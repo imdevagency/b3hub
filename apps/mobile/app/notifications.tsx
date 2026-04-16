@@ -297,7 +297,7 @@ export default function NotificationsScreen() {
   const unreadCount = notifs.filter((n) => !n.isRead).length;
 
   return (
-    <ScreenContainer standalone noAnimation bg="#ffffff">
+    <ScreenContainer standalone noAnimation topBg="#111827">
       <ScreenHeader
         title={unreadCount > 0 ? `Paziņojumi (${unreadCount})` : 'Paziņojumi'}
         rightAction={
@@ -309,20 +309,20 @@ export default function NotificationsScreen() {
                 height: 40,
                 paddingHorizontal: 16,
                 borderRadius: 999,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: '#374151',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
               {markingAll ? (
-                <ActivityIndicator size="small" color="#000000" />
+                <ActivityIndicator size="small" color="#ffffff" />
               ) : (
                 <Text
                   style={{
                     fontSize: 14,
                     fontFamily: 'Inter_600SemiBold',
                     fontWeight: '600',
-                    color: '#000000',
+                    color: '#ffffff',
                   }}
                 >
                   Atzīmēt

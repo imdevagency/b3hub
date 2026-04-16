@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { TopBar } from '@/components/ui/TopBar';
 import { useRouter } from 'expo-router';
 import { LayoutGrid, Wallet, FileText, Handshake, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -78,9 +79,8 @@ function BizRow({ tool }: { tool: BizTool }) {
 export default function SellerBusinessScreen() {
   return (
     <ScreenContainer bg="white">
+      <TopBar title="Pārdevēja centrs" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.container}>
-        <Text style={s.pageTitle}>Pārdevēja centrs</Text>
-
         <Text style={s.sectionHeader}>Operācijas</Text>
         {OPERATIONS.map((tool) => (
           <BizRow key={tool.route} tool={tool} />

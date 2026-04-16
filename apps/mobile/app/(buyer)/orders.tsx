@@ -38,6 +38,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { SIZE_LABEL } from '@/lib/materials';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const PAYMENT_BADGE: Record<string, { label: string; bg: string; color: string } | undefined> = {
   PENDING: { label: 'Gaida maksājumu', bg: '#fef3c7', color: '#92400e' },
@@ -177,55 +178,58 @@ export default function OrdersScreen() {
   }, []);
 
   return (
-    <ScreenContainer bg="#ffffff">
-      {/* ── Uber Header ──────────────────────────────────────── */}
-      <View style={s.uberHeader}>
-        <Text style={s.uberTitle}>Pasūtījumi</Text>
-        <View style={s.headerActions}>
-          <TouchableOpacity
-            style={s.headerRoundBtn}
-            activeOpacity={0.8}
-            onPress={() => {
-              haptics.light();
-              setShowSearch((v) => !v);
-            }}
-          >
-            <Search size={20} color={showSearch ? '#00A878' : '#111827'} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={s.headerRoundBtn}
-            activeOpacity={0.8}
-            onPress={() => {
-              haptics.light();
-              router.push('/(buyer)/schedules' as any);
-            }}
-          >
-            <Calendar size={20} color="#111827" />
-          </TouchableOpacity>
-          <TouchableOpacity style={s.headerRoundBtn} activeOpacity={0.8} onPress={handleNewOrder}>
-            <Plus size={22} color="#111827" />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <ScreenContainer bg="#F4F5F7">
+      <ScreenHeader
+        title="Pasūtījumi"
+        showBack={false}
+        noBorder
+        rightAction={
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              className="w-[40px] h-[40px] rounded-full bg-gray-700 items-center justify-center"
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.light();
+                setShowSearch((v) => !v);
+              }}
+            >
+              <Search size={20} color={showSearch ? '#00A878' : '#ffffff'} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="w-[40px] h-[40px] rounded-full bg-gray-700 items-center justify-center"
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.light();
+                router.push('/(buyer)/schedules' as any);
+              }}
+            >
+              <Calendar size={20} color="#ffffff" />
+            </TouchableOpacity>
+            <TouchableOpacity className="w-[40px] h-[40px] rounded-full bg-gray-700 items-center justify-center" activeOpacity={0.8} onPress={handleNewOrder}>
+              <Plus size={22} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        }
+      />
 
       {/* ── Segmented Control ────────────────────────────────── */}
-      <View style={s.segmentWrap}>
-        <View style={s.segmentTrack}>
+      <View className="px-4 pb-3 bg-gray-900">
+        <View className="flex-row bg-gray-800 rounded-[10px] p-1">
           <TouchableOpacity
-            style={[s.segmentBtn, activeTab === 'active' && s.segmentBtnActive]}
+            className={`flex-1 py-[7px] rounded-lg items-center justify-center ${activeTab === 'active' ? 'bg-gray-700 shadow-sm' : ''}`}
             onPress={() => handleTabChange('active')}
             activeOpacity={0.8}
           >
-            <Text style={[s.segmentText, activeTab === 'active' && s.segmentTextActive]}>
+            <Text className={`text-sm font-semibold ${activeTab === 'active' ? 'text-white' : 'text-gray-400'}`}>
               Aktīvie
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[s.segmentBtn, activeTab === 'done' && s.segmentBtnActive]}
+            className={`flex-1 py-[7px] rounded-lg items-center justify-center ${activeTab === 'done' ? 'bg-gray-700 shadow-sm' : ''}`}
             onPress={() => handleTabChange('done')}
             activeOpacity={0.8}
           >
-            <Text style={[s.segmentText, activeTab === 'done' && s.segmentTextActive]}>
+            <Text className={`text-sm font-semibold ${activeTab === 'done' ? 'text-white' : 'text-gray-400'}`}>
               Vēsture
             </Text>
           </TouchableOpacity>
@@ -234,15 +238,15 @@ export default function OrdersScreen() {
 
       {/* ── Collapsible search + type filters ────────────────── */}
       {showSearch && (
-        <View style={s.collapsibleFilters}>
-          <View style={[s.searchRow, searchFocused && s.searchRowFocused]}>
+        <View className="bg-white pb-2">
+          <View className={`flex-row items-center mx-4 mb-2 px-3 py-2 rounded-xl border-[1.5px] ${searchFocused ? 'border-emerald-500 bg-white' : 'border-transparent bg-gray-100'}`}>
             <Search
               size={16}
               color={searchFocused ? '#00A878' : '#9ca3af'}
               style={{ marginRight: 8 }}
             />
             <TextInput
-              style={s.searchInput}
+              className="flex-1 text-sm text-gray-900 py-0"
               placeholder="Meklēt pēc adreses, materiāla..."
               placeholderTextColor="#9ca3af"
               value={query}
@@ -270,7 +274,7 @@ export default function OrdersScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.typeScrollContent}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}
             >
               <TypeChip
                 label="Visi"
@@ -336,19 +340,19 @@ export default function OrdersScreen() {
         data={displayItems}
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
         renderItem={renderItem}
-        contentContainerStyle={s.list}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentInsetAdjustmentBehavior="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         ListHeaderComponent={
           showCo2Banner ? (
-            <View style={s.co2Banner}>
-              <View style={s.co2Left}>
+            <View className="bg-green-50 rounded-[20px] p-4 mb-4 border border-green-100 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-3">
                 <Leaf size={18} color="#16a34a" fill="#16a34a" />
                 <View>
-                  <Text style={s.co2Value}>{formatCo2(totalCo2Kg)}</Text>
-                  <Text style={s.co2Label}>
+                  <Text className="text-green-800 font-extrabold text-[15px] tracking-tight">{formatCo2(totalCo2Kg)}</Text>
+                  <Text className="text-green-700 font-medium text-[11px]">
                     Kopējais CO₂ · {totalTonnes.toFixed(1)} t piegādāts ({deliveredJobCount} reises)
                   </Text>
                 </View>
@@ -368,11 +372,11 @@ export default function OrdersScreen() {
               subtitle="Pārbaudiet interneta savienojumu un mēģiniet vēlreiz."
               action={
                 <TouchableOpacity
-                  style={s.emptyButton}
+                  className="mt-6 bg-gray-900 px-6 py-3 rounded-[20px]"
                   onPress={() => refresh()}
                   activeOpacity={0.8}
                 >
-                  <Text style={s.emptyButtonText}>Mēģināt vēlreiz</Text>
+                  <Text className="text-white font-semibold text-[15px]">Mēģināt vēlreiz</Text>
                 </TouchableOpacity>
               }
             />
@@ -383,11 +387,11 @@ export default function OrdersScreen() {
               subtitle="Veiciet jaunu pasūtījumu vai RFQ, lai sāktu."
               action={
                 <TouchableOpacity
-                  style={s.emptyButton}
+                  className="mt-6 bg-gray-900 px-6 py-3 rounded-[20px]"
                   onPress={handleNewOrder}
                   activeOpacity={0.8}
                 >
-                  <Text style={s.emptyButtonText}>Jauns pasūtījums</Text>
+                  <Text className="text-white font-semibold text-[15px]">Jauns pasūtījums</Text>
                 </TouchableOpacity>
               }
             />
@@ -397,11 +401,11 @@ export default function OrdersScreen() {
 
       {/* ── New Order Sheet ──────────────────────────────────── */}
       <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
-        <View style={s.sheetContent}>
-          <Text style={s.sheetTitle}>Jauns pasūtījums</Text>
+        <View className="pb-10 pt-2">
+          <Text className="text-2xl font-extrabold text-gray-900 mb-6 px-6 tracking-tight">Jauns pasūtījums</Text>
 
           <TouchableOpacity
-            style={s.sheetOption}
+            className="flex-row items-center px-6 py-3 gap-4"
             onPress={() => {
               haptics.light();
               setShowTypePicker(false);
@@ -409,17 +413,17 @@ export default function OrdersScreen() {
             }}
             activeOpacity={0.7}
           >
-            <View style={s.uberIconBox}>
+            <View className="w-16 h-16 rounded-2xl bg-gray-100 items-center justify-center">
               <HardHat size={28} color="#111827" strokeWidth={1.5} />
             </View>
-            <View style={s.sheetText}>
-              <Text style={s.uberOptionTitle}>Materiāli</Text>
-              <Text style={s.uberOptionDesc}>Smiltis, šķembas, melnzeme</Text>
+            <View className="flex-1 justify-center gap-0.5">
+              <Text className="text-[17px] font-bold text-gray-900">Materiāli</Text>
+              <Text className="text-sm font-medium text-gray-500">Smiltis, šķembas, melnzeme</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={s.sheetOption}
+            className="flex-row items-center px-6 py-3 gap-4"
             onPress={() => {
               haptics.light();
               setShowTypePicker(false);
@@ -427,17 +431,17 @@ export default function OrdersScreen() {
             }}
             activeOpacity={0.7}
           >
-            <View style={s.uberIconBox}>
+            <View className="w-16 h-16 rounded-2xl bg-gray-100 items-center justify-center">
               <Package size={28} color="#111827" strokeWidth={1.5} />
             </View>
-            <View style={s.sheetText}>
-              <Text style={s.uberOptionTitle}>Konteiners</Text>
-              <Text style={s.uberOptionDesc}>Konteiners uz vietas (noma)</Text>
+            <View className="flex-1 justify-center gap-0.5">
+              <Text className="text-[17px] font-bold text-gray-900">Konteiners</Text>
+              <Text className="text-sm font-medium text-gray-500">Konteiners uz vietas (noma)</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={s.sheetOption}
+            className="flex-row items-center px-6 py-3 gap-4"
             onPress={() => {
               haptics.light();
               setShowTypePicker(false);
@@ -445,17 +449,17 @@ export default function OrdersScreen() {
             }}
             activeOpacity={0.7}
           >
-            <View style={s.uberIconBox}>
+            <View className="w-16 h-16 rounded-2xl bg-gray-100 items-center justify-center">
               <Trash2 size={28} color="#111827" strokeWidth={1.5} />
             </View>
-            <View style={s.sheetText}>
-              <Text style={s.uberOptionTitle}>Utilizācija</Text>
-              <Text style={s.uberOptionDesc}>Atkritumu izvešana no objekta</Text>
+            <View className="flex-1 justify-center gap-0.5">
+              <Text className="text-[17px] font-bold text-gray-900">Utilizācija</Text>
+              <Text className="text-sm font-medium text-gray-500">Atkritumu izvešana no objekta</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={s.sheetOption}
+            className="flex-row items-center px-6 py-3 gap-4"
             onPress={() => {
               haptics.light();
               setShowTypePicker(false);
@@ -463,29 +467,29 @@ export default function OrdersScreen() {
             }}
             activeOpacity={0.7}
           >
-            <View style={s.uberIconBox}>
+            <View className="w-16 h-16 rounded-2xl bg-gray-100 items-center justify-center">
               <FileText size={28} color="#111827" strokeWidth={1.5} />
             </View>
-            <View style={s.sheetText}>
-              <Text style={s.uberOptionTitle}>Cenu aptauja (RFQ)</Text>
-              <Text style={s.uberOptionDesc}>Specifiski apjomi vai materiāli</Text>
+            <View className="flex-1 justify-center gap-0.5">
+              <Text className="text-[17px] font-bold text-gray-900">Cenu aptauja (RFQ)</Text>
+              <Text className="text-sm font-medium text-gray-500">Specifiski apjomi vai materiāli</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={s.sheetOption}
+            className="flex-row items-center px-6 py-3 gap-4"
             onPress={() => {
               setShowTypePicker(false);
               router.push('/transport');
             }}
             activeOpacity={0.7}
           >
-            <View style={s.uberIconBox}>
+            <View className="w-16 h-16 rounded-2xl bg-gray-100 items-center justify-center">
               <Truck size={28} color="#111827" strokeWidth={1.5} />
             </View>
-            <View style={s.sheetText}>
-              <Text style={s.uberOptionTitle}>Transports A → B</Text>
-              <Text style={s.uberOptionDesc}>Tikai pārvadājums</Text>
+            <View className="flex-1 justify-center gap-0.5">
+              <Text className="text-[17px] font-bold text-gray-900">Transports A → B</Text>
+              <Text className="text-sm font-medium text-gray-500">Tikai pārvadājums</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -509,13 +513,13 @@ function TypeChip({
 }) {
   return (
     <TouchableOpacity
-      style={[s.typeChip, active && s.typeChipActive]}
+      className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${active ? 'bg-emerald-500 border-emerald-500' : 'bg-gray-50 border-gray-200'}`}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[s.typeChipText, active && s.typeChipTextActive]}>{label}</Text>
-      <View style={[s.typeChipBadge, active && s.typeChipBadgeActive]}>
-        <Text style={[s.typeChipBadgeText, active && s.typeChipBadgeTextActive]}>{count}</Text>
+      <Text className={`text-[13px] font-semibold ${active ? 'text-white' : 'text-gray-600'}`}>{label}</Text>
+      <View className={`min-w-[18px] h-[18px] rounded-full items-center justify-center px-1 ${active ? 'bg-emerald-600' : 'bg-gray-200'}`}>
+        <Text className={`text-[10px] font-bold ${active ? 'text-white' : 'text-gray-500'}`}>{count}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -544,15 +548,15 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
 
   return (
     <TouchableOpacity
-      style={s.card}
+      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
       activeOpacity={0.9}
       onPress={() => router.push(`/(buyer)/order/${order.id}`)}
     >
-      <View style={s.cardHeader}>
-        <View style={s.typeRow}>
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Package size={16} color="#64748b" />
-          <Text style={s.orderId}>Materiāli</Text>
-          <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Materiāli</Text>
+          <Text className="text-xs font-medium text-gray-400">
             · #{order.orderNumber}
           </Text>
         </View>
@@ -564,31 +568,31 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
         />
       </View>
 
-      <Text style={s.cardTitle} numberOfLines={2}>
+      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
         {displayTitle}
       </Text>
 
       {order.project?.name && (
         <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-          <View style={s.projectPill}>
+          <View className="flex-row items-center gap-1.5 bg-blue-50/50 border border-blue-100 px-2.5 py-1 rounded-full max-w-[80%]">
             <HardHat size={11} color="#1d4ed8" />
-            <Text style={s.projectPillText} numberOfLines={1}>
+            <Text className="text-[11px] font-bold text-blue-700" numberOfLines={1}>
               {order.project.name}
             </Text>
           </View>
         </View>
       )}
 
-      <View style={s.cardMeta}>
-        <View style={s.metaItem}>
+      <View className="gap-2 mb-3 mt-1">
+        <View className="flex-row items-center gap-2">
           <MapPin size={14} color="#94a3b8" />
-          <Text style={s.metaText} numberOfLines={1}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1" numberOfLines={1}>
             {order.deliveryAddress}
           </Text>
         </View>
-        <View style={s.metaItem}>
+        <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#94a3b8" />
-          <Text style={s.metaText}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">
             {order.deliveryDate
               ? format(new Date(order.deliveryDate), 'd. MMM', { locale: lv })
               : 'Cik drīz iespējams'}
@@ -596,15 +600,15 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
         </View>
       </View>
 
-      <View style={s.cardFooter}>
-        <View style={{ gap: 4 }}>
-          <Text style={s.price}>{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
+      <View className="flex-row justify-between items-end mt-4 pt-4 border-t border-gray-100">
+        <View className="gap-1">
+          <Text className="text-gray-900 font-black text-[22px]">{order.totalAmount != null ? `€${order.totalAmount}` : '—'}</Text>
           <PaymentBadge status={order.paymentStatus} />
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View className="flex-row items-center gap-3">
           {order.linkedSkipOrder && (
             <TouchableOpacity
-              style={s.linkedSkipChip}
+              className="flex-row items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-full"
               onPress={(e) => {
                 e.stopPropagation();
                 router.push(`/(buyer)/skip-order/${order.linkedSkipOrder.id}` as any);
@@ -612,24 +616,24 @@ const MaterialOrderCard = React.memo(function MaterialOrderCard({ order }: { ord
               activeOpacity={0.8}
             >
               <Link2 size={11} color="#059669" />
-              <Text style={s.linkedSkipChipText}>Konteiners</Text>
+              <Text className="text-emerald-700 font-bold text-xs">Konteiners</Text>
             </TouchableOpacity>
           )}
-          {activeJob && driverName && <Text style={s.driverNameText}>{driverName}</Text>}
+          {activeJob && driverName && <Text className="text-gray-600 font-semibold text-sm">{driverName}</Text>}
           {activeJob && (
             <TouchableOpacity
-              style={s.liveChip}
+              className="flex-row items-center gap-1.5 bg-green-500 px-3 py-1.5 rounded-full shadow-sm shadow-green-500/20"
               onPress={(e) => {
                 e.stopPropagation();
                 router.push(`/(buyer)/transport-job/${activeJob.id}` as any);
               }}
               activeOpacity={0.8}
             >
-              <View style={s.liveChipDot} />
-              <Text style={s.liveChipText}>Live</Text>
+              <View className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <Text className="text-white font-bold text-[13px]">Live</Text>
             </TouchableOpacity>
           )}
-          <View style={s.chevronBox}>
+          <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
             <ChevronRight size={18} color="#94a3b8" />
           </View>
         </View>
@@ -644,14 +648,14 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
 
   return (
     <TouchableOpacity
-      style={s.card}
+      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
       activeOpacity={0.9}
       onPress={() => router.push(`/(buyer)/transport-job/${req.id}`)}
     >
-      <View style={s.cardHeader}>
-        <View style={s.typeRow}>
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Trash2 size={16} color="#64748b" />
-          <Text style={s.orderId}>Utilizācija</Text>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Utilizācija</Text>
         </View>
         <StatusPill
           label={formatStatus(req.status)}
@@ -661,20 +665,20 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
         />
       </View>
 
-      <Text style={s.cardTitle} numberOfLines={2}>
+      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
         {(req.pickupAddress ?? '').split(',')[0] || 'Izvešanas vieta'}
       </Text>
 
-      <View style={s.cardMeta}>
-        <View style={s.metaItem}>
+      <View className="gap-2 mb-3 mt-1">
+        <View className="flex-row items-center gap-2">
           <MapPin size={14} color="#94a3b8" />
-          <Text style={s.metaText} numberOfLines={1}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1" numberOfLines={1}>
             Atkritumu izvešana
           </Text>
         </View>
-        <View style={s.metaItem}>
+        <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#94a3b8" />
-          <Text style={s.metaText}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">
             {req.pickupDate
               ? format(new Date(req.pickupDate), 'd. MMM', { locale: lv })
               : 'Pēc vienošanās'}
@@ -682,25 +686,17 @@ const DisposalOrderCard = React.memo(function DisposalOrderCard({ req }: { req: 
         </View>
       </View>
 
-      <View style={s.cardFooter}>
+      <View className="flex-row justify-between items-end mt-4 pt-4 border-t border-gray-100">
         {req.rate != null ? (
-          <Text style={s.price}>€{req.rate}</Text>
+          <Text className="text-gray-900 font-black text-[22px]">€{req.rate}</Text>
         ) : (
           <Text
-            style={[
-              s.price,
-              {
-                color: '#94a3b8',
-                fontSize: 13,
-                alignSelf: 'center',
-                fontFamily: 'Inter_600SemiBold',
-              },
-            ]}
+            className="text-gray-400 text-sm font-semibold self-center"
           >
             Tiks precizēts
           </Text>
         )}
-        <View style={s.chevronBox}>
+        <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
         </View>
       </View>
@@ -714,14 +710,14 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
 
   return (
     <TouchableOpacity
-      style={s.card}
+      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
       activeOpacity={0.9}
       onPress={() => router.push(`/(buyer)/transport-job/${req.id}`)}
     >
-      <View style={s.cardHeader}>
-        <View style={s.typeRow}>
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Truck size={16} color="#64748b" />
-          <Text style={s.orderId}>Transports</Text>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Transports</Text>
         </View>
         <StatusPill
           label={formatStatus(req.status)}
@@ -731,15 +727,15 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
         />
       </View>
 
-      <Text style={s.cardTitle} numberOfLines={2}>
+      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
         {(req.pickupAddress ?? '').split(',')[0] || 'Iekraušana'} →{' '}
         {(req.deliveryAddress ?? '').split(',')[0] || 'Piegāde'}
       </Text>
 
-      <View style={s.cardMeta}>
-        <View style={s.metaItem}>
+      <View className="gap-2 mb-3 mt-1">
+        <View className="flex-row items-center gap-2">
           <Clock size={14} color="#94a3b8" />
-          <Text style={s.metaText}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">
             {req.pickupDate
               ? format(new Date(req.pickupDate), 'd. MMM HH:mm', { locale: lv })
               : 'Pēc vienošanās'}
@@ -748,25 +744,17 @@ const TransportRequestCard = React.memo(function TransportRequestCard({ req }: {
       </View>
 
       {/* Spacer to align footer height if needed, or remove if content adjusts */}
-      <View style={s.cardFooter}>
+      <View className="flex-row justify-between items-end mt-4 pt-4 border-t border-gray-100">
         {req.rate != null && req.rate > 0 ? (
-          <Text style={s.price}>no €{req.rate}</Text>
+          <Text className="text-gray-900 font-black text-[22px]">no €{req.rate}</Text>
         ) : (
           <Text
-            style={[
-              s.price,
-              {
-                color: '#94a3b8',
-                fontSize: 13,
-                alignSelf: 'center',
-                fontFamily: 'Inter_600SemiBold',
-              },
-            ]}
+            className="text-gray-400 text-sm font-semibold self-center"
           >
             Tiks precizēts
           </Text>
         )}
-        <View style={s.chevronBox}>
+        <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
         </View>
       </View>
@@ -780,14 +768,14 @@ const RfqCard = React.memo(function RfqCard({ rfq }: { rfq: any }) {
 
   return (
     <TouchableOpacity
-      style={s.card}
+      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
       activeOpacity={0.9}
       onPress={() => router.push(`/(buyer)/rfq/${rfq.id}`)}
     >
-      <View style={s.cardHeader}>
-        <View style={s.typeRow}>
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <FileText size={16} color="#64748b" />
-          <Text style={s.orderId}>Cenu aptauja</Text>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Cenu aptauja</Text>
         </View>
         <StatusPill
           label={formatStatus(rfq.status)}
@@ -797,18 +785,18 @@ const RfqCard = React.memo(function RfqCard({ rfq }: { rfq: any }) {
         />
       </View>
 
-      <Text style={s.cardTitle} numberOfLines={2}>
+      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
         {rfq.title || 'Jauna cenu aptauja'}
       </Text>
 
-      <View style={s.cardMeta}>
-        <View style={s.metaItem}>
+      <View className="gap-2 mb-3 mt-1">
+        <View className="flex-row items-center gap-2">
           <AlertCircle size={14} color="#94a3b8" />
-          <Text style={s.metaText}>{rfq._count?.quotes || 0} piedāvājumi</Text>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">{rfq._count?.quotes || 0} piedāvājumi</Text>
         </View>
-        <View style={s.metaItem}>
+        <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#94a3b8" />
-          <Text style={s.metaText}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">
             Termiņš:{' '}
             {rfq.deadline
               ? format(new Date(rfq.deadline), 'd. MMM', { locale: lv })
@@ -817,9 +805,9 @@ const RfqCard = React.memo(function RfqCard({ rfq }: { rfq: any }) {
         </View>
       </View>
 
-      <View style={s.cardFooter}>
-        <Text style={s.price}>RFQ</Text>
-        <View style={s.chevronBox}>
+      <View className="flex-row justify-between items-end mt-4 pt-4 border-t border-gray-100">
+        <Text className="text-gray-900 font-black text-[22px]">RFQ</Text>
+        <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
         </View>
       </View>
@@ -833,15 +821,15 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
 
   return (
     <TouchableOpacity
-      style={s.card}
+      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
       activeOpacity={0.9}
       onPress={() => router.push(`/(buyer)/skip-order/${order.id}`)}
     >
-      <View style={s.cardHeader}>
-        <View style={s.typeRow}>
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="flex-row items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl">
           <Package size={16} color="#64748b" />
-          <Text style={s.orderId}>Konteiners</Text>
-          <Text style={[s.orderId, { color: '#94a3b8', fontWeight: '400' as const }]}>
+          <Text className="text-xs font-bold text-gray-500 uppercase tracking-widest">Konteiners</Text>
+          <Text className="text-xs font-medium text-gray-400">
             {' '}
             · #{order.orderNumber}
           </Text>
@@ -854,20 +842,20 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
         />
       </View>
 
-      <Text style={s.cardTitle} numberOfLines={2}>
+      <Text className="text-gray-900 font-black text-xl tracking-tight mb-2 leading-tight" numberOfLines={2}>
         {SIZE_LABEL[order.skipSize as string] ?? order.skipSize}
       </Text>
 
-      <View style={s.cardMeta}>
-        <View style={s.metaItem}>
+      <View className="gap-2 mb-3 mt-1">
+        <View className="flex-row items-center gap-2">
           <MapPin size={14} color="#94a3b8" />
-          <Text style={s.metaText} numberOfLines={1}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1" numberOfLines={1}>
             {order.location}
           </Text>
         </View>
-        <View style={s.metaItem}>
+        <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#94a3b8" />
-          <Text style={s.metaText}>
+          <Text className="text-gray-500 font-medium text-[15px] flex-1">
             {order.deliveryDate
               ? format(new Date(order.deliveryDate), 'd. MMM', { locale: lv })
               : 'Nav datuma'}
@@ -875,26 +863,17 @@ const SkipOrderCard = React.memo(function SkipOrderCard({ order }: { order: any 
         </View>
       </View>
 
-      <View style={s.cardFooter}>
+      <View className="flex-row justify-between items-end mt-4 pt-4 border-t border-gray-100">
         {order.price != null ? (
-          <Text style={s.price}>€{order.price.toFixed(2)}</Text>
+          <Text className="text-gray-900 font-black text-[22px]">€{order.price.toFixed(2)}</Text>
         ) : (
           <Text
-            style={[
-              s.price,
-              {
-                color: '#94a3b8',
-                fontSize: 13,
-                alignSelf: 'center',
-                fontFamily: 'Inter_600SemiBold',
-                marginBottom: 2,
-              },
-            ]}
+            className="text-gray-400 text-sm font-semibold self-center mb-0.5"
           >
             Gaida cenu
           </Text>
         )}
-        <View style={s.chevronBox}>
+        <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
           <ChevronRight size={18} color="#94a3b8" />
         </View>
       </View>
@@ -944,387 +923,4 @@ function formatStatus(status: string) {
 
 // ── Styles ────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  uberHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-  },
-  uberTitle: {
-    fontSize: 32,
-    fontFamily: 'Inter_800ExtraBold',
-    fontWeight: '800',
-    color: '#000',
-    letterSpacing: -0.5,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  headerRoundBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentWrap: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-  },
-  segmentTrack: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    padding: 3,
-  },
-  segmentBtn: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentBtnActive: {
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  segmentText: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#6b7280',
-  },
-  segmentTextActive: {
-    color: '#111827',
-  },
-  collapsibleFilters: {
-    backgroundColor: '#fff',
-    paddingBottom: 8,
-  },
-  typeScrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  searchRowFocused: {
-    borderColor: '#00A878',
-    backgroundColor: '#fff',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#111827',
-    paddingVertical: 0,
-  },
-  typeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  typeChipActive: {
-    backgroundColor: '#00A878',
-    borderColor: '#00A878',
-  },
-  typeChipText: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#4b5563',
-  },
-  typeChipTextActive: {
-    color: '#ffffff',
-  },
-  typeChipBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  typeChipBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  typeChipBadgeText: {
-    fontSize: 11,
-    fontFamily: 'Inter_700Bold',
-    color: '#6b7280',
-  },
-  typeChipBadgeTextActive: {
-    color: '#ffffff',
-  },
-  filterContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  co2Banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0fdf4',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  co2Left: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  co2Value: { fontSize: 16, fontWeight: '700', color: '#15803d' },
-  co2Label: { fontSize: 12, color: '#16a34a', marginTop: 2 },
 
-  list: {
-    padding: 16,
-    gap: 12,
-    paddingBottom: 100,
-  },
-
-  // Cards
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  typeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  orderId: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#64748b',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 11,
-    fontFamily: 'Inter_700Bold',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    marginBottom: 6,
-    lineHeight: 22,
-  },
-  cardMeta: {
-    gap: 8,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  metaText: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: '#64748b',
-    flex: 1,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  price: {
-    fontSize: 18,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-  },
-  chevronBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#f8fafc',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  liveChipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#ffffff',
-  },
-  liveChipText: {
-    fontSize: 11,
-    fontFamily: 'Inter_700Bold',
-    color: '#ffffff',
-  },
-  linkedSkipChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#d1fae5',
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  linkedSkipChipText: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#059669',
-  },
-  projectPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#eff6ff',
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    maxWidth: '80%',
-  },
-  projectPillText: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#1d4ed8',
-  },
-
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 999,
-    backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 15,
-    fontFamily: 'Inter_500Medium',
-    color: '#64748b',
-    textAlign: 'center',
-    maxWidth: 240,
-  },
-  emptyButton: {
-    marginTop: 24,
-    backgroundColor: '#111827',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  emptyButtonText: {
-    color: '#fff',
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
-  },
-
-  driverNameText: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#4b5563',
-  },
-
-  // Sheet
-  sheetContent: {
-    paddingBottom: 40,
-    paddingTop: 8,
-  },
-  sheetTitle: {
-    fontSize: 24,
-    fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
-    marginBottom: 24,
-    paddingHorizontal: 24,
-    letterSpacing: -0.5,
-  },
-  sheetOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    gap: 16,
-  },
-  uberIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#F4F5F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetText: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: 2,
-  },
-  uberOptionTitle: {
-    fontSize: 17,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-  },
-  uberOptionDesc: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: '#64748b',
-  },
-});

@@ -32,9 +32,13 @@ interface ScreenHeaderProps {
    * By default, it auto-shows if navigation.canGoBack() is true.
    */
   showBack?: boolean;
+  /**
+   * Remove the bottom border.
+   */
+  noBorder?: boolean;
 }
 
-export function ScreenHeader({ title, rightAction, onBack, showBack }: ScreenHeaderProps) {
+export function ScreenHeader({ title, rightAction, onBack, showBack, noBorder }: ScreenHeaderProps) {
   const router = useRouter();
   const navigation = useNavigation();
 
@@ -51,7 +55,7 @@ export function ScreenHeader({ title, rightAction, onBack, showBack }: ScreenHea
   };
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, noBorder && { borderBottomWidth: 0 }]}>
       <View style={styles.left}>
         {shouldShowBack && (
           <TouchableOpacity
@@ -62,7 +66,7 @@ export function ScreenHeader({ title, rightAction, onBack, showBack }: ScreenHea
             accessibilityLabel="Atpakaļ"
             accessibilityRole="button"
           >
-            <ChevronLeft size={24} color="#111827" />
+            <ChevronLeft size={24} color="#ffffff" />
           </TouchableOpacity>
         )}
         <Text style={styles.title} numberOfLines={1}>
@@ -82,9 +86,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#1f2937',
     minHeight: 56,
   },
   left: {
@@ -105,7 +109,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
-    color: '#111827',
+    color: '#ffffff',
     flex: 1,
   },
   right: {

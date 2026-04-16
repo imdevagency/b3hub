@@ -14,13 +14,14 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Send, ArrowLeft, MessageCircle, ImageIcon } from 'lucide-react-native';
+import { Send, MessageCircle, ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/auth-context';
 import { ApiChatMessage } from '@/lib/api';
 import { useChat } from '@/lib/use-chat';
 import { useState } from 'react';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 
 export default function ChatScreen() {
@@ -149,28 +150,13 @@ export default function ChatScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#f2f2f7">
+    <ScreenContainer standalone bg="#f2f2f7" topBg="#111827">
+      <ScreenHeader title={String(title ?? 'Čats')} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.headerBack}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft size={22} color="#111827" />
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {title ?? 'Čats'}
-            </Text>
-            <Text style={styles.headerSub}>Darba čats</Text>
-          </View>
-        </View>
 
         {/* Messages or states */}
         {loading ? (
@@ -239,36 +225,6 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f2f2f7' },
   flex: { flex: 1 },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-    gap: 8,
-  },
-  headerBack: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-  },
-  headerCenter: { flex: 1 },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  headerSub: {
-    fontSize: 11,
-    color: '#9ca3af',
-    marginTop: 1,
-  },
 
   // Center empty/loading states
   centerBox: {

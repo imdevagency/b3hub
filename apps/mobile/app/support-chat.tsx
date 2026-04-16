@@ -107,7 +107,7 @@ export default function SupportChatScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg={colors.bgScreen}>
+      <ScreenContainer standalone bg={colors.bgScreen} topBg="#111827">
         <ScreenHeader title="Atbalsts" />
         <View style={s.centered}>
           <ActivityIndicator color={colors.primary} />
@@ -117,7 +117,7 @@ export default function SupportChatScreen() {
   }
 
   return (
-    <ScreenContainer standalone bg={colors.bgScreen}>
+    <ScreenContainer standalone bg={colors.bgScreen} topBg="#111827">
       <ScreenHeader title="Atbalsts" />
       <KeyboardAvoidingView
         style={s.flex}

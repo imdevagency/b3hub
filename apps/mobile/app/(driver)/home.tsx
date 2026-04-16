@@ -15,8 +15,9 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiTransportJob, ApiVehicle } from '@/lib/api';
 import { BaseMap, PinLayer } from '@/components/map';
-import { TopBar } from '@/components/ui/TopBar';
 import type { CameraRefHandle } from '@/components/map';
+import { useIsFocused } from '@react-navigation/native';
+import { useHeaderConfig } from '@/lib/header-context';
 import * as Location from 'expo-location';
 import { Wallet, Trash2, ChevronRight, User, Truck, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -38,12 +39,13 @@ export default function DriverHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRefHandle | null>(null);
+  const isFocused = useIsFocused();
+  const { setConfig } = useHeaderConfig();
 
   const [availableJobs, setAvailableJobs] = useState<ApiTransportJob[]>([]);
   const [hasActiveJob, setHasActiveJob] = useState(false);
   const [upcomingJobs, setUpcomingJobs] = useState<ApiTransportJob[]>([]);
   const [vehicleCount, setVehicleCount] = useState<number | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [todayEarnings, setTodayEarnings] = useState<number | null>(null);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -97,10 +99,6 @@ export default function DriverHomeScreen() {
           setLoadingJobs(false);
           setFetchError(true);
         }),
-      api.notifications
-        .unreadCount(token)
-        .then((res: { count: number }) => setUnreadCount(res.count))
-        .catch(() => {}),
       api.vehicles
         .getAll(token)
         .then((vs: ApiVehicle[]) => setVehicleCount(Array.isArray(vs) ? vs.length : 0))
@@ -159,6 +157,41 @@ export default function DriverHomeScreen() {
     }
   }, [token, togglingOnline, hasActiveJob, isOnline]);
 
+  // Reactively update the layout-level TopBar with the driver status pill
+  useEffect(() => {
+    if (!isFocused) {
+      setConfig(null);
+      return;
+    }
+    setConfig({
+      centerElement: (
+        <TouchableOpacity
+          style={[
+            s.statusPill,
+            hasActiveJob ? s.statusActive : isOnline ? s.statusOnline : s.statusOffline,
+          ]}
+          onPress={handleToggleOnline}
+          activeOpacity={0.8}
+          disabled={hasActiveJob || togglingOnline}
+        >
+          {togglingOnline ? (
+            <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 4 }} />
+          ) : (
+            <View
+              style={[
+                s.statusDot,
+                { backgroundColor: hasActiveJob ? '#10b981' : isOnline ? '#111827' : '#9ca3af' },
+              ]}
+            />
+          )}
+          <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: '#9ca3af' }]}>
+            {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
+          </Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [isFocused, hasActiveJob, isOnline, togglingOnline, handleToggleOnline, setConfig]);
+
   // Ensure safe bottom padding for iPhone X/11/etc home indicator
   const bottomInset = insets.bottom > 0 ? insets.bottom : 20;
 
@@ -195,54 +228,7 @@ export default function DriverHomeScreen() {
         </BaseMap>
       </View>
 
-      {/* 2. Floating Header (Top Bar) — Transparent, laid over map */}
-      <TopBar
-        transparent
-        unreadCount={unreadCount}
-        leftElement={
-          <TouchableOpacity
-            style={s.roundBtn}
-            activeOpacity={0.9}
-            onPress={() => {
-              haptics.light();
-              router.push('/(driver)/profile');
-            }}
-          >
-            <View style={s.avatarFill}>
-              <Text style={s.avatarText}>
-                {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        }
-        centerElement={
-          <TouchableOpacity
-            style={[
-              s.statusPill,
-              hasActiveJob ? s.statusActive : isOnline ? s.statusOnline : s.statusOffline,
-            ]}
-            onPress={handleToggleOnline}
-            activeOpacity={0.8}
-            disabled={hasActiveJob || togglingOnline}
-          >
-            {togglingOnline ? (
-              <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 4 }} />
-            ) : (
-              <View
-                style={[
-                  s.statusDot,
-                  { backgroundColor: hasActiveJob ? '#10b981' : isOnline ? '#111827' : '#9ca3af' },
-                ]}
-              />
-            )}
-            <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: '#9ca3af' }]}>
-              {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
-
-      {/* 3. Bottom Sheet Card — Slide-up panel styling */}
+      {/* 2. Bottom Sheet Card — Slide-up panel styling */}
       <View style={[s.bottomSheet, { height: BOTTOM_PANEL_H }]}>
         {/* Drag handle affordance */}
         <View style={s.dragHandle} />
@@ -425,28 +411,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     zIndex: 10,
   },
-  roundBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  avatarFill: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   badge: {
     position: 'absolute',
     top: 10,

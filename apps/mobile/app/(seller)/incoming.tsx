@@ -685,9 +685,9 @@ export default function IncomingScreen() {
               activeOpacity={0.8}
             >
               {batchMode ? (
-                <X size={15} color="#6b7280" />
+                <X size={15} color="#9ca3af" />
               ) : (
-                <CheckSquare2 size={15} color="#374151" />
+                <CheckSquare2 size={15} color="#e5e7eb" />
               )}
               <Text style={styles.batchToggleText}>{batchMode ? 'Atcelt' : 'Atlasīt'}</Text>
             </TouchableOpacity>
@@ -1076,10 +1076,10 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: '#4b5563',
   },
-  batchToggleBtnActive: { borderColor: '#9ca3af', backgroundColor: '#f3f4f6' },
-  batchToggleText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  batchToggleBtnActive: { borderColor: '#6b7280', backgroundColor: '#374151' },
+  batchToggleText: { fontSize: 14, fontWeight: '600', color: '#e5e7eb' },
   batchBar: {
     position: 'absolute',
     bottom: 0,

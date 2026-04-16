@@ -6,13 +6,20 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, ViewStyle } from 'react-native';
+import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
   /** Override background. Defaults to '#f2f2f7' (iOS system grouped gray) */
   bg?: string;
+  /**
+   * Background colour for the status-bar inset strip only.
+   * When provided and resolvedTopInset > 0, a separate thin View is rendered
+   * at the top with this colour so the content area can have a different bg.
+   * E.g. pass '#111827' for standalone ScreenHeader screens.
+   */
+  topBg?: string;
   /** Pass true for screens NOT inside a tab navigator (adds top safe area inset) */
   standalone?: boolean;
   /**
@@ -28,6 +35,7 @@ interface ScreenContainerProps {
 export function ScreenContainer({
   children,
   bg = '#f2f2f7',
+  topBg,
   standalone = false,
   topInset,
   style,
@@ -48,6 +56,19 @@ export function ScreenContainer({
       Animated.spring(translateY, { toValue: 0, tension: 80, friction: 14, useNativeDriver: true }),
     ]).start();
   }, []);
+
+  // When topBg is provided, render a separate strip for the status-bar area
+  // so the content background can differ from the header background.
+  if (topBg && resolvedTopInset > 0) {
+    return (
+      <Animated.View
+        style={[styles.base, { backgroundColor: topBg }, { opacity, transform: [{ translateY }] }, style]}
+      >
+        <View style={{ height: resolvedTopInset, backgroundColor: topBg }} />
+        <View style={[styles.base, { backgroundColor: bg }]}>{children}</View>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View

@@ -373,10 +373,10 @@ export default function FrameworkContractsScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 20,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: '#374151',
               }}
             >
-              <Plus size={24} color="#111827" />
+              <Plus size={24} color="#ffffff" />
             </TouchableOpacity>
           ) : undefined
         }

@@ -35,10 +35,10 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: string; color: s
 function SpendBar({ pct }: { pct: number | null }) {
   if (pct === null) return null;
   const clamped = Math.min(Math.max(pct, 0), 100);
-  const color = clamped > 90 ? colors.danger : clamped > 70 ? colors.warning : colors.success;
+  const color = clamped > 90 ? 'bg-red-500' : clamped > 70 ? 'bg-amber-500' : 'bg-green-500';
   return (
-    <View style={styles.barTrack}>
-      <View style={[styles.barFill, { width: `${clamped}%` as any, backgroundColor: color }]} />
+    <View className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mt-3">
+      <View className={`h-full ${color}`} style={{ width: `${clamped}%` as any }} />
     </View>
   );
 }
@@ -52,11 +52,25 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
     }).format(v);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.75}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardName} numberOfLines={1}>
-          {project.name}
-        </Text>
+    <TouchableOpacity
+      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View className="flex-row justify-between items-start mb-3">
+        <View className="flex-1 pr-4">
+          <Text
+            className="text-gray-900 font-extrabold text-xl tracking-tight mb-1"
+            numberOfLines={1}
+          >
+            {project.name}
+          </Text>
+          {(project.clientName || project.siteAddress) && (
+            <Text className="text-gray-500 font-medium text-sm" numberOfLines={1}>
+              {[project.clientName, project.siteAddress].filter(Boolean).join(' • ')}
+            </Text>
+          )}
+        </View>
         <StatusPill
           label={STATUS_CONFIG[project.status]?.label ?? project.status}
           bg={STATUS_CONFIG[project.status]?.bg ?? '#f3f4f6'}
@@ -65,40 +79,34 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
         />
       </View>
 
-      {(project.clientName || project.siteAddress) && (
-        <View style={styles.addressRow}>
-          <Text style={styles.cardMeta} numberOfLines={1}>
-            {[project.clientName, project.siteAddress].filter(Boolean).join(' • ')}
+      <View className="flex-row items-center bg-gray-50 rounded-2xl p-4 mt-2">
+        <View className="flex-1">
+          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+            Līgums
+          </Text>
+          <Text className="text-gray-900 font-bold text-base">
+            {formatEur(project.contractValue)}
           </Text>
         </View>
-      )}
-
-      <View style={styles.metricsRow}>
-        <View style={styles.metricGroup}>
-          <Text style={styles.metricLabel}>Līgums</Text>
-          <Text style={styles.metricValue}>{formatEur(project.contractValue)}</Text>
+        <View className="flex-1">
+          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+            Izmaksas
+          </Text>
+          <Text className="text-gray-900 font-bold text-base">
+            {formatEur(project.materialCosts)}
+          </Text>
         </View>
-        <View style={styles.metricGroup}>
-          <Text style={styles.metricLabel}>Izmaksas</Text>
-          <Text style={styles.metricValue}>{formatEur(project.materialCosts)}</Text>
-        </View>
-        <View style={styles.metricGroup}>
-          <Text style={styles.metricLabel}>Peļņa</Text>
-          <Text style={[styles.metricValue, { color: project.grossMargin >= 0 ? '#15803d' : '#ef4444' }]}>
+        <View className="flex-1 items-end">
+          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+            Peļņa
+          </Text>
+          <Text
+            className={`font-black text-lg ${project.grossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}
+          >
             {project.marginPct !== null ? `${Math.round(project.marginPct)}%` : '—'}
           </Text>
         </View>
-        <View style={[styles.metricGroup, { alignItems: 'flex-end', flex: 1 }]}>
-          <Text style={styles.metricLabel}>Pasūtījumi</Text>
-          <Text style={[styles.metricValue, { color: '#111827' }]}>{project.orderCount}</Text>
-        </View>
       </View>
-
-      {project.budgetUsedPct !== null ? (
-        <View style={styles.budgetRow}>
-          <SpendBar pct={project.budgetUsedPct} />
-        </View>
-      ) : null}
     </TouchableOpacity>
   );
 }
@@ -169,7 +177,7 @@ export default function ProjectsScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Plus size={22} color="#111827" />
+            <Plus size={22} color="#ffffff" />
           </TouchableOpacity>
         }
       />
@@ -187,7 +195,9 @@ export default function ProjectsScreen() {
           />
         )}
         contentContainerStyle={projects.length === 0 ? styles.emptyContainer : styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
+        }
         ListEmptyComponent={
           <EmptyState
             icon={<Building2 size={40} color={colors.textMuted} />}
@@ -196,10 +206,11 @@ export default function ProjectsScreen() {
             action={
               <TouchableOpacity
                 onPress={() => router.push('/(buyer)/project/new' as any)}
-                style={styles.createBtn}
                 activeOpacity={0.8}
               >
-                <Text style={styles.createBtnText}>Jauns projekts</Text>
+                <Text className="text-white font-bold text-base bg-gray-900 px-6 py-3 rounded-full overflow-hidden text-center mt-6">
+                  Jauns projekts
+                </Text>
               </TouchableOpacity>
             }
           />
@@ -212,109 +223,6 @@ export default function ProjectsScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  headerBar: {
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.base,
-    paddingBottom: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-  },
-  title: {
-    fontSize: fontSizes.xl,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-  },
-  list: {
-    paddingHorizontal: 0,
-    paddingBottom: 100,
-    gap: 0,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  createBtn: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#000000',
-    borderRadius: 999,
-  },
-  createBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    gap: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 2,
-  },
-  cardName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#000000',
-    flex: 1,
-    letterSpacing: -0.5,
-  },
-  addressRow: {
-    marginBottom: 8,
-  },
-  cardMeta: {
-    fontSize: 15,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    marginTop: 12,
-    gap: 24,
-  },
-  metricGroup: {
-    alignItems: 'flex-start',
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#000000',
-    letterSpacing: -0.4,
-  },
-  budgetRow: {
-    marginTop: 16,
-  },
-  barTrack: {
-    height: 4,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
+  emptyContainer: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  list: { padding: 16, paddingBottom: 100 },
 });

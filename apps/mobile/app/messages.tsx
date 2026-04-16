@@ -171,7 +171,7 @@ export default function MessagesScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg={colors.bgCard}>
+    <ScreenContainer standalone bg={colors.bgCard} topBg="#111827">
       <ScreenHeader title={t.nav.messages} onBack={handleBack} />
 
       {loading ? (

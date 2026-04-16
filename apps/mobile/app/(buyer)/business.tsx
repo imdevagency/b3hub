@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { TopBar } from '@/components/ui/TopBar';
 import { useRouter } from 'expo-router';
 import {
   FolderKanban,
@@ -111,9 +112,8 @@ function BizRow({ tool }: { tool: BizTool }) {
 export default function BusinessScreen() {
   return (
     <ScreenContainer bg="white">
+      <TopBar title="Darbu centrs" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.container}>
-        <Text style={s.pageTitle}>Darbu centrs</Text>
-
         <Text style={s.sectionHeader}>Organizācija</Text>
         {ORGANISATION.map((tool) => (
           <BizRow key={tool.route} tool={tool} />

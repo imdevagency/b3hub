@@ -244,8 +244,8 @@ export default function ProjectDetailScreen() {
     setLoadingUnassigned(true);
     setSelectedOrderIds([]);
     try {
-      const all = await api.orders.orders.myOrders(token);
-      setUnassignedOrders(all.filter((o) => !o.project));
+      const all = await api.orders.myOrders(token);
+      setUnassignedOrders(all.filter((o: any) => !o.project));
     } catch {
       Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumus');
     } finally {
@@ -311,7 +311,7 @@ export default function ProjectDetailScreen() {
             style={{ padding: 4 }}
             activeOpacity={0.7}
           >
-            <Plus size={22} color="#111827" />
+            <Plus size={22} color="#ffffff" />
           </TouchableOpacity>
         }
       />

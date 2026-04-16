@@ -776,13 +776,13 @@ export default function JobsScreen() {
               activeOpacity={0.7}
             >
               {viewMode === 'list' ? (
-                <Map size={22} color="#111827" />
+                <Map size={22} color="#ffffff" />
               ) : (
-                <List size={22} color="#111827" />
+                <List size={22} color="#ffffff" />
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={togglePanel} style={styles.filterBtn} activeOpacity={0.7}>
-              <Settings2 size={22} color="#111827" />
+              <Settings2 size={22} color="#ffffff" />
               {activeFilter && <View style={styles.filterDot} />}
             </TouchableOpacity>
           </View>
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#374151',
     alignItems: 'center',
     justifyContent: 'center',
   },

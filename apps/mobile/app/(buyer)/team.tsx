@@ -513,7 +513,7 @@ export default function TeamScreen() {
                 setInviteOpen(true);
               }}
             >
-              <Plus size={24} color="#111827" strokeWidth={2.5} />
+              <Plus size={24} color="#ffffff" strokeWidth={2.5} />
             </TouchableOpacity>
           )
         }

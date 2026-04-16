@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
 import { Home, ClipboardList, User, Briefcase } from 'lucide-react-native';
@@ -10,13 +10,17 @@ import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useUnreadCount } from '@/lib/use-unread-count';
+import { TopBar } from '@/components/ui/TopBar';
+import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
+import { haptics } from '@/lib/haptics';
 
-export default function BuyerLayout() {
+function BuyerLayoutContent() {
   const { user, isLoading } = useAuth();
   const { availableModes } = useMode();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const unreadCount = useUnreadCount();
+  const { config } = useHeaderConfig();
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
 
@@ -40,8 +44,26 @@ export default function BuyerLayout() {
     );
   }
 
+  const avatarBtn = (
+    <TouchableOpacity
+      style={ls.avatarBtn}
+      activeOpacity={0.85}
+      onPress={() => {
+        haptics.light();
+        router.push('/(buyer)/profile');
+      }}
+    >
+      <Text style={ls.avatarBtnText}>
+        {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#111827', paddingTop: insets.top }}>
+      {config !== null && (
+        <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />
+      )}
       <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
           name="home"
@@ -94,5 +116,30 @@ export default function BuyerLayout() {
         <Tabs.Screen name="analytics" options={{ href: null }} />
       </Tabs>
     </View>
+  );
+}
+
+const ls = StyleSheet.create({
+  avatarBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: '#374151',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBtnText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+  },
+});
+
+export default function BuyerLayout() {
+  return (
+    <HeaderProvider>
+      <BuyerLayoutContent />
+    </HeaderProvider>
   );
 }

@@ -10,7 +10,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { Inbox, ArrowRight, Plus, CheckCircle, Wallet, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
-import { TopBar } from '@/components/ui/TopBar';
+import { useHeaderConfig } from '@/lib/header-context';
 
 const TAB_H = 52;
 
@@ -18,6 +18,7 @@ export default function SellerHomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { setConfig } = useHeaderConfig();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [recentOrders, setRecentOrders] = useState<ApiOrder[]>([]);
   const [materialCount, setMaterialCount] = useState<number | null>(null);
@@ -77,28 +78,16 @@ export default function SellerHomeScreen() {
     }, [loadData]),
   );
 
+  // Show the layout-level TopBar while this tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      setConfig({});
+      return () => setConfig(null);
+    }, [setConfig]),
+  );
+
   return (
     <ScreenContainer noAnimation bg="#F3F4F6">
-      <TopBar
-        transparent
-        title=""
-        unreadCount={unreadCount}
-        leftElement={
-          <TouchableOpacity
-            style={s.avatarBtn}
-            activeOpacity={0.85}
-            onPress={() => {
-              haptics.light();
-              router.push('/(seller)/profile');
-            }}
-          >
-            <Text style={s.avatarBtnText}>
-              {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -462,20 +451,6 @@ export default function SellerHomeScreen() {
 }
 
 const s = StyleSheet.create({
-  avatarBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-  },
   recentSection: { marginTop: 8 },
   recentHeader: {
     flexDirection: 'row',

@@ -151,11 +151,11 @@ export default Sentry.wrap(function RootLayout() {
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <AuthProvider>
-            <LanguageProvider>
-              <ModeProvider>
-                <ToastProvider>
-                  <StatusBar style="dark" />
+          <ToastProvider>
+            <AuthProvider>
+              <LanguageProvider>
+                <ModeProvider>
+                  <StatusBar style="light" />
                   <OfflineBanner />
                   {StripeProvider && STRIPE_PK ? (
                     <StripeProvider publishableKey={STRIPE_PK}>
@@ -190,10 +190,10 @@ export default Sentry.wrap(function RootLayout() {
                       <Stack.Screen name="(auth)" options={SCREEN.fade} />
                     </Stack>
                   )}
-                </ToastProvider>
-              </ModeProvider>
-            </LanguageProvider>
-          </AuthProvider>
+                </ModeProvider>
+              </LanguageProvider>
+            </AuthProvider>
+          </ToastProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>

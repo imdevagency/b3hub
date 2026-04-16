@@ -1,31 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  ScrollView,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Animated, ScrollView, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiOrder, SkipHireOrder, ApiTransportJob } from '@/lib/api';
-import { HardHat, Trash2, Truck, Package, ChevronRight, AlertCircle } from 'lucide-react-native';
+import {
+  HardHat,
+  Trash2,
+  Truck,
+  Package,
+  ChevronRight,
+  AlertCircle,
+  ArrowRight,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { TopBar } from '@/components/ui/TopBar';
-// Guard: expo-linear-gradient requires a native build (not available in Expo Go)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let LinearGradient: React.ComponentType<any>;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  LinearGradient = require('expo-linear-gradient').LinearGradient;
-} catch {
-  LinearGradient = ({ style, children }: { style?: object; children?: React.ReactNode }) =>
-    React.createElement(View, { style }, children);
-}
+import { useHeaderConfig } from '@/lib/header-context';
 import { useToast } from '@/components/ui/Toast';
 
 // ── Status maps ───────────────────────────────────────────────────────────
@@ -77,54 +68,35 @@ const SERVICES = [
     id: 'materials',
     icon: HardHat,
     label: 'Materiāli',
+    sub: 'Smiltis, šķembas',
     route: '/(buyer)/catalog',
   },
   {
     id: 'transport',
     icon: Truck,
-    label: 'Transports',
+    label: 'Pasūtīt auto',
+    sub: 'Tehnika, transports',
     route: '/transport',
   },
-  {
-    id: 'disposal',
-    icon: Trash2,
-    label: 'Utilizācija',
-    route: '/disposal',
-  },
-  {
-    id: 'container',
-    icon: Package,
-    label: 'Konteineri',
-    route: '/order',
-  },
+  { id: 'container', icon: Package, label: 'Konteineri', sub: 'Piegāde', route: '/order' },
+  { id: 'disposal', icon: Trash2, label: 'Utilizācija', sub: 'Būvgruži, zeme', route: '/disposal' },
 ];
-
-// ── Screen ────────────────────────────────────────────────────────────────
-
-type ActiveItem = {
-  id: string;
-  num: string;
-  sub: string;
-  status: string;
-  dotColor: string;
-  kind: 'mat' | 'skip' | 'transport';
-  eta?: string;
-};
 
 export default function HomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
+  const { setConfig } = useHeaderConfig();
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Active status animations
   useEffect(() => {
     const hasActive =
       orders.some((o) => ACTIVE_STATUSES.has(o.status)) ||
@@ -133,7 +105,7 @@ export default function HomeScreen() {
     if (!hasActive) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ]),
     );
@@ -162,10 +134,6 @@ export default function HomeScreen() {
           setLoading(false);
           setRefreshing(false);
         });
-      api.notifications
-        .unreadCount(token)
-        .then((res) => setUnreadCount(res.count))
-        .catch(() => {});
     },
     [token, toast],
   );
@@ -176,7 +144,14 @@ export default function HomeScreen() {
     }, [loadData]),
   );
 
-  const activeItem: ActiveItem | null = useMemo(() => {
+  useFocusEffect(
+    useCallback(() => {
+      setConfig({});
+      return () => setConfig(null);
+    }, [setConfig]),
+  );
+
+  const activeItem = useMemo(() => {
     const mat = orders.find((o) => ACTIVE_STATUSES.has(o.status));
     if (mat) {
       const trackingJob = mat.transportJobs?.find((j: any) => TJ_ACTIVE_STATUSES.has(j.status));
@@ -186,28 +161,28 @@ export default function HomeScreen() {
         sub: mat.deliveryCity ?? '—',
         status: STATUS_LABEL[mat.status] ?? mat.status,
         dotColor: STATUS_DOT[mat.status] ?? '#22c55e',
-        kind: trackingJob ? ('transport' as const) : ('mat' as const),
+        kind: trackingJob ? 'transport' : 'mat',
       };
     }
     const skip = skipOrders.find((o) => SKIP_ACTIVE_STATUSES.has(o.status));
-    if (skip)
+    if (skip) {
       return {
         id: skip.id,
         num: `#${skip.orderNumber}`,
         sub: skip.location ?? '—',
         status:
           (
-            {
-              PENDING: 'Gaida apstiprinājumu',
-              CONFIRMED: 'Apstiprināts',
-              DELIVERED: 'Piegādāts',
-            } as Record<string, string>
+            { PENDING: 'Gaida', CONFIRMED: 'Apstiprināts', DELIVERED: 'Piegādāts' } as Record<
+              string,
+              string
+            >
           )[skip.status] ?? skip.status,
         dotColor: '#f59e0b',
         kind: 'skip',
       };
+    }
     const tj = transportOrders.find((o) => TJ_ACTIVE_STATUSES.has(o.status));
-    if (tj)
+    if (tj) {
       return {
         id: tj.id,
         num: `#${tj.jobNumber}`,
@@ -226,6 +201,7 @@ export default function HomeScreen() {
         dotColor: '#3b82f6',
         kind: 'transport',
       };
+    }
     return null;
   }, [orders, skipOrders, transportOrders]);
 
@@ -237,673 +213,137 @@ export default function HomeScreen() {
     [orders, skipOrders, transportOrders],
   );
 
-  const getRecentItems = () => {
-    const items: any[] = [];
-    orders
-      .filter((o) => !ACTIVE_STATUSES.has(o.status))
-      .forEach((o) =>
-        items.push({
-          id: o.id,
-          num: `#${o.orderNumber}`,
-          sub: o.deliveryCity ?? '—',
-          status: STATUS_LABEL[o.status] ?? o.status,
-          kind: 'mat',
-          date: o.createdAt,
-        }),
-      );
-    skipOrders
-      .filter((o) => !SKIP_ACTIVE_STATUSES.has(o.status))
-      .forEach((o) =>
-        items.push({
-          id: o.id,
-          num: `#${o.orderNumber}`,
-          sub: o.location ?? '—',
-          status: o.status === 'COMPLETED' ? 'Pabeigts' : o.status,
-          kind: 'skip',
-          date: o.createdAt,
-        }),
-      );
-    transportOrders
-      .filter((o) => !TJ_ACTIVE_STATUSES.has(o.status))
-      .forEach((o) =>
-        items.push({
-          id: o.id,
-          num: `#${o.jobNumber}`,
-          sub: o.deliveryCity ?? '—',
-          status: o.status === 'DELIVERED' ? 'Piegādāts' : o.status,
-          kind: 'transport',
-          date: o.pickupDate,
-        }),
-      );
-    items.sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
-    return items.slice(0, 5);
-  };
-  const recentOrders = useMemo(() => getRecentItems(), [orders, skipOrders, transportOrders]);
-
-  const isNewUser = recentOrders.length === 0 && activeCount === 0;
-
-  const navToActive = () => {
-    if (!activeItem) return;
-    haptics.light();
-    if (activeCount > 1) {
-      router.push('/(buyer)/orders' as any);
-      return;
-    }
-    const route =
-      activeItem.kind === 'skip'
-        ? `/(buyer)/skip-order/${activeItem.id}`
-        : activeItem.kind === 'transport'
-          ? `/(buyer)/transport-job/${activeItem.id}`
-          : `/(buyer)/order/${activeItem.id}`;
-    router.push(route as any);
-  };
-
   return (
-    <ScreenContainer bg="#ffffff">
-      <TopBar
-        title=""
-        transparent={true}
-        unreadCount={unreadCount}
-        leftElement={
-          <TouchableOpacity
-            style={s.avatarBtn}
-            activeOpacity={0.85}
-            onPress={() => {
-              haptics.light();
-              router.push('/(buyer)/profile');
-            }}
-          >
-            <Text style={s.avatarBtnText}>
-              {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
-
+    <ScreenContainer bg="#f9fafb">
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => loadData(true)}
-            tintColor="#00A878"
+            tintColor="#000"
           />
         }
       >
-        {/* Profile completion nudge */}
+        {/* Header Section */}
+        <View className="px-5 pt-8 pb-4">
+          <Text className="text-gray-500 text-sm font-medium mb-1">
+            Reģions: <Text className="text-gray-900 font-bold">Rīga</Text>
+          </Text>
+          <Text className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Sveiki{user?.firstName ? `, ${user.firstName}` : ''} 👋
+          </Text>
+        </View>
+
+        {/* Profile Nudge */}
         {user && (!user.phone || (user.isCompany && !user.company?.id)) && (
           <TouchableOpacity
-            style={s.profileNudge}
+            className="mx-5 mb-6 bg-amber-50 p-4 rounded-2xl flex-row items-center shadow-sm"
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
               router.push('/(buyer)/profile' as any);
             }}
           >
-            <AlertCircle size={16} color="#b45309" />
-            <Text style={s.profileNudgeText}>
+            <AlertCircle size={20} color="#b45309" className="mr-3" />
+            <Text className="flex-1 text-sm text-amber-800 font-semibold">
               {!user.phone
                 ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
                 : 'Pievienojiet uzņēmuma profilu, lai pilnvērtīgi lietotu platformu'}
             </Text>
-            <ChevronRight size={14} color="#b45309" />
+            <ChevronRight size={16} color="#b45309" />
           </TouchableOpacity>
         )}
 
-        {/* ─── Active Order Hero ──────────────────────────── */}
+        {/* Active Hero */}
         {activeItem && (
-          <TouchableOpacity style={s.activeHero} onPress={navToActive} activeOpacity={0.92}>
-            {/* top row: live dot + tag + order number */}
-            <View style={s.activeHeroTop}>
-              <View style={s.activeHeroLiveRow}>
-                <View style={s.activeHeroDotWrap}>
-                  <Animated.View
-                    style={[
-                      s.pulseRing,
-                      { transform: [{ scale: pulseAnim }], backgroundColor: activeItem.dotColor },
-                    ]}
-                  />
-                  <View style={[s.activeDot, { backgroundColor: activeItem.dotColor }]} />
-                </View>
-                <Text style={s.activeHeroTag}>
-                  {activeCount > 1 ? `${activeCount} aktīvi pasūtījumi` : 'Aktīvs pasūtījums'}
-                </Text>
-              </View>
-              <Text style={s.activeHeroNum}>{activeItem.num}</Text>
-            </View>
-
-            {/* big status headline */}
-            <Text style={s.activeHeroStatus}>
-              {activeCount > 1 ? `${activeCount} pasūtījumi ceļā` : activeItem.status}
-            </Text>
-
-            {/* address / destination */}
-            <Text style={s.activeHeroSub} numberOfLines={1}>
-              {activeItem.sub}
-            </Text>
-
-            {/* CTA row */}
-            <View style={s.activeHeroCTA}>
-              <Text style={s.activeHeroCTAText}>Skatīt detaļas</Text>
-              <ChevronRight size={16} color="#ffffff" />
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* New-user hero — shown only when user has no history yet */}
-        {isNewUser && !loading && (
           <TouchableOpacity
-            style={s.newUserHero}
-            activeOpacity={0.88}
+            className="mx-5 mb-8 bg-gray-900 rounded-[28px] overflow-hidden shadow-sm"
+            activeOpacity={0.92}
             onPress={() => {
-              haptics.medium();
-              router.push('/(buyer)/catalog' as any);
+              haptics.light();
+              if (activeCount > 1) return router.push('/(buyer)/orders' as any);
+              const route =
+                activeItem.kind === 'skip'
+                  ? `/(buyer)/skip-order/${activeItem.id}`
+                  : activeItem.kind === 'transport'
+                    ? `/(buyer)/transport-job/${activeItem.id}`
+                    : `/(buyer)/order/${activeItem.id}`;
+              router.push(route as any);
             }}
           >
-            <View>
-              <Text style={s.newUserHeroGreeting}>
-                Sveiki{user?.firstName ? `, ${user.firstName}` : ''} 👋
+            <View className="p-6">
+              <View className="flex-row justify-between items-center mb-4">
+                <View className="flex-row items-center bg-gray-800 rounded-full px-3 py-1.5">
+                  <View className="relative w-3 h-3 items-center justify-center mr-2">
+                    <Animated.View
+                      style={{
+                        transform: [{ scale: pulseAnim }],
+                        backgroundColor: activeItem.dotColor,
+                      }}
+                      className="absolute w-3 h-3 rounded-full opacity-40"
+                    />
+                    <View
+                      style={{ backgroundColor: activeItem.dotColor }}
+                      className="w-2 h-2 rounded-full"
+                    />
+                  </View>
+                  <Text className="text-gray-300 text-xs font-bold uppercase tracking-wider">
+                    {activeCount > 1 ? `${activeCount} Aktīvi` : 'Aktīvs'}
+                  </Text>
+                </View>
+                <Text className="text-gray-400 text-sm font-semibold">{activeItem.num}</Text>
+              </View>
+
+              <Text className="text-white text-3xl font-extrabold tracking-tight mb-2">
+                {activeCount > 1 ? `${activeCount} pasūtījumi ceļā` : activeItem.status}
               </Text>
-              <Text style={s.newUserHeroTitle}>Ko pasūtīt šodien?</Text>
-              <Text style={s.newUserHeroSub}>
-                Materi\u0101li, transports un konteineri — dažos klikšķos.
+              <Text className="text-gray-400 text-base font-medium mb-6 line-clamp-1">
+                {activeItem.sub}
               </Text>
-            </View>
-            <View style={s.newUserHeroCTA}>
-              <Text style={s.newUserHeroCTAText}>Sākt pasūtīt</Text>
-              <ChevronRight size={16} color="#ffffff" />
+
+              <View className="bg-gray-800 p-4 rounded-xl flex-row items-center justify-between">
+                <Text className="text-white font-bold text-sm">Sekot līdzi</Text>
+                <ArrowRight size={18} color="#fff" />
+              </View>
             </View>
           </TouchableOpacity>
         )}
 
-        {/* Services Row */}
-        <Text style={[s.sectionTitle, activeItem && s.sectionTitleSecondary]}>
-          {activeItem ? 'Pasūtīt vēl' : 'Pakalpojumi'}
-        </Text>
-        <View style={{ position: 'relative', marginBottom: 24 }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.servicesRow}
-            style={s.servicesScroll}
-          >
+        {/* Services / New order prompt */}
+        <View className="px-5 mb-8">
+          <Text className="text-xl font-extrabold tracking-tight text-gray-900 mb-4">
+            Veikt jaunu pasūtījumu
+          </Text>
+          <View className="flex-row flex-wrap justify-between">
             {SERVICES.map((svc, i) => {
               const Icon = svc.icon;
               return (
                 <TouchableOpacity
-                  key={`${svc.id}-${i}`}
-                  style={s.serviceChip}
+                  key={svc.id}
+                  className="bg-white p-4 rounded-3xl mb-3 shadow-sm border border-gray-100"
+                  style={{ width: '48%' }}
                   onPress={() => {
-                    haptics.light();
+                    haptics.medium();
                     router.push(svc.route as any);
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={s.serviceChipIcon}>
-                    <Icon size={24} color="#111827" strokeWidth={2} />
+                  <View className="mb-4 bg-gray-50 self-start p-3 rounded-2xl">
+                    <Icon size={28} color="#111827" strokeWidth={2} />
                   </View>
-                  <Text style={s.serviceLabel} numberOfLines={2}>
+                  <Text className="text-gray-900 font-bold text-base tracking-tight mb-1">
                     {svc.label}
                   </Text>
+                  <Text className="text-gray-500 font-medium text-xs line-clamp-1">{svc.sub}</Text>
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
-          <LinearGradient
-            colors={['rgba(242,242,247,0)', 'rgba(242,242,247,0.95)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            pointerEvents="none"
-            style={s.servicesGradient}
-          />
-        </View>
-
-        {/* Recent Activity */}
-        <View style={s.recentHeader}>
-          <Text style={s.sectionTitle}>Pēdējie pasūtījumi</Text>
-          <TouchableOpacity onPress={() => router.push('/(buyer)/orders' as any)}>
-            <Text style={s.seeAllLink}>Visi</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={s.recentList}>
-          {recentOrders.length > 0 ? (
-            recentOrders.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={s.recentRow}
-                onPress={() => {
-                  haptics.light();
-                  const route =
-                    item.kind === 'skip'
-                      ? `/(buyer)/skip-order/${item.id}`
-                      : item.kind === 'transport'
-                        ? `/(buyer)/transport-job/${item.id}`
-                        : `/(buyer)/order/${item.id}`;
-                  router.push(route as any);
-                }}
-              >
-                <View style={s.recentIconSmall}>
-                  {item.kind === 'transport' ? (
-                    <Truck size={16} color="#6b7280" />
-                  ) : (
-                    <Package size={16} color="#6b7280" />
-                  )}
-                </View>
-                <View style={{ flex: 1, marginRight: 16 }}>
-                  <View style={{ flex: 1, marginRight: 16 }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text style={s.recentRowTitle}>
-                        {item.kind === 'mat'
-                          ? 'Materiāli'
-                          : item.kind === 'skip'
-                            ? 'Konteiners'
-                            : 'Transports'}
-                      </Text>
-                      <Text
-                        style={[
-                          s.recentStatusText,
-                          item.status.includes('CANCEL') || item.status.includes('Atcelts')
-                            ? { color: '#ef4444' }
-                            : item.status.includes('Piegādāts')
-                              ? { color: '#10b981' }
-                              : {},
-                        ]}
-                      >
-                        {item.status}
-                      </Text>
-                    </View>
-                    <Text style={s.recentRowSub} numberOfLines={1}>
-                      {item.sub}
-                    </Text>
-                    <Text style={s.recentRowDate}>
-                      {item.num}
-                      {item.date
-                        ? ' • ' +
-                          new Date(item.date).toLocaleDateString('lv', {
-                            day: 'numeric',
-                            month: 'short',
-                          })
-                        : ''}
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={16} color="#d1d5db" />
-              </TouchableOpacity>
-            ))
-          ) : loading ? (
-            <View style={{ gap: 10, paddingHorizontal: 20 }}>
-              {[1, 2, 3].map((i) => (
-                <View
-                  key={i}
-                  style={{
-                    height: 52,
-                    backgroundColor: '#e5e7eb',
-                    borderRadius: 12,
-                    opacity: 1 - i * 0.15,
-                  }}
-                />
-              ))}
-            </View>
-          ) : isNewUser ? (
-            <View style={s.emptyHint}>
-              <Text style={s.emptyHintText}>Nav jaunu pasūtījumu</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  haptics.light();
-                  router.push('/(buyer)/catalog' as any);
-                }}
-              >
-                <Text style={s.emptyHintLink}>Sākt pasūtīt →</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <Text style={s.emptyRecent}>Pabeigti pasūtījumi parādīsies šeit</Text>
-          )}
+          </View>
         </View>
       </ScrollView>
     </ScreenContainer>
   );
 }
-
-const s = StyleSheet.create({
-  activeFloatWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  activePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-    gap: 12,
-  },
-  activeIconBox: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#374151',
-    borderRadius: 999,
-  },
-  activeDot: { width: 10, height: 10, borderRadius: 5 },
-  pulseRing: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    opacity: 0.3,
-  },
-  activeStatus: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
-  activeSub: { color: '#9ca3af', fontSize: 13, marginTop: 2 },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
-    marginLeft: 20,
-    marginBottom: 16,
-    letterSpacing: -0.4,
-  },
-  sectionTitleSecondary: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    color: '#9ca3af',
-    marginTop: -8,
-  },
-
-  newUserHero: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-    gap: 20,
-  },
-  newUserHeroGreeting: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-    color: '#9ca3af',
-    marginBottom: 4,
-  },
-  newUserHeroTitle: {
-    fontSize: 28,
-    fontFamily: 'Inter_800ExtraBold',
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: -0.8,
-    marginBottom: 6,
-  },
-  newUserHeroSub: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
-    lineHeight: 20,
-  },
-  newUserHeroCTA: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingTop: 16,
-  },
-  newUserHeroCTAText: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  servicesScroll: {
-    marginBottom: 4,
-  },
-  servicesGradient: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 48,
-  },
-  servicesRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
-    paddingBottom: 12,
-  },
-  serviceChip: {
-    width: 104,
-    height: 104,
-    backgroundColor: '#F4F4F5',
-    borderRadius: 20,
-    padding: 14,
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  serviceChipIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  serviceLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
-    textAlign: 'left',
-    letterSpacing: -0.2,
-  },
-
-  recentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: 20,
-    marginBottom: 16,
-    marginTop: 12,
-  },
-  seeAllLink: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  recentList: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 0,
-    paddingVertical: 0,
-  },
-  recentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    gap: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
-  },
-  recentIconSmall: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F4F4F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  recentRowTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  recentStatusText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#9ca3af',
-    textTransform: 'capitalize',
-  },
-  recentRowSub: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  recentRowDate: {
-    fontSize: 13,
-    color: '#9ca3af',
-    marginTop: 4,
-  },
-  emptyRecent: {
-    textAlign: 'center',
-    color: '#9ca3af',
-    paddingVertical: 32,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-
-  emptyHint: {
-    paddingHorizontal: 20,
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F4F4F5',
-    marginHorizontal: 20,
-    borderRadius: 20,
-  },
-  emptyHintText: {
-    fontSize: 15,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  emptyHintLink: {
-    fontSize: 15,
-    color: '#111827',
-    fontWeight: '700',
-  },
-  // ── Active hero card (replaces the compact pill) ──────────────────────
-  activeHero: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  activeHeroTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  activeHeroLiveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  activeHeroDotWrap: {
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeHeroTag: {
-    color: '#9ca3af',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  activeHeroNum: {
-    color: '#6b7280',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  activeHeroStatus: {
-    color: '#ffffff',
-    fontSize: 26,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    letterSpacing: -0.6,
-    marginBottom: 6,
-  },
-  activeHeroSub: {
-    color: '#9ca3af',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 20,
-  },
-  activeHeroCTA: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingTop: 16,
-  },
-  activeHeroCTAText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  profileNudge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 20,
-    marginBottom: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 14,
-  },
-  profileNudgeText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#92400e',
-    fontWeight: '600',
-  },
-  avatarBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 999,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-  },
-});

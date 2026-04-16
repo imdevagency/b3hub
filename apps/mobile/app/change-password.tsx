@@ -98,7 +98,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <ScreenContainer standalone>
+    <ScreenContainer standalone topBg="#111827">
       <ScreenHeader title="Nomainiēt paroli" />
 
       <KeyboardAvoidingView

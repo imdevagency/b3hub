@@ -100,33 +100,40 @@ function CategoryCard({
 
   return (
     <TouchableOpacity
-      style={s.catCard}
+      className="bg-white mx-5 mb-4 rounded-[24px] p-5 shadow-sm border border-gray-100 flex-row items-center"
       onPress={() => {
         haptics.light();
         onPress();
       }}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <View style={[s.catIconWrap, { backgroundColor: '#f3f4f6' }]}>
-        <Icon size={24} color="#000" strokeWidth={1.5} />
+      <View className="bg-gray-50 h-14 w-14 rounded-2xl items-center justify-center mr-4">
+        <Icon size={24} color="#111827" strokeWidth={1.5} />
       </View>
 
-      <View style={s.catBody}>
-        <View style={s.catNameRow}>
-          <Text style={s.catName}>{CATEGORY_LABELS[category]}</Text>
+      <View className="flex-1 justify-center">
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-gray-900 font-extrabold tracking-tight text-lg line-clamp-1">
+            {CATEGORY_LABELS[category]}
+          </Text>
           {hasRecycled && (
-            <View style={s.recycledBadge}>
-              <Text style={s.recycledText}>Pārstrādāts</Text>
+            <View className="bg-green-100 px-2 py-0.5 rounded-md flex-row items-center">
+              <Leaf size={10} color="#166534" className="mr-1" />
+              <Text className="text-xs font-bold text-green-800">ECO</Text>
             </View>
           )}
         </View>
-        <Text style={s.catDesc} numberOfLines={1}>
+        <Text className="text-gray-500 font-medium text-sm line-clamp-1">
           {supplierCount > 0 ? `${supplierCount} piegādātāji` : description}
         </Text>
       </View>
 
-      <View style={s.catRight}>
-        {minPrice != null && <Text style={s.catMinPrice}>no €{minPrice.toFixed(2)}</Text>}
+      <View className="items-end justify-center ml-2">
+        {minPrice != null && (
+          <Text className="text-gray-900 font-bold text-sm tracking-tight bg-gray-50 px-3 py-1.5 rounded-xl">
+            no €{minPrice.toFixed(2)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -396,16 +403,26 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer bg="#ffffff">
-      <View style={s.uberHeader}>
-        <Text style={s.uberTitle}>Katalogs</Text>
+    <ScreenContainer bg="#f9fafb">
+      <View className="px-5 pt-8 pb-2">
+        <Text className="text-3xl font-extrabold tracking-tight text-gray-900 leading-tight">
+          Katalogs
+        </Text>
+        <Text className="text-gray-500 text-sm font-medium mt-1">
+          Atrodiet labākos piegādātājus
+        </Text>
       </View>
-      {/* ── Header & Search ── */}
-      <View style={s.topBar}>
-        <View style={[s.searchBox, searchFocused && s.searchBoxFocused]}>
-          <Search size={16} color={searchFocused ? '#00A878' : '#9ca3af'} />
+
+      {/* ── Search ── */}
+      <View className="px-5 py-3 mb-2">
+        <View
+          className={`flex-row items-center bg-white rounded-2xl px-4 py-3 ${
+            searchFocused ? 'border-amber-600 border-2' : 'border-gray-200 border shadow-sm'
+          }`}
+        >
+          <Search size={18} color={searchFocused ? '#b45309' : '#9ca3af'} className="mr-3" />
           <TextInput
-            style={s.searchInput}
+            className="flex-1 font-medium text-base text-gray-900 pt-0 pb-0"
             placeholder="Meklēt kategoriju..."
             placeholderTextColor="#9ca3af"
             value={query}
@@ -422,654 +439,112 @@ export default function CatalogScreen() {
                 haptics.light();
                 setQuery('');
               }}
-              hitSlop={8}
+              className="ml-2 bg-gray-100 p-1.5 rounded-full"
             >
-              <X size={16} color="#9ca3af" />
+              <X size={14} color="#6b7280" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* ── Filter chips ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={s.chipScroll}
-        contentContainerStyle={s.chipRow}
-        keyboardShouldPersistTaps="handled"
-      >
-        <TouchableOpacity
-          style={[s.chip, filterMode === 'ALL' && s.chipActive]}
-          onPress={() => {
-            haptics.light();
-            setFilterMode('ALL');
-          }}
-          activeOpacity={0.8}
+      <View className="mb-4">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={[s.chipText, filterMode === 'ALL' && s.chipTextActive]}>Visi</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.chip, filterMode === 'RECYCLED' && s.chipActive]}
-          onPress={() => {
-            haptics.light();
-            setFilterMode('RECYCLED');
-          }}
-          activeOpacity={0.8}
-        >
-          <Recycle size={13} color={filterMode === 'RECYCLED' ? '#fff' : '#111827'} />
-          <Text style={[s.chipText, filterMode === 'RECYCLED' ? s.chipTextActive : undefined]}>
-            Reciklēti
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.chip, nearMe && s.chipActive]}
-          onPress={handleNearMeToggle}
-          activeOpacity={0.8}
-          disabled={nearMeLoading}
-        >
-          <MapPin size={13} color={nearMe ? '#fff' : '#111827'} />
-          <Text style={[s.chipText, nearMe ? s.chipTextActive : s.chipTextBlue]}>
-            {nearMeLoading ? '...' : 'Tuvumā'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={s.chip}
-          onPress={() => {
-            haptics.light();
-            setCalcVisible(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <Calculator size={13} color="#111827" />
-          <Text style={[s.chipText, { color: '#111827' }]}>Kalkulators</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* ── Material quantity calculator modal ── */}
-      <Modal
-        visible={calcVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCalcVisible(false)}
-      >
-        <KeyboardAvoidingView
-          style={s.calcOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={s.calcSheet}>
-            <View style={s.calcHeader}>
-              <Calculator size={16} color="#111827" />
-              <Text style={s.calcTitle}>Daudzuma kalkulators</Text>
-              <TouchableOpacity hitSlop={12} onPress={() => setCalcVisible(false)}>
-                <X size={18} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            <Text style={s.calcSubtitle}>
-              Ievadiet laukumu un dziļumu, lai aprēķinātu nepieciešamos tonnus.
+          <TouchableOpacity
+            className={`px-5 py-2.5 rounded-2xl flex-row items-center ${
+              filterMode === 'ALL' ? 'bg-gray-900 shadow-sm' : 'bg-white border-gray-100 border'
+            }`}
+            onPress={() => {
+              haptics.light();
+              setFilterMode('ALL');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text className={`font-bold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-600'}`}>
+              Visi
             </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`px-5 py-2.5 rounded-2xl flex-row items-center ${
+              filterMode === 'RECYCLED'
+                ? 'bg-amber-600 shadow-sm'
+                : 'bg-white border-gray-100 border'
+            }`}
+            onPress={() => {
+              haptics.light();
+              setFilterMode('RECYCLED');
+            }}
+            activeOpacity={0.8}
+          >
+            <Leaf
+              size={14}
+              color={filterMode === 'RECYCLED' ? '#ffffff' : '#6b7280'}
+              className="mr-2"
+            />
+            <Text
+              className={`font-bold ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-600'}`}
+            >
+              Pārstrādāts
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
 
-            <View style={s.calcRow}>
-              <View style={s.calcField}>
-                <Text style={s.calcLabel}>Laukums (m²)</Text>
-                <TextInput
-                  style={s.calcInput}
-                  value={calcArea}
-                  onChangeText={setCalcArea}
-                  keyboardType="decimal-pad"
-                  placeholder="piem., 120"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-              <View style={s.calcField}>
-                <Text style={s.calcLabel}>Dziļums (cm)</Text>
-                <TextInput
-                  style={s.calcInput}
-                  value={calcDepth}
-                  onChangeText={setCalcDepth}
-                  keyboardType="decimal-pad"
-                  placeholder="piem., 15"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-            </View>
-
-            <View style={s.calcDensityRow}>
-              <Text style={s.calcLabel}>Blīvums (t/m³)</Text>
-              <View style={s.calcDensityChips}>
-                {[
-                  { label: 'Grants 1.6', val: '1.6' },
-                  { label: 'Smiltis 1.4', val: '1.4' },
-                  { label: 'Šķembas 1.7', val: '1.7' },
-                  { label: 'Augsne 1.5', val: '1.5' },
-                ].map((d) => (
-                  <TouchableOpacity
-                    key={d.val}
-                    style={[s.densityChip, calcDensity === d.val && s.densityChipActive]}
-                    onPress={() => {
-                      haptics.light();
-                      setCalcDensity(d.val);
-                    }}
-                  >
-                    <Text
-                      style={[s.densityChipText, calcDensity === d.val && s.densityChipTextActive]}
-                    >
-                      {d.label}
-                    </Text>
-                  </TouchableOpacity>
+      <FlatList
+        data={visibleCategories}
+        keyExtractor={(item) => String(item)}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#000" />
+        }
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+        ListEmptyComponent={() => {
+          if (loading) {
+            return (
+              <View className="px-5 gap-4 mt-4">
+                {[1, 2, 3].map((i) => (
+                  <View key={i} className="bg-gray-200 h-24 rounded-3xl opacity-50" />
                 ))}
               </View>
-              <TextInput
-                style={[s.calcInput, { marginTop: 6 }]}
-                value={calcDensity}
-                onChangeText={setCalcDensity}
-                keyboardType="decimal-pad"
-                placeholder="1.6"
-                placeholderTextColor="#9ca3af"
-              />
-            </View>
-
-            {/* Result */}
-            {(() => {
-              const area = parseFloat(calcArea.replace(',', '.'));
-              const depth = parseFloat(calcDepth.replace(',', '.'));
-              const density = parseFloat(calcDensity.replace(',', '.'));
-              if (
-                !isNaN(area) &&
-                !isNaN(depth) &&
-                !isNaN(density) &&
-                area > 0 &&
-                depth > 0 &&
-                density > 0
-              ) {
-                const volumeM3 = area * (depth / 100);
-                const tonnes = volumeM3 * density;
-                const trucks17 = Math.ceil(tonnes / 17);
-                const trucks26 = Math.ceil(tonnes / 26);
-                return (
-                  <View style={s.calcResult}>
-                    <View style={s.calcResultMain}>
-                      <Text style={s.calcResultTonnes}>{tonnes.toFixed(1)} t</Text>
-                      <Text style={s.calcResultLabel}>nepieciešamo materiālu</Text>
-                    </View>
-                    <View style={s.calcResultMeta}>
-                      <Text style={s.calcResultMetaText}>≈ {volumeM3.toFixed(1)} m³</Text>
-                      <Text style={s.calcResultMetaText}>
-                        · {trucks17} mašīna (17t) vai {trucks26} mašīna (26t)
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={s.calcOrderBtn}
-                      onPress={() => {
-                        haptics.medium();
-                        setCalcVisible(false);
-                        router.push({
-                          pathname: '/order-request-new',
-                          params: { prefilledQty: String(Math.ceil(tonnes)) },
-                        } as any);
-                      }}
-                    >
-                      <Text style={s.calcOrderBtnText}>Pasūtīt {Math.ceil(tonnes)} t</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              }
-              return (
-                <View style={s.calcResultEmpty}>
-                  <Text style={s.calcResultEmptyText}>Ievadiet laukumu un dziļumu</Text>
-                </View>
-              );
-            })()}
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ── Project context banner ── */}
-      {projectId ? (
-        <View style={s.projectBanner}>
-          <FolderOpen size={14} color="#111827" />
-          <Text style={s.projectBannerText}>Pasūtījums tiks piesaistīts projektam</Text>
-        </View>
-      ) : null}
-
-      {/* ── Draft resume banner ── */}
-      {resumeDraft && !query && (
-        <TouchableOpacity
-          style={s.draftBanner}
-          onPress={() =>
-            router.push({
-              pathname: '/order-request-new',
-              params: { resumeDraft: 'true' },
-            } as any)
-          }
-          activeOpacity={0.8}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={s.draftSub} numberOfLines={1}>
-              <Text style={{ fontWeight: '600' }}>Nepabeigts: </Text>
-              {resumeDraft.materialName}, {resumeDraft.quantity}{' '}
-              {UNIT_SHORT[resumeDraft.unit as keyof typeof UNIT_SHORT] ?? resumeDraft.unit}
-            </Text>
-          </View>
-          <TouchableOpacity
-            hitSlop={12}
-            onPress={() => {
-              AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
-              setResumeDraft(null);
-            }}
-          >
-            <X size={16} color="#6b7280" />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      )}
-
-      {/* ── Category list ── */}
-      {loading ? (
-        <View style={s.skeletonWrap}>
-          <SkeletonCard count={6} />
-        </View>
-      ) : visibleCategories.length === 0 ? (
-        <View style={s.empty}>
-          <Package size={36} color="#d1d5db" />
-          <Text style={s.emptyTitle}>Nav rezultātu</Text>
-          <Text style={s.emptySub}>Izmēģiniet citu nosaukumu</Text>
-        </View>
-      ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          data={visibleCategories}
-          keyExtractor={(cat) => cat}
-          renderItem={({ item: cat }) => {
-            const staticData = categoryData[cat] ?? {
-              supplierCount: 0,
-              hasRecycled: false,
-              minPrice: null,
-            };
-            const live = liveData[cat];
-            return (
-              <CategoryCard
-                category={cat}
-                hasRecycled={staticData.hasRecycled}
-                supplierCount={live ? live.supplierCount : staticData.supplierCount}
-                minPrice={live ? live.minPrice : staticData.minPrice}
-                onPress={() => handleCategoryPress(cat)}
-              />
             );
-          }}
-          contentContainerStyle={s.list}
-          showsVerticalScrollIndicator={false}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#00A878" />
           }
-        />
-      )}
+          return (
+            <View className="items-center px-5 py-12">
+              <View className="w-16 h-16 bg-gray-100 rounded-[24px] items-center justify-center mb-4">
+                <Box size={28} color="#94a3b8" />
+              </View>
+              <Text className="text-gray-900 font-extrabold text-xl mb-1 text-center">
+                Nekas nav atrasts
+              </Text>
+              <Text className="text-gray-500 font-medium text-center">
+                Mēģiniet mainīt meklēšanu vai izvēlētos filtrus.
+              </Text>
+            </View>
+          );
+        }}
+        renderItem={({ item: cat }) => {
+          const catData = categoryData[cat];
+          const hasRecycled = catData?.hasRecycled ?? false;
+          const supCount = catData?.supplierCount ?? 0;
+          const minPrice = catData?.minPrice ?? null;
+
+          return (
+            <CategoryCard
+              category={cat as MaterialCategory}
+              hasRecycled={hasRecycled}
+              supplierCount={supCount}
+              minPrice={minPrice}
+              onPress={() => handleCategoryPress(cat as MaterialCategory)}
+            />
+          );
+        }}
+        showsVerticalScrollIndicator={false}
+      />
     </ScreenContainer>
   );
 }
-
-// ── Styles ────────────────────────────────────────────────────────────────
-
-const s = StyleSheet.create({
-  uberHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
-    backgroundColor: '#fff',
-  },
-  uberTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#000',
-    letterSpacing: -0.5,
-    lineHeight: 38,
-    paddingTop: 4,
-  },
-  topBar: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-  },
-  chipScroll: {
-    backgroundColor: '#fff',
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 100,
-    backgroundColor: '#f3f4f6',
-  },
-  chipActive: {
-    backgroundColor: '#111827',
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  chipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  chipTextBlue: {
-    color: '#2563eb',
-  },
-  livePriceBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginHorizontal: 16,
-    marginTop: 6,
-    marginBottom: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#eff6ff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  livePriceBannerText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#1d4ed8',
-    fontWeight: '500',
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchBoxFocused: {
-    borderColor: '#cbd5e1',
-    backgroundColor: '#fff',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#111827',
-    paddingVertical: 0,
-  },
-  projectBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-  },
-  projectBannerText: {
-    fontSize: 13,
-    color: '#111827',
-    fontWeight: '500',
-  },
-  draftBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-  },
-  draftSub: {
-    fontSize: 13,
-    color: '#111827',
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 108,
-    gap: 10,
-  },
-  skeletonWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  emptySub: {
-    fontSize: 13,
-    color: '#9ca3af',
-    textAlign: 'center',
-  },
-  // Category card
-  catCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  catStrip: {
-    display: 'none',
-  },
-  catIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  catBody: {
-    flex: 1,
-    gap: 2,
-  },
-  catNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  catName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    letterSpacing: -0.3,
-  },
-  catDesc: {
-    fontSize: 13,
-    color: '#6b7280',
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  catMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  catSupplierCount: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  catMinPrice: {
-    fontSize: 12,
-    color: '#000',
-    fontWeight: '600',
-  },
-  catRight: {
-    paddingLeft: 12,
-  },
-  recycledBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  recycledText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  // ── Calculator modal styles ────────────────────────────────────
-  calcOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  calcSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 36,
-    gap: 16,
-  },
-  calcHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  calcTitle: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  calcSubtitle: {
-    fontSize: 13,
-    color: '#6b7280',
-    lineHeight: 18,
-    marginTop: -8,
-  },
-  calcRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  calcField: {
-    flex: 1,
-    gap: 6,
-  },
-  calcLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  calcInput: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#111827',
-  },
-  calcDensityRow: {
-    gap: 6,
-  },
-  calcDensityChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
-  },
-  densityChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: '#f3f4f6',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  densityChipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  densityChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  densityChipTextActive: {
-    color: '#fff',
-  },
-  calcResult: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 16,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  calcResultMain: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  calcResultTonnes: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  calcResultLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  calcResultMeta: {
-    gap: 2,
-  },
-  calcResultMetaText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  calcOrderBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  calcOrderBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  calcResultEmpty: {
-    padding: 16,
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-  },
-  calcResultEmptyText: {
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-});

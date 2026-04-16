@@ -198,7 +198,7 @@ interface TopBarProps {
 
 export function TopBar({
   title,
-  accentColor = '#111827',
+  accentColor = '#ffffff',
   onMenuPress,
   unreadCount = 0,
   leftElement,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   barSolid: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     // borderBottomWidth: 1, // Removed to match premium feel as requested previously
     // borderBottomColor: '#f3f4f6', // Removed
     paddingHorizontal: 16,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#ef4444',
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: '#111827',
   },
   backdrop: {
     backgroundColor: '#000000',
