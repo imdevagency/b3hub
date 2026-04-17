@@ -32,17 +32,6 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: string; color: s
 
 // ─── Components ───────────────────────────────────────────────────────────
 
-function SpendBar({ pct }: { pct: number | null }) {
-  if (pct === null) return null;
-  const clamped = Math.min(Math.max(pct, 0), 100);
-  const color = clamped > 90 ? 'bg-red-500' : clamped > 70 ? 'bg-amber-500' : 'bg-green-500';
-  return (
-    <View className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden mt-3">
-      <View className={`h-full ${color}`} style={{ width: `${clamped}%` as any }} />
-    </View>
-  );
-}
-
 function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () => void }) {
   const formatEur = (v: number) =>
     new Intl.NumberFormat('lv-LV', {
@@ -53,55 +42,54 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-[24px] p-5 mb-4 border border-gray-100 shadow-sm"
+      className="bg-white px-5 py-6 border-b border-gray-100"
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View className="flex-row justify-between items-start mb-3">
+      <View className="flex-row justify-between items-start mb-1">
         <View className="flex-1 pr-4">
           <Text
-            className="text-gray-900 font-extrabold text-xl tracking-tight mb-1"
+            className="text-[22px] font-extrabold tracking-tight text-gray-900 mb-1"
             numberOfLines={1}
           >
             {project.name}
           </Text>
           {(project.clientName || project.siteAddress) && (
-            <Text className="text-gray-500 font-medium text-sm" numberOfLines={1}>
+            <Text className="text-[15px] font-medium text-gray-500 mb-6" numberOfLines={1}>
               {[project.clientName, project.siteAddress].filter(Boolean).join(' • ')}
             </Text>
           )}
         </View>
-        <StatusPill
-          label={STATUS_CONFIG[project.status]?.label ?? project.status}
-          bg={STATUS_CONFIG[project.status]?.bg ?? '#f3f4f6'}
-          color={STATUS_CONFIG[project.status]?.color ?? '#6b7280'}
-          size="sm"
-        />
+        <View className="bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 mt-1">
+          <Text className="text-[11px] font-bold text-gray-600 uppercase tracking-widest">
+            {STATUS_CONFIG[project.status]?.label ?? project.status}
+          </Text>
+        </View>
       </View>
 
-      <View className="flex-row items-center bg-gray-50 rounded-2xl p-4 mt-2">
-        <View className="flex-1">
-          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+      <View className="flex-row items-center justify-between">
+        <View>
+          <Text className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
             Līgums
           </Text>
-          <Text className="text-gray-900 font-bold text-base">
+          <Text className="text-[18px] font-bold text-gray-900 tracking-tight">
             {formatEur(project.contractValue)}
           </Text>
         </View>
-        <View className="flex-1">
-          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+        <View>
+          <Text className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
             Izmaksas
           </Text>
-          <Text className="text-gray-900 font-bold text-base">
+          <Text className="text-[18px] font-bold text-gray-900 tracking-tight">
             {formatEur(project.materialCosts)}
           </Text>
         </View>
-        <View className="flex-1 items-end">
-          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">
+        <View className="items-end">
+          <Text className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
             Peļņa
           </Text>
           <Text
-            className={`font-black text-lg ${project.grossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}
+            className={`text-[18px] font-black tracking-tight ${project.grossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}
           >
             {project.marginPct !== null ? `${Math.round(project.marginPct)}%` : '—'}
           </Text>
@@ -224,5 +212,5 @@ export default function ProjectsScreen() {
 
 const styles = StyleSheet.create({
   emptyContainer: { flexGrow: 1, padding: 24, justifyContent: 'center' },
-  list: { padding: 16, paddingBottom: 100 },
+  list: { paddingBottom: 100 },
 });

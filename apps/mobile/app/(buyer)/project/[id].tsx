@@ -14,6 +14,7 @@ import {
   RefreshControl,
   Alert,
   TextInput,
+  Text as RNText,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -81,7 +82,14 @@ function StatusPillLocal({ status }: { status: ProjectStatus }) {
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <View style={styles.statCard}>
-      <Text style={[styles.statCardValue, { color: color ?? colors.textPrimary }]}>{value}</Text>
+      <RNText
+        style={[styles.statCardValue, { color: color ?? colors.textPrimary }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
+      >
+        {value}
+      </RNText>
       <Text style={styles.statCardLabel}>{label}</Text>
     </View>
   );
