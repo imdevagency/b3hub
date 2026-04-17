@@ -27,6 +27,11 @@ export default function ChatScreen() {
   const { jobId, title } = useLocalSearchParams<{ jobId: string; title?: string }>();
   const { token, user } = useAuth();
   const router = useRouter();
+  const fallbackHome = user?.canTransport
+    ? '/(driver)/home'
+    : user?.canSell
+      ? '/(seller)/home'
+      : '/(buyer)/home';
 
   const [input, setInput] = useState('');
   const [sendingImage, setSendingImage] = useState(false);
@@ -152,7 +157,10 @@ export default function ChatScreen() {
 
   return (
     <ScreenContainer standalone bg="#f2f2f7">
-      <ScreenHeader title={String(title ?? 'Čats')} />
+      <ScreenHeader
+        title={String(title ?? 'Čats')}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
+      />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

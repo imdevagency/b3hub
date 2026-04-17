@@ -107,6 +107,11 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { logout, user, token } = useAuth();
   const { language, setLanguage } = useLanguage();
+  const fallbackHome = user?.canTransport
+    ? '/(driver)/home'
+    : user?.canSell
+      ? '/(seller)/home'
+      : '/(buyer)/home';
   const toast = useToast();
 
   // Notification toggles — initialised from backend user prefs
@@ -154,7 +159,10 @@ export default function SettingsScreen() {
 
   return (
     <ScreenContainer standalone>
-      <ScreenHeader title={t.nav.settings} />
+      <ScreenHeader
+        title={t.nav.settings}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
+      />
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* ── Notifications ─────────────────────────────── */}

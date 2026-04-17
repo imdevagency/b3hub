@@ -15,7 +15,7 @@ import {
   FlatList,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { TopBar } from '@/components/ui/TopBar';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { Plus, X, Trash2, Truck, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -168,20 +168,43 @@ function VehicleModal({
           <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}>
             {initial?.id ? 'Rediģēt transportu' : 'Jauns transports'}
           </Text>
-          <TouchableOpacity onPress={onClose} className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center" activeOpacity={0.8}>
+          <TouchableOpacity
+            onPress={onClose}
+            className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center"
+            activeOpacity={0.8}
+          >
             <X size={18} color="#6b7280" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, gap: 24 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, gap: 24 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {/* License Plate - Hero Input */}
           <View className="bg-gray-100 rounded-3xl p-6 items-center mt-2">
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '600',
+                color: '#6b7280',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+                marginBottom: 8,
+              }}
+            >
               Valsts numurzīme
             </Text>
             <TextInput
-              style={{ fontSize: 36, fontWeight: '800', color: '#111827', letterSpacing: 2, textAlign: 'center', minWidth: '100%' }}
+              style={{
+                fontSize: 36,
+                fontWeight: '800',
+                color: '#111827',
+                letterSpacing: 2,
+                textAlign: 'center',
+                minWidth: '100%',
+              }}
               placeholder="AA-1234"
               placeholderTextColor="#9ca3af"
               value={form.licensePlate}
@@ -192,70 +215,146 @@ function VehicleModal({
 
           {/* Type Selector */}
           <View>
-             <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Transporta veids</Text>
-             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {TYPES.map((t) => {
-                  const isActive = form.vehicleType === t;
-                  return (
-                    <TouchableOpacity
-                      key={t}
-                      className={`px-5 py-3 rounded-full flex-row items-center justify-center border ${isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'}`}
-                      onPress={() => { haptics.light(); set('vehicleType')(t); }}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 12 }}>
+              Transporta veids
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {TYPES.map((t) => {
+                const isActive = form.vehicleType === t;
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    className={`px-5 py-3 rounded-full flex-row items-center justify-center border ${isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'}`}
+                    onPress={() => {
+                      haptics.light();
+                      set('vehicleType')(t);
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: isActive ? '700' : '600',
+                        color: isActive ? '#ffffff' : '#374151',
+                      }}
                     >
-                      <Text style={{ fontSize: 15, fontWeight: isActive ? '700' : '600', color: isActive ? '#ffffff' : '#374151' }}>
-                        {VEHICLE_LABELS[t]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-             </ScrollView>
+                      {VEHICLE_LABELS[t]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
 
           {/* Make / Model */}
           <View className="flex-row gap-3">
-             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-               <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>Marka</Text>
-               <TextInput style={{ fontSize: 16, fontWeight: '600', color: '#111827' }} placeholder="Scania" placeholderTextColor="#9ca3af" value={form.make} onChangeText={set('make')} />
-             </View>
-             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-               <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>Modelis</Text>
-               <TextInput style={{ fontSize: 16, fontWeight: '600', color: '#111827' }} placeholder="R450" placeholderTextColor="#9ca3af" value={form.model} onChangeText={set('model')} />
-             </View>
+            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
+              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+                Marka
+              </Text>
+              <TextInput
+                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                placeholder="Scania"
+                placeholderTextColor="#9ca3af"
+                value={form.make}
+                onChangeText={set('make')}
+              />
+            </View>
+            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
+              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+                Modelis
+              </Text>
+              <TextInput
+                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                placeholder="R450"
+                placeholderTextColor="#9ca3af"
+                value={form.model}
+                onChangeText={set('model')}
+              />
+            </View>
           </View>
 
           {/* Year / Capacity */}
           <View className="flex-row gap-3">
-             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-               <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>Gads</Text>
-               <TextInput style={{ fontSize: 16, fontWeight: '600', color: '#111827' }} placeholder="2020" placeholderTextColor="#9ca3af" value={form.year} onChangeText={set('year')} keyboardType="number-pad" />
-             </View>
-             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-               <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>Krava (t)</Text>
-               <TextInput style={{ fontSize: 16, fontWeight: '600', color: '#111827' }} placeholder="20.5" placeholderTextColor="#9ca3af" value={form.capacity} onChangeText={set('capacity')} keyboardType="decimal-pad" />
-             </View>
+            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
+              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+                Gads
+              </Text>
+              <TextInput
+                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                placeholder="2020"
+                placeholderTextColor="#9ca3af"
+                value={form.year}
+                onChangeText={set('year')}
+                keyboardType="number-pad"
+              />
+            </View>
+            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
+              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+                Krava (t)
+              </Text>
+              <TextInput
+                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                placeholder="20.5"
+                placeholderTextColor="#9ca3af"
+                value={form.capacity}
+                onChangeText={set('capacity')}
+                keyboardType="decimal-pad"
+              />
+            </View>
           </View>
 
           {/* Dates */}
           <View className="flex-row gap-3">
-             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-               <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>OCTA līdz</Text>
-               <TextInput style={{ fontSize: 16, fontWeight: '600', color: '#111827' }} placeholder="GGGG-MM-DD" placeholderTextColor="#9ca3af" value={form.insuranceExpiry} onChangeText={set('insuranceExpiry')} keyboardType="numbers-and-punctuation" maxLength={10} />
-             </View>
-             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-               <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>Skate līdz</Text>
-               <TextInput style={{ fontSize: 16, fontWeight: '600', color: '#111827' }} placeholder="GGGG-MM-DD" placeholderTextColor="#9ca3af" value={form.inspectionExpiry} onChangeText={set('inspectionExpiry')} keyboardType="numbers-and-punctuation" maxLength={10} />
-             </View>
+            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
+              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+                OCTA līdz
+              </Text>
+              <TextInput
+                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                placeholder="GGGG-MM-DD"
+                placeholderTextColor="#9ca3af"
+                value={form.insuranceExpiry}
+                onChangeText={set('insuranceExpiry')}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+              />
+            </View>
+            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
+              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+                Skate līdz
+              </Text>
+              <TextInput
+                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                placeholder="GGGG-MM-DD"
+                placeholderTextColor="#9ca3af"
+                value={form.inspectionExpiry}
+                onChangeText={set('inspectionExpiry')}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+              />
+            </View>
           </View>
 
           {/* Status Toggle */}
           <View className="flex-row items-center justify-between py-2">
             <View>
-               <Text style={{ fontSize: 16, color: '#111827', fontWeight: '700' }}>Aktīvs statuss</Text>
-               <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>Transportlīdzeklis tiks izmantots plānošanā</Text>
+              <Text style={{ fontSize: 16, color: '#111827', fontWeight: '700' }}>
+                Aktīvs statuss
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+                Transportlīdzeklis tiks izmantots plānošanā
+              </Text>
             </View>
             <Switch
               value={form.isActive}
-              onValueChange={(v) => { haptics.light(); set('isActive')(v); }}
+              onValueChange={(v) => {
+                haptics.light();
+                set('isActive')(v);
+              }}
               trackColor={{ true: '#111827', false: '#e5e7eb' }}
               thumbColor="#fff"
             />
@@ -268,28 +367,37 @@ function VehicleModal({
               onPress={() => onDelete(initial.id)}
               activeOpacity={0.8}
             >
-              <Text style={{ color: '#ef4444', fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Dzēst transportlīdzekli</Text>
+              <Text
+                style={{ color: '#ef4444', fontSize: 15, fontWeight: '600', textAlign: 'center' }}
+              >
+                Dzēst transportlīdzekli
+              </Text>
             </TouchableOpacity>
           )}
-
         </ScrollView>
 
         {/* Sticky Bottom Actions */}
         <View className="absolute bottom-0 w-full px-5 py-6 bg-white border-t border-gray-100 pb-10">
-           <TouchableOpacity
-              onPress={() => { haptics.medium(); onSave(form); }}
-              disabled={!canSave}
-              className={`py-4 rounded-full flex-row items-center justify-center ${canSave ? 'bg-gray-900' : 'bg-gray-200'}`}
-              activeOpacity={0.8}
-           >
-              {saving ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={{ fontSize: 17, fontWeight: '700', color: canSave ? '#ffffff' : '#9ca3af' }}>Saglabāt</Text>
-              )}
-           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              haptics.medium();
+              onSave(form);
+            }}
+            disabled={!canSave}
+            className={`py-4 rounded-full flex-row items-center justify-center ${canSave ? 'bg-gray-900' : 'bg-gray-200'}`}
+            activeOpacity={0.8}
+          >
+            {saving ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text
+                style={{ fontSize: 17, fontWeight: '700', color: canSave ? '#ffffff' : '#9ca3af' }}
+              >
+                Saglabāt
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -397,23 +505,21 @@ export default function VehiclesScreen() {
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
-      <TopBar transparent />
-      
-      <View className="flex-row items-center justify-between px-5 pt-2 pb-6">
-        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>
-          Transporti
-        </Text>
-        {!isReadOnly && (
-          <TouchableOpacity
-            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
-            onPress={() => openModal()}
-            activeOpacity={0.8}
-            hitSlop={8}
-          >
-            <Plus size={20} color="#111827" strokeWidth={3} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader
+        title="Transporti"
+        rightAction={
+          !isReadOnly ? (
+            <TouchableOpacity
+              className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+              onPress={() => openModal()}
+              activeOpacity={0.8}
+              hitSlop={8}
+            >
+              <Plus size={20} color="#111827" strokeWidth={3} />
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       <FlatList
         data={vehicles}
@@ -446,7 +552,9 @@ export default function VehiclesScreen() {
                       onPress={() => openModal()}
                       activeOpacity={0.8}
                     >
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>Pievienot transportu</Text>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+                        Pievienot transportu
+                      </Text>
                     </TouchableOpacity>
                   ) : undefined
                 }

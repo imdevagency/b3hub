@@ -228,6 +228,12 @@ export default function NotificationsScreen() {
   const { token } = useAuth();
   const { mode } = useMode();
   const router = useRouter();
+  const fallbackHome =
+    mode === 'CARRIER'
+      ? '/(driver)/home'
+      : mode === 'SUPPLIER'
+        ? '/(seller)/home'
+        : '/(buyer)/home';
   const toast = useToast();
   const [notifs, setNotifs] = useState<ApiNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -288,6 +294,7 @@ export default function NotificationsScreen() {
     <ScreenContainer standalone bg="#ffffff" noAnimation>
       <ScreenHeader
         title={unreadCount > 0 ? `Paziņojumi (${unreadCount})` : 'Paziņojumi'}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
         rightAction={
           unreadCount > 0 ? (
             <TouchableOpacity

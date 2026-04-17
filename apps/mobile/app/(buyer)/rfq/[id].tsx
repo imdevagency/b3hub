@@ -159,8 +159,19 @@ export default function RfqDetailScreen() {
       <ScreenContainer bg="#ffffff">
         <View style={ss.center}>
           <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-            <Text style={ss.link}>← Atpakaļ</Text>
+          <TouchableOpacity
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any)
+            }
+            style={{
+              marginTop: 16,
+              paddingVertical: 10,
+              paddingHorizontal: 20,
+              backgroundColor: '#f3f4f6',
+              borderRadius: 10,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Atpakaļ</Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>

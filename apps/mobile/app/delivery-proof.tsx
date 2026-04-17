@@ -19,6 +19,7 @@ import {
 import Svg, { Path as SvgPath } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
@@ -209,19 +210,14 @@ export default function DeliveryProofScreen() {
 
   return (
     <ScreenContainer standalone bg="#ffffff">
+      <ScreenHeader title={t.deliveryProof.title} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={16} style={styles.backBtn}>
-            <ArrowLeft size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{t.deliveryProof.title}</Text>
-          <Text style={styles.subtitle}>{t.deliveryProof.subtitle}</Text>
-        </View>
+        {/* Subtitle */}
+        <Text style={styles.subtitle}>{t.deliveryProof.subtitle}</Text>
 
         {/* ── Checklist ────────────────────────────────────────────────── */}
         <View style={styles.section}>
@@ -439,10 +435,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   scroll: { padding: 24, gap: 24, paddingBottom: 40 },
 
-  header: { gap: 4, marginBottom: 8 },
-  backBtn: { marginBottom: 16, width: 40, height: 40, justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 15, color: '#6b7280' },
+  subtitle: { fontSize: 15, color: '#6b7280', marginBottom: 8 },
 
   section: { gap: 12 },
   label: {
