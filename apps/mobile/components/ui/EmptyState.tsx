@@ -17,6 +17,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors } from '@/lib/theme';
 
 interface EmptyStateProps {
   /** Icon element — e.g. <FileText size={32} color="#9ca3af" /> */
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -63,12 +64,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textAlign: 'center',
     lineHeight: 21,
   },

@@ -95,6 +95,7 @@ LocaleConfig.defaultLocale = 'lv';
 
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 // ── Draft persistence ────────────────────────────────────────────
 const DISPOSAL_DRAFT_KEY = '@b3hub_disposal_draft';
@@ -600,8 +601,8 @@ export default function DisposalWizard() {
                     </View>
 
                     <View style={s.wasteInfo}>
-                      <Text style={[s.wasteLabel, isSel && { color: '#ffffff' }]}>{opt.label}</Text>
-                      <Text style={[s.wasteDesc, isSel && { color: '#9ca3af' }]}>{opt.desc}</Text>
+                      <Text style={[s.wasteLabel, isSel && { color: colors.white }]}>{opt.label}</Text>
+                      <Text style={[s.wasteDesc, isSel && { color: colors.textDisabled }]}>{opt.desc}</Text>
                     </View>
 
                     <View style={[s.checkboxOuter, isSel && s.checkboxOuterSel]}>
@@ -729,7 +730,7 @@ export default function DisposalWizard() {
             <Text
               style={[
                 s.sectionLabel,
-                { textTransform: 'none', color: '#6b7280', fontSize: 13, marginTop: 16 },
+                { textTransform: 'none', color: colors.textMuted, fontSize: 13, marginTop: 16 },
               ]}
             >
               Aptuvenais svars tonnās (neobligāti)
@@ -738,7 +739,7 @@ export default function DisposalWizard() {
               style={[
                 s.uberInput,
                 {
-                  backgroundColor: '#f3f4f6',
+                  backgroundColor: colors.bgMuted,
                   borderRadius: 16,
                   borderWidth: 0,
                   paddingHorizontal: 16,
@@ -755,7 +756,7 @@ export default function DisposalWizard() {
             <Text
               style={[
                 s.sectionLabel,
-                { textTransform: 'none', color: '#6b7280', fontSize: 13, marginTop: 10 },
+                { textTransform: 'none', color: colors.textMuted, fontSize: 13, marginTop: 10 },
               ]}
             >
               Papildu informācija (neobligāti)
@@ -765,7 +766,7 @@ export default function DisposalWizard() {
                 s.uberInput,
                 s.uberInputMulti,
                 {
-                  backgroundColor: '#f3f4f6',
+                  backgroundColor: colors.bgMuted,
                   borderRadius: 16,
                   borderWidth: 0,
                   paddingHorizontal: 16,
@@ -795,7 +796,7 @@ export default function DisposalWizard() {
                 borderRadius: 16,
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: colors.border,
               }}
             >
               <Calendar
@@ -993,22 +994,22 @@ function DetailRow({
 const s = StyleSheet.create({
   content: { flex: 1 },
   pad: { padding: 20, paddingBottom: 32 },
-  hint: { fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 },
-  stepSub: { fontSize: 14, color: '#6b7280', marginBottom: 16 },
+  hint: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
+  stepSub: { fontSize: 14, color: colors.textMuted, marginBottom: 16 },
   addressCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderWidth: 0,
     borderRadius: 12,
     padding: 16,
   },
-  addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500' },
-  placeholder: { color: '#9ca3af', fontWeight: '400' },
+  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500' },
+  placeholder: { color: colors.textDisabled, fontWeight: '400' },
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.textMuted,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -1023,13 +1024,13 @@ const s = StyleSheet.create({
   wasteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 16,
     borderWidth: 0,
     padding: 16,
   },
   wasteRowSel: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   wasteInfo: {
     flex: 1,
@@ -1038,12 +1039,12 @@ const s = StyleSheet.create({
   wasteLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   wasteDesc: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     lineHeight: 20,
   },
   checkboxOuter: {
@@ -1057,8 +1058,8 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   checkboxOuterSel: {
-    backgroundColor: '#ffffff',
-    borderColor: '#ffffff',
+    backgroundColor: colors.bgCard,
+    borderColor: colors.white,
   },
 
   // Volume list styles
@@ -1069,19 +1070,19 @@ const s = StyleSheet.create({
   volRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 16,
     padding: 16,
     borderWidth: 0,
   },
   volRowSel: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   volRowIconBadge: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -1093,27 +1094,27 @@ const s = StyleSheet.create({
   volRowLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.textSecondary,
     lineHeight: 22,
   },
   volRowLabelSel: {
-    color: '#ffffff',
+    color: colors.white,
   },
   volRowSub: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 2,
   },
   volRowSubSel: {
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   volRowPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
   },
   volRowPriceSel: {
-    color: '#ffffff',
+    color: colors.white,
   },
 
   // Hazard
@@ -1126,7 +1127,7 @@ const s = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  hazardText: { flex: 1, fontSize: 12, color: '#b91c1c', fontWeight: '500' },
+  hazardText: { flex: 1, fontSize: 12, color: colors.dangerText, fontWeight: '500' },
 
   // Day chips
   dayChip: {
@@ -1136,14 +1137,14 @@ const s = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 0,
     marginRight: 10,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     minWidth: 70,
   },
-  dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
   dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
-  dayDow: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  dayNum: { fontSize: 24, fontWeight: '700', color: '#111827', marginVertical: 4 },
-  dayMon: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
+  dayDow: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+  dayNum: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginVertical: 4 },
+  dayMon: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
   windowRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
@@ -1153,12 +1154,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 10,
     borderWidth: 0,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
   windowChipActive: { backgroundColor: '#000000' },
-  windowChipText: { fontSize: 14, color: '#374151', fontWeight: '600', textAlign: 'center' },
-  windowChipTextActive: { color: '#ffffff' },
+  windowChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
+  windowChipTextActive: { color: colors.white },
 
   // Save address toggle
   saveAddrRow: {
@@ -1167,7 +1168,7 @@ const s = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 12,
     borderWidth: 0,
     marginBottom: 12,
@@ -1178,13 +1179,13 @@ const s = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 0,
     borderColor: '#d1d5db',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  saveAddrCheckActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
 
   // Summary card
   summaryCard: {
@@ -1198,31 +1199,31 @@ const s = StyleSheet.create({
     marginVertical: 4,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
-  addressValue: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '600', lineHeight: 22 },
+  addressValue: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '600', lineHeight: 22 },
   detailRow: {
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
   },
-  detailLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  detailLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
   detailValue: {
     flex: 1,
     textAlign: 'right',
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '600',
   },
 
   uberInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 16,
     borderWidth: 0,
     paddingHorizontal: 16,
@@ -1238,7 +1239,7 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   uberInputMulti: {
     height: 100,
@@ -1252,38 +1253,38 @@ const s = StyleSheet.create({
     flex: 1,
     borderRadius: 14,
     borderWidth: 0,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     overflow: 'hidden',
   },
-  truckTypeCardSel: { backgroundColor: '#111827' },
+  truckTypeCardSel: { backgroundColor: colors.primary },
   truckIllZone: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
   truckIllZoneSel: { backgroundColor: '#1f2937' },
   truckTypeName: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.textSecondary,
     paddingHorizontal: 6,
     paddingTop: 6,
     textAlign: 'center',
   },
-  truckTypeNameSel: { color: '#ffffff' },
+  truckTypeNameSel: { color: colors.white },
   truckTypeCap: {
     fontSize: 10,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     paddingHorizontal: 6,
     paddingBottom: 8,
     textAlign: 'center',
   },
-  truckTypeCapSel: { color: '#9ca3af' },
+  truckTypeCapSel: { color: colors.textDisabled },
 
   // ── Count stepper ────────────────────────────────────────────
   countCard: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 18,
     borderWidth: 0,
     overflow: 'hidden',
@@ -1307,7 +1308,7 @@ const s = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1315,7 +1316,7 @@ const s = StyleSheet.create({
   stepperBtnText: {
     fontSize: 26,
     fontWeight: '300',
-    color: '#ffffff',
+    color: colors.white,
     lineHeight: 30,
     includeFontPadding: false,
   },
@@ -1323,12 +1324,12 @@ const s = StyleSheet.create({
   stepperNum: {
     fontSize: 42,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     lineHeight: 46,
     letterSpacing: -1,
     includeFontPadding: false,
   },
-  stepperUnit: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  stepperUnit: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
 
   // ── Live stats ───────────────────────────────────────────────
   liveStats: {
@@ -1341,12 +1342,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
-  liveStatLabel: { fontSize: 15, color: '#6b7280', fontWeight: '500' },
+  liveStatLabel: { fontSize: 15, color: colors.textMuted, fontWeight: '500' },
   liveStatValue: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '600',
     textAlign: 'right',
     flex: 1,

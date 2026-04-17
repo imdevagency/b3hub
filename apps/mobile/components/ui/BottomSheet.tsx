@@ -30,6 +30,7 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/lib/theme';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -220,8 +221,8 @@ const s = StyleSheet.create({
     paddingBottom: 4,
   },
   headerText: { flex: 1, marginRight: 12 },
-  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
+  title: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  subtitle: { fontSize: 13, color: colors.textDisabled, marginTop: 2 },
   closeCorner: { position: 'absolute', top: 14, right: 18 },
   scrollContent: { paddingHorizontal: 24, paddingBottom: 16, gap: 2 },
   content: { paddingHorizontal: 24, paddingBottom: 16 },

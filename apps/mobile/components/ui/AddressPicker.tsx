@@ -35,6 +35,7 @@ import { Marker } from 'react-native-maps';
 import { MapPin, X, Check, Search } from 'lucide-react-native';
 import { BaseMap, useGeocode, GeocodeSuggestion } from '@/components/map';
 import type { CameraRefHandle, MapPressFeature } from '@/components/map';
+import { colors } from '@/lib/theme';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PickedLocation {
@@ -249,7 +250,7 @@ function PinMarker({ color }: { color: string }) {
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 3,
-          borderColor: '#ffffff',
+          borderColor: colors.white,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 3 },
           shadowOpacity: 0.35,
@@ -279,7 +280,7 @@ function PinMarker({ color }: { color: string }) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff' },
+  root: { flex: 1, backgroundColor: colors.bgCard },
 
   header: {
     flexDirection: 'row',
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 56 : 16,
     paddingBottom: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -296,22 +297,22 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
 
   searchWrapper: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     zIndex: 10,
   },
   searchInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 12,
     height: 44,
     gap: 6,
@@ -319,11 +320,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     paddingRight: 12,
   },
   searchList: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f9fafb',
   },
-  searchDesc: { fontSize: 14, color: '#374151' },
+  searchDesc: { fontSize: 14, color: colors.textSecondary },
 
   mapWrapper: { flex: 1, position: 'relative' },
 
@@ -351,10 +352,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  mapHintText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
+  mapHintText: { color: colors.white, fontSize: 12, fontWeight: '600' },
 
   footer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
     padding: 16,
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 4,
   },
-  footerAddrText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20 },
+  footerAddrText: { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
 
   confirmBtn: {
     flexDirection: 'row',
@@ -377,5 +378,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
   },
-  confirmBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  confirmBtnText: { color: colors.white, fontWeight: '700', fontSize: 16 },
 });

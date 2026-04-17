@@ -12,6 +12,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors } from '@/lib/theme';
 
 let Marker: any = null;
 try {
@@ -122,14 +123,14 @@ const pin = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2.5,
-    borderColor: '#ffffff',
+    borderColor: colors.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
   },
-  letter: { color: '#ffffff', fontWeight: '900' },
+  letter: { color: colors.white, fontWeight: '900' },
   tail: {
     width: 0,
     height: 0,
@@ -161,8 +162,8 @@ const pin = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.white,
   },
 });

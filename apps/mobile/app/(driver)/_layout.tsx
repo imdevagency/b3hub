@@ -13,6 +13,7 @@ import { useUnreadCount } from '@/lib/use-unread-count';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 function DriverLayoutContent() {
   const { user, isLoading } = useAuth();
@@ -75,7 +76,7 @@ function DriverLayoutContent() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bgCard, paddingTop: insets.top }}>
       {config !== null && (
         <TopBar
           title=""
@@ -105,7 +106,7 @@ function DriverLayoutContent() {
                           borderRadius: 6,
                           backgroundColor: '#059669',
                           borderWidth: 2,
-                          borderColor: '#ffffff',
+                          borderColor: colors.white,
                         }}
                       />
                     )}
@@ -153,12 +154,12 @@ const ls = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarBtnText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700',

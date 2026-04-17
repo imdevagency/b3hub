@@ -28,12 +28,15 @@ import { useFocusEffect } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
   ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#10b981' },
   COMPLETED: { label: 'Pabeigts', bg: '#f8fafc', color: '#64748b' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textDisabled },
   CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#ef4444' },
 };
 
@@ -100,6 +103,7 @@ function PositionCard({ pos }: { pos: ApiFrameworkPosition }) {
 export default function SellerFrameworkContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  const toast = useToast();
 
   const [contract, setContract] = useState<ApiFrameworkContract | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +117,7 @@ export default function SellerFrameworkContractDetailScreen() {
         const data = await api.frameworkContracts.get(id, token);
         setContract(data);
       } catch (e) {
-        Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās ielādēt līgumu');
+        toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt līgumu');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -133,8 +137,8 @@ export default function SellerFrameworkContractDetailScreen() {
       <ScreenContainer bg="white">
         <Stack.Screen options={{ headerShown: false }} />
         <ScreenHeader title="Rāmjlīgums" />
-        <View style={s.loadingCenter}>
-          <ActivityIndicator size="large" color="#000" />
+        <View style={{ padding: 20 }}>
+          <SkeletonCard count={4} />
         </View>
       </ScreenContainer>
     );
@@ -253,7 +257,7 @@ const s = StyleSheet.create({
   heroTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
     letterSpacing: -0.4,
   },
@@ -268,7 +272,7 @@ const s = StyleSheet.create({
   },
   metaBox: {
     flexDirection: 'row',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
@@ -286,14 +290,14 @@ const s = StyleSheet.create({
   metaLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   metaValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   section: {
@@ -308,7 +312,7 @@ const s = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 10,
@@ -319,7 +323,7 @@ const s = StyleSheet.create({
   },
   bigProgressTrack: {
     height: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
@@ -330,12 +334,12 @@ const s = StyleSheet.create({
   },
   progressSummary: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   notesText: {
     fontSize: 15,
-    color: '#374151',
+    color: colors.textSecondary,
     lineHeight: 22,
   },
   // Position card
@@ -362,11 +366,11 @@ const s = StyleSheet.create({
   posDesc: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
   },
   posTypeBadge: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -374,7 +378,7 @@ const s = StyleSheet.create({
   posTypeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   posMetaRow: {
     flexDirection: 'row',
@@ -382,12 +386,12 @@ const s = StyleSheet.create({
   },
   posMeta: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   posRoute: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   progressRow: {
     flexDirection: 'row',
@@ -398,7 +402,7 @@ const s = StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -414,6 +418,6 @@ const s = StyleSheet.create({
   },
   callOffCount: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
 });

@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 interface BizTool {
   icon: any;
@@ -133,7 +134,7 @@ const s = StyleSheet.create({
   pageTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 28,
     letterSpacing: -0.5,
     fontFamily: 'Inter_800ExtraBold',
@@ -141,7 +142,7 @@ const s = StyleSheet.create({
   sectionHeader: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 4,
@@ -166,12 +167,12 @@ const s = StyleSheet.create({
   rowLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     fontFamily: 'Inter_700Bold',
   },
   rowDesc: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 2,
     fontFamily: 'Inter_400Regular',
   },

@@ -12,6 +12,7 @@ import {
   CreditCard,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 function formatDate(iso: string): string {
   if (!iso) return '—';
@@ -200,7 +201,7 @@ export default function DisposalConfirmation() {
             <CreditCard size={14} color="#6b7280" style={{ marginTop: 1 }} />
             <View style={{ flex: 1, marginLeft: 8 }}>
               <Text style={s.rowLabel}>Orientačjā cena</Text>
-              <Text style={[s.rowValue, { color: '#059669', fontWeight: '700' }]}>
+              <Text style={[s.rowValue, { color: colors.success, fontWeight: '700' }]}>
                 no €{fromPrice} + PVN 21%
               </Text>
             </View>
@@ -212,7 +213,7 @@ export default function DisposalConfirmation() {
           <Recycle size={14} color="#6b7280" style={{ marginTop: 1 }} />
           <View style={{ flex: 1, marginLeft: 8 }}>
             <Text style={s.rowLabel}>Pārstrādes centrs</Text>
-            <Text style={[s.rowValue, { color: '#6b7280' }]}>
+            <Text style={[s.rowValue, { color: colors.textMuted }]}>
               Tiks norīkots — jūs saņemsiet paziņojumu
             </Text>
           </View>
@@ -262,13 +263,13 @@ const s = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 14,
@@ -277,31 +278,31 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  refText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  refText: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
 
   card: {
     marginHorizontal: 20,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 16,
     gap: 14,
     marginBottom: 28,
   },
-  cardTitle: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 2 },
+  cardTitle: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 },
   row: { flexDirection: 'row', alignItems: 'flex-start' },
-  rowLabel: { fontSize: 11, color: '#9ca3af', marginBottom: 2 },
-  rowValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
+  rowLabel: { fontSize: 11, color: colors.textDisabled, marginBottom: 2 },
+  rowValue: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
 
   btns: { paddingHorizontal: 20, gap: 10 },
   btnPrimary: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     height: 52,
     alignItems: 'center',
@@ -309,16 +310,16 @@ const s = StyleSheet.create({
   },
   btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   btnSecondary: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 14,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnSecondaryText: { color: '#374151', fontSize: 15, fontWeight: '600' },
+  btnSecondaryText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  centerText: { fontSize: 16, color: '#6b7280' },
+  centerText: { fontSize: 16, color: colors.textMuted },
   centerLink: { paddingVertical: 8 },
-  centerLinkText: { color: '#111827', fontWeight: '600' },
+  centerLinkText: { color: colors.textPrimary, fontWeight: '600' },
 });

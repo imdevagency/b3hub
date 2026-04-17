@@ -29,6 +29,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, X } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 export type WizardLayoutProps = {
   /** Step title shown below the header, large + left-aligned. */
@@ -143,12 +144,12 @@ const wl = StyleSheet.create({
   // progress bar — thin line at the very top, fills proportionally
   progressTrack: {
     height: 3,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     width: '100%',
   },
   progressFill: {
     height: 3,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderTopRightRadius: 2,
     borderBottomRightRadius: 2,
   },
@@ -176,7 +177,7 @@ const wl = StyleSheet.create({
   stepCaption: {
     fontSize: 12,
     fontFamily: 'Inter_700Bold',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     letterSpacing: 1.0,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -184,7 +185,7 @@ const wl = StyleSheet.create({
   title: {
     fontSize: 32,
     fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -1,
     lineHeight: 38,
   },
@@ -199,7 +200,7 @@ const wl = StyleSheet.create({
     backgroundColor: '#fff',
   },
   cta: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: 'center',
@@ -216,5 +217,5 @@ const wl = StyleSheet.create({
     elevation: 0,
   },
   ctaText: { fontSize: 17, fontFamily: 'Inter_600SemiBold', color: '#fff' },
-  ctaTextDisabled: { color: '#9ca3af' },
+  ctaTextDisabled: { color: colors.textDisabled },
 });

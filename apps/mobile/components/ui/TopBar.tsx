@@ -5,6 +5,7 @@ import { useRouter, usePathname, type Href } from 'expo-router';
 import { useMode, AppMode, MODE_HOME } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
+import { colors } from '@/lib/theme';
 
 // Maps the last URL segment → display title using t.nav as the single source of truth
 const SEGMENT_TITLE: Record<string, string> = {
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 22,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginBottom: 16,
     textAlign: 'center',
     textTransform: 'uppercase',
@@ -418,19 +419,19 @@ const styles = StyleSheet.create({
     borderColor: '#f3f4f6',
   },
   roleRowActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: colors.primary,
+    borderColor: colors.textPrimary,
   },
   roleIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   roleIconWrapActive: {
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
   },
   roleText: {
     flex: 1,
@@ -439,24 +440,24 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   roleLabelActive: {
-    color: '#ffffff',
+    color: colors.white,
   },
   roleDesc: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 4,
   },
   roleDescActive: {
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   checkWrap: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

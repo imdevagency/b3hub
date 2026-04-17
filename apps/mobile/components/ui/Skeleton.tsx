@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
+import { colors } from '@/lib/theme';
 
 // ── Base shimmer ──────────────────────────────────────────────────────────────
 interface SkeletonProps {
@@ -166,7 +167,7 @@ export function SkeletonJobRow({ count = 4 }: { count?: number }) {
 
 const cardStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 20,
     padding: 16,
   },

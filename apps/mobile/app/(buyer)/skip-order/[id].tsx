@@ -47,6 +47,8 @@ import { RatingModal } from '@/components/ui/RatingModal';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate } from '@/lib/format';
 import { SectionLabel } from '@/components/ui/SectionLabel';
+import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -105,8 +107,8 @@ function StatusTimeline({ status }: { status: string }) {
   const currentIdx = STEP_ORDER.indexOf(status);
   if (status === 'CANCELLED') {
     return (
-      <View style={[s.timelineRow, { backgroundColor: '#fee2e2', borderRadius: 12, padding: 14 }]}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: '#b91c1c' }}>
+      <View style={[s.timelineRow, { backgroundColor: colors.dangerBg, borderRadius: 12, padding: 14 }]}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.dangerText }}>
           Pasūtījums atcelts
         </Text>
       </View>
@@ -148,6 +150,7 @@ function StatusTimeline({ status }: { status: string }) {
 export default function SkipOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const { order, setOrder, loading, error, reload } = useSkipOrder(id);
   const [refreshing, setRefreshing] = useState(false);
@@ -173,7 +176,7 @@ export default function SkipOrderDetailScreen() {
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumu.');
+      toast.error('Neizdevās ielādēt pasūtījumu.')
       router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any);
     }
   }, [error, router]);
@@ -426,7 +429,7 @@ const s = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.4,
     marginTop: 24,
     paddingHorizontal: 4,
@@ -440,7 +443,7 @@ const s = StyleSheet.create({
     paddingBottom: 14,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.border,
   },
   backBtn: {
     width: 40,
@@ -450,8 +453,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  headerSub: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  headerSub: { fontSize: 12, color: colors.textDisabled, marginTop: 1 },
 
   scroll: { paddingHorizontal: 16, gap: 0 },
 
@@ -469,28 +472,28 @@ const s = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
   },
-  rowLabel: { fontSize: 13, color: '#9ca3af', marginBottom: 4 },
-  rowValue: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  rowLabel: { fontSize: 13, color: colors.textDisabled, marginBottom: 4 },
+  rowValue: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
 
   priceCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 18,
     marginTop: 8,
   },
-  priceLabel: { fontSize: 15, fontWeight: '600', color: '#9ca3af' },
-  priceValue: { fontSize: 22, fontWeight: '800', color: '#ffffff' },
+  priceLabel: { fontSize: 15, fontWeight: '600', color: colors.textDisabled },
+  priceValue: { fontSize: 22, fontWeight: '800', color: colors.white },
 
   rateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 100,
     paddingVertical: 16,
     marginTop: 4,
@@ -509,13 +512,13 @@ const s = StyleSheet.create({
     marginTop: 8,
     backgroundColor: '#fff7f7',
   },
-  cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
+  cancelBtnText: { fontSize: 15, fontWeight: '600', color: colors.dangerText },
   reorderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 100,
     paddingVertical: 16,
     marginTop: 8,
@@ -531,21 +534,21 @@ const s = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timelineDotDone: { borderColor: '#111827', backgroundColor: '#111827' },
-  timelineDotActive: { borderColor: '#111827', backgroundColor: '#fff' },
+  timelineDotDone: { borderColor: colors.textPrimary, backgroundColor: colors.primary },
+  timelineDotActive: { borderColor: colors.textPrimary, backgroundColor: '#fff' },
   timelineDotInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
-  timelineDotActiveInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#111827' },
+  timelineDotActiveInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
   timelineLine: { flex: 1, width: 2, backgroundColor: '#e5e7eb', marginVertical: 2 },
-  timelineLineDone: { backgroundColor: '#111827' },
+  timelineLineDone: { backgroundColor: colors.primary },
   timelineContent: { flex: 1, paddingBottom: 16, paddingTop: 1 },
-  timelineLabel: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
-  timelineLabelActive: { color: '#111827' },
-  timelineHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  timelineLabel: { fontSize: 14, fontWeight: '600', color: colors.textDisabled },
+  timelineLabelActive: { color: colors.textPrimary },
+  timelineHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 
   timelineRow: {},
 });

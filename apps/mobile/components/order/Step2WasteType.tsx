@@ -5,6 +5,7 @@ import type { SkipWasteCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { WASTE_TYPES, WASTE_ICONS } from './skip-hire-types';
+import { colors } from '@/lib/theme';
 
 export function Step2WasteType({
   selected,
@@ -96,7 +97,7 @@ const s2 = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     padding: 14,
     borderWidth: 2,
@@ -104,7 +105,7 @@ const s2 = StyleSheet.create({
     position: 'relative',
     minHeight: 118,
   },
-  cardSelected: { borderColor: '#111827', backgroundColor: '#111827' },
+  cardSelected: { borderColor: colors.textPrimary, backgroundColor: colors.primary },
   check: {
     position: 'absolute',
     top: 9,
@@ -116,8 +117,8 @@ const s2 = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 13, fontWeight: '700', color: '#374151', lineHeight: 17 },
+  label: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, lineHeight: 17 },
   labelSelected: { color: '#fff' },
-  desc: { fontSize: 12, color: '#9ca3af', marginTop: 3, lineHeight: 16 },
+  desc: { fontSize: 12, color: colors.textDisabled, marginTop: 3, lineHeight: 16 },
   descSelected: { color: 'rgba(255,255,255,0.6)' },
 });

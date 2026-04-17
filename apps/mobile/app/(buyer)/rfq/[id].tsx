@@ -31,15 +31,16 @@ import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
 import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 // ── Status helpers ─────────────────────────────────────────────
 
 const RFQ_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida piedāvājumus', bg: '#f3f4f6', color: '#6b7280' },
-  QUOTED: { label: 'Ir piedāvājumi', bg: '#e5e7eb', color: '#111827' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#f3f4f6', color: '#374151' },
-  CANCELLED: { label: 'Atcelts', bg: '#f9fafb', color: '#9ca3af' },
-  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: '#9ca3af' },
+  PENDING: { label: 'Gaida piedāvājumus', bg: '#f3f4f6', color: colors.textMuted },
+  QUOTED: { label: 'Ir piedāvājumi', bg: '#e5e7eb', color: colors.textPrimary },
+  ACCEPTED: { label: 'Pieņemts', bg: '#f3f4f6', color: colors.textSecondary },
+  CANCELLED: { label: 'Atcelts', bg: '#f9fafb', color: colors.textDisabled },
+  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: colors.textDisabled },
 };
 
 const RFQ_STATUS_HEADER_LABEL: Record<string, string> = {
@@ -167,11 +168,11 @@ export default function RfqDetailScreen() {
               marginTop: 16,
               paddingVertical: 10,
               paddingHorizontal: 20,
-              backgroundColor: '#f3f4f6',
+              backgroundColor: colors.bgMuted,
               borderRadius: 10,
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Atpakaļ</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Atpakaļ</Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -266,7 +267,7 @@ export default function RfqDetailScreen() {
         {sortedResponses.length === 0 && rfq.status === 'CANCELLED' && (
           <View style={[ss.emptyResponses, ss.emptyResponsesCancelled]}>
             <XCircle size={32} color="#fca5a5" />
-            <Text style={[ss.emptyResponsesTitle, { color: '#b91c1c' }]}>Pieprasījums atcelts</Text>
+            <Text style={[ss.emptyResponsesTitle, { color: colors.dangerText }]}>Pieprasījums atcelts</Text>
             <Text style={ss.emptyResponsesDesc}>
               Šis pieprasījums ir atcelts. Varat iesniegt jaunu pieprasījumu jebkurā laikā.
             </Text>
@@ -276,7 +277,7 @@ export default function RfqDetailScreen() {
         {sortedResponses.length === 0 && rfq.status === 'EXPIRED' && (
           <View style={[ss.emptyResponses, ss.emptyResponsesExpired]}>
             <Clock size={32} color="#d1d5db" />
-            <Text style={[ss.emptyResponsesTitle, { color: '#6b7280' }]}>
+            <Text style={[ss.emptyResponsesTitle, { color: colors.textMuted }]}>
               Piedāvājumu laiks beidzies
             </Text>
             <Text style={ss.emptyResponsesDesc}>
@@ -330,7 +331,7 @@ export default function RfqDetailScreen() {
                 <Text
                   style={{
                     fontSize: 10,
-                    color: '#9ca3af',
+                    color: colors.textDisabled,
                     fontWeight: '500' as const,
                     lineHeight: 13,
                   }}
@@ -417,10 +418,10 @@ export default function RfqDetailScreen() {
 }
 
 const ss = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' },
-  emptyText: { fontSize: 15, color: '#6b7280' },
-  link: { fontSize: 15, color: '#111827', fontWeight: '600' },
+  root: { flex: 1, backgroundColor: colors.bgCard },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCard },
+  emptyText: { fontSize: 15, color: colors.textMuted },
+  link: { fontSize: 15, color: colors.textPrimary, fontWeight: '600' },
 
   // Header
   header: {
@@ -429,7 +430,7 @@ const ss = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f3f4f6',
   },
@@ -437,7 +438,7 @@ const ss = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -446,10 +447,10 @@ const ss = StyleSheet.create({
     borderColor: '#fecaca',
   },
   emptyResponsesExpired: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#e5e7eb',
+    backgroundColor: colors.bgSubtle,
+    borderColor: colors.border,
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   statusPill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
@@ -464,22 +465,22 @@ const ss = StyleSheet.create({
 
   // Summary card
   summaryCard: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 20,
     padding: 18, // slightly more padding
     borderWidth: 0,
   },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  summaryLabel: { fontSize: 14, color: '#6b7280', width: 90 }, // slightly larger label
-  summaryValue: { flex: 1, fontSize: 14, fontWeight: '700', color: '#111827' },
+  summaryLabel: { fontSize: 14, color: colors.textMuted, width: 90 }, // slightly larger label
+  summaryValue: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   summaryDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }, // light divider
 
   // Section title
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginTop: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginTop: 8 },
 
   // Empty responses
   emptyResponses: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
@@ -487,12 +488,12 @@ const ss = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  emptyResponsesTitle: { fontSize: 15, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  emptyResponsesDesc: { fontSize: 13, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
+  emptyResponsesTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  emptyResponsesDesc: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 
   // Response card
   responseCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
@@ -504,35 +505,35 @@ const ss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#111827', // Keep black for contrast
+    backgroundColor: colors.primary, // Keep black for contrast
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 4,
   },
-  bestBadgeText: { color: '#ffffff', fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
+  bestBadgeText: { color: colors.white, fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
   responseTop: { gap: 2 },
-  supplierName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  supplierCity: { fontSize: 13, color: '#6b7280' },
+  supplierName: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  supplierCity: { fontSize: 13, color: colors.textMuted },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  priceMain: { fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
-  priceSub: { fontSize: 13, color: '#6b7280', marginTop: 1 },
+  priceMain: { fontSize: 24, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 },
+  priceSub: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   etaChip: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  etaText: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  respNotes: { fontSize: 13, color: '#6b7280', lineHeight: 20, marginTop: 4 },
-  validUntil: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
+  etaText: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  respNotes: { fontSize: 13, color: colors.textMuted, lineHeight: 20, marginTop: 4 },
+  validUntil: { fontSize: 12, color: colors.textDisabled, marginTop: 2 },
   acceptBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -541,7 +542,7 @@ const ss = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  acceptBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
+  acceptBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
   cancelBtn: {
     borderWidth: 1.5,
     borderColor: '#fecaca',

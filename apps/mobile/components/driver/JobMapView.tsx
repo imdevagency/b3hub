@@ -5,6 +5,7 @@ import type { CameraRefHandle } from '@/components/map';
 import { Marker } from 'react-native-maps';
 import { haversineKm, RADIUS_OPTIONS } from './job-types';
 import type { TransportJob } from './job-types';
+import { colors } from '@/lib/theme';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -114,9 +115,9 @@ export function JobMapView({
       {/* Legend */}
       <View style={s.legend}>
         {[
-          { color: '#111827', label: '<50 km' },
-          { color: '#9ca3af', label: '50–120 km' },
-          { color: '#111827', label: '>120 km' },
+          { color: colors.textPrimary, label: '<50 km' },
+          { color: colors.textDisabled, label: '50–120 km' },
+          { color: colors.textPrimary, label: '>120 km' },
         ].map((item) => (
           <View key={item.label} style={s.legendItem}>
             <View style={[s.legendDot, { backgroundColor: item.color }]} />
@@ -146,7 +147,7 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.4)',
   },
-  pinPrice: { fontSize: 12, fontWeight: '800', color: '#ffffff' },
+  pinPrice: { fontSize: 12, fontWeight: '800', color: colors.white },
   radiusOverlay: {
     position: 'absolute',
     bottom: 80,
@@ -163,9 +164,9 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4b5563',
   },
-  radiusChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  radiusChipText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
-  radiusChipTextActive: { color: '#ffffff' },
+  radiusChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  radiusChipText: { fontSize: 13, fontWeight: '600', color: colors.textDisabled },
+  radiusChipTextActive: { color: colors.white },
   countBadge: {
     position: 'absolute',
     top: 14,

@@ -47,15 +47,16 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/Toast';
 import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
 
 // ─── Status config ────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: string; color: string }> = {
-  PLANNING: { label: 'Plānošana', bg: '#f3f4f6', color: '#6b7280' },
-  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: '#15803d' },
+  PLANNING: { label: 'Plānošana', bg: '#f3f4f6', color: colors.textMuted },
+  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: colors.successText },
   COMPLETED: { label: 'Pabeigts', bg: '#f0f9ff', color: '#0369a1' },
-  ON_HOLD: { label: 'Apturēts', bg: '#fef2f2', color: '#b91c1c' },
+  ON_HOLD: { label: 'Apturēts', bg: '#fef2f2', color: colors.dangerText },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -155,6 +156,7 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  const toast = useToast();
   const router = useRouter();
 
   const [project, setProject] = useState<ApiProjectDetail | null>(null);
@@ -186,7 +188,7 @@ export default function ProjectDetailScreen() {
         setSites(sitesData);
         setDocuments(docsData);
       } catch {
-        Alert.alert('Kļūda', 'Neizdevās ielādēt projektu');
+        toast.error('Neizdevās ielādēt projektu')
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -221,7 +223,7 @@ export default function ProjectDetailScreen() {
       const updated = await api.projects.getSites(id, token);
       setSites(updated);
     } catch {
-      Alert.alert('Kļūda', 'Neizdevās pievienot darbavietu');
+      toast.error('Neizdevās pievienot darbavietu')
     } finally {
       setAddingSite(false);
     }
@@ -239,7 +241,7 @@ export default function ProjectDetailScreen() {
             await api.projects.removeSite(id, siteId, token);
             setSites((prev) => prev.filter((s) => s.id !== siteId));
           } catch {
-            Alert.alert('Kļūda', 'Neizdevās dzēst darbavietu');
+            toast.error('Neizdevās dzēst darbavietu')
           }
         },
       },
@@ -255,7 +257,7 @@ export default function ProjectDetailScreen() {
       const all = await api.orders.myOrders(token);
       setUnassignedOrders(all.filter((o: any) => !o.project));
     } catch {
-      Alert.alert('Kļūda', 'Neizdevās ielādēt pasūtījumus');
+      toast.error('Neizdevās ielādēt pasūtījumus')
     } finally {
       setLoadingUnassigned(false);
     }
@@ -270,7 +272,7 @@ export default function ProjectDetailScreen() {
       setSelectedOrderIds([]);
       load(true);
     } catch {
-      Alert.alert('Kļūda', 'Neizdevās piesaistīt pasūtījumus');
+      toast.error('Neizdevās piesaistīt pasūtījumus')
     } finally {
       setAssigning(false);
     }
@@ -288,7 +290,7 @@ export default function ProjectDetailScreen() {
             await api.projects.unassignOrder(id, orderId, token);
             load(true);
           } catch {
-            Alert.alert('Kļūda', 'Neizdevās noņemt pasūtījumu');
+            toast.error('Neizdevās noņemt pasūtījumu')
           }
         },
       },
@@ -706,7 +708,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
     letterSpacing: -0.5,
     flexShrink: 1,
@@ -726,7 +728,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '40%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 16,
     gap: 4,
@@ -746,7 +748,7 @@ const styles = StyleSheet.create({
   },
   statCardLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -758,13 +760,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 12,
     marginTop: 16,
     paddingHorizontal: 20,
   },
   sectionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     marginHorizontal: 16,
     borderWidth: 1,
@@ -816,13 +818,13 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
     flexShrink: 0,
   },
   infoValue: {
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '600',
     textAlign: 'right',
     flex: 1,
@@ -846,12 +848,12 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
   orderMeta: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   orderTotal: {
@@ -862,11 +864,11 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
   emptyOrders: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textAlign: 'center',
     paddingVertical: 20,
     paddingHorizontal: 16,
@@ -891,10 +893,10 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   addSiteForm: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     padding: 16,
     gap: 10,
@@ -902,7 +904,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   formInput: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -955,12 +957,12 @@ const styles = StyleSheet.create({
   siteLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
   siteAddress: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 2,
   },
   removeBtn: {
@@ -981,19 +983,19 @@ const styles = StyleSheet.create({
   docTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
   docDate: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 2,
   },
   assignPanel: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     padding: 16,
     gap: 10,
     marginHorizontal: 16,
@@ -1002,7 +1004,7 @@ const styles = StyleSheet.create({
   assignPanelTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,

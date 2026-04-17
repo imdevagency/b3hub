@@ -13,6 +13,7 @@ import { useUnreadCount } from '@/lib/use-unread-count';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 function SellerLayoutContent() {
   const { user, isLoading } = useAuth();
@@ -59,7 +60,7 @@ function SellerLayoutContent() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bgCard, paddingTop: insets.top }}>
       {config !== null && <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />}
       <Tabs initialRouteName="home" screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
@@ -108,12 +109,12 @@ const ls = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarBtnText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700',

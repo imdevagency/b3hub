@@ -24,6 +24,7 @@ import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -609,7 +610,7 @@ export default function TransportWizard() {
                 borderRadius: 16,
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: colors.border,
               }}
             >
               <Calendar
@@ -833,9 +834,9 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 const s = StyleSheet.create({
   content: { flex: 1 },
   pad: { padding: 20, paddingBottom: 32 },
-  hint: { fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 },
-  sectionLabel: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 16, marginTop: 8 },
+  hint: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
+  sectionLabel: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, marginBottom: 16, marginTop: 8 },
 
   routeLiteCard: {
     backgroundColor: 'transparent',
@@ -844,7 +845,7 @@ const s = StyleSheet.create({
   },
   routeMeta: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '600',
     marginTop: 0,
     paddingTop: 0,
@@ -855,19 +856,19 @@ const s = StyleSheet.create({
   addressCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
   },
-  addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500', lineHeight: 20 },
-  placeholder: { color: '#9ca3af', fontWeight: '400' },
+  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500', lineHeight: 20 },
+  placeholder: { color: colors.textDisabled, fontWeight: '400' },
 
   // Pickup reference row (step 2)
   refRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, paddingHorizontal: 4 },
   refDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e', marginRight: 8 },
-  refLabel: { flex: 1, fontSize: 13, color: '#6b7280' },
+  refLabel: { flex: 1, fontSize: 13, color: colors.textMuted },
   refLine: { width: 2, height: 20, backgroundColor: '#e5e7eb', marginLeft: 7, marginBottom: 4 },
 
   // Vehicle cards
@@ -899,11 +900,11 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
-  vehicleLabel: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 2 },
+  vehicleLabel: { fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
   vehicleLabelSel: { color: '#000' },
-  vehicleSub: { fontSize: 13, color: '#6b7280', fontWeight: '400' },
+  vehicleSub: { fontSize: 13, color: colors.textMuted, fontWeight: '400' },
   vehicleSubSel: { color: '#4b5563' },
-  vehiclePrice: { fontSize: 18, fontWeight: '600', color: '#111827' },
+  vehiclePrice: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
   vehiclePriceSel: { color: '#000' },
   
 
@@ -912,7 +913,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 100,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -920,21 +921,21 @@ const s = StyleSheet.create({
     backgroundColor: '#000',
     borderColor: '#000',
   },
-  cargoText: { fontSize: 14, fontWeight: '500', color: '#374151' },
+  cargoText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
   cargoTextSel: { color: '#fff' },
 
   // Weight input
   weightRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderWidth: 0,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  weightInput: { flex: 1, fontSize: 15, color: '#111827', paddingVertical: 0 },
-  weightUnit: { fontSize: 13, color: '#6b7280', marginLeft: 8 },
+  weightInput: { flex: 1, fontSize: 15, color: colors.textPrimary, paddingVertical: 0 },
+  weightUnit: { fontSize: 13, color: colors.textMuted, marginLeft: 8 },
 
   // Day chips
   dayChip: {
@@ -943,16 +944,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     marginRight: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     minWidth: 54,
   },
-  dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
   dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
-  dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
-  dayNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
-  dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  dayDow: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
+  dayNum: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginVertical: 2 },
+  dayMon: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
   windowRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
@@ -962,12 +963,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 10,
     borderWidth: 0,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
   windowChipActive: { backgroundColor: '#000000' },
-  windowChipText: { fontSize: 14, color: '#374151', fontWeight: '600', textAlign: 'center' },
-  windowChipTextActive: { color: '#ffffff' },
+  windowChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
+  windowChipTextActive: { color: colors.white },
 
   // Summary card
   summaryCard: {
@@ -986,18 +987,18 @@ const s = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
   },
   summaryMetaText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '600',
   },
 
     uberRouteBox: {
     flexDirection: 'row',
     marginBottom: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 16,
     paddingVertical: 12,
@@ -1008,12 +1009,12 @@ const s = StyleSheet.create({
     marginRight: 12,
     paddingVertical: 2,
   },
-  uberDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#111827', marginTop: 14 },
-  uberSquare: { width: 8, height: 8, backgroundColor: '#111827', marginBottom: 14 },
+  uberDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 14 },
+  uberSquare: { width: 8, height: 8, backgroundColor: colors.primary, marginBottom: 14 },
   uberLineFill: { width: 2, flex: 1, backgroundColor: '#d1d5db', marginVertical: 4 },
   uberRouteTexts: { flex: 1 },
   uberRouteTextRow: { height: 36, justifyContent: 'center' },
-  uberRouteValue: { fontSize: 15, fontWeight: '500', color: '#111827' },
+  uberRouteValue: { fontSize: 15, fontWeight: '500', color: colors.textPrimary },
   uberRouteDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 },
 
   detailCard: {
@@ -1031,26 +1032,26 @@ const s = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   detailValue: {
     flex: 1,
     textAlign: 'right',
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '600',
   },
 
   // Inputs
   input: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderWidth: 0,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
 
@@ -1072,7 +1073,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  saveAddrCheckActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
 });

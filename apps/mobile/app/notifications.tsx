@@ -8,8 +8,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
+import { useScreenLoad } from '@/lib/use-screen-load';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   Package,
@@ -243,32 +244,15 @@ export default function NotificationsScreen() {
         : '/(buyer)/home';
   const toast = useToast();
   const [notifs, setNotifs] = useState<ApiNotification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
-  const load = useCallback(
-    async (refresh = false) => {
-      if (!token) return;
-      try {
-        refresh ? setRefreshing(true) : setLoading(true);
-        const data = await api.notifications.getAll(token);
-        setNotifs(Array.isArray(data) ? data : []);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt paziņojumus');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetcher = useCallback(async () => {
+    if (!token) return;
+    const data = await api.notifications.getAll(token);
+    setNotifs(Array.isArray(data) ? data : []);
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const markRead = async (id: string) => {
     if (!token) return;
@@ -330,11 +314,7 @@ export default function NotificationsScreen() {
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => load(true)}
-              tintColor="#111827"
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
           }
         >
           {visibleNotifs.length === 0 ? (

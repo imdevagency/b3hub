@@ -15,6 +15,7 @@ import { MapPin, Navigation2, X, Truck } from 'lucide-react-native';
 import { t } from '@/lib/translations';
 import type { SearchFilter, SavedSearch } from './job-types';
 import { RADIUS_OPTIONS } from './job-types';
+import { colors } from '@/lib/theme';
 
 const VEHICLE_TYPE_LABELS: { value: string; label: string }[] = [
   { value: 'DUMP_TRUCK', label: 'Pašizgāzējs' },
@@ -281,7 +282,7 @@ export function FilterSheet({
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const fs = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff' },
+  root: { flex: 1, backgroundColor: colors.bgCard },
   handleWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 2 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#e5e7eb' },
   toolbar: {
@@ -290,27 +291,27 @@ const fs = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 18,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
-  toolbarCancel: { fontSize: 16, color: '#111827', fontWeight: '500', lineHeight: 22 },
-  toolbarTitle: { fontSize: 18, fontWeight: '800', color: '#111827', lineHeight: 22 },
-  toolbarReset: { fontSize: 16, color: '#111827', fontWeight: '500', lineHeight: 22 },
+  toolbarCancel: { fontSize: 16, color: colors.textPrimary, fontWeight: '500', lineHeight: 22 },
+  toolbarTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, lineHeight: 22 },
+  toolbarReset: { fontSize: 16, color: colors.textPrimary, fontWeight: '500', lineHeight: 22 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 0, paddingBottom: 40, gap: 0 },
   sectionBlock: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
   divider: {
     height: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginHorizontal: 20,
   },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -318,7 +319,7 @@ const fs = StyleSheet.create({
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 12,
     marginBottom: 20,
     paddingHorizontal: 16,
@@ -331,26 +332,26 @@ const fs = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     fontWeight: '500',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   radiusRow: { flexDirection: 'row', gap: 10, paddingRight: 20 },
   radChip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
-  radChipActive: { backgroundColor: '#111827' },
-  radChipText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  radChipTextActive: { color: '#ffffff' },
+  radChipActive: { backgroundColor: colors.primary },
+  radChipText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  radChipTextActive: { color: colors.white },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   priceInput: { flex: 1, marginBottom: 0 },
-  priceSep: { fontSize: 18, color: '#9ca3af', fontWeight: '600' },
+  priceSep: { fontSize: 18, color: colors.textDisabled, fontWeight: '600' },
 
   savedTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -359,14 +360,14 @@ const fs = StyleSheet.create({
   savedChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 999,
     paddingLeft: 16,
     paddingRight: 8,
     paddingVertical: 10,
     gap: 8,
   },
-  savedChipText: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  savedChipText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   savedChipX: {
     width: 24,
     height: 24,
@@ -376,23 +377,23 @@ const fs = StyleSheet.create({
     justifyContent: 'center',
   },
   saveLink: { alignItems: 'center', paddingVertical: 24, marginTop: 10 },
-  saveLinkText: { fontSize: 16, color: '#111827', fontWeight: '700' },
+  saveLinkText: { fontSize: 16, color: colors.textPrimary, fontWeight: '700' },
   footer: {
     paddingHorizontal: 20,
     paddingBottom: 34,
     paddingTop: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
   },
   applyBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: 'center',
   },
   applyBtnText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 18,
     fontWeight: '700',
   },

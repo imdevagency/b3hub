@@ -6,8 +6,8 @@
 
 import React, { useCallback, useState } from 'react';
 import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type AnalyticsOverview, type BuyerAnalytics } from '@/lib/api';
 import { BarChart2, Leaf, Package, TrendingUp, AlertTriangle } from 'lucide-react-native';
 import type { ArAging } from '@/lib/api';
@@ -88,33 +88,14 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function AnalyticsScreen() {
   const { token } = useAuth();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const data = await api.analytics.overview(token);
-        setOverview(data);
-        setError(null);
-      } catch {
-        setError('Neizdevās ielādēt analītikas datus');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetcher = useCallback(async () => {
+    if (!token) return;
+    const data = await api.analytics.overview(token);
+    setOverview(data);
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const { loading, refreshing, error, onRefresh } = useScreenLoad(fetcher);
 
   const buyer: BuyerAnalytics | null = overview?.buyer ?? null;
 
@@ -137,15 +118,7 @@ export default function AnalyticsScreen() {
     <ScreenContainer bg="#f4f5f7">
       <ScreenHeader title="Analītika" />
       <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              load(true);
-            }}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.scroll}
       >
         {error ? (
@@ -348,7 +321,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.5,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   statLabel: {
     fontSize: 11,
@@ -364,7 +337,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 10,
@@ -393,25 +366,25 @@ const styles = StyleSheet.create({
   breakdownLabel: {
     width: 74,
     fontSize: 13,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   barTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 3,
   },
   breakdownValue: {
     width: 36,
     fontSize: 13,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '700',
     textAlign: 'right',
   },
@@ -425,7 +398,7 @@ const styles = StyleSheet.create({
   },
   materialLabel: {
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '600',
     flex: 1,
   },
@@ -435,7 +408,7 @@ const styles = StyleSheet.create({
   materialAmount: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   materialMeta: {
     fontSize: 12,
@@ -453,7 +426,7 @@ const styles = StyleSheet.create({
   sellerStatValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   sellerStatLabel: {
@@ -474,7 +447,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#b91c1c',
+    color: colors.dangerText,
   },
   agingHeader: {
     flexDirection: 'row',
@@ -485,12 +458,12 @@ const styles = StyleSheet.create({
   agingTotal: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#dc2626',
+    color: colors.danger,
   },
   breakdownValueWide: {
     width: 70,
     fontSize: 13,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '700',
     textAlign: 'right',
   },

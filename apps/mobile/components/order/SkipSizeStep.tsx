@@ -4,6 +4,7 @@ import type { SkipSize } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { SIZES } from './skip-hire-types';
+import { colors } from '@/lib/theme';
 
 export function SkipSizeStep({
   selected,
@@ -106,7 +107,7 @@ const s3 = StyleSheet.create({
     elevation: 3,
   },
   popular: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -118,11 +119,11 @@ const s3 = StyleSheet.create({
   skipBox: { borderRadius: 3 },
   wheels: { flexDirection: 'row', gap: 7, marginTop: 3 },
   wheel: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#d1d5db' },
-  label: { fontSize: 18, fontWeight: '600', color: '#111827' },
-  vol: { fontSize: 13, color: '#6b7280', marginTop: 1 },
-  desc: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
-  price: { fontSize: 18, fontWeight: '600', color: '#111827' },
-  minHire: { fontSize: 10, color: '#9ca3af', fontWeight: '500' },
+  label: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  vol: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  desc: { fontSize: 11, color: colors.textDisabled, marginTop: 1 },
+  price: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  minHire: { fontSize: 10, color: colors.textDisabled, fontWeight: '500' },
   checkCircle: {
     width: 20,
     height: 20,

@@ -43,6 +43,7 @@ import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
+import { colors } from '@/lib/theme';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -55,15 +56,15 @@ const UNITS = Object.keys(UNIT_SHORT) as MaterialUnit[];
 
 const CATEGORY_COLOR: Record<MaterialCategory, { bg: string; color: string }> = {
   SAND: { bg: '#fffbeb', color: '#d97706' },
-  GRAVEL: { bg: '#f1f5f9', color: '#6b7280' },
-  STONE: { bg: '#f3f4f6', color: '#374151' },
+  GRAVEL: { bg: '#f1f5f9', color: colors.textMuted },
+  STONE: { bg: '#f3f4f6', color: colors.textSecondary },
   CONCRETE: { bg: '#f4f4f5', color: '#52525b' },
-  SOIL: { bg: '#f0fdf4', color: '#15803d' },
-  RECYCLED_CONCRETE: { bg: '#ecfdf5', color: '#059669' },
+  SOIL: { bg: '#f0fdf4', color: colors.successText },
+  RECYCLED_CONCRETE: { bg: '#ecfdf5', color: colors.success },
   RECYCLED_SOIL: { bg: '#f0fdf4', color: '#166534' },
   ASPHALT: { bg: '#f1f5f9', color: '#1e293b' },
   CLAY: { bg: '#fff7ed', color: '#9a3412' },
-  OTHER: { bg: '#f3f4f6', color: '#6b7280' },
+  OTHER: { bg: '#f3f4f6', color: colors.textMuted },
 };
 
 // ── Types ──────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ function ListingCard({
   isSelected?: boolean;
   onToggleSelect?: () => void;
 }) {
-  const catTheme = CATEGORY_COLOR[material.category] ?? { bg: '#f3f4f6', color: '#6b7280' };
+  const catTheme = CATEGORY_COLOR[material.category] ?? { bg: '#f3f4f6', color: colors.textMuted };
 
   return (
     <TouchableOpacity
@@ -205,7 +206,7 @@ function QuickEditSheet({
     if (!token) return;
     const p = parseFloat(price.replace(',', '.'));
     if (isNaN(p) || p <= 0) {
-      Alert.alert('Kļūda', 'Ievadiet derīgu cenu.');
+      toast.error('Ievadiet derīgu cenu.');
       return;
     }
     setSaving(true);
@@ -273,22 +274,22 @@ function QuickEditSheet({
 
 const qs = StyleSheet.create({
   row: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 48,
     gap: 4,
   },
-  euro: { fontSize: 16, color: '#374151', fontWeight: '600' },
+  euro: { fontSize: 16, color: colors.textSecondary, fontWeight: '600' },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#111827',
+    color: colors.textPrimary,
     paddingVertical: 0,
   },
   toggleRow: {
@@ -298,7 +299,7 @@ const qs = StyleSheet.create({
   },
   saveBtn: {
     height: 50,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -348,7 +349,7 @@ function BulkPriceSheet({
   const handleApply = async () => {
     const num = parseFloat(value.replace(',', '.'));
     if (isNaN(num)) {
-      Alert.alert('Kļūda', 'Ievadiet derīgu vērtību.');
+      toast.error('Ievadiet derīgu vērtību.');
       return;
     }
     setApplying(true);
@@ -469,19 +470,19 @@ const bs = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     alignItems: 'center',
   },
-  modeBtnActive: { borderColor: '#111827', backgroundColor: '#111827' },
-  modeBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  modeBtnActive: { borderColor: colors.textPrimary, backgroundColor: colors.primary },
+  modeBtnText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   modeBtnTextActive: { color: '#fff' },
-  hint: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  previewBox: { backgroundColor: '#f9fafb', borderRadius: 14, padding: 16, gap: 6 },
-  previewTitle: { fontSize: 11, fontWeight: '700', color: '#9ca3af', marginBottom: 2 },
+  hint: { fontSize: 12, color: colors.textDisabled, marginTop: 2 },
+  previewBox: { backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 16, gap: 6 },
+  previewTitle: { fontSize: 11, fontWeight: '700', color: colors.textDisabled, marginBottom: 2 },
   previewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  previewName: { fontSize: 13, color: '#374151', flex: 1, paddingRight: 8 },
-  previewPrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  previewMore: { fontSize: 12, color: '#9ca3af', textAlign: 'center', marginTop: 4 },
+  previewName: { fontSize: 13, color: colors.textSecondary, flex: 1, paddingRight: 8 },
+  previewPrice: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  previewMore: { fontSize: 12, color: colors.textDisabled, textAlign: 'center', marginTop: 4 },
 });
 
 // ── Listing Modal ──────────────────────────────────────────────
@@ -507,6 +508,7 @@ function ListingModal({
   const [catSheetOpen, setCatSheetOpen] = useState(false);
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (visible) {
@@ -534,7 +536,7 @@ function ListingModal({
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Atļauja nepieciešama', 'Atļaujiet piekļuvi galerijā iestatījumos.');
+      toast.error('Atļaujiet piekļuvi galerijā iestatījumos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -559,7 +561,7 @@ function ListingModal({
       );
       setLocalImages(images);
     } catch {
-      Alert.alert('Kļūda', 'Neizdevās augšupielādēt attēlu.');
+      toast.error('Neizdevās augšupielādēt attēlu.');
     } finally {
       setUploadingImage(false);
     }
@@ -579,7 +581,7 @@ function ListingModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={{ flex: 1, backgroundColor: colors.bgCard }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={s.modalHeader}>
@@ -868,7 +870,7 @@ export default function SellerCatalog() {
         const data = await api.materials.getAll(token, params);
         setMaterials(Array.isArray(data) ? data : ((data as { items: ApiMaterial[] }).items ?? []));
       } catch (err) {
-        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās ielādēt materiālus');
+        toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt materiālus');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -916,7 +918,7 @@ export default function SellerCatalog() {
       toast.success(editing?.id ? 'Sludinājums atjaunināts!' : 'Sludinājums izveidots!');
       load();
     } catch (err: unknown) {
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās saglabāt');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt');
     } finally {
       setSaving(false);
     }
@@ -935,7 +937,7 @@ export default function SellerCatalog() {
             setMaterials((prev) => prev.filter((x) => x.id !== id));
             setModalVisible(false);
           } catch (err: unknown) {
-            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās dzēst');
+            toast.error(err instanceof Error ? err.message : 'Neizdevās dzēst');
           }
         },
       },
@@ -1077,12 +1079,12 @@ export default function SellerCatalog() {
 // ── Styles ─────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: colors.bgCard },
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1090,19 +1092,19 @@ const s = StyleSheet.create({
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
   },
-  addBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 14 },
+  addBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
 
   selectBtn: {
     flexDirection: 'row',
@@ -1112,22 +1114,22 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   selectBtnActive: {
-    borderColor: '#9ca3af',
-    backgroundColor: '#f3f4f6',
+    borderColor: colors.textDisabled,
+    backgroundColor: colors.bgMuted,
   },
-  selectBtnText: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  selectBtnText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
 
   countChip: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,
     alignSelf: 'flex-start',
   },
-  countChipText: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
+  countChipText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
 
   list: { paddingBottom: 60 },
 
@@ -1139,7 +1141,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     gap: 16,
   },
   cardSelected: { backgroundColor: '#f0fdf4' },
@@ -1152,12 +1154,18 @@ const s = StyleSheet.create({
   },
   cardBody: { flex: 1, gap: 4 },
   cardRowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardName: { fontSize: 16, fontWeight: '700', color: '#111827', flex: 1, paddingRight: 8 },
+  cardName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    flex: 1,
+    paddingRight: 8,
+  },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardPrice: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  cardPrice: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
 
   cardRowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardCategory: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  cardCategory: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
 
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tagRecycled: {
@@ -1173,7 +1181,7 @@ const s = StyleSheet.create({
   tagRecycledText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#059669',
+    color: colors.success,
     textTransform: 'uppercase',
   },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
@@ -1191,7 +1199,7 @@ const s = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 999,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -1199,21 +1207,21 @@ const s = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
-  emptyDesc: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
+  emptyDesc: { fontSize: 16, color: colors.textMuted, textAlign: 'center', lineHeight: 24 },
   emptyBtn: {
     marginTop: 24,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyBtnText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  emptyBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
 
   // Modal
   modalHeader: {
@@ -1225,7 +1233,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
   closeBtn: { padding: 4 },
   formScroll: { padding: 20, paddingBottom: 60 },
   formGroup: { marginBottom: 20 },
@@ -1233,23 +1241,23 @@ const s = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '500',
   },
   textArea: { minHeight: 100, textAlignVertical: 'top' },
   pickerBtn: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1257,19 +1265,19 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  pickerValue: { fontSize: 16, color: '#111827', fontWeight: '500', flex: 1 },
+  pickerValue: { fontSize: 16, color: colors.textPrimary, fontWeight: '500', flex: 1 },
 
   chipsScroll: { gap: 8 },
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginRight: 8,
   },
-  chipActive: { backgroundColor: '#111827' },
-  chipText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  chipTextActive: { color: '#ffffff' },
+  chipActive: { backgroundColor: colors.primary },
+  chipText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  chipTextActive: { color: colors.white },
 
   toggleRow: {
     flexDirection: 'row',
@@ -1279,16 +1287,16 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  toggleLabel: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  toggleLabel: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
 
   saveBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  saveBtnText: { color: colors.white, fontWeight: '700', fontSize: 16 },
 
   deleteBtn: {
     marginTop: 12,
@@ -1305,11 +1313,11 @@ const s = StyleSheet.create({
     height: 72,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
   },
 
   // Picker Sheet
@@ -1331,7 +1339,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   sheet: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 40,
@@ -1348,7 +1356,7 @@ const s = StyleSheet.create({
   sheetTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     padding: 20,
     textAlign: 'center',
   },
@@ -1361,7 +1369,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  sheetRowText: { fontSize: 16, color: '#111827' },
+  sheetRowText: { fontSize: 16, color: colors.textPrimary },
   miniIcon: {
     width: 28,
     height: 28,
@@ -1376,7 +1384,7 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1386,10 +1394,10 @@ const s = StyleSheet.create({
   },
   bulkBarText: { color: '#f9fafb', fontSize: 15, fontWeight: '600' },
   bulkBarBtn: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  bulkBarBtnText: { color: '#111827', fontWeight: '700', fontSize: 14 },
+  bulkBarBtnText: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
 });

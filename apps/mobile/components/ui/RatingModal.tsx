@@ -12,6 +12,7 @@ import { Star, CheckCircle } from 'lucide-react-native';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
+import { colors } from '@/lib/theme';
 
 interface Props {
   visible: boolean;
@@ -133,12 +134,12 @@ const s = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginBottom: 24,
   },
   starsRow: {
@@ -151,21 +152,21 @@ const s = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginBottom: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
     height: 90,
     marginBottom: 20,
   },
   submitBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     height: 50,
     alignItems: 'center',
@@ -185,11 +186,11 @@ const s = StyleSheet.create({
   successTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   successSub: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
   },
 });

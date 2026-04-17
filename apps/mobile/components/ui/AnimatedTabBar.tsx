@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { Route } from '@react-navigation/native';
+import { colors } from '@/lib/theme';
 
 /** Config for a raised CTA button inserted in the centre of the tab row. */
 export interface CtaTabConfig {
@@ -291,9 +292,9 @@ export function AnimatedTabBar({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
@@ -338,15 +339,15 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.danger,
     borderWidth: 1.5,
-    borderColor: '#ffffff',
+    borderColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 9,
     fontWeight: '800',
     lineHeight: 13,
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

@@ -7,8 +7,9 @@
 
 import React, { useCallback, useState } from 'react';
 import { View, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type ApiProject, type ProjectStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
 import { Building2, Package, MapPin, Calendar, Plus } from 'lucide-react-native';
@@ -24,10 +25,10 @@ import { haptics } from '@/lib/haptics';
 // ─── Status config ────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; bg: string; color: string }> = {
-  PLANNING: { label: 'Plānošana', bg: '#f3f4f6', color: '#6b7280' },
-  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: '#15803d' },
+  PLANNING: { label: 'Plānošana', bg: '#f3f4f6', color: colors.textMuted },
+  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: colors.successText },
   COMPLETED: { label: 'Pabeigts', bg: '#f0f9ff', color: '#0369a1' },
-  ON_HOLD: { label: 'Apturēts', bg: '#fef2f2', color: '#b91c1c' },
+  ON_HOLD: { label: 'Apturēts', bg: '#fef2f2', color: colors.dangerText },
 };
 
 // ─── Components ───────────────────────────────────────────────────────────
@@ -114,36 +115,14 @@ export default function ProjectsScreen() {
   const router = useRouter();
 
   const [projects, setProjects] = useState<ApiProject[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const data = await api.projects.getAll(token);
-        setProjects(data);
-      } catch {
-        // silently ignore — list stays empty
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetcher = useCallback(async () => {
+    if (!token) return;
+    const data = await api.projects.getAll(token);
+    setProjects(data);
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    load(true);
-  };
+  const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   if (loading) {
     return (
@@ -194,7 +173,7 @@ export default function ProjectsScreen() {
         )}
         contentContainerStyle={projects.length === 0 ? styles.emptyContainer : styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />
         }
         ListEmptyComponent={
           <EmptyState

@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 import {
   ShoppingCart,
   MapPin,
@@ -199,7 +200,7 @@ const s = StyleSheet.create({
   },
   skipText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textMuted,
     fontFamily: 'Inter_400Regular',
   },
   slide: {
@@ -220,14 +221,14 @@ const s = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
   },
   slideSub: {
     fontSize: 16,
     fontFamily: 'Inter_400Regular',
-    color: '#6B7280',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 24,
   },

@@ -39,17 +39,19 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/Toast';
 import { Calendar, Clock, Package, Send, Trash2, TrendingUp, Truck } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 const CONTRACT_STATUS: Record<
   FrameworkContractStatus,
   { label: string; bg: string; color: string }
 > = {
   DRAFT: { label: 'Melnraksts', bg: '#fef3c7', color: '#92400e' },
-  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: '#15803d' },
+  ACTIVE: { label: 'Aktīvs', bg: '#dcfce7', color: colors.successText },
   COMPLETED: { label: 'Pabeigts', bg: '#f0f9ff', color: '#0369a1' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#6b7280' },
-  CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#b91c1c' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textMuted },
+  CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: colors.dangerText },
 };
 
 const POSITION_TYPE_LABEL: Record<
@@ -192,6 +194,7 @@ function PositionSection({
 export default function FrameworkContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token, user } = useAuth();
+  const toast = useToast();
   const router = useRouter();
 
   const [contract, setContract] = useState<ApiFrameworkContract | null>(null);
@@ -219,7 +222,7 @@ export default function FrameworkContractDetailScreen() {
         const data = await api.frameworkContracts.get(String(id), token);
         setContract(data);
       } catch (e) {
-        Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās ielādēt līgumu');
+        toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt līgumu')
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -242,7 +245,7 @@ export default function FrameworkContractDetailScreen() {
       setContract(updated);
       haptics.success();
     } catch (e) {
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās aktivizēt līgumu');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās aktivizēt līgumu')
     } finally {
       setActivating(false);
     }
@@ -295,7 +298,7 @@ export default function FrameworkContractDetailScreen() {
       );
       load(false);
     } catch (e) {
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot darba uzdevumu');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot darba uzdevumu')
     } finally {
       setSubmitting(false);
     }
@@ -671,28 +674,28 @@ export default function FrameworkContractDetailScreen() {
 const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40, gap: 12 },
-  sectionRightText: { fontWeight: '700', color: '#374151' },
+  sectionRightText: { fontWeight: '700', color: colors.textSecondary },
   sectionBody: { paddingHorizontal: 14, paddingVertical: 14, paddingBottom: 2, gap: 10 },
   sectionBlock: { padding: 14, gap: 12 },
-  positionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 21 },
+  positionTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, lineHeight: 21 },
   progressBlock: { gap: 6 },
   progRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressValue: { fontWeight: '700', color: '#111827' },
+  progressValue: { fontWeight: '700', color: colors.textPrimary },
   progressMeta: { marginTop: 2 },
   progTrack: {
     height: 7,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 999,
     overflow: 'hidden',
   },
   progFill: {
     height: 7,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 999,
   },
   progFillDone: { backgroundColor: '#059669' },
   callOffList: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -706,10 +709,10 @@ const s = StyleSheet.create({
   },
   callOffRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.border,
   },
   callOffCopy: { flex: 1, gap: 2 },
-  callOffNumber: { fontWeight: '700', color: '#111827' },
+  callOffNumber: { fontWeight: '700', color: colors.textPrimary },
   moreCallOffs: { paddingHorizontal: 12, paddingVertical: 10 },
   releaseBtnInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   releaseBtnLabel: { fontSize: 14, fontWeight: '700', color: '#00A878' },
@@ -732,19 +735,19 @@ const s = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.textSecondary,
     marginTop: 12,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   inputMulti: {
     height: 80,
@@ -756,15 +759,15 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 4,
   },
-  dateBtnText: { fontSize: 15, color: '#111827', fontFamily: 'Inter_500Medium' },
+  dateBtnText: { fontSize: 15, color: colors.textPrimary, fontFamily: 'Inter_500Medium' },
   dateModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -773,7 +776,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
   },
   dateModalCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     padding: 16,
     width: '100%',
@@ -782,7 +785,7 @@ const s = StyleSheet.create({
   dateModalTitle: {
     fontSize: 16,
     fontFamily: 'Inter_700Bold',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -809,7 +812,7 @@ const s = StyleSheet.create({
   },
   costKpi: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 10,
     padding: 10,
     gap: 3,
@@ -821,12 +824,12 @@ const s = StyleSheet.create({
   costKpiValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
   },
-  costKpiActual: { color: '#059669' },
-  costKpiOver: { color: '#dc2626' },
+  costKpiActual: { color: colors.success },
+  costKpiOver: { color: colors.danger },
   costPosRow: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 10,
     padding: 10,
     gap: 6,
@@ -839,8 +842,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  costPosDesc: { flex: 1, fontSize: 13, fontWeight: '600', color: '#374151' },
-  costPosAmt: { fontWeight: '700', color: '#111827' },
+  costPosDesc: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  costPosAmt: { fontWeight: '700', color: colors.textPrimary },
   costNoPriceBanner: {
     flexDirection: 'row',
     alignItems: 'center',

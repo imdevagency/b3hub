@@ -22,6 +22,7 @@ import { ArrowLeft, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react-
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 const ACCENT = '#111827';
 
@@ -35,7 +36,7 @@ function strengthScore(pw: string): number {
 }
 
 const STRENGTH_META = [
-  { label: '', color: '#e5e7eb' }, // 0
+  { label: '', color: colors.border }, // 0
   { label: 'Vāja', color: '#ef4444' }, // 1
   { label: 'Vidēja', color: '#f59e0b' }, // 2
   { label: 'Laba', color: '#84cc16' }, // 3
@@ -164,7 +165,7 @@ export default function ChangePasswordScreen() {
                     key={i}
                     style={[
                       s.strengthBar,
-                      { backgroundColor: i <= score ? meta.color : '#e5e7eb' },
+                      { backgroundColor: i <= score ? meta.color : colors.border },
                     ]}
                   />
                 ))}
@@ -230,26 +231,26 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.bgCard,
     gap: 12,
   },
   backBtn: { padding: 4 },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: ACCENT },
   scroll: { flex: 1, backgroundColor: '#f2f2f7' },
   content: { padding: 20, paddingBottom: 48 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     height: 48,
   },
-  input: { flex: 1, fontSize: 15, color: '#111827' },
+  input: { flex: 1, fontSize: 15, color: colors.textPrimary },
   eyeBtn: { padding: 4 },
   strengthWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   strengthBars: { flex: 1, flexDirection: 'row', gap: 4 },
@@ -268,7 +269,7 @@ const s = StyleSheet.create({
   bannerText: { flex: 1, fontSize: 13, fontWeight: '500' },
   btn: {
     marginTop: 24,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     height: 50,
     alignItems: 'center',

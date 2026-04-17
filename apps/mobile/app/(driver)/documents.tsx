@@ -29,6 +29,7 @@ import {
   ArrowDownToLine,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -280,15 +281,15 @@ const s = StyleSheet.create({
     borderRadius: 8,
   },
   tabBtnActive: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   tabLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   tabLabelActive: {
-    color: '#ffffff',
+    color: colors.white,
     fontWeight: '600',
   },
 
@@ -307,7 +308,7 @@ const s = StyleSheet.create({
 
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginLeft: 68,
     marginRight: 20,
   },
@@ -317,7 +318,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
   iconWrap: {
     width: 36,
@@ -333,23 +334,23 @@ const s = StyleSheet.create({
   rowTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
   rowRoute: {
     fontSize: 13,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '500',
     marginTop: 1,
   },
   rowDate: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 2,
   },
   rowNotes: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginTop: 2,
   },
   rowRight: {
@@ -360,7 +361,7 @@ const s = StyleSheet.create({
     opacity: 0.45,
   },
   rowTitleDisabled: {
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   pendingDot: {
     width: 8,

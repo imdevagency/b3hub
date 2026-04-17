@@ -35,6 +35,7 @@ import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useToast } from '@/components/ui/Toast';
 import { api, SkipHireOrder, SkipHireStatus } from '@/lib/api';
 import { BaseMap } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
@@ -47,6 +48,7 @@ try {
 import { t } from '@/lib/translations';
 import { formatDateNumeric } from '@/lib/format';
 import { geocodeLocation } from '@/lib/maps';
+import { colors } from '@/lib/theme';
 
 const ACCENT = '#000000';
 const RIGA: [number, number] = [24.1052, 56.9496];
@@ -81,7 +83,7 @@ function OrderCard({
   const statusInfo = cs.status[order.status] ?? {
     label: order.status,
     bg: '#f3f4f6',
-    color: '#374151',
+    color: colors.textSecondary,
   };
   const sizeLabel = cs.sizes[order.skipSize] ?? order.skipSize;
   const wasteLabel = cs.wasteTypes[order.wasteCategory] ?? order.wasteCategory;
@@ -181,6 +183,7 @@ function OrderCard({
 
 export default function CarrierSkipsScreen() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [orders, setOrders] = useState<SkipHireOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -263,7 +266,7 @@ export default function CarrierSkipsScreen() {
       );
       if (newStatus === 'COLLECTED') setSelectedOrder(null);
     } catch (err) {
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atjaunināt.');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās atjaunināt.')
     } finally {
       setUpdatingId(null);
     }
@@ -295,7 +298,7 @@ export default function CarrierSkipsScreen() {
             style={{
               fontSize: 20,
               fontWeight: '800',
-              color: '#111827',
+              color: colors.textPrimary,
               marginTop: 20,
               marginBottom: 8,
               textAlign: 'center',
@@ -303,13 +306,13 @@ export default function CarrierSkipsScreen() {
           >
             Nav aktīvu uzdevumu
           </Text>
-          <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', lineHeight: 22 }}>
+          <Text style={{ fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22 }}>
             Visi konteineri ir piegādāti vai savākti.
           </Text>
           <TouchableOpacity
             style={{
               marginTop: 28,
-              backgroundColor: '#111827',
+              backgroundColor: colors.primary,
               paddingHorizontal: 28,
               paddingVertical: 14,
               borderRadius: 100,
@@ -423,7 +426,7 @@ export default function CarrierSkipsScreen() {
             </View>
           ))}
           {orders.length === 0 && (
-            <Text style={{ textAlign: 'center', color: '#6b7280', marginVertical: 32 }}>
+            <Text style={{ textAlign: 'center', color: colors.textMuted, marginVertical: 32 }}>
               Nav aktīvu uzdevumu.
             </Text>
           )}
@@ -496,13 +499,13 @@ const s = StyleSheet.create({
     elevation: 10,
   },
   closeSelected: { alignSelf: 'flex-end', marginBottom: 12 },
-  closeSelectedText: { color: '#6b7280', fontWeight: '600', fontSize: 14 },
+  closeSelectedText: { color: colors.textMuted, fontWeight: '600', fontSize: 14 },
   card: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   cardHeader: { marginBottom: 12 },
   titleRow: {
@@ -512,7 +515,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   orderNumber: { fontSize: 16, fontWeight: '800', color: '#000' },
-  addressText: { fontSize: 15, color: '#374151', lineHeight: 22, fontWeight: '500' },
+  addressText: { fontSize: 15, color: colors.textSecondary, lineHeight: 22, fontWeight: '500' },
   metaWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -547,7 +550,7 @@ const s = StyleSheet.create({
   navBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   callBtn: {
     width: 52,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,

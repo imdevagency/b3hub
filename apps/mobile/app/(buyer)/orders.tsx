@@ -24,6 +24,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { haptics } from '@/lib/haptics';
 import { Divider } from '@/components/ui/Divider';
 import { SIZE_LABEL } from '@/lib/materials';
+import { colors } from '@/lib/theme';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -177,7 +178,7 @@ export default function OrdersScreen() {
 
       {/* ── List ─────────────────────────────────────────────── */}
       <FlatList
-        style={{ flex: 1, backgroundColor: '#FFFFFF' }}
+        style={{ flex: 1, backgroundColor: colors.bgCard }}
         data={displayItems}
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
         removeClippedSubviews={true}
@@ -376,19 +377,19 @@ function getStatusStyle(status: string) {
     case 'IN_PROGRESS':
     case 'ACCEPTED':
     case 'CONFIRMED':
-      return { color: '#059669', label: 'Izpildē' };
+      return { color: colors.success, label: 'Izpildē' };
     case 'DELIVERED':
     case 'COMPLETED':
-      return { color: '#6b7280', label: 'Pabeigts' };
+      return { color: colors.textMuted, label: 'Pabeigts' };
     case 'PENDING':
     case 'OPEN':
     case 'SUBMITTED':
       return { color: '#d97706', label: 'Gaida' };
     case 'CANCELLED':
     case 'REJECTED':
-      return { color: '#dc2626', label: 'Atcelts' };
+      return { color: colors.danger, label: 'Atcelts' };
     default:
-      return { color: '#6b7280', label: status };
+      return { color: colors.textMuted, label: status };
   }
 }
 

@@ -29,6 +29,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { FilterSheet } from '@/components/driver/FilterSheet';
 import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import { useToast } from '@/components/ui/Toast';
 import {
   type TransportJob,
   type SearchFilter,
@@ -51,6 +52,7 @@ import {
   List,
 } from 'lucide-react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { colors } from '@/lib/theme';
 // Lazy-load: react-native-gesture-handler native module not available in Expo Go
 type SwipeableProps = {
   children?: React.ReactNode;
@@ -105,10 +107,10 @@ function AcceptBottomSheet({
             <Text style={styles.sheetJobPrice}>€{j.priceTotal.toFixed(0)}</Text>
           </View>
           <View style={styles.sheetRouteRow}>
-            <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
+            <View style={[styles.sheetRouteDot, { backgroundColor: colors.primary }]} />
             <Text style={styles.sheetRouteCity}>{j.fromCity}</Text>
             <ChevronRight size={14} color="#9ca3af" />
-            <View style={[styles.sheetRouteDot, { backgroundColor: '#111827' }]} />
+            <View style={[styles.sheetRouteDot, { backgroundColor: colors.primary }]} />
             <Text style={styles.sheetRouteCity}>{j.toCity}</Text>
           </View>
           <View style={styles.sheetJobMeta}>
@@ -319,7 +321,7 @@ const JobCard = React.memo(function JobCard({
           style={{
             fontSize: 32,
             fontWeight: '800',
-            color: '#111827',
+            color: colors.textPrimary,
             lineHeight: 36,
             letterSpacing: -0.5,
           }}
@@ -327,24 +329,24 @@ const JobCard = React.memo(function JobCard({
           €{job.priceTotal.toFixed(0)}
         </Text>
         {job.distanceKm > 0 && (
-          <Text style={{ fontSize: 13, color: '#9ca3af', fontWeight: '600', marginTop: 2 }}>
+          <Text style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 2 }}>
             €{(job.priceTotal / job.distanceKm).toFixed(2)}/km
           </Text>
         )}
         <View style={{ alignItems: 'flex-end' }}>
           <View
             style={{
-              backgroundColor: '#f3f4f6',
+              backgroundColor: colors.bgMuted,
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 8,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>
               {job.distanceKm} km
             </Text>
           </View>
-          <Text style={{ fontSize: 13, color: '#9ca3af', marginTop: 4, fontWeight: '600' }}>
+          <Text style={{ fontSize: 13, color: colors.textDisabled, marginTop: 4, fontWeight: '600' }}>
             {job.time}
           </Text>
         </View>
@@ -362,18 +364,18 @@ const JobCard = React.memo(function JobCard({
 
         <View style={{ flex: 1, gap: 18 }}>
           <View>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 }}>
               {job.fromCity}
             </Text>
-            <Text style={{ fontSize: 14, color: '#6b7280' }} numberOfLines={1}>
+            <Text style={{ fontSize: 14, color: colors.textMuted }} numberOfLines={1}>
               {job.fromAddress}
             </Text>
           </View>
           <View>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 }}>
               {job.toCity}
             </Text>
-            <Text style={{ fontSize: 14, color: '#6b7280' }} numberOfLines={1}>
+            <Text style={{ fontSize: 14, color: colors.textMuted }} numberOfLines={1}>
               {job.toAddress}
             </Text>
           </View>
@@ -450,6 +452,7 @@ const JobCard = React.memo(function JobCard({
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function JobsScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const router = useRouter();
 
   const [allJobs, setAllJobs] = useState<TransportJob[]>([]);
@@ -484,7 +487,7 @@ export default function JobsScreen() {
       const data = await api.transportJobs.available(token);
       setAllJobs(data.map(mapJob));
     } catch (e) {
-      Alert.alert('Kļūda', 'Neizdevās ielādēt darbus');
+      toast.error('Neizdevās ielādēt darbus')
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -743,7 +746,7 @@ export default function JobsScreen() {
       );
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās pieņemt darbu')
     } finally {
       setAccepting(false);
     }
@@ -885,7 +888,7 @@ export default function JobsScreen() {
                   elevation: 4,
                 }}
               >
-                <Text style={{ fontSize: 13, color: '#6b7280' }}>Nav pieejamu darbu kartē</Text>
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>Nav pieejamu darbu kartē</Text>
               </View>
             </View>
           )}
@@ -905,7 +908,7 @@ export default function JobsScreen() {
                   elevation: 4,
                 }}
               >
-                <Text style={{ fontSize: 13, color: '#374151', fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}>
                   {filteredJobs.length} darb{filteredJobs.length === 1 ? 's' : 'i'} — pieskarieties,
                   lai pieņemtu
                 </Text>
@@ -1001,7 +1004,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1014,7 +1017,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#ef4444',
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.white,
   },
 
   // Earnings strip (below ScreenHeader)
@@ -1023,7 +1026,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
   earningsStripInner: {
     flexDirection: 'row',
@@ -1033,7 +1036,7 @@ const styles = StyleSheet.create({
   earningsStripAmount: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   earningsStripLabel: {
     fontSize: 14,
@@ -1046,7 +1049,7 @@ const styles = StyleSheet.create({
   activePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginHorizontal: 16,
     marginTop: 0,
     marginBottom: 16,
@@ -1055,15 +1058,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  activePillLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280' },
-  activePillText: { flex: 1, fontSize: 12, fontWeight: '600', color: '#111827' },
+  activePillLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  activePillText: { flex: 1, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
   activePillClear: {
     backgroundColor: '#d1d5db',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  activePillClearText: { fontSize: 11, fontWeight: '700', color: '#111827' },
+  activePillClearText: { fontSize: 11, fontWeight: '700', color: colors.textPrimary },
 
   resultsHeader: {
     flexDirection: 'row',
@@ -1072,8 +1075,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 8,
   },
-  resultsCount: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
-  sortLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  resultsCount: { fontSize: 13, fontWeight: '600', color: colors.textDisabled },
+  sortLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
 
   list: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, gap: 12 },
 
@@ -1084,7 +1087,7 @@ const styles = StyleSheet.create({
   },
   swipeHintText: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -1107,9 +1110,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardSelected: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 2,
-    borderColor: '#111827',
+    borderColor: colors.textPrimary,
   },
   tourCheckWrap: {
     position: 'absolute',
@@ -1123,19 +1126,19 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: '#d1d5db',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
   // Sub-styles for card content
-  routeCity: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  routeAddress: { fontSize: 13, color: '#6b7280' },
-  priceTotal: { fontSize: 22, fontWeight: '800', color: '#111827' },
-  pricePerTonne: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
+  routeCity: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  routeAddress: { fontSize: 13, color: colors.textMuted },
+  priceTotal: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  pricePerTonne: { fontSize: 12, color: colors.textDisabled, fontWeight: '500' },
   metaValue: { fontSize: 13, fontWeight: '600', color: '#4b5563' },
   jobNumber: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#9ca3af',
-    backgroundColor: '#f3f4f6',
+    color: colors.textDisabled,
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1146,26 +1149,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 11,
     borderRadius: 999,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   modalInput: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
-    backgroundColor: '#f9fafb',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgSubtle,
   },
   modalActions: { flexDirection: 'row', gap: 12 },
   modalCancel: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
   modalCancelText: { fontSize: 15, fontWeight: '600', color: '#4b5563' },
@@ -1173,20 +1176,20 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
   modalSaveDisabled: { opacity: 0.5 },
-  modalSaveText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  modalSaveText: { fontSize: 15, fontWeight: '700', color: colors.white },
 
   // ── Accept Bottom Sheet ────────────────────────────────────────
   sheetJobCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 14,
     padding: 16,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 10,
@@ -1197,8 +1200,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sheetJobNum: { fontSize: 13, fontWeight: '700', color: '#9ca3af' },
-  sheetJobPrice: { fontSize: 24, fontWeight: '800', color: '#111827' },
+  sheetJobNum: { fontSize: 13, fontWeight: '700', color: colors.textDisabled },
+  sheetJobPrice: { fontSize: 24, fontWeight: '800', color: colors.textPrimary },
   sheetRouteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1206,7 +1209,7 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
   },
   sheetRouteDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  sheetRouteCity: { fontSize: 16, fontWeight: '700', color: '#111827', flexShrink: 1 },
+  sheetRouteCity: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, flexShrink: 1 },
   sheetJobMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1244,11 +1247,11 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   sheetReturnKmText: { fontSize: 11, fontWeight: '700', color: '#166534' },
-  sheetReturnCity: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  sheetReturnCity: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   sheetReturnPrice: { fontSize: 16, fontWeight: '800', color: '#166534', marginLeft: 8 },
-  sheetReturnNone: { fontSize: 13, color: '#9ca3af', textAlign: 'center', paddingVertical: 8 },
+  sheetReturnNone: { fontSize: 13, color: colors.textDisabled, textAlign: 'center', paddingVertical: 8 },
   sheetAcceptBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 999,
     paddingVertical: 18,
     alignItems: 'center',

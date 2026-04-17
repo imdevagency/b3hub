@@ -11,6 +11,7 @@ import {
   Package,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 function formatDate(iso: string): string {
   if (!iso) return '—';
@@ -241,13 +242,13 @@ const s = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 14,
@@ -267,13 +268,13 @@ const s = StyleSheet.create({
 
   card: {
     marginHorizontal: 20,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 16,
     gap: 14,
     marginBottom: 28,
   },
-  cardTitle: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 2 },
+  cardTitle: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 },
   routeRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -289,7 +290,7 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     marginTop: 4,
     flexShrink: 0,
   },
@@ -297,8 +298,8 @@ const s = StyleSheet.create({
     backgroundColor: '#2563eb',
   },
   row: { flexDirection: 'row', alignItems: 'flex-start' },
-  rowLabel: { fontSize: 11, color: '#9ca3af', marginBottom: 2 },
-  rowValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
+  rowLabel: { fontSize: 11, color: colors.textDisabled, marginBottom: 2 },
+  rowValue: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
 
   estimatedRow: {
     flexDirection: 'row',
@@ -306,14 +307,14 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
   },
-  estimatedLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
-  estimatedValue: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  estimatedLabel: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
+  estimatedValue: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
 
   btns: { paddingHorizontal: 20, gap: 10 },
   btnPrimary: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     height: 52,
     alignItems: 'center',
@@ -321,11 +322,11 @@ const s = StyleSheet.create({
   },
   btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   btnSecondary: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 14,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnSecondaryText: { color: '#374151', fontSize: 15, fontWeight: '600' },
+  btnSecondaryText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
 });

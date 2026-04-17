@@ -14,6 +14,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 interface ScreenHeaderProps {
   title: string;
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: 'transparent',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
     minHeight: 56,
   },
   left: {
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
   },
   right: {

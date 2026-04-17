@@ -3,6 +3,7 @@
  * Full CRUD: list, add, edit, delete, set default.
  */
 import React, { useState, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import {
   View,
   Text,
@@ -21,12 +22,15 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { SavedAddress, CreateSavedAddressInput } from '@/lib/api';
 import { useFocusEffect } from 'expo-router';
 import { MapPin, Plus, Star, Pencil, Trash2, Check, X } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
+import { t } from '@/lib/translations';
 
 // ── Form state ────────────────────────────────────────────────
 
@@ -63,7 +67,7 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
           {item.isDefault && (
             <View style={s.defaultBadge}>
               <Star size={9} color="#fff" fill="#fff" />
-              <Text style={s.defaultBadgeText}>Noklusējums</Text>
+              <Text style={s.defaultBadgeText}>{t.savedAddresses.defaultBadge}</Text>
             </View>
           )}
         </View>
@@ -102,6 +106,7 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
 
 export default function SavedAddressesScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -110,8 +115,18 @@ export default function SavedAddressesScreen() {
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    watch,
+    setValue,
+  } = useForm<FormState>({ defaultValues: EMPTY_FORM });
+
+  const isDefaultValue = watch('isDefault');
 
   const load = useCallback(
     async (refresh = false) => {
@@ -144,13 +159,13 @@ export default function SavedAddressesScreen() {
 
   const openAdd = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    reset(EMPTY_FORM);
     setModalVisible(true);
   };
 
   const openEdit = (item: SavedAddress) => {
     setEditingId(item.id);
-    setForm({
+    reset({
       label: item.label,
       address: item.address,
       city: item.city,
@@ -161,22 +176,18 @@ export default function SavedAddressesScreen() {
 
   const closeModal = () => {
     setModalVisible(false);
-    setForm(EMPTY_FORM);
+    reset(EMPTY_FORM);
     setEditingId(null);
   };
 
-  const handleSave = async () => {
+  const onSubmit = async (data: FormState) => {
     if (!token) return;
     const trimmed = {
-      label: form.label.trim(),
-      address: form.address.trim(),
-      city: form.city.trim(),
-      isDefault: form.isDefault,
+      label: data.label.trim(),
+      address: data.address.trim(),
+      city: data.city.trim(),
+      isDefault: data.isDefault,
     };
-    if (!trimmed.label || !trimmed.address || !trimmed.city) {
-      Alert.alert('Nepilnīgi dati', 'Lūdzu aizpildi visus laukus.');
-      return;
-    }
     setSaving(true);
     try {
       if (editingId) {
@@ -188,7 +199,7 @@ export default function SavedAddressesScreen() {
       closeModal();
       load();
     } catch (e) {
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās saglabāt adresi');
+      toast.error(e instanceof Error ? e.message : t.savedAddresses.saveError);
     } finally {
       setSaving(false);
     }
@@ -196,10 +207,10 @@ export default function SavedAddressesScreen() {
 
   const handleDelete = (item: SavedAddress) => {
     haptics.medium();
-    Alert.alert('Dzēst adresi?', `"${item.label}" tiks neatgriezeniski dzēsta.`, [
+    Alert.alert(t.savedAddresses.deleteTitle, t.savedAddresses.deleteMsg(item.label), [
       { text: 'Atcelt', style: 'cancel' },
       {
-        text: 'Dzēst',
+        text: t.savedAddresses.deleteConfirm,
         style: 'destructive',
         onPress: async () => {
           if (!token) return;
@@ -207,7 +218,7 @@ export default function SavedAddressesScreen() {
             await api.savedAddresses.remove(item.id, token);
             setAddresses((prev) => prev.filter((a) => a.id !== item.id));
           } catch (e) {
-            Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās dzēst adresi');
+            toast.error(e instanceof Error ? e.message : t.savedAddresses.deleteSaved);
           }
         },
       },
@@ -229,7 +240,7 @@ export default function SavedAddressesScreen() {
           }),
       );
     } catch (e) {
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās iestatīt noklusējumu');
+      toast.error(e instanceof Error ? e.message : t.savedAddresses.defaultError);
     } finally {
       setSettingDefault(null);
     }
@@ -238,7 +249,7 @@ export default function SavedAddressesScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#f9fafb">
-        <ScreenHeader title="Saglabātās adreses" />
+        <ScreenHeader title={t.savedAddresses.title} />
         <View style={{ padding: 20 }}>
           <SkeletonCard count={4} />
         </View>
@@ -249,7 +260,7 @@ export default function SavedAddressesScreen() {
   return (
     <ScreenContainer bg="#f9fafb">
       <ScreenHeader
-        title="Saglabātās adreses"
+        title={t.savedAddresses.title}
         rightAction={
           <TouchableOpacity style={s.addBtn} onPress={openAdd} activeOpacity={0.8}>
             <Plus size={18} color="#ffffff" />
@@ -272,11 +283,11 @@ export default function SavedAddressesScreen() {
         {addresses.length === 0 ? (
           <EmptyState
             icon={<MapPin size={36} color="#9ca3af" />}
-            title="Nav saglabātu adresu"
-            subtitle="Pievieno biežāk izmantotās piegādes adreses, lai ātrāk veidotu pasūtījumus."
+            title={t.savedAddresses.empty}
+            subtitle={t.savedAddresses.emptyDesc}
             action={
               <TouchableOpacity style={s.emptyAction} onPress={openAdd} activeOpacity={0.8}>
-                <Text style={s.emptyActionText}>Pievienot adresi</Text>
+                <Text style={s.emptyActionText}>{t.savedAddresses.addBtn}</Text>
               </TouchableOpacity>
             }
           />
@@ -310,7 +321,9 @@ export default function SavedAddressesScreen() {
           style={s.modalRoot}
         >
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{editingId ? 'Rediģēt adresi' : 'Jauna adrese'}</Text>
+            <Text style={s.modalTitle}>
+              {editingId ? t.savedAddresses.modalEditTitle : t.savedAddresses.modalAddTitle}
+            </Text>
             <TouchableOpacity onPress={closeModal} style={s.modalClose} activeOpacity={0.7}>
               <X size={20} color="#6b7280" />
             </TouchableOpacity>
@@ -321,56 +334,82 @@ export default function SavedAddressesScreen() {
             contentContainerStyle={s.modalContent}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={s.fieldLabel}>Nosaukums *</Text>
-            <TextInput
-              style={s.input}
-              value={form.label}
-              onChangeText={(v) => setForm((f) => ({ ...f, label: v }))}
-              placeholder="piem. Noliktava, Objekts A"
-              placeholderTextColor="#9ca3af"
+            <Text style={s.fieldLabel}>{t.savedAddresses.fieldLabel}</Text>
+            <Controller
+              control={control}
+              name="label"
+              rules={{ required: t.savedAddresses.requiredField }}
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[s.input, errors.label && s.inputError]}
+                  value={value}
+                  onChangeText={onChange}
+                  placeholder={t.savedAddresses.labelPlaceholder}
+                  placeholderTextColor="#9ca3af"
+                />
+              )}
             />
+            {errors.label && <Text style={s.fieldError}>{errors.label.message}</Text>}
 
-            <Text style={[s.fieldLabel, { marginTop: 16 }]}>Adrese *</Text>
-            <TextInput
-              style={s.input}
-              value={form.address}
-              onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
-              placeholder="Iela, māja"
-              placeholderTextColor="#9ca3af"
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{t.savedAddresses.fieldAddress}</Text>
+            <Controller
+              control={control}
+              name="address"
+              rules={{ required: t.savedAddresses.requiredField }}
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[s.input, errors.address && s.inputError]}
+                  value={value}
+                  onChangeText={onChange}
+                  placeholder={t.savedAddresses.addressPlaceholder}
+                  placeholderTextColor="#9ca3af"
+                />
+              )}
             />
+            {errors.address && <Text style={s.fieldError}>{errors.address.message}</Text>}
 
-            <Text style={[s.fieldLabel, { marginTop: 16 }]}>Pilsēta *</Text>
-            <TextInput
-              style={s.input}
-              value={form.city}
-              onChangeText={(v) => setForm((f) => ({ ...f, city: v }))}
-              placeholder="Rīga"
-              placeholderTextColor="#9ca3af"
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>{t.savedAddresses.fieldCity}</Text>
+            <Controller
+              control={control}
+              name="city"
+              rules={{ required: t.savedAddresses.requiredField }}
+              render={({ field: { onChange, value } }) => (
+                <TextInput
+                  style={[s.input, errors.city && s.inputError]}
+                  value={value}
+                  onChangeText={onChange}
+                  placeholder={t.savedAddresses.cityPlaceholder}
+                  placeholderTextColor="#9ca3af"
+                />
+              )}
             />
+            {errors.city && <Text style={s.fieldError}>{errors.city.message}</Text>}
 
             <TouchableOpacity
               style={s.defaultToggle}
-              onPress={() => setForm((f) => ({ ...f, isDefault: !f.isDefault }))}
+              onPress={() => setValue('isDefault', !isDefaultValue)}
               activeOpacity={0.8}
             >
-              <View style={[s.checkbox, form.isDefault && s.checkboxChecked]}>
-                {form.isDefault && <Check size={12} color="#ffffff" />}
+              <View style={[s.checkbox, isDefaultValue && s.checkboxChecked]}>
+                {isDefaultValue && <Check size={12} color="#ffffff" />}
               </View>
-              <Text style={s.defaultToggleText}>Iestatīt kā noklusējuma adresi</Text>
+              <Text style={s.defaultToggleText}>{t.savedAddresses.setDefault}</Text>
             </TouchableOpacity>
           </ScrollView>
 
           <View style={s.modalFooter}>
             <TouchableOpacity
               style={[s.saveBtn, saving && { opacity: 0.6 }]}
-              onPress={handleSave}
+              onPress={handleSubmit(onSubmit)}
               disabled={saving}
               activeOpacity={0.85}
             >
               {saving ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text style={s.saveBtnText}>{editingId ? 'Saglabāt' : 'Pievienot'}</Text>
+                <Text style={s.saveBtnText}>
+                  {editingId ? t.savedAddresses.saveBtn : t.savedAddresses.addBtnModal}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -387,7 +426,7 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -397,13 +436,13 @@ const s = StyleSheet.create({
   listEmpty: { flexGrow: 1 },
 
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#f3f4f6',
     overflow: 'hidden',
   },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginLeft: 68 },
+  divider: { height: 1, backgroundColor: colors.bgMuted, marginLeft: 68 },
 
   row: {
     flexDirection: 'row',
@@ -416,39 +455,39 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowIconDefault: { backgroundColor: '#111827' },
+  rowIconDefault: { backgroundColor: colors.primary },
   rowBody: { flex: 1 },
   rowTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowLabel: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1 },
-  rowAddress: { fontSize: 13, color: '#374151', marginTop: 2 },
-  rowCity: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
+  rowLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, flex: 1 },
+  rowAddress: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  rowCity: { fontSize: 12, color: colors.textDisabled, marginTop: 1 },
   defaultBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  defaultBadgeText: { fontSize: 10, fontWeight: '700', color: '#ffffff' },
+  defaultBadgeText: { fontSize: 10, fontWeight: '700', color: colors.white },
 
   rowActions: { flexDirection: 'row', gap: 4 },
   actionBtn: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // Modal
-  modalRoot: { flex: 1, backgroundColor: '#ffffff' },
+  modalRoot: { flex: 1, backgroundColor: colors.bgCard },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -459,12 +498,12 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   modalClose: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -476,17 +515,19 @@ const s = StyleSheet.create({
     borderTopColor: '#f3f4f6',
   },
 
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
   input: {
     height: 48,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     backgroundColor: '#fafafa',
   },
+  inputError: { borderColor: colors.danger },
+  fieldError: { fontSize: 12, color: colors.danger, marginTop: 4 },
 
   defaultToggle: {
     flexDirection: 'row',
@@ -503,26 +544,26 @@ const s = StyleSheet.create({
     borderColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
-  checkboxChecked: { backgroundColor: '#111827', borderColor: '#111827' },
-  defaultToggleText: { fontSize: 14, color: '#374151', fontWeight: '500' },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  defaultToggleText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
 
   saveBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveBtnText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
 
   emptyAction: {
     marginTop: 16,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  emptyActionText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
+  emptyActionText: { color: colors.white, fontSize: 15, fontWeight: '700' },
 });

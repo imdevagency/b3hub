@@ -49,6 +49,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -374,10 +375,10 @@ function RequestCard({ request, myCompanyId, onRespond, autoExpand = false }: Re
 // ── My Response Row ───────────────────────────────────────────────────────────
 
 const RESP_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: '#6b7280' },
+  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: colors.textMuted },
   ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#16a34a' },
-  REJECTED: { label: 'Noraidīts', bg: '#fee2e2', color: '#dc2626' },
-  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: '#9ca3af' },
+  REJECTED: { label: 'Noraidīts', bg: '#fee2e2', color: colors.danger },
+  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: colors.textDisabled },
 };
 
 function MyResponseRow({ item }: { item: MyQuoteResponse }) {
@@ -712,12 +713,12 @@ export default function SellerQuotesScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ffffff' },
+  root: { flex: 1, backgroundColor: colors.bgCard },
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
 
   // Tab bar
@@ -733,16 +734,16 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     borderRadius: 10,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
-  tabBtnActive: { backgroundColor: '#111827' },
-  tabBtnText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-  tabBtnTextActive: { color: '#ffffff' },
+  tabBtnActive: { backgroundColor: colors.primary },
+  tabBtnText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  tabBtnTextActive: { color: colors.white },
 
   // My response row
   myrRow: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#f3f4f6',
@@ -757,20 +758,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  myrTitle: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
+  myrTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, flex: 1 },
   myrBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   myrBadgeText: { fontSize: 11, fontWeight: '700' },
-  myrSub: { fontSize: 13, color: '#6b7280' },
+  myrSub: { fontSize: 13, color: colors.textMuted },
   myrPriceRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  myrPrice: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  myrPriceSub: { fontSize: 12, color: '#9ca3af' },
-  myrEta: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-  myrNotes: { fontSize: 13, color: '#374151' },
-  myrDate: { fontSize: 11, color: '#9ca3af' },
+  myrPrice: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  myrPriceSub: { fontSize: 12, color: colors.textDisabled },
+  myrEta: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  myrNotes: { fontSize: 13, color: colors.textSecondary },
+  myrDate: { fontSize: 11, color: colors.textDisabled },
   heroTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 16,
     letterSpacing: -0.5,
   },
@@ -778,13 +779,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     alignSelf: 'flex-start',
   },
-  countChipText: { fontSize: 13, fontWeight: '700', color: '#6b7280' },
+  countChipText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
 
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
@@ -801,12 +802,12 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
   },
-  filterChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  filterChipTextActive: { color: '#ffffff' },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  filterChipTextActive: { color: colors.white },
 
   emptyWrap: {
     alignItems: 'center',
@@ -819,7 +820,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -827,17 +828,17 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
-  emptyDesc: { fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 },
+  emptyDesc: { fontSize: 16, color: colors.textMuted, textAlign: 'center', lineHeight: 24 },
 
   card: {
     paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
   cardResponded: { opacity: 0.7 },
   cardHeader: {
@@ -846,13 +847,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   cardTopLeft: { gap: 4, flex: 1, paddingRight: 10 },
-  materialText: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  buyerText: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  materialText: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  buyerText: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
 
   cardTopRight: { alignItems: 'flex-end', gap: 4 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 13, fontWeight: '600' },
-  responseCountText: { fontSize: 12, fontWeight: '600', color: '#9ca3af', marginTop: 2 },
+  responseCountText: { fontSize: 12, fontWeight: '600', color: colors.textDisabled, marginTop: 2 },
 
   expandedBody: {
     paddingTop: 16,
@@ -863,38 +864,38 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
   },
-  detailLabel: { fontSize: 14, color: '#6b7280', minWidth: 80 },
-  detailValue: { fontSize: 14, color: '#111827', fontWeight: '500', flex: 1, lineHeight: 20 },
+  detailLabel: { fontSize: 14, color: colors.textMuted, minWidth: 80 },
+  detailValue: { fontSize: 14, color: colors.textPrimary, fontWeight: '500', flex: 1, lineHeight: 20 },
 
-  requestNumber: { fontSize: 12, color: '#9ca3af', marginTop: 12, marginBottom: 8 },
+  requestNumber: { fontSize: 12, color: colors.textDisabled, marginTop: 12, marginBottom: 8 },
 
   alreadyRespondedBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
   },
-  alreadyRespondedText: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  alreadyRespondedText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
 
   respondBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
-  respondBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
+  respondBtnText: { color: colors.white, fontWeight: '700', fontSize: 15 },
 
   // Modal styles (unchanged)
-  fieldLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  fieldLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
   },
   priceInput: {
@@ -903,14 +904,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   priceUnit: { paddingHorizontal: 16, paddingVertical: 16 },
-  priceUnitText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  priceUnitText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     alignSelf: 'flex-start',
   },
@@ -919,17 +920,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     minWidth: 48,
     textAlign: 'center',
   },
   notesInput: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
-    color: '#111827',
+    color: colors.textPrimary,
     height: 100,
     textAlignVertical: 'top',
   },
@@ -937,31 +938,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
   },
-  totalPreviewLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-  totalPreviewValue: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  totalPreviewLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
+  totalPreviewValue: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     marginTop: 24,
   },
-  submitBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  submitBtnText: { color: colors.white, fontWeight: '700', fontSize: 16 },
   successBox: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },
-  successMsg: { fontSize: 15, color: '#6b7280', textAlign: 'center' },
+  successTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+  successMsg: { fontSize: 15, color: colors.textMuted, textAlign: 'center' },
 
   emptyBtn: {
     marginTop: 24,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 30,
@@ -969,7 +970,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyBtnText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '700',
   },

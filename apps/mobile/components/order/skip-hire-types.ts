@@ -6,6 +6,7 @@ import { Dimensions } from 'react-native';
 import type { SkipSize, SkipWasteCategory } from '@/lib/api';
 import type { LucideIcon } from 'lucide-react-native';
 import { Trash2, Leaf, Hammer, TreePine, Wrench, Cpu } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 
@@ -38,10 +39,10 @@ export const WASTE_TYPES: SkipWasteCategory[] = [
 ];
 
 export const SIZES: Array<{ id: SkipSize; price: number; color: string; heightPct: number }> = [
-  { id: 'MINI', price: 89, color: '#374151', heightPct: 0.28 },
-  { id: 'MIDI', price: 129, color: '#111827', heightPct: 0.48 },
-  { id: 'BUILDERS', price: 169, color: '#9ca3af', heightPct: 0.68 },
-  { id: 'LARGE', price: 199, color: '#111827', heightPct: 0.88 },
+  { id: 'MINI', price: 89, color: colors.textSecondary, heightPct: 0.28 },
+  { id: 'MIDI', price: 129, color: colors.textPrimary, heightPct: 0.48 },
+  { id: 'BUILDERS', price: 169, color: colors.textDisabled, heightPct: 0.68 },
+  { id: 'LARGE', price: 199, color: colors.textPrimary, heightPct: 0.88 },
 ];
 
 export const SKIP_PRICES: Record<string, number> = { MINI: 89, MIDI: 129, BUILDERS: 169, LARGE: 199 };

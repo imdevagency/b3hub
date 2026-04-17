@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Animated, StyleSheet, Easing } from 'react-native';
 import { CheckCircle } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 export function SearchingAnimation() {
   const ring1 = useRef(new Animated.Value(0)).current;
@@ -63,7 +64,7 @@ const s = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: '#374151',
+    borderColor: colors.textSecondary,
   },
   ringCenter: {
     width: 64,

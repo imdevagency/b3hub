@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api, type DriverAvailability, type DriverWeeklySlot } from '@/lib/api';
 import { CalendarDays, Wifi, WifiOff, X } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 const DAY_FULL = [
   'Svētdiena',
@@ -83,13 +84,13 @@ function DayRow({
               hitSlop={8}
             >
               <View className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
-                <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>
                   {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
                 </Text>
               </View>
             </TouchableOpacity>
           ) : (
-            <Text style={{ fontSize: 14, color: '#9ca3af', fontWeight: '600' }}>Brīvdiena</Text>
+            <Text style={{ fontSize: 14, color: colors.textDisabled, fontWeight: '600' }}>Brīvdiena</Text>
           )}
         </View>
       </View>
@@ -302,7 +303,7 @@ export default function ScheduleScreen() {
           <View className="px-5">
             <View className="pt-2 pb-6">
               <Text
-                style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}
+                style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}
               >
                 Grafiks
               </Text>
@@ -321,7 +322,7 @@ export default function ScheduleScreen() {
           <>
             <View className="px-5 pt-1 pb-6">
               <Text
-                style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}
+                style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}
               >
                 Grafiks
               </Text>
@@ -393,11 +394,11 @@ export default function ScheduleScreen() {
             <View>
               <View className="px-5 pb-3">
                 <Text
-                  style={{ fontSize: 20, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+                  style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
                 >
                   Nedēļas plāns
                 </Text>
-                <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>
+                <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>
                   Norādiet darba stundas katrai dienai
                 </Text>
               </View>
@@ -423,7 +424,7 @@ export default function ScheduleScreen() {
                     style={{
                       fontSize: 20,
                       fontWeight: '800',
-                      color: '#111827',
+                      color: colors.textPrimary,
                       letterSpacing: -0.5,
                     }}
                   >
@@ -436,11 +437,11 @@ export default function ScheduleScreen() {
                       key={block.id}
                       className={`py-4 px-5 bg-white border-gray-100 ${i !== futureBlocks.length - 1 ? 'border-b' : ''}`}
                     >
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
                         {fmtBlockDate(block.blockedDate)}
                       </Text>
                       {block.reason ? (
-                        <Text style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>
+                        <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>
                           {block.reason}
                         </Text>
                       ) : null}
@@ -471,7 +472,7 @@ export default function ScheduleScreen() {
           />
           <View
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor: colors.bgCard,
               borderTopLeftRadius: 32,
               borderTopRightRadius: 32,
               padding: 24,
@@ -480,7 +481,7 @@ export default function ScheduleScreen() {
           >
             <View className="flex-row justify-between items-center mb-6">
               <Text
-                style={{ fontSize: 22, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+                style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
               >
                 {editingDay !== null ? DAY_FULL[editingDay] : ''}
               </Text>
@@ -498,7 +499,7 @@ export default function ScheduleScreen() {
                   style={{
                     fontSize: 13,
                     fontWeight: '600',
-                    color: '#6b7280',
+                    color: colors.textMuted,
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                     marginBottom: 8,
@@ -516,7 +517,7 @@ export default function ScheduleScreen() {
                   style={{
                     fontSize: 32,
                     fontWeight: '800',
-                    color: '#111827',
+                    color: colors.textPrimary,
                     textAlign: 'center',
                     marginTop: 4,
                   }}
@@ -527,7 +528,7 @@ export default function ScheduleScreen() {
                   style={{
                     fontSize: 13,
                     fontWeight: '600',
-                    color: '#6b7280',
+                    color: colors.textMuted,
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                     marginBottom: 8,
@@ -545,7 +546,7 @@ export default function ScheduleScreen() {
                   style={{
                     fontSize: 32,
                     fontWeight: '800',
-                    color: '#111827',
+                    color: colors.textPrimary,
                     textAlign: 'center',
                     marginTop: 4,
                   }}
@@ -558,7 +559,7 @@ export default function ScheduleScreen() {
               className="mt-6 py-4 rounded-full bg-gray-900 items-center justify-center"
               activeOpacity={0.8}
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: '#ffffff' }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.white }}>
                 Saglabāt grafiku
               </Text>
             </TouchableOpacity>

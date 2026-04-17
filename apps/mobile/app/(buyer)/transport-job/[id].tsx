@@ -43,9 +43,11 @@ import { formatDate, formatDateTime } from '@/lib/format';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { TJB_STATUS } from '@/lib/materials';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
+import { colors } from '@/lib/theme';
 let Marker: any = null;
 try {
   const maps = require('react-native-maps');
@@ -176,6 +178,7 @@ function InfoRow({
 export default function TransportJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRefHandle | null>(null);
@@ -277,7 +280,7 @@ export default function TransportJobDetailScreen() {
       haptics.success();
     } catch (err) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu')
     } finally {
       setRatingLoading(false);
     }
@@ -626,7 +629,7 @@ export default function TransportJobDetailScreen() {
               {job.actualWeightKg != null && (
                 <View style={s.priceRow}>
                   <Text style={s.priceLabel}>Izmērītais svars</Text>
-                  <Text style={[s.priceValue, { color: '#059669' }]}>
+                  <Text style={[s.priceValue, { color: colors.success }]}>
                     {(job.actualWeightKg / 1000).toFixed(3)} t
                   </Text>
                 </View>
@@ -836,7 +839,7 @@ const s = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -868,10 +871,10 @@ const s = StyleSheet.create({
     letterSpacing: -0.5,
     marginBottom: 4,
   },
-  heroSub: { fontSize: 15, color: '#6b7280', fontWeight: '500' },
+  heroSub: { fontSize: 15, color: colors.textMuted, fontWeight: '500' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6b7280' },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.textMuted },
   backLink: {
     backgroundColor: '#000',
     borderRadius: 8,
@@ -905,19 +908,19 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   stepDotActive: { backgroundColor: '#000' },
-  stepDotInactive: { backgroundColor: '#f3f4f6', borderWidth: 1.5, borderColor: '#e5e7eb' },
+  stepDotInactive: { backgroundColor: colors.bgMuted, borderWidth: 1.5, borderColor: colors.border },
   stepLine: { width: 1.5, flex: 1, minHeight: 20, marginVertical: 4 },
   stepLineActive: { backgroundColor: '#000' },
   stepLineInactive: { backgroundColor: '#e5e7eb' },
   stepContent: { flex: 1, paddingBottom: 24 },
   stepLabel: { fontSize: 15, fontWeight: '600' },
   stepLabelActive: { color: '#000' },
-  stepLabelInactive: { color: '#9ca3af' },
-  stepHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  stepLabelInactive: { color: colors.textDisabled },
+  stepHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   stepCheck: { color: '#fff', fontSize: 12, fontWeight: '700' },
   stepNum: { fontSize: 12, fontWeight: '700' },
   stepNumActive: { color: '#fff' },
-  stepNumInactive: { color: '#9ca3af' },
+  stepNumInactive: { color: colors.textDisabled },
 
   // ── Route
   routeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 4 },
@@ -928,13 +931,13 @@ const s = StyleSheet.create({
     backgroundColor: '#000',
     marginTop: 4,
   },
-  routeDotDest: { backgroundColor: '#dc2626', borderRadius: 0, width: 9, height: 9 },
+  routeDotDest: { backgroundColor: colors.danger, borderRadius: 0, width: 9, height: 9 },
   routeInfo: { flex: 1 },
   routePlace: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 2 },
-  routeAddr: { fontSize: 14, color: '#6b7280', lineHeight: 20 },
+  routeAddr: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
   routeDistRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4 },
   routeLine: { width: 2, height: 24, backgroundColor: '#e5e7eb', marginLeft: 3.5 },
-  routeDist: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
+  routeDist: { fontSize: 12, color: colors.textDisabled, fontWeight: '500' },
 
   // ── Info rows
   infoRow: {
@@ -944,7 +947,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
   },
   infoLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  infoLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  infoLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
   infoValue: { fontSize: 14, color: '#000', fontWeight: '600' },
 
   // ── Driver
@@ -953,12 +956,12 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   driverName: { fontSize: 15, fontWeight: '600', color: '#000' },
-  driverSub: { fontSize: 13, color: '#6b7280', marginTop: 1 },
+  driverSub: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -977,7 +980,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
   },
-  priceLabel: { fontSize: 14, color: '#6b7280' },
+  priceLabel: { fontSize: 14, color: colors.textMuted },
   priceValue: { fontSize: 15, fontWeight: '700', color: '#000' },
 
   // ── Weighing slip
@@ -986,7 +989,7 @@ const s = StyleSheet.create({
     width: '100%',
     height: 180,
     borderRadius: 10,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
   slipOpenBtn: {
     alignSelf: 'flex-start',
@@ -994,9 +997,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  slipOpenText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  slipOpenText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
   // ── Cancel
   cancelBtn: {
@@ -1012,7 +1015,7 @@ const s = StyleSheet.create({
     marginHorizontal: 24,
     marginTop: 8,
   },
-  cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
+  cancelBtnText: { fontSize: 15, fontWeight: '600', color: colors.dangerText },
   reorderBtn: {
     marginTop: 12,
     flexDirection: 'row',
@@ -1026,11 +1029,11 @@ const s = StyleSheet.create({
   },
   reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   // Driver rating
-  ratingDriverName: { fontSize: 14, color: '#374151', marginBottom: 12 },
+  ratingDriverName: { fontSize: 14, color: colors.textSecondary, marginBottom: 12 },
   starsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   ratingInput: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1050,5 +1053,5 @@ const s = StyleSheet.create({
   ratingSubmitDisabled: { opacity: 0.4 },
   ratingSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   ratingThanks: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
-  ratingThanksText: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  ratingThanksText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
 });

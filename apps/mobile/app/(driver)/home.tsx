@@ -22,6 +22,7 @@ import * as Location from 'expo-location';
 import { Wallet, Trash2, ChevronRight, User, Truck, ArrowRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { colors } from '@/lib/theme';
 
 // Utility for greeting
 function greeting(): string {
@@ -184,7 +185,7 @@ export default function DriverHomeScreen() {
               ]}
             />
           )}
-          <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: '#9ca3af' }]}>
+          <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: colors.textDisabled }]}>
             {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
           </Text>
         </TouchableOpacity>
@@ -438,10 +439,10 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   statusOnline: {},
-  statusOffline: { backgroundColor: '#f3f4f6', borderColor: '#d1d5db' },
+  statusOffline: { backgroundColor: colors.bgMuted, borderColor: '#d1d5db' },
   statusActive: {},
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13, fontWeight: '700', color: '#111827', textTransform: 'uppercase' },
+  statusText: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, textTransform: 'uppercase' },
 
   // Bottom Sheet
   bottomSheet: {
@@ -469,8 +470,8 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
   sheetHeader: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 24 },
-  greetingLabel: { fontSize: 20, color: '#6b7280', fontWeight: '500' },
-  greetingName: { fontSize: 20, color: '#111827', fontWeight: '800', marginLeft: 6 },
+  greetingLabel: { fontSize: 20, color: colors.textMuted, fontWeight: '500' },
+  greetingName: { fontSize: 20, color: colors.textPrimary, fontWeight: '800', marginLeft: 6 },
 
   // Stats Grid
   statsContainer: { flexDirection: 'row', marginBottom: 24 },
@@ -478,19 +479,19 @@ const s = StyleSheet.create({
   statValue: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
     marginBottom: 4,
   },
-  statLabel: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  verticalLine: { width: 1, backgroundColor: '#f3f4f6', marginHorizontal: 20 },
+  statLabel: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+  verticalLine: { width: 1, backgroundColor: colors.bgMuted, marginHorizontal: 20 },
 
   // Primary Action
   primaryAction: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 20,
     height: 62,
     shadowColor: '#000',
@@ -501,30 +502,30 @@ const s = StyleSheet.create({
   },
   primaryActionActive: { backgroundColor: '#059669' },
   primaryActionText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
-  noJobsHint: { fontSize: 13, color: '#9ca3af', textAlign: 'center', marginTop: 10 },
+  noJobsHint: { fontSize: 13, color: colors.textDisabled, textAlign: 'center', marginTop: 10 },
 
   // Vehicle first-run prompt
   vehiclePrompt: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   vehiclePromptIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  vehiclePromptTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 2 },
-  vehiclePromptSub: { fontSize: 12, color: '#6b7280' },
+  vehiclePromptTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  vehiclePromptSub: { fontSize: 12, color: colors.textMuted },
 
   // Quick Actions
   quickGrid: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 },
@@ -543,26 +544,26 @@ const s = StyleSheet.create({
   upcomingSectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  upcomingSeeAll: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  upcomingSeeAll: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   upcomingCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   upcomingCardLeft: { flex: 1, marginRight: 8 },
-  upcomingTime: { fontSize: 11, fontWeight: '600', color: '#6b7280', marginBottom: 2 },
-  upcomingRoute: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  upcomingTime: { fontSize: 11, fontWeight: '600', color: colors.textMuted, marginBottom: 2 },
+  upcomingRoute: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   upcomingCardRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  upcomingEarning: { fontSize: 15, fontWeight: '800', color: '#111827' },
+  upcomingEarning: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
 });

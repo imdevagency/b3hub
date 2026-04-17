@@ -26,6 +26,7 @@ import { useToast } from '@/components/ui/Toast';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import type { ApiVehicle, VehicleType } from '@/lib/api';
+import { colors } from '@/lib/theme';
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -89,12 +90,12 @@ function VehicleCard({
 
       <View className="flex-1 pr-4 gap-1">
         <View className="flex-row items-center gap-2">
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', letterSpacing: 0.5 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, letterSpacing: 0.5 }}>
             {vehicle.licensePlate}
           </Text>
           {vehicle.isActive && <StatusPill label="Akтīvs" bg="#dcfce7" color="#166534" size="sm" />}
         </View>
-        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>
+        <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }}>
           {VEHICLE_LABELS[vehicle.vehicleType]}
           {vehicle.capacity ? ` • ${vehicle.capacity}t` : ''}
         </Text>
@@ -160,12 +161,12 @@ function VehicleModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={{ flex: 1, backgroundColor: colors.bgCard }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Header */}
         <View className="flex-row items-center justify-between pt-6 pb-4 px-5">
-          <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}>
+          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}>
             {initial?.id ? 'Rediģēt transportu' : 'Jauns transports'}
           </Text>
           <TouchableOpacity
@@ -188,7 +189,7 @@ function VehicleModal({
               style={{
                 fontSize: 12,
                 fontWeight: '600',
-                color: '#6b7280',
+                color: colors.textMuted,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
                 marginBottom: 8,
@@ -200,7 +201,7 @@ function VehicleModal({
               style={{
                 fontSize: 36,
                 fontWeight: '800',
-                color: '#111827',
+                color: colors.textPrimary,
                 letterSpacing: 2,
                 textAlign: 'center',
                 minWidth: '100%',
@@ -215,7 +216,7 @@ function VehicleModal({
 
           {/* Type Selector */}
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 }}>
               Transporta veids
             </Text>
             <ScrollView
@@ -252,11 +253,11 @@ function VehicleModal({
           {/* Make / Model */}
           <View className="flex-row gap-3">
             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
                 Marka
               </Text>
               <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
                 placeholder="Scania"
                 placeholderTextColor="#9ca3af"
                 value={form.make}
@@ -264,11 +265,11 @@ function VehicleModal({
               />
             </View>
             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
                 Modelis
               </Text>
               <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
                 placeholder="R450"
                 placeholderTextColor="#9ca3af"
                 value={form.model}
@@ -280,11 +281,11 @@ function VehicleModal({
           {/* Year / Capacity */}
           <View className="flex-row gap-3">
             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
                 Gads
               </Text>
               <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
                 placeholder="2020"
                 placeholderTextColor="#9ca3af"
                 value={form.year}
@@ -293,11 +294,11 @@ function VehicleModal({
               />
             </View>
             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
                 Krava (t)
               </Text>
               <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
                 placeholder="20.5"
                 placeholderTextColor="#9ca3af"
                 value={form.capacity}
@@ -310,11 +311,11 @@ function VehicleModal({
           {/* Dates */}
           <View className="flex-row gap-3">
             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
                 OCTA līdz
               </Text>
               <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
                 placeholder="GGGG-MM-DD"
                 placeholderTextColor="#9ca3af"
                 value={form.insuranceExpiry}
@@ -324,11 +325,11 @@ function VehicleModal({
               />
             </View>
             <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500', marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
                 Skate līdz
               </Text>
               <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}
+                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
                 placeholder="GGGG-MM-DD"
                 placeholderTextColor="#9ca3af"
                 value={form.inspectionExpiry}
@@ -342,10 +343,10 @@ function VehicleModal({
           {/* Status Toggle */}
           <View className="flex-row items-center justify-between py-2">
             <View>
-              <Text style={{ fontSize: 16, color: '#111827', fontWeight: '700' }}>
+              <Text style={{ fontSize: 16, color: colors.textPrimary, fontWeight: '700' }}>
                 Aktīvs statuss
               </Text>
-              <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+              <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
                 Transportlīdzeklis tiks izmantots plānošanā
               </Text>
             </View>
@@ -467,7 +468,7 @@ export default function VehiclesScreen() {
       toast.success(editing?.id ? 'Transports atjaunināts!' : 'Transports pievienots!');
       load();
     } catch (err: unknown) {
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās saglabāt');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt')
     } finally {
       setSaving(false);
     }
@@ -490,7 +491,7 @@ export default function VehiclesScreen() {
             setModalVisible(false);
             haptics.success();
           } catch (err: unknown) {
-            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās dzēst');
+            toast.error(err instanceof Error ? err.message : 'Neizdevās dzēst')
           }
         },
       },
@@ -554,7 +555,7 @@ export default function VehiclesScreen() {
                       onPress={() => openModal()}
                       activeOpacity={0.8}
                     >
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
                         Pievienot transportu
                       </Text>
                     </TouchableOpacity>

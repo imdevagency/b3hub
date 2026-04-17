@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
 import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 const schema = z.object({
   email: z.string().email(t.login.validation.invalidEmail),
@@ -211,7 +212,7 @@ const s = StyleSheet.create({
   },
   heroSubtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginBottom: 32,
     fontFamily: 'Inter_400Regular',
   },
@@ -221,7 +222,7 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
   softInput: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 14,
     paddingHorizontal: 18,
     height: 56,
@@ -232,7 +233,7 @@ const s = StyleSheet.create({
   softInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 14,
     height: 56,
   },
@@ -273,7 +274,7 @@ const s = StyleSheet.create({
 
   // API Err
   apiErrBox: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: colors.dangerBg,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -283,13 +284,13 @@ const s = StyleSheet.create({
     gap: 8,
   },
   apiErrText: {
-    color: '#b91c1c',
+    color: colors.dangerText,
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
   },
   apiErrDismiss: {
-    color: '#b91c1c',
+    color: colors.dangerText,
     fontSize: 20,
     lineHeight: 20,
     fontWeight: '700',

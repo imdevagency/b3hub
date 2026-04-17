@@ -6,9 +6,10 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { View, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type ApiFrameworkContract, type FrameworkContractStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
@@ -18,12 +19,13 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
+import { colors } from '@/lib/theme';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
   ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#10b981' },
   COMPLETED: { label: 'Pabeigts', bg: '#f8fafc', color: '#64748b' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textDisabled },
   CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#ef4444' },
 };
 
@@ -38,31 +40,14 @@ export default function SellerFrameworkContractsScreen() {
   const router = useRouter();
 
   const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(
-    async (skeleton = true) => {
-      if (!token) return;
-      if (skeleton) setLoading(true);
-      try {
-        const data = await api.frameworkContracts.list(token);
-        setContracts(data);
-      } catch (e) {
-        Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās ielādēt līgumus');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetcher = useCallback(async () => {
+    if (!token) return;
+    const data = await api.frameworkContracts.list(token);
+    setContracts(data);
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const renderItem = ({ item: contract }: { item: ApiFrameworkContract }) => {
     const status = STATUS[contract.status] ?? STATUS.ACTIVE;
@@ -137,14 +122,7 @@ export default function SellerFrameworkContractsScreen() {
           contentContainerStyle={contracts.length === 0 ? s.emptyScroll : s.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                load(false);
-              }}
-              tintColor="#000"
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
           }
           ListEmptyComponent={
             <EmptyState
@@ -190,7 +168,7 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
     letterSpacing: -0.3,
   },
@@ -206,11 +184,11 @@ const s = StyleSheet.create({
   cardMeta: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   cardDates: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   progressRow: {
     flexDirection: 'row',
@@ -221,7 +199,7 @@ const s = StyleSheet.create({
   progressTrack: {
     flex: 1,
     height: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -237,6 +215,6 @@ const s = StyleSheet.create({
   },
   posCount: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
 });

@@ -22,6 +22,8 @@ import { useState } from 'react';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 export default function ChatScreen() {
   const { jobId, title } = useLocalSearchParams<{ jobId: string; title?: string }>();
@@ -169,7 +171,7 @@ export default function ChatScreen() {
         {/* Messages or states */}
         {loading ? (
           <View style={styles.centerBox}>
-            <ActivityIndicator color="#111827" />
+            <SkeletonCard count={6} />
           </View>
         ) : messages.length === 0 ? (
           <View style={styles.centerBox}>
@@ -245,11 +247,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.textSecondary,
   },
   emptyHint: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -285,7 +287,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
   },
 
   // Bubbles
@@ -297,11 +299,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   bubbleOwn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -312,20 +314,20 @@ const styles = StyleSheet.create({
   senderName: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.textMuted,
     marginBottom: 2,
   },
   bodyText: {
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     lineHeight: 21,
   },
   bodyTextOwn: {
-    color: '#ffffff',
+    color: colors.white,
   },
   timeText: {
     fontSize: 10,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     alignSelf: 'flex-end',
     marginTop: 2,
   },
@@ -340,9 +342,9 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
   },
   attachBtn: {
     width: 40,
@@ -355,19 +357,19 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 40,
     maxHeight: 120,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     lineHeight: 20,
   },
   sendBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

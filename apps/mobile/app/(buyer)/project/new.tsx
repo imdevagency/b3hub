@@ -78,12 +78,12 @@ export default function NewProjectScreen() {
     if (!token) return;
 
     if (!form.name.trim()) {
-      Alert.alert('Kļūda', 'Projekta nosaukums ir obligāts.');
+      toast.error('Projekta nosaukums ir obligāts.')
       return;
     }
     const cv = parseFloat(form.contractValue.replace(',', '.'));
     if (!form.contractValue.trim() || isNaN(cv) || cv <= 0) {
-      Alert.alert('Kļūda', 'Ievadiet derīgu līguma vērtību.');
+      toast.error('Ievadiet derīgu līguma vērtību.')
       return;
     }
 
@@ -93,7 +93,7 @@ export default function NewProjectScreen() {
     if (form.startDate.trim()) {
       const parsed = parseDate(form.startDate);
       if (!parsed) {
-        Alert.alert('Kļūda', 'Sākuma datums jāievada formātā DD.MM.GGGG');
+        toast.error('Sākuma datums jāievada formātā DD.MM.GGGG')
         return;
       }
       startDate = parsed;
@@ -101,7 +101,7 @@ export default function NewProjectScreen() {
     if (form.endDate.trim()) {
       const parsed = parseDate(form.endDate);
       if (!parsed) {
-        Alert.alert('Kļūda', 'Beigu datums jāievada formātā DD.MM.GGGG');
+        toast.error('Beigu datums jāievada formātā DD.MM.GGGG')
         return;
       }
       endDate = parsed;
@@ -131,7 +131,7 @@ export default function NewProjectScreen() {
       router.replace(`/(buyer)/project/${project.id}` as any);
     } catch (e: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot projektu.');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot projektu.')
     } finally {
       setSaving(false);
     }
@@ -334,7 +334,7 @@ const s = StyleSheet.create({
   },
   btn: {
     marginTop: spacing.xl,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: radius.md,
     paddingVertical: 15,
     alignItems: 'center' as const,

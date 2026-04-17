@@ -34,6 +34,7 @@ import { useOrderDetail } from '@/lib/use-order-detail';
 import { UNIT_SHORT } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 function getStatusColors(status: string): { bg: string; color: string } {
   switch (status) {
@@ -144,8 +145,8 @@ export default function SellerOrderDetailScreen() {
     return (
       <ScreenContainer>
         <ScreenHeader title="Pasūtījums" />
-        <View style={s.center}>
-          <ActivityIndicator size="large" color="#111827" />
+        <View style={{ padding: 20 }}>
+          <SkeletonCard count={4} />
         </View>
       </ScreenContainer>
     );
@@ -346,7 +347,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  phoneLabel: { fontSize: 13, color: '#6b7280', flex: 1 },
+  phoneLabel: { fontSize: 13, color: colors.textMuted, flex: 1 },
   phoneRight: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   phoneValue: { fontSize: 13, fontWeight: '600', color: colors.primary },
   phoneLink: {
@@ -413,7 +414,7 @@ const s = StyleSheet.create({
   },
   notesText: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
 });

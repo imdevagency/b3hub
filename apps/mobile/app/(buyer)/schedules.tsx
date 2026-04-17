@@ -16,6 +16,7 @@ import { haptics } from '@/lib/haptics';
 import { Calendar, Plus } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
+import { colors } from '@/lib/theme';
 
 const INTERVAL_LABELS: Record<number, string> = {
   1: 'Katru dienu',
@@ -211,14 +212,14 @@ const s = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     gap: 10,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: '#111827', flex: 1, marginRight: 8 },
+  cardTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, flex: 1, marginRight: 8 },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 12, color: '#6b7280' },
+  metaText: { fontSize: 12, color: colors.textMuted },
   sep: { fontSize: 12, color: '#d1d5db' },
 
   actions: { flexDirection: 'row', gap: 8 },
@@ -231,8 +232,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   actionBtnDanger: { borderColor: '#fca5a5', flex: 0, paddingHorizontal: 16 },
-  actionBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  actionBtnTextDanger: { color: '#dc2626' },
+  actionBtnText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  actionBtnTextDanger: { color: colors.danger },
 
   addBtn: {
     flexDirection: 'row',
@@ -241,13 +242,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   addBtnText: { fontSize: 13, fontWeight: '600', color: '#fff' },
 
   emptyBtn: {
     marginTop: 8,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,

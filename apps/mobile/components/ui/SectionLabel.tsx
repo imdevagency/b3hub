@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import { colors } from '@/lib/theme';
 
 interface Props {
   label: string;
@@ -18,7 +19,7 @@ const s = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textMuted,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     marginTop: 8,

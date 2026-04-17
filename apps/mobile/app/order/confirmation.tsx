@@ -25,11 +25,13 @@ try {
   /* Expo Go fallback */
 }
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { useToast } from '@/components/ui/Toast';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
 import { CheckCircle2, Copy } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 function formatDisplay(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
@@ -37,6 +39,7 @@ function formatDisplay(iso: string): string {
 }
 
 export default function OrderConfirmation() {
+  const toast = useToast();
   const router = useRouter();
   const { state, reset } = useOrder();
   const order = state.confirmedOrder;
@@ -174,7 +177,7 @@ export default function OrderConfirmation() {
                     returnURL: 'b3hub://order/confirmation',
                   });
                   if (initError) {
-                    Alert.alert('Kļūda', initError.message);
+                    toast.error(initError.message)
                     return;
                   }
                   const { error: presentError } = await stripe.presentPaymentSheet();
@@ -237,9 +240,9 @@ export default function OrderConfirmation() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  centerText: { fontSize: 16, color: '#6b7280' },
+  centerText: { fontSize: 16, color: colors.textMuted },
   centerLink: { paddingVertical: 8 },
-  centerLinkText: { color: '#111827', fontWeight: '600' },
+  centerLinkText: { color: colors.textPrimary, fontWeight: '600' },
   body: { paddingHorizontal: 24, paddingTop: 48, paddingBottom: 40 },
   iconWrap: {
     alignItems: 'center',
@@ -257,13 +260,13 @@ const s = StyleSheet.create({
     fontSize: 32,
     fontWeight: '800',
     fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -273,14 +276,14 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
     gap: 6,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 100,
     marginBottom: 40,
   },
   minimalOrderText: {
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
@@ -298,19 +301,19 @@ const s = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 15,
-    color: '#6b7280',
+    color: colors.textMuted,
     flex: 1,
   },
   detailValue: {
     fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
+    color: colors.textPrimary,
     maxWidth: '60%',
     textAlign: 'right',
   },
   primaryBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
@@ -323,15 +326,15 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   secondaryBtn: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   secondaryBtnText: {
-    color: '#374151',
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',

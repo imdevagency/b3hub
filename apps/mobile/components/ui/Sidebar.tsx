@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { getRoleName } from '@/lib/utils';
+import { colors } from '@/lib/theme';
 
 const SIDEBAR_WIDTH = 300;
 
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     width: SIDEBAR_WIDTH,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.18,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 72,
     paddingBottom: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
   },
   avatar: {
     width: 56,
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     fontSize: 16,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -363,6 +364,6 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
 });

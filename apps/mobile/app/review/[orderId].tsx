@@ -252,7 +252,7 @@ const s = StyleSheet.create({
   },
 
   formCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.bgCard,
     borderRadius: radius.xl,
     padding: spacing.xl,
     ...shadows.card,
@@ -291,7 +291,7 @@ const s = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     padding: spacing.md,
     fontSize: 14,
     color: colors.textPrimary,
@@ -319,7 +319,7 @@ const s = StyleSheet.create({
   submitBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.white,
   },
 
   skipBtn: {

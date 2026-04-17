@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { t } from '@/lib/translations';
 import { toISO, formatShort } from './skip-hire-types';
+import { colors } from '@/lib/theme';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ function buildPeriodMarks(
   if (!start) return {};
   if (!end) {
     return {
-      [start]: { startingDay: true, endingDay: true, color: '#111827', textColor: '#fff' },
+      [start]: { startingDay: true, endingDay: true, color: colors.textPrimary, textColor: '#fff' },
     };
   }
   const marks: Record<
@@ -32,7 +33,7 @@ function buildPeriodMarks(
   while (cur <= endD) {
     const iso = toISO(cur);
     marks[iso] = {
-      color: '#111827',
+      color: colors.textPrimary,
       textColor: '#fff',
       startingDay: iso === start,
       endingDay: iso === end,
@@ -192,13 +193,13 @@ const s4 = StyleSheet.create({
   summTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 10,
   },
   summary: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     paddingHorizontal: 14,
     marginBottom: 8,
@@ -208,22 +209,22 @@ const s4 = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
   },
-  summLabel: { fontSize: 13, color: '#6b7280' },
+  summLabel: { fontSize: 13, color: colors.textMuted },
   summVal: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
     maxWidth: '55%',
     textAlign: 'right',
   },
   contactInput: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
   },
 });

@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   Linking,
@@ -49,8 +48,11 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
+import { useToast } from '@/components/ui/Toast';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
+import { colors } from '@/lib/theme';
+import { s } from './order-detail-styles';
 
 // Guard: Stripe React Native — requires native build (not available in Expo Go)
 let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
@@ -75,6 +77,7 @@ const ORDER_STEPS = [
 
 export default function OrderDetailScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
@@ -123,7 +126,7 @@ export default function OrderDetailScreen() {
       load();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstiprināt piemaksu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt piemaksu');
     } finally {
       setSurchargeActionLoading(null);
     }
@@ -140,7 +143,7 @@ export default function OrderDetailScreen() {
       load();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās noraidīt piemaksu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās noraidīt piemaksu');
     } finally {
       setSurchargeActionLoading(null);
     }
@@ -190,7 +193,7 @@ export default function OrderDetailScreen() {
       load();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās saglabāt izmaiņas');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt izmaiņas');
     } finally {
       setAmendLoading(false);
     }
@@ -224,7 +227,7 @@ export default function OrderDetailScreen() {
         defaultBillingDetails: {},
       });
       if (initError) {
-        Alert.alert('Kļūda', initError.message);
+        toast.error(initError.message);
         return;
       }
       const { error: presentError } = await stripe.presentPaymentSheet();
@@ -241,7 +244,7 @@ export default function OrderDetailScreen() {
       load();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstrādāt maksājumu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās apstrādāt maksājumu');
     } finally {
       setPayLoading(false);
     }
@@ -280,7 +283,7 @@ export default function OrderDetailScreen() {
       setDisputeResultVisible(true);
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt sūdzību');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt sūdzību');
     } finally {
       setDisputeLoading(false);
     }
@@ -303,7 +306,7 @@ export default function OrderDetailScreen() {
             setCancelResultVisible(true);
           } catch (err: unknown) {
             haptics.error();
-            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt');
+            toast.error(err instanceof Error ? err.message : 'Neizdevās atcelt');
           } finally {
             setActionLoading(false);
           }
@@ -331,7 +334,7 @@ export default function OrderDetailScreen() {
               Alert.alert('✅ Apstiprināts', 'Pasūtījums veiksmīgi pabeigts. Paldies!');
             } catch (err: unknown) {
               haptics.error();
-              Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstiprināt');
+              toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt');
             } finally {
               setActionLoading(false);
             }
@@ -628,16 +631,16 @@ export default function OrderDetailScreen() {
               FAILED: 'Neizdevās',
             };
             const JOB_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-              PENDING: { bg: '#f3f4f6', color: '#6b7280' },
+              PENDING: { bg: '#f3f4f6', color: colors.textMuted },
               ACCEPTED: { bg: '#eff6ff', color: '#1d4ed8' },
               EN_ROUTE_PICKUP: { bg: '#fffbeb', color: '#92400e' },
               AT_PICKUP: { bg: '#fffbeb', color: '#92400e' },
               LOADED: { bg: '#f0fdf4', color: '#166534' },
-              EN_ROUTE_DELIVERY: { bg: '#dcfce7', color: '#15803d' },
-              AT_DELIVERY: { bg: '#dcfce7', color: '#15803d' },
+              EN_ROUTE_DELIVERY: { bg: '#dcfce7', color: colors.successText },
+              AT_DELIVERY: { bg: '#dcfce7', color: colors.successText },
               DELIVERED: { bg: '#f0fdf4', color: '#166534' },
-              CANCELLED: { bg: '#fef2f2', color: '#b91c1c' },
-              FAILED: { bg: '#fef2f2', color: '#b91c1c' },
+              CANCELLED: { bg: '#fef2f2', color: colors.dangerText },
+              FAILED: { bg: '#fef2f2', color: colors.dangerText },
             };
             return (
               <InfoSection
@@ -649,7 +652,10 @@ export default function OrderDetailScreen() {
                 }
               >
                 {order.transportJobs.map((job, i) => {
-                  const sc = JOB_STATUS_COLORS[job.status] ?? { bg: '#f3f4f6', color: '#6b7280' };
+                  const sc = JOB_STATUS_COLORS[job.status] ?? {
+                    bg: '#f3f4f6',
+                    color: colors.textMuted,
+                  };
                   const label = JOB_STATUS_LABELS[job.status] ?? job.status;
                   const driverName = job.driver
                     ? `${job.driver.firstName} ${job.driver.lastName}`
@@ -1249,892 +1255,3 @@ export default function OrderDetailScreen() {
     </ScreenContainer>
   );
 }
-
-const s = StyleSheet.create({
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
-    letterSpacing: -0.4,
-    marginTop: 24,
-    paddingHorizontal: 4,
-  },
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827', flex: 1, marginHorizontal: 10 },
-  content: { padding: 16, gap: 12, paddingBottom: 180 },
-
-  // ── Uber hero header ──────────────────────────────────────────
-  heroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  heroLeft: { flex: 1, marginRight: 12 },
-  heroOrderNumber: {
-    fontSize: 26,
-    fontFamily: 'Inter_800ExtraBold',
-    fontWeight: '800',
-    color: '#111827',
-    lineHeight: 30,
-    letterSpacing: -0.5,
-  },
-  heroMaterial: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
-    marginTop: 3,
-  },
-
-  // ── Horizontal status stepper ──────────────────────────────────
-  stepperCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  stepperWrap: { position: 'relative', paddingBottom: 4 },
-  stepperTrack: {
-    position: 'absolute',
-    top: 11,
-    left: '10%',
-    right: '10%',
-    height: 2,
-    backgroundColor: '#e5e7eb',
-  },
-  stepperFill: {
-    position: 'absolute',
-    top: 11,
-    left: '10%',
-    height: 2,
-    backgroundColor: '#111827',
-  },
-  stepperDotsRow: { flexDirection: 'row' },
-  stepCol: { flex: 1, alignItems: 'center', gap: 6 },
-  stepDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepDotDone: { backgroundColor: '#111827' },
-  stepDotActive: {
-    backgroundColor: '#111827',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    shadowColor: '#111827',
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  stepDotPulse: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' },
-  stepLabel: {
-    fontSize: 10,
-    color: '#d1d5db',
-    textAlign: 'center',
-    fontFamily: 'Inter_400Regular',
-  },
-  stepLabelDone: { color: '#9ca3af' },
-  stepLabelActive: {
-    color: '#111827',
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-  },
-  stepHint: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 12,
-    fontFamily: 'Inter_400Regular',
-  },
-
-  liveTrackCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  liveTrackLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  liveIndicator: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#111827',
-  },
-  liveTrackTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827',
-    fontFamily: 'Inter_800ExtraBold',
-  },
-  liveTrackSub: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
-    fontFamily: 'Inter_400Regular',
-  },
-  driverCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  driverAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#e5e7eb' },
-  driverAvatarFallback: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverAvatarInitials: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  driverName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  driverRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
-  driverRatingText: { fontSize: 12, color: '#6b7280', marginLeft: 3, fontWeight: '500' },
-  driverPhone: { fontSize: 12, color: '#6b7280', marginTop: 1 },
-  driverPlate: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  callBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f3f4f6',
-  },
-  callBtnText: { display: 'none' },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: 'transparent',
-  },
-  itemBorder: { borderBottomWidth: 0 },
-  itemName: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  itemMeta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  itemTotal: { fontSize: 15, fontWeight: '700', color: '#374151' },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#f9fafb',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  totalLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  totalValue: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  callSiteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    margin: 12,
-    padding: 10,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-  },
-  callSiteBtnText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  actions: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 32,
-    gap: 8,
-  },
-  pendingNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#4b5563',
-  },
-  pendingText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-  deliveredNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#111827',
-  },
-  deliveredText: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  cancelledNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#fee2e2',
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#111827',
-  },
-  cancelledText: { fontSize: 13, fontWeight: '600', color: '#b91c1c' },
-  cancelOrderBtn: {
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#111827',
-  },
-  cancelOrderBtnText: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  payNowBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    padding: 16,
-  },
-  payNowBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  stripeUnavailableBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#fffbeb',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-    padding: 12,
-  },
-  stripeUnavailableText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18 },
-  invoiceBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    padding: 14,
-  },
-  invoiceBannerTitle: { fontSize: 14, fontWeight: '700', color: '#1d4ed8', marginBottom: 2 },
-  invoiceBannerDesc: { fontSize: 13, color: '#1e40af', lineHeight: 18 },
-  rateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#111827',
-    borderRadius: 100,
-    padding: 14,
-    justifyContent: 'center',
-  },
-  rateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  // ETA card
-  etaCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#111827',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  etaLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  etaEmoji: { fontSize: 28 },
-  etaLabel: { fontSize: 11, color: '#6b7280', fontWeight: '500' },
-  etaValue: { fontSize: 20, fontWeight: '800', color: '#111827', marginTop: 2 },
-
-  // Re-order button
-  reorderBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 999,
-    paddingVertical: 15,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-
-  confirmReceiptBtn: {
-    backgroundColor: '#16a34a',
-    borderRadius: 999,
-    paddingVertical: 15,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  confirmReceiptBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-
-  alreadyRated: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    padding: 12,
-  },
-  alreadyRatedText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-
-  // Documents section
-  docRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 0,
-    borderBottomColor: '#e5e7eb',
-    gap: 12,
-  },
-  docInfo: { flex: 1 },
-  docTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  docStatus: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  docDownloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#111827',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  docDownloadText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  docPendingBadge: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  docPendingText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
-
-  trackingCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  trackingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#fff7f7',
-    borderBottomWidth: 1,
-    borderBottomColor: '#fee2e2',
-  },
-  trackingTitle: { fontSize: 12, fontWeight: '700', color: '#374151', flex: 1 },
-
-  // Order timeline
-  tlRow: { flexDirection: 'row', minHeight: 44 },
-  tlLeft: { alignItems: 'center', width: 28, marginRight: 12 },
-  tlDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  tlDotDone: { backgroundColor: '#111827', borderColor: '#111827' },
-  tlDotActive: {
-    backgroundColor: '#fff',
-    borderColor: '#111827',
-    borderWidth: 3,
-  },
-  tlDotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#111827',
-  },
-  tlLine: { flex: 1, width: 2, backgroundColor: '#e5e7eb', marginVertical: 2 },
-  tlLineDone: { backgroundColor: '#111827' },
-  tlContent: { flex: 1, paddingTop: 2, paddingBottom: 10 },
-  tlLabel: { fontSize: 14, fontWeight: '500', color: '#9ca3af' },
-  tlLabelDone: { color: '#374151', fontWeight: '600' },
-  tlLabelActive: { color: '#111827', fontWeight: '700' },
-  tlHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  chatDriverBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  chatDriverBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  // Delivery proof section
-  proofTime: { fontSize: 11, color: '#9ca3af', marginLeft: 'auto' },
-  proofPhotoRow: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 10, gap: 10 },
-  proofPhoto: {
-    width: 140,
-    height: 140,
-    borderRadius: 10,
-    backgroundColor: '#e5e7eb',
-  },
-  proofNoPhoto: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  proofNoPhotoText: { fontSize: 13, color: '#6b7280' },
-
-  // Weighing slip photo
-  weighingSlipPhoto: {
-    width: '100%',
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    marginTop: 10,
-  },
-  weighingWeight: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#374151',
-    marginLeft: 'auto',
-  },
-
-  // Amendment button
-  amendBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginTop: 4,
-  },
-  amendBtnText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-
-  // Amendment sheet fields
-  amendField: { gap: 6 },
-  amendLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  amendInput: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-  },
-  amendWindowRow: { flexDirection: 'row', gap: 8 },
-  amendWindowBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-  },
-  amendWindowBtnActive: { backgroundColor: '#111827' },
-  amendWindowBtnText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  amendWindowBtnTextActive: { color: '#fff' },
-  amendSubmitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  amendSubmitBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-
-  // Report issue button
-  reportIssueBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    marginTop: 4,
-  },
-  reportIssueBtnText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-
-  // Dispute filed confirmation
-  disputeFiledNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#fffbeb',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-    marginTop: 4,
-  },
-  disputeFiledText: {
-    fontSize: 13,
-    color: '#92400e',
-    fontWeight: '500',
-  },
-
-  // Dispute bottom sheet
-  disputeReasonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
-  },
-  disputeReasonRowActive: {
-    borderColor: '#111827',
-    backgroundColor: '#f9fafb',
-  },
-  disputeRadio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disputeRadioActive: {
-    borderColor: '#111827',
-  },
-  disputeRadioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#111827',
-  },
-  disputeReasonText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#374151',
-  },
-  disputeReasonTextActive: {
-    color: '#111827',
-    fontWeight: '600',
-  },
-  disputeDetailsInput: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#111827',
-    backgroundColor: '#fff',
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  disputeSubmitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disputeSubmitBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-
-  // ── Exception banner ──────────────────────────────────────────
-  exceptionBanner: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: '#fcd34d',
-    borderRadius: 12,
-    padding: 14,
-  },
-  exceptionBannerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  exceptionBannerMeta: {
-    fontSize: 13,
-    color: '#b45309',
-    fontWeight: '500',
-  },
-  exceptionBannerNote: {
-    fontSize: 13,
-    color: '#78350f',
-    marginTop: 2,
-  },
-  primaryActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#111827',
-    borderRadius: 10,
-    padding: 14,
-  },
-  primaryActionBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  secondaryActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    padding: 12,
-  },
-  secondaryActionBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  secondaryActionBtnDanger: {
-    backgroundColor: '#fee2e2',
-  },
-  secondaryActionBtnDangerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#991b1b',
-  },
-  chatBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 12,
-  },
-  chatBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  statusMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    padding: 10,
-  },
-  statusMessageText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  exceptionBannerFlat: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 0,
-  },
-  exceptionBannerFlatTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  exceptionBannerFlatSub: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  priceRowSimple: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: 'transparent',
-  },
-  priceLabel: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  priceValue: {
-    fontSize: 13,
-    color: '#374151',
-    fontWeight: '600',
-  },
-  priceDivider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginVertical: 4,
-  },
-  pendingSurchargeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#fffbeb',
-    borderRadius: 10,
-    marginHorizontal: 4,
-    marginVertical: 3,
-    gap: 8,
-  },
-  pendingSurchargeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  pendingSurchargeMeta: {
-    fontSize: 11,
-    color: '#b45309',
-    marginTop: 1,
-  },
-  pendingSurchargeAmount: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400e',
-  },
-  pendingSurchargeActions: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  rejectBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-    backgroundColor: '#fff',
-    minWidth: 72,
-    alignItems: 'center',
-  },
-  rejectBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#ef4444',
-  },
-  approveBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: '#111827',
-    minWidth: 88,
-    alignItems: 'center',
-  },
-  approveBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  totalRowFinal: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: 'transparent',
-  },
-  totalLabelFinal: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  totalValueFinal: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-});

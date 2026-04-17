@@ -1,4 +1,5 @@
 import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+import { colors } from '@/lib/theme';
 
 export const lv = {
   welcome: {
@@ -180,12 +181,12 @@ export const lv = {
       newOrder: 'Jauns pasūtījums',
     },
     status: {
-      PENDING: { label: 'Gaida apstiprinājumu', bg: '#f3f4f6', color: '#6b7280' },
-      CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: '#111827' },
-      DELIVERED: { label: 'Piegādāts', bg: '#f3f4f6', color: '#111827' },
-      COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: '#059669' },
-      COMPLETED: { label: 'Pabeigts', bg: '#d1fae5', color: '#059669' },
-      CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: '#111827' },
+      PENDING: { label: 'Gaida apstiprinājumu', bg: '#f3f4f6', color: colors.textMuted },
+      CONFIRMED: { label: 'Apstiprināts', bg: '#f3f4f6', color: colors.textPrimary },
+      DELIVERED: { label: 'Piegādāts', bg: '#f3f4f6', color: colors.textPrimary },
+      COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: colors.success },
+      COMPLETED: { label: 'Pabeigts', bg: '#d1fae5', color: colors.success },
+      CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: colors.textPrimary },
     } as Record<string, { label: string; bg: string; color: string }>,
     myOrders: 'Mani pasūtījumi',
     noOrders: 'Nav pasūtījumu',
@@ -412,9 +413,9 @@ export const lv = {
     cancel: 'Atcelt',
     errorTitle: 'Kļūda',
     status: {
-      CONFIRMED: { label: 'Jāpiegādā', bg: '#f3f4f6', color: '#111827' },
-      DELIVERED: { label: 'Piegādāts — jāsavāc', bg: '#f3f4f6', color: '#111827' },
-      COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: '#059669' },
+      CONFIRMED: { label: 'Jāpiegādā', bg: '#f3f4f6', color: colors.textPrimary },
+      DELIVERED: { label: 'Piegādāts — jāsavāc', bg: '#f3f4f6', color: colors.textPrimary },
+      COLLECTED: { label: 'Savākts', bg: '#d1fae5', color: colors.success },
     } as Record<string, { label: string; bg: string; color: string }>,
     sizes: {
       MINI: 'Mini (2 m³)',
@@ -571,6 +572,76 @@ export const lv = {
     },
     note: 'Pieteikumu izskatīsim 1–2 darba dienu laikā.',
     back: '← Atpakaļ',
+  },
+
+  help: {
+    title: 'Biežāk uzdotie jautājumi',
+    intro: 'Šeit atradīsiet atbildes uz visbiežāk uzdotajiem jautājumiem par B3Hub platformas lietošanu.',
+    contactTitle: 'Neatradāt atbildi?',
+    contactSub: 'Sazinieties ar mums — atbildēsim ātri.',
+    chat: 'Tērzēt',
+    email: 'E-pasts',
+    sections: [
+      {
+        title: 'Pasūtījumi',
+        items: [
+          { q: 'Kā veikt materiālu pasūtījumu?', a: 'Izvēlieties "Materiāli" sākumlapā, norādiet preci, daudzumu un piegādes adresi. Pēc apstiprināšanas piegādātājs sazināsies ar Jums.' },
+          { q: 'Kā iznomāt atkritumu konteineru?', a: 'Atveriet "Konteineri", izvēlieties izmēru un atkritumu veidu, norādiet adresi un piegādes datumu. Konteiners tiks piegādāts norādītajā laikā.' },
+          { q: 'Kā pasūtīt celtniecības atkritumu izvešanu?', a: 'Izmantojiet pakalpojumu "Atkritumi". Norādiet adresi, atkritumu veidu un apjomu. Sistēma automātiski atlasīs piemērotu pārvadātāju.' },
+          { q: 'Kā pasūtīt kravu pārvadāšanu no A uz B?', a: 'Atveriet "Transports A→B", ievadiet iekraušanas un piegādes adreses, kravas aprakstu un vēlamo datumu.' },
+        ],
+      },
+      {
+        title: 'Pasūtījumu statusi',
+        items: [
+          { q: 'Ko nozīmē statuss "Gaida"?', a: 'Pasūtījums ir saņemts un gaida, kad pārvadātājs to pieņems. Parasti tas notiek dažu stundu laikā.' },
+          { q: 'Ko nozīmē statuss "Apstiprināts"?', a: 'Pārvadātājs ir pieņēmis Jūsu pasūtījumu un plāno to izpildīt norādītajā datumā.' },
+          { q: 'Vai es varu atcelt pasūtījumu?', a: 'Jā — pasūtājumus ar statusu "Gaida" vai "Apstiprināts" var atcelt, atverot pasūtājuma detaļas un nospiežot "Atcelt pasūtījumu".' },
+        ],
+      },
+      {
+        title: 'Konts un profils',
+        items: [
+          { q: 'Kā pievienot telefona numuru?', a: 'Dodieties uz sadaļu "Profils", spiediet "Rediģēt profilu" un ievadiet telefona numuru. Tas ļaus pārvadātājiem ar Jums sazināties.' },
+          { q: 'Kā kļūt par piegādātāju vai pārvadātāju?', a: 'Apmeklējiet b3hub.lv/apply un aizpildiet pieteikuma formu. Mēs izskatīsim pieteikumu un sazināsimies ar Jums pa e-pastu.' },
+          { q: 'Kā mainīt paroli?', a: 'Saistībā ar drošību paroli var mainīt, izmantojot ekrānu "Mainīt paroli" (pieejams no konta iestatījumiem) vai arī piesakieties no jauna ar "Aizmirsu paroli".' },
+        ],
+      },
+      {
+        title: 'Citi jautājumi',
+        items: [
+          { q: 'Kā es saņemšu paziņojumus par pasūtījumu statusu?', a: 'Paziņojumi tiek sūtīti automātiski, kad mainās pasūtījuma statuss. Tos skatiet sadaļā "Paziņojumi" vai zvans/e-pasts no pārvadātāja.' },
+          { q: 'Kādās valūtās darbojas B3Hub?', a: 'Visi maksājumi tiek apstrādāti eiro (EUR).' },
+          { q: 'Ko darīt, ja radusies problēma ar pasūtījumu?', a: 'Sazinieties ar mums, izmantojot zemāk esošo pogu "Rakstīt mums". Mēs atbildēsim 1 darba dienas laikā.' },
+        ],
+      },
+    ],
+  },
+
+  savedAddresses: {
+    title: 'Saglabātās adreses',
+    empty: 'Nav saglabātu adresu',
+    emptyDesc: 'Pievieno biežāk izmantotās piegādes adreses, lai ātrāk veidotu pasūtījumus.',
+    addBtn: 'Pievienot adresi',
+    defaultBadge: 'Noklusējums',
+    modalAddTitle: 'Jauna adrese',
+    modalEditTitle: 'Rediģēt adresi',
+    fieldLabel: 'Nosaukums *',
+    fieldAddress: 'Adrese *',
+    fieldCity: 'Pilsēta *',
+    labelPlaceholder: 'piem. Noliktava, Objekts A',
+    addressPlaceholder: 'Iela, māja',
+    cityPlaceholder: 'Rīga',
+    setDefault: 'Iestatīt kā noklusējuma adresi',
+    saveBtn: 'Saglabāt',
+    addBtnModal: 'Pievienot',
+    requiredField: 'Obligāts lauks',
+    deleteTitle: 'Dzēst adresi?',
+    deleteMsg: (label: string) => `"${label}" tiks neatgriezeniski dzēsta.`,
+    deleteConfirm: 'Dzēst',
+    deleteSaved: 'Neizdevās dzēst adresi',
+    saveError: 'Neizdevās saglabāt adresi',
+    defaultError: 'Neizdevās iestatīt noklusējumu',
   },
 };
 
@@ -740,12 +811,12 @@ export const ru: Translations = {
       newOrder: 'Новый заказ',
     },
     status: {
-      PENDING: { label: 'Ожидает подтверждения', bg: '#f3f4f6', color: '#6b7280' },
-      CONFIRMED: { label: 'Подтверждён', bg: '#f3f4f6', color: '#111827' },
-      DELIVERED: { label: 'Доставлен', bg: '#f3f4f6', color: '#111827' },
-      COLLECTED: { label: 'Забран', bg: '#d1fae5', color: '#059669' },
-      COMPLETED: { label: 'Завершён', bg: '#d1fae5', color: '#059669' },
-      CANCELLED: { label: 'Отменён', bg: '#fee2e2', color: '#111827' },
+      PENDING: { label: 'Ожидает подтверждения', bg: '#f3f4f6', color: colors.textMuted },
+      CONFIRMED: { label: 'Подтверждён', bg: '#f3f4f6', color: colors.textPrimary },
+      DELIVERED: { label: 'Доставлен', bg: '#f3f4f6', color: colors.textPrimary },
+      COLLECTED: { label: 'Забран', bg: '#d1fae5', color: colors.success },
+      COMPLETED: { label: 'Завершён', bg: '#d1fae5', color: colors.success },
+      CANCELLED: { label: 'Отменён', bg: '#fee2e2', color: colors.textPrimary },
     } as Record<string, { label: string; bg: string; color: string }>,
     myOrders: 'Мои заказы',
     noOrders: 'Нет заказов',
@@ -958,9 +1029,9 @@ export const ru: Translations = {
     cancel: 'Отмена',
     errorTitle: 'Ошибка',
     status: {
-      CONFIRMED: { label: 'К доставке', bg: '#f3f4f6', color: '#111827' },
-      DELIVERED: { label: 'Доставлен — к забору', bg: '#f3f4f6', color: '#111827' },
-      COLLECTED: { label: 'Забран', bg: '#d1fae5', color: '#059669' },
+      CONFIRMED: { label: 'К доставке', bg: '#f3f4f6', color: colors.textPrimary },
+      DELIVERED: { label: 'Доставлен — к забору', bg: '#f3f4f6', color: colors.textPrimary },
+      COLLECTED: { label: 'Забран', bg: '#d1fae5', color: colors.success },
     } as Record<string, { label: string; bg: string; color: string }>,
     sizes: {
       MINI: 'Мини (2 м³)',
@@ -1117,6 +1188,42 @@ export const ru: Translations = {
     },
     note: 'Заявки рассматриваются в течение 1–2 рабочих дней.',
     back: '← Назад',
+  },
+
+  help: {
+    title: 'Часто задаваемые вопросы',
+    intro: 'Здесь вы найдёте ответы на часто задаваемые вопросы об использовании платформы B3Hub.',
+    contactTitle: 'Не нашли ответ?',
+    contactSub: 'Свяжитесь с нами — ответим быстро.',
+    chat: 'Чат',
+    email: 'E-mail',
+    sections: [] as typeof lv.help.sections,
+  },
+
+  savedAddresses: {
+    title: 'Сохранённые адреса',
+    empty: 'Нет сохранённых адресов',
+    emptyDesc: 'Добавьте часто используемые адреса доставки для ускорения заказов.',
+    addBtn: 'Добавить адрес',
+    defaultBadge: 'По умолчанию',
+    modalAddTitle: 'Новый адрес',
+    modalEditTitle: 'Редактировать адрес',
+    fieldLabel: 'Название *',
+    fieldAddress: 'Адрес *',
+    fieldCity: 'Город *',
+    labelPlaceholder: 'напр. Склад, Объект A',
+    addressPlaceholder: 'Улица, дом',
+    cityPlaceholder: 'Рига',
+    setDefault: 'Установить как адрес по умолчанию',
+    saveBtn: 'Сохранить',
+    addBtnModal: 'Добавить',
+    requiredField: 'Обязательное поле',
+    deleteTitle: 'Удалить адрес?',
+    deleteMsg: (label: string) => `"${label}" будет удалён безвозвратно.`,
+    deleteConfirm: 'Удалить',
+    deleteSaved: 'Не удалось удалить адрес',
+    saveError: 'Не удалось сохранить адрес',
+    defaultError: 'Не удалось установить адрес по умолчанию',
   },
 };
 

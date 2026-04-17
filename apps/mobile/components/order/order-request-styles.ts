@@ -1,4 +1,5 @@
 import { StyleSheet, Platform } from 'react-native';
+import { colors } from '@/lib/theme';
 
 export const sa = StyleSheet.create({
   // ── Common
@@ -12,18 +13,18 @@ export const sa = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#111827' },
-  headerSub: { fontSize: 12, color: '#9ca3af', fontWeight: '500', marginTop: 2 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  headerSub: { fontSize: 12, color: colors.textDisabled, fontWeight: '500', marginTop: 2 },
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
@@ -37,7 +38,7 @@ export const sa = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     letterSpacing: 0.3,
   },
-  ctaBtnTextDisabled: { color: '#9ca3af' },
+  ctaBtnTextDisabled: { color: colors.textDisabled },
   floatingCta: {
     position: 'absolute',
     bottom: 0,
@@ -97,12 +98,12 @@ export const sa = StyleSheet.create({
   },
   mapCardDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
   mapSearchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     padding: 0,
   },
   mapMyLocIcon: {
@@ -131,7 +132,7 @@ export const sa = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   mapSuggLineTop: {
     width: 1,
@@ -145,7 +146,7 @@ export const sa = StyleSheet.create({
     backgroundColor: '#e5e7eb',
     marginTop: 2,
   },
-  mapSuggText: { flex: 1, fontSize: 14, color: '#111827', lineHeight: 20 },
+  mapSuggText: { flex: 1, fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   mapConfirmedRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -157,7 +158,7 @@ export const sa = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 4,
   },
-  mapConfirmedText: { flex: 1, fontSize: 13, color: '#059669', lineHeight: 18 },
+  mapConfirmedText: { flex: 1, fontSize: 13, color: colors.success, lineHeight: 18 },
 
   // ── Map step
   mapTopBar: {
@@ -181,7 +182,7 @@ export const sa = StyleSheet.create({
   placesInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 12,
     height: 44,
     gap: 6,
@@ -189,7 +190,7 @@ export const sa = StyleSheet.create({
   placesTextInput: {
     flex: 1,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '500',
     paddingRight: 12,
   },
@@ -197,7 +198,7 @@ export const sa = StyleSheet.create({
     marginTop: 4,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -212,7 +213,7 @@ export const sa = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f9fafb',
   },
-  placesDesc: { fontSize: 13, color: '#374151', flex: 1 },
+  placesDesc: { fontSize: 13, color: colors.textSecondary, flex: 1 },
 
   mapHintStrip: {
     position: 'absolute',
@@ -230,7 +231,7 @@ export const sa = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  mapHintText: { fontSize: 13, color: '#374151', fontWeight: '500' },
+  mapHintText: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
 
   // ── Floating back button (top-left, always over map) ────────
   mapBackBtn: {
@@ -260,7 +261,7 @@ export const sa = StyleSheet.create({
     elevation: 6,
   },
   mapFabActive: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
 
   // ── Reset pin button in bottom sheet ─────────────────────────
@@ -268,7 +269,7 @@ export const sa = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -279,7 +280,7 @@ export const sa = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#111827',
@@ -288,7 +289,7 @@ export const sa = StyleSheet.create({
     elevation: 4,
   },
   markerInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#fff' },
-  markerStem: { width: 3, height: 10, backgroundColor: '#111827', borderRadius: 2 },
+  markerStem: { width: 3, height: 10, backgroundColor: colors.primary, borderRadius: 2 },
 
   mapBottomSheet: {
     position: 'absolute',
@@ -312,12 +313,12 @@ export const sa = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     marginTop: 5,
     flexShrink: 0,
   },
-  addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500', lineHeight: 22 },
-  mapEmptyHint: { textAlign: 'center', fontSize: 14, color: '#9ca3af', paddingVertical: 10 },
+  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500', lineHeight: 22 },
+  mapEmptyHint: { textAlign: 'center', fontSize: 14, color: colors.textDisabled, paddingVertical: 10 },
 
   // ── Configure step
   configScroll: { paddingHorizontal: 20, paddingBottom: 24, paddingTop: 16, gap: 18 },
@@ -330,12 +331,12 @@ export const sa = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   materialIcon: { fontSize: 28 },
-  materialName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  materialSup: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  materialPrice: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  materialName: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  materialSup: { fontSize: 12, color: colors.textDisabled, marginTop: 2 },
+  materialPrice: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
 
   locationCard: {
     flexDirection: 'row',
@@ -346,13 +347,13 @@ export const sa = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  locationCardText: { flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' },
-  locationChange: { fontSize: 13, color: '#111827', fontWeight: '600' },
+  locationCardText: { flex: 1, fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
+  locationChange: { fontSize: 13, color: colors.textPrimary, fontWeight: '600' },
 
   section: { gap: 10 },
-  sectionLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  sectionLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
 
   fractionChip: {
     paddingHorizontal: 14,
@@ -360,10 +361,10 @@ export const sa = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  fractionChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  fractionChipText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  fractionChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  fractionChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   fractionChipTextActive: { color: '#fff' },
 
   stepper: {
@@ -372,11 +373,11 @@ export const sa = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
-  stepperBtn: { width: 64, paddingVertical: 18, alignItems: 'center', backgroundColor: '#f9fafb' },
-  stepperBtnText: { fontSize: 24, fontWeight: '300', color: '#111827' },
+  stepperBtn: { width: 64, paddingVertical: 18, alignItems: 'center', backgroundColor: colors.bgSubtle },
+  stepperBtnText: { fontSize: 24, fontWeight: '300', color: colors.textPrimary },
   stepperDisplay: {
     flex: 1,
     flexDirection: 'row',
@@ -384,17 +385,17 @@ export const sa = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  stepperValue: { fontSize: 32, fontWeight: '800', color: '#111827' },
-  stepperUnit: { fontSize: 14, color: '#9ca3af', fontWeight: '500' },
+  stepperValue: { fontSize: 32, fontWeight: '800', color: colors.textPrimary },
+  stepperUnit: { fontSize: 14, color: colors.textDisabled, fontWeight: '500' },
 
   qtyQuick: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
-  qtyQuickActive: { backgroundColor: '#111827' },
-  qtyQuickText: { fontSize: 12, color: '#6b7280', fontWeight: '600' },
+  qtyQuickActive: { backgroundColor: colors.primary },
+  qtyQuickText: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
   qtyQuickTextActive: { color: '#fff' },
 
   vehicleCard: {
@@ -405,13 +406,13 @@ export const sa = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 14,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  vehicleCardActive: { borderColor: '#111827', backgroundColor: '#f9fafb' },
+  vehicleCardActive: { borderColor: colors.textPrimary, backgroundColor: colors.bgSubtle },
   vehicleEmoji: { fontSize: 24 },
-  vehicleLabel: { fontSize: 13, fontWeight: '700', color: '#374151' },
-  vehicleLabelActive: { color: '#111827' },
-  vehicleSub: { fontSize: 10, color: '#9ca3af' },
+  vehicleLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  vehicleLabelActive: { color: colors.textPrimary },
+  vehicleSub: { fontSize: 10, color: colors.textDisabled },
 
   estimateRow: {
     flexDirection: 'row',
@@ -422,10 +423,10 @@ export const sa = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  estimateLabel: { fontSize: 14, color: '#374151', fontWeight: '500' },
-  estimateValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
+  estimateLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+  estimateValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
 
   // ── Searching step
   searchingScreen: {
@@ -452,7 +453,7 @@ export const sa = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
   },
   searchingDotActive: {
     backgroundColor: '#4ade80',
@@ -503,7 +504,7 @@ export const sa = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: '#374151',
+    borderColor: colors.textSecondary,
   },
   ringCenter: {
     width: 64,
@@ -538,13 +539,13 @@ export const sa = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  quoteCardSelected: { borderColor: '#111827' },
+  quoteCardSelected: { borderColor: colors.textPrimary },
   recommendedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     alignSelf: 'flex-start',
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 9,
     paddingVertical: 4,
@@ -556,28 +557,28 @@ export const sa = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  supplierName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  supplierCity: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  quotePrice: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  quoteUnit: { fontSize: 13, fontWeight: '400', color: '#9ca3af' },
-  quoteTotal: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  supplierName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  supplierCity: { fontSize: 12, color: colors.textDisabled, marginTop: 2 },
+  quotePrice: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  quoteUnit: { fontSize: 13, fontWeight: '400', color: colors.textDisabled },
+  quoteTotal: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   quoteMeta: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   quoteMetaChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   selectedChip: { backgroundColor: '#dcfce7' },
-  quoteMetaText: { fontSize: 11, color: '#6b7280', fontWeight: '600' },
+  quoteMetaText: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
 
   // ── RFQ fallback CTA card
   rfqFallbackCard: {
@@ -589,7 +590,7 @@ export const sa = StyleSheet.create({
     gap: 4,
   },
   rfqFallbackTitle: { fontSize: 15, fontWeight: '700', color: '#0369a1' },
-  rfqFallbackDesc: { fontSize: 13, color: '#374151' },
+  rfqFallbackDesc: { fontSize: 13, color: colors.textSecondary },
 
   // ── Confirm / Summary
   summaryCard: {
@@ -598,21 +599,21 @@ export const sa = StyleSheet.create({
     padding: 18,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  summaryTitle: { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 2 },
+  summaryTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
   },
-  summaryLabel: { fontSize: 13, color: '#9ca3af', fontWeight: '500' },
-  summaryValue: { fontSize: 13, color: '#111827', fontWeight: '600' },
-  summaryDivider: { height: 1, backgroundColor: '#f3f4f6' },
+  summaryLabel: { fontSize: 13, color: colors.textDisabled, fontWeight: '500' },
+  summaryValue: { fontSize: 13, color: colors.textPrimary, fontWeight: '600' },
+  summaryDivider: { height: 1, backgroundColor: colors.bgMuted },
 
   totalCard: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 18,
     padding: 22,
     alignItems: 'center',
@@ -641,14 +642,14 @@ export const sa = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressDotActive: { backgroundColor: '#111827' },
-  progressDotInactive: { backgroundColor: '#f3f4f6' },
+  progressDotActive: { backgroundColor: colors.primary },
+  progressDotInactive: { backgroundColor: colors.bgMuted },
   progressNum: { fontSize: 11, fontWeight: '700' },
   progressNumActive: { color: '#fff' },
-  progressNumInactive: { color: '#9ca3af' },
+  progressNumInactive: { color: colors.textDisabled },
   progressCheck: {},
   progressLine: { flex: 1, height: 2, marginHorizontal: 3 },
-  progressLineActive: { backgroundColor: '#111827' },
+  progressLineActive: { backgroundColor: colors.primary },
   progressLineInactive: { backgroundColor: '#e5e7eb' },
 
   // ── Onboarding
@@ -661,7 +662,7 @@ export const sa = StyleSheet.create({
     gap: 24,
   },
   skipBtn: { position: 'absolute', top: 56, right: 28 },
-  skipText: { fontSize: 14, color: '#9ca3af', fontWeight: '600' },
+  skipText: { fontSize: 14, color: colors.textDisabled, fontWeight: '600' },
   onboardingIllustration: { alignItems: 'center', justifyContent: 'center' },
   onboardingIconCircle: {
     width: 140,
@@ -692,15 +693,15 @@ export const sa = StyleSheet.create({
   onboardingTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     textAlign: 'center',
     lineHeight: 32,
   },
-  onboardingDesc: { fontSize: 15, color: '#6b7280', textAlign: 'center', lineHeight: 22 },
+  onboardingDesc: { fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
 
   // ── Material header address
   headerAddressRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  headerAddress: { fontSize: 11, color: '#9ca3af', fontWeight: '500', maxWidth: 200 },
+  headerAddress: { fontSize: 11, color: colors.textDisabled, fontWeight: '500', maxWidth: 200 },
 
   // ── Material search bar
   matSearchBar: {
@@ -714,13 +715,13 @@ export const sa = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     gap: 8,
   },
   matSearchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '500',
     paddingVertical: 0,
   },
@@ -755,16 +756,16 @@ export const sa = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   matCardIcon: { fontSize: 22 },
-  matCardName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  matCardSup: { fontSize: 12, color: '#6b7280', fontWeight: '400', lineHeight: 17 },
-  matCardPrice: { fontSize: 15, fontWeight: '800', color: '#111827' },
-  matCardUnit: { fontSize: 11, fontWeight: '500', color: '#9ca3af' },
+  matCardName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  matCardSup: { fontSize: 12, color: colors.textMuted, fontWeight: '400', lineHeight: 17 },
+  matCardPrice: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  matCardUnit: { fontSize: 11, fontWeight: '500', color: colors.textDisabled },
   recycledBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -775,12 +776,12 @@ export const sa = StyleSheet.create({
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
-  recycledText: { fontSize: 9, color: '#15803d', fontWeight: '700' },
+  recycledText: { fontSize: 9, color: colors.successText, fontWeight: '700' },
   selectBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
   selectBtnText: { fontSize: 11, color: '#fff', fontWeight: '700' },
   matEmpty: {
@@ -790,8 +791,8 @@ export const sa = StyleSheet.create({
     gap: 8,
   },
   matEmptyEmoji: { fontSize: 40 },
-  matEmptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151' },
-  matEmptyDesc: { fontSize: 14, color: '#9ca3af', textAlign: 'center', paddingHorizontal: 20 },
+  matEmptyTitle: { fontSize: 16, fontWeight: '700', color: colors.textSecondary },
+  matEmptyDesc: { fontSize: 14, color: colors.textDisabled, textAlign: 'center', paddingHorizontal: 20 },
 
   // ── Uber-style sheet ─────────────────────────────────────────
   sheet: {
@@ -817,13 +818,13 @@ export const sa = StyleSheet.create({
     paddingBottom: 12,
     gap: 8,
   },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  sheetSub: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  sheetSub: { fontSize: 13, color: colors.textDisabled, marginTop: 2 },
   sheetCloseBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -836,37 +837,37 @@ export const sa = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
     backgroundColor: '#fff',
   },
   backFooterBtn: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // ── Contact / Notes inputs ────────────────────────────────────────────────
   contactInput: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
   },
 
   // ── Map step address card ──────────────────────────────────
   mapAddressCard: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
     margin: 20,

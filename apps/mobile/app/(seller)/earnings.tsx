@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 // ── Types & helpers ───────────────────────────────────────────────────────
 
@@ -255,6 +256,7 @@ type Period = 'today' | 'week' | 'month';
 
 export default function SellerEarningsScreen() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -281,10 +283,10 @@ export default function SellerEarningsScreen() {
       if (url) {
         await Linking.openURL(url);
       } else {
-        Alert.alert('Kļūda', 'Neizdevās iegūt saiti.');
+        toast.error('Neizdevās iegūt saiti.')
       }
     } catch (err: any) {
-      Alert.alert('Kļūda', err.message || 'Neizdevās savienoties ar Stripe.');
+      toast.error(err.message || 'Neizdevās savienoties ar Stripe.')
     } finally {
       setSetupLoading(false);
     }
@@ -477,7 +479,7 @@ export default function SellerEarningsScreen() {
                     <Text
                       style={[
                         s.an12MonthLabel,
-                        isThisMonth && { color: '#111827', fontWeight: '700' },
+                        isThisMonth && { color: colors.textPrimary, fontWeight: '700' },
                       ]}
                     >
                       {mo}/{y?.slice(2)}
@@ -493,7 +495,7 @@ export default function SellerEarningsScreen() {
                         ]}
                       />
                     </View>
-                    <Text style={[s.an12ValLabel, isThisMonth && { color: '#111827' }]}>
+                    <Text style={[s.an12ValLabel, isThisMonth && { color: colors.textPrimary }]}>
                       €{m.value >= 1000 ? `${(m.value / 1000).toFixed(1)}k` : m.value.toFixed(0)}
                     </Text>
                   </View>
@@ -589,7 +591,7 @@ export default function SellerEarningsScreen() {
                             s.anBarFill,
                             {
                               width: `${(m.amount / maxAmt) * 100}%` as any,
-                              backgroundColor: '#374151',
+                              backgroundColor: colors.primaryMid,
                             },
                           ]}
                         />
@@ -646,21 +648,21 @@ const s = StyleSheet.create({
   },
   heroLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
     letterSpacing: 0.2,
   },
   heroAmount: {
     fontSize: 48,
     fontWeight: '800', // Heavy weight like Uber/Lyft
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -1.5,
   },
 
   // Segmented Control
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 999,
     padding: 4,
     marginTop: 16,
@@ -674,7 +676,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
   },
   segmentActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -684,10 +686,10 @@ const s = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   segmentTextActive: {
-    color: '#111827',
+    color: colors.textPrimary,
   },
 
   // Chart
@@ -712,11 +714,11 @@ const s = StyleSheet.create({
   metricValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   metricLabel: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginTop: 2,
     fontWeight: '500',
   },
@@ -733,7 +735,7 @@ const s = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 16,
   },
 
@@ -749,13 +751,13 @@ const s = StyleSheet.create({
   },
   anCard: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     padding: 16,
     gap: 4,
   },
-  anCardValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
-  anCardLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 6 },
+  anCardValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  anCardLabel: { fontSize: 11, color: colors.textDisabled, fontWeight: '500', marginBottom: 6 },
   anBar: {
     height: 4,
     backgroundColor: '#e5e7eb',
@@ -764,11 +766,11 @@ const s = StyleSheet.create({
   },
   anBarFill: {
     height: 4,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 2,
   },
   an12Card: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     padding: 16,
     gap: 8,
@@ -777,7 +779,7 @@ const s = StyleSheet.create({
   an12Label: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.4,
     marginBottom: 4,
@@ -790,28 +792,28 @@ const s = StyleSheet.create({
   an12MonthLabel: {
     width: 40,
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '500' as const,
   },
   an12ValLabel: {
     width: 50,
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '600' as const,
     textAlign: 'right' as const,
   },
   anTopMats: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     padding: 16,
     gap: 12,
   },
-  anTopMatsTitle: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 4 },
+  anTopMatsTitle: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 },
   anMatRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  anMatRank: { fontSize: 13, fontWeight: '700', color: '#9ca3af', width: 16, textAlign: 'center' },
+  anMatRank: { fontSize: 13, fontWeight: '700', color: colors.textDisabled, width: 16, textAlign: 'center' },
   anMatLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  anMatLabel: { fontSize: 13, fontWeight: '500', color: '#374151', flex: 1 },
-  anMatAmt: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  anMatLabel: { fontSize: 13, fontWeight: '500', color: colors.textSecondary, flex: 1 },
+  anMatAmt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -828,12 +830,12 @@ const s = StyleSheet.create({
   },
   listTime: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '500',
   },
   listRoute: {
     fontSize: 14,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   listRight: {
@@ -844,6 +846,6 @@ const s = StyleSheet.create({
   listAmount: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
 });

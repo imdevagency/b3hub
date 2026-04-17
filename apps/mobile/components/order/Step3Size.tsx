@@ -4,6 +4,7 @@ import type { SkipSize } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { SIZES } from './skip-hire-types';
+import { colors } from '@/lib/theme';
 
 export function Step3Size({
   selected,
@@ -82,7 +83,7 @@ export function Step3Size({
                       {
                         height: boxH,
                         width: boxW,
-                        backgroundColor: isSel ? size.color : '#e5e7eb',
+                        backgroundColor: isSel ? size.color : colors.border,
                       },
                     ]}
                   />
@@ -121,17 +122,17 @@ const s3 = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderColor: colors.border,
+    backgroundColor: colors.bgSubtle,
     position: 'relative',
     overflow: 'hidden',
   },
-  cardSel: { borderColor: '#111827', backgroundColor: '#fff' },
+  cardSel: { borderColor: colors.textPrimary, backgroundColor: '#fff' },
   popular: {
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderBottomLeftRadius: 10,
@@ -142,10 +143,10 @@ const s3 = StyleSheet.create({
   skipBox: { borderRadius: 3 },
   wheels: { flexDirection: 'row', gap: 7, marginTop: 3 },
   wheel: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#d1d5db' },
-  label: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  vol: { fontSize: 13, color: '#6b7280', marginTop: 1 },
-  desc: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
-  price: { fontSize: 18, fontWeight: '700', color: '#374151' },
+  label: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  vol: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
+  desc: { fontSize: 11, color: colors.textDisabled, marginTop: 1 },
+  price: { fontSize: 18, fontWeight: '700', color: colors.textSecondary },
   checkCircle: {
     width: 22,
     height: 22,

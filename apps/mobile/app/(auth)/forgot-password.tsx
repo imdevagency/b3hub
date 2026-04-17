@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Mail, CheckCircle } from 'lucide-react-native';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -161,7 +162,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
@@ -176,10 +177,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  title: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 22,
@@ -194,22 +195,22 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 20,
   },
-  errorText: { color: '#b91c1c', fontSize: 14 },
+  errorText: { color: colors.dangerText, fontSize: 14 },
   fieldWrap: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
+  label: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     backgroundColor: '#fff',
   },
   inputError: { borderColor: '#f87171' },
   primaryBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
@@ -228,10 +229,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#111827', textAlign: 'center' },
+  successTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
   successSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 22,

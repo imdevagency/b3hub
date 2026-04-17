@@ -39,7 +39,6 @@ import {
   Minus,
   Plus,
   Send,
-  Star,
   Clock,
   Zap as ZapIcon,
   CheckCircle2,
@@ -55,6 +54,9 @@ import { WizardLayout } from '@/components/wizard/WizardLayout';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
+import { OfferCard } from '@/components/order/OfferCard';
+import { s, oc } from './order-request-new-styles';
 
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
@@ -749,7 +751,12 @@ export default function OrderRequestWizard() {
       <View className="mb-6">
         <Text className="text-gray-400 text-sm font-semibold mb-3 ml-1">Piegādes datums</Text>
         <View
-          style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#e5e7eb' }}
+          style={{
+            borderRadius: 16,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
         >
           <RNCalendar
             current={deliveryDate || new Date().toISOString().split('T')[0]}
@@ -857,7 +864,7 @@ export default function OrderRequestWizard() {
           {/* Payment CTA */}
           <TouchableOpacity
             style={{
-              backgroundColor: '#111827',
+              backgroundColor: colors.primary,
               borderRadius: 14,
               paddingVertical: 16,
               alignItems: 'center',
@@ -891,7 +898,7 @@ export default function OrderRequestWizard() {
             }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 14, color: '#6b7280', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}>
               Skatīt pasūtījumu
             </Text>
           </TouchableOpacity>
@@ -936,7 +943,7 @@ export default function OrderRequestWizard() {
       return (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
           <View style={s.successWrap}>
-            <View style={[s.successIconBg, { backgroundColor: '#111827' }]}>
+            <View style={[s.successIconBg, { backgroundColor: colors.primary }]}>
               <Send size={36} color="#fff" />
             </View>
             <Text style={s.successTitle}>Pieprasījums nosūtīts!</Text>
@@ -955,7 +962,7 @@ export default function OrderRequestWizard() {
       return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
           <ActivityIndicator size="large" color="#111827" />
-          <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500' }}>
+          <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500' }}>
             Meklējam pieejamos piegādātājus...
           </Text>
         </View>
@@ -967,7 +974,9 @@ export default function OrderRequestWizard() {
       return (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}>
           {offersError ? (
-            <Text style={{ fontSize: 14, color: '#dc2626', fontWeight: '500' }}>{offersError}</Text>
+            <Text style={{ fontSize: 14, color: colors.danger, fontWeight: '500' }}>
+              {offersError}
+            </Text>
           ) : (
             <>
               <Text style={s.offersTitle}>Nav tūlītēju piedāvājumu</Text>
@@ -977,7 +986,9 @@ export default function OrderRequestWizard() {
             </>
           )}
           {submitError ? (
-            <Text style={{ fontSize: 14, color: '#dc2626', fontWeight: '500' }}>{submitError}</Text>
+            <Text style={{ fontSize: 14, color: colors.danger, fontWeight: '500' }}>
+              {submitError}
+            </Text>
           ) : null}
           <View style={s.rfqBox}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
@@ -1032,7 +1043,7 @@ export default function OrderRequestWizard() {
             style={{
               fontSize: 18,
               fontWeight: '700',
-              color: '#111827',
+              color: colors.textPrimary,
               fontFamily: 'Inter_700Bold',
             }}
           >
@@ -1049,7 +1060,7 @@ export default function OrderRequestWizard() {
               <Text
                 style={{
                   fontSize: 13,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   marginRight: 4,
                   fontFamily: 'Inter_500Medium',
                 }}
@@ -1069,20 +1080,20 @@ export default function OrderRequestWizard() {
                       paddingVertical: 6,
                       borderRadius: 100,
                       borderWidth: StyleSheet.hairlineWidth,
-                      borderColor: '#e5e7eb',
+                      borderColor: colors.border,
                       backgroundColor: '#fff',
                     },
                     offersSort === opt.key && {
-                      borderColor: '#111827',
-                      backgroundColor: '#f3f4f6',
+                      borderColor: colors.textPrimary,
+                      backgroundColor: colors.bgMuted,
                     },
                   ]}
                 >
                   <Text
                     style={[
-                      { fontSize: 13, color: '#374151', fontFamily: 'Inter_500Medium' },
+                      { fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_500Medium' },
                       offersSort === opt.key && {
-                        color: '#111827',
+                        color: colors.textPrimary,
                         fontWeight: '600',
                         fontFamily: 'Inter_600SemiBold',
                       },
@@ -1100,7 +1111,7 @@ export default function OrderRequestWizard() {
               <Text
                 style={{
                   fontSize: 13,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   marginRight: 4,
                   fontFamily: 'Inter_500Medium',
                 }}
@@ -1120,20 +1131,20 @@ export default function OrderRequestWizard() {
                       paddingVertical: 6,
                       borderRadius: 100,
                       borderWidth: StyleSheet.hairlineWidth,
-                      borderColor: '#e5e7eb',
+                      borderColor: colors.border,
                       backgroundColor: '#fff',
                     },
                     priceMaxFilter === cap && {
-                      borderColor: '#111827',
-                      backgroundColor: '#f3f4f6',
+                      borderColor: colors.textPrimary,
+                      backgroundColor: colors.bgMuted,
                     },
                   ]}
                 >
                   <Text
                     style={[
-                      { fontSize: 13, color: '#374151', fontFamily: 'Inter_500Medium' },
+                      { fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_500Medium' },
                       priceMaxFilter === cap && {
-                        color: '#111827',
+                        color: colors.textPrimary,
                         fontWeight: '600',
                         fontFamily: 'Inter_600SemiBold',
                       },
@@ -1147,7 +1158,9 @@ export default function OrderRequestWizard() {
           </ScrollView>
 
           {submitError ? (
-            <Text style={{ fontSize: 14, color: '#dc2626', fontWeight: '500' }}>{submitError}</Text>
+            <Text style={{ fontSize: 14, color: colors.danger, fontWeight: '500' }}>
+              {submitError}
+            </Text>
           ) : null}
         </View>
 
@@ -1175,14 +1188,21 @@ export default function OrderRequestWizard() {
             style={{
               marginTop: 12,
               padding: 16,
-              backgroundColor: '#f9fafb',
+              backgroundColor: colors.bgSubtle,
               borderRadius: 16,
               alignItems: 'center',
               borderWidth: 1,
               borderColor: '#f3f4f6',
             }}
           >
-            <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 12, textAlign: 'center' }}>
+            <Text
+              style={{
+                fontSize: 13,
+                color: colors.textMuted,
+                marginBottom: 12,
+                textAlign: 'center',
+              }}
+            >
               Neesat apmierināts ar cenām?
             </Text>
             <TouchableOpacity
@@ -1202,7 +1222,7 @@ export default function OrderRequestWizard() {
               activeOpacity={0.8}
             >
               <Send size={14} color="#111827" />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
                 Pieprasīt spec. cenas
               </Text>
             </TouchableOpacity>
@@ -1253,13 +1273,15 @@ export default function OrderRequestWizard() {
         footerLeft={
           step === 'specs' ? (
             <View>
-              <Text style={{ fontSize: 13, color: '#9CA3AF', fontFamily: 'Inter_500Medium' }}>
+              <Text
+                style={{ fontSize: 13, color: colors.textDisabled, fontFamily: 'Inter_500Medium' }}
+              >
                 Pasūtījuma apjoms
               </Text>
               <Text
                 style={{
                   fontSize: 16,
-                  color: '#111827',
+                  color: colors.textPrimary,
                   fontFamily: 'Inter_600SemiBold',
                   marginTop: 2,
                 }}
@@ -1370,7 +1392,7 @@ export default function OrderRequestWizard() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   fontFamily: 'Inter_500Medium',
                   marginBottom: 4,
                 }}
@@ -1390,7 +1412,7 @@ export default function OrderRequestWizard() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   fontFamily: 'Inter_500Medium',
                   marginBottom: 4,
                 }}
@@ -1410,7 +1432,7 @@ export default function OrderRequestWizard() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   fontFamily: 'Inter_500Medium',
                   marginBottom: 4,
                 }}
@@ -1485,7 +1507,7 @@ export default function OrderRequestWizard() {
             disabled={calcM3 == null}
             activeOpacity={0.85}
           >
-            <Text style={[s.nextBtnTxt, calcM3 == null && { color: '#9ca3af' }]}>
+            <Text style={[s.nextBtnTxt, calcM3 == null && { color: colors.textDisabled }]}>
               Izmantot{' '}
               {orderType === 'BY_VOLUME' ? `${calcM3 ?? '—'} m³` : `${calcTonnes ?? '—'} t`}
             </Text>
@@ -1495,834 +1517,3 @@ export default function OrderRequestWizard() {
     </>
   );
 }
-
-// ── Offer Card ────────────────────────────────────────────────────────────────
-
-function OfferCard({
-  offer,
-  unit,
-  isCheapest,
-  submitting,
-  onSelect,
-}: {
-  offer: SupplierOffer;
-  unit: MaterialUnit;
-  isCheapest: boolean;
-  submitting: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={onSelect}
-      disabled={submitting}
-      style={[
-        {
-          paddingHorizontal: 16,
-          paddingVertical: 16,
-          backgroundColor: '#fff',
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: isCheapest ? '#111827' : '#e5e7eb',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        },
-        isCheapest && {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
-          elevation: 3,
-        },
-      ]}
-    >
-      {/* Best Deal absolute badge */}
-      {isCheapest && (
-        <View
-          style={{
-            position: 'absolute',
-            top: -10,
-            right: 16,
-            backgroundColor: '#e11d48', // Striking but good looking red
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 6,
-            zIndex: 10,
-            shadowColor: '#e11d48',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 10,
-              fontWeight: '800',
-              color: '#fff',
-              textTransform: 'uppercase',
-              fontFamily: 'Inter_800ExtraBold',
-              letterSpacing: 0.5,
-            }}
-          >
-            Labākā cena
-          </Text>
-        </View>
-      )}
-
-      {/* Left Column: Supplier, Location, Details */}
-      <View style={{ flex: 1, paddingRight: 16 }}>
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}
-        >
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: '800',
-              color: '#111827',
-              fontFamily: 'Inter_800ExtraBold',
-              marginRight: 8,
-            }}
-            numberOfLines={1}
-          >
-            {offer.supplier?.name}
-          </Text>
-          {offer.supplier?.rating && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 3,
-                backgroundColor: '#f3f4f6',
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                borderRadius: 6,
-              }}
-            >
-              <Star size={10} color="#111827" fill="#111827" />
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: '700',
-                  color: '#111827',
-                  fontFamily: 'Inter_700Bold',
-                }}
-              >
-                {offer.supplier.rating.toFixed(1)}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text
-          style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Inter_500Medium', marginBottom: 2 }}
-        >
-          {offer.supplier?.city ?? offer.etaLabel ?? 'Zināms reģions'} ·{' '}
-          {offer.distanceKm?.toFixed(1) ?? '— '} km
-        </Text>
-        <Text style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Inter_500Medium' }}>
-          {offer.effectiveUnitPrice?.toFixed(2) ?? '—'} €/{UNIT_SHORT[unit]}
-          {offer.deliveryFee != null ? ` + ${offer.deliveryFee?.toFixed(2)} € piegāde` : ''}
-        </Text>
-      </View>
-
-      {/* Right Column: Price */}
-      <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-        {submitting ? (
-          <ActivityIndicator color="#111827" size="small" />
-        ) : (
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: '800',
-              color: '#111827',
-              fontFamily: 'Inter_800ExtraBold',
-            }}
-          >
-            €{offer.totalPrice?.toFixed(2) ?? '—'}
-          </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-const s = StyleSheet.create({
-  // ── Specs step ──
-  catBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#F4F5F7',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  catBadgeMin: {
-    backgroundColor: '#F4F5F7',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  catBadgeTextMin: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#6b7280' },
-
-  // ── Dropdown button ──
-  dropdownBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-    gap: 6,
-  },
-  dropdownBtnText: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-  },
-
-  // ── Truck cards ──
-  truckCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    gap: 4,
-    position: 'relative',
-  },
-  truckCardActive: {
-    backgroundColor: '#ffffff',
-    borderColor: '#111827',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  truckCheckBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  truckLabel: {
-    fontSize: 13,
-    fontFamily: 'Inter_700Bold',
-    color: '#6B7280',
-  },
-  truckLabelActive: {
-    color: '#111827',
-  },
-  truckSub: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    color: '#9CA3AF',
-  },
-
-  // ── BottomSheet picker rows ──
-  sheetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F4F5F7',
-  },
-  sheetItemText: {
-    fontSize: 15,
-    fontFamily: 'Inter_500Medium',
-    color: '#374151',
-  },
-  sheetItemTextActive: {
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-  },
-
-  // ── Line style inputs ──
-  lineFieldWrap: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    paddingBottom: 8,
-  },
-  lineFieldLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    color: '#9CA3AF',
-    marginBottom: 4,
-  },
-  lineFieldBtn: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  lineFieldValue: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: 'Inter_500Medium',
-    color: '#374151',
-    letterSpacing: -0.2,
-  },
-
-  // ── Plain section title ──
-  sectionTitleCenter: {
-    textAlign: 'center',
-    fontSize: 15,
-    fontFamily: 'Inter_500Medium',
-    color: '#4B5563',
-    marginBottom: 6,
-  },
-
-  // ── Truck flat cards ──
-  truckCardPlain: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  truckImageWrap: {
-    position: 'relative',
-  },
-  truckCheckCircle: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#10b981', // green like attachment
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  truckLabelPlain: {
-    fontSize: 15,
-    fontFamily: 'Inter_500Medium',
-    color: '#4B5563',
-  },
-  truckSubPlain: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: '#9CA3AF',
-  },
-
-  // ── Line Stepper ──
-  stepperLineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    paddingVertical: 12,
-  },
-  stepBtnDark: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#312e81', // dark purple like attachment
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperValueBox: {
-    minWidth: 100,
-    height: 60,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperValueLine: {
-    fontSize: 32,
-    fontFamily: 'Inter_500Medium',
-    color: '#111827',
-  },
-
-  field: { gap: 10 },
-  fieldLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#9ca3af', // lighter label since the form is focused
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  textInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 18, // taller tap target
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 16,
-  },
-
-  // ── Quantity stepper ──
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 32,
-    paddingVertical: 12,
-  },
-  stepBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  stepperValueWrap: { minWidth: 100, alignItems: 'center' },
-  stepperValue: {
-    fontSize: 72, // Mega large quantity size
-    fontFamily: 'Inter_800ExtraBold',
-    color: '#111827',
-    letterSpacing: -2.5,
-    includeFontPadding: false,
-  },
-
-  // ── Unit Toggle ──
-  unitToggleRow: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    backgroundColor: '#F4F5F7',
-    borderRadius: 16,
-    padding: 6,
-    marginTop: 16,
-  },
-  unitToggleBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  unitToggleBtnActive: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  unitToggleText: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#9ca3af',
-  },
-  unitToggleTextActive: {
-    color: '#111827',
-  },
-
-  // ── When step ──
-  stepSub: { fontSize: 15, color: '#6b7280', fontFamily: 'Inter_500Medium', lineHeight: 22 },
-  asapCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#F4F5F7',
-    borderWidth: 1,
-    borderColor: 'transparent',
-    gap: 12,
-  },
-  asapCardActive: {
-    backgroundColor: '#ffffff',
-    borderColor: '#111827',
-    borderWidth: 2,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  asapIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  asapIconActive: { backgroundColor: '#F4F5F7', shadowOpacity: 0, elevation: 0 },
-  asapTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-  asapTitleActive: { color: '#111827' },
-  asapSub: { fontSize: 13, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_500Medium' },
-  hint: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F4F5F7',
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  hintText: { fontSize: 13, color: '#4b5563', lineHeight: 18, fontFamily: 'Inter_500Medium' },
-  etaHintRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f0fdf4',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-  },
-  etaHintText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
-
-  // ── Calculator ──
-  calcWrap: {
-    marginTop: 20,
-    borderRadius: 16,
-    backgroundColor: '#F4F5F7',
-    overflow: 'hidden',
-  },
-  calcHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  calcHeaderText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#6b7280',
-  },
-  calcBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  calcHint: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Inter_400Regular',
-    lineHeight: 16,
-  },
-  calcRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  calcField: { flex: 1, gap: 4 },
-  calcFieldLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  calcInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    textAlign: 'center',
-  },
-  calcResult: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
-  },
-  calcResultLabel: {
-    fontSize: 11,
-    color: '#9ca3af',
-    fontFamily: 'Inter_500Medium',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  calcResultValue: {
-    fontSize: 20,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    marginTop: 2,
-  },
-  calcResultSub: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: '#6b7280',
-  },
-  calcApplyBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-  calcApplyText: {
-    fontSize: 14,
-    fontFamily: 'Inter_700Bold',
-    color: '#ffffff',
-  },
-
-  // ── Offers step ──
-  offersTitle: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-  offersSub: {
-    fontSize: 15,
-    color: '#6b7280',
-    fontFamily: 'Inter_500Medium',
-    marginTop: -8,
-  },
-  sortPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#fff',
-  },
-  sortPillActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  sortPillText: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-    color: '#6b7280',
-  },
-  sortPillTextActive: {
-    color: '#fff',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  rfqBox: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#ffffff',
-    padding: 16,
-    gap: 12,
-  },
-  rfqIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F4F5F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rfqTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-  rfqSub: {
-    fontSize: 14,
-    color: '#6b7280',
-    lineHeight: 20,
-    marginTop: 4,
-    fontFamily: 'Inter_500Medium',
-  },
-  rfqBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 100,
-    backgroundColor: '#F4F5F7',
-  },
-  rfqBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-
-  // ── Success state ──
-  successWrap: { alignItems: 'center', paddingVertical: 32, gap: 12 },
-  successIconBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  successTitle: {
-    fontSize: 26,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-  successNum: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#6b7280' },
-  successSub: {
-    fontSize: 15,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 8,
-    paddingHorizontal: 16,
-    fontFamily: 'Inter_500Medium',
-  },
-  summaryCard: {
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#F9FAFB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    padding: 16,
-  },
-  summaryText: { flex: 1, fontSize: 15, color: '#111827', fontFamily: 'Inter_500Medium' },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: '#F4F5F7',
-    marginHorizontal: 16,
-  },
-  nextBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  nextBtnTxt: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#ffffff',
-  },
-});
-
-// ── Offer card styles ──────────────────────────────────────────────────────────
-
-const oc = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  cardBest: { borderColor: '#111827' },
-  top: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    gap: 12,
-  },
-  supplierName: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-  supplierCity: { fontSize: 14, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_500Medium' },
-  bestBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  bestText: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#ffffff',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  price: {
-    fontSize: 22,
-    fontFamily: 'Inter_700Bold',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-  priceUnit: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
-    fontFamily: 'Inter_500Medium',
-    textAlign: 'right',
-  },
-  meta: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 14, color: '#6b7280', fontFamily: 'Inter_500Medium' },
-  btn: {
-    margin: 12,
-    marginTop: 0,
-    backgroundColor: '#F4F5F7',
-    borderRadius: 100,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-  productImage: {
-    width: 80,
-    height: 64,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-  },
-  stockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  stockText: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-  },
-});

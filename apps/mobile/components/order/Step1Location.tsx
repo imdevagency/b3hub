@@ -11,6 +11,7 @@ import {
 import { Search, X, MapPin, Navigation2 } from 'lucide-react-native';
 import type { GeocodeSuggestion } from '@/components/map';
 import { t } from '@/lib/translations';
+import { colors } from '@/lib/theme';
 
 export interface Step1Props {
   floating?: boolean;
@@ -159,9 +160,9 @@ const s1 = StyleSheet.create({
   },
   cardDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
-  searchInput: { flex: 1, fontSize: 15, color: '#111827', padding: 0 },
+  searchInput: { flex: 1, fontSize: 15, color: colors.textPrimary, padding: 0 },
   myLocIcon: {
     width: 28,
     height: 28,
@@ -187,9 +188,9 @@ const s1 = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
   },
-  suggText: { flex: 1, fontSize: 14, color: '#111827', lineHeight: 20 },
+  suggText: { flex: 1, fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   confirmedRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -201,5 +202,5 @@ const s1 = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
   },
-  confirmedText: { flex: 1, fontSize: 13, color: '#059669', lineHeight: 18 },
+  confirmedText: { flex: 1, fontSize: 13, color: colors.success, lineHeight: 18 },
 });

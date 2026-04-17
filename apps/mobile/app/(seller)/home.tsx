@@ -12,6 +12,7 @@ import { Inbox, ArrowRight, Plus, CheckCircle, Wallet, ChevronRight } from 'luci
 import { haptics } from '@/lib/haptics';
 import { useHeaderConfig } from '@/lib/header-context';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { colors } from '@/lib/theme';
 
 const TAB_H = 52;
 
@@ -38,9 +39,9 @@ function getStatusMeta(status: string) {
     case 'DELIVERED':
       return { text: 'Piegādāts', color: '#1d4ed8', bg: '#dbeafe' };
     case 'CANCELLED':
-      return { text: 'Atcelts', color: '#b91c1c', bg: '#fef2f2' };
+      return { text: 'Atcelts', color: colors.dangerText, bg: '#fef2f2' };
     default:
-      return { text: status, color: '#6b7280', bg: '#f3f4f6' };
+      return { text: status, color: colors.textMuted, bg: '#f3f4f6' };
   }
 }
 
@@ -164,7 +165,7 @@ export default function SellerHomeScreen() {
                 style={{
                   fontSize: 22,
                   fontWeight: '700',
-                  color: '#ffffff',
+                  color: colors.white,
                   letterSpacing: -0.5,
                   marginBottom: 8,
                 }}
@@ -207,7 +208,7 @@ export default function SellerHomeScreen() {
                       <Text
                         style={{
                           fontSize: 15,
-                          color: '#ffffff',
+                          color: colors.white,
                           fontWeight: '600',
                           letterSpacing: -0.2,
                         }}
@@ -256,7 +257,7 @@ export default function SellerHomeScreen() {
                           style={{
                             fontSize: 72,
                             fontWeight: '800',
-                            color: '#ffffff',
+                            color: colors.white,
                             lineHeight: 72,
                             letterSpacing: -3.5,
                             marginTop: 4,
@@ -273,7 +274,7 @@ export default function SellerHomeScreen() {
                       style={{
                         fontSize: 16,
                         fontWeight: '600',
-                        color: '#ffffff',
+                        color: colors.white,
                         marginTop: 16,
                         opacity: 0.8,
                       }}
@@ -291,7 +292,7 @@ export default function SellerHomeScreen() {
                             style={{
                               fontSize: 16,
                               fontWeight: '600',
-                              color: '#6b7280',
+                              color: colors.textMuted,
                               letterSpacing: -0.3,
                             }}
                           >
@@ -302,7 +303,7 @@ export default function SellerHomeScreen() {
                           style={{
                             fontSize: 32,
                             fontWeight: '800',
-                            color: '#111827',
+                            color: colors.textPrimary,
                             letterSpacing: -1,
                             marginTop: 4,
                           }}
@@ -315,7 +316,7 @@ export default function SellerHomeScreen() {
                       </View>
                     </View>
                     <Text
-                      style={{ fontSize: 15, fontWeight: '600', color: '#6b7280', marginTop: 32 }}
+                      style={{ fontSize: 15, fontWeight: '600', color: colors.textMuted, marginTop: 32 }}
                     >
                       Pagaidām nav jaunu pieprasījumu
                     </Text>
@@ -346,12 +347,12 @@ export default function SellerHomeScreen() {
           {/* RECENT ORDERS HEADER */}
           <View className="flex-row justify-between items-center mb-2">
             <Text
-              style={{ fontSize: 20, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+              style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
             >
               Pēdējie pasūtījumi
             </Text>
             <TouchableOpacity onPress={() => router.push('/(seller)/incoming' as any)}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#6b7280' }}>Visi</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textMuted }}>Visi</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -382,7 +383,7 @@ export default function SellerHomeScreen() {
                 >
                   <View className="flex-1 pr-3">
                     <View className="flex-row items-center mb-1.5" style={{ gap: 10 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
                         #{order.orderNumber}
                       </Text>
                       <StatusPill label={meta.text} bg={meta.bg} color={meta.color} size="sm" />
@@ -391,7 +392,7 @@ export default function SellerHomeScreen() {
                       {order.buyer?.name ?? '—'} · {order.deliveryCity}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
                     €{order.total.toFixed(0)}
                   </Text>
                   <ChevronRight size={18} color="#d1d5db" className="ml-2" />
@@ -413,7 +414,7 @@ const ls = StyleSheet.create({
   },
   kpiTile: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 14,
     alignItems: 'center',
@@ -423,13 +424,13 @@ const ls = StyleSheet.create({
   kpiValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
   },
   kpiLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginTop: 2,

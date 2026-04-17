@@ -86,10 +86,10 @@ LocaleConfig.defaultLocale = 'lv';
 
 const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
   // ... existing status map code ...
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
   ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#10b981' },
   COMPLETED: { label: 'Pabeigts', bg: '#f8fafc', color: '#64748b' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: '#9ca3af' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textDisabled },
   CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#ef4444' },
 };
 
@@ -116,9 +116,12 @@ interface PositionDraft {
 }
 
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 export default function FrameworkContractsScreen() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const { newProjectId } = useLocalSearchParams<{ newProjectId?: string }>();
 
@@ -205,7 +208,7 @@ export default function FrameworkContractsScreen() {
         const data = await api.frameworkContracts.list(token);
         setContracts(data);
       } catch (e) {
-        Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās ielādēt līgumus');
+        toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt līgumus')
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -238,12 +241,12 @@ export default function FrameworkContractsScreen() {
 
   const savePosition = () => {
     if (!posDesc.trim()) {
-      Alert.alert('Ievadiet aprakstu');
+      toast.error('Lūdzu aizpildiet šo lauku')
       return;
     }
     const qty = parseFloat(posQty.replace(',', '.'));
     if (!posQty || isNaN(qty) || qty <= 0) {
-      Alert.alert('Ievadiet derīgu daudzumu');
+      toast.error('Lūdzu aizpildiet šo lauku')
       return;
     }
     setPositions((prev) => [
@@ -304,7 +307,7 @@ export default function FrameworkContractsScreen() {
       closeCreate();
       load(false);
     } catch (e) {
-      Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās izveidot līgumu');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot līgumu')
     } finally {
       setCreating(false);
     }
@@ -373,7 +376,7 @@ export default function FrameworkContractsScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 20,
-                backgroundColor: '#374151',
+                backgroundColor: colors.primaryMid,
               }}
             >
               <Plus size={24} color="#ffffff" />
@@ -421,7 +424,7 @@ export default function FrameworkContractsScreen() {
                     activeOpacity={0.8}
                     style={{
                       marginTop: 20,
-                      backgroundColor: '#111827',
+                      backgroundColor: colors.primary,
                       paddingHorizontal: 24,
                       paddingVertical: 14,
                       borderRadius: 12,
@@ -500,7 +503,7 @@ export default function FrameworkContractsScreen() {
                     markingType={'period'}
                     markedDates={markedDates}
                     theme={{
-                      backgroundColor: '#ffffff',
+                      backgroundColor: colors.bgCard,
                       calendarBackground: '#ffffff',
                       textSectionTitleColor: '#b6c1cd',
                       selectedDayBackgroundColor: '#000000',
@@ -718,13 +721,13 @@ const s = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -755,18 +758,18 @@ const s = StyleSheet.create({
   itemTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
     marginRight: 12,
     letterSpacing: -0.3,
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   itemMetaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemSubtitle: { fontSize: 14, fontWeight: '500', color: '#6b7280' },
-  itemProgress: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  itemSubtitle: { fontSize: 14, fontWeight: '500', color: colors.textMuted },
+  itemProgress: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   miniProgressTrack: {
     height: 3,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 2,
     marginTop: 8,
     width: '100%',
@@ -787,14 +790,14 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalStepText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -808,7 +811,7 @@ const s = StyleSheet.create({
   heroInput: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'transparent',
@@ -816,7 +819,7 @@ const s = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 4,
     marginBottom: 16,
@@ -829,17 +832,17 @@ const s = StyleSheet.create({
   dateLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   dateValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   datePlaceholder: {
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   dateDivider: {
     width: 1,
@@ -856,7 +859,7 @@ const s = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 4,
@@ -865,7 +868,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#111827',
+    color: colors.textPrimary,
     paddingVertical: 14,
   },
   textArea: {
@@ -895,7 +898,7 @@ const s = StyleSheet.create({
     color: '#fff',
   },
   // Positions
-  sectionHeading: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  sectionHeading: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   positionsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -906,26 +909,26 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
-  addPosBtnText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  addPosBtnText: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   posChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#f0f0f0',
   },
-  posChipDesc: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 2 },
-  posChipMeta: { fontSize: 12, color: '#6b7280' },
+  posChipDesc: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
+  posChipMeta: { fontSize: 12, color: colors.textMuted },
   posForm: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 14,
     gap: 8,
@@ -939,21 +942,21 @@ const s = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     alignItems: 'center',
   },
-  posTypeBtnActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  posTypeBtnText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  posTypeBtnActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  posTypeBtnText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
   posTypeBtnTextActive: { color: '#fff' },
   posInput: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   posQtyRow: { flexDirection: 'row', gap: 8 },
   posFormBtns: { flexDirection: 'row', gap: 8, marginTop: 4 },
@@ -963,15 +966,15 @@ const s = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     alignItems: 'center',
   },
-  posCancelBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  posCancelBtnText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   posSaveBtn: {
     flex: 2,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
   posSaveBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },

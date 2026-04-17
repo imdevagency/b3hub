@@ -36,6 +36,7 @@ import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useLanguage } from '@/lib/language-context';
 import Constants from 'expo-constants';
+import { colors } from '@/lib/theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const ACCENT = '#111827';
@@ -303,12 +304,12 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
   },
   sectionHeader: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     letterSpacing: 0.8,
     paddingHorizontal: 16,
     paddingTop: 24,
@@ -316,10 +317,10 @@ const styles = StyleSheet.create({
   },
   card: {
     marginHorizontal: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   row: {
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -344,22 +345,22 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   rowDesc: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   dangerLabel: {
     color: '#ef4444',
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginLeft: 56,
   },
   comingSoonBadge: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -367,15 +368,15 @@ const styles = StyleSheet.create({
   comingSoonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   langOpt: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: colors.textDisabled,
   },
   langOptActive: {
-    color: '#111827',
+    color: colors.textPrimary,
   },
   bottom: {
     height: 40,

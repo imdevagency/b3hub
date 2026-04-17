@@ -33,6 +33,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { API_URL } from '@/lib/api/common';
+import { colors } from '@/lib/theme';
 
 // Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
 let FileSystem: typeof import('expo-file-system') | null = null;
@@ -62,11 +63,11 @@ function fmtEur(n: number): string {
 }
 
 const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
   ISSUED: { label: 'Gaida apmaksu', bg: '#eff6ff', color: '#1d4ed8' },
-  PAID: { label: 'Apmaksāts', bg: '#dcfce7', color: '#15803d' },
-  OVERDUE: { label: 'Kavēts', bg: '#fee2e2', color: '#b91c1c' },
-  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#9ca3af' },
+  PAID: { label: 'Apmaksāts', bg: '#dcfce7', color: colors.successText },
+  OVERDUE: { label: 'Kavēts', bg: '#fee2e2', color: colors.dangerText },
+  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: colors.textDisabled },
 };
 
 // ── Invoice row ────────────────────────────────────────────────
@@ -124,7 +125,7 @@ function InvoiceModal({
         {/* Amount hero */}
         <View style={m.amountHero}>
           <Text style={m.amountHeroLabel}>Kopā jāmaksā</Text>
-          <Text style={[m.amountHeroVal, isActionable && { color: '#111827' }]}>
+          <Text style={[m.amountHeroVal, isActionable && { color: colors.textPrimary }]}>
             {fmtEur(inv.total)}
           </Text>
           <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="md" />
@@ -171,7 +172,7 @@ function InvoiceModal({
             <Text
               style={[
                 m.lineVal,
-                inv.status === 'OVERDUE' && { color: '#dc2626', fontWeight: '700' },
+                inv.status === 'OVERDUE' && { color: colors.danger, fontWeight: '700' },
               ]}
             >
               {fmtDate(inv.dueDate)}
@@ -331,7 +332,7 @@ export default function InvoicesScreen() {
           {overdueCount > 0 && (
             <View style={[s.summaryChip, s.summaryChipRed]}>
               <AlertCircle size={12} color="#dc2626" />
-              <Text style={[s.summaryChipText, { color: '#dc2626' }]}>{overdueCount} kavēts</Text>
+              <Text style={[s.summaryChipText, { color: colors.danger }]}>{overdueCount} kavēts</Text>
             </View>
           )}
           {paidCount > 0 && (
@@ -423,7 +424,7 @@ const s = StyleSheet.create({
   summaryMain: { marginBottom: 10 },
   summaryLabel: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -431,7 +432,7 @@ const s = StyleSheet.create({
   summaryAmount: {
     fontSize: 40,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -1.5,
     marginTop: 2,
   },
@@ -447,7 +448,7 @@ const s = StyleSheet.create({
   summaryChipRed: { backgroundColor: '#fef2f2' },
   summaryChipGreen: { backgroundColor: '#f0fdf4' },
   summaryChipText: { fontSize: 12, fontWeight: '600' },
-  summaryEmpty: { fontSize: 13, color: '#9ca3af' },
+  summaryEmpty: { fontSize: 13, color: colors.textDisabled },
 
   // Segmented control
   segmentWrap: {
@@ -464,9 +465,9 @@ const s = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 8,
   },
-  segmentActive: { backgroundColor: '#f3f4f6' },
-  segmentText: { fontSize: 13, fontWeight: '500', color: '#6b7280' },
-  segmentTextActive: { color: '#111827', fontWeight: '700' },
+  segmentActive: { backgroundColor: colors.bgMuted },
+  segmentText: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
+  segmentTextActive: { color: colors.textPrimary, fontWeight: '700' },
 
   // List
   list: { flex: 1 },
@@ -483,17 +484,17 @@ const s = StyleSheet.create({
   },
   rowLeft: { flex: 1, gap: 5 },
   rowTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowNum: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  rowAmount: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  rowAmountDue: { color: '#111827' },
+  rowNum: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  rowAmount: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  rowAmountDue: { color: colors.textPrimary },
   rowBottomLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 7, height: 7, borderRadius: 4 },
   statusLabel: { fontSize: 12, fontWeight: '500' },
-  rowDate: { fontSize: 12, color: '#9ca3af' },
-  rowOrder: { fontSize: 12, color: '#9ca3af' },
+  rowDate: { fontSize: 12, color: colors.textDisabled },
+  rowOrder: { fontSize: 12, color: colors.textDisabled },
 
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginLeft: 20 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.bgMuted, marginLeft: 20 },
 });
 
 // ── Modal styles ───────────────────────────────────────────────
@@ -503,7 +504,7 @@ const m = StyleSheet.create({
   amountHero: { alignItems: 'center', paddingVertical: 20 },
   amountHeroLabel: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -511,7 +512,7 @@ const m = StyleSheet.create({
   amountHeroVal: {
     fontSize: 42,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: -1.5,
     marginTop: 4,
   },
@@ -523,7 +524,7 @@ const m = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
   },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
   statusText: { fontSize: 12, fontWeight: '600' },
@@ -534,10 +535,10 @@ const m = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 6,
   },
-  refLabel: { fontSize: 13, color: '#9ca3af' },
-  refVal: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  refLabel: { fontSize: 13, color: colors.textDisabled },
+  refVal: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#f3f4f6', marginVertical: 12 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.bgMuted, marginVertical: 12 },
 
   // Line items
   lineItem: {
@@ -547,10 +548,10 @@ const m = StyleSheet.create({
     paddingVertical: 8,
   },
   lineItemTotal: { paddingTop: 12, marginTop: 4 },
-  lineLabel: { fontSize: 14, color: '#6b7280' },
-  lineVal: { fontSize: 14, color: '#374151', fontWeight: '500' },
-  lineTotalLabel: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  lineTotalVal: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  lineLabel: { fontSize: 14, color: colors.textMuted },
+  lineVal: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+  lineTotalLabel: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  lineTotalVal: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
 
   // CTA
   payInfo: {
@@ -569,12 +570,12 @@ const m = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 14,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginTop: 12,
     gap: 8,
   },
   downloadBtnDisabled: {
     opacity: 0.45,
   },
-  downloadBtnText: { color: '#111827', fontWeight: '600', fontSize: 15 },
+  downloadBtnText: { color: colors.textPrimary, fontWeight: '600', fontSize: 15 },
 });

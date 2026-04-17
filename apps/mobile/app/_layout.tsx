@@ -20,6 +20,7 @@ import { SCREEN } from '@/lib/transitions';
 import React, { useEffect, useRef } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
+import { colors } from '@/lib/theme';
 import {
   Inter_300Light,
   Inter_400Regular,
@@ -98,7 +99,7 @@ Sentry.init({
 // show a white flash — edge-to-edge, Uber-style.
 const STACK_SCREEN_OPTIONS = {
   headerShown: false,
-  contentStyle: { backgroundColor: '#FFFFFF' },
+  contentStyle: { backgroundColor: colors.bgCard },
   ...SCREEN.push,
 } as const;
 

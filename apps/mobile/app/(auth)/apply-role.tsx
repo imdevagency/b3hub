@@ -23,11 +23,12 @@ import { ChevronLeft, CheckCircle, Info } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 type RoleType = 'supplier' | 'carrier';
 
 const ROLE_META: Record<RoleType, { emoji: string; title: string; color: string; bg: string }> = {
-  supplier: { emoji: '📦', title: 'Piegādātājs', color: '#059669', bg: '#d1fae5' },
+  supplier: { emoji: '📦', title: 'Piegādātājs', color: colors.success, bg: '#d1fae5' },
   carrier: { emoji: '🚛', title: 'Pārvadātājs', color: '#1d4ed8', bg: '#eff6ff' },
 };
 
@@ -289,7 +290,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -304,19 +305,19 @@ const s = StyleSheet.create({
   roleEmoji: { fontSize: 16 },
   roleBadgeText: { fontSize: 14, fontWeight: '700' },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16 },
-  title: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 6 },
-  subtitle: { fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 24 },
+  title: { fontSize: 26, fontWeight: '800', color: colors.textPrimary, marginBottom: 6 },
+  subtitle: { fontSize: 14, color: colors.textMuted, lineHeight: 20, marginBottom: 24 },
   field: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
-  optional: { fontWeight: '400', color: '#9ca3af' },
+  label: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 6 },
+  optional: { fontWeight: '400', color: colors.textDisabled },
   input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     backgroundColor: '#fff',
   },
   textarea: { height: 100, textAlignVertical: 'top' },
@@ -331,7 +332,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 16,
   },
-  apiErrText: { color: '#b91c1c', fontSize: 14 },
+  apiErrText: { color: colors.dangerText, fontSize: 14 },
   footer: {
     paddingHorizontal: 24,
     paddingBottom: 32,
@@ -419,10 +420,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  successTitle: { fontSize: 24, fontWeight: '800', color: '#111827', textAlign: 'center' },
+  successTitle: { fontSize: 24, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
   successDesc: {
     fontSize: 15,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 22,
   },

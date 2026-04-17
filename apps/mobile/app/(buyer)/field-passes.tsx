@@ -60,7 +60,7 @@ function isToday(from: string, to: string) {
 
 const STATUS_CFG = {
   ACTIVE: { label: 'Aktīva', bg: '#ecfdf5', color: '#10b981' },
-  EXPIRED: { label: 'Beigusies', bg: '#f3f4f6', color: '#9ca3af' },
+  EXPIRED: { label: 'Beigusies', bg: '#f3f4f6', color: colors.textDisabled },
   REVOKED: { label: 'Atsaukta', bg: '#fef2f2', color: '#ef4444' },
 } as const;
 
@@ -68,6 +68,7 @@ const STATUS_CFG = {
 
 export default function FieldPassesScreen() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const { showToast } = useToast();
 
   const [passes, setPasses] = useState<ApiFieldPass[]>([]);
@@ -131,11 +132,11 @@ export default function FieldPassesScreen() {
   const handleCreate = async () => {
     if (!token) return;
     if (!selectedContractId) {
-      Alert.alert('Kļūda', 'Izvēlieties līgumu');
+      toast.error('Izvēlieties līgumu')
       return;
     }
     if (!vehiclePlate.trim()) {
-      Alert.alert('Kļūda', 'Ievadiet transportlīdzekļa numuru');
+      toast.error('Ievadiet transportlīdzekļa numuru')
       return;
     }
     setCreating(true);
@@ -232,7 +233,7 @@ export default function FieldPassesScreen() {
                   {p.vehiclePlate}
                 </Text>
                 {p.driverName ? (
-                  <Text style={{ fontSize: 12, color: '#6b7280' }}> · {p.driverName}</Text>
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}> · {p.driverName}</Text>
                 ) : null}
               </View>
             ))}
@@ -574,7 +575,7 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
           }}
         >
           <XCircle size={12} color="#ef4444" />
-          <Text style={{ fontSize: 12, color: '#b91c1c', flex: 1 }}>{pass.revokedReason}</Text>
+          <Text style={{ fontSize: 12, color: colors.dangerText, flex: 1 }}>{pass.revokedReason}</Text>
         </View>
       )}
     </View>

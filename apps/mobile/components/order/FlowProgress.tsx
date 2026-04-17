@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { Step } from './order-request-types';
+import { colors } from '@/lib/theme';
 
 export const STEP_ORDER: Step[] = ['map', 'material', 'configure', 'offers', 'confirm'];
 
@@ -45,13 +46,13 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressDotActive: { backgroundColor: '#111827' },
-  progressDotInactive: { backgroundColor: '#f3f4f6' },
+  progressDotActive: { backgroundColor: colors.primary },
+  progressDotInactive: { backgroundColor: colors.bgMuted },
   progressNum: { fontSize: 11, fontWeight: '700' },
   progressNumActive: { color: '#fff' },
-  progressNumInactive: { color: '#9ca3af' },
+  progressNumInactive: { color: colors.textDisabled },
   progressCheck: {},
   progressLine: { flex: 1, height: 2, marginHorizontal: 3 },
-  progressLineActive: { backgroundColor: '#111827' },
+  progressLineActive: { backgroundColor: colors.primary },
   progressLineInactive: { backgroundColor: '#e5e7eb' },
 });

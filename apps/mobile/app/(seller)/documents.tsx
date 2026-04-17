@@ -19,10 +19,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiDocument, DocumentType } from '@/lib/api';
-import { useFocusEffect } from 'expo-router';
+import { useScreenLoad } from '@/lib/use-screen-load';
 import {
   FileText,
   Weight,
@@ -33,6 +34,7 @@ import {
   Handshake,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -79,12 +81,13 @@ const FALLBACK_META = { label: 'Cits', icon: FileText, iconColor: '#6b7280', ico
 // ── Document Row ──────────────────────────────────────────────
 
 function DocRow({ doc }: { doc: ApiDocument }) {
+  const toast = useToast();
   const meta = TYPE_META[doc.type] ?? FALLBACK_META;
   const Icon = meta.icon;
 
   const handleOpen = async () => {
     if (!doc.fileUrl) {
-      Alert.alert('Nav faila', 'Šim dokumentam nav pievienots fails.');
+      toast.info('Šim dokumentam nav pievienots fails.');
       return;
     }
     haptics.light();
@@ -92,7 +95,7 @@ function DocRow({ doc }: { doc: ApiDocument }) {
     if (can) {
       await Linking.openURL(doc.fileUrl);
     } else {
-      Alert.alert('Kļūda', 'Neizdevās atvērt dokumentu.');
+      toast.error('Neizdevās atvērt dokumentu.');
     }
   };
 
@@ -129,34 +132,18 @@ function DocRow({ doc }: { doc: ApiDocument }) {
 
 export default function SellerDocuments() {
   const { token } = useAuth();
+  const toast = useToast();
   const [docs, setDocs] = useState<ApiDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<DocTab>('ALL');
 
-  const load = useCallback(
-    async (refresh = false) => {
-      if (!token) return;
-      try {
-        refresh ? setRefreshing(true) : setLoading(true);
-        const data = await api.documents.getAll(token);
-        // Exclude invoices — those belong on a dedicated invoices screen
-        setDocs(data.filter((d) => d.type !== 'INVOICE'));
-      } catch {
-        // silently fail — empty state handles it
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetcher = useCallback(async () => {
+    if (!token) return;
+    const data = await api.documents.getAll(token);
+    // Exclude invoices — those belong on a dedicated invoices screen
+    setDocs(data.filter((d) => d.type !== 'INVOICE'));
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const visible =
     tab === 'ALL'
@@ -221,11 +208,7 @@ export default function SellerDocuments() {
         contentContainerStyle={visible.length === 0 ? s.listEmpty : s.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => load(true)}
-            tintColor="#00A878"
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
         }
       >
         {visible.length === 0 ? (
@@ -265,11 +248,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
-  tabActive: { backgroundColor: '#111827' },
-  tabText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-  tabTextActive: { color: '#ffffff' },
+  tabActive: { backgroundColor: colors.primary },
+  tabText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  tabTextActive: { color: colors.white },
   tabBadge: {
     backgroundColor: '#e5e7eb',
     borderRadius: 999,
@@ -279,21 +262,21 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   tabBadgeActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  tabBadgeText: { fontSize: 11, fontWeight: '700', color: '#374151' },
-  tabBadgeTextActive: { color: '#ffffff' },
+  tabBadgeText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  tabBadgeTextActive: { color: colors.white },
 
   list: { flex: 1 },
   listContent: { padding: 16 },
   listEmpty: { flexGrow: 1 },
 
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#f3f4f6',
     overflow: 'hidden',
   },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginLeft: 68 },
+  divider: { height: 1, backgroundColor: colors.bgMuted, marginLeft: 68 },
 
   docRow: {
     flexDirection: 'row',
@@ -310,13 +293,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   docBody: { flex: 1 },
-  docTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  docMeta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  docTitle: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  docMeta: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   noFile: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  noFileText: { fontSize: 11, fontWeight: '600', color: '#9ca3af' },
+  noFileText: { fontSize: 11, fontWeight: '600', color: colors.textDisabled },
 });

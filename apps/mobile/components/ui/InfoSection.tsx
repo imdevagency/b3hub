@@ -14,7 +14,7 @@
  *   <InfoSection
  *     icon={<Camera size={14} color="#6b7280" />}
  *     title="Svēršanas biļete"
- *     right={<Text style={{ fontSize: 12, color: '#374151' }}>⚖️ 12 000 kg</Text>}
+ *     right={<Text style={{ fontSize: 12, color: colors.textSecondary }}>⚖️ 12 000 kg</Text>}
  *   >
  *     <Image ... />
  *   </InfoSection>
@@ -22,6 +22,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors } from '@/lib/theme';
 
 interface InfoSectionProps {
   /** Icon element — e.g. <MapPin size={14} color="#6b7280" /> */
@@ -50,7 +51,7 @@ export function InfoSection({ icon, title, right, children }: InfoSectionProps) 
 
 const styles = StyleSheet.create({
   section: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

@@ -49,6 +49,7 @@ import {
   FileDown,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 let FileSystem: typeof import('expo-file-system') | null = null;
 let Sharing: typeof import('expo-sharing') | null = null;
@@ -214,11 +215,11 @@ function DocsTab() {
 }
 
 const INV_STATUS_META: Record<InvoiceStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
   ISSUED: { label: 'Gaida apmaksu', bg: '#eff6ff', color: '#1d4ed8' },
-  PAID: { label: 'Apmaksāts', bg: '#dcfce7', color: '#15803d' },
-  OVERDUE: { label: 'Kavēts', bg: '#fee2e2', color: '#b91c1c' },
-  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: '#9ca3af' },
+  PAID: { label: 'Apmaksāts', bg: '#dcfce7', color: colors.successText },
+  OVERDUE: { label: 'Kavēts', bg: '#fee2e2', color: colors.dangerText },
+  CANCELLED: { label: 'Atcelts', bg: '#f3f4f6', color: colors.textDisabled },
 };
 
 const INV_FILTERS: { key: InvoiceStatus | 'ALL'; label: string }[] = [

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ShoppingCart, Store, Truck, ChevronDown, Check } from 'lucide-react-native';
 import { useMode, AppMode, MODE_HOME } from '@/lib/mode-context';
 import { t } from '@/lib/translations';
+import { colors } from '@/lib/theme';
 
 // ── Mode config ──────────────────────────────────────────────────────────────
 
@@ -152,7 +153,7 @@ export function ModeSwitcher() {
 const styles = StyleSheet.create({
   // ── Trigger bar ──
   bar: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignItems: 'flex-start',
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
 
   // ── Sheet ──
   sheet: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -203,12 +204,12 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   sheetSub: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginBottom: 20,
   },
 
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1.5,
@@ -232,8 +233,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modeCardBody: { flex: 1, gap: 3 },
-  modeCardLabel: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  modeCardSub: { fontSize: 13, color: '#6b7280' },
+  modeCardLabel: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  modeCardSub: { fontSize: 13, color: colors.textMuted },
   activeCheck: {
     width: 28,
     height: 28,

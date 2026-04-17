@@ -19,6 +19,8 @@ import type { ApiWasteRecord, WasteType } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useToast } from '@/components/ui/Toast';
+import { colors } from '@/lib/theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -47,15 +49,14 @@ const WASTE_TYPE_COLORS: Record<WasteType, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function RecordCard({ item }: { item: ApiWasteRecord }) {
-  const typeColor = WASTE_TYPE_COLORS[item.wasteType] ?? '#6b7280';
+  const toast = useToast();
+  const typeColor = WASTE_TYPE_COLORS[item.wasteType] ?? colors.textMuted;
   const typeLabel = WASTE_TYPE_LABELS[item.wasteType] ?? item.wasteType;
   const hasCertificate = !!item.certificateUrl;
 
   const handleOpenCertificate = () => {
     if (!item.certificateUrl) return;
-    Linking.openURL(item.certificateUrl).catch(() =>
-      Alert.alert('Kļūda', 'Neizdevās atvērt sertifikātu.'),
-    );
+    Linking.openURL(item.certificateUrl).catch(() => toast.error('Neizdevās atvērt sertifikātu.'));
   };
 
   return (
@@ -138,6 +139,7 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
 
 export default function CertificatesScreen() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [records, setRecords] = useState<ApiWasteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -197,7 +199,7 @@ export default function CertificatesScreen() {
               marginTop: 16,
               paddingHorizontal: 24,
               paddingVertical: 10,
-              backgroundColor: '#111827',
+              backgroundColor: colors.primary,
               borderRadius: 100,
             }}
           >
@@ -260,12 +262,12 @@ export default function CertificatesScreen() {
 
 const s = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },
-  headerSub: { fontSize: 14, color: '#6b7280', marginTop: 2 },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+  headerSub: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#374151' },
-  emptyDesc: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.textSecondary },
+  emptyDesc: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
 
   summaryBar: {
     backgroundColor: '#fff',
@@ -281,8 +283,8 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   summaryItem: { alignItems: 'center', gap: 2 },
-  summaryNum: { fontSize: 22, fontWeight: '700', color: '#111827' },
-  summaryLabel: { fontSize: 12, color: '#9ca3af' },
+  summaryNum: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  summaryLabel: { fontSize: 12, color: colors.textDisabled },
   summaryDivider: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: '#e5e7eb' },
 
   card: {
@@ -303,43 +305,43 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  certBadgeText: { fontSize: 11, fontWeight: '600', color: '#374151' },
+  certBadgeText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
   pendingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  pendingBadgeText: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
+  pendingBadgeText: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
 
-  centerName: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  centerCity: { fontSize: 13, color: '#6b7280' },
+  centerName: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  centerCity: { fontSize: 13, color: colors.textMuted },
 
   metricsRow: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
   metric: { gap: 1 },
-  metricValue: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  metricLabel: { fontSize: 11, color: '#9ca3af' },
+  metricValue: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  metricLabel: { fontSize: 11, color: colors.textDisabled },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   certBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
-  certBtnText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
+  certBtnText: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
-  cardDate: { fontSize: 12, color: '#9ca3af' },
+  cardDate: { fontSize: 12, color: colors.textDisabled },
 });

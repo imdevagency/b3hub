@@ -46,6 +46,8 @@ import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
+import { colors } from '@/lib/theme';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -65,6 +67,7 @@ export default function OrderWizard() {
     setSkipPaymentClientSecret,
   } = useOrder();
   const { user, token } = useAuth();
+  const toast = useToast();
 
   // ── Wizard state ──────────────────────────────────────────────
   const [step, setStep] = useState<Step>(1);
@@ -198,7 +201,7 @@ export default function OrderWizard() {
     }
     // Submit
     if (!token) {
-      Alert.alert('Pieteikties nepīciešams', 'Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.');
+      toast.info('Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.')
       return;
     }
     if (!state.location || !state.wasteCategory || !state.skipSize) return;
@@ -281,7 +284,7 @@ export default function OrderWizard() {
       if (fromCamera) {
         const { granted } = await ImagePicker.requestCameraPermissionsAsync();
         if (!granted) {
-          Alert.alert('Nav piekļuves kamerai', 'Lai pievienotu foto, atļauj piekļuvi kamerai.');
+          toast.error('Lai pievienotu foto, atļauj piekļuvi kamerai.')
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -608,7 +611,7 @@ export default function OrderWizard() {
                         onPress={() => setLinkedMaterialOrderId(null)}
                         activeOpacity={0.75}
                       >
-                        <Text style={[s.matOrderNum, { color: '#6b7280' }]}>Noņemt saiti</Text>
+                        <Text style={[s.matOrderNum, { color: colors.textMuted }]}>Noņemt saiti</Text>
                       </TouchableOpacity>
                     )}
                     {matOrders.map((o) => {
@@ -674,22 +677,22 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 const s = StyleSheet.create({
   content: { flex: 1 },
   contentPad: { padding: 20, paddingBottom: 32 },
-  hint: { fontSize: 14, color: '#6b7280', marginBottom: 16, lineHeight: 20 },
+  hint: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
   addressCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
   },
-  addressText: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '500', lineHeight: 20 },
-  addressPlaceholder: { color: '#9ca3af', fontWeight: '400' },
+  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500', lineHeight: 20 },
+  addressPlaceholder: { color: colors.textDisabled, fontWeight: '400' },
   sectionLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginTop: 8,
     marginBottom: 16,
   },
@@ -700,18 +703,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     marginRight: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     minWidth: 54,
   },
-  dayChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  dayChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
   dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
-  dayDow: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
-  dayNum: { fontSize: 20, fontWeight: '700', color: '#111827', marginVertical: 2 },
-  dayMon: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  dayDow: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
+  dayNum: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginVertical: 2 },
+  dayMon: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
   dayActive: { color: '#fff' },
-  dayActiveSub: { color: '#9ca3af' },
+  dayActiveSub: { color: colors.textDisabled },
   windowRow: {
     flexDirection: 'row',
     gap: 8,
@@ -724,11 +727,11 @@ const s = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
   windowChipActive: { backgroundColor: '#000', borderColor: '#000' },
-  windowChipText: { fontSize: 14, color: '#374151', fontWeight: '600', textAlign: 'center' },
+  windowChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
   windowChipTextActive: { color: '#fff' },
   summaryCard: {
     backgroundColor: '#fff',
@@ -749,7 +752,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  addressValue: { flex: 1, fontSize: 15, color: '#111827', fontWeight: '600', lineHeight: 22 },
+  addressValue: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '600', lineHeight: 22 },
   detailRow: {
     paddingVertical: 14,
     paddingHorizontal: 4,
@@ -760,22 +763,22 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  detailLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  detailLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
   detailValue: {
     flex: 1,
     textAlign: 'right',
     fontSize: 15,
-    color: '#111827',
+    color: colors.textPrimary,
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderWidth: 0,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   inputMulti: { height: 80, textAlignVertical: 'top' },
   saveAddrRow: {
@@ -800,8 +803,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   saveAddrCheckActive: { backgroundColor: '#000', borderColor: '#000' },
-  saveAddrLabel: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },
+  saveAddrLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
   photoCard: {
     backgroundColor: 'transparent',
     borderWidth: 0,
@@ -816,11 +819,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
   },
   photoAddBtnText: {
     fontSize: 13,
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   photoPreviewWrap: {
@@ -858,13 +861,13 @@ const s = StyleSheet.create({
   matLinkToggleText: {
     flex: 1,
     fontSize: 14,
-    color: '#059669',
+    color: colors.success,
     fontWeight: '600',
   },
   matOrderList: {
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -874,7 +877,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.border,
     backgroundColor: '#fff',
   },
   matOrderRowActive: {
@@ -883,17 +886,17 @@ const s = StyleSheet.create({
   matOrderNum: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   matOrderName: {
     fontSize: 12,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   matOrderEmpty: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textAlign: 'center',
     padding: 16,
   },
@@ -916,21 +919,21 @@ const s = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginTop: 20,
     marginBottom: 8,
   },
-  successSub: { fontSize: 15, color: '#6b7280', marginBottom: 24 },
+  successSub: { fontSize: 15, color: colors.textMuted, marginBottom: 24 },
   jobBadge: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 20,
     marginBottom: 32,
   },
-  jobBadgeText: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  jobBadgeText: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   successBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 40,

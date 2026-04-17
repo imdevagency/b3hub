@@ -2,6 +2,7 @@ import React, { createContext, useContext, useRef, useState, useCallback } from 
 import { Animated, Text, StyleSheet, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, XCircle, Info } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type ToastVariant = 'success' | 'error' | 'info';
@@ -174,7 +175,7 @@ function ToastBanner({
       ]}
     >
       <Icon size={18} color={style.iconColor} />
-      <Text style={[styles.message, { color: '#111827' }]} numberOfLines={2}>
+      <Text style={[styles.message, { color: colors.textPrimary }]} numberOfLines={2}>
         {config.message}
       </Text>
       <View style={[styles.accent, { backgroundColor: style.accentColor }]} />

@@ -27,6 +27,7 @@ import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder, type OpenQuoteRequest } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
+import { colors } from '@/lib/theme';
 import {
   X,
   Square,
@@ -112,9 +113,9 @@ function getStatusMeta(status: OrderStatus) {
     case 'DISPATCHED':
       return { text: 'Piegādē', color: '#4b5563', bg: '#f3f4f6' };
     case 'CANCELLED':
-      return { text: 'Atcelts', color: '#b91c1c', bg: '#fef2f2' };
+      return { text: 'Atcelts', color: colors.dangerText, bg: '#fef2f2' };
     default:
-      return { text: status, color: '#6b7280', bg: '#f3f4f6' };
+      return { text: status, color: colors.textMuted, bg: '#f3f4f6' };
   }
 }
 
@@ -167,7 +168,7 @@ function LoadingModal({
               <X size={18} color="#111827" />
             </View>
           </TouchableOpacity>
-          <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827' }}>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary }}>
             Iekraušanas apstiprinājums
           </Text>
           <View style={{ width: 36 }} />
@@ -180,7 +181,7 @@ function LoadingModal({
           <ScrollView contentContainerStyle={{ padding: 20, gap: 24 }}>
             <View className="pb-6 border-b border-gray-100">
               <Text
-                style={{ fontSize: 26, fontWeight: '800', color: '#111827', letterSpacing: -0.5 }}
+                style={{ fontSize: 26, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
               >
                 {order.material}
               </Text>
@@ -301,7 +302,7 @@ function OrderCard({
         <View className="flex-row justify-between items-start mb-1">
           <View className="flex-1 pr-4">
             <Text
-              style={{ fontSize: 18, fontWeight: '800', color: '#111827', letterSpacing: -0.3 }}
+              style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.3 }}
             >
               {order.material}
             </Text>
@@ -318,7 +319,7 @@ function OrderCard({
               )
             ) : (
               <>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
                   €{order.price.toFixed(0)}
                 </Text>
                 <StatusPill
@@ -418,7 +419,7 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#111827" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>Noraidīt</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>Noraidīt</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -431,7 +432,7 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>Apstiprināt</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>Apstiprināt</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -448,7 +449,7 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
                 Sākt iekraušanu
               </Text>
             )}
@@ -696,7 +697,7 @@ export default function IncomingScreen() {
           style={{
             fontSize: 32,
             fontWeight: '800',
-            color: '#111827',
+            color: colors.textPrimary,
             letterSpacing: -0.8,
             lineHeight: 38,
           }}
@@ -815,7 +816,7 @@ export default function IncomingScreen() {
                   <Package size={18} color="#2563eb" />
                 </View>
                 <View className="flex-1">
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
                     {req.materialCategory}
                   </Text>
                   <Text className="text-gray-500 font-medium mt-0.5" style={{ fontSize: 13 }}>
@@ -953,7 +954,7 @@ export default function IncomingScreen() {
             {batchConfirming ? (
               <ActivityIndicator color="#111827" size="small" />
             ) : (
-              <Text style={{ color: '#111827', fontWeight: '700', fontSize: 14 }}>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 14 }}>
                 Apstiprināt visus
               </Text>
             )}

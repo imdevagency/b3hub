@@ -21,6 +21,7 @@ import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { colors } from '@/lib/theme';
 
 type RoleKey = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
@@ -54,16 +55,16 @@ const ACCOUNT_KINDS = [
 ];
 
 function pwStrength(pw: string): { label: string; color: string; pct: number } {
-  if (pw.length === 0) return { label: '', color: '#e5e7eb', pct: 0 };
+  if (pw.length === 0) return { label: '', color: colors.border, pct: 0 };
   let score = 0;
   if (pw.length >= 8) score++;
   if (/[A-Z]/.test(pw)) score++;
   if (/[0-9]/.test(pw)) score++;
   if (/[^a-zA-Z0-9]/.test(pw)) score++;
   if (score <= 1) return { label: 'Vāja', color: '#ef4444', pct: 0.25 };
-  if (score === 2) return { label: 'Vidēja', color: '#9ca3af', pct: 0.5 };
-  if (score === 3) return { label: 'Laba', color: '#111827', pct: 0.75 };
-  return { label: 'Stipra', color: '#111827', pct: 1 };
+  if (score === 2) return { label: 'Vidēja', color: colors.textDisabled, pct: 0.5 };
+  if (score === 3) return { label: 'Laba', color: colors.textPrimary, pct: 0.75 };
+  return { label: 'Stipra', color: colors.textPrimary, pct: 1 };
 }
 
 export default function RegisterScreen() {
@@ -484,7 +485,7 @@ const s = StyleSheet.create({
 
   // Block Opts
   blockOption: {
-    backgroundColor: '#f3f4f6', // bg-muted
+    backgroundColor: colors.bgMuted, // bg-muted
     borderRadius: 16,
     padding: 20,
   },
@@ -500,7 +501,7 @@ const s = StyleSheet.create({
   },
   blockDesc: {
     fontSize: 14,
-    color: '#6b7280', // text-muted
+    color: colors.textMuted, // text-muted
     fontFamily: 'Inter_400Regular',
   },
   textWhite: { color: '#fff' },
@@ -508,7 +509,7 @@ const s = StyleSheet.create({
 
   // Soft Inputs
   softInput: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 14,
     paddingHorizontal: 18,
     height: 56,
@@ -519,7 +520,7 @@ const s = StyleSheet.create({
   softInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 14,
     paddingHorizontal: 18,
     height: 56,
@@ -533,7 +534,7 @@ const s = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     marginBottom: 12,
     letterSpacing: 0.5,
@@ -547,17 +548,17 @@ const s = StyleSheet.create({
 
   // API Err
   apiErrBox: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: colors.dangerBg,
     borderRadius: 12,
     padding: 16,
     marginTop: 24,
   },
-  apiErrText: { color: '#b91c1c', fontSize: 14, fontWeight: '500' },
+  apiErrText: { color: colors.dangerText, fontSize: 14, fontWeight: '500' },
 
   // Legal
   legalText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginTop: 24,
     lineHeight: 20,
     fontFamily: 'Inter_400Regular',

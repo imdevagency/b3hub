@@ -6,6 +6,7 @@
  */
 import React, { useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, ViewStyle, StyleProp, View, Text } from 'react-native';
+import { colors } from '@/lib/theme';
 
 // react-native-maps is not bundled in Expo Go SDK 50+. Guard the import so the
 // app loads in Expo Go and shows a fallback instead of crashing the JS runtime.
@@ -184,10 +185,10 @@ export function BaseMap({
         style={[
           StyleSheet.absoluteFillObject,
           style as ViewStyle,
-          { backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
+          { backgroundColor: colors.bgMuted, alignItems: 'center', justifyContent: 'center' },
         ]}
       >
-        <Text style={{ color: '#9ca3af', fontSize: 13 }}>Map not available in Expo Go</Text>
+        <Text style={{ color: colors.textDisabled, fontSize: 13 }}>Map not available in Expo Go</Text>
       </View>
     );
   }

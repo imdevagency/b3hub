@@ -42,6 +42,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { SavedAddress, SupplierOffer, MaterialCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -692,16 +693,16 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
   },
   reversingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
-  reversingText: { fontSize: 14, color: '#9ca3af', fontFamily: 'Inter_400Regular' },
+  reversingText: { fontSize: 14, color: colors.textDisabled, fontFamily: 'Inter_400Regular' },
   mapAddrMain: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#000', lineHeight: 22 },
-  mapAddrCity: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#6b7280', marginTop: 2 },
-  mapHint: { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#9ca3af', textAlign: 'center' },
+  mapAddrCity: { fontSize: 13, fontFamily: 'Inter_400Regular', color: colors.textMuted, marginTop: 2 },
+  mapHint: { fontSize: 12, fontFamily: 'Inter_400Regular', color: colors.textDisabled, textAlign: 'center' },
   confirmBtn: {
     backgroundColor: '#000',
     borderRadius: 8,
@@ -723,9 +724,9 @@ const s = StyleSheet.create({
     gap: 6,
   },
   previewLoading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  previewLoadingText: { fontSize: 12, color: '#6b7280', fontFamily: 'Inter_500Medium' },
+  previewLoadingText: { fontSize: 12, color: colors.textMuted, fontFamily: 'Inter_500Medium' },
   previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
-  previewHeaderText: { fontSize: 12, color: '#059669', fontFamily: 'Inter_600SemiBold' },
+  previewHeaderText: { fontSize: 12, color: colors.success, fontFamily: 'Inter_600SemiBold' },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -736,11 +737,11 @@ const s = StyleSheet.create({
   },
   previewSupplier: { fontSize: 13, color: '#000', fontFamily: 'Inter_500Medium' },
   previewMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 },
-  previewMetaText: { fontSize: 11, color: '#6b7280', fontFamily: 'Inter_400Regular' },
-  previewMetaDot: { fontSize: 11, color: '#9ca3af' },
+  previewMetaText: { fontSize: 11, color: colors.textMuted, fontFamily: 'Inter_400Regular' },
+  previewMetaDot: { fontSize: 11, color: colors.textDisabled },
   previewPriceCol: { alignItems: 'flex-end' },
-  previewPrice: { fontSize: 14, color: '#059669', fontFamily: 'Inter_700Bold' },
-  previewUnit: { fontSize: 11, color: '#6b7280', fontFamily: 'Inter_400Regular' },
+  previewPrice: { fontSize: 14, color: colors.success, fontFamily: 'Inter_700Bold' },
+  previewUnit: { fontSize: 11, color: colors.textMuted, fontFamily: 'Inter_400Regular' },
 
   // ── Uber Stack (transport steps SEARCH mode) ──
   uberStackWrap: {
@@ -756,7 +757,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -774,7 +775,7 @@ const s = StyleSheet.create({
   uberInputActiveWrap: { position: 'relative' },
   uberInputActive: {
     height: 48,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 8,
     paddingLeft: 14,
     paddingRight: 42,
@@ -795,15 +796,15 @@ const s = StyleSheet.create({
   },
   uberInputStatic: {
     height: 48,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSubtle,
     borderRadius: 8,
     justifyContent: 'center',
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  uberInputStaticText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: '#6b7280' },
-  uberInputPlaceholder: { backgroundColor: '#f3f4f6', borderWidth: 0 },
+  uberInputStaticText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: colors.textMuted },
+  uberInputPlaceholder: { backgroundColor: colors.bgMuted, borderWidth: 0 },
   uberInputPlaceholderText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: '#bbb' },
 
   // ── Generic search header ──
@@ -820,7 +821,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -834,7 +835,7 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter_400Regular',
     color: '#000',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
   },
   searchClearBtn: { position: 'absolute', right: 28, top: 25 },
 
@@ -850,12 +851,12 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#000' },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginHorizontal: 20, marginVertical: 4 },
+  divider: { height: 1, backgroundColor: colors.bgMuted, marginHorizontal: 20, marginVertical: 4 },
   searchingRow: { alignItems: 'center', paddingVertical: 24 },
   suggRow: {
     flexDirection: 'row',
@@ -868,16 +869,16 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   suggTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#000', marginBottom: 2 },
-  suggSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#9ca3af' },
+  suggSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: colors.textDisabled },
   sectionHeader: {
     fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.7,
     paddingHorizontal: 20,
@@ -896,10 +897,10 @@ const s = StyleSheet.create({
     color: '#000',
     marginBottom: 3,
   },
-  savedPlaceSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#9CA3AF' },
+  savedPlaceSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: colors.textDisabled },
   emptyText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     paddingHorizontal: 20,
     fontFamily: 'Inter_400Regular',
     marginTop: 12,

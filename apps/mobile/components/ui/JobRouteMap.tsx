@@ -14,6 +14,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
 import { BaseMap, RouteLayer, PinLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
+import { colors } from '@/lib/theme';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface MapPin {
@@ -273,12 +274,12 @@ const styles = StyleSheet.create({
   infoDistance: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   infoDuration: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6b7280',
+    color: colors.textMuted,
     marginLeft: 4,
   },
 });

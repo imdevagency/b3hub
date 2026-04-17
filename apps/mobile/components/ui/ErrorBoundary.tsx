@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { colors } from '@/lib/theme';
 
 interface Props {
   children: React.ReactNode;
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#fee2e2',
+    backgroundColor: colors.dangerBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -90,13 +91,13 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 24,
   },
   devError: {
     maxHeight: 160,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 8,
     padding: 12,
     marginBottom: 24,
@@ -104,11 +105,11 @@ const styles = StyleSheet.create({
   },
   devErrorText: {
     fontSize: 11,
-    color: '#374151',
+    color: colors.textSecondary,
     fontFamily: 'monospace',
   },
   button: {
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.danger,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 32,

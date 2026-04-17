@@ -4,7 +4,6 @@ import {
   Text as RNText,
   View,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -33,8 +32,9 @@ import {
 } from '@/lib/api';
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { BaseMap, PinLayer, RouteLayer, useRoute } from '@/components/map';
-import type { CameraRefHandle } from '@/components/map';
+import { ActiveJobMap } from '@/components/driver/ActiveJobMap';
+import { InlineTab } from '@/components/driver/InlineTab';
+import { styles } from './active-styles';
 import { haptics } from '@/lib/haptics';
 import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
@@ -43,6 +43,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { colors } from '@/lib/theme';
 import {
   MapPin,
   Navigation,
@@ -120,124 +121,6 @@ const DOC_LABELS: Record<string, string> = {
 
 function formatDocCode(code: string): string {
   return DOC_LABELS[code] ?? code.replaceAll('_', ' ').toLowerCase();
-}
-
-// ── Always-on map: renders live BaseMap, overlays route+pins only when coords exist ──
-function ActiveJobMap({
-  job,
-  currentStatus,
-  currentLat,
-  currentLng,
-}: {
-  job: ApiTransportJob;
-  currentStatus: JobStatus;
-  currentLat: number | null;
-  currentLng: number | null;
-}) {
-  const cameraRef = React.useRef<CameraRefHandle | null>(null);
-  const hasCoords =
-    job.pickupLat != null &&
-    job.pickupLng != null &&
-    job.deliveryLat != null &&
-    job.deliveryLng != null;
-
-  const pickup = hasCoords ? { lat: job.pickupLat!, lng: job.pickupLng! } : null;
-  const delivery = hasCoords ? { lat: job.deliveryLat!, lng: job.deliveryLng! } : null;
-
-  const { route } = useRoute(pickup, delivery);
-
-  const validCurrent =
-    currentLat != null &&
-    currentLng != null &&
-    currentLat >= 34 &&
-    currentLat <= 72 &&
-    currentLng >= -25 &&
-    currentLng <= 50
-      ? { lat: currentLat, lng: currentLng }
-      : null;
-
-  const showToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
-  const { route: toPickupRoute } = useRoute(
-    showToPickup && validCurrent && pickup ? validCurrent : null,
-    showToPickup && pickup ? pickup : null,
-  );
-
-  // Fit camera to show job once coords are known
-  const fitted = React.useRef(false);
-  React.useEffect(() => {
-    if (!hasCoords || fitted.current || !cameraRef.current) return;
-    const timer = setTimeout(() => {
-      if (!cameraRef.current || !pickup || !delivery) return;
-      cameraRef.current.fitBounds(
-        [Math.max(pickup.lng, delivery.lng), Math.max(pickup.lat, delivery.lat)],
-        [Math.min(pickup.lng, delivery.lng), Math.min(pickup.lat, delivery.lat)],
-        [56, 56, 220, 56],
-        400,
-      );
-      fitted.current = true;
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [hasCoords]);
-
-  // Follow driver position
-  React.useEffect(() => {
-    if (!validCurrent || !cameraRef.current) return;
-    cameraRef.current.setCamera({
-      centerCoordinate: [validCurrent.lng, validCurrent.lat],
-      zoomLevel: 13,
-      animationDuration: 700,
-    });
-  }, [validCurrent?.lat, validCurrent?.lng]);
-
-  const center: [number, number] = validCurrent
-    ? [validCurrent.lng, validCurrent.lat]
-    : pickup && delivery
-      ? [(pickup.lng + delivery.lng) / 2, (pickup.lat + delivery.lat) / 2]
-      : [24.1052, 56.9496];
-
-  const mainCoords =
-    route?.coords ??
-    (pickup && delivery
-      ? [
-          { latitude: pickup.lat, longitude: pickup.lng },
-          { latitude: delivery.lat, longitude: delivery.lng },
-        ]
-      : []);
-
-  const toPickupCoords =
-    toPickupRoute?.coords ??
-    (validCurrent && pickup
-      ? [
-          { latitude: validCurrent.lat, longitude: validCurrent.lng },
-          { latitude: pickup.lat, longitude: pickup.lng },
-        ]
-      : []);
-
-  return (
-    <View style={StyleSheet.absoluteFill}>
-      <BaseMap cameraRef={cameraRef} center={center} zoom={12} style={StyleSheet.absoluteFill}>
-        {validCurrent && <PinLayer id="current" coordinate={validCurrent} type="current" />}
-        {pickup && (
-          <PinLayer id="pickup" coordinate={pickup} type="pickup" label={job.pickupCity} />
-        )}
-        {delivery && (
-          <PinLayer id="delivery" coordinate={delivery} type="delivery" label={job.deliveryCity} />
-        )}
-        {mainCoords.length > 1 && (
-          <RouteLayer id="main-route" coordinates={mainCoords} color="#111827" width={4} />
-        )}
-        {toPickupCoords.length > 1 && (
-          <RouteLayer
-            id="to-pickup"
-            coordinates={toPickupCoords}
-            color="#9ca3af"
-            width={3}
-            dashed
-          />
-        )}
-      </BaseMap>
-    </View>
-  );
 }
 
 export default function ActiveJobScreen() {
@@ -389,7 +272,7 @@ export default function ActiveJobScreen() {
         setBuyerRatingComment('');
       }, 1800);
     } catch (err: unknown) {
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
     } finally {
       setBuyerRatingSubmitting(false);
     }
@@ -418,7 +301,7 @@ export default function ActiveJobScreen() {
               setCancelReason('');
               router.replace('/(driver)/jobs');
             } catch (err: unknown) {
-              Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atcelt darbu');
+              toast.error(err instanceof Error ? err.message : 'Neizdevās atcelt darbu');
             } finally {
               setCancelling(false);
             }
@@ -443,7 +326,7 @@ export default function ActiveJobScreen() {
     if (!result.canceled && result.assets[0] && job) {
       const asset = result.assets[0];
       if (!asset.base64) {
-        Alert.alert('Kļūda', 'Neizdevās iegūt attēla datus.');
+        toast.error('Neizdevās iegūt attēla datus.');
         return;
       }
       try {
@@ -456,7 +339,7 @@ export default function ActiveJobScreen() {
         );
         setPickupPhotoUri(url);
       } catch (err) {
-        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās augšupielādēt foto');
+        toast.error(err instanceof Error ? err.message : 'Neizdevās augšupielādēt foto');
       }
     }
   };
@@ -476,7 +359,7 @@ export default function ActiveJobScreen() {
     if (!result.canceled && result.assets[0] && job) {
       const asset = result.assets[0];
       if (!asset.base64) {
-        Alert.alert('Kļūda', 'Neizdevās iegūt attēla datus.');
+        toast.error('Neizdevās iegūt attēla datus.');
         return;
       }
       setUploadingExceptionPhoto(true);
@@ -490,7 +373,7 @@ export default function ActiveJobScreen() {
         );
         setExceptionPhotoUri(url);
       } catch (err) {
-        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās augšupielādēt foto');
+        toast.error(err instanceof Error ? err.message : 'Neizdevās augšupielādēt foto');
       } finally {
         setUploadingExceptionPhoto(false);
       }
@@ -617,7 +500,7 @@ export default function ActiveJobScreen() {
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās iesniegt izņēmumu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās iesniegt izņēmumu');
     } finally {
       setReportingException(false);
     }
@@ -639,7 +522,7 @@ export default function ActiveJobScreen() {
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atrisināt izņēmumu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās atrisināt izņēmumu');
     } finally {
       setResolvingExceptionId(null);
     }
@@ -660,7 +543,7 @@ export default function ActiveJobScreen() {
             Alert.alert('✓ Darbs pieņemts', 'Atpakaļceļa darbs pievienots jūsu darbu sarakstam.');
           } catch (err: unknown) {
             haptics.error();
-            Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
+            toast.error(err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
           } finally {
             setAcceptingReturnId(null);
           }
@@ -797,14 +680,14 @@ export default function ActiveJobScreen() {
       const encoded = encodeURIComponent(label);
       Linking.openURL(
         `https://www.google.com/maps/dir/?api=1&destination=${encoded}&travelmode=driving`,
-      ).catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt navigāciju'));
+      ).catch(() => toast.error('Neizdevās atvērt navigāciju'));
       return;
     }
 
     const openUrl = (url: string, fallback: string) =>
       Linking.canOpenURL(url)
         .then((ok) => Linking.openURL(ok ? url : fallback))
-        .catch(() => Alert.alert('Kļūda', 'Neizdevās atvērt navigāciju'));
+        .catch(() => toast.error('Neizdevās atvērt navigāciju'));
 
     const wazeUrl = `waze://?ll=${lat},${lng}&navigate=yes`;
     const googleUrlNative =
@@ -846,7 +729,7 @@ export default function ActiveJobScreen() {
 
   const handleCall = (phone: string | null | undefined, name?: string | null) => {
     if (phone) {
-      Linking.openURL(`tel:${phone}`).catch(() => Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'));
+      Linking.openURL(`tel:${phone}`).catch(() => toast.error('Neizdevās iniciēt zvanu'));
     } else {
       Alert.alert(
         t.activeJob.noContact,
@@ -927,7 +810,7 @@ export default function ActiveJobScreen() {
     if (!token || !job) return;
     const kg = parseFloat(weightInput.replace(',', '.'));
     if (!kg || kg <= 0 || isNaN(kg)) {
-      Alert.alert('Kļūda', 'Ievadiet derīgu svaru kilogramos.');
+      toast.error('Ievadiet derīgu svaru kilogramos.');
       return;
     }
     setWeightSubmitting(true);
@@ -945,7 +828,7 @@ export default function ActiveJobScreen() {
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu');
     } finally {
       setWeightSubmitting(false);
     }
@@ -955,7 +838,7 @@ export default function ActiveJobScreen() {
     if (!job || !token) return;
     const amount = parseFloat(surchargeAmount.replace(',', '.'));
     if (!amount || amount <= 0 || isNaN(amount)) {
-      Alert.alert('Kļūda', 'Ievadiet derīgu summu eiro.');
+      toast.error('Ievadiet derīgu summu eiro.');
       return;
     }
     setSurchargeSubmitting(true);
@@ -990,7 +873,7 @@ export default function ActiveJobScreen() {
     if (!token || !job) return;
     const mins = parseInt(delayMinutes, 10);
     if (isNaN(mins) || mins < 1 || mins > 480) {
-      Alert.alert('Kļūda', 'Ievadiet kavēšanās laiku (1–480 minūtes).');
+      toast.error('Ievadiet kavēšanās laiku (1–480 minūtes).');
       return;
     }
     setDelaySubmitting(true);
@@ -1007,7 +890,7 @@ export default function ActiveJobScreen() {
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
-      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās nosūtīt paziņojumu');
+      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt paziņojumu');
     } finally {
       setDelaySubmitting(false);
     }
@@ -1046,7 +929,7 @@ export default function ActiveJobScreen() {
         {/* Phase Pill at the top */}
         <View
           style={{
-            backgroundColor: '#111827',
+            backgroundColor: colors.primary,
             paddingHorizontal: 16,
             paddingVertical: 8,
             borderRadius: 20,
@@ -1097,7 +980,7 @@ export default function ActiveJobScreen() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 6,
-                backgroundColor: '#111827',
+                backgroundColor: colors.primary,
                 borderRadius: 24,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
@@ -1141,7 +1024,7 @@ export default function ActiveJobScreen() {
             style={{
               fontSize: 28,
               fontWeight: '800',
-              color: '#111827',
+              color: colors.textPrimary,
               letterSpacing: -0.5,
               lineHeight: 32,
               marginBottom: 4,
@@ -1159,7 +1042,7 @@ export default function ActiveJobScreen() {
             style={{
               fontSize: 16,
               fontWeight: '600',
-              color: '#6b7280',
+              color: colors.textMuted,
             }}
             numberOfLines={1}
           >
@@ -1198,7 +1081,7 @@ export default function ActiveJobScreen() {
                       width: 52,
                       height: 52,
                       borderRadius: 26,
-                      backgroundColor: '#f3f4f6',
+                      backgroundColor: colors.bgMuted,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -1221,7 +1104,7 @@ export default function ActiveJobScreen() {
                       width: 52,
                       height: 52,
                       borderRadius: 26,
-                      backgroundColor: '#f3f4f6',
+                      backgroundColor: colors.bgMuted,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -1251,7 +1134,7 @@ export default function ActiveJobScreen() {
                         width: 52,
                         height: 52,
                         borderRadius: 26,
-                        backgroundColor: '#f3f4f6',
+                        backgroundColor: colors.bgMuted,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -1276,7 +1159,7 @@ export default function ActiveJobScreen() {
                       width: 52,
                       height: 52,
                       borderRadius: 26,
-                      backgroundColor: '#f3f4f6',
+                      backgroundColor: colors.bgMuted,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -1297,7 +1180,7 @@ export default function ActiveJobScreen() {
                     width: '100%',
                     height: 56,
                     borderRadius: 28,
-                    backgroundColor: '#111827',
+                    backgroundColor: colors.primary,
                     elevation: 4,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
@@ -1378,7 +1261,7 @@ export default function ActiveJobScreen() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   fontWeight: '700',
                   marginBottom: 2,
                   textTransform: 'uppercase',
@@ -1391,7 +1274,7 @@ export default function ActiveJobScreen() {
                 style={{
                   fontSize: 28,
                   fontWeight: '800',
-                  color: '#111827',
+                  color: colors.textPrimary,
                   letterSpacing: -1,
                   lineHeight: 36,
                   paddingVertical: 2,
@@ -1403,7 +1286,9 @@ export default function ActiveJobScreen() {
                 €{job.rate.toFixed(2).replace(/\.00$/, '')}
               </Text>
               {job.pricePerTonne ? (
-                <Text style={{ fontSize: 13, color: '#059669', fontWeight: '700', marginTop: 2 }}>
+                <Text
+                  style={{ fontSize: 13, color: colors.success, fontWeight: '700', marginTop: 2 }}
+                >
                   €{job.pricePerTonne.toFixed(2)}/t
                 </Text>
               ) : null}
@@ -1412,7 +1297,7 @@ export default function ActiveJobScreen() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#6b7280',
+                  color: colors.textMuted,
                   fontWeight: '700',
                   marginBottom: 2,
                   textAlign: 'right',
@@ -1426,7 +1311,7 @@ export default function ActiveJobScreen() {
                 style={{
                   fontSize: 16,
                   fontWeight: '700',
-                  color: '#111827',
+                  color: colors.textPrimary,
                   textAlign: 'right',
                   flexShrink: 1,
                 }}
@@ -1455,7 +1340,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 13,
-                    color: '#111827',
+                    color: colors.textPrimary,
                     fontWeight: '700',
                     marginTop: 4,
                     textAlign: 'right',
@@ -1505,7 +1390,7 @@ export default function ActiveJobScreen() {
           {/* Timeline-style Addresses */}
           <View
             style={{
-              backgroundColor: '#f9fafb',
+              backgroundColor: colors.bgSubtle,
               borderRadius: 20,
               padding: 20,
               marginBottom: 24,
@@ -1521,7 +1406,7 @@ export default function ActiveJobScreen() {
                     width: 10,
                     height: 10,
                     borderRadius: 5,
-                    backgroundColor: '#111827',
+                    backgroundColor: colors.primary,
                     zIndex: 2,
                     marginTop: 6,
                   }}
@@ -1541,7 +1426,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 12,
-                    color: '#6b7280',
+                    color: colors.textMuted,
                     fontWeight: '700',
                     marginBottom: 4,
                     textTransform: 'uppercase',
@@ -1558,7 +1443,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 18,
                     fontWeight: '800',
-                    color: '#111827',
+                    color: colors.textPrimary,
                     letterSpacing: -0.5,
                     marginBottom: 2,
                     flexShrink: 1,
@@ -1582,7 +1467,7 @@ export default function ActiveJobScreen() {
                   style={{
                     width: 10,
                     height: 10,
-                    backgroundColor: '#111827',
+                    backgroundColor: colors.primary,
                     zIndex: 2,
                     marginTop: 6,
                   }}
@@ -1592,7 +1477,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 12,
-                    color: '#6b7280',
+                    color: colors.textMuted,
                     fontWeight: '700',
                     marginBottom: 4,
                     textTransform: 'uppercase',
@@ -1609,7 +1494,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 18,
                     fontWeight: '800',
-                    color: '#111827',
+                    color: colors.textPrimary,
                     letterSpacing: -0.5,
                     marginBottom: 2,
                     flexShrink: 1,
@@ -1640,7 +1525,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 12,
-                    color: '#9ca3af',
+                    color: colors.textDisabled,
                     fontWeight: '700',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
@@ -1648,7 +1533,14 @@ export default function ActiveJobScreen() {
                 >
                   Attālums
                 </Text>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginTop: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '800',
+                    color: colors.textPrimary,
+                    marginTop: 4,
+                  }}
+                >
                   {job.distanceKm.toFixed(1)} km
                 </Text>
               </View>
@@ -1658,7 +1550,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 12,
-                    color: '#9ca3af',
+                    color: colors.textDisabled,
                     fontWeight: '700',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
@@ -1666,7 +1558,14 @@ export default function ActiveJobScreen() {
                 >
                   Auto tips
                 </Text>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginTop: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '800',
+                    color: colors.textPrimary,
+                    marginTop: 4,
+                  }}
+                >
                   {job.requiredVehicleType}
                 </Text>
               </View>
@@ -1678,7 +1577,7 @@ export default function ActiveJobScreen() {
             style={{
               fontSize: 12,
               fontWeight: '800',
-              color: '#9ca3af',
+              color: colors.textDisabled,
               marginBottom: 12,
               textTransform: 'uppercase',
               letterSpacing: 0.5,
@@ -1693,7 +1592,7 @@ export default function ActiveJobScreen() {
               backgroundColor: '#fff',
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: '#e5e7eb',
+              borderColor: colors.border,
               overflow: 'hidden',
             }}
           >
@@ -1718,7 +1617,7 @@ export default function ActiveJobScreen() {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                   <PlusCircle size={20} color="#111827" />
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                     Pievienot papildu izmaksas
                   </Text>
                 </View>
@@ -1744,7 +1643,7 @@ export default function ActiveJobScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 <AlertCircle size={20} color="#111827" />
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                   Ziņot par problēmu
                 </Text>
               </View>
@@ -1791,7 +1690,7 @@ export default function ActiveJobScreen() {
             <View
               style={{
                 marginBottom: 24,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: colors.bgMuted,
                 padding: 16,
                 borderRadius: 16,
               }}
@@ -1801,7 +1700,7 @@ export default function ActiveJobScreen() {
                   fontSize: 13,
                   fontFamily: 'Inter_700Bold',
                   fontWeight: '700',
-                  color: '#111827',
+                  color: colors.textPrimary,
                   marginBottom: 8,
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -1818,7 +1717,7 @@ export default function ActiveJobScreen() {
                         fontSize: 15,
                         fontFamily: 'Inter_700Bold',
                         fontWeight: '700',
-                        color: '#111827',
+                        color: colors.textPrimary,
                       }}
                     >
                       {EXCEPTION_TYPE_OPTIONS.find((o) => o.value === ex.type)?.label ?? ex.type}
@@ -1829,7 +1728,7 @@ export default function ActiveJobScreen() {
                           fontSize: 14,
                           fontFamily: 'Inter_500Medium',
                           fontWeight: '500',
-                          color: '#6b7280',
+                          color: colors.textMuted,
                           marginTop: 2,
                         }}
                       >
@@ -1847,7 +1746,7 @@ export default function ActiveJobScreen() {
               fontSize: 15,
               fontFamily: 'Inter_700Bold',
               fontWeight: '700',
-              color: '#111827',
+              color: colors.textPrimary,
               marginBottom: 12,
             }}
           >
@@ -1897,7 +1796,7 @@ export default function ActiveJobScreen() {
                   fontSize: 15,
                   fontFamily: 'Inter_700Bold',
                   fontWeight: '700',
-                  color: '#111827',
+                  color: colors.textPrimary,
                   marginBottom: 12,
                 }}
               >
@@ -1905,12 +1804,12 @@ export default function ActiveJobScreen() {
               </RNText>
               <TextInput
                 style={{
-                  backgroundColor: '#f3f4f6',
+                  backgroundColor: colors.bgMuted,
                   borderRadius: 16,
                   padding: 16,
                   fontSize: 18,
                   fontFamily: 'Inter_600SemiBold',
-                  color: '#111827',
+                  color: colors.textPrimary,
                 }}
                 keyboardType="decimal-pad"
                 placeholder={job.cargoWeight ? `Plānotais: ${job.cargoWeight} t` : '0 t'}
@@ -1924,7 +1823,7 @@ export default function ActiveJobScreen() {
                   fontSize: 15,
                   fontFamily: 'Inter_700Bold',
                   fontWeight: '700',
-                  color: '#111827',
+                  color: colors.textPrimary,
                   marginTop: 20,
                   marginBottom: 12,
                 }}
@@ -1973,7 +1872,7 @@ export default function ActiveJobScreen() {
                 fontSize: 15,
                 fontFamily: 'Inter_700Bold',
                 fontWeight: '700',
-                color: '#111827',
+                color: colors.textPrimary,
                 marginBottom: 12,
               }}
             >
@@ -1981,13 +1880,13 @@ export default function ActiveJobScreen() {
             </RNText>
             <TextInput
               style={{
-                backgroundColor: '#f3f4f6',
+                backgroundColor: colors.bgMuted,
                 borderRadius: 16,
                 padding: 16,
                 fontSize: 16,
                 fontFamily: 'Inter_500Medium',
                 minHeight: 120,
-                color: '#111827',
+                color: colors.textPrimary,
                 textAlignVertical: 'top',
               }}
               placeholder="Aprakstiet situāciju..."
@@ -2030,7 +1929,7 @@ export default function ActiveJobScreen() {
                 fontSize: 15,
                 fontFamily: 'Inter_600SemiBold',
                 fontWeight: '600',
-                color: '#6b7280',
+                color: colors.textMuted,
               }}
             >
               Vai gribējāt ziņot par kavēšanos?
@@ -2088,7 +1987,7 @@ export default function ActiveJobScreen() {
                 fontSize: 60,
                 fontFamily: 'Inter_700Bold',
                 fontWeight: '700',
-                color: '#111827',
+                color: colors.textPrimary,
                 letterSpacing: -2,
                 minWidth: 100,
                 padding: 0,
@@ -2162,7 +2061,7 @@ export default function ActiveJobScreen() {
                 fontSize: 15,
                 fontFamily: 'Inter_700Bold',
                 fontWeight: '700',
-                color: '#111827',
+                color: colors.textPrimary,
                 marginBottom: 12,
               }}
             >
@@ -2170,12 +2069,12 @@ export default function ActiveJobScreen() {
             </RNText>
             <TextInput
               style={{
-                backgroundColor: '#f3f4f6',
+                backgroundColor: colors.bgMuted,
                 borderRadius: 16,
                 padding: 16,
                 fontSize: 18,
                 fontFamily: 'Inter_600SemiBold',
-                color: '#111827',
+                color: colors.textPrimary,
               }}
               keyboardType="numeric"
               value={delayMinutes}
@@ -2191,7 +2090,7 @@ export default function ActiveJobScreen() {
                 fontSize: 15,
                 fontFamily: 'Inter_700Bold',
                 fontWeight: '700',
-                color: '#111827',
+                color: colors.textPrimary,
                 marginBottom: 12,
               }}
             >
@@ -2199,13 +2098,13 @@ export default function ActiveJobScreen() {
             </RNText>
             <TextInput
               style={{
-                backgroundColor: '#f3f4f6',
+                backgroundColor: colors.bgMuted,
                 borderRadius: 16,
                 padding: 16,
                 fontSize: 16,
                 fontFamily: 'Inter_500Medium',
                 minHeight: 120,
-                color: '#111827',
+                color: colors.textPrimary,
                 textAlignVertical: 'top',
               }}
               value={delayReason}
@@ -2242,11 +2141,11 @@ export default function ActiveJobScreen() {
             <View
               key={rt.id}
               style={{
-                backgroundColor: '#f9fafb',
+                backgroundColor: colors.bgSubtle,
                 borderRadius: 16,
                 padding: 16,
                 borderWidth: 1,
-                borderColor: '#e5e7eb',
+                borderColor: colors.border,
               }}
             >
               <View
@@ -2257,10 +2156,10 @@ export default function ActiveJobScreen() {
                 }}
               >
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
                     €{rt.rate.toFixed(0)}
                   </Text>
-                  <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+                  <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
                     {rt.returnDistanceKm} km
                   </Text>
                 </View>
@@ -2284,7 +2183,7 @@ export default function ActiveJobScreen() {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>
                 <MapPin size={13} color="#6b7280" />
-                <Text style={{ fontSize: 14, color: '#374151' }}>
+                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                   {rt.pickupCity} → {rt.deliveryCity}
                 </Text>
               </View>
@@ -2429,7 +2328,7 @@ export default function ActiveJobScreen() {
               onPress={() => setShowBuyerRatingSheet(false)}
               style={{ alignItems: 'center', paddingVertical: 8 }}
             >
-              <Text style={{ fontSize: 14, color: '#9ca3af' }}>Izlaist</Text>
+              <Text style={{ fontSize: 14, color: colors.textDisabled }}>Izlaist</Text>
             </TouchableOpacity>
           </>
         )}
@@ -2462,18 +2361,25 @@ export default function ActiveJobScreen() {
             </Text>
           </View>
           <View>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.textSecondary,
+                marginBottom: 6,
+              }}
+            >
               Iemesls *
             </Text>
             <TextInput
               style={{
                 borderWidth: 1,
-                borderColor: '#e5e7eb',
+                borderColor: colors.border,
                 borderRadius: 10,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 fontSize: 14,
-                color: '#111827',
+                color: colors.textPrimary,
                 minHeight: 80,
                 textAlignVertical: 'top',
               }}
@@ -2484,7 +2390,9 @@ export default function ActiveJobScreen() {
               multiline
               maxLength={300}
             />
-            <Text style={{ fontSize: 11, color: '#9ca3af', textAlign: 'right', marginTop: 4 }}>
+            <Text
+              style={{ fontSize: 11, color: colors.textDisabled, textAlign: 'right', marginTop: 4 }}
+            >
               {cancelReason.length}/300
             </Text>
           </View>
@@ -2508,725 +2416,3 @@ export default function ActiveJobScreen() {
     </ScreenContainer>
   );
 }
-
-function InlineTab({
-  label,
-  active,
-  onPress,
-  badge,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  badge?: number;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[inlineTabStyles.btn, active && inlineTabStyles.btnActive]}
-      activeOpacity={0.75}
-    >
-      <Text style={[inlineTabStyles.text, active && inlineTabStyles.textActive]}>{label}</Text>
-      {!!badge && (
-        <View style={inlineTabStyles.badge}>
-          <Text style={inlineTabStyles.badgeText}>{badge}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-const inlineTabStyles = StyleSheet.create({
-  bar: { flexDirection: 'row', gap: 6, marginBottom: 12 },
-  btn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  btnActive: { backgroundColor: '#1d4ed8' },
-  text: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
-  textActive: { color: '#fff' },
-  badge: {
-    backgroundColor: '#dc2626',
-    borderRadius: 9,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  badgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-});
-
-const styles = StyleSheet.create({
-  // New minimal styles
-  container: { flex: 1 },
-  staticBottomCard: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 20,
-  },
-  detailsPull: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 0,
-  },
-  detailsPullHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#d1d5db',
-    borderRadius: 3,
-  },
-
-  topOverlay: {
-    position: 'absolute',
-    // top is managed inline natively now
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start', // Align to top
-    zIndex: 10,
-    pointerEvents: 'box-none',
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  roundButton: {
-    // Alias for iconButton
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  gorhomBackground: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 20,
-  },
-  gorhomHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  sheetContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  hudContainer: {
-    position: 'absolute',
-    right: 16,
-    bottom: 260,
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    zIndex: 50,
-  },
-  hudButtonGroup: {
-    gap: 12,
-  },
-  hudButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  slaBadge: {
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  slaText: { color: '#dc2626', fontWeight: '700', fontSize: 13 },
-
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 12,
-    paddingBottom: 40, // Home indicator space
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 20,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  jobIdText: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  sheetTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-    letterSpacing: -0.5,
-  },
-  sheetAddress: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 24,
-  },
-  mainInfo: { marginBottom: 20 },
-  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  actionGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  actionRow: {
-    // Keep for back-compat if needed
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  actionButtonSecondary: {
-    width: 80,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: { fontSize: 12, fontWeight: '600', color: '#1f2937', marginTop: 2 },
-  actionButtonPrimary: {
-    flex: 1,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  navButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    flex: 1,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
-  completedBanner: {
-    flex: 1,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: '#ecfccb',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#84cc16',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  completedText: {
-    color: '#365314',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  findNextJobBtn: {
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  findNextJobText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  rateBuyerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
-  },
-  rateBuyerBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  cancelJobBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: '#dc2626',
-    backgroundColor: '#fff5f5',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  cancelJobBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#dc2626',
-  },
-  ratingTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  ratingSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
-  },
-  ratingStarRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginBottom: 20,
-  },
-  ratingInput: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 14,
-    color: '#111827',
-    height: 90,
-    marginBottom: 16,
-  },
-  ratingSubmitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  ratingSubmitBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  ratingSuccessWrap: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    gap: 12,
-  },
-  ratingSuccessTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  ratingSuccessSub: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    flexShrink: 0,
-  },
-  detailValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fef3c7',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#fcd34d',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 10,
-  },
-  offlineBannerText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#92400e',
-    fontFamily: 'Inter_500Medium',
-  },
-  // Progress stepper
-  stepperRow: {
-    flexDirection: 'row',
-    gap: 5,
-    marginBottom: 16,
-  },
-  stepDot: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-  },
-  stepDotDone: {
-    backgroundColor: '#111827',
-  },
-  stepDotActive: {
-    backgroundColor: '#111827',
-    opacity: 1,
-  },
-  // Return trips chip
-  returnTripsChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  returnTripsChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#059669',
-    flex: 1,
-  },
-  // Report problem button
-  reportProblemBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 20,
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 12,
-    padding: 14,
-  },
-  reportProblemText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#dc2626',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingTop: 4,
-    paddingBottom: 4,
-    minHeight: 48,
-  },
-  optionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  detailsTrigger: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    marginTop: 8,
-  },
-  detailsTriggerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  expandedContent: {
-    marginTop: 0,
-    paddingTop: 8,
-    maxHeight: 320,
-  },
-  contactRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  contactButton: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    height: 48,
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  contactText: { fontWeight: '600', color: '#1f2937' },
-
-  exceptionCard: {
-    marginTop: 8,
-    backgroundColor: '#fef2f2',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    gap: 12,
-  },
-  exceptionTitle: { fontSize: 14, fontWeight: '700', color: '#991b1b' },
-  // Weight Modal
-  weightInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  weightInput: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000',
-    paddingVertical: 12,
-  },
-  weightUnit: { fontSize: 18, fontWeight: '700', color: '#9ca3af' },
-  weightHint: { fontSize: 14, color: '#6b7280', marginTop: 4 },
-  weightActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  weightCancel: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  weightCancelText: { fontSize: 15, fontWeight: '700', color: '#000' },
-  weightConfirm: {
-    flex: 2,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#000',
-    alignItems: 'center',
-  },
-  weightConfirmText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  photoCapture: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
-  photoCaptured: { borderStyle: 'solid', borderColor: '#000' },
-  photoPicker: { alignItems: 'center', gap: 8 },
-  photoPickerText: { fontSize: 15, fontWeight: '700', color: '#000' },
-  photoPickerHint: { fontSize: 13, color: '#6b7280' },
-  photoPreview: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  photoThumb: { width: 80, height: 80, borderRadius: 8 },
-  photoCheck: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  photoCheckText: { fontSize: 14, fontWeight: '700', color: '#000' },
-  goBtn: {
-    marginTop: 24,
-    backgroundColor: '#000',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 100,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  goBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  // Surcharge sheet
-  addSurchargeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 10,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: '#fde68a',
-    borderRadius: 12,
-    padding: 14,
-  },
-  addSurchargeBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#d97706',
-  },
-  surchargeAmountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
-  },
-  surchargeAmountLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  surchargeAmountInput: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
-    textAlign: 'right',
-    minWidth: 100,
-  },
-  surchargeLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6b7280',
-    marginBottom: 6,
-  },
-  surchargeInput: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#111827',
-  },
-  surchargeSubmitBtn: {
-    backgroundColor: '#d97706',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  surchargeSubmitText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-});

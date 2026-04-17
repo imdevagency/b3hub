@@ -22,7 +22,9 @@ import { Trash2, Plus, Check, X } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -37,6 +39,7 @@ const SKIP_SIZES: { value: SkipSize; label: string; volume: string }[] = [
 
 export default function CarrierSettingsScreen() {
   const { token } = useAuth();
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>('pricing');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,7 +112,7 @@ export default function CarrierSettingsScreen() {
       haptics.success();
     } catch {
       haptics.error();
-      Alert.alert('Kļūda', 'Neizdevās saglabāt cenu');
+      toast.error('Neizdevās saglabāt cenu')
     } finally {
       setSavingSize(null);
     }
@@ -129,7 +132,7 @@ export default function CarrierSettingsScreen() {
             load(true);
             haptics.success();
           } catch {
-            Alert.alert('Kļūda', 'Neizdevās dzēst cenu');
+            toast.error('Neizdevās dzēst cenu')
           }
         },
       },
@@ -154,7 +157,7 @@ export default function CarrierSettingsScreen() {
       haptics.success();
     } catch {
       haptics.error();
-      Alert.alert('Kļūda', 'Neizdevās pievienot zonu');
+      toast.error('Neizdevās pievienot zonu')
     } finally {
       setAddingZone(false);
     }
@@ -174,7 +177,7 @@ export default function CarrierSettingsScreen() {
             load(true);
             haptics.success();
           } catch {
-            Alert.alert('Kļūda', 'Neizdevās dzēst zonu');
+            toast.error('Neizdevās dzēst zonu')
           }
         },
       },
@@ -201,7 +204,7 @@ export default function CarrierSettingsScreen() {
       haptics.success();
     } catch {
       haptics.error();
-      Alert.alert('Kļūda', 'Neizdevās bloķēt datumu');
+      toast.error('Neizdevās bloķēt datumu')
     } finally {
       setBlockingDate(false);
     }
@@ -220,7 +223,7 @@ export default function CarrierSettingsScreen() {
             load(true);
             haptics.success();
           } catch {
-            Alert.alert('Kļūda', 'Neizdevās atbloķēt datumu');
+            toast.error('Neizdevās atbloķēt datumu')
           }
         },
       },
@@ -232,7 +235,7 @@ export default function CarrierSettingsScreen() {
       <ScreenContainer bg="#ffffff">
         <ScreenHeader title="" />
         <View className="px-5 pt-2 pb-4">
-          <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>Pārvadātājs</Text>
+          <Text style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}>Pārvadātājs</Text>
         </View>
         <View className="px-5"><SkeletonCard count={3} /></View>
       </ScreenContainer>
@@ -244,7 +247,7 @@ export default function CarrierSettingsScreen() {
       <ScreenHeader title="" />
       
       <View className="px-5 pt-1 pb-4">
-        <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>
+        <Text style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}>
           Pārvadātājs
         </Text>
  <Text className="text-gray-500 font-medium mt-1 mb-2" style={{ fontSize: 15 }}>Reģioni un izcenojumi</Text>
@@ -307,8 +310,8 @@ export default function CarrierSettingsScreen() {
               return (
                 <View key={value} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${i !== SKIP_SIZES.length - 1 ? 'border-b' : ''}`}>
                   <View className="flex-1 pr-4">
-                    <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', letterSpacing: -0.3 }}>{label}</Text>
-                    <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>{volume}</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3 }}>{label}</Text>
+                    <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>{volume}</Text>
                   </View>
                   <View className="flex-row items-center" style={{ gap: 8 }}>
                     <View className="relative flex-row items-center">
@@ -394,7 +397,7 @@ export default function CarrierSettingsScreen() {
                       onPress={() => { setShowAddZone(false); setNewCity(''); setNewPostcode(''); setNewSurcharge(''); }}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: '#6b7280' }}>Atcelt</Text>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textMuted }}>Atcelt</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       className={`flex-1 items-center justify-center rounded-full py-3.5 ${!newCity.trim() || addingZone ? 'bg-gray-200' : 'bg-gray-900'}`}
@@ -414,7 +417,7 @@ export default function CarrierSettingsScreen() {
                   activeOpacity={0.7}
                 >
                   <Plus size={18} color="#111827" />
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>Pievienot zonu</Text>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>Pievienot zonu</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -428,14 +431,14 @@ export default function CarrierSettingsScreen() {
               {zones.map((zone, idx) => (
                 <View key={zone.id} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${idx !== zones.length - 1 ? 'border-b' : ''}`}>
                   <View className="flex-1 pr-4">
-                    <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', letterSpacing: -0.3 }}>{zone.city}</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3 }}>{zone.city}</Text>
                     <View className="flex-row items-center mt-1.5" style={{ gap: 12 }}>
                       {zone.postcode ? (
-                        <Text style={{ fontSize: 13, color: '#6b7280', fontWeight: '500' }}>Indekss: {zone.postcode}</Text>
+                        <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }}>Indekss: {zone.postcode}</Text>
                       ) : null}
                       {zone.surcharge ? (
                         <View className="bg-red-50 px-2 py-0.5 rounded-md">
-                          <Text style={{ fontSize: 12, color: '#b91c1c', fontWeight: '600' }}>+€{zone.surcharge}</Text>
+                          <Text style={{ fontSize: 12, color: colors.dangerText, fontWeight: '600' }}>+€{zone.surcharge}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -496,8 +499,8 @@ export default function CarrierSettingsScreen() {
               {blockedDates.sort((a, b) => a.date.localeCompare(b.date)).map((d, idx) => (
                 <View key={d.id} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${idx !== blockedDates.length - 1 ? 'border-b' : ''}`}>
                   <View className="flex-1 pr-4">
-                    <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>{d.date}</Text>
-                    {d.reason ? <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500', marginTop: 2 }}>{d.reason}</Text> : null}
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>{d.date}</Text>
+                    {d.reason ? <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>{d.reason}</Text> : null}
                   </View>
                   <TouchableOpacity
                     className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"

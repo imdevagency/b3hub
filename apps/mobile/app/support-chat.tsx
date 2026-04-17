@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiSupportMessage } from '@/lib/api/chat';
 import { colors, spacing, radius } from '@/lib/theme';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 // ── Bubble ────────────────────────────────────────────────────────────────
 
@@ -107,17 +108,17 @@ export default function SupportChatScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer standalone bg={colors.bgScreen} >
+      <ScreenContainer standalone bg={colors.bgScreen}>
         <ScreenHeader title="Atbalsts" />
         <View style={s.centered}>
-          <ActivityIndicator color={colors.primary} />
+          <SkeletonCard count={5} />
         </View>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer standalone bg={colors.bgScreen} >
+    <ScreenContainer standalone bg={colors.bgScreen}>
       <ScreenHeader title="Atbalsts" />
       <KeyboardAvoidingView
         style={s.flex}
@@ -205,7 +206,7 @@ const s = StyleSheet.create({
     color: colors.primary,
     marginBottom: 2,
   },
-  bubbleText: { fontSize: 14, color: '#111827', lineHeight: 20 },
+  bubbleText: { fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   bubbleTextMe: { color: '#fff' },
   bubbleTime: { fontSize: 11, color: colors.textMuted, marginTop: 4, textAlign: 'right' },
   bubbleTimeMe: { color: 'rgba(255,255,255,0.7)' },
@@ -219,7 +220,7 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
     backgroundColor: '#fff',
     gap: spacing.sm,
   },
@@ -232,7 +233,7 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   sendBtn: {
     width: 40,

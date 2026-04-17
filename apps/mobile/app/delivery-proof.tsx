@@ -27,6 +27,7 @@ import { api } from '@/lib/api';
 import { Camera, Trash2, CheckCircle2, ArrowLeft, ImagePlus } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { addToProofQueue } from '@/lib/proof-queue';
+import { colors } from '@/lib/theme';
 
 const PAD_HEIGHT = 200;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -432,30 +433,30 @@ export default function DeliveryProofScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: colors.bgCard },
   scroll: { padding: 24, gap: 24, paddingBottom: 40 },
 
-  subtitle: { fontSize: 15, color: '#6b7280', marginBottom: 8 },
+  subtitle: { fontSize: 15, color: colors.textMuted, marginBottom: 8 },
 
   section: { gap: 12 },
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  optionalText: { fontSize: 13, color: '#9ca3af' },
+  optionalText: { fontSize: 13, color: colors.textDisabled },
 
   input: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 12,
     borderWidth: 0,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   notesInput: { height: 100, paddingTop: 16 },
 
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
   },
 
   // Photos
-  photoCount: { fontSize: 13, color: '#9ca3af', marginLeft: 'auto' },
+  photoCount: { fontSize: 13, color: colors.textDisabled, marginLeft: 'auto' },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   photoThumb: {
     width: 104,
@@ -500,12 +501,12 @@ const styles = StyleSheet.create({
     width: 104,
     height: 104,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  photoAddText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  photoAddText: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
 
   // Checklist
   conditionRow: { flexDirection: 'row', gap: 12 },
@@ -513,16 +514,16 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
-  conditionChipActive: { backgroundColor: '#111827' },
+  conditionChipActive: { backgroundColor: colors.primary },
   conditionChipDamaged: { backgroundColor: '#ef4444' },
-  conditionChipText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  conditionChipText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   conditionChipTextActive: { color: '#fff' },
   conditionChipTextDamaged: { color: '#fff' },
 
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: -4 },
+  divider: { height: 1, backgroundColor: colors.bgMuted, marginVertical: -4 },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -540,13 +541,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#fff',
   },
-  checkboxChecked: { backgroundColor: '#111827', borderColor: '#111827' },
-  checkLabel: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  checkSublabel: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
+  checkLabel: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  checkSublabel: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
 
   // Submit
   submitBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 100,
     paddingVertical: 18,
     alignItems: 'center',

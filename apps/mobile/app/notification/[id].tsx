@@ -22,6 +22,7 @@ import { useMode } from '@/lib/mode-context';
 import { api } from '@/lib/api';
 import { notifStore } from '@/lib/notif-store';
 import type { ApiNotification } from '@/lib/api';
+import { colors } from '@/lib/theme';
 
 // ── Icon map (mirrors notifications.tsx) ─────────────────────────────────────
 type LucideIcon = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
@@ -325,31 +326,31 @@ const s = StyleSheet.create({
   typeLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.textMuted,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   dateText: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     fontWeight: '400',
   },
   divider: {
     height: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     marginBottom: 24,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     lineHeight: 30,
     marginBottom: 14,
   },
   message: {
     fontSize: 16,
-    color: '#374151',
+    color: colors.textSecondary,
     lineHeight: 26,
     marginBottom: 32,
   },
@@ -357,7 +358,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -365,7 +366,7 @@ const s = StyleSheet.create({
   actionBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.white,
   },
   center: {
     flex: 1,
@@ -375,19 +376,19 @@ const s = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   backBtn: {
     marginTop: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgMuted,
     borderRadius: 10,
   },
   backBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
   },
 });

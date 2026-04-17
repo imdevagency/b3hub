@@ -13,6 +13,7 @@ import { useUnreadCount } from '@/lib/use-unread-count';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
 
 function BuyerLayoutContent() {
   const { user, isLoading } = useAuth();
@@ -55,7 +56,7 @@ function BuyerLayoutContent() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bgCard, paddingTop: insets.top }}>
       {config !== null && <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />}
       <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
@@ -120,7 +121,7 @@ function BuyerLayoutContent() {
 const ls = StyleSheet.create({
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 999,
@@ -129,12 +130,12 @@ const ls = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 999,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarBtnText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 14,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700',

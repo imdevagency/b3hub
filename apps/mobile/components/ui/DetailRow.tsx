@@ -18,6 +18,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { colors } from '@/lib/theme';
 
 interface DetailRowProps {
   label: string;
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   rowLast: { borderBottomWidth: 0 },
-  label: { fontSize: 13, color: '#6b7280', flex: 1 },
-  value: { fontSize: 13, fontWeight: '600', color: '#111827', flex: 2, textAlign: 'right' },
+  label: { fontSize: 13, color: colors.textMuted, flex: 1 },
+  value: { fontSize: 13, fontWeight: '600', color: colors.textPrimary, flex: 2, textAlign: 'right' },
   valueNode: { flex: 2, alignItems: 'flex-end' },
 });

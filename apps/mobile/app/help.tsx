@@ -15,87 +15,14 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ChevronDown, MessageCircle, Mail } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
+import { colors } from '@/lib/theme';
+import { t } from '@/lib/translations';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
 // ── FAQ data ──────────────────────────────────────────────────────────────────
-
-const SECTIONS = [
-  {
-    title: 'Pasūtījumi',
-    items: [
-      {
-        q: 'Kā veikt materiālu pasūtījumu?',
-        a: 'Izvēlieties "Materiāli" sākumlapā, norādiet preci, daudzumu un piegādes adresi. Pēc apstiprināšanas piegādātājs sazināsies ar Jums.',
-      },
-      {
-        q: 'Kā iznomāt atkritumu konteineru?',
-        a: 'Atveriet "Konteineri", izvēlieties izmēru un atkritumu veidu, norādiet adresi un piegādes datumu. Konteiners tiks piegādāts norādītajā laikā.',
-      },
-      {
-        q: 'Kā pasūtīt celtniecības atkritumu izvešanu?',
-        a: 'Izmantojiet pakalpojumu "Atkritumi". Norādiet adresi, atkritumu veidu un apjomu. Sistēma automātiski atlasīs piemērotu pārvadātāju.',
-      },
-      {
-        q: 'Kā pasūtīt kravu pārvadāšanu no A uz B?',
-        a: 'Atveriet "Transports A→B", ievadiet iekraušanas un piegādes adreses, kravas aprakstu un vēlamo datumu.',
-      },
-    ],
-  },
-  {
-    title: 'Pasūtījumu statusi',
-    items: [
-      {
-        q: 'Ko nozīmē statuss "Gaida"?',
-        a: 'Pasūtījums ir saņemts un gaida, kad pārvadātājs to pieņems. Parasti tas notiek dažu stundu laikā.',
-      },
-      {
-        q: 'Ko nozīmē statuss "Apstiprināts"?',
-        a: 'Pārvadātājs ir pieņēmis Jūsu pasūtījumu un plāno to izpildīt norādītajā datumā.',
-      },
-      {
-        q: 'Vai es varu atcelt pasūtījumu?',
-        a: 'Jā — pasūtājumus ar statusu "Gaida" vai "Apstiprināts" var atcelt, atverot pasūtājuma detaļas un nospiežot "Atcelt pasūtījumu".',
-      },
-    ],
-  },
-  {
-    title: 'Konts un profils',
-    items: [
-      {
-        q: 'Kā pievienot telefona numuru?',
-        a: 'Dodieties uz sadaļu "Profils", spiediet "Rediģēt profilu" un ievadiet telefona numuru. Tas ļaus pārvadātājiem ar Jums sazināties.',
-      },
-      {
-        q: 'Kā kļūt par piegādātāju vai pārvadātāju?',
-        a: 'Apmeklējiet b3hub.lv/apply un aizpildiet pieteikuma formu. Mēs izskatīsim pieteikumu un sazināsimies ar Jums pa e-pastu.',
-      },
-      {
-        q: 'Kā mainīt paroli?',
-        a: 'Saistībā ar drošību paroli var mainīt, izmantojot ekrānu "Mainīt paroli" (pieejams no konta iestatījumiem) vai arī piesakieties no jauna ar "Aizmirsu paroli".',
-      },
-    ],
-  },
-  {
-    title: 'Citi jautājumi',
-    items: [
-      {
-        q: 'Kā es saņemšu paziņojumus par pasūtījumu statusu?',
-        a: 'Paziņojumi tiek sūtīti automātiski, kad mainās pasūtījuma statuss. Tos skatiet sadaļā "Paziņojumi" vai zvans/e-pasts no pārvadātāja.',
-      },
-      {
-        q: 'Kādās valūtās darbojas B3Hub?',
-        a: 'Visi maksājumi tiek apstrādāti eiro (EUR).',
-      },
-      {
-        q: 'Ko darīt, ja radusies problēma ar pasūtījumu?',
-        a: 'Sazinieties ar mums, izmantojot zemāk esošo pogu "Rakstīt mums". Mēs atbildēsim 1 darba dienas laikā.',
-      },
-    ],
-  },
-];
 
 // ── Accordion item ────────────────────────────────────────────────────────────
 
@@ -133,16 +60,13 @@ function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
 export default function HelpScreen() {
   const router = useRouter();
   return (
-    <ScreenContainer standalone bg="#f2f2f7" >
-      <ScreenHeader title="Biežāk uzdotie jautājumi" />
+    <ScreenContainer standalone bg="#f2f2f7">
+      <ScreenHeader title={t.help.title} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        <Text style={s.intro}>
-          Šeit atradīsiet atbildes uz visbiežāk uzdotajiem jautājumiem par B3Hub platformas
-          lietošanu.
-        </Text>
+        <Text style={s.intro}>{t.help.intro}</Text>
 
-        {SECTIONS.map((section) => (
+        {t.help.sections.map((section) => (
           <View key={section.title} style={s.section}>
             <Text style={s.sectionTitle}>{section.title}</Text>
             <View style={s.card}>
@@ -160,8 +84,8 @@ export default function HelpScreen() {
 
         {/* Contact CTA */}
         <View style={s.contactCard}>
-          <Text style={s.contactTitle}>Neatradāt atbildi?</Text>
-          <Text style={s.contactSub}>Sazinieties ar mums — atbildēsim ātri.</Text>
+          <Text style={s.contactTitle}>{t.help.contactTitle}</Text>
+          <Text style={s.contactSub}>{t.help.contactSub}</Text>
           <View style={s.contactBtns}>
             <TouchableOpacity
               style={s.contactBtn}
@@ -169,7 +93,7 @@ export default function HelpScreen() {
               activeOpacity={0.8}
             >
               <MessageCircle size={15} color="#fff" />
-              <Text style={s.contactBtnText}>Tērzēt</Text>
+              <Text style={s.contactBtnText}>{t.help.chat}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.contactBtn, s.contactBtnSecondary]}
@@ -177,7 +101,7 @@ export default function HelpScreen() {
               activeOpacity={0.8}
             >
               <Mail size={15} color="#111827" />
-              <Text style={[s.contactBtnText, { color: '#111827' }]}>E-pasts</Text>
+              <Text style={[s.contactBtnText, { color: colors.textPrimary }]}>{t.help.email}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -192,13 +116,13 @@ export default function HelpScreen() {
 
 const s = StyleSheet.create({
   scroll: { padding: 20 },
-  intro: { fontSize: 14, color: '#6b7280', lineHeight: 21, marginBottom: 24 },
+  intro: { fontSize: 14, color: colors.textMuted, lineHeight: 21, marginBottom: 24 },
 
   section: { marginBottom: 20 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: colors.textDisabled,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -218,7 +142,7 @@ const s = StyleSheet.create({
   faqItem: { paddingHorizontal: 16, paddingVertical: 14 },
   faqItemBorder: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   faqQuestion: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  faqQ: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827', lineHeight: 20 },
+  faqQ: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textPrimary, lineHeight: 20 },
   faqA: {
     marginTop: 10,
     fontSize: 14,
@@ -228,7 +152,7 @@ const s = StyleSheet.create({
   },
 
   contactCard: {
-    backgroundColor: '#111827',
+    backgroundColor: colors.primary,
     borderRadius: 20,
     padding: 24,
     marginTop: 4,
@@ -242,7 +166,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    backgroundColor: '#374151',
+    backgroundColor: colors.primaryMid,
     borderRadius: 12,
     paddingVertical: 13,
   },

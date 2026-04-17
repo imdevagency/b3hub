@@ -6,9 +6,10 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { View, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type ApiDispute, type DisputeReason, type DisputeStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
 import { haptics } from '@/lib/haptics';
@@ -19,6 +20,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
+import { colors } from '@/lib/theme';
 
 const REASON_LABEL: Record<DisputeReason, string> = {
   SHORT_DELIVERY: 'Trūkst daudzums',
@@ -42,31 +44,14 @@ export default function DisputesScreen() {
   const router = useRouter();
 
   const [disputes, setDisputes] = useState<ApiDispute[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(
-    async (skeleton = true) => {
-      if (!token) return;
-      if (skeleton) setLoading(true);
-      try {
-        const data = await api.listDisputes(token);
-        setDisputes(data);
-      } catch (e) {
-        Alert.alert('Kļūda', e instanceof Error ? e.message : 'Neizdevās ielādēt strīdus');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token],
-  );
+  const fetcher = useCallback(async () => {
+    if (!token) return;
+    const data = await api.listDisputes(token);
+    setDisputes(data);
+  }, [token]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const renderItem = ({ item }: { item: ApiDispute }) => {
     const status = STATUS_MAP[item.status] ?? STATUS_MAP.OPEN;
@@ -134,14 +119,7 @@ export default function DisputesScreen() {
           contentContainerStyle={disputes.length === 0 ? s.emptyScroll : s.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                load(false);
-              }}
-              tintColor="#000"
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
           }
           ListEmptyComponent={
             <EmptyState
@@ -187,7 +165,7 @@ const s = StyleSheet.create({
   orderNum: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     flex: 1,
   },
   statusBadge: {
@@ -202,11 +180,11 @@ const s = StyleSheet.create({
   reason: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.textSecondary,
   },
   description: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     lineHeight: 18,
   },
   resolutionBox: {
@@ -219,18 +197,18 @@ const s = StyleSheet.create({
   resolutionLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   resolutionText: {
     fontSize: 13,
-    color: '#374151',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   date: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.textDisabled,
     marginTop: 2,
   },
 });
