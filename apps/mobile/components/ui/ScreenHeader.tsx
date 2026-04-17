@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter, useNavigation } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 
 interface ScreenHeaderProps {
@@ -46,11 +46,10 @@ export function ScreenHeader({
   noBorder,
 }: ScreenHeaderProps) {
   const router = useRouter();
-  const navigation = useNavigation();
 
   // If onBack is explicitly null, hide back button.
   // Otherwise, use canGoBack() or force showBack.
-  const shouldShowBack = onBack !== null && (showBack || navigation.canGoBack());
+  const shouldShowBack = onBack !== null && (showBack || router.canGoBack());
 
   const handleBack = () => {
     if (onBack) {

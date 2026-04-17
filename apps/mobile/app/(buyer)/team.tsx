@@ -42,7 +42,7 @@ import {
 } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
-import { useRouter, useNavigation } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 // ── Types & data ───────────────────────────────────────────────
 
@@ -407,7 +407,6 @@ export default function TeamScreen() {
   const { token, user } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
-  const navigation = useNavigation();
 
   // State
   const [members, setMembers] = useState<ApiCompanyMember[]>([]);
