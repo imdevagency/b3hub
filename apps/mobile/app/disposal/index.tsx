@@ -50,13 +50,46 @@ import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 
-
 LocaleConfig.locales['lv'] = {
-  monthNames: ['Janvāris','Februāris','Marts','Aprīlis','Maijs','Jūnijs','Jūlijs','Augusts','Septembris','Oktobris','Novembris','Decembris'],
-  monthNamesShort: ['Jan.','Feb.','Mar.','Apr.','Mai','Jūn.','Jūl.','Aug.','Sep.','Okt.','Nov.','Dec.'],
-  dayNames: ['Svētdiena','Pirmdiena','Otrdiena','Trešdiena','Ceturtdiena','Piektdiena','Sestdiena'],
-  dayNamesShort: ['Sv','P','O','T','C','Pk','S'],
-  today: 'Šodien'
+  monthNames: [
+    'Janvāris',
+    'Februāris',
+    'Marts',
+    'Aprīlis',
+    'Maijs',
+    'Jūnijs',
+    'Jūlijs',
+    'Augusts',
+    'Septembris',
+    'Oktobris',
+    'Novembris',
+    'Decembris',
+  ],
+  monthNamesShort: [
+    'Jan.',
+    'Feb.',
+    'Mar.',
+    'Apr.',
+    'Mai',
+    'Jūn.',
+    'Jūl.',
+    'Aug.',
+    'Sep.',
+    'Okt.',
+    'Nov.',
+    'Dec.',
+  ],
+  dayNames: [
+    'Svētdiena',
+    'Pirmdiena',
+    'Otrdiena',
+    'Trešdiena',
+    'Ceturtdiena',
+    'Piektdiena',
+    'Sestdiena',
+  ],
+  dayNamesShort: ['Sv', 'P', 'O', 'T', 'C', 'Pk', 'S'],
+  today: 'Šodien',
 };
 LocaleConfig.defaultLocale = 'lv';
 
@@ -226,6 +259,11 @@ export default function DisposalWizard() {
   const [notes, setNotes] = useState('');
 
   const activeTruck = TIPPER_TRUCKS.find((t) => t.type === selectedTruckType) ?? TIPPER_TRUCKS[0];
+
+  // Redirect to welcome if not authenticated
+  useEffect(() => {
+    if (!user) router.replace('/(auth)/welcome' as never);
+  }, [user, router]);
 
   // ── Draft: restore from AsyncStorage on mount ──
   const draftLoadedRef = useRef(false);
@@ -751,14 +789,29 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.sectionLabel}>Savākšanas datums</Text>
-            <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+            <View
+              style={{
+                marginBottom: 16,
+                borderRadius: 16,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+              }}
+            >
               <Calendar
-                current={date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                current={
+                  date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                }
                 onDayPress={(day: any) => {
                   setDate(new Date(day.dateString));
                 }}
                 markedDates={{
-                  [date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#111827' }
+                  [date
+                    ? date.toISOString().split('T')[0]
+                    : new Date().toISOString().split('T')[0]]: {
+                    selected: true,
+                    selectedColor: '#111827',
+                  },
                 }}
                 theme={{
                   calendarBackground: '#ffffff',
@@ -777,7 +830,7 @@ export default function DisposalWizard() {
                   textDayHeaderFontFamily: 'Geist-Medium',
                   textDayFontSize: 15,
                   textMonthFontSize: 16,
-                  textDayHeaderFontSize: 13
+                  textDayHeaderFontSize: 13,
                 }}
                 minDate={new Date().toISOString().split('T')[0]}
                 firstDay={1}

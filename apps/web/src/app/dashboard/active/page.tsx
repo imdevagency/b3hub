@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { RefreshCw, Truck, MapPin, Package, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -140,7 +141,8 @@ function JobCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ActiveTrackingPage() {
-  const { token } = useAuth();
+  const { token, user, isLoading } = useAuth();
+  const router = useRouter();
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -149,6 +151,13 @@ export default function ActiveTrackingPage() {
   );
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Restrict to dispatcher/carrier users only
+  useEffect(() => {
+    if (!isLoading && user && !user.canTransport && user.userType !== 'ADMIN') {
+      router.replace('/dashboard');
+    }
+  }, [isLoading, user, router]);
 
   const fetchJobs = useCallback(
     async (silent = false) => {

@@ -165,6 +165,11 @@ export default function TransportWizard() {
   const currentVehicle = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle);
   const currentVehiclePrice = currentVehicle?.fromPrice;
 
+  // Redirect to welcome if not authenticated
+  useEffect(() => {
+    if (!user) router.replace('/(auth)/welcome' as never);
+  }, [user, router]);
+
   // ── Draft: restore from AsyncStorage on mount ──
   const draftLoadedRef = useRef(false);
   useEffect(() => {
@@ -594,7 +599,15 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.sectionLabel}>Pārvadāšanas datums</Text>
-            <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+            <View
+              style={{
+                marginBottom: 16,
+                borderRadius: 16,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+              }}
+            >
               <Calendar
                 current={selectedDay || new Date().toISOString().split('T')[0]}
                 onDayPress={(day: any) => {
@@ -602,7 +615,10 @@ export default function TransportWizard() {
                   setRequestedDate(day.dateString);
                 }}
                 markedDates={{
-                  [selectedDay || new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#111827' }
+                  [selectedDay || new Date().toISOString().split('T')[0]]: {
+                    selected: true,
+                    selectedColor: '#111827',
+                  },
                 }}
                 theme={{
                   calendarBackground: '#ffffff',
@@ -621,7 +637,7 @@ export default function TransportWizard() {
                   textDayHeaderFontFamily: 'Geist-Medium',
                   textDayFontSize: 15,
                   textMonthFontSize: 16,
-                  textDayHeaderFontSize: 13
+                  textDayHeaderFontSize: 13,
                 }}
                 minDate={new Date().toISOString().split('T')[0]}
                 firstDay={1}
@@ -666,7 +682,6 @@ export default function TransportWizard() {
               {currentVehiclePrice && (
                 <DetailRow
                   label="Aptuvenā cena"
-                  
                   value={
                     route && currentVehicle
                       ? `~€${Math.round(
@@ -723,8 +738,6 @@ export default function TransportWizard() {
                 <Bookmark size={16} color={saveDropoff ? '#111827' : '#9ca3af'} />
               </TouchableOpacity>
             )}
-
-            
 
             <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
             <View style={{ gap: 10, marginBottom: 8 }}>
@@ -1033,7 +1046,15 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  saveAddrCheck: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
+  saveAddrCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   saveAddrCheckActive: { backgroundColor: '#111827', borderColor: '#111827' },
   saveAddrLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
   saveAddrSub: { fontSize: 12, color: '#6b7280', marginTop: 1 },

@@ -100,6 +100,11 @@ export default function OrderWizard() {
   const [linkedMaterialOrderId, setLinkedMaterialOrderId] = useState<string | null>(null);
   const [showMatLink, setShowMatLink] = useState(false);
 
+  // Redirect to welcome if not authenticated
+  useEffect(() => {
+    if (!user) router.replace('/(auth)/welcome' as never);
+  }, [user, router]);
+
   // Fetch market prices once on mount
   useEffect(() => {
     api.skipHire
@@ -385,14 +390,25 @@ export default function OrderWizard() {
             showsVerticalScrollIndicator={false}
           >
             <Text style={s.sectionLabel}>Piegādes datums</Text>
-            <View style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB' }}>
+            <View
+              style={{
+                marginBottom: 16,
+                borderRadius: 16,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+              }}
+            >
               <Calendar
                 current={selectedDay || new Date().toISOString().split('T')[0]}
                 onDayPress={(day: any) => {
                   setSelectedDay(day.dateString);
                 }}
                 markedDates={{
-                  [selectedDay || new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#111827' }
+                  [selectedDay || new Date().toISOString().split('T')[0]]: {
+                    selected: true,
+                    selectedColor: '#111827',
+                  },
                 }}
                 theme={{
                   calendarBackground: '#ffffff',
@@ -411,7 +427,7 @@ export default function OrderWizard() {
                   textDayHeaderFontFamily: 'Geist-Medium',
                   textDayFontSize: 15,
                   textMonthFontSize: 16,
-                  textDayHeaderFontSize: 13
+                  textDayHeaderFontSize: 13,
                 }}
                 minDate={new Date().toISOString().split('T')[0]}
                 firstDay={1}

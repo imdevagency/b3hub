@@ -11,8 +11,12 @@ import type { NextRequest } from 'next/server';
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 const ADMIN_PATH_PREFIX = '/dashboard/admin';
 
-// ── JWT payload decoder (no verification — backend verifies on every API call)
-
+// ── JWT payload decoder (no signature verification — Edge Runtime lacks Node crypto)
+// Trade-off: this only checks the unverified payload for routing decisions (e.g.
+// admin redirect). All sensitive data access goes through the NestJS API which
+// fully verifies the JWT on every request. A forged token could bypass the
+// admin-page *redirect* but still receive 403 on every API call, so no data is
+// exposed. To harden further, use the Web Crypto API with the JWT_SECRET env var.
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.');
