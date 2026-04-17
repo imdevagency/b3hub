@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import type { SkipSize } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
@@ -15,38 +15,10 @@ export function SkipSizeStep({
   /** Live market prices per size — overrides hardcoded SIZES prices when provided */
   prices?: Partial<Record<SkipSize, number>>;
 }) {
-  const scales = useRef(SIZES.map(() => new Animated.Value(1))).current;
-  const stagger = useRef(SIZES.map(() => new Animated.Value(0))).current;
 
-  useEffect(() => {
-    stagger.forEach((anim, i) => {
-      Animated.spring(anim, {
-        toValue: 1,
-        delay: i * 70,
-        useNativeDriver: true,
-        tension: 75,
-        friction: 10,
-      }).start();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  const handleSelect = (id: SkipSize, idx: number) => {
+  const handleSelect = (id: SkipSize) => {
     haptics.selection();
-    Animated.sequence([
-      Animated.spring(scales[idx], {
-        toValue: 0.96,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 8,
-      }),
-      Animated.spring(scales[idx], {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 7,
-      }),
-    ]).start();
     onSelect(id);
   };
 
@@ -60,61 +32,52 @@ export function SkipSizeStep({
         const isSel = selected === size.id;
         const boxH = Math.round(16 + size.heightPct * 26);
         const boxW = Math.round(32 + size.heightPct * 16);
-        const translateY = stagger[idx].interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
         return (
-          <Animated.View
+          <TouchableOpacity
             key={size.id}
-            style={{ opacity: stagger[idx], transform: [{ scale: scales[idx] }, { translateY }] }}
+            style={[s3.card, isSel && s3.cardSel]}
+            onPress={() => handleSelect(size.id)}
+            activeOpacity={0.75}
           >
-            <TouchableOpacity
-              style={[s3.card, isSel && s3.cardSel]}
-              onPress={() => handleSelect(size.id, idx)}
-              activeOpacity={0.75}
-            >
-              {size.id === 'MIDI' && (
-                <View style={s3.popular}>
-                  <Text style={s3.popularTxt}>{t.skipHire.step3.popular}</Text>
+            <View style={s3.row}>
+              {/* Visual skip container */}
+              <View style={s3.skipWrap}>
+                <View
+                  style={[
+                    s3.skipBox,
+                    {
+                      height: boxH,
+                      width: boxW,
+                      backgroundColor: isSel ? '#000' : '#e5e7eb',
+                    },
+                  ]}
+                />
+                <View style={s3.wheels}>
+                  <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
+                  <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
                 </View>
-              )}
-              <View style={s3.row}>
-                {/* Visual skip container */}
-                <View style={s3.skipWrap}>
-                  <View
-                    style={[
-                      s3.skipBox,
-                      {
-                        height: boxH,
-                        width: boxW,
-                        backgroundColor: isSel ? size.color : '#e5e7eb',
-                      },
-                    ]}
-                  />
-                  <View style={s3.wheels}>
-                    <View style={[s3.wheel, isSel && { backgroundColor: size.color }]} />
-                    <View style={[s3.wheel, isSel && { backgroundColor: size.color }]} />
-                  </View>
-                </View>
+              </View>
 
-                <View style={{ flex: 1 }}>
-                  <Text style={[s3.label, isSel && { color: size.color }]}>{info.label}</Text>
-                  <Text style={s3.vol}>{info.volume}</Text>
-                  <Text style={s3.desc}>{info.desc}</Text>
-                </View>
-
-                <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                  <Text style={[s3.price, isSel && { color: size.color }]}>
-                    {prices?.[size.id] != null ? `no €${prices[size.id]}` : `€${size.price}`}
-                  </Text>
-                  <Text style={s3.minHire}>7 dienu min.</Text>
-                  {isSel && (
-                    <View style={[s3.checkCircle, { backgroundColor: size.color }]}>
-                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>✓</Text>
+              <View style={{ flex: 1, paddingLeft: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                  <Text style={[s3.label, isSel && { color: '#000' }]}>{info.label}</Text>
+                  {size.id === 'MIDI' && (
+                    <View style={s3.popular}>
+                      <Text style={s3.popularTxt}>{t.skipHire.step3.popular}</Text>
                     </View>
                   )}
                 </View>
+                <Text style={[s3.vol, isSel && { color: '#4b5563' }]}>{info.volume}</Text>
+                <Text style={s3.desc}>{info.desc}</Text>
               </View>
-            </TouchableOpacity>
-          </Animated.View>
+
+              <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                <Text style={[s3.price, isSel && { color: '#000' }]}>
+                  {prices?.[size.id] != null ? `€${prices[size.id]}` : `€${size.price}`}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         );
       })}
     </ScrollView>
@@ -123,41 +86,49 @@ export function SkipSizeStep({
 
 const s3 = StyleSheet.create({
   card: {
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderWidth: 2,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
-    position: 'relative',
-    overflow: 'hidden',
+    borderColor: 'transparent',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginBottom: 6,
   },
-  cardSel: { borderColor: '#111827', backgroundColor: '#fff' },
+  cardSel: { 
+    borderColor: '#000', 
+    backgroundColor: '#f8fafc',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
   popular: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#111827',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderBottomLeftRadius: 10,
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 8,
   },
-  popularTxt: { color: '#fff', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  skipWrap: { alignItems: 'center', width: 56, justifyContent: 'flex-end' },
+  popularTxt: { color: '#4b5563', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  row: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+  skipWrap: { alignItems: 'center', width: 60, justifyContent: 'center' },
   skipBox: { borderRadius: 3 },
   wheels: { flexDirection: 'row', gap: 7, marginTop: 3 },
   wheel: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#d1d5db' },
-  label: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  label: { fontSize: 18, fontWeight: '600', color: '#111827' },
   vol: { fontSize: 13, color: '#6b7280', marginTop: 1 },
   desc: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
-  price: { fontSize: 18, fontWeight: '700', color: '#374151' },
+  price: { fontSize: 18, fontWeight: '600', color: '#111827' },
   minHire: { fontSize: 10, color: '#9ca3af', fontWeight: '500' },
   checkCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
 });

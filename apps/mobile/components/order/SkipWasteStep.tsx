@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Check } from 'lucide-react-native';
 import type { SkipWasteCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -13,60 +13,26 @@ export function SkipWasteStep({
   selected: SkipWasteCategory | null;
   onSelect: (v: SkipWasteCategory) => void;
 }) {
-  const scales = useRef(WASTE_TYPES.map(() => new Animated.Value(1))).current;
-  const stagger = useRef(WASTE_TYPES.map(() => new Animated.Value(0))).current;
-
-  useEffect(() => {
-    stagger.forEach((anim, i) => {
-      Animated.spring(anim, {
-        toValue: 1,
-        delay: i * 55,
-        useNativeDriver: true,
-        tension: 80,
-        friction: 10,
-      }).start();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleSelect = (id: SkipWasteCategory, idx: number) => {
+  const handleSelect = (id: SkipWasteCategory) => {
     haptics.selection();
-    Animated.sequence([
-      Animated.spring(scales[idx], {
-        toValue: 0.92,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 8,
-      }),
-      Animated.spring(scales[idx], {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 120,
-        friction: 6,
-      }),
-    ]).start();
     onSelect(id);
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s2.grid}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={s2.grid}
+      style={{ paddingHorizontal: 20 }}
+    >
       {WASTE_TYPES.map((id, idx) => {
         const info = t.skipHire.step2.types[id];
         const isSelected = selected === id;
         const Icon = WASTE_ICONS[id];
-        const translateY = stagger[idx].interpolate({ inputRange: [0, 1], outputRange: [28, 0] });
         return (
-          <Animated.View
-            key={id}
-            style={{
-              width: '48%',
-              opacity: stagger[idx],
-              transform: [{ scale: scales[idx] }, { translateY }],
-            }}
-          >
+          <View key={id} style={{ width: '48%' }}>
             <TouchableOpacity
               style={[s2.card, isSelected && s2.cardSelected]}
-              onPress={() => handleSelect(id, idx)}
+              onPress={() => handleSelect(id)}
               activeOpacity={0.75}
             >
               {isSelected && (
@@ -74,11 +40,15 @@ export function SkipWasteStep({
                   <Check size={10} color="#fff" />
                 </View>
               )}
-              <Icon size={24} color={isSelected ? '#fff' : '#6b7280'} style={{ marginBottom: 6 }} />
+              <Icon
+                size={28}
+                color={isSelected ? '#000' : '#4b5563'}
+                strokeWidth={selected === id ? 2.5 : 1.5}
+              />
               <Text style={[s2.label, isSelected && s2.labelSelected]}>{info.label}</Text>
               <Text style={[s2.desc, isSelected && s2.descSelected]}>{info.desc}</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         );
       })}
     </ScrollView>
@@ -90,34 +60,41 @@ const s2 = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 40,
+    rowGap: 16,
   },
   card: {
     width: '100%',
     backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 2,
-    borderColor: '#f3f4f6',
-    position: 'relative',
-    minHeight: 118,
+    borderColor: 'transparent',
+    minHeight: 120,
+    justifyContent: 'flex-start',
   },
-  cardSelected: { borderColor: '#111827', backgroundColor: '#111827' },
+  cardSelected: {
+    borderColor: '#000',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
   check: {
     position: 'absolute',
-    top: 9,
-    right: 9,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    top: 12,
+    right: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 13, fontWeight: '700', color: '#374151', lineHeight: 17 },
-  labelSelected: { color: '#fff' },
-  desc: { fontSize: 12, color: '#9ca3af', marginTop: 3, lineHeight: 16 },
-  descSelected: { color: 'rgba(255,255,255,0.6)' },
+  label: { fontSize: 15, fontWeight: '600', color: '#111827', marginTop: 12, marginBottom: 2 },
+  labelSelected: { color: '#000' },
+  desc: { fontSize: 13, color: '#6b7280' },
+  descSelected: { color: '#4b5563' },
 });
