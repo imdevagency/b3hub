@@ -94,7 +94,10 @@ export function InlineAddressStep({
   const { token } = useAuth();
 
   const [mode, setMode] = useState<Mode>('SEARCH');
-  const [query, setQuery] = useState(initialText ?? picked?.address ?? '');
+  // Transport steps always start empty — no pre-filled dropoff address.
+  const [query, setQuery] = useState(
+    variant === 'transport' ? (initialText ?? '') : (initialText ?? picked?.address ?? ''),
+  );
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [showSugs, setShowSugs] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -449,7 +452,8 @@ export function InlineAddressStep({
   return (
     <View style={s.root}>
       <SafeAreaView style={s.safeArea}>
-        {isTransportStep ? (
+        {isTransportStep && contextAddress ? (
+          // ── Transport step 2: route-stack (locked pickup + active dropoff) ──
           <View style={s.uberStackWrap}>
             <View style={s.uberBackRow}>
               <TouchableOpacity style={s.backBtn} onPress={() => onCancel?.()} hitSlop={12}>
@@ -463,69 +467,35 @@ export function InlineAddressStep({
                 <View style={s.uberSquare} />
               </View>
               <View style={s.uberInputs}>
-                {contextLabel === 'Izkraušanas vieta' && contextAddress ? (
-                  <>
-                    <View style={s.uberInputStatic}>
-                      <Text style={s.uberInputStaticText} numberOfLines={1}>
-                        {contextAddress.address}
-                      </Text>
-                    </View>
-                    <View style={s.uberInputActiveWrap}>
-                      <TextInput
-                        style={s.uberInputActive}
-                        placeholder="Kurp dosimies?"
-                        placeholderTextColor="#9ca3af"
-                        value={query}
-                        onChangeText={handleQueryChange}
-                        autoFocus
-                        autoCorrect={false}
-                        returnKeyType="search"
-                      />
-                      {query.length > 0 && (
-                        <TouchableOpacity
-                          style={s.uberClearBtn}
-                          onPress={() => {
-                            setQuery('');
-                            setSuggestions([]);
-                            setShowSugs(false);
-                          }}
-                        >
-                          <X size={15} color="#6B7280" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <View style={s.uberInputActiveWrap}>
-                      <TextInput
-                        style={s.uberInputActive}
-                        placeholder="Iekraušanas vieta"
-                        placeholderTextColor="#9ca3af"
-                        value={query}
-                        onChangeText={handleQueryChange}
-                        autoFocus
-                        autoCorrect={false}
-                        returnKeyType="search"
-                      />
-                      {query.length > 0 && (
-                        <TouchableOpacity
-                          style={s.uberClearBtn}
-                          onPress={() => {
-                            setQuery('');
-                            setSuggestions([]);
-                            setShowSugs(false);
-                          }}
-                        >
-                          <X size={15} color="#6B7280" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <View style={[s.uberInputStatic, s.uberInputPlaceholder]}>
-                      <Text style={s.uberInputPlaceholderText}>Kurp dosimies?</Text>
-                    </View>
-                  </>
-                )}
+                <View style={s.uberInputStatic}>
+                  <Text style={s.uberInputStaticText} numberOfLines={1}>
+                    {contextAddress.address}
+                  </Text>
+                </View>
+                <View style={s.uberInputActiveWrap}>
+                  <TextInput
+                    style={s.uberInputActive}
+                    placeholder="Kurp dosimies?"
+                    placeholderTextColor="#9ca3af"
+                    value={query}
+                    onChangeText={handleQueryChange}
+                    autoFocus
+                    autoCorrect={false}
+                    returnKeyType="search"
+                  />
+                  {query.length > 0 && (
+                    <TouchableOpacity
+                      style={s.uberClearBtn}
+                      onPress={() => {
+                        setQuery('');
+                        setSuggestions([]);
+                        setShowSugs(false);
+                      }}
+                    >
+                      <X size={15} color="#6B7280" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
           </View>
