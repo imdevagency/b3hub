@@ -294,6 +294,44 @@ export default function CarrierSkipsScreen() {
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
   const resolved = orders.filter((o) => coords[o.id]);
 
+  // No active skips — show empty state instead of an empty map
+  if (!loading && orders.length === 0) {
+    return (
+      <ScreenContainer bg="#fff">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <MapPinOff size={48} color="#d1d5db" />
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '800',
+              color: '#111827',
+              marginTop: 20,
+              marginBottom: 8,
+              textAlign: 'center',
+            }}
+          >
+            Nav aktīvu uzdevumu
+          </Text>
+          <Text style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', lineHeight: 22 }}>
+            Visi konteineri ir piegādāti vai savākti.
+          </Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 28,
+              backgroundColor: '#111827',
+              paddingHorizontal: 28,
+              paddingVertical: 14,
+              borderRadius: 100,
+            }}
+            onPress={() => load()}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Atsvaidzināt</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
   return (
     <View style={s.root}>
       <BaseMap cameraRef={cameraRef} center={RIGA} zoom={10} style={StyleSheet.absoluteFillObject}>
