@@ -423,7 +423,8 @@ export default function CatalogScreen() {
         >
           <Search size={20} color={searchFocused ? '#111827' : '#9ca3af'} className="mr-3" />
           <TextInput
-            className="flex-1 font-medium text-[17px] text-gray-900 pt-0 pb-0"
+            className="flex-1 text-gray-900"
+            style={{ fontSize: 17, fontFamily: 'Inter_500Medium', paddingVertical: 2 }}
             placeholder="Meklēt kategoriju..."
             placeholderTextColor="#9ca3af"
             value={query}
