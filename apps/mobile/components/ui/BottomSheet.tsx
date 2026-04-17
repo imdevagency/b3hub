@@ -176,7 +176,7 @@ export function BottomSheet({
             {children}
           </ScrollView>
         ) : (
-          <View>{children}</View>
+          <View style={s.content}>{children}</View>
         )}
       </Animated.View>
     </Modal>
@@ -224,4 +224,5 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
   closeCorner: { position: 'absolute', top: 14, right: 18 },
   scrollContent: { paddingHorizontal: 24, paddingBottom: 16, gap: 2 },
+  content: { paddingHorizontal: 24, paddingBottom: 16 },
 });

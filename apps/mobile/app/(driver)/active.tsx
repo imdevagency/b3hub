@@ -42,6 +42,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import {
   MapPin,
   Navigation,
@@ -60,6 +61,7 @@ import {
   Star,
   MessageCircle,
   MoreHorizontal,
+  ChevronRight,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -281,6 +283,7 @@ export default function ActiveJobScreen() {
   const [surchargeType, setSurchargeType] = React.useState<string>('WAITING_TIME');
   const [surchargeAmount, setSurchargeAmount] = React.useState('');
   const [surchargeSubmitting, setSurchargeSubmitting] = React.useState(false);
+  const surchargeInputRef = useRef<TextInput>(null);
 
   // ── Delay report sheet ───────────────────────────────────────
   const [delaySheetVisible, setDelaySheetVisible] = React.useState(false);
@@ -1303,152 +1306,419 @@ export default function ActiveJobScreen() {
         title="Opcijas"
         scrollable
       >
-        <View style={{ padding: 20, gap: 0 }}>
-          {/* ── Options Block ── */}
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 12 }}>
-            Opcijas
-          </Text>
-
-          {(currentStatus === 'AT_PICKUP' ||
-            currentStatus === 'LOADED' ||
-            currentStatus === 'EN_ROUTE_DELIVERY' ||
-            currentStatus === 'AT_DELIVERY') && (
-            <TouchableOpacity
-              style={styles.optionRow}
-              onPress={() => {
-                setActiveTab('navigate');
-                setTimeout(() => setSurchargeSheetVisible(true), 260);
-              }}
-            >
-              <View style={[styles.optionIcon, { backgroundColor: '#fffbeb' }]}>
-                <PlusCircle size={18} color="#d97706" />
-              </View>
-              <Text style={styles.optionText}>Pievienot papildu izmaksas</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => {
-              setActiveTab('navigate');
-              setTimeout(() => setActiveTab('issues'), 260);
+        <View style={{ paddingHorizontal: 20, paddingBottom: 40, paddingTop: 12 }}>
+          {/* 1. Context First - Prominent Payout & Cargo */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: 24,
+              paddingHorizontal: 4,
+              gap: 16,
             }}
           >
-            <View style={[styles.optionIcon, { backgroundColor: '#fef2f2' }]}>
-              <AlertCircle size={18} color="#b91c1c" />
+            <View style={{ flex: 1.5, paddingRight: 8 }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6b7280',
+                  fontWeight: '700',
+                  marginBottom: 2,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Atlīdzība
+              </Text>
+              <Text
+                style={{
+                  fontSize: 28,
+                  fontWeight: '800',
+                  color: '#111827',
+                  letterSpacing: -1,
+                  lineHeight: 36,
+                  paddingVertical: 2,
+                }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                €{job.rate.toFixed(2).replace(/\.00$/, '')}
+              </Text>
+              {job.pricePerTonne ? (
+                <Text style={{ fontSize: 13, color: '#059669', fontWeight: '700', marginTop: 2 }}>
+                  €{job.pricePerTonne.toFixed(2)}/t
+                </Text>
+              ) : null}
             </View>
-            <Text style={styles.optionText}>Ziņot par problēmu</Text>
-          </TouchableOpacity>
+            <View style={{ flex: 1, overflow: 'hidden' }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#6b7280',
+                  fontWeight: '700',
+                  marginBottom: 2,
+                  textAlign: 'right',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Krava
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#111827',
+                  textAlign: 'right',
+                  flexShrink: 1,
+                }}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+              >
+                {job.cargoType}
+              </Text>
+              <View
+                style={{ flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginTop: 4 }}
+              >
+                {job.cargoWeight ? (
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: '#4b5563',
+                      fontWeight: '600',
+                      textAlign: 'right',
+                    }}
+                  >
+                    Plānotais: {job.cargoWeight}t
+                  </Text>
+                ) : null}
+              </View>
+              {job.actualWeightKg != null && (
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: '#111827',
+                    fontWeight: '700',
+                    marginTop: 4,
+                    textAlign: 'right',
+                  }}
+                >
+                  Faktiskais: {(job.actualWeightKg / 1000).toFixed(2)}t
+                </Text>
+              )}
+            </View>
+          </View>
 
-          {(currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP') && (
-            <TouchableOpacity
-              style={styles.optionRow}
-              onPress={() => {
-                setActiveTab('navigate');
-                setTimeout(() => setCancelSheetVisible(true), 260);
+          {/* Elevated Notes (if any) */}
+          {job.order?.notes ? (
+            <View
+              style={{
+                backgroundColor: '#fefce8',
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 24,
+                borderWidth: 1,
+                borderColor: '#fef08a',
+                flexDirection: 'row',
+                gap: 12,
               }}
             >
-              <View style={[styles.optionIcon, { backgroundColor: '#fef2f2' }]}>
-                <AlertCircle size={18} color="#dc2626" />
-              </View>
-              <Text style={[styles.optionText, { color: '#dc2626' }]}>Atcelt darbu</Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={{ height: 1, backgroundColor: '#f3f4f6', marginVertical: 20 }} />
-
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 }}>
-            Informācija
-          </Text>
-
-          {/* ── Earnings ── */}
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Atlīdzība</Text>
-            <Text style={[styles.detailValue, { color: '#059669', fontWeight: '800' }]}>
-              €{job.rate.toFixed(2)}
-              {job.pricePerTonne ? ` · €${job.pricePerTonne.toFixed(2)}/t` : ''}
-            </Text>
-          </View>
-
-          {/* Distance */}
-          {job.distanceKm != null && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Attālums</Text>
-              <Text style={styles.detailValue}>{job.distanceKm.toFixed(1)} km</Text>
-            </View>
-          )}
-
-          {/* Cargo */}
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Materiāls</Text>
-            <Text style={styles.detailValue}>{job.cargoType}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Plān. svars</Text>
-            <Text style={styles.detailValue}>{job.cargoWeight ?? '-'} t</Text>
-          </View>
-          {job.actualWeightKg != null && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Faktiskais</Text>
-              <Text style={styles.detailValue}>{(job.actualWeightKg / 1000).toFixed(2)} t</Text>
-            </View>
-          )}
-
-          {/* Required vehicle */}
-          {job.requiredVehicleType ? (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Transportlīdzeklis</Text>
-              <Text style={styles.detailValue}>{job.requiredVehicleType}</Text>
-            </View>
-          ) : null}
-
-          {/* Pickup */}
-          <View style={[styles.detailRow, { marginTop: 12 }]}>
-            <Text style={styles.detailLabel}>Iekraušanas adrese</Text>
-            <Text style={[styles.detailValue, { textAlign: 'right', marginLeft: 20, flex: 1 }]}>
-              {job.pickupAddress}, {job.pickupCity}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Iekraušana datums</Text>
-            <Text style={styles.detailValue}>
-              {new Date(job.pickupDate).toLocaleDateString('lv-LV', {
-                day: '2-digit',
-                month: 'short',
-              })}
-              {job.pickupWindow ? ` · ${job.pickupWindow}` : ''}
-            </Text>
-          </View>
-
-          {/* Delivery */}
-          <View style={[styles.detailRow, { marginTop: 12 }]}>
-            <Text style={styles.detailLabel}>Piegādes adrese</Text>
-            <Text style={[styles.detailValue, { textAlign: 'right', marginLeft: 20, flex: 1 }]}>
-              {job.deliveryAddress}, {job.deliveryCity}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Piegādes datums</Text>
-            <Text style={styles.detailValue}>
-              {new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
-                day: '2-digit',
-                month: 'short',
-              })}
-              {job.deliveryWindow ? ` · ${job.deliveryWindow}` : ''}
-            </Text>
-          </View>
-
-          {/* Order notes */}
-          {job.order?.notes ? (
-            <View style={{ marginTop: 16 }}>
-              <Text style={[styles.detailLabel, { marginBottom: 6 }]}>Piezīmes</Text>
-              <View style={{ backgroundColor: '#f9fafb', borderRadius: 10, padding: 12 }}>
-                <Text style={{ fontSize: 14, color: '#374151', lineHeight: 20 }}>
+              <FileText size={20} color="#ca8a04" style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '800',
+                    color: '#a16207',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Piezīmes no pasūtītāja
+                </Text>
+                <Text style={{ fontSize: 15, color: '#854d0e', lineHeight: 22, fontWeight: '500' }}>
                   {job.order.notes}
                 </Text>
               </View>
             </View>
           ) : null}
+
+          {/* Timeline-style Addresses */}
+          <View
+            style={{
+              backgroundColor: '#f9fafb',
+              borderRadius: 20,
+              padding: 20,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: '#f3f4f6',
+            }}
+          >
+            {/* Pickup */}
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <View style={{ alignItems: 'center', width: 14 }}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: '#111827',
+                    zIndex: 2,
+                    marginTop: 6,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 2,
+                    height: '100%',
+                    backgroundColor: '#e5e7eb',
+                    position: 'absolute',
+                    top: 16,
+                    bottom: -6,
+                  }}
+                />
+              </View>
+              <View style={{ flex: 1, paddingBottom: 24 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#6b7280',
+                    fontWeight: '700',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {new Date(job.pickupDate).toLocaleDateString('lv-LV', {
+                    day: '2-digit',
+                    month: 'short',
+                  })}{' '}
+                  {job.pickupWindow ? `· ${job.pickupWindow}` : ''}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '800',
+                    color: '#111827',
+                    letterSpacing: -0.5,
+                    marginBottom: 2,
+                    flexShrink: 1,
+                  }}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                >
+                  {job.pickupAddress}
+                </Text>
+                <Text style={{ fontSize: 15, color: '#4b5563', fontWeight: '500' }}>
+                  {job.pickupCity}
+                </Text>
+              </View>
+            </View>
+
+            {/* Dropoff */}
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <View style={{ alignItems: 'center', width: 14 }}>
+                {/* Dropoff visual indicator usually a square in navigation apps */}
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    backgroundColor: '#111827',
+                    zIndex: 2,
+                    marginTop: 6,
+                  }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#6b7280',
+                    fontWeight: '700',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
+                    day: '2-digit',
+                    month: 'short',
+                  })}{' '}
+                  {job.deliveryWindow ? `· ${job.deliveryWindow}` : ''}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: '800',
+                    color: '#111827',
+                    letterSpacing: -0.5,
+                    marginBottom: 2,
+                    flexShrink: 1,
+                  }}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                >
+                  {job.deliveryAddress}
+                </Text>
+                <Text style={{ fontSize: 15, color: '#4b5563', fontWeight: '500' }}>
+                  {job.deliveryCity}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Other Info Compact */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginBottom: 32,
+              paddingHorizontal: 4,
+            }}
+          >
+            {job.distanceKm != null && (
+              <View>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#9ca3af',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Attālums
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginTop: 4 }}>
+                  {job.distanceKm.toFixed(1)} km
+                </Text>
+              </View>
+            )}
+            {job.requiredVehicleType && (
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#9ca3af',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Auto tips
+                </Text>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginTop: 4 }}>
+                  {job.requiredVehicleType}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Support Actions (Minimal) */}
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '800',
+              color: '#9ca3af',
+              marginBottom: 12,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              paddingHorizontal: 4,
+            }}
+          >
+            Darba opcijas
+          </Text>
+
+          <View
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: '#e5e7eb',
+              overflow: 'hidden',
+            }}
+          >
+            {(currentStatus === 'AT_PICKUP' ||
+              currentStatus === 'LOADED' ||
+              currentStatus === 'EN_ROUTE_DELIVERY' ||
+              currentStatus === 'AT_DELIVERY') && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 18,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#f3f4f6',
+                }}
+                onPress={() => {
+                  setActiveTab('navigate');
+                  setTimeout(() => setSurchargeSheetVisible(true), 260);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <PlusCircle size={20} color="#111827" />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                    Pievienot papildu izmaksas
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#d1d5db" />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: 18,
+                borderBottomWidth:
+                  currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP' ? 1 : 0,
+                borderBottomColor: '#f3f4f6',
+              }}
+              onPress={() => {
+                setActiveTab('navigate');
+                setTimeout(() => setActiveTab('issues'), 260);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                <AlertCircle size={20} color="#111827" />
+                <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                  Ziņot par problēmu
+                </Text>
+              </View>
+              <ChevronRight size={20} color="#d1d5db" />
+            </TouchableOpacity>
+
+            {(currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP') && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 18,
+                }}
+                onPress={() => {
+                  setActiveTab('navigate');
+                  setTimeout(() => setCancelSheetVisible(true), 260);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <AlertCircle size={20} color="#ef4444" />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#ef4444' }}>
+                    Atcelt darbu
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#fecaca" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </BottomSheet>
 
@@ -1459,34 +1729,56 @@ export default function ActiveJobScreen() {
         subtitle="Ātra ziņošana dispečeram"
         scrollable
       >
-        <View style={{ padding: 20, paddingBottom: 40 }}>
+        <View style={{ paddingBottom: 32 }}>
           {/* ── Existing open exceptions ── */}
           {exceptions.filter((e) => e.status === 'OPEN').length > 0 && (
-            <View style={{ marginBottom: 20 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#b91c1c', marginBottom: 8 }}>
+            <View
+              style={{
+                marginBottom: 24,
+                backgroundColor: '#f3f4f6',
+                padding: 16,
+                borderRadius: 16,
+              }}
+            >
+              <RNText
+                style={{
+                  fontSize: 13,
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  color: '#111827',
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
                 Aktīvās problēmas
-              </Text>
+              </RNText>
               {exceptions
                 .filter((e) => e.status === 'OPEN')
-                .map((ex) => (
-                  <View
-                    key={ex.id}
-                    style={{
-                      backgroundColor: '#fef2f2',
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: '#fecaca',
-                      padding: 12,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#b91c1c' }}>
+                .map((ex, i) => (
+                  <View key={ex.id} style={{ marginTop: i > 0 ? 12 : 0 }}>
+                    <RNText
+                      style={{
+                        fontSize: 15,
+                        fontFamily: 'Inter_700Bold',
+                        fontWeight: '700',
+                        color: '#111827',
+                      }}
+                    >
                       {EXCEPTION_TYPE_OPTIONS.find((o) => o.value === ex.type)?.label ?? ex.type}
-                    </Text>
+                    </RNText>
                     {ex.notes ? (
-                      <Text style={{ fontSize: 13, color: '#374151', marginTop: 2 }}>
+                      <RNText
+                        style={{
+                          fontSize: 14,
+                          fontFamily: 'Inter_500Medium',
+                          fontWeight: '500',
+                          color: '#6b7280',
+                          marginTop: 2,
+                        }}
+                      >
                         {ex.notes}
-                      </Text>
+                      </RNText>
                     ) : null}
                   </View>
                 ))}
@@ -1494,58 +1786,78 @@ export default function ActiveJobScreen() {
           )}
 
           {/* ── Exception type chips ── */}
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 10 }}>
+          <RNText
+            style={{
+              fontSize: 15,
+              fontFamily: 'Inter_700Bold',
+              fontWeight: '700',
+              color: '#111827',
+              marginBottom: 12,
+            }}
+          >
             Problēmas veids
-          </Text>
+          </RNText>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 4 }}
+            style={{ marginBottom: 24, marginHorizontal: -24 }}
           >
-            {EXCEPTION_TYPE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                onPress={() => setExceptionType(opt.value)}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 9,
-                  borderRadius: 20,
-                  backgroundColor: exceptionType === opt.value ? '#b91c1c' : '#f3f4f6',
-                }}
-              >
-                <Text
+            {EXCEPTION_TYPE_OPTIONS.map((opt) => {
+              const isActive = exceptionType === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setExceptionType(opt.value)}
+                  activeOpacity={0.7}
                   style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: exceptionType === opt.value ? '#fff' : '#374151',
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderRadius: 100,
+                    marginRight: 8,
+                    backgroundColor: isActive ? '#111827' : '#f3f4f6',
                   }}
                 >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <RNText
+                    style={{
+                      fontSize: 15,
+                      fontFamily: isActive ? 'Inter_700Bold' : 'Inter_600SemiBold',
+                      fontWeight: isActive ? '700' : '600',
+                      color: isActive ? '#ffffff' : '#374151',
+                    }}
+                  >
+                    {opt.label}
+                  </RNText>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
 
           {/* ── Partial delivery quantity ── */}
           {exceptionType === 'PARTIAL_DELIVERY' && (
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 14, color: '#374151', fontWeight: '600', marginBottom: 6 }}>
+            <View style={{ marginBottom: 24 }}>
+              <RNText
+                style={{
+                  fontSize: 15,
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  color: '#111827',
+                  marginBottom: 12,
+                }}
+              >
                 Faktiskais daudzums (t)
-              </Text>
+              </RNText>
               <TextInput
                 style={{
-                  backgroundColor: '#f9fafb',
-                  borderRadius: 10,
-                  padding: 12,
-                  fontSize: 15,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: 16,
+                  padding: 16,
+                  fontSize: 18,
+                  fontFamily: 'Inter_600SemiBold',
                   color: '#111827',
                 }}
                 keyboardType="decimal-pad"
-                placeholder={
-                  job.cargoWeight ? `Plānotais: ${job.cargoWeight} t` : 'Ievadiet tonnas'
-                }
+                placeholder={job.cargoWeight ? `Plānotais: ${job.cargoWeight} t` : '0 t'}
                 placeholderTextColor="#9ca3af"
                 value={exceptionActualQty}
                 onChangeText={setExceptionActualQty}
@@ -1554,55 +1866,74 @@ export default function ActiveJobScreen() {
           )}
 
           {/* ── Notes ── */}
-          <Text style={{ fontSize: 14, color: '#374151', fontWeight: '600', marginBottom: 6 }}>
-            Apraksts
-          </Text>
-          <TextInput
-            style={{
-              backgroundColor: '#f9fafb',
-              borderRadius: 12,
-              padding: 14,
-              height: 90,
-              fontSize: 15,
-              borderWidth: 1,
-              borderColor: '#e5e7eb',
-              color: '#111827',
-              textAlignVertical: 'top',
-            }}
-            placeholder="Kāda ir problēma?"
-            placeholderTextColor="#9ca3af"
-            value={exceptionNotes}
-            onChangeText={setExceptionNotes}
-            multiline
-          />
-          <TouchableOpacity
-            style={[styles.weightConfirm, { marginTop: 16 }]}
+          <View style={{ marginBottom: 32 }}>
+            <RNText
+              style={{
+                fontSize: 15,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: 12,
+              }}
+            >
+              Papildu informācija
+            </RNText>
+            <TextInput
+              style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: 16,
+                padding: 16,
+                fontSize: 16,
+                fontFamily: 'Inter_500Medium',
+                minHeight: 120,
+                color: '#111827',
+                textAlignVertical: 'top',
+              }}
+              placeholder="Aprakstiet situāciju..."
+              placeholderTextColor="#9ca3af"
+              value={exceptionNotes}
+              onChangeText={setExceptionNotes}
+              multiline
+            />
+          </View>
+
+          {/* ── Actions ── */}
+          <Button
+            size="lg"
+            variant="default"
+            className="h-16 rounded-2xl mb-4"
             onPress={handleReportException}
             disabled={reportingException}
+            isLoading={reportingException}
           >
-            <Text style={styles.weightConfirmText}>{reportingException ? 'Sūta...' : 'Ziņot'}</Text>
-          </TouchableOpacity>
+            Iesniegt ziņojumu
+          </Button>
+
           <TouchableOpacity
+            activeOpacity={0.7}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 8,
-              marginTop: 12,
-              backgroundColor: '#fffbeb',
-              borderWidth: 1,
-              borderColor: '#fde68a',
-              borderRadius: 12,
-              padding: 14,
+              justifyContent: 'center',
+              paddingVertical: 16,
+              borderRadius: 16,
             }}
             onPress={() => {
               setActiveTab('navigate');
               setTimeout(() => setDelaySheetVisible(true), 260);
             }}
           >
-            <ClockIcon size={18} color="#d97706" />
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#d97706' }}>
-              Ziņot par kavēšanos
-            </Text>
+            <ClockIcon size={16} color="#6b7280" style={{ marginRight: 8 }} />
+            <RNText
+              style={{
+                fontSize: 15,
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
+                color: '#6b7280',
+              }}
+            >
+              Vai gribējāt ziņot par kavēšanos?
+            </RNText>
           </TouchableOpacity>
         </View>
       </BottomSheet>
@@ -1611,67 +1942,108 @@ export default function ActiveJobScreen() {
 
       <BottomSheet
         visible={surchargeSheetVisible}
-        onClose={() => setSurchargeSheetVisible(false)}
+        onClose={() => {
+          setSurchargeSheetVisible(false);
+          setSurchargeAmount('');
+          setSurchargeType('WAITING_TIME');
+        }}
         title="Papildu maksa"
-        subtitle="Pievienojiet gaidīšanas laiku, degvielas piemaksu u.c."
-        scrollable
-        maxHeightPct={0.65}
+        hideHandle={false}
       >
-        <View style={{ gap: 14, paddingBottom: 32 }}>
-          {/* Surcharge type picker */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+        <View style={{ paddingBottom: 32 }}>
+          {/* Amount input — € is a static label, TextInput holds digits only */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 8,
+              marginBottom: 32,
+            }}
           >
-            {SURCHARGE_TYPE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                onPress={() => setSurchargeType(opt.value)}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 20,
-                  backgroundColor: surchargeType === opt.value ? '#d97706' : '#f3f4f6',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: surchargeType === opt.value ? '#fff' : '#374151',
-                  }}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Amount input */}
-          <View style={styles.surchargeAmountRow}>
-            <Text style={styles.surchargeAmountLabel}>Summa (€)</Text>
+            <RNText
+              style={{
+                fontSize: 52,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: surchargeAmount ? '#111827' : '#d1d5db',
+                letterSpacing: -1,
+                marginRight: 4,
+                lineHeight: 72,
+              }}
+            >
+              €
+            </RNText>
             <TextInput
-              style={styles.surchargeAmountInput}
+              ref={surchargeInputRef}
               value={surchargeAmount}
-              onChangeText={setSurchargeAmount}
+              onChangeText={(text) => setSurchargeAmount(text.replace(/[^0-9.]/g, ''))}
               keyboardType="decimal-pad"
               placeholder="0.00"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#d1d5db"
+              maxLength={7}
+              autoFocus
+              style={{
+                fontSize: 60,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: '#111827',
+                letterSpacing: -2,
+                minWidth: 100,
+                padding: 0,
+                margin: 0,
+              }}
             />
           </View>
 
-          {/* Submit */}
-          <TouchableOpacity
-            style={[styles.surchargeSubmitBtn, surchargeSubmitting && { opacity: 0.6 }]}
+          {/* Type selector chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 4 }}
+            style={{ marginBottom: 32, marginHorizontal: -24 }}
+          >
+            {SURCHARGE_TYPE_OPTIONS.map((opt) => {
+              const isActive = surchargeType === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setSurchargeType(opt.value)}
+                  activeOpacity={0.7}
+                  style={{
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderRadius: 100,
+                    marginRight: 8,
+                    backgroundColor: isActive ? '#111827' : '#f3f4f6',
+                    borderWidth: 1,
+                    borderColor: isActive ? '#111827' : '#e5e7eb',
+                  }}
+                >
+                  <RNText
+                    style={{
+                      fontSize: 14,
+                      fontWeight: isActive ? '700' : '500',
+                      color: isActive ? '#fff' : '#374151',
+                    }}
+                  >
+                    {opt.label}
+                  </RNText>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Confirm button */}
+          <Button
+            size="lg"
+            className="h-20 rounded-2xl"
             onPress={handleAddSurcharge}
             disabled={surchargeSubmitting || !surchargeAmount}
-            activeOpacity={0.8}
+            isLoading={surchargeSubmitting}
           >
-            <Text style={styles.surchargeSubmitText}>
-              {surchargeSubmitting ? 'Saglabā...' : 'Pievienot papildu maksu'}
-            </Text>
-          </TouchableOpacity>
+            Apstiprināt maksu
+          </Button>
         </View>
       </BottomSheet>
 
@@ -1682,38 +2054,76 @@ export default function ActiveJobScreen() {
         title="Ziņot par kavēšanos"
         subtitle="Pasūtītājs saņems paziņojumu"
       >
-        <View style={{ gap: 14, paddingBottom: 32 }}>
+        <View style={{ gap: 24, paddingBottom: 32 }}>
           <View>
-            <Text style={styles.surchargeLabel}>Kavēšanās laiks (minūtes)</Text>
+            <RNText
+              style={{
+                fontSize: 15,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: 12,
+              }}
+            >
+              Kavēšanās laiks (minūtes)
+            </RNText>
             <TextInput
-              style={styles.surchargeInput}
+              style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: 16,
+                padding: 16,
+                fontSize: 18,
+                fontFamily: 'Inter_600SemiBold',
+                color: '#111827',
+              }}
               keyboardType="numeric"
               value={delayMinutes}
               onChangeText={setDelayMinutes}
-              placeholder="30"
+              placeholder="Piem., 30"
+              placeholderTextColor="#9ca3af"
               returnKeyType="done"
             />
           </View>
           <View>
-            <Text style={styles.surchargeLabel}>Iemesls (neobligāti)</Text>
+            <RNText
+              style={{
+                fontSize: 15,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: 12,
+              }}
+            >
+              Kāpēc kavējaties? (Neobligāti)
+            </RNText>
             <TextInput
-              style={[styles.surchargeInput, { height: 72, textAlignVertical: 'top' }]}
+              style={{
+                backgroundColor: '#f3f4f6',
+                borderRadius: 16,
+                padding: 16,
+                fontSize: 16,
+                fontFamily: 'Inter_500Medium',
+                minHeight: 120,
+                color: '#111827',
+                textAlignVertical: 'top',
+              }}
               value={delayReason}
               onChangeText={setDelayReason}
               placeholder="Satiksme, tehniskas problēmas..."
+              placeholderTextColor="#9ca3af"
               multiline
             />
           </View>
-          <TouchableOpacity
-            style={[styles.surchargeSubmitBtn, { backgroundColor: '#d97706' }]}
+          <Button
+            size="lg"
+            variant="default"
+            className="h-16 rounded-2xl mt-2"
             onPress={handleReportDelay}
             disabled={delaySubmitting}
-            activeOpacity={0.8}
+            isLoading={delaySubmitting}
           >
-            <Text style={styles.surchargeSubmitText}>
-              {delaySubmitting ? 'Sūta...' : 'Nosūtīt paziņojumu'}
-            </Text>
-          </TouchableOpacity>
+            Nosūtīt paziņojumu
+          </Button>
         </View>
       </BottomSheet>
 
