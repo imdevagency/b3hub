@@ -122,7 +122,9 @@ function CategoryCard({
           {hasRecycled && (
             <View className="ml-2 bg-green-100 px-1.5 py-0.5 rounded flex-row items-center">
               <Leaf size={10} color="#166534" className="mr-1" />
-              <Text className="text-[10px] font-bold text-green-800 uppercase tracking-widest">Eco</Text>
+              <Text className="text-[10px] font-bold text-green-800 uppercase tracking-widest">
+                Eco
+              </Text>
             </View>
           )}
         </View>
@@ -408,7 +410,7 @@ export default function CatalogScreen() {
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff" standalone noAnimation>
-      <View className="px-5 pt-8 pb-2">
+      <View className="px-5 pt-4 pb-2">
         <Text className="text-[32px] font-bold tracking-tight text-gray-900 leading-tight">
           Katalogs
         </Text>
@@ -464,7 +466,9 @@ export default function CatalogScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Text className={`font-bold text-[15px] ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}>
+            <Text
+              className={`font-bold text-[15px] ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}
+            >
               Visi
             </Text>
           </TouchableOpacity>
@@ -506,11 +510,11 @@ export default function CatalogScreen() {
               <View className="px-5 gap-4 mt-2">
                 {[1, 2, 3].map((i) => (
                   <View key={i} className="flex-row items-center py-4 border-b border-gray-100">
-                     <View className="w-12 h-12 rounded-full bg-gray-100 mr-4"></View>
-                     <View className="flex-1">
-                        <View className="w-3/4 h-5 bg-gray-100 rounded mb-2"></View>
-                        <View className="w-1/2 h-4 bg-gray-100 rounded"></View>
-                     </View>
+                    <View className="w-12 h-12 rounded-full bg-gray-100 mr-4"></View>
+                    <View className="flex-1">
+                      <View className="w-3/4 h-5 bg-gray-100 rounded mb-2"></View>
+                      <View className="w-1/2 h-4 bg-gray-100 rounded"></View>
+                    </View>
                   </View>
                 ))}
               </View>
