@@ -220,6 +220,7 @@ export default function OrderDetailScreen() {
       const { error: initError } = await stripe.initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'B3Hub',
+        returnURL: 'b3hub://order/return',
         defaultBillingDetails: {},
       });
       if (initError) {

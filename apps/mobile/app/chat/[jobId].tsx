@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
   Image,
   Alert,
 } from 'react-native';
@@ -152,7 +151,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#f2f2f7" >
+    <ScreenContainer standalone bg="#f2f2f7">
       <ScreenHeader title={String(title ?? 'Čats')} />
       <KeyboardAvoidingView
         style={styles.flex}

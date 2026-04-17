@@ -214,7 +214,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <ScreenContainer bg="#ffffff" topBg="#ffffff" standalone noAnimation>
+    <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -230,7 +230,9 @@ export default function HomeScreen() {
         {/* Flat Minimal Header */}
         <View className="px-5 pt-8 pb-6 flex-row justify-between items-end">
           <View>
-            <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5">Laipni lūdzam</Text>
+            <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5">
+              Laipni lūdzam
+            </Text>
             <Text className="text-[32px] font-bold tracking-tight text-gray-900">
               Sveiki{user?.firstName ? `, ${user.firstName}` : ''}
             </Text>
@@ -251,10 +253,12 @@ export default function HomeScreen() {
             }}
           >
             <View className="w-10 h-10 bg-amber-100 rounded-full items-center justify-center mr-3">
-               <AlertCircle size={20} color="#b45309" />
+              <AlertCircle size={20} color="#b45309" />
             </View>
             <View className="flex-1 mr-2">
-              <Text className="text-[15px] text-gray-900 font-bold mb-0.5 tracking-tight">Pabeidziet konta reģistrāciju</Text>
+              <Text className="text-[15px] text-gray-900 font-bold mb-0.5 tracking-tight">
+                Pabeidziet konta reģistrāciju
+              </Text>
               <Text className="text-[13px] text-gray-500 font-medium leading-tight">
                 {!user.phone
                   ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
@@ -345,7 +349,9 @@ export default function HomeScreen() {
                   <Text className="text-gray-900 font-bold text-[16px] tracking-tight mb-1">
                     {svc.label}
                   </Text>
-                  <Text className="text-gray-500 font-medium text-[13px] line-clamp-1 leading-tight">{svc.sub}</Text>
+                  <Text className="text-gray-500 font-medium text-[13px] line-clamp-1 leading-tight">
+                    {svc.sub}
+                  </Text>
                 </TouchableOpacity>
               );
             })}

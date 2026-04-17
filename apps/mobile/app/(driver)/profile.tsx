@@ -16,10 +16,26 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import {
-  X, LogOut, Trash2, ChevronRight, AlertCircle, HelpCircle,
-  MessageCircle, Settings, Bell, ArrowUpDown, Globe,
-  Package, Truck, BarChart2,
-  FileText, Handshake, Euro, Briefcase, FileCheck, Target,
+  X,
+  LogOut,
+  Trash2,
+  ChevronRight,
+  AlertCircle,
+  HelpCircle,
+  MessageCircle,
+  Settings,
+  Bell,
+  ArrowUpDown,
+  Globe,
+  Package,
+  Truck,
+  BarChart2,
+  FileText,
+  Handshake,
+  Euro,
+  Briefcase,
+  FileCheck,
+  Target,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -150,7 +166,7 @@ export default function ProfileScreen() {
   const isComplete = missing.length === 0;
 
   return (
-    <ScreenContainer standalone bg="#f9fafb" noAnimation>
+    <ScreenContainer topInset={0} bg="#f9fafb" noAnimation>
       <ScreenHeader title="Profils" onBack={null} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -162,8 +178,12 @@ export default function ProfileScreen() {
           activeOpacity={0.8}
           onPress={openEdit}
         >
-          <View className={`w-[72px] h-[72px] rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}>
-            <Text className={`text-2xl font-bold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}>
+          <View
+            className={`w-[72px] h-[72px] rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}
+          >
+            <Text
+              className={`text-2xl font-bold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}
+            >
               {initials}
             </Text>
           </View>
@@ -178,7 +198,9 @@ export default function ProfileScreen() {
                 <Text className="text-gray-400 font-medium mr-3">{user?.email}</Text>
               )}
               <View className="bg-gray-100 px-2 py-0.5 rounded flex-row items-center">
-                <Text className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">{accountTypeLabel}</Text>
+                <Text className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+                  {accountTypeLabel}
+                </Text>
               </View>
             </View>
           </View>
@@ -194,8 +216,12 @@ export default function ProfileScreen() {
           >
             <AlertCircle size={20} color="#b45309" className="mr-3" />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-amber-900 mb-0.5">Pabeidziet konta reģistrāciju</Text>
-              <Text className="text-xs font-medium text-amber-700">Trūkst informācijas: {missing.map(m => m.label).join(', ')}</Text>
+              <Text className="text-sm font-bold text-amber-900 mb-0.5">
+                Pabeidziet konta reģistrāciju
+              </Text>
+              <Text className="text-xs font-medium text-amber-700">
+                Trūkst informācijas: {missing.map((m) => m.label).join(', ')}
+              </Text>
             </View>
             <ChevronRight size={16} color="#b45309" />
           </TouchableOpacity>
@@ -220,25 +246,69 @@ export default function ProfileScreen() {
         {/* Dynamic Mode-Specific Links */}
         <View className="mb-3 border-y border-gray-100 bg-white">
           {mode === 'BUYER' && (
-            <MenuItem icon={BarChart2} label="Analītika" onPress={() => router.push('/(buyer)/analytics' as any)} hideBorder />
+            <MenuItem
+              icon={BarChart2}
+              label="Analītika"
+              onPress={() => router.push('/(buyer)/analytics' as any)}
+              hideBorder
+            />
           )}
 
           {mode === 'SUPPLIER' && (
             <>
-              <MenuItem icon={Euro} label="Izpeļņa" onPress={() => router.push('/(seller)/earnings' as any)} />
-              <MenuItem icon={FileText} label="Cenu pieprasījumi" value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined} onPress={() => router.push('/(seller)/quotes' as any)} />
-              <MenuItem icon={FileCheck} label="Pavadzīmes" onPress={() => router.push('/(seller)/documents' as any)} />
-              <MenuItem icon={Handshake} label="Ilgtermiņa līgumi" onPress={() => router.push('/(seller)/framework-contracts' as any)} hideBorder />
+              <MenuItem
+                icon={Euro}
+                label="Izpeļņa"
+                onPress={() => router.push('/(seller)/earnings' as any)}
+              />
+              <MenuItem
+                icon={FileText}
+                label="Cenu pieprasījumi"
+                value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined}
+                onPress={() => router.push('/(seller)/quotes' as any)}
+              />
+              <MenuItem
+                icon={FileCheck}
+                label="Pavadzīmes"
+                onPress={() => router.push('/(seller)/documents' as any)}
+              />
+              <MenuItem
+                icon={Handshake}
+                label="Ilgtermiņa līgumi"
+                onPress={() => router.push('/(seller)/framework-contracts' as any)}
+                hideBorder
+              />
             </>
           )}
 
           {mode === 'CARRIER' && (
             <>
-              <MenuItem icon={Euro} label="Izpeļņa" onPress={() => router.push('/(driver)/earnings' as any)} />
-              <MenuItem icon={Truck} label="Transporti" onPress={() => router.push('/(driver)/vehicles' as any)} />
-              <MenuItem icon={Package} label="Konteineri (Skips)" onPress={() => router.push('/(driver)/skips' as any)} />
-              <MenuItem icon={FileCheck} label="Pavadzīmes" onPress={() => router.push('/(driver)/documents' as any)} />
-              <MenuItem icon={Target} label="Pārvadātāja iestatījumi" onPress={() => router.push('/(driver)/carrier-settings' as any)} hideBorder />
+              <MenuItem
+                icon={Euro}
+                label="Izpeļņa"
+                onPress={() => router.push('/(driver)/earnings' as any)}
+              />
+              <MenuItem
+                icon={Truck}
+                label="Transporti"
+                onPress={() => router.push('/(driver)/vehicles' as any)}
+              />
+              <MenuItem
+                icon={Package}
+                label="Konteineri (Skips)"
+                onPress={() => router.push('/(driver)/skips' as any)}
+              />
+              <MenuItem
+                icon={FileCheck}
+                label="Pavadzīmes"
+                onPress={() => router.push('/(driver)/documents' as any)}
+              />
+              <MenuItem
+                icon={Target}
+                label="Pārvadātāja iestatījumi"
+                onPress={() => router.push('/(driver)/carrier-settings' as any)}
+                hideBorder
+              />
             </>
           )}
         </View>
@@ -246,14 +316,29 @@ export default function ProfileScreen() {
         {/* Application Section (Only show if missing rights and in BUYER mode commonly or generally) */}
         {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && (
           <View className="mb-3 border-y border-gray-100 bg-white">
-            {!user?.canSell && (
+            {!user?.canSell &&
               (() => {
-                const app = applications.find(a => a.appliesForSell);
+                const app = applications.find((a) => a.appliesForSell);
                 if (app?.status === 'PENDING') {
-                  return <ApplicationRow icon={Package} label="Piegādātāja pieteikums" status="PENDING" hideBorder={!!user?.canTransport} />;
+                  return (
+                    <ApplicationRow
+                      icon={Package}
+                      label="Piegādātāja pieteikums"
+                      status="PENDING"
+                      hideBorder={!!user?.canTransport}
+                    />
+                  );
                 }
                 if (app?.status === 'REJECTED') {
-                  return <ApplicationRow icon={Package} label="Piegādātāja pieteikums" status="REJECTED" onReapply={() => router.push('/(auth)/apply-role?type=supplier' as any)} hideBorder={!!user?.canTransport} />;
+                  return (
+                    <ApplicationRow
+                      icon={Package}
+                      label="Piegādātāja pieteikums"
+                      status="REJECTED"
+                      onReapply={() => router.push('/(auth)/apply-role?type=supplier' as any)}
+                      hideBorder={!!user?.canTransport}
+                    />
+                  );
                 }
                 return (
                   <MenuItem
@@ -263,17 +348,31 @@ export default function ProfileScreen() {
                     onPress={() => router.push('/(auth)/apply-role?type=supplier' as any)}
                   />
                 );
-              })()
-            )}
-            
-            {!user?.canTransport && (
+              })()}
+
+            {!user?.canTransport &&
               (() => {
-                const app = applications.find(a => a.appliesForTransport);
+                const app = applications.find((a) => a.appliesForTransport);
                 if (app?.status === 'PENDING') {
-                  return <ApplicationRow icon={Truck} label="Pārvadātāja pieteikums" status="PENDING" hideBorder />;
+                  return (
+                    <ApplicationRow
+                      icon={Truck}
+                      label="Pārvadātāja pieteikums"
+                      status="PENDING"
+                      hideBorder
+                    />
+                  );
                 }
                 if (app?.status === 'REJECTED') {
-                  return <ApplicationRow icon={Truck} label="Pārvadātāja pieteikums" status="REJECTED" onReapply={() => router.push('/(auth)/apply-role?type=carrier' as any)} hideBorder />;
+                  return (
+                    <ApplicationRow
+                      icon={Truck}
+                      label="Pārvadātāja pieteikums"
+                      status="REJECTED"
+                      onReapply={() => router.push('/(auth)/apply-role?type=carrier' as any)}
+                      hideBorder
+                    />
+                  );
                 }
                 return (
                   <MenuItem
@@ -283,8 +382,7 @@ export default function ProfileScreen() {
                     onPress={() => router.push('/(auth)/apply-role?type=carrier' as any)}
                   />
                 );
-              })()
-            )}
+              })()}
           </View>
         )}
 
@@ -294,8 +392,12 @@ export default function ProfileScreen() {
             icon={Bell}
             label="Paziņojumi"
             value={
-              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean).length === 0
-                ? 'Izslēgti' : user?.notifPush === false ? 'Tikai lietotnē' : 'Ieslēgti'
+              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean)
+                .length === 0
+                ? 'Izslēgti'
+                : user?.notifPush === false
+                  ? 'Tikai lietotnē'
+                  : 'Ieslēgti'
             }
             onPress={() => router.push('/notifications' as any)}
           />
@@ -314,7 +416,7 @@ export default function ProfileScreen() {
             label="Palīdzība / BUJ"
             onPress={() => router.push('/help' as any)}
           />
-          
+
           {/* Language Toggle inline item */}
           <TouchableOpacity
             className="flex-row items-center px-5 py-4 bg-white"
@@ -330,9 +432,17 @@ export default function ProfileScreen() {
             <View className="flex-1 flex-row items-center justify-between">
               <Text className="text-base font-semibold text-gray-900">Valoda / Язык</Text>
               <View className="flex-row items-center">
-                <Text className={`text-sm font-bold ${language === 'lv' ? 'text-gray-900' : 'text-gray-400'}`}>LV</Text>
+                <Text
+                  className={`text-sm font-bold ${language === 'lv' ? 'text-gray-900' : 'text-gray-400'}`}
+                >
+                  LV
+                </Text>
                 <Text className="text-sm font-bold text-gray-300 mx-1.5">|</Text>
-                <Text className={`text-sm font-bold ${language === 'ru' ? 'text-gray-900' : 'text-gray-400'}`}>RU</Text>
+                <Text
+                  className={`text-sm font-bold ${language === 'ru' ? 'text-gray-900' : 'text-gray-400'}`}
+                >
+                  RU
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -341,7 +451,13 @@ export default function ProfileScreen() {
         {/* Destructive Actions */}
         <View className="mb-3 border-y border-gray-100 bg-white">
           <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} />
-          <MenuItem icon={Trash2} label="Dzēst kontu" onPress={handleDeleteAccount} isDestructive hideBorder />
+          <MenuItem
+            icon={Trash2}
+            label="Dzēst kontu"
+            onPress={handleDeleteAccount}
+            isDestructive
+            hideBorder
+          />
         </View>
       </ScrollView>
 
@@ -367,7 +483,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -378,7 +494,9 @@ export default function ProfileScreen() {
 
             <View className="gap-6">
               <View>
-                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Vārds</Text>
+                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                  Vārds
+                </Text>
                 <TextInput
                   className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
                   value={form.firstName}
@@ -389,7 +507,9 @@ export default function ProfileScreen() {
                 />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Uzvārds</Text>
+                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                  Uzvārds
+                </Text>
                 <TextInput
                   className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
                   value={form.lastName}
@@ -400,7 +520,9 @@ export default function ProfileScreen() {
                 />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Tālrunis</Text>
+                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                  Tālrunis
+                </Text>
                 <TextInput
                   className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
                   value={form.phone}
@@ -448,17 +570,19 @@ function MenuItem({ icon: Icon, label, value, onPress, isDestructive, hideBorder
         disabled={!onPress}
         activeOpacity={0.7}
       >
-        <View className={`w-9 h-9 rounded-full items-center justify-center mr-4 ${isDestructive ? 'bg-red-50' : 'bg-gray-100'}`}>
+        <View
+          className={`w-9 h-9 rounded-full items-center justify-center mr-4 ${isDestructive ? 'bg-red-50' : 'bg-gray-100'}`}
+        >
           <Icon size={18} color={isDestructive ? '#ef4444' : '#4b5563'} strokeWidth={2} />
         </View>
         <View className="flex-1 flex-row items-center justify-between">
-          <Text className={`text-base font-semibold ${isDestructive ? 'text-red-600' : 'text-gray-900'}`}>
+          <Text
+            className={`text-base font-semibold ${isDestructive ? 'text-red-600' : 'text-gray-900'}`}
+          >
             {label}
           </Text>
           <View className="flex-row items-center">
-            {!!value && (
-              <Text className="text-sm font-medium text-gray-500 mr-2">{value}</Text>
-            )}
+            {!!value && <Text className="text-sm font-medium text-gray-500 mr-2">{value}</Text>}
             {!isDestructive && onPress && <ChevronRight size={18} color="#d1d5db" />}
           </View>
         </View>
@@ -479,12 +603,16 @@ function ApplicationRow({ icon: Icon, label, status, onReapply, hideBorder }: an
           <Text className="text-base font-semibold text-gray-900">{label}</Text>
           {status === 'PENDING' ? (
             <View className="bg-amber-100 px-2 py-1 rounded">
-              <Text className="text-xs font-bold text-amber-800 tracking-wide uppercase">Izskatīšanā</Text>
+              <Text className="text-xs font-bold text-amber-800 tracking-wide uppercase">
+                Izskatīšanā
+              </Text>
             </View>
           ) : (
             <View className="flex-row items-center gap-2.5">
               <View className="bg-red-100 px-2 py-1 rounded">
-                <Text className="text-xs font-bold text-red-800 tracking-wide uppercase">Noraidīts</Text>
+                <Text className="text-xs font-bold text-red-800 tracking-wide uppercase">
+                  Noraidīts
+                </Text>
               </View>
               {onReapply && (
                 <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>

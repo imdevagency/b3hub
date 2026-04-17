@@ -1,12 +1,6 @@
 /**
  * skips.tsx — Carrier: manage assigned skip-hire orders
- *
- * Two views toggled from the header:
- *   LIST — scrollable cards (original view)
- *   MAP  — interactive Mapbox map with pins for every skip order.
- *           Red pin    = to deliver (CONFIRMED)
- *           Purple pin = to collect (DELIVERED)
- *           Tapping a pin slides up a bottom sheet order card.
+ * Minimal, Uber-like Map-first interface.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,15 +11,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  RefreshControl,
   Alert,
   Linking,
   Platform,
-  Animated,
   Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
   Trash2,
   MapPin,
@@ -35,12 +27,9 @@ import {
   CheckCircle2,
   Package,
   RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
   List,
-  Map,
-  X,
+  Map as MapIcon,
+  MapPinOff,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -59,16 +48,10 @@ import { t } from '@/lib/translations';
 import { formatDateNumeric } from '@/lib/format';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const ACCENT = '#111827';
+const ACCENT = '#000000';
 const RIGA: [number, number] = [24.1052, 56.9496];
-const SCREEN_H = Dimensions.get('window').height;
 const GOOGLE_KEY = getGoogleMapsPublicKey();
-
 const cs = t.carrierSkips;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function openMaps(address: string) {
   const enc = encodeURIComponent(address);
@@ -78,59 +61,32 @@ function openMaps(address: string) {
 
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
   try {
-    const url =
-      `https://maps.googleapis.com/maps/api/geocode/json` +
-      `?address=${encodeURIComponent(address)}&region=lv&key=${GOOGLE_KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=lv&key=${GOOGLE_KEY}`;
     const res = await fetch(url);
     const json = await res.json();
     if (json.status !== 'OK' || !json.results?.[0]) return null;
     const loc = json.results[0].geometry.location;
-    return [loc.lng as number, loc.lat as number]; // [longitude, latitude]
+    return [loc.lng, loc.lat];
   } catch {
     return null;
   }
 }
 
 function pinColor(status: string): string {
-  if (status === 'CONFIRMED') return '#111827';
-  if (status === 'DELIVERED') return '#111827';
-  return '#6b7280';
+  if (status === 'CONFIRMED') return '#000000';
+  if (status === 'DELIVERED') return '#374151';
+  return '#9ca3af';
 }
 
-// ── DetailRow ─────────────────────────────────────────────────────────────────
-
-function DetailRow({
-  icon,
-  label,
-  value,
+function OrderCard({
+  order,
+  onStatusUpdate,
+  updating,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={s.detailRow}>
-      {icon}
-      <Text style={s.detailLabel}>{label}:</Text>
-      <Text style={s.detailValue} numberOfLines={2}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-// ── OrderCard ─────────────────────────────────────────────────────────────────
-
-interface OrderCardProps {
   order: SkipHireOrder;
-  onStatusUpdate: (id: string, status: SkipHireStatus) => void;
+  onStatusUpdate: (id: string, s: SkipHireStatus) => void;
   updating: boolean;
-  flat?: boolean;
-}
-
-function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardProps) {
-  const [expanded, setExpanded] = useState(flat);
-
+}) {
   const statusInfo = cs.status[order.status] ?? {
     label: order.status,
     bg: '#f3f4f6',
@@ -157,17 +113,10 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
 
   return (
     <View style={s.card}>
-      <TouchableOpacity
-        style={s.cardHeader}
-        onPress={flat ? undefined : () => setExpanded((e) => !e)}
-        activeOpacity={flat ? 1 : 0.7}
-      >
-        <View style={[s.iconBox, { backgroundColor: statusInfo.bg }]}>
-          <Trash2 size={22} color={statusInfo.color} />
-        </View>
-        <View style={{ flex: 1, marginLeft: 12 }}>
+      <View style={s.cardHeader}>
+        <View style={{ flex: 1 }}>
           <View style={s.titleRow}>
-            <Text style={s.orderNumber}>{order.orderNumber}</Text>
+            <Text style={s.orderNumber}>#{order.orderNumber}</Text>
             <StatusPill
               label={statusInfo.label}
               bg={statusInfo.bg}
@@ -175,255 +124,69 @@ function OrderCard({ order, onStatusUpdate, updating, flat = false }: OrderCardP
               size="sm"
             />
           </View>
-          <View style={s.metaRow}>
-            <MapPin size={13} color="#6b7280" />
-            <Text style={s.metaText} numberOfLines={1}>
-              {order.location}
-            </Text>
-          </View>
-          <View style={s.metaRow}>
-            <Package size={13} color="#6b7280" />
-            <Text style={s.metaText}>{sizeLabel}</Text>
-            <Calendar size={13} color="#6b7280" style={{ marginLeft: 10 }} />
-            <Text style={s.metaText}>{formatDateNumeric(order.deliveryDate)}</Text>
-          </View>
+          <Text style={s.addressText} numberOfLines={2}>
+            {order.location}
+          </Text>
         </View>
-        {!flat &&
-          (expanded ? (
-            <ChevronUp size={18} color="#9ca3af" />
-          ) : (
-            <ChevronDown size={18} color="#9ca3af" />
-          ))}
-      </TouchableOpacity>
-
-      {(expanded || flat) && (
-        <View style={s.expandedBody}>
-          <View style={s.divider} />
-          <DetailRow
-            icon={<Package size={14} color="#6b7280" />}
-            label={cs.size}
-            value={sizeLabel}
-          />
-          <DetailRow
-            icon={<Trash2 size={14} color="#6b7280" />}
-            label={cs.wasteType}
-            value={wasteLabel}
-          />
-          <DetailRow
-            icon={<MapPin size={14} color="#6b7280" />}
-            label={cs.address}
-            value={order.location}
-          />
-          <DetailRow
-            icon={<Calendar size={14} color="#6b7280" />}
-            label={cs.deliveryDate}
-            value={formatDateNumeric(order.deliveryDate)}
-          />
-          {order.contactName && (
-            <DetailRow
-              icon={<Phone size={14} color="#6b7280" />}
-              label={cs.client}
-              value={order.contactName}
-            />
-          )}
-          {order.contactPhone && (
-            <DetailRow
-              icon={<Phone size={14} color="#6b7280" />}
-              label={cs.phone}
-              value={order.contactPhone}
-            />
-          )}
-          {order.notes ? (
-            <View style={s.notesBox}>
-              <Text style={s.notesText}>{order.notes}</Text>
-            </View>
-          ) : null}
-
-          <View style={s.actionRow}>
-            <TouchableOpacity
-              style={s.navBtn}
-              onPress={() => openMaps(order.location)}
-              activeOpacity={0.8}
-            >
-              <Navigation2 size={15} color={ACCENT} />
-              <Text style={s.navBtnText}>{cs.navigate}</Text>
-            </TouchableOpacity>
-            {order.contactPhone ? (
-              <TouchableOpacity
-                style={s.callBtn}
-                onPress={() => Linking.openURL(`tel:${order.contactPhone!}`)}
-                activeOpacity={0.8}
-              >
-                <Phone size={15} color="#374151" />
-                <Text style={s.callBtnText}>{cs.call}</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          {(canDeliver || canCollect) && (
-            <TouchableOpacity
-              style={[s.statusBtn, updating && { opacity: 0.5 }]}
-              onPress={confirm}
-              disabled={updating}
-              activeOpacity={0.8}
-            >
-              {updating ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <CheckCircle2 size={17} color="#fff" />
-                  <Text style={s.statusBtnText}>
-                    {canDeliver ? cs.markDelivered : cs.markCollected}
-                  </Text>
-                  <ArrowRight size={15} color="rgba(255,255,255,0.7)" />
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ── Map view ──────────────────────────────────────────────────────────────────
-
-interface MapViewProps {
-  orders: SkipHireOrder[];
-  onStatusUpdate: (id: string, status: SkipHireStatus) => void;
-  updatingId: string | null;
-}
-
-function SkipsMapView({ orders, onStatusUpdate, updatingId }: MapViewProps) {
-  const cameraRef = useRef<CameraRefHandle | null>(null);
-  const [coords, setCoords] = useState<Record<string, [number, number]>>({});
-  const [geocoding, setGeocoding] = useState(false);
-  const [selected, setSelected] = useState<SkipHireOrder | null>(null);
-  const sheetAnim = useRef(new Animated.Value(0)).current;
-
-  // Geocode every order whose coords we don't have yet
-  useEffect(() => {
-    const missing = orders.filter((o) => !coords[o.id]);
-    if (missing.length === 0) return;
-
-    setGeocoding(true);
-    Promise.all(
-      missing.map(async (o) => ({ id: o.id, coord: await geocodeAddress(o.location) })),
-    ).then((results) => {
-      const next: Record<string, [number, number]> = { ...coords };
-      results.forEach(({ id, coord }) => {
-        if (coord) next[id] = coord;
-      });
-      setCoords(next);
-      setGeocoding(false);
-
-      const all = Object.values(next);
-      if (all.length === 0 || !cameraRef.current) return;
-      if (all.length === 1) {
-        cameraRef.current.setCamera({
-          centerCoordinate: all[0],
-          zoomLevel: 14,
-          animationDuration: 600,
-        });
-      } else {
-        const lngs = all.map((c) => c[0]);
-        const lats = all.map((c) => c[1]);
-        cameraRef.current.fitBounds(
-          [Math.min(...lngs) - 0.01, Math.min(...lats) - 0.01],
-          [Math.max(...lngs) + 0.01, Math.max(...lats) + 0.01],
-          [80, 80, 80, 80],
-          600,
-        );
-      }
-    });
-  }, [orders.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const openSheet = (order: SkipHireOrder) => {
-    setSelected(order);
-    Animated.spring(sheetAnim, { toValue: 1, useNativeDriver: true, bounciness: 4 }).start();
-  };
-
-  const closeSheet = () => {
-    Animated.timing(sheetAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() =>
-      setSelected(null),
-    );
-  };
-
-  const sheetY = sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [SCREEN_H, 0] });
-  const resolved = orders.filter((o) => coords[o.id]);
-
-  return (
-    <View style={{ flex: 1 }}>
-      <BaseMap cameraRef={cameraRef} center={RIGA} zoom={9}>
-        {resolved.map((order) => (
-          <Marker
-            key={order.id}
-            coordinate={{ latitude: coords[order.id]![1], longitude: coords[order.id]![0] }}
-            onPress={() => openSheet(order)}
-          >
-            <View collapsable={false}>
-              <View style={[s.mapPin, { backgroundColor: pinColor(order.status) }]}>
-                <Trash2 size={13} color="#fff" />
-              </View>
-              <View style={[s.mapPinTail, { borderTopColor: pinColor(order.status) }]} />
-            </View>
-          </Marker>
-        ))}
-      </BaseMap>
-
-      {geocoding && (
-        <View style={s.geocodeOverlay}>
-          <ActivityIndicator color={ACCENT} size="small" />
-          <Text style={s.geocodeText}>Ielādē adreses…</Text>
-        </View>
-      )}
-
-      <View style={s.legend}>
-        <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: '#111827' }]} />
-          <Text style={s.legendLabel}>Piegādāt</Text>
-        </View>
-        <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: '#111827' }]} />
-          <Text style={s.legendLabel}>Savākt</Text>
-        </View>
-        <Text style={s.legendCount}>
-          {resolved.length}/{orders.length}
-        </Text>
       </View>
+      <View style={s.metaWrap}>
+        <View style={s.metaItem}>
+          <Package size={14} color="#6b7280" />
+          <Text style={s.metaItemText}>{sizeLabel}</Text>
+        </View>
+        <View style={s.metaItem}>
+          <Trash2 size={14} color="#6b7280" />
+          <Text style={s.metaItemText}>{wasteLabel}</Text>
+        </View>
+        <View style={s.metaItem}>
+          <Calendar size={14} color="#6b7280" />
+          <Text style={s.metaItemText}>{formatDateNumeric(order.deliveryDate)}</Text>
+        </View>
+      </View>
+      {order.notes ? (
+        <View style={s.notesBox}>
+          <Text style={s.notesText}>{order.notes}</Text>
+        </View>
+      ) : null}
 
-      {selected && (
-        <>
-          <TouchableOpacity style={s.backdrop} onPress={closeSheet} activeOpacity={1} />
-          <Animated.View style={[s.sheet, { transform: [{ translateY: sheetY }] }]}>
-            <View style={s.sheetHandle} />
-            <View style={s.sheetHeader}>
-              <Text style={s.sheetTitle}>#{selected.orderNumber}</Text>
-              <TouchableOpacity onPress={closeSheet} hitSlop={10}>
-                <X size={20} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ maxHeight: SCREEN_H * 0.55 }} showsVerticalScrollIndicator={false}>
-              <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                <OrderCard
-                  order={selected}
-                  onStatusUpdate={(id, status) => {
-                    closeSheet();
-                    onStatusUpdate(id, status);
-                  }}
-                  updating={updatingId === selected.id}
-                  flat
-                />
-              </View>
-            </ScrollView>
-          </Animated.View>
-        </>
+      <View style={s.actionRow}>
+        <TouchableOpacity
+          style={s.navBtn}
+          onPress={() => openMaps(order.location)}
+          activeOpacity={0.8}
+        >
+          <Navigation2 size={16} color="#fff" />
+          <Text style={s.navBtnText}>Rādīt ceļu</Text>
+        </TouchableOpacity>
+        {order.contactPhone && (
+          <TouchableOpacity
+            style={s.callBtn}
+            onPress={() => Linking.openURL(`tel:${order.contactPhone}`)}
+            activeOpacity={0.8}
+          >
+            <Phone size={16} color="#000" />
+          </TouchableOpacity>
+        )}
+      </View>
+      {(canDeliver || canCollect) && (
+        <TouchableOpacity
+          style={[s.actionBtnPrimary, updating && { opacity: 0.5 }]}
+          onPress={confirm}
+          disabled={updating}
+          activeOpacity={0.8}
+        >
+          {updating ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={s.actionBtnPrimaryText}>
+              {canDeliver ? 'Atzīmēt kā piegādātu' : 'Atzīmēt kā savāktu'}
+            </Text>
+          )}
+        </TouchableOpacity>
       )}
     </View>
   );
 }
-
-// ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function CarrierSkipsScreen() {
   const { token, user } = useAuth();
@@ -431,7 +194,11 @@ export default function CarrierSkipsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  const cameraRef = useRef<CameraRefHandle | null>(null);
+  const [coords, setCoords] = useState<Record<string, [number, number]>>({});
+  const [selectedOrder, setSelectedOrder] = useState<SkipHireOrder | null>(null);
+  const [showList, setShowList] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -454,394 +221,314 @@ export default function CarrierSkipsScreen() {
     load();
   }, [load]);
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    load(true);
-  }, [load]);
-
-  const handleStatusUpdate = useCallback(
-    async (id: string, newStatus: SkipHireStatus) => {
-      if (!token) return;
-      setUpdatingId(id);
-      try {
-        const updated = await api.skipHire.updateCarrierStatus(id, newStatus, token);
-        setOrders((prev) =>
-          newStatus === 'COLLECTED'
-            ? prev.filter((o) => o.id !== id)
-            : prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)),
-        );
-      } catch (err: unknown) {
-        Alert.alert(
-          cs.errorTitle,
-          err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu.',
-        );
-      } finally {
-        setUpdatingId(null);
+  useEffect(() => {
+    const missing = orders.filter((o) => !coords[o.id]);
+    if (missing.length === 0) return;
+    Promise.all(
+      missing.map(async (o) => ({ id: o.id, coord: await geocodeAddress(o.location) })),
+    ).then((results) => {
+      const next = { ...coords };
+      let added = false;
+      results.forEach(({ id, coord }) => {
+        if (coord) {
+          next[id] = coord;
+          added = true;
+        }
+      });
+      if (added) {
+        setCoords(next);
+        const all = Object.values(next);
+        if (all.length > 1 && cameraRef.current) {
+          const lngs = all.map((c) => c[0]);
+          const lats = all.map((c) => c[1]);
+          setTimeout(() => {
+            cameraRef.current?.fitBounds(
+              [Math.min(...lngs) - 0.05, Math.min(...lats) - 0.05],
+              [Math.max(...lngs) + 0.05, Math.max(...lats) + 0.05],
+              [100, 50, 100, 50],
+              600,
+            );
+          }, 500);
+        } else if (all.length === 1 && cameraRef.current) {
+          cameraRef.current.setCamera({
+            centerCoordinate: all[0],
+            zoomLevel: 13,
+            animationDuration: 600,
+          });
+        }
       }
-    },
-    [token],
-  );
+    });
+  }, [orders]);
 
-  const toDeliver = orders.filter((o) => o.status === 'CONFIRMED');
-  const toCollect = orders.filter((o) => o.status === 'DELIVERED');
+  const handleStatusUpdate = async (id: string, newStatus: SkipHireStatus) => {
+    if (!token) return;
+    setUpdatingId(id);
+    try {
+      const updated = await api.skipHire.updateCarrierStatus(id, newStatus, token);
+      setOrders((prev) =>
+        newStatus === 'COLLECTED'
+          ? prev.filter((o) => o.id !== id)
+          : prev.map((o) => (o.id === id ? { ...o, status: updated.status } : o)),
+      );
+      if (newStatus === 'COLLECTED') setSelectedOrder(null);
+    } catch (err) {
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atjaunināt.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   if (!user?.canSkipHire) {
     return (
-      <ScreenContainer bg="#f2f2f7">
-        <ScreenHeader title={cs.title} />
+      <ScreenContainer bg="#fff">
         <EmptyState
-          icon={<Trash2 size={42} color="#9ca3af" />}
+          icon={<Package size={42} color="#9ca3af" />}
           title="Nav pieejams"
-          subtitle="Konteineru pārvaldība ir pieejama tikai apstiprinātu operatoru kontiem."
+          subtitle="Konteineru pārvaldība pieejama apstiprinātiem operatoriem."
         />
       </ScreenContainer>
     );
   }
 
-  return (
-    <ScreenContainer bg="#f2f2f7">
-      <ScreenHeader
-        title={cs.title}
-        rightAction={
-          <View style={s.headerRight}>
-            <View style={s.toggle}>
-              <TouchableOpacity
-                style={[s.toggleBtn, viewMode === 'list' && s.toggleActive]}
-                onPress={() => setViewMode('list')}
-              >
-                <List size={16} color={viewMode === 'list' ? '#fff' : '#6b7280'} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.toggleBtn, viewMode === 'map' && s.toggleActive]}
-                onPress={() => setViewMode('map')}
-              >
-                <Map size={16} color={viewMode === 'map' ? '#fff' : '#6b7280'} />
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              onPress={() => load()}
-              style={s.refreshBtn}
-              hitSlop={8}
-              disabled={loading}
-            >
-              <RefreshCw size={20} color={loading ? '#d1d5db' : ACCENT} />
-            </TouchableOpacity>
-          </View>
-        }
-      />
+  const toDeliver = orders.filter((o) => o.status === 'CONFIRMED');
+  const toCollect = orders.filter((o) => o.status === 'DELIVERED');
+  const resolved = orders.filter((o) => coords[o.id]);
 
-      {/* ── Summary chips ── */}
-      {!loading && orders.length > 0 && (
-        <View style={s.chipRow}>
-          {toDeliver.length > 0 && (
-            <View style={[s.chip, { backgroundColor: '#fee2e2' }]}>
-              <Text style={[s.chipText, { color: '#111827' }]}>{toDeliver.length} jāpiegādā</Text>
+  return (
+    <View style={s.root}>
+      <BaseMap cameraRef={cameraRef} center={RIGA} zoom={10} style={StyleSheet.absoluteFillObject}>
+        {resolved.map((order) => (
+          <Marker
+            key={order.id}
+            coordinate={{ latitude: coords[order.id]![1], longitude: coords[order.id]![0] }}
+            onPress={() => {
+              setSelectedOrder(order);
+              setShowList(false);
+            }}
+          >
+            <View
+              style={[
+                s.mapPin,
+                {
+                  backgroundColor: pinColor(order.status),
+                  transform: selectedOrder?.id === order.id ? [{ scale: 1.2 }] : [{ scale: 1 }],
+                },
+              ]}
+            >
+              <Trash2 size={16} color="#fff" />
             </View>
-          )}
-          {toCollect.length > 0 && (
-            <View style={[s.chip, { backgroundColor: '#f3f4f6' }]}>
-              <Text style={[s.chipText, { color: '#111827' }]}>{toCollect.length} jāsavāc</Text>
-            </View>
-          )}
+          </Marker>
+        ))}
+      </BaseMap>
+
+      {/* Floating Header */}
+      <View style={[s.floatingTop, { top: 12 }]}>
+        <View style={s.pillHeader}>
+          <Text style={s.pillText}>{orders.length} aktīvi uzdevumi</Text>
+        </View>
+      </View>
+
+      {/* Floating Controls */}
+      <View style={[s.floatingControls, { bottom: selectedOrder ? 400 : 100 }]}>
+        <TouchableOpacity style={s.fab} onPress={() => load()} disabled={loading}>
+          <RefreshCw size={22} color={loading ? '#9ca3af' : '#000'} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={s.fab}
+          onPress={() => {
+            setShowList(true);
+            setSelectedOrder(null);
+          }}
+        >
+          <List size={22} color="#000" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Selected Order Bottom Sheet Overlay (Not full screen) */}
+      {selectedOrder && !showList && (
+        <View style={s.selectedOverlay} pointerEvents="box-none">
+          <View style={s.selectedCardWrap}>
+            <TouchableOpacity style={s.closeSelected} onPress={() => setSelectedOrder(null)}>
+              <Text style={s.closeSelectedText}>Aizvērt</Text>
+            </TouchableOpacity>
+            <OrderCard
+              order={selectedOrder}
+              onStatusUpdate={handleStatusUpdate}
+              updating={updatingId === selectedOrder.id}
+            />
+          </View>
         </View>
       )}
 
-      {/* ── Content ── */}
-      {loading ? (
-        <SkeletonCard count={4} />
-      ) : orders.length === 0 ? (
-        <EmptyState
-          icon={<Trash2 size={32} color="#9ca3af" />}
-          title={cs.empty}
-          subtitle={cs.emptyDesc}
-          action={
-            <TouchableOpacity style={s.retryBtn} onPress={() => load()}>
-              <RefreshCw size={15} color={ACCENT} />
-              <Text style={s.retryText}>{cs.refresh}</Text>
-            </TouchableOpacity>
-          }
-        />
-      ) : viewMode === 'map' ? (
-        <SkipsMapView orders={orders} onStatusUpdate={handleStatusUpdate} updatingId={updatingId} />
-      ) : (
-        <ScrollView
-          style={s.list}
-          contentContainerStyle={s.listContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
-          }
-        >
-          {toDeliver.length > 0 && (
-            <>
-              <Text style={s.section}>Jāpiegādā ({toDeliver.length})</Text>
-              {toDeliver.map((o) => (
-                <OrderCard
-                  key={o.id}
-                  order={o}
-                  onStatusUpdate={handleStatusUpdate}
-                  updating={updatingId === o.id}
-                />
-              ))}
-            </>
-          )}
+      {/* List View Bottom Sheet */}
+      <BottomSheet
+        visible={showList}
+        onClose={() => setShowList(false)}
+        title="Visi uzdevumi"
+        scrollable
+        maxHeightPct={0.85}
+      >
+        <View style={{ padding: 16 }}>
+          {toDeliver.length > 0 && <Text style={s.listSectionTitle}>Jāpiegādā</Text>}
+          {toDeliver.map((o) => (
+            <View key={o.id} style={{ marginBottom: 16 }}>
+              <OrderCard
+                order={o}
+                onStatusUpdate={handleStatusUpdate}
+                updating={updatingId === o.id}
+              />
+            </View>
+          ))}
           {toCollect.length > 0 && (
-            <>
-              <Text style={[s.section, toDeliver.length > 0 && { marginTop: 20 }]}>
-                Jāsavāc ({toCollect.length})
-              </Text>
-              {toCollect.map((o) => (
-                <OrderCard
-                  key={o.id}
-                  order={o}
-                  onStatusUpdate={handleStatusUpdate}
-                  updating={updatingId === o.id}
-                />
-              ))}
-            </>
+            <Text style={[s.listSectionTitle, toDeliver.length > 0 && { marginTop: 8 }]}>
+              Jāsavāc
+            </Text>
           )}
-        </ScrollView>
-      )}
-    </ScreenContainer>
+          {toCollect.map((o) => (
+            <View key={o.id} style={{ marginBottom: 16 }}>
+              <OrderCard
+                order={o}
+                onStatusUpdate={handleStatusUpdate}
+                updating={updatingId === o.id}
+              />
+            </View>
+          ))}
+          {orders.length === 0 && (
+            <Text style={{ textAlign: 'center', color: '#6b7280', marginVertical: 32 }}>
+              Nav aktīvu uzdevumu.
+            </Text>
+          )}
+        </View>
+      </BottomSheet>
+    </View>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f9fafb' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  root: { flex: 1, backgroundColor: '#fff' },
+  floatingTop: { position: 'absolute', width: '100%', alignItems: 'center', zIndex: 10 },
+  pillHeader: {
+    backgroundColor: '#000',
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
-  headerSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  refreshBtn: { padding: 8 },
-
-  toggle: {
-    flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  },
-  toggleBtn: {
-    width: 34,
-    height: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleActive: { backgroundColor: ACCENT },
-
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
-  chip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
-  chipText: { fontSize: 12, fontWeight: '600' },
-
-  retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: ACCENT,
-  },
-  retryText: { color: ACCENT, fontWeight: '600', fontSize: 14 },
-
-  list: { flex: 1 },
-  listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 10 },
-  section: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-    paddingHorizontal: 2,
-  },
-
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    overflow: 'hidden',
+    paddingVertical: 12,
+    borderRadius: 30,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 14 },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
-  orderNumber: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
-  badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  metaText: { fontSize: 13, color: '#6b7280', flexShrink: 1 },
-
-  expandedBody: { paddingHorizontal: 14, paddingBottom: 14 },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginBottom: 10 },
-  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 7 },
-  detailLabel: { fontSize: 13, color: '#6b7280', minWidth: 80 },
-  detailValue: { fontSize: 13, color: '#111827', fontWeight: '500', flex: 1 },
-  notesBox: { backgroundColor: '#f3f4f6', borderRadius: 8, padding: 10, marginBottom: 10 },
-  notesText: { fontSize: 13, color: '#713f12' },
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  navBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1.5,
-    borderColor: ACCENT,
-    borderRadius: 10,
-    paddingVertical: 9,
-  },
-  navBtnText: { color: ACCENT, fontWeight: '600', fontSize: 13 },
-  callBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    paddingVertical: 9,
-  },
-  callBtnText: { color: '#374151', fontWeight: '600', fontSize: 13 },
-  statusBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: ACCENT,
-    borderRadius: 12,
-    paddingVertical: 13,
-  },
-  statusBtnText: { color: '#fff', fontWeight: '700', fontSize: 15, flex: 1 },
-
-  mapPin: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 5,
   },
-  mapPinTail: {
-    alignSelf: 'center',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-
-  geocodeOverlay: {
-    position: 'absolute',
-    top: 16,
-    alignSelf: 'center',
-    flexDirection: 'row',
+  pillText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  floatingControls: { position: 'absolute', right: 16, gap: 12, zIndex: 10 },
+  fab: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  geocodeText: { fontSize: 13, color: '#374151', fontWeight: '500' },
-
-  legend: {
-    position: 'absolute',
-    bottom: 20,
-    left: 16,
-    flexDirection: 'row',
+  mapPin: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { fontSize: 12, color: '#374151', fontWeight: '500' },
-  legendCount: { fontSize: 11, color: '#9ca3af' },
-
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheet: {
+  selectedOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#f9fafb',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    zIndex: 20,
+  },
+  selectedCardWrap: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 16,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
   },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#d1d5db',
-    alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 4,
+  closeSelected: { alignSelf: 'flex-end', marginBottom: 12 },
+  closeSelectedText: { color: '#6b7280', fontWeight: '600', fontSize: 14 },
+  card: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  sheetHeader: {
+  cardHeader: { marginBottom: 12 },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    marginBottom: 6,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  orderNumber: { fontSize: 16, fontWeight: '800', color: '#000' },
+  addressText: { fontSize: 15, color: '#374151', lineHeight: 22, fontWeight: '500' },
+  metaWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+  },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaItemText: { fontSize: 13, color: '#4b5563', fontWeight: '600' },
+  notesBox: {
+    backgroundColor: '#fff8f1',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ffedd5',
+  },
+  notesText: { fontSize: 14, color: '#9a3412', fontWeight: '500' },
+  actionRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  navBtn: {
+    flex: 1,
+    backgroundColor: '#000',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  navBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  callBtn: {
+    width: 52,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  actionBtnPrimary: {
+    backgroundColor: '#000',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  actionBtnPrimaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  listSectionTitle: { fontSize: 18, fontWeight: '800', color: '#000', marginBottom: 12 },
 });

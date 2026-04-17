@@ -141,6 +141,7 @@ export function AnimatedTabBar({
   const insets = useSafeAreaInsets();
   const bottomInset = insets.bottom;
   const indicatorX = useRef(new Animated.Value(0)).current;
+  const indicatorOpacity = useRef(new Animated.Value(1)).current;
   const [barWidth, setBarWidth] = useState(0);
   const layoutSetRef = useRef(false);
 
@@ -171,7 +172,20 @@ export function AnimatedTabBar({
       const fullIdx = state.routes.findIndex((x: Route<string>) => x.key === r.key);
       return aliasedName ? aliasedName === r.name : state.index === fullIdx;
     });
-    const idx = activeVisibleIdx >= 0 ? activeVisibleIdx : 0;
+
+    // No matching visible tab — hide indicator instead of snapping to tab 0
+    if (activeVisibleIdx < 0) {
+      Animated.timing(indicatorOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    Animated.timing(indicatorOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+
+    const idx = activeVisibleIdx;
     const tabW = barWidth / (totalItems || 1);
     // If CTA slot is inserted before this tab's visual position, shift right by one slot
     const ctaOffset = ctaTab && ctaInsertIndex >= 0 && idx >= ctaInsertIndex ? 1 : 0;
@@ -240,6 +254,7 @@ export function AnimatedTabBar({
                   {
                     width: indicatorW,
                     backgroundColor: activeTint,
+                    opacity: indicatorOpacity,
                     transform: [{ translateX: Animated.add(indicatorX, centerOffset) }],
                   },
                 ]}

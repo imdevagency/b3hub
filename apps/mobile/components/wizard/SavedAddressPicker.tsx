@@ -17,10 +17,10 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  SafeAreaView,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bookmark, MapPin, Star, X } from 'lucide-react-native';
 import { colors as c, spacing, radius, fontSizes } from '@/lib/theme';
 import { savedAddressesApi, SavedAddress } from '@/lib/api/saved-addresses';

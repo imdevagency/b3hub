@@ -1028,7 +1028,7 @@ export default function ActiveJobScreen() {
         style={[
           styles.topOverlay,
           {
-            top: Math.max(insets.top + 8, 16),
+            top: 8,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
