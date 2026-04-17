@@ -343,7 +343,7 @@ export default function OrderWizard() {
         onPick={setPicked}
         onConfirm={onCTA}
         onCancel={goBack}
-        contextLabel="Izkraušanas vieta"
+        contextLabel="Piegādes adrese"
       />
     );
   }

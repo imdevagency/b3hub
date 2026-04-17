@@ -123,15 +123,7 @@ function StatusStepper({ status }: { status: string }) {
         return (
           <View key={step.key} style={s.stepRow}>
             <View style={s.stepLeft}>
-              <View style={[s.stepDot, active ? s.stepDotActive : s.stepDotInactive]}>
-                {done ? (
-                  <Text style={s.stepCheck}>✓</Text>
-                ) : (
-                  <Text style={[s.stepNum, active ? s.stepNumActive : s.stepNumInactive]}>
-                    {i + 1}
-                  </Text>
-                )}
-              </View>
+              <View style={[s.stepDot, active ? s.stepDotActive : s.stepDotInactive]}></View>
               {i < visibleSteps.length - 1 && (
                 <View style={[s.stepLine, done ? s.stepLineActive : s.stepLineInactive]} />
               )}
@@ -168,13 +160,13 @@ function InfoRow({
   if (!value) return null;
   return (
     <View style={s.infoRow}>
-      <View style={s.infoIcon}>
-        <Icon size={14} color="#6b7280" strokeWidth={2} />
-      </View>
-      <View style={s.infoText}>
+      <View style={s.infoLabelRow}>
+        <Icon size={16} color="#9ca3af" strokeWidth={2} />
         <Text style={s.infoLabel}>{label}</Text>
-        <Text style={s.infoValue}>{value}</Text>
       </View>
+      <Text style={[s.infoValue, { flexShrink: 1, textAlign: 'right' }]} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -321,7 +313,7 @@ export default function TransportJobDetailScreen() {
   const isActive = job ? ACTIVE_STATUSES.has(job.status) : false;
 
   return (
-    <ScreenContainer standalone={!isActive} bg="#f9fafb">
+    <ScreenContainer bg="#ffffff">
       {isActive ? (
         <View>
           {/* ── MAP SECTION ── */}
@@ -374,7 +366,7 @@ export default function TransportJobDetailScreen() {
 
             {/* Floating back button */}
             <TouchableOpacity
-              style={[s.mapBackBtn, { top: insets.top + 12 }]}
+              style={[s.mapBackBtn, { top: 12 }]}
               onPress={() => {
                 haptics.light();
                 router.back();
@@ -404,7 +396,7 @@ export default function TransportJobDetailScreen() {
             )}
             {/* Live driver distance chip */}
             {driverLocation && delivery && (
-              <View style={[s.driverBadge, { top: insets.top + 12 }]}>
+              <View style={[s.driverBadge, { top: 12 }]}>
                 <View style={s.driverLiveDot} />
                 <Text style={s.driverBadgeText}>
                   {etaMin != null
@@ -416,10 +408,7 @@ export default function TransportJobDetailScreen() {
           </View>
         </View>
       ) : (
-        <ScreenHeader
-          title={job?.jobNumber || 'Pasūtījums'}
-          rightAction={st && <StatusPill label={st.label} bg={st.bg} color={st.color} />}
-        />
+        <ScreenHeader title="" />
       )}
 
       {/* ── CONTENT SECTION ── */}
@@ -439,13 +428,15 @@ export default function TransportJobDetailScreen() {
           contentContainerStyle={s.scroll}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-          {/* Job number + type header */}
-          <View style={s.jobHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.jobNumber}>{job.jobNumber}</Text>
-              <Text style={s.jobType}>{typeLabel}</Text>
-            </View>
-            {st && <StatusPill label={st.label} bg={st.bg} color={st.color} />}
+          {/* Hero Header */}
+          <View style={s.hero}>
+            {st && (
+              <View style={{ alignSelf: 'flex-start', marginBottom: 12 }}>
+                <StatusPill label={st.label} bg={st.bg} color={st.color} />
+              </View>
+            )}
+            <Text style={s.heroTitle}>{job.jobNumber}</Text>
+            <Text style={s.heroSub}>{typeLabel}</Text>
           </View>
 
           {/* Driver card */}
@@ -791,13 +782,13 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#111827',
+    backgroundColor: '#000',
   },
   distBadge: {
     position: 'absolute',
     bottom: 12,
     right: 16,
-    backgroundColor: '#111827',
+    backgroundColor: '#000',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -826,16 +817,16 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#111827',
+    backgroundColor: '#000',
   },
-  driverBadgeText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  driverBadgeText: { fontSize: 13, fontWeight: '600', color: '#000' },
 
   // Map markers
   pinPickup: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#111827',
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -855,12 +846,12 @@ const s = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#111827',
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: '#fff',
-    shadowColor: '#111827',
+    shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -869,22 +860,21 @@ const s = StyleSheet.create({
 
   scroll: { backgroundColor: '#fff' },
 
-  jobHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+  hero: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24 },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#000',
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
-  jobNumber: { fontSize: 18, fontWeight: '700', color: '#111827' },
-  jobType: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+  heroSub: { fontSize: 15, color: '#6b7280', fontWeight: '500' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6b7280' },
   backLink: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
+    backgroundColor: '#000',
+    borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
@@ -893,38 +883,35 @@ const s = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    gap: 16,
+    paddingHorizontal: 24,
+    gap: 12,
   },
   cardTitle: {
-    fontSize: 11,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#9ca3af',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    color: '#000',
+    marginBottom: 4,
   },
 
   // ── Stepper
   stepper: { gap: 0 },
-  stepRow: { flexDirection: 'row', gap: 12 },
-  stepLeft: { alignItems: 'center', width: 28 },
+  stepRow: { flexDirection: 'row', gap: 16 },
+  stepLeft: { alignItems: 'center', width: 14 },
   stepDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepDotActive: { backgroundColor: '#111827' },
+  stepDotActive: { backgroundColor: '#000' },
   stepDotInactive: { backgroundColor: '#f3f4f6', borderWidth: 1.5, borderColor: '#e5e7eb' },
-  stepLine: { width: 2, flex: 1, minHeight: 16, marginVertical: 2 },
-  stepLineActive: { backgroundColor: '#111827' },
+  stepLine: { width: 1.5, flex: 1, minHeight: 20, marginVertical: 4 },
+  stepLineActive: { backgroundColor: '#000' },
   stepLineInactive: { backgroundColor: '#e5e7eb' },
-  stepContent: { flex: 1, paddingBottom: 16 },
-  stepLabel: { fontSize: 14, fontWeight: '600' },
-  stepLabelActive: { color: '#111827' },
+  stepContent: { flex: 1, paddingBottom: 24 },
+  stepLabel: { fontSize: 15, fontWeight: '600' },
+  stepLabelActive: { color: '#000' },
   stepLabelInactive: { color: '#9ca3af' },
   stepHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
   stepCheck: { color: '#fff', fontSize: 12, fontWeight: '700' },
@@ -938,37 +925,27 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#111827',
+    backgroundColor: '#000',
     marginTop: 4,
   },
-  routeDotDest: { backgroundColor: '#dc2626' },
+  routeDotDest: { backgroundColor: '#dc2626', borderRadius: 0, width: 9, height: 9 },
   routeInfo: { flex: 1 },
-  routePlace: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  routeAddr: { fontSize: 13, color: '#6b7280', marginTop: 1 },
+  routePlace: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 2 },
+  routeAddr: { fontSize: 14, color: '#6b7280', lineHeight: 20 },
   routeDistRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4 },
-  routeLine: { width: 2, height: 20, backgroundColor: '#e5e7eb' },
+  routeLine: { width: 2, height: 24, backgroundColor: '#e5e7eb', marginLeft: 3.5 },
   routeDist: { fontSize: 12, color: '#9ca3af', fontWeight: '500' },
 
   // ── Info rows
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingVertical: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
-  },
-  infoIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
   },
-  infoText: { flex: 1 },
-  infoLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500', marginBottom: 1 },
-  infoValue: { fontSize: 14, color: '#111827', fontWeight: '500' },
+  infoLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  infoLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+  infoValue: { fontSize: 14, color: '#000', fontWeight: '600' },
 
   // ── Driver
   driverRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -980,14 +957,14 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  driverName: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  driverName: { fontSize: 15, fontWeight: '600', color: '#000' },
   driverSub: { fontSize: 13, color: '#6b7280', marginTop: 1 },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#111827',
-    borderRadius: 20,
+    backgroundColor: '#000',
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -1001,7 +978,7 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   priceLabel: { fontSize: 14, color: '#6b7280' },
-  priceValue: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  priceValue: { fontSize: 15, fontWeight: '700', color: '#000' },
 
   // ── Weighing slip
   slipHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1028,10 +1005,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#fff7f7',
-    borderRadius: 14,
+    borderRadius: 8,
     paddingVertical: 14,
     borderWidth: 1.5,
     borderColor: '#fca5a5',
+    marginHorizontal: 24,
+    marginTop: 8,
   },
   cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#b91c1c' },
   reorderBtn: {
@@ -1040,9 +1019,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#111827',
-    borderRadius: 14,
+    backgroundColor: '#000',
+    borderRadius: 8,
     paddingVertical: 14,
+    marginHorizontal: 24,
   },
   reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   // Driver rating
@@ -1055,14 +1035,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#111827',
+    color: '#000',
     minHeight: 70,
     textAlignVertical: 'top',
     marginBottom: 14,
   },
   ratingSubmitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
+    backgroundColor: '#000',
+    borderRadius: 8,
     paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',

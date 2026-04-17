@@ -1,18 +1,14 @@
 /**
- * InlineAddressStep (Now Fullscreen GlobalAddressPicker)
+ * InlineAddressStep — Two-phase address picker
  *
- * Fullscreen address-picking step matching 2-screen design:
- *   - Screen 1: Search / Select from Saved / GPS
- *   - Screen 2: Map confirmation
+ * Phase 1 (SEARCH): search bar + autocomplete + GPS + saved addresses
+ * Phase 2 (MAP_CONFIRM): full-screen map with draggable pin, reverse-geocoded
+ *   address shown in bottom panel, explicit "Apstiprināt" button.
  *
- * Usage:
- *   <InlineAddressStep
- *     picked={pickedAddress}
- *     onPick={(p) => setPickedAddress(p)}
- *     onConfirm={() => goNext()}
- *     onCancel={() => goBack()}
- *     contextLabel="Izkraušanas vieta"
- *   />
+ * Flow: search → select → MAP_CONFIRM → confirm → onConfirm()
+ * The double-advance bug cannot occur because the confirm button only exists
+ * on the MAP_CONFIRM screen, and each wizard step is a fresh component
+ * mounted with a unique key.
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -25,23 +21,19 @@ import {
   ActivityIndicator,
   Keyboard,
   Platform,
-  KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import {
-  MapPin,
+  ArrowLeft,
   Search,
   X,
   Navigation,
-  CheckCircle,
-  Star,
-  Map,
   ChevronRight,
+  MapPin,
   Clock,
-  Tag,
   TrendingDown,
 } from 'lucide-react-native';
 import { useGeocode } from '@/components/map';
@@ -60,6 +52,8 @@ export type PickedAddress = {
   city: string;
 };
 
+type Mode = 'SEARCH' | 'MAP_CONFIRM';
+
 type Props = {
   picked: PickedAddress | null;
   onPick: (p: PickedAddress) => void;
@@ -70,18 +64,12 @@ type Props = {
   contextLabel?: string;
   contextIcon?: 'from' | 'to';
   contextAddress?: PickedAddress | null;
-  /** When provided, a live price preview is fetched after picking an address */
+  /** 'transport' renders the Uber route-stack header (pickup + dropoff).
+   *  All other flows omit this prop — they get the simple delivery header. */
+  variant?: 'transport';
+  /** When provided, a live price preview is shown in the map confirmation panel */
   pricePreviewCategory?: MaterialCategory;
   pricePreviewQuantity?: number;
-};
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const RIGA_REGION = {
-  latitude: 56.9496,
-  longitude: 24.1052,
-  latitudeDelta: 0.12,
-  longitudeDelta: 0.12,
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -92,24 +80,20 @@ export function InlineAddressStep({
   onConfirm,
   onCancel,
   initialText,
-  banner,
   contextLabel = 'Izvēlēties vietu',
-  contextIcon,
   contextAddress,
+  variant,
   pricePreviewCategory,
   pricePreviewQuantity,
 }: Props) {
-  const mapRef = useRef<MapView>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSearchText = useRef<string>('');
   const isSelectingRef = useRef<boolean>(false);
+  const mapRef = useRef<MapView>(null);
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
   const { token } = useAuth();
 
-  const [mode, setMode] = useState<'SEARCH' | 'MAP'>('SEARCH');
-  const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
-    picked ? { latitude: picked.lat, longitude: picked.lng } : null,
-  );
+  const [mode, setMode] = useState<Mode>('SEARCH');
   const [query, setQuery] = useState(initialText ?? picked?.address ?? '');
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
   const [showSugs, setShowSugs] = useState(false);
@@ -118,17 +102,23 @@ export function InlineAddressStep({
   const [locating, setLocating] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
 
-  // ── Live price preview ─────────────────────────────────────────────────────
+  // Map-confirm state
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(
+    picked ? { lat: picked.lat, lng: picked.lng } : null,
+  );
+  const [resolvedAddress, setResolvedAddress] = useState<PickedAddress | null>(picked ?? null);
+  const [reversing, setReversing] = useState(false);
+
+  // Live price preview (material order only)
   const [previewOffers, setPreviewOffers] = useState<SupplierOffer[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!pricePreviewCategory || pricePreviewQuantity == null || !token || !picked) {
+    if (!pricePreviewCategory || pricePreviewQuantity == null || !token || !resolvedAddress) {
       setPreviewOffers([]);
       return;
     }
-    // Cancel any in-flight preview fetch
     previewAbortRef.current?.abort();
     const ctrl = new AbortController();
     previewAbortRef.current = ctrl;
@@ -138,14 +128,13 @@ export function InlineAddressStep({
         {
           category: pricePreviewCategory,
           quantity: pricePreviewQuantity,
-          lat: picked.lat,
-          lng: picked.lng,
+          lat: resolvedAddress.lat,
+          lng: resolvedAddress.lng,
         },
         token,
       )
       .then((offers) => {
         if (ctrl.signal.aborted) return;
-        // Show top 3 cheapest
         setPreviewOffers(offers.slice(0, 3));
       })
       .catch(() => {})
@@ -153,7 +142,13 @@ export function InlineAddressStep({
         if (!ctrl.signal.aborted) setPreviewLoading(false);
       });
     return () => ctrl.abort();
-  }, [picked?.lat, picked?.lng, pricePreviewCategory, pricePreviewQuantity, token]);
+  }, [
+    resolvedAddress?.lat,
+    resolvedAddress?.lng,
+    pricePreviewCategory,
+    pricePreviewQuantity,
+    token,
+  ]);
 
   useEffect(() => {
     if (!token) return;
@@ -165,32 +160,30 @@ export function InlineAddressStep({
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  const applyCoords = useCallback(
-    async (lat: number, lng: number) => {
-      isSelectingRef.current = true;
-      setResolving(true);
-      try {
-        const result = await reverseGeocodeWithCity(lat, lng);
-        onPick({ address: result.address, lat, lng, city: result.city });
-        setQuery(result.address);
-      } finally {
-        setResolving(false);
-        setTimeout(() => {
-          isSelectingRef.current = false;
-        }, 100);
-      }
+  /** Enter map-confirm mode at given coords with address string */
+  const enterMapConfirm = useCallback(
+    (addr: PickedAddress) => {
+      setResolvedAddress(addr);
+      setPin({ lat: addr.lat, lng: addr.lng });
+      onPick(addr);
+      setMode('MAP_CONFIRM');
+      setTimeout(() => {
+        mapRef.current?.animateToRegion(
+          { latitude: addr.lat, longitude: addr.lng, latitudeDelta: 0.005, longitudeDelta: 0.005 },
+          400,
+        );
+      }, 150);
     },
-    [reverseGeocodeWithCity, onPick],
+    [onPick],
   );
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Search handlers ───────────────────────────────────────────────────────
 
   const handleQueryChange = useCallback(
     (text: string) => {
       if (isSelectingRef.current) return;
       setQuery(text);
       activeSearchText.current = text;
-
       if (searchTimer.current) clearTimeout(searchTimer.current);
       if (!text.trim()) {
         setSuggestions([]);
@@ -223,16 +216,9 @@ export function InlineAddressStep({
         const coords = await resolvePlace(sug.id);
         if (!coords) return;
         const [lng, lat] = coords;
-        const newPin = { latitude: lat, longitude: lng };
-        setPin(newPin);
-        mapRef.current?.animateToRegion(
-          { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-          600,
-        );
         const city = sug.place_name.split(',').slice(-2, -1)[0]?.trim() ?? '';
-        onPick({ address: sug.place_name, lat, lng, city });
+        enterMapConfirm({ address: sug.place_name, lat, lng, city });
         setQuery(sug.place_name);
-        setMode('MAP');
       } finally {
         setResolving(false);
         setTimeout(() => {
@@ -240,7 +226,7 @@ export function InlineAddressStep({
         }, 100);
       }
     },
-    [resolvePlace, onPick],
+    [resolvePlace, enterMapConfirm],
   );
 
   const handleGPS = useCallback(async () => {
@@ -248,60 +234,41 @@ export function InlineAddressStep({
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = loc.coords;
-      const newPin = { latitude, longitude };
-      setPin(newPin);
-      await applyCoords(latitude, longitude);
-      setMode('MAP');
-      setTimeout(() => {
-        mapRef.current?.animateToRegion(
-          { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-          600,
-        );
-      }, 100);
+      isSelectingRef.current = true;
+      setResolving(true);
+      try {
+        const result = await reverseGeocodeWithCity(latitude, longitude);
+        enterMapConfirm({
+          address: result.address,
+          lat: latitude,
+          lng: longitude,
+          city: result.city,
+        });
+        setQuery(result.address);
+      } finally {
+        setResolving(false);
+        setTimeout(() => {
+          isSelectingRef.current = false;
+        }, 100);
+      }
     } finally {
       setLocating(false);
     }
-  }, [applyCoords]);
-
-  const handleMapPress = useCallback(
-    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      const nextPin = { latitude, longitude };
-      setPin(nextPin);
-      await applyCoords(latitude, longitude);
-    },
-    [applyCoords],
-  );
-
-  const handleMarkerDragEnd = useCallback(
-    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      const nextPin = { latitude, longitude };
-      setPin(nextPin);
-      await applyCoords(latitude, longitude);
-    },
-    [applyCoords],
-  );
+  }, [reverseGeocodeWithCity, enterMapConfirm]);
 
   const handleSavedAddressPick = useCallback(
     async (addr: SavedAddress) => {
       Keyboard.dismiss();
       if (addr.lat != null && addr.lng != null) {
-        const newPin = { latitude: addr.lat, longitude: addr.lng };
-        setPin(newPin);
+        enterMapConfirm({
+          address: addr.address,
+          lat: addr.lat,
+          lng: addr.lng,
+          city: addr.city || '',
+        });
         setQuery(addr.address);
-        onPick({ address: addr.address, lat: addr.lat, lng: addr.lng, city: addr.city || '' });
-        setMode('MAP');
-        setTimeout(() => {
-          mapRef.current?.animateToRegion(
-            { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-            600,
-          );
-        }, 100);
       } else {
         setResolving(true);
         try {
@@ -310,89 +277,116 @@ export function InlineAddressStep({
           const coords = await resolvePlace(results[0].id);
           if (!coords) return;
           const [lng, lat] = coords;
-          const newPin = { latitude: lat, longitude: lng };
-          setPin(newPin);
+          enterMapConfirm({ address: addr.address, lat, lng, city: addr.city || '' });
           setQuery(addr.address);
-          onPick({ address: addr.address, lat, lng, city: addr.city || '' });
-          setMode('MAP');
-          setTimeout(() => {
-            mapRef.current?.animateToRegion(
-              { ...newPin, latitudeDelta: 0.01, longitudeDelta: 0.01 },
-              600,
-            );
-          }, 100);
         } finally {
           setResolving(false);
         }
       }
     },
-    [onPick, forwardGeocode, resolvePlace],
+    [enterMapConfirm, forwardGeocode, resolvePlace],
   );
 
-  const handleConfirmDone = useCallback(() => {
+  // ── Map-confirm handlers ──────────────────────────────────────────────────
+
+  const handleMarkerDragEnd = useCallback(
+    async (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      const { latitude, longitude } = e.nativeEvent.coordinate;
+      setPin({ lat: latitude, lng: longitude });
+      setReversing(true);
+      try {
+        const result = await reverseGeocodeWithCity(latitude, longitude);
+        const updated: PickedAddress = {
+          address: result.address,
+          lat: latitude,
+          lng: longitude,
+          city: result.city,
+        };
+        setResolvedAddress(updated);
+        onPick(updated);
+        setQuery(result.address);
+      } finally {
+        setReversing(false);
+      }
+    },
+    [reverseGeocodeWithCity, onPick],
+  );
+
+  const handleConfirm = useCallback(() => {
     haptics.light();
-    if (onConfirm) onConfirm();
+    onConfirm?.();
   }, [onConfirm]);
 
-  const handleCancelDone = useCallback(() => {
-    if (onCancel) onCancel();
-  }, [onCancel]);
+  // ── Render: MAP_CONFIRM ───────────────────────────────────────────────────
 
-  // ── Render MAP Mode ────────────────────────────────────────────────────────
-
-  if (mode === 'MAP') {
+  if (mode === 'MAP_CONFIRM' && pin) {
     return (
       <View style={s.root}>
         <MapView
           ref={mapRef}
-          style={s.mapFullscreen}
+          style={StyleSheet.absoluteFillObject}
           provider={PROVIDER_GOOGLE}
-          initialRegion={pin ? { ...pin, latitudeDelta: 0.01, longitudeDelta: 0.01 } : RIGA_REGION}
-          onPress={handleMapPress}
-          scrollEnabled
-          zoomEnabled
-          rotateEnabled={false}
-          pitchEnabled={false}
+          initialRegion={{
+            latitude: pin.lat,
+            longitude: pin.lng,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }}
           showsUserLocation
           showsMyLocationButton={false}
         >
-          {pin && <Marker coordinate={pin} draggable onDragEnd={handleMarkerDragEnd} />}
+          <Marker
+            coordinate={{ latitude: pin.lat, longitude: pin.lng }}
+            draggable
+            onDragEnd={handleMarkerDragEnd}
+          />
         </MapView>
 
-        {/* Floating cross circular button top-right */}
-        <SafeAreaView style={s.floatingHeader}>
-          <View style={s.floatingHeaderContent}>
-            <View style={{ flex: 1 }} />
-            <TouchableOpacity
-              style={s.mapXBtn}
-              onPress={() => setMode('SEARCH')}
-              activeOpacity={0.8}
-            >
-              <X size={24} color="#111827" />
+        {/* Floating header */}
+        <SafeAreaView style={s.mapHeader} pointerEvents="box-none">
+          <View style={s.mapHeaderInner}>
+            <TouchableOpacity style={s.mapBackBtn} onPress={() => setMode('SEARCH')} hitSlop={12}>
+              <ArrowLeft size={22} color="#000" />
             </TouchableOpacity>
+            <Text style={s.mapHeaderTitle}>{contextLabel}</Text>
+            <View style={{ width: 44 }} />
           </View>
         </SafeAreaView>
 
-        {/* Bottom Confirmation Card Overlay */}
-        <View style={s.bottomPanel}>
-          <Text style={s.panelTitle}>Apstipriniet vietu</Text>
-          <View style={s.panelInfoRow}>
-            <View style={s.panelPinOuter}>
-              <MapPin size={24} color="#3b82f6" />
+        {/* Bottom panel */}
+        <View style={s.mapPanel}>
+          <View style={s.mapPanelRow}>
+            <View style={s.mapPinIconWrap}>
+              <MapPin size={18} color="#000" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.panelAddress} numberOfLines={2}>
-                {picked?.address || query || 'Izvēlēties vietu kartē'}
-              </Text>
+              {reversing ? (
+                <View style={s.reversingRow}>
+                  <ActivityIndicator size="small" color="#9ca3af" />
+                  <Text style={s.reversingText}>Nosaka adresi…</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={s.mapAddrMain} numberOfLines={2}>
+                    {resolvedAddress?.address ?? '—'}
+                  </Text>
+                  {resolvedAddress?.city ? (
+                    <Text style={s.mapAddrCity}>{resolvedAddress.city}</Text>
+                  ) : null}
+                </>
+              )}
             </View>
           </View>
-          {/* Live price preview strip */}
+
+          <Text style={s.mapHint}>Velciet pin, lai precizētu vietu</Text>
+
+          {/* Price preview (material order only) */}
           {pricePreviewCategory && pricePreviewQuantity != null && (
             <View style={s.previewWrap}>
               {previewLoading ? (
                 <View style={s.previewLoading}>
                   <ActivityIndicator size="small" color="#6b7280" />
-                  <Text style={s.previewLoadingText}>Rēķina cenas jūsu adresei…</Text>
+                  <Text style={s.previewLoadingText}>Rēķina cenas…</Text>
                 </View>
               ) : previewOffers.length > 0 ? (
                 <>
@@ -436,128 +430,228 @@ export function InlineAddressStep({
           )}
 
           <TouchableOpacity
-            style={[s.ctaBtn, resolving || locating ? s.ctaBtnDisabled : {}]}
-            onPress={handleConfirmDone}
-            disabled={resolving || locating || !picked}
-            activeOpacity={0.88}
+            style={[s.confirmBtn, reversing && s.confirmBtnDisabled]}
+            onPress={handleConfirm}
+            activeOpacity={0.85}
+            disabled={reversing}
           >
-            {resolving || locating ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={s.ctaBtnText}>APSTIPRINĀT</Text>
-            )}
+            <Text style={s.confirmBtnText}>Apstiprināt vietu</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  // ── Render SEARCH Mode ─────────────────────────────────────────────────────
+  // ── Render: SEARCH ────────────────────────────────────────────────────────
+
+  const isTransportStep = variant === 'transport';
 
   return (
     <View style={s.root}>
-      <SafeAreaView style={s.searchSafeArea}>
-        {/* Header */}
-        <View style={s.searchHeader}>
-          <View style={s.headerSpacer} />
-          <Text style={s.headerTitle}>{contextLabel}</Text>
-          <TouchableOpacity style={s.headerSpacerRight} onPress={handleCancelDone} hitSlop={12}>
-            <X size={24} color="#111827" />
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={s.safeArea}>
+        {isTransportStep ? (
+          <View style={s.uberStackWrap}>
+            <View style={s.uberBackRow}>
+              <TouchableOpacity style={s.backBtn} onPress={() => onCancel?.()} hitSlop={12}>
+                <ArrowLeft size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <View style={s.uberStackRow}>
+              <View style={s.uberTimeline}>
+                <View style={s.uberDot} />
+                <View style={s.uberLine} />
+                <View style={s.uberSquare} />
+              </View>
+              <View style={s.uberInputs}>
+                {contextLabel === 'Izkraušanas vieta' && contextAddress ? (
+                  <>
+                    <View style={s.uberInputStatic}>
+                      <Text style={s.uberInputStaticText} numberOfLines={1}>
+                        {contextAddress.address}
+                      </Text>
+                    </View>
+                    <View style={s.uberInputActiveWrap}>
+                      <TextInput
+                        style={s.uberInputActive}
+                        placeholder="Kurp dosimies?"
+                        placeholderTextColor="#9ca3af"
+                        value={query}
+                        onChangeText={handleQueryChange}
+                        autoFocus
+                        autoCorrect={false}
+                        returnKeyType="search"
+                      />
+                      {query.length > 0 && (
+                        <TouchableOpacity
+                          style={s.uberClearBtn}
+                          onPress={() => {
+                            setQuery('');
+                            setSuggestions([]);
+                            setShowSugs(false);
+                          }}
+                        >
+                          <X size={15} color="#6B7280" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={s.uberInputActiveWrap}>
+                      <TextInput
+                        style={s.uberInputActive}
+                        placeholder="Iekraušanas vieta"
+                        placeholderTextColor="#9ca3af"
+                        value={query}
+                        onChangeText={handleQueryChange}
+                        autoFocus
+                        autoCorrect={false}
+                        returnKeyType="search"
+                      />
+                      {query.length > 0 && (
+                        <TouchableOpacity
+                          style={s.uberClearBtn}
+                          onPress={() => {
+                            setQuery('');
+                            setSuggestions([]);
+                            setShowSugs(false);
+                          }}
+                        >
+                          <X size={15} color="#6B7280" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={[s.uberInputStatic, s.uberInputPlaceholder]}>
+                      <Text style={s.uberInputPlaceholderText}>Kurp dosimies?</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            </View>
+          </View>
+        ) : (
+          <>
+            <View style={s.searchHeader}>
+              <Text style={s.headerTitle}>{contextLabel}</Text>
+              <TouchableOpacity style={s.headerCloseBtn} onPress={() => onCancel?.()} hitSlop={12}>
+                <X size={22} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <View style={s.searchInputWrap}>
+              <View style={s.searchIconLeft} pointerEvents="none">
+                <Search size={18} color="#9ca3af" />
+              </View>
+              <TextInput
+                style={s.searchTextInput}
+                placeholder="Meklēt pēc adreses/nosaukuma"
+                placeholderTextColor="#9CA3AF"
+                value={query}
+                onChangeText={handleQueryChange}
+                autoFocus
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {query.length > 0 && (
+                <TouchableOpacity
+                  style={s.searchClearBtn}
+                  onPress={() => {
+                    setQuery('');
+                    setSuggestions([]);
+                    setShowSugs(false);
+                  }}
+                >
+                  <X size={18} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
+        )}
 
-        {/* Input */}
-        <View style={s.searchInputWrap}>
-          <TextInput
-            style={s.searchTextInput}
-            placeholder="Meklēt pēc adreses/nosaukuma"
-            placeholderTextColor="#9CA3AF"
-            value={query}
-            onChangeText={handleQueryChange}
-            autoFocus
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity
-              style={s.searchClearBtn}
-              onPress={() => {
-                setQuery('');
-                setSuggestions([]);
-                setShowSugs(false);
-              }}
-            >
-              <X size={18} color="#6B7280" />
-            </TouchableOpacity>
-          )}
-        </View>
+        {(resolving || locating) && (
+          <View style={s.searchingRow}>
+            <ActivityIndicator size="small" color="#9ca3af" />
+          </View>
+        )}
 
         <ScrollView
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
         >
-          {/* Action Buttons */}
-          <TouchableOpacity style={s.actionRow} onPress={handleGPS} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={s.actionRow}
+            onPress={handleGPS}
+            activeOpacity={0.7}
+            disabled={locating || resolving}
+          >
             <View style={s.actionIconWrap}>
-              <Navigation size={20} color="#6B7280" />
+              {locating || resolving ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <Navigation size={20} color="#6B7280" />
+              )}
             </View>
-            <Text style={s.actionText}>Lietot manu šī brīža vietu</Text>
+            <Text style={s.actionText}>
+              {locating ? 'Nosaka atrašanās vietu…' : 'Lietot manu šī brīža vietu'}
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.actionRow} onPress={() => setMode('MAP')} activeOpacity={0.7}>
-            <View style={s.actionIconWrap}>
-              <Map size={20} color="#6B7280" />
-            </View>
-            <Text style={s.actionText}>Norādīt vietu kartē</Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
           <View style={s.divider} />
 
-          {/* Autocomplete Suggestions OR Saved Places */}
-          {showSugs && suggestions.length > 0 ? (
-            <View>
-              {suggestions.map((sg, i) => (
+          {showSugs ? (
+            searching ? (
+              <View style={s.searchingRow}>
+                <ActivityIndicator size="small" color="#9ca3af" />
+              </View>
+            ) : suggestions.length > 0 ? (
+              suggestions.map((sg) => (
                 <TouchableOpacity
                   key={sg.id}
-                  style={s.savedPlaceRow}
+                  style={s.suggRow}
                   onPress={() => handleSuggestionSelect(sg)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.savedPlaceTitle} numberOfLines={1}>
-                      {sg.place_name}
-                    </Text>
-                    <Text style={s.savedPlaceSub} numberOfLines={1}>
-                      {sg.place_name}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={{ marginTop: 8 }}>
-              <Text style={s.sectionHeader}>Manas vietas</Text>
-              {savedAddresses.map((addr) => (
-                <TouchableOpacity
-                  key={addr.id}
-                  style={s.savedPlaceRow}
-                  onPress={() => handleSavedAddressPick(addr)}
                   activeOpacity={0.7}
                 >
+                  <View style={s.suggIconWrap}>
+                    <Search size={15} color="#9ca3af" />
+                  </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.savedPlaceTitle} numberOfLines={1}>
-                      {addr.label}
+                    <Text style={s.suggTitle} numberOfLines={1}>
+                      {sg.place_name.split(',')[0]}
                     </Text>
-                    <Text style={s.savedPlaceSub} numberOfLines={1}>
-                      {addr.address}
+                    <Text style={s.suggSub} numberOfLines={1}>
+                      {sg.place_name.split(',').slice(1).join(',').trim()}
                     </Text>
                   </View>
-                  <ChevronRight size={20} color="#D1D5DB" />
                 </TouchableOpacity>
-              ))}
-              {savedAddresses.length === 0 && (
+              ))
+            ) : (
+              <Text style={s.emptyText}>Nav atrasts neviens rezultāts</Text>
+            )
+          ) : (
+            <View>
+              <Text style={s.sectionHeader}>Manas vietas</Text>
+              {savedAddresses.length === 0 ? (
                 <Text style={s.emptyText}>Jums nav saglabātu adrešu</Text>
+              ) : (
+                savedAddresses.map((addr) => (
+                  <TouchableOpacity
+                    key={addr.id}
+                    style={s.savedPlaceRow}
+                    onPress={() => handleSavedAddressPick(addr)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.savedPlaceTitle} numberOfLines={1}>
+                        {addr.label}
+                      </Text>
+                      <Text style={s.savedPlaceSub} numberOfLines={1}>
+                        {addr.address}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color="#D1D5DB" />
+                  </TouchableOpacity>
+                ))
               )}
             </View>
           )}
@@ -570,100 +664,85 @@ export function InlineAddressStep({
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  root: { flex: 1, backgroundColor: '#fff' },
+  safeArea: { flex: 1 },
 
-  // ── MAP MODE ──
-  mapFullscreen: {
-    flex: 1,
-  },
-  floatingHeader: {
+  // ── Map confirm ──
+  mapHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 10,
   },
-  floatingHeaderContent: {
+  mapHeaderInner: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-  mapXBtn: {
+  mapBackBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
-  bottomPanel: {
+  mapHeaderTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#000' },
+  mapPanel: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
-    maxHeight: '65%',
+    elevation: 10,
+    gap: 12,
   },
-  panelTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#374151',
-    marginBottom: 16,
-  },
-  panelInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 16,
-  },
-  panelPinOuter: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#eff6ff',
+  mapPanelRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  mapPinIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
-  panelAddress: {
-    fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    color: '#111827',
-  },
-  ctaBtn: {
-    backgroundColor: '#10b981', // APSTIPRINĀT green
-    borderRadius: 12,
-    paddingVertical: 18,
+  reversingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  reversingText: { fontSize: 14, color: '#9ca3af', fontFamily: 'Inter_400Regular' },
+  mapAddrMain: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#000', lineHeight: 22 },
+  mapAddrCity: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#6b7280', marginTop: 2 },
+  mapHint: { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#9ca3af', textAlign: 'center' },
+  confirmBtn: {
+    backgroundColor: '#000',
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 16,
+    marginTop: 4,
   },
-  ctaBtnDisabled: {
-    opacity: 0.6,
-  },
-  ctaBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.5,
-  },
+  confirmBtnDisabled: { backgroundColor: '#d1d5db' },
+  confirmBtnText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_700Bold' },
 
-  // ── Live price preview ──
+  // Price preview
   previewWrap: {
     backgroundColor: '#f0fdf4',
     borderRadius: 12,
@@ -671,170 +750,188 @@ const s = StyleSheet.create({
     borderColor: '#bbf7d0',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 14,
-    gap: 8,
+    gap: 6,
   },
-  previewLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  previewLoadingText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontFamily: 'Inter_500Medium',
-  },
-  previewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginBottom: 4,
-  },
-  previewHeaderText: {
-    fontSize: 12,
-    color: '#059669',
-    fontFamily: 'Inter_600SemiBold',
-  },
+  previewLoading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  previewLoadingText: { fontSize: 12, color: '#6b7280', fontFamily: 'Inter_500Medium' },
+  previewHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
+  previewHeaderText: { fontSize: 12, color: '#059669', fontFamily: 'Inter_600SemiBold' },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderTopWidth: 1,
     borderTopColor: '#dcfce7',
     gap: 8,
   },
-  previewSupplier: {
-    fontSize: 13,
-    color: '#111827',
-    fontFamily: 'Inter_500Medium',
-  },
-  previewMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 1,
-  },
-  previewMetaText: {
-    fontSize: 11,
-    color: '#6b7280',
-    fontFamily: 'Inter_400Regular',
-  },
-  previewMetaDot: {
-    fontSize: 11,
-    color: '#9ca3af',
-  },
-  previewPriceCol: {
-    alignItems: 'flex-end',
-  },
-  previewPrice: {
-    fontSize: 14,
-    color: '#059669',
-    fontFamily: 'Inter_700Bold',
-  },
-  previewUnit: {
-    fontSize: 11,
-    color: '#6b7280',
-    fontFamily: 'Inter_400Regular',
-  },
+  previewSupplier: { fontSize: 13, color: '#000', fontFamily: 'Inter_500Medium' },
+  previewMeta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 },
+  previewMetaText: { fontSize: 11, color: '#6b7280', fontFamily: 'Inter_400Regular' },
+  previewMetaDot: { fontSize: 11, color: '#9ca3af' },
+  previewPriceCol: { alignItems: 'flex-end' },
+  previewPrice: { fontSize: 14, color: '#059669', fontFamily: 'Inter_700Bold' },
+  previewUnit: { fontSize: 11, color: '#6b7280', fontFamily: 'Inter_400Regular' },
 
-  // \u2500\u2500 SEARCH MODE \u2500\u2500
-  searchSafeArea: {
-    flex: 1,
+  // ── Uber Stack (transport steps SEARCH mode) ──
+  uberStackWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
+  uberBackRow: { flexDirection: 'row', marginBottom: 16 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uberStackRow: { flexDirection: 'row' },
+  uberTimeline: {
+    width: 24,
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginRight: 12,
+  },
+  uberDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#000' },
+  uberLine: { width: 2, flex: 1, backgroundColor: '#e5e7eb', marginVertical: 4 },
+  uberSquare: { width: 10, height: 10, backgroundColor: '#000' },
+  uberInputs: { flex: 1, gap: 10 },
+  uberInputActiveWrap: { position: 'relative' },
+  uberInputActive: {
+    height: 48,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingLeft: 14,
+    paddingRight: 42,
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    color: '#000',
+  },
+  uberClearBtn: {
+    position: 'absolute',
+    right: 12,
+    top: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uberInputStatic: {
+    height: 48,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  uberInputStaticText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: '#6b7280' },
+  uberInputPlaceholder: { backgroundColor: '#f3f4f6', borderWidth: 0 },
+  uberInputPlaceholderText: { fontSize: 14, fontFamily: 'Inter_500Medium', color: '#bbb' },
+
+  // ── Generic search header ──
   searchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
-  headerSpacer: {
-    width: 40,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 17,
-    fontFamily: 'Inter_500Medium',
-    color: '#374151',
-  },
-  headerSpacerRight: {
-    width: 40,
-    alignItems: 'flex-end',
+  headerTitle: { fontSize: 26, fontFamily: 'Inter_700Bold', color: '#000' },
+  headerCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  searchInputWrap: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
+  searchInputWrap: { paddingHorizontal: 16, paddingVertical: 8, position: 'relative' },
+  searchIconLeft: { position: 'absolute', left: 32, top: 22, zIndex: 1 },
   searchTextInput: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 15,
+    height: 52,
+    borderRadius: 14,
+    paddingLeft: 46,
+    paddingRight: 44,
+    fontSize: 16,
     fontFamily: 'Inter_400Regular',
-    color: '#111827',
-    backgroundColor: '#fff',
+    color: '#000',
+    backgroundColor: '#f3f4f6',
   },
-  searchClearBtn: {
-    position: 'absolute',
-    right: 28,
-    top: 28,
-  },
+  searchClearBtn: { position: 'absolute', right: 28, top: 25 },
+
+  // ── List ──
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     gap: 16,
   },
   actionIconWrap: {
-    width: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  actionText: {
-    fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    color: '#374151',
+  actionText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#000' },
+  divider: { height: 1, backgroundColor: '#f3f4f6', marginHorizontal: 20, marginVertical: 4 },
+  searchingRow: { alignItems: 'center', paddingVertical: 24 },
+  suggRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 14,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginHorizontal: 16,
-    marginVertical: 8,
+  suggIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  suggTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#000', marginBottom: 2 },
+  suggSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#9ca3af' },
   sectionHeader: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: '#6B7280',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
   },
   savedPlaceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
   savedPlaceTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    color: '#374151',
-    marginBottom: 4,
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#000',
+    marginBottom: 3,
   },
-  savedPlaceSub: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: '#9CA3AF',
-  },
+  savedPlaceSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: '#9CA3AF' },
   emptyText: {
     fontSize: 14,
     color: '#9ca3af',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     fontFamily: 'Inter_400Regular',
-    marginTop: 10,
+    marginTop: 12,
   },
 });

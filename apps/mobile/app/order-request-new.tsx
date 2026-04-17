@@ -1222,7 +1222,7 @@ export default function OrderRequestWizard() {
         onConfirm={goNext}
         onCancel={goBack}
         initialText={params.prefillAddress}
-        contextLabel="Izkraušanas vieta"
+        contextLabel="Piegādes adrese"
         pricePreviewCategory={selectedCategory}
         pricePreviewQuantity={quantity}
       />

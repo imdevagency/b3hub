@@ -550,7 +550,7 @@ export default function DisposalWizard() {
         onPick={setPicked}
         onConfirm={onCTA}
         onCancel={goBack}
-        contextLabel="Iekraušanas vieta"
+        contextLabel="Atkritumu adrese"
       />
     );
   }

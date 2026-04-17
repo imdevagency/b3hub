@@ -439,10 +439,12 @@ export default function TransportWizard() {
   if (step === 1) {
     return (
       <InlineAddressStep
+        key="pickup"
         picked={pickupPicked}
         onPick={setPickupPicked}
         onConfirm={onCTA}
         onCancel={goBack}
+        variant="transport"
         contextLabel="Iekraušanas vieta"
       />
     );
@@ -451,10 +453,12 @@ export default function TransportWizard() {
   if (step === 2) {
     return (
       <InlineAddressStep
+        key="dropoff"
         picked={dropoffPicked}
         onPick={setDropoffPicked}
         onConfirm={onCTA}
         onCancel={goBack}
+        variant="transport"
         contextLabel="Izkraušanas vieta"
         contextAddress={pickupPicked ?? undefined}
         contextIcon="from"

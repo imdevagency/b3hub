@@ -30,6 +30,14 @@ import { api } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import type { ApiNotification } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { notifStore } from '@/lib/notif-store';
+
+function stripEmojis(str: string): string {
+  return str
+    .replace(/\p{Emoji}/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
 type LucideIcon = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 interface TypeInfo {
@@ -183,13 +191,12 @@ function NotifCard({
 }) {
   const { Icon, bg, iconColor } = TYPE_INFO[notif.type] ?? DEFAULT_TYPE_INFO;
   const router = useRouter();
-  const { mode } = useMode();
 
   const handlePress = () => {
     haptics.light();
     if (!notif.isRead) onMarkRead(notif.id);
-    const path = deepLinkPath(notif, mode);
-    if (path) router.push(path as Parameters<typeof router.push>[0]);
+    notifStore.set(notif);
+    router.push(`/notification/${notif.id}` as any);
   };
 
   return (
@@ -207,7 +214,7 @@ function NotifCard({
       <View className="flex-1 pt-1">
         <View className="flex-row justify-between items-start mb-1">
           <Text className="flex-1 text-base font-bold text-gray-900 mr-2" numberOfLines={1}>
-            {notif.title}
+            {stripEmojis(notif.title)}
           </Text>
           <View className="flex-row items-center mt-0.5">
             <Text className="text-xs font-medium text-gray-400 mr-1.5">
@@ -217,7 +224,7 @@ function NotifCard({
           </View>
         </View>
         <Text className="text-sm text-gray-500 leading-5" numberOfLines={2}>
-          {notif.message}
+          {stripEmojis(notif.message)}
         </Text>
       </View>
     </TouchableOpacity>
