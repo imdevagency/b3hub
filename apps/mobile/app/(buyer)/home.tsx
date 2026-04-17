@@ -230,15 +230,20 @@ export default function HomeScreen() {
         {/* Flat Minimal Header */}
         <View className="px-5 pt-8 pb-6 flex-row justify-between items-end">
           <View>
-            <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5">
+            <Text
+              className=" font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5"
+              style={{ fontSize: 13 }}
+            >
               Laipni lūdzam
             </Text>
-            <Text className="text-[32px] font-bold tracking-tight text-gray-900">
+            <Text className=" font-bold tracking-tight text-gray-900" style={{ fontSize: 32 }}>
               Sveiki{user?.firstName ? `, ${user.firstName}` : ''}
             </Text>
           </View>
           <View className="bg-gray-100 px-3 py-1.5 rounded-full mb-1">
-            <Text className="text-[13px] font-bold text-gray-900">Rīga</Text>
+            <Text className=" font-bold text-gray-900" style={{ fontSize: 13 }}>
+              Rīga
+            </Text>
           </View>
         </View>
 
@@ -256,10 +261,13 @@ export default function HomeScreen() {
               <AlertCircle size={20} color="#b45309" />
             </View>
             <View className="flex-1 mr-2">
-              <Text className="text-[15px] text-gray-900 font-bold mb-0.5 tracking-tight">
+              <Text
+                className=" text-gray-900 font-bold mb-0.5 tracking-tight"
+                style={{ fontSize: 15 }}
+              >
                 Pabeidziet konta reģistrāciju
               </Text>
-              <Text className="text-[13px] text-gray-500 font-medium leading-tight">
+              <Text className=" text-gray-500 font-medium leading-tight" style={{ fontSize: 13 }}>
                 {!user.phone
                   ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
                   : 'Pievienojiet uzņēmuma datus'}
@@ -272,7 +280,8 @@ export default function HomeScreen() {
         {/* Tracking (Uber-style dark card) */}
         {activeItem && (
           <TouchableOpacity
-            className="mx-5 mb-8 bg-[#111827] rounded-[28px] overflow-hidden"
+            className="mx-5 mb-8 bg-gray-900 overflow-hidden"
+            style={{ borderRadius: 28 }}
             activeOpacity={0.9}
             onPress={() => {
               haptics.light();
@@ -302,22 +311,35 @@ export default function HomeScreen() {
                       className="w-1.5 h-1.5 rounded-full"
                     />
                   </View>
-                  <Text className="text-gray-200 text-[11px] font-bold uppercase tracking-widest">
+                  <Text
+                    className="text-gray-200 font-bold uppercase tracking-widest"
+                    style={{ fontSize: 11 }}
+                  >
                     {activeCount > 1 ? `${activeCount} Aktīvi` : 'Aktīvs'}
                   </Text>
                 </View>
-                <Text className="text-gray-400 text-[13px] font-semibold">{activeItem.num}</Text>
+                <Text className="text-gray-400 font-semibold" style={{ fontSize: 13 }}>
+                  {activeItem.num}
+                </Text>
               </View>
 
-              <Text className="text-white text-[28px] font-bold tracking-tight leading-tight mb-2">
+              <Text
+                className="text-white font-bold tracking-tight leading-tight mb-2"
+                style={{ fontSize: 28 }}
+              >
                 {activeCount > 1 ? `${activeCount} pasūtījumi ceļā` : activeItem.status}
               </Text>
-              <Text className="text-gray-400 text-[15px] font-medium mb-6 line-clamp-1">
+              <Text
+                className="text-gray-400 font-medium mb-6 line-clamp-1"
+                style={{ fontSize: 15 }}
+              >
                 {activeItem.sub}
               </Text>
 
               <View className="bg-white/10 p-4 rounded-2xl flex-row items-center justify-between">
-                <Text className="text-white font-bold text-[15px]">Sekot līdzi</Text>
+                <Text className="text-white font-bold " style={{ fontSize: 15 }}>
+                  Sekot līdzi
+                </Text>
                 <ArrowRight size={20} color="#fff" />
               </View>
             </View>
@@ -326,7 +348,7 @@ export default function HomeScreen() {
 
         {/* Actions Grid */}
         <View className="px-5">
-          <Text className="text-[22px] font-bold tracking-tight text-gray-900 mb-4">
+          <Text className=" font-bold tracking-tight text-gray-900 mb-4" style={{ fontSize: 22 }}>
             Ko vēlaties pasūtīt?
           </Text>
           <View className="flex-row flex-wrap justify-between">
@@ -346,10 +368,13 @@ export default function HomeScreen() {
                   <View className="mb-6 bg-white self-start p-3.5 rounded-full shadow-sm">
                     <Icon size={22} color="#111827" strokeWidth={2.5} />
                   </View>
-                  <Text className="text-gray-900 font-bold text-[16px] tracking-tight mb-1">
+                  <Text className="text-gray-900 font-bold text-base tracking-tight mb-1">
                     {svc.label}
                   </Text>
-                  <Text className="text-gray-500 font-medium text-[13px] line-clamp-1 leading-tight">
+                  <Text
+                    className="text-gray-500 font-medium line-clamp-1 leading-tight"
+                    style={{ fontSize: 13 }}
+                  >
                     {svc.sub}
                   </Text>
                 </TouchableOpacity>

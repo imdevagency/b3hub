@@ -49,19 +49,27 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
       <View className="flex-row justify-between items-start mb-1">
         <View className="flex-1 pr-4">
           <Text
-            className="text-[22px] font-extrabold tracking-tight text-gray-900 mb-1"
+            className=" font-extrabold tracking-tight text-gray-900 mb-1"
+            style={{ fontSize: 22 }}
             numberOfLines={1}
           >
             {project.name}
           </Text>
           {(project.clientName || project.siteAddress) && (
-            <Text className="text-[15px] font-medium text-gray-500 mb-6" numberOfLines={1}>
+            <Text
+              className=" font-medium text-gray-500 mb-6"
+              style={{ fontSize: 15 }}
+              numberOfLines={1}
+            >
               {[project.clientName, project.siteAddress].filter(Boolean).join(' • ')}
             </Text>
           )}
         </View>
         <View className="bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 mt-1">
-          <Text className="text-[11px] font-bold text-gray-600 uppercase tracking-widest">
+          <Text
+            className=" font-bold text-gray-600 uppercase tracking-widest"
+            style={{ fontSize: 11 }}
+          >
             {STATUS_CONFIG[project.status]?.label ?? project.status}
           </Text>
         </View>
@@ -69,27 +77,27 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
 
       <View className="flex-row items-center justify-between">
         <View>
-          <Text className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+          <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
             Līgums
           </Text>
-          <Text className="text-[18px] font-bold text-gray-900 tracking-tight">
+          <Text className="text-lg font-bold text-gray-900 tracking-tight">
             {formatEur(project.contractValue)}
           </Text>
         </View>
         <View>
-          <Text className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+          <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
             Izmaksas
           </Text>
-          <Text className="text-[18px] font-bold text-gray-900 tracking-tight">
+          <Text className="text-lg font-bold text-gray-900 tracking-tight">
             {formatEur(project.materialCosts)}
           </Text>
         </View>
         <View className="items-end">
-          <Text className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+          <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
             Peļņa
           </Text>
           <Text
-            className={`text-[18px] font-black tracking-tight ${project.grossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}
+            className={`text-lg font-black tracking-tight ${project.grossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}
           >
             {project.marginPct !== null ? `${Math.round(project.marginPct)}%` : '—'}
           </Text>
@@ -173,6 +181,8 @@ export default function ProjectsScreen() {
       <FlatList
         data={projects}
         keyExtractor={(p) => p.id}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
         renderItem={({ item }) => (
           <ProjectCard
             project={item}

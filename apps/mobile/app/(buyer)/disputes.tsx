@@ -128,6 +128,8 @@ export default function DisputesScreen() {
         <FlatList
           data={disputes}
           keyExtractor={(item) => item.id}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
           renderItem={renderItem}
           contentContainerStyle={disputes.length === 0 ? s.emptyScroll : s.listContent}
           showsVerticalScrollIndicator={false}

@@ -98,7 +98,11 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 
         {/* Middle row: Route + Status */}
         <View className="flex-row items-center mb-1">
-          <Text className="text-sm font-medium text-gray-700" style={{ flexShrink: 1 }} numberOfLines={1}>
+          <Text
+            className="text-sm font-medium text-gray-700"
+            style={{ flexShrink: 1 }}
+            numberOfLines={1}
+          >
             {route}
           </Text>
           <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
@@ -196,7 +200,9 @@ export default function MessagesScreen() {
           <View className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
             <MessageCircle size={28} color="#d1d5db" strokeWidth={1.5} />
           </View>
-          <Text className="text-xl font-bold text-gray-900 mb-2 text-center">Nav aktīvu sarunu</Text>
+          <Text className="text-xl font-bold text-gray-900 mb-2 text-center">
+            Nav aktīvu sarunu
+          </Text>
           <Text className="text-base text-gray-500 font-medium text-center">
             Sarakste ar piegādātājiem un šoferiem parādīsies šeit pēc pasūtījuma veikšanas.
           </Text>
@@ -206,6 +212,8 @@ export default function MessagesScreen() {
           data={rooms}
           className="bg-white flex-1"
           keyExtractor={(r) => r.jobId}
+          removeClippedSubviews={true}
+          initialNumToRender={15}
           renderItem={({ item }) => (
             <RoomCard
               item={item}

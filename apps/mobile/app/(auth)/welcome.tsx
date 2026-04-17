@@ -31,8 +31,13 @@ export default function WelcomeScreen() {
         {/* Bottom half: Value prop & actions */}
         <View className="px-6 pb-8" style={{ paddingBottom: Math.max(insets.bottom + 16, 40) }}>
           <Text
-            className="text-white text-[56px] leading-[60px] tracking-tight mb-4"
-            style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+            className="text-white tracking-tight mb-4"
+            style={{
+              fontSize: 56,
+              lineHeight: 60,
+              fontFamily: 'Inter_800ExtraBold',
+              fontWeight: '800',
+            }}
           >
             Būvē{'\n'}ātrāk.
           </Text>

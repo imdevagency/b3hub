@@ -46,11 +46,10 @@ try {
 }
 import { t } from '@/lib/translations';
 import { formatDateNumeric } from '@/lib/format';
-import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+import { geocodeLocation } from '@/lib/maps';
 
 const ACCENT = '#000000';
 const RIGA: [number, number] = [24.1052, 56.9496];
-const GOOGLE_KEY = getGoogleMapsPublicKey();
 const cs = t.carrierSkips;
 
 function openMaps(address: string) {
@@ -60,16 +59,8 @@ function openMaps(address: string) {
 }
 
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
-  try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&region=lv&key=${GOOGLE_KEY}`;
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json.status !== 'OK' || !json.results?.[0]) return null;
-    const loc = json.results[0].geometry.location;
-    return [loc.lng, loc.lat];
-  } catch {
-    return null;
-  }
+  const result = await geocodeLocation(address);
+  return result ? [result.lng, result.lat] : null;
 }
 
 function pinColor(status: string): string {

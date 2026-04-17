@@ -171,7 +171,7 @@ export default function SellerHomeScreen() {
               >
                 Sāciet pārdot
               </Text>
-              <Text className="text-gray-400 mb-6 text-[15px] font-medium leading-5">
+ <Text className="text-gray-400 mb-6 font-medium leading-5" style={{ fontSize: 15 }}>
                 Izpildiet 3 soļus, lai saņemtu pirmo pasūtījumu
               </Text>
               {[
@@ -365,7 +365,7 @@ export default function SellerHomeScreen() {
           ) : recentOrders.length === 0 ? (
             <View className="items-center py-10" style={{ gap: 12 }}>
               <Inbox size={32} color="#d1d5db" />
-              <Text className="text-gray-400 font-medium text-[15px]">Pagaidām nav pasūtījumu</Text>
+ <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>Pagaidām nav pasūtījumu</Text>
             </View>
           ) : (
             recentOrders.map((order, i) => {
@@ -387,7 +387,7 @@ export default function SellerHomeScreen() {
                       </Text>
                       <StatusPill label={meta.text} bg={meta.bg} color={meta.color} size="sm" />
                     </View>
-                    <Text className="text-[14px] text-gray-500 font-medium" numberOfLines={1}>
+                    <Text className="text-sm text-gray-500 font-medium" numberOfLines={1}>
                       {order.buyer?.name ?? '—'} · {order.deliveryCity}
                     </Text>
                   </View>

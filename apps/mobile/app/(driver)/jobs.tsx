@@ -918,6 +918,9 @@ export default function JobsScreen() {
           style={{ flex: 1 }}
           data={filteredJobs}
           keyExtractor={(item) => item.id}
+          removeClippedSubviews={true}
+          initialNumToRender={8}
+          maxToRenderPerBatch={4}
           renderItem={renderJobItem}
           contentContainerStyle={styles.list}
           refreshControl={

@@ -15,7 +15,8 @@ import {
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
-import { useOrders } from '@/lib/use-orders';
+import { useOrders, UnifiedOrder } from '@/lib/use-orders';
+import type { ApiOrder, ApiTransportJob, SkipHireOrder, QuoteRequest } from '@/lib/api';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -66,7 +67,7 @@ export default function OrdersScreen() {
     setActiveTab(tab);
   };
 
-  const renderItem = useCallback(({ item }: { item: any }) => {
+  const renderItem = useCallback(({ item }: { item: UnifiedOrder }) => {
     switch (item.kind) {
       case 'material':
         return <MaterialRow item={item.data} />;
@@ -179,6 +180,9 @@ export default function OrdersScreen() {
         style={{ flex: 1, backgroundColor: '#FFFFFF' }}
         data={displayItems}
         keyExtractor={(item) => `${item.kind}-${item.data.id}`}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
         renderItem={renderItem}
         ItemSeparatorComponent={() => (
           <View className="h-[1px] bg-gray-100" style={{ marginLeft: 76 }} />
@@ -262,7 +266,17 @@ export default function OrdersScreen() {
 
 // ── Components ────────────────────────────────────────────────
 
-function SheetRow({ icon, title, subtitle, onPress }: any) {
+function SheetRow({
+  icon,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
       className="flex-row items-center px-4 py-3 active:bg-gray-50 rounded-xl mx-2"
@@ -291,7 +305,15 @@ function UniversalRow({
   statusColor,
   statusText,
   onPress,
-}: any) {
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitleLines: string[];
+  price: string;
+  statusColor: string;
+  statusText: string;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
       className="flex-row items-center py-4 pr-5 pl-4 active:bg-gray-50 bg-white"
@@ -372,22 +394,22 @@ function getStatusStyle(status: string) {
 
 // ── Specialized Rows ──────────────────────────────────────────
 
-function MaterialRow({ item }: { item: any }) {
+function MaterialRow({ item }: { item: ApiOrder }) {
   const router = useRouter();
   const st = getStatusStyle(item.status);
 
   const itemsCount = item.items?.length || 0;
-  const firstItemName = item.items?.[0]?.product?.name || 'Materiāli';
+  const firstItemName = item.items?.[0]?.material?.name || 'Materiāli';
   const title = itemsCount > 1 ? `${firstItemName} +${itemsCount - 1}` : firstItemName;
 
   const address = item.deliveryAddress?.split(',')[0] || 'Nav adreses';
   const dateStr = item.deliveryDate
     ? format(new Date(item.deliveryDate), 'd. MMM', { locale: lv })
     : '';
-  const price = item.totalAmount != null ? `€${item.totalAmount}` : '';
+  const price = item.total != null ? `€${item.total}` : '';
 
   // Highlight if driver is en route
-  const activeJob = item.transportJobs?.find((j: any) => DRIVER_TRANSIT_STATUSES.has(j.status));
+  const activeJob = item.transportJobs?.find((j) => DRIVER_TRANSIT_STATUSES.has(j.status));
   const statusText = activeJob ? 'Ceļā' : st.label;
   const statusColor = activeJob ? '#059669' : st.color;
 
@@ -404,7 +426,7 @@ function MaterialRow({ item }: { item: any }) {
   );
 }
 
-function TransportRow({ item }: { item: any }) {
+function TransportRow({ item }: { item: ApiTransportJob }) {
   const router = useRouter();
   const st = getStatusStyle(item.status);
 
@@ -430,7 +452,7 @@ function TransportRow({ item }: { item: any }) {
   );
 }
 
-function DisposalRow({ item }: { item: any }) {
+function DisposalRow({ item }: { item: ApiTransportJob }) {
   const router = useRouter();
   const st = getStatusStyle(item.status);
 
@@ -454,7 +476,7 @@ function DisposalRow({ item }: { item: any }) {
   );
 }
 
-function SkipRow({ item }: { item: any }) {
+function SkipRow({ item }: { item: SkipHireOrder }) {
   const router = useRouter();
   const st = getStatusStyle(item.status);
 
@@ -479,14 +501,14 @@ function SkipRow({ item }: { item: any }) {
   );
 }
 
-function RfqRow({ item }: { item: any }) {
+function RfqRow({ item }: { item: QuoteRequest }) {
   const router = useRouter();
   const st = getStatusStyle(item.status);
 
-  const title = item.title || 'Cenu aptauja';
-  const quotes = `${item._count?.quotes || 0} piedāvājumi`;
-  const dateStr = item.deadline
-    ? `Termiņš: ${format(new Date(item.deadline), 'd. MMM', { locale: lv })}`
+  const title = item.materialName || 'Cenu aptauja';
+  const quotes = `${item.responses?.length || 0} piedāvājumi`;
+  const dateStr = item.createdAt
+    ? `Izveidots: ${format(new Date(item.createdAt), 'd. MMM', { locale: lv })}`
     : '';
 
   return (

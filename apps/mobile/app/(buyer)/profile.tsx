@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -188,7 +188,11 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <View className="flex-1">
-            <Text className="text-[22px] font-bold text-gray-900 mb-1" numberOfLines={1}>
+            <Text
+              className=" font-bold text-gray-900 mb-1"
+              style={{ fontSize: 22 }}
+              numberOfLines={1}
+            >
               {user?.firstName} {user?.lastName}
             </Text>
             <View className="flex-row items-center flex-wrap">
@@ -198,7 +202,10 @@ export default function ProfileScreen() {
                 <Text className="text-gray-400 font-medium mr-3">{user?.email}</Text>
               )}
               <View className="bg-gray-100 px-2 py-0.5 rounded flex-row items-center">
-                <Text className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+                <Text
+                  className="font-bold text-gray-600 uppercase tracking-widest"
+                  style={{ fontSize: 10 }}
+                >
                   {accountTypeLabel}
                 </Text>
               </View>
@@ -488,17 +495,21 @@ export default function ProfileScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text className="text-[32px] font-bold text-gray-900 mb-8 tracking-tight">
+            <Text className=" font-bold text-gray-900 mb-8 tracking-tight" style={{ fontSize: 32 }}>
               Konta informācija
             </Text>
 
             <View className="gap-6">
               <View>
-                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                <Text
+                  className=" font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                  style={{ fontSize: 13 }}
+                >
                   Vārds
                 </Text>
                 <TextInput
-                  className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
+                  className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
+                  style={{ fontSize: 17 }}
                   value={form.firstName}
                   onChangeText={set('firstName')}
                   placeholder="Ievadiet vārdu"
@@ -507,11 +518,15 @@ export default function ProfileScreen() {
                 />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                <Text
+                  className=" font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                  style={{ fontSize: 13 }}
+                >
                   Uzvārds
                 </Text>
                 <TextInput
-                  className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
+                  className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
+                  style={{ fontSize: 17 }}
                   value={form.lastName}
                   onChangeText={set('lastName')}
                   placeholder="Ievadiet uzvārdu"
@@ -520,11 +535,15 @@ export default function ProfileScreen() {
                 />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                <Text
+                  className=" font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                  style={{ fontSize: 13 }}
+                >
                   Tālrunis
                 </Text>
                 <TextInput
-                  className="bg-gray-100 rounded-2xl px-5 py-4 text-[17px] text-gray-900 font-semibold"
+                  className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
+                  style={{ fontSize: 17 }}
                   value={form.phone}
                   onChangeText={set('phone')}
                   placeholder="+371 20000000"
@@ -547,7 +566,9 @@ export default function ProfileScreen() {
               {saving ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text className="text-white text-[17px] font-bold">Saglabāt</Text>
+                <Text className="text-white font-bold" style={{ fontSize: 17 }}>
+                  Saglabāt
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -561,7 +582,21 @@ export default function ProfileScreen() {
 
 // ─── Helper Components ────────────────────────────────────────────────────────
 
-function MenuItem({ icon: Icon, label, value, onPress, isDestructive, hideBorder }: any) {
+function MenuItem({
+  icon: Icon,
+  label,
+  value,
+  onPress,
+  isDestructive,
+  hideBorder,
+}: {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  isDestructive?: boolean;
+  hideBorder?: boolean;
+}) {
   return (
     <>
       <TouchableOpacity
@@ -592,7 +627,19 @@ function MenuItem({ icon: Icon, label, value, onPress, isDestructive, hideBorder
   );
 }
 
-function ApplicationRow({ icon: Icon, label, status, onReapply, hideBorder }: any) {
+function ApplicationRow({
+  icon: Icon,
+  label,
+  status,
+  onReapply,
+  hideBorder,
+}: {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
+  label: string;
+  status: string;
+  onReapply?: () => void;
+  hideBorder?: boolean;
+}) {
   return (
     <>
       <View className="flex-row items-center px-5 py-3.5 bg-white">

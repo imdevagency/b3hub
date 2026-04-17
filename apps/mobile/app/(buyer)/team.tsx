@@ -65,37 +65,37 @@ const PERM_META: Array<{ key: keyof MemberPermissions; label: string; sub: strin
 
 const s = {
   // List
-  row: 'flex-row items-center py-4 px-6 border-b border-[#f3f4f6] bg-white active:bg-[#f9fafb]',
+  row: 'flex-row items-center py-4 px-6 border-b border-gray-100 bg-white active:bg-gray-50',
   headerBtn: 'w-10 h-10 items-center justify-center rounded-full active:bg-gray-100',
 
   // Avatar
-  avatar: 'w-12 h-12 rounded-full bg-[#f3f4f6] items-center justify-center mr-4',
-  avatarText: 'text-base font-bold text-[#374151]',
+  avatar: 'w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-4',
+  avatarText: 'text-base font-bold text-gray-700',
 
   // Text
-  name: 'text-[17px] font-semibold text-[#111827]',
-  role: 'text-[14px] text-[#6b7280] mt-0.5',
+  name: ' font-semibold text-gray-900',
+  role: 'text-sm text-gray-500 mt-0.5',
 
   // Badges
-  badge: 'px-2.5 py-1 rounded-full bg-[#f3f4f6] self-start ml-2',
-  badgeText: 'text-[11px] font-bold text-[#374151] uppercase tracking-wide',
+  badge: 'px-2.5 py-1 rounded-full bg-gray-100 self-start ml-2',
+  badgeText: ' font-bold text-gray-700 uppercase tracking-wide',
 
   // Sheet
   sheetSection: 'px-6 pt-2 pb-12',
-  label: 'text-[13px] font-bold text-[#374151] uppercase tracking-wide mb-2 ml-1',
-  input: 'bg-[#f9fafb] rounded-xl px-4 py-3.5 text-[16px] text-[#111827] font-medium mb-4',
+  label: ' font-bold text-gray-700 uppercase tracking-wide mb-2 ml-1',
+  input: 'bg-gray-50 rounded-xl px-4 py-3.5 text-base text-gray-900 font-medium mb-4',
 
   // Toggles
-  switchRow: 'flex-row items-center justify-between py-4 border-b border-[#f3f4f6]',
-  switchLabel: 'text-[16px] font-medium text-[#111827]',
-  switchSub: 'text-[13px] text-[#6b7280] mt-0.5',
+  switchRow: 'flex-row items-center justify-between py-4 border-b border-gray-100',
+  switchLabel: 'text-base font-medium text-gray-900',
+  switchSub: ' text-gray-500 mt-0.5',
 
   // Actions
-  primaryBtn: 'bg-[#111827] rounded-full py-4 items-center mt-6 shadow-sm active:opacity-90',
-  primaryBtnText: 'text-white font-bold text-[16px]',
+  primaryBtn: 'bg-gray-900 rounded-full py-4 items-center mt-6 shadow-sm active:opacity-90',
+  primaryBtnText: 'text-white font-bold text-base',
   deleteBtn:
-    'flex-row items-center justify-center gap-2 mt-6 py-4 bg-[#fee2e2] rounded-full active:opacity-90 border border-red-100',
-  deleteBtnText: 'text-[#dc2626] font-bold text-[15px]',
+    'flex-row items-center justify-center gap-2 mt-6 py-4 bg-red-100 rounded-full active:opacity-90 border border-red-100',
+  deleteBtnText: 'text-red-600 font-bold ',
 };
 
 // ── Components ─────────────────────────────────────────────────
@@ -195,10 +195,10 @@ function MemberDetailsSheet({
               <Phone size={18} color="#6b7280" />
             </View>
             <View>
-              <Text className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">
+              <Text className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                 Telefons
               </Text>
-              <Text className="text-[16px] font-semibold text-gray-900 mt-0.5">
+              <Text className="text-base font-semibold text-gray-900 mt-0.5">
                 {member.phone || '—'}
               </Text>
             </View>
@@ -210,10 +210,10 @@ function MemberDetailsSheet({
               <Shield size={18} color="#6b7280" />
             </View>
             <View>
-              <Text className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">
+              <Text className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                 Loma
               </Text>
-              <Text className="text-[16px] font-semibold text-gray-900 mt-0.5">
+              <Text className="text-base font-semibold text-gray-900 mt-0.5">
                 {ROLE_LABEL[member.companyRole ?? ''] ?? member.companyRole}
               </Text>
             </View>
@@ -239,8 +239,10 @@ function MemberDetailsSheet({
                 <IconComp size={18} color="#6b7280" />
               </View>
               <View style={{ flex: 1, paddingRight: 16 }}>
-                <Text className="text-[16px] font-medium text-[#111827]">{label}</Text>
-                <Text className="text-[13px] text-[#6b7280] mt-0.5">{sub}</Text>
+                <Text className="text-base font-medium text-[#111827]">{label}</Text>
+                <Text className=" text-[#6b7280] mt-0.5" style={{ fontSize: 13 }}>
+                  {sub}
+                </Text>
               </View>
               <Switch
                 value={perms[key]}
@@ -376,8 +378,8 @@ function InviteSheet({
                 <IconComp size={18} color="#6b7280" />
               </View>
               <View style={{ flex: 1, paddingRight: 16 }}>
-                <Text className="text-[16px] font-medium text-[#111827]">{label}</Text>
-                <Text className="text-[12px] text-[#6b7280]">{sub}</Text>
+                <Text className="text-base font-medium text-[#111827]">{label}</Text>
+                <Text className="text-xs text-[#6b7280]">{sub}</Text>
               </View>
               <Switch
                 value={form[key] as boolean}
@@ -527,6 +529,8 @@ export default function TeamScreen() {
         <FlatList
           data={members}
           keyExtractor={(m) => m.id}
+          removeClippedSubviews={true}
+          initialNumToRender={20}
           contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={
             <RefreshControl

@@ -524,6 +524,8 @@ export default function VehiclesScreen() {
       <FlatList
         data={vehicles}
         keyExtractor={(item) => item.id}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}

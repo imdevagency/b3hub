@@ -112,17 +112,23 @@ function CategoryCard({
       </View>
 
       <View className="flex-1 justify-center pr-2">
-        <Text className="text-gray-900 font-bold tracking-tight text-[17px] mb-0.5 line-clamp-1">
+        <Text
+          className="text-gray-900 font-bold tracking-tight mb-0.5 line-clamp-1"
+          style={{ fontSize: 17 }}
+        >
           {CATEGORY_LABELS[category]}
         </Text>
         <View className="flex-row items-center">
-          <Text className="text-gray-500 font-medium text-[14px] line-clamp-1">
+          <Text className="text-gray-500 font-medium text-sm line-clamp-1">
             {supplierCount > 0 ? `${supplierCount} piegādātāji` : description}
           </Text>
           {hasRecycled && (
             <View className="ml-2 bg-green-100 px-1.5 py-0.5 rounded flex-row items-center">
               <Leaf size={10} color="#166534" className="mr-1" />
-              <Text className="text-[10px] font-bold text-green-800 uppercase tracking-widest">
+              <Text
+                className="font-bold text-green-800 uppercase tracking-widest"
+                style={{ fontSize: 10 }}
+              >
                 Eco
               </Text>
             </View>
@@ -133,7 +139,7 @@ function CategoryCard({
       <View className="items-end justify-center ml-2">
         {minPrice != null ? (
           <View className="bg-gray-100 px-3 py-1.5 rounded-full">
-            <Text className="text-gray-900 font-bold text-[13px] tracking-tight">
+            <Text className="text-gray-900 font-bold tracking-tight" style={{ fontSize: 13 }}>
               no €{minPrice.toFixed(2)}
             </Text>
           </View>
@@ -411,7 +417,10 @@ export default function CatalogScreen() {
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff" standalone noAnimation>
       <View className="px-5 pt-4 pb-2">
-        <Text className="text-[32px] font-bold tracking-tight text-gray-900 leading-tight">
+        <Text
+          className=" font-bold tracking-tight text-gray-900 leading-tight"
+          style={{ fontSize: 32 }}
+        >
           Katalogs
         </Text>
 
@@ -467,9 +476,7 @@ export default function CatalogScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Text
-              className={`font-bold text-[15px] ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}
-            >
+            <Text className={`font-bold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}>
               Visi
             </Text>
           </TouchableOpacity>
@@ -489,7 +496,7 @@ export default function CatalogScreen() {
               className="mr-2"
             />
             <Text
-              className={`font-bold text-[15px] ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-900'}`}
+              className={`font-bold ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-900'}`}
             >
               Pārstrādāts
             </Text>
@@ -500,6 +507,8 @@ export default function CatalogScreen() {
       <FlatList
         data={visibleCategories}
         keyExtractor={(item) => String(item)}
+        removeClippedSubviews={true}
+        initialNumToRender={12}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
@@ -526,10 +535,10 @@ export default function CatalogScreen() {
               <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-4">
                 <Box size={28} color="#9ca3af" />
               </View>
-              <Text className="text-gray-900 font-bold text-[18px] mb-1 text-center tracking-tight">
+              <Text className="text-gray-900 font-bold text-lg mb-1 text-center tracking-tight">
                 Nekas nav atrasts
               </Text>
-              <Text className="text-gray-500 font-medium text-center text-[15px]">
+              <Text className="text-gray-500 font-medium text-center " style={{ fontSize: 15 }}>
                 Mēģiniet mainīt meklēšanu vai filtru.
               </Text>
             </View>

@@ -247,7 +247,7 @@ export default function CarrierSettingsScreen() {
         <Text style={{ fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.8 }}>
           Pārvadātājs
         </Text>
-        <Text className="text-gray-500 font-medium text-[15px] mt-1 mb-2">Reģioni un izcenojumi</Text>
+ <Text className="text-gray-500 font-medium mt-1 mb-2" style={{ fontSize: 15 }}>Reģioni un izcenojumi</Text>
       </View>
 
       {/* Segmented Control */}
@@ -294,7 +294,7 @@ export default function CarrierSettingsScreen() {
         {tab === 'pricing' && (
           <View>
             <View className="px-5 pb-3">
-              <Text className="text-[14px] text-gray-500 font-medium tracking-tight">Iestatiet cenu (€/dienā) katram konteinera izmēram.</Text>
+              <Text className="text-sm text-gray-500 font-medium tracking-tight">Iestatiet cenu (€/dienā) katram konteinera izmēram.</Text>
             </View>
             
             {SKIP_SIZES.map(({ value, label, volume }, i) => {
@@ -355,7 +355,7 @@ export default function CarrierSettingsScreen() {
         {tab === 'zones' && (
           <View>
             <View className="px-5 pb-3">
-              <Text className="text-[14px] text-gray-500 font-medium tracking-tight mb-4">Norādiet pilsētas un reģionus, kuros sniedzat pakalpojumus.</Text>
+              <Text className="text-sm text-gray-500 font-medium tracking-tight mb-4">Norādiet pilsētas un reģionus, kuros sniedzat pakalpojumus.</Text>
               
               {showAddZone ? (
                 <View className="bg-gray-50 rounded-3xl p-5 mb-2" style={{ gap: 12 }}>
@@ -422,7 +422,7 @@ export default function CarrierSettingsScreen() {
             <View className="mt-2">
               {zones.length === 0 && !showAddZone && (
                 <View className="items-center py-10">
-                  <Text className="text-gray-400 font-medium text-[15px]">Nav pievienotu zonu</Text>
+ <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>Nav pievienotu zonu</Text>
                 </View>
               )}
               {zones.map((zone, idx) => (
@@ -457,7 +457,7 @@ export default function CarrierSettingsScreen() {
         {tab === 'availability' && (
           <View>
             <View className="px-5 pb-3">
-              <Text className="text-[14px] text-gray-500 font-medium tracking-tight mb-4">Bloķējiet datumus, kad neesat pieejams piegādēm.</Text>
+              <Text className="text-sm text-gray-500 font-medium tracking-tight mb-4">Bloķējiet datumus, kad neesat pieejams piegādēm.</Text>
               
               <View className="bg-gray-50 rounded-3xl p-5 mb-2" style={{ gap: 12 }}>
                 <TextInput
@@ -490,7 +490,7 @@ export default function CarrierSettingsScreen() {
             <View className="mt-2">
               {blockedDates.length === 0 && (
                 <View className="items-center py-10">
-                  <Text className="text-gray-400 font-medium text-[15px]">Nav bloķētu datumu</Text>
+ <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>Nav bloķētu datumu</Text>
                 </View>
               )}
               {blockedDates.sort((a, b) => a.date.localeCompare(b.date)).map((d, idx) => (
