@@ -482,7 +482,7 @@ export default function DisposalWizard() {
   const ctaDisabled =
     (step === 1 && selectedWastes.length === 0) || (step === 2 && !picked) || loading;
 
-  const ctaLabel = step === 4 ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}` : 'Turpināt';
+  const ctaLabel = step === 4 ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}` : step === 3 ? `Turpināt • no €${activeTruck.fromPrice * numTrucks}` : 'Turpināt';
 
   const onCTA = useCallback(async () => {
     if (step === 4) {
@@ -630,155 +630,134 @@ export default function DisposalWizard() {
               </View>
             )}
 
-            {/* ── Truck type selector ── */}
-            <Text style={s.sectionLabel}>Transportlīdzekļa veids</Text>
-            <View style={s.truckTypeRow}>
+            {/* ── Uber-style Ride selector ── */}
+            <View style={{ gap: 12, marginBottom: 32, marginTop: 8 }}>
               {TIPPER_TRUCKS.map((t) => {
                 const isSel = selectedTruckType === t.type;
+                const priceFrom = t.fromPrice * (isSel ? numTrucks : 1);
+                
                 return (
                   <TouchableOpacity
                     key={t.type}
-                    style={[s.truckTypeCard, isSel && s.truckTypeCardSel]}
+                    style={{
+                      backgroundColor: colors.bgCard,
+                      padding: 16,
+                      borderRadius: 16,
+                      borderWidth: isSel ? 2 : 1,
+                      borderColor: isSel ? '#000000' : '#E5E7EB',
+                      shadowColor: isSel ? '#000' : 'transparent',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 10,
+                      elevation: isSel ? 2 : 0,
+                    }}
                     onPress={() => {
                       haptics.light();
                       setSelectedTruckType(t.type);
+                      if (!isSel) setNumTrucks(1);
                     }}
-                    activeOpacity={0.7}
+                    activeOpacity={0.9}
                   >
-                    {/* Truck illustration zone */}
-                    <View style={[s.truckIllZone, isSel && s.truckIllZoneSel]}>
-                      <TruckIllustration type={t.type} height={30} onDark={isSel} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ width: 64, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                        <TruckIllustration type={t.type} height={32} />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{ fontSize: 16, fontWeight: isSel ? '700' : '600', color: colors.textPrimary }}>
+                          {t.label}
+                        </Text>
+                        <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
+                          {t.capacity} t · {t.volume} m³
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 16, fontWeight: isSel ? '800' : '600', color: colors.textPrimary }}>
+                        €{priceFrom}
+                      </Text>
                     </View>
-                    <Text style={[s.truckTypeName, isSel && s.truckTypeNameSel]} numberOfLines={2}>
-                      {t.label}
-                    </Text>
-                    <Text style={[s.truckTypeCap, isSel && s.truckTypeCapSel]}>
-                      {t.capacity} t · {t.volume} m³
-                    </Text>
+
+                    {isSel && (
+                      <View style={{ 
+                        marginTop: 16, 
+                        paddingTop: 16, 
+                        borderTopWidth: 1, 
+                        borderColor: '#E5E7EB',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
+                         <View>
+                           <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '500' }}>Kopējais apjoms</Text>
+                           <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 }}>
+                             ≈ {t.capacity * numTrucks} t · ≈ {t.volume * numTrucks} m³
+                           </Text>
+                         </View>
+
+                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 24, padding: 4 }}>
+                            <TouchableOpacity
+                              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: numTrucks <= 1 ? 'transparent' : '#ffffff', alignItems: 'center', justifyContent: 'center', shadowColor: numTrucks > 1 ? '#000' : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: numTrucks > 1 ? 2 : 0 }}
+                              disabled={numTrucks <= 1}
+                              onPress={() => { haptics.light(); setNumTrucks(n => n - 1); }}
+                              activeOpacity={0.7}
+                            >
+                               <Text style={{ fontSize: 20, color: numTrucks <= 1 ? '#9CA3AF' : '#111827', fontWeight: '500' }}>−</Text>
+                            </TouchableOpacity>
+                            <Text style={{ color: '#111827', fontSize: 16, fontWeight: '700', minWidth: 32, textAlign: 'center' }}>
+                              {numTrucks}
+                            </Text>
+                            <TouchableOpacity
+                              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: numTrucks >= 6 ? 'transparent' : '#ffffff', alignItems: 'center', justifyContent: 'center', shadowColor: numTrucks < 6 ? '#000' : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: numTrucks < 6 ? 2 : 0 }}
+                              disabled={numTrucks >= 6}
+                              onPress={() => { haptics.light(); setNumTrucks(n => n + 1); }}
+                              activeOpacity={0.7}
+                            >
+                               <Text style={{ fontSize: 20, color: numTrucks >= 6 ? '#9CA3AF' : '#111827', fontWeight: '500' }}>+</Text>
+                            </TouchableOpacity>
+                         </View>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            {/* ── Count stepper ── */}
-            <Text style={[s.sectionLabel, { marginTop: 4 }]}>Mašīnu skaits</Text>
-            <View style={s.countCard}>
-              {/* Hero truck illustration */}
-              <View style={s.heroIllZone}>
-                <TruckIllustration type={selectedTruckType} height={52} />
-              </View>
-              {/* Stepper */}
-              <View style={s.stepperRow}>
-                <TouchableOpacity
-                  style={[s.stepperBtn, numTrucks <= 1 && s.stepperBtnDim]}
-                  onPress={() => {
-                    if (numTrucks > 1) {
-                      haptics.light();
-                      setNumTrucks((n) => n - 1);
-                    }
-                  }}
-                  disabled={numTrucks <= 1}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.stepperBtnText}>−</Text>
-                </TouchableOpacity>
-
-                <View style={s.stepperCountBox}>
-                  <Text style={s.stepperNum}>{numTrucks}</Text>
-                  <Text style={s.stepperUnit}>{numTrucks === 1 ? 'mašīna' : 'mašīnas'}</Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[s.stepperBtn, numTrucks >= 6 && s.stepperBtnDim]}
-                  onPress={() => {
-                    if (numTrucks < 6) {
-                      haptics.light();
-                      setNumTrucks((n) => n + 1);
-                    }
-                  }}
-                  disabled={numTrucks >= 6}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.stepperBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* ── Live stats ── */}
-            <View style={s.liveStats}>
-              <View style={s.liveStatRow}>
-                <Text style={s.liveStatLabel}>Kopā</Text>
-                <Text style={s.liveStatValue}>
-                  {numTrucks} × {activeTruck.label}
-                </Text>
-              </View>
-              <View style={s.liveStatRow}>
-                <Text style={s.liveStatLabel}>Apjoms</Text>
-                <Text style={s.liveStatValue}>
-                  ≈ {activeTruck.capacity * numTrucks} t · ≈ {activeTruck.volume * numTrucks} m³
-                </Text>
-              </View>
-              <View style={[s.liveStatRow, { borderBottomWidth: 0 }]}>
-                <Text style={s.liveStatLabel}>Kopējā cena (no)</Text>
-                <Text style={[s.liveStatValue, { fontSize: 18, fontWeight: '800' }]}>
-                  no €{activeTruck.fromPrice * numTrucks}
-                </Text>
-              </View>
-            </View>
-
-            {/* ── Optional weight override ── */}
-            <Text
-              style={[
-                s.sectionLabel,
-                { textTransform: 'none', color: colors.textMuted, fontSize: 13, marginTop: 16 },
-              ]}
-            >
-              Aptuvenais svars tonnās (neobligāti)
-            </Text>
-            <TextInput
-              style={[
-                s.uberInput,
-                {
-                  backgroundColor: colors.bgMuted,
+            {/* ── Optional details ── */}
+            <View style={{ gap: 12, paddingBottom: 16 }}>
+              <TextInput
+                style={{
+                  backgroundColor: '#F3F4F6',
                   borderRadius: 16,
                   borderWidth: 0,
                   paddingHorizontal: 16,
-                  marginBottom: 4,
-                },
-              ]}
-              placeholder={`piem., ${activeTruck.capacity * numTrucks} t (pilna mašīna)`}
-              placeholderTextColor="#9ca3af"
-              value={weightText}
-              onChangeText={setWeightText}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-            />
-            <Text
-              style={[
-                s.sectionLabel,
-                { textTransform: 'none', color: colors.textMuted, fontSize: 13, marginTop: 10 },
-              ]}
-            >
-              Papildu informācija (neobligāti)
-            </Text>
-            <TextInput
-              style={[
-                s.uberInput,
-                s.uberInputMulti,
-                {
-                  backgroundColor: colors.bgMuted,
+                  paddingVertical: 16,
+                  fontSize: 15,
+                  color: colors.textPrimary,
+                }}
+                placeholder={`Neobligāti: Aptuvenais svars (piem. ${activeTruck.capacity * numTrucks} t)`}
+                placeholderTextColor="#9CA3AF"
+                value={weightText}
+                onChangeText={setWeightText}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+              <TextInput
+                style={{
+                  backgroundColor: '#F3F4F6',
                   borderRadius: 16,
                   borderWidth: 0,
                   paddingHorizontal: 16,
-                },
-              ]}
-              placeholder="piem., Z0 Grunts, asfalta segums..."
-              placeholderTextColor="#9ca3af"
-              value={desc}
-              onChangeText={setDesc}
-              multiline
-              numberOfLines={3}
-            />
+                  paddingVertical: 16,
+                  fontSize: 15,
+                  color: colors.textPrimary,
+                  minHeight: 100,
+                  textAlignVertical: 'top',
+                }}
+                placeholder="Neobligāti: Papildu informācija autovadītājam..."
+                placeholderTextColor="#9CA3AF"
+                value={desc}
+                onChangeText={setDesc}
+                multiline
+              />
+            </View>
           </ScrollView>
         )}
 
@@ -1245,112 +1224,5 @@ const s = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
     paddingTop: 16,
-  },
-
-  // ── Truck type selector ──────────────────────────────────────
-  truckTypeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  truckTypeCard: {
-    flex: 1,
-    borderRadius: 14,
-    borderWidth: 0,
-    backgroundColor: colors.bgMuted,
-    overflow: 'hidden',
-  },
-  truckTypeCardSel: { backgroundColor: colors.primary },
-  truckIllZone: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: colors.bgMuted,
-  },
-  truckIllZoneSel: { backgroundColor: '#1f2937' },
-  truckTypeName: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    paddingHorizontal: 6,
-    paddingTop: 6,
-    textAlign: 'center',
-  },
-  truckTypeNameSel: { color: colors.white },
-  truckTypeCap: {
-    fontSize: 10,
-    color: colors.textDisabled,
-    paddingHorizontal: 6,
-    paddingBottom: 8,
-    textAlign: 'center',
-  },
-  truckTypeCapSel: { color: colors.textDisabled },
-
-  // ── Count stepper ────────────────────────────────────────────
-  countCard: {
-    backgroundColor: colors.bgMuted,
-    borderRadius: 18,
-    borderWidth: 0,
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  heroIllZone: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-    backgroundColor: 'transparent',
-    borderBottomWidth: 0,
-  },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-  },
-  stepperBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperBtnDim: { opacity: 0.3 },
-  stepperBtnText: {
-    fontSize: 26,
-    fontWeight: '300',
-    color: colors.white,
-    lineHeight: 30,
-    includeFontPadding: false,
-  },
-  stepperCountBox: { alignItems: 'center' },
-  stepperNum: {
-    fontSize: 42,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    lineHeight: 46,
-    letterSpacing: -1,
-    includeFontPadding: false,
-  },
-  stepperUnit: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
-
-  // ── Live stats ───────────────────────────────────────────────
-  liveStats: {
-    backgroundColor: 'transparent',
-    marginBottom: 24,
-  },
-  liveStatRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  liveStatLabel: { fontSize: 15, color: colors.textMuted, fontWeight: '500' },
-  liveStatValue: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    textAlign: 'right',
-    flex: 1,
-    paddingLeft: 12,
   },
 });
