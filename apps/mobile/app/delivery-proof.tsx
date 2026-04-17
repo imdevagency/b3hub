@@ -23,15 +23,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { t } from '@/lib/translations';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import {
-  Camera,
-  Trash2,
-  CheckCircle2,
-  PenLine,
-  AlertTriangle,
-  Package,
-  Star,
-} from 'lucide-react-native';
+import { Camera, Trash2, CheckCircle2, ArrowLeft, ImagePlus } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { addToProofQueue } from '@/lib/proof-queue';
 
@@ -216,7 +208,7 @@ export default function DeliveryProofScreen() {
   };
 
   return (
-    <ScreenContainer standalone bg="#f9fafb">
+    <ScreenContainer standalone bg="#ffffff">
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -224,8 +216,8 @@ export default function DeliveryProofScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={16}>
-            <Text style={styles.backText}>← Atpakaļ</Text>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={16} style={styles.backBtn}>
+            <ArrowLeft size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.title}>{t.deliveryProof.title}</Text>
           <Text style={styles.subtitle}>{t.deliveryProof.subtitle}</Text>
@@ -233,10 +225,7 @@ export default function DeliveryProofScreen() {
 
         {/* ── Checklist ────────────────────────────────────────────────── */}
         <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <Package size={15} color="#374151" />
-            <Text style={styles.label}>Kravas stāvoklis</Text>
-          </View>
+          <Text style={styles.label}>Kravas stāvoklis</Text>
 
           <View style={styles.conditionRow}>
             {(['FULL', 'PARTIAL', 'DAMAGED'] as const).map((val) => {
@@ -277,10 +266,7 @@ export default function DeliveryProofScreen() {
         {/* Damage note — only visible when damaged */}
         {hasDamage && (
           <View style={styles.section}>
-            <View style={styles.labelRow}>
-              <AlertTriangle size={15} color="#ef4444" />
-              <Text style={[styles.label, { color: '#ef4444' }]}>Bojājuma apraksts</Text>
-            </View>
+            <Text style={[styles.label, { color: '#ef4444' }]}>Bojājuma apraksts</Text>
             <TextInput
               style={[styles.input, styles.notesInput]}
               value={damageNote}
@@ -296,6 +282,7 @@ export default function DeliveryProofScreen() {
         )}
 
         {/* Grade confirmation */}
+        <View style={styles.divider} />
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.checkRow}
@@ -303,21 +290,24 @@ export default function DeliveryProofScreen() {
             activeOpacity={0.7}
           >
             <View style={[styles.checkbox, gradeConfirmed && styles.checkboxChecked]}>
-              {gradeConfirmed && <CheckCircle2 size={14} color="#fff" />}
+              {gradeConfirmed && <CheckCircle2 size={16} color="#fff" strokeWidth={3} />}
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
               <Text style={styles.checkLabel}>Materiāla kvalitāte apstiprināta</Text>
               <Text style={styles.checkSublabel}>
                 Piegādātais materiāls atbilst pasūtījuma specifikācijai
               </Text>
             </View>
-            <Star size={16} color={gradeConfirmed ? '#f59e0b' : '#d1d5db'} />
           </TouchableOpacity>
         </View>
+        <View style={styles.divider} />
 
         {/* Recipient name */}
         <View style={styles.section}>
-          <Text style={styles.label}>{t.deliveryProof.recipientName}</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>{t.deliveryProof.recipientName}</Text>
+            <Text style={styles.optionalText}>(neobligāts)</Text>
+          </View>
           <TextInput
             style={styles.input}
             value={recipientName}
@@ -332,13 +322,11 @@ export default function DeliveryProofScreen() {
         {/* Signature pad */}
         <View style={styles.section}>
           <View style={styles.labelRow}>
-            <PenLine size={15} color="#374151" />
             <Text style={styles.label}>{t.deliveryProof.signatureLabel}</Text>
-            <Text style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>(neobligāts)</Text>
+            <Text style={styles.optionalText}>(neobligāts)</Text>
             {strokes.length > 0 && (
               <TouchableOpacity onPress={clearSignature} style={styles.clearBtn}>
-                <Trash2 size={13} color="#ef4444" />
-                <Text style={styles.clearBtnText}>{t.deliveryProof.clearSignature}</Text>
+                <Trash2 size={14} color="#6b7280" />
               </TouchableOpacity>
             )}
           </View>
@@ -380,7 +368,6 @@ export default function DeliveryProofScreen() {
         {/* Photos */}
         <View style={styles.section}>
           <View style={styles.labelRow}>
-            <Camera size={15} color="#374151" />
             <Text style={styles.label}>{t.deliveryProof.photosLabel}</Text>
             <Text style={styles.photoCount}>{photos.length}/3</Text>
           </View>
@@ -393,13 +380,13 @@ export default function DeliveryProofScreen() {
                   style={styles.photoRemoveBtn}
                   onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
                 >
-                  <Trash2 size={12} color="#fff" />
+                  <Trash2 size={16} color="#fff" />
                 </TouchableOpacity>
               </View>
             ))}
             {photos.length < 3 && (
               <TouchableOpacity style={styles.photoAddBtn} onPress={showPhotoOptions}>
-                <Camera size={22} color="#9ca3af" />
+                <ImagePlus size={24} color="#6b7280" />
                 <Text style={styles.photoAddText}>{t.deliveryProof.addPhoto}</Text>
               </TouchableOpacity>
             )}
@@ -408,7 +395,10 @@ export default function DeliveryProofScreen() {
 
         {/* Notes */}
         <View style={styles.section}>
-          <Text style={styles.label}>{t.deliveryProof.notes}</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>{t.deliveryProof.notes}</Text>
+            <Text style={styles.optionalText}>(neobligāts)</Text>
+          </View>
           <TextInput
             style={[styles.input, styles.notesInput]}
             value={notes}
@@ -446,15 +436,15 @@ export default function DeliveryProofScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  scroll: { padding: 24, gap: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  scroll: { padding: 24, gap: 24, paddingBottom: 40 },
 
-  header: { gap: 4, marginBottom: 4 },
-  backText: { fontSize: 14, color: '#111827', fontWeight: '600', marginBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 14, color: '#6b7280' },
+  header: { gap: 4, marginBottom: 8 },
+  backBtn: { marginBottom: 16, width: 40, height: 40, justifyContent: 'center' },
+  title: { fontSize: 26, fontWeight: '800', color: '#111827' },
+  subtitle: { fontSize: 15, color: '#6b7280' },
 
-  section: { gap: 8 },
+  section: { gap: 12 },
   label: {
     fontSize: 13,
     fontWeight: '700',
@@ -463,132 +453,112 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  optionalText: { fontSize: 13, color: '#9ca3af' },
 
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    borderWidth: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
     color: '#111827',
   },
-  notesInput: { height: 90, paddingTop: 12 },
+  notesInput: { height: 100, paddingTop: 16 },
 
   // Signature
   sigPad: {
     height: PAD_HEIGHT,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    borderStyle: 'dashed',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sigHint: { fontSize: 14, color: '#d1d5db', pointerEvents: 'none' },
+  sigHint: { fontSize: 15, color: '#d1d5db', pointerEvents: 'none' },
   clearBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     marginLeft: 'auto',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    backgroundColor: '#fef2f2',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#fecaca',
+    paddingVertical: 6,
   },
-  clearBtnText: { fontSize: 12, color: '#ef4444', fontWeight: '600' },
 
   // Photos
-  photoCount: { fontSize: 12, color: '#9ca3af', marginLeft: 'auto' },
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  photoCount: { fontSize: 13, color: '#9ca3af', marginLeft: 'auto' },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   photoThumb: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
+    width: 104,
+    height: 104,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
   },
   photoImg: { width: '100%', height: '100%' },
   photoRemoveBtn: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 12,
-    padding: 5,
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    padding: 6,
   },
   photoAddBtn: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    borderStyle: 'dashed',
+    width: 104,
+    height: 104,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9fafb',
-    gap: 6,
+    gap: 8,
   },
-  photoAddText: { fontSize: 11, color: '#9ca3af', fontWeight: '600' },
+  photoAddText: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
 
   // Checklist
-  conditionRow: { flexDirection: 'row', gap: 10 },
+  conditionRow: { flexDirection: 'row', gap: 12 },
   conditionChip: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
-  conditionChipActive: { borderColor: '#111827', backgroundColor: '#111827' },
-  conditionChipDamaged: { borderColor: '#ef4444', backgroundColor: '#fef2f2' },
-  conditionChipText: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  conditionChipActive: { backgroundColor: '#111827' },
+  conditionChipDamaged: { backgroundColor: '#ef4444' },
+  conditionChipText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
   conditionChipTextActive: { color: '#fff' },
-  conditionChipTextDamaged: { color: '#ef4444' },
+  conditionChipTextDamaged: { color: '#fff' },
+
+  divider: { height: 1, backgroundColor: '#f3f4f6', marginVertical: -4 },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 14,
+    paddingVertical: 8,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fff',
   },
   checkboxChecked: { backgroundColor: '#111827', borderColor: '#111827' },
-  checkLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  checkSublabel: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  checkLabel: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  checkSublabel: { fontSize: 14, color: '#6b7280', marginTop: 4 },
 
   // Submit
   submitBtn: {
     backgroundColor: '#111827',
     borderRadius: 100,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 16,
   },
   submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText: { color: '#fff', fontWeight: '800', fontSize: 17 },
+  submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 17 },
 });

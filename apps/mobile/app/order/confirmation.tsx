@@ -122,57 +122,39 @@ export default function OrderConfirmation() {
     <ScreenContainer standalone bg="#fff">
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
         <Animated.View
-          style={[s.iconWrap, { opacity: iconOpacity, transform: [{ scale: iconScale }] }]}
+          style={[{ opacity: iconOpacity, transform: [{ scale: iconScale }] }, s.iconWrap]}
         >
-          <CheckCircle2 size={72} color="#111827" />
+          <View style={s.successCircle}>
+            <CheckCircle2 size={40} color="#059669" strokeWidth={2.5} />
+          </View>
         </Animated.View>
 
         <Animated.View style={{ opacity: headerOpacity, transform: [{ translateY: headerY }] }}>
           <Text style={s.title}>{t.skipHire.confirmation.title}</Text>
           <Text style={s.subtitle}>{t.skipHire.confirmation.subtitle}</Text>
-        </Animated.View>
 
-        <Animated.View style={{ opacity: cardOpacity, transform: [{ translateY: cardY }] }}>
-          {/* Order number highlight card */}
           <TouchableOpacity
-            style={s.orderNumCard}
+            style={s.minimalOrderRow}
             onPress={async () => {
               await Clipboard?.setStringAsync(order.orderNumber);
               haptics.success();
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={s.orderNumLabel}>{t.skipHire.confirmation.orderNumber}</Text>
-              <Text style={s.orderNum}>{order.orderNumber}</Text>
-            </View>
-            <Copy size={16} color="#6b7280" />
+            <Text style={s.minimalOrderText}>Pasūtījums: {order.orderNumber}</Text>
+            <Copy size={14} color="#6b7280" />
           </TouchableOpacity>
+        </Animated.View>
 
-          {/* Order details */}
-          <View style={s.detailsCard}>
+        <Animated.View style={{ opacity: cardOpacity, transform: [{ translateY: cardY }] }}>
+          {/* Minimal details list without heavy background or borders */}
+          <View style={s.minimalDetails}>
             {details.map((row, i) => (
-              <View key={i} style={[s.detailRow, i < details.length - 1 && s.detailRowBorder]}>
+              <View key={i} style={s.detailRow}>
                 <Text style={s.detailLabel}>{row.label}</Text>
                 <Text style={s.detailValue}>{row.value}</Text>
               </View>
             ))}
-          </View>
-
-          {/* Status badge */}
-          <View style={s.statusBadge}>
-            <View style={s.statusDot} />
-            <Text style={s.statusText}>
-              {(
-                {
-                  PENDING: 'Gaida apstiprinājumu',
-                  CONFIRMED: 'Apstiprināts',
-                  IN_PROGRESS: 'Izpildē',
-                  COMPLETED: 'Pabeigts',
-                  CANCELLED: 'Atcelts',
-                } as Record<string, string>
-              )[order.status] ?? order.status}
-            </Text>
           </View>
         </Animated.View>
 
@@ -260,18 +242,19 @@ const s = StyleSheet.create({
   centerLinkText: { color: '#111827', fontWeight: '600' },
   body: { paddingHorizontal: 24, paddingTop: 48, paddingBottom: 40 },
   iconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#fef2f2',
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
     marginBottom: 24,
   },
-  successIcon: { fontSize: 44 },
+  successCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#ecfdf5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: '800',
     fontFamily: 'Inter_800ExtraBold',
     color: '#111827',
@@ -279,64 +262,53 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
-    marginBottom: 28,
-  },
-  orderNumCard: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
-    padding: 22,
-    alignItems: 'center',
     marginBottom: 20,
   },
-  orderNumLabel: {
-    color: '#fca5a5',
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  orderNum: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: 1.5,
-  },
-  detailsCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
+  minimalOrderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    backgroundColor: '#f3f4f6',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingVertical: 8,
+    borderRadius: 100,
+    marginBottom: 40,
   },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14 },
-  detailRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  detailLabel: { fontSize: 14, color: '#6b7280' },
-  detailValue: {
+  minimalOrderText: {
+    color: '#374151',
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  minimalDetails: {
+    gap: 20,
+    marginBottom: 40,
+    paddingHorizontal: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  detailLabel: {
+    fontSize: 15,
+    color: '#6b7280',
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
-    maxWidth: '55%',
+    maxWidth: '60%',
     textAlign: 'right',
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'center',
-    backgroundColor: '#ecfdf5',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    marginBottom: 32,
-  },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#059669' },
-  statusText: { color: '#059669', fontWeight: '600', fontSize: 13 },
   primaryBtn: {
     backgroundColor: '#111827',
     borderRadius: 100,
