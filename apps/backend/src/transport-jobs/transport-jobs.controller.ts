@@ -50,9 +50,14 @@ class CreateDriverReviewDto {
 
 class CreateTransportSurchargeDto {
   @IsEnum(SurchargeType) type: SurchargeType;
-  @IsNumber() @Min(0) @Type(() => Number) amount: number;
+  /** Cap at €5 000 per surcharge — prevents accidental or malicious charge inflation. */
+  @IsNumber() @Min(0.01) @Max(5000) @Type(() => Number) amount: number;
   @IsString() @IsOptional() label?: string;
   @IsBoolean() @IsOptional() billable?: boolean;
+}
+
+class RejectSurchargeDto {
+  @IsString() @IsOptional() note?: string;
 }
 
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -590,5 +595,32 @@ export class TransportJobsController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.service.addSurcharge(id, dto, user.userId);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/surcharges/:surchargeId/approve
+   * Buyer approves a PENDING surcharge — triggers PaymentIntent update.
+   */
+  @Patch(':id/surcharges/:surchargeId/approve')
+  approveSurcharge(
+    @Param('id') id: string,
+    @Param('surchargeId') surchargeId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.approveSurcharge(id, surchargeId, user.userId);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/surcharges/:surchargeId/reject
+   * Buyer rejects a PENDING surcharge — marks it REJECTED, notifies driver.
+   */
+  @Patch(':id/surcharges/:surchargeId/reject')
+  rejectSurcharge(
+    @Param('id') id: string,
+    @Param('surchargeId') surchargeId: string,
+    @Body() dto: RejectSurchargeDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.rejectSurcharge(id, surchargeId, user.userId, dto.note);
   }
 }

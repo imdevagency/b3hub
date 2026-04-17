@@ -109,6 +109,43 @@ export default function OrderDetailScreen() {
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeFiled, setDisputeFiled] = useState(false);
 
+  // Surcharge approval state
+  const [surchargeActionLoading, setSurchargeActionLoading] = useState<string | null>(null);
+
+  const handleApproveSurcharge = async (surchargeId: string) => {
+    const jobId = order?.transportJobs?.[0]?.id;
+    if (!token || !jobId) return;
+    setSurchargeActionLoading(surchargeId);
+    haptics.light();
+    try {
+      await api.transportJobs.approveSurcharge(jobId, surchargeId, token);
+      haptics.success();
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās apstiprināt piemaksu');
+    } finally {
+      setSurchargeActionLoading(null);
+    }
+  };
+
+  const handleRejectSurcharge = async (surchargeId: string) => {
+    const jobId = order?.transportJobs?.[0]?.id;
+    if (!token || !jobId) return;
+    setSurchargeActionLoading(surchargeId);
+    haptics.light();
+    try {
+      await api.transportJobs.rejectSurcharge(jobId, surchargeId, token);
+      haptics.success();
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās noraidīt piemaksu');
+    } finally {
+      setSurchargeActionLoading(null);
+    }
+  };
+
   // Load existing dispute from server so confirm-receipt is always properly blocked
   React.useEffect(() => {
     if (!token || !id || !order) return;
@@ -663,11 +700,53 @@ export default function OrderDetailScreen() {
                 <Text style={s.priceValue}>€{order.deliveryFee.toFixed(2)}</Text>
               </View>
               {(order.surcharges ?? [])
-                .filter((sc) => sc.billable)
+                .filter(
+                  (sc) =>
+                    sc.billable &&
+                    sc.approvalStatus !== 'PENDING' &&
+                    sc.approvalStatus !== 'REJECTED',
+                )
                 .map((sc) => (
                   <View key={sc.id} style={s.priceRowSimple}>
                     <Text style={s.priceLabel}>{sc.label}</Text>
                     <Text style={s.priceValue}>+€{sc.amount.toFixed(2)}</Text>
+                  </View>
+                ))}
+              {(order.surcharges ?? [])
+                .filter((sc) => sc.billable && sc.approvalStatus === 'PENDING')
+                .map((sc) => (
+                  <View key={sc.id} style={s.pendingSurchargeRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.pendingSurchargeLabel}>{sc.label}</Text>
+                      <Text style={s.pendingSurchargeMeta}>Gaida jūsu apstiprinājumu</Text>
+                    </View>
+                    <Text style={s.pendingSurchargeAmount}>+€{sc.amount.toFixed(2)}</Text>
+                    <View style={s.pendingSurchargeActions}>
+                      <TouchableOpacity
+                        style={s.rejectBtn}
+                        onPress={() => handleRejectSurcharge(sc.id)}
+                        disabled={surchargeActionLoading === sc.id}
+                        activeOpacity={0.7}
+                      >
+                        {surchargeActionLoading === sc.id ? (
+                          <ActivityIndicator size="small" color="#ef4444" />
+                        ) : (
+                          <Text style={s.rejectBtnText}>Noraidīt</Text>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={s.approveBtn}
+                        onPress={() => handleApproveSurcharge(sc.id)}
+                        disabled={surchargeActionLoading === sc.id}
+                        activeOpacity={0.7}
+                      >
+                        {surchargeActionLoading === sc.id ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={s.approveBtnText}>Apstiprināt</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ))}
               {order.tax > 0 && (
@@ -1981,6 +2060,64 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: '#f3f4f6',
     marginVertical: 4,
+  },
+  pendingSurchargeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#fffbeb',
+    borderRadius: 10,
+    marginHorizontal: 4,
+    marginVertical: 3,
+    gap: 8,
+  },
+  pendingSurchargeLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  pendingSurchargeMeta: {
+    fontSize: 11,
+    color: '#b45309',
+    marginTop: 1,
+  },
+  pendingSurchargeAmount: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  pendingSurchargeActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  rejectBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    backgroundColor: '#fff',
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  rejectBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ef4444',
+  },
+  approveBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: '#111827',
+    minWidth: 88,
+    alignItems: 'center',
+  },
+  approveBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
   },
   totalRowFinal: {
     flexDirection: 'row',

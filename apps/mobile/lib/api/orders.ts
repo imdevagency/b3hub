@@ -24,6 +24,7 @@ export interface ApiOrderSurcharge {
   amount: number;
   currency: string;
   billable: boolean;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
 }
 export interface CreateDisposalOrderInput {
@@ -214,6 +215,7 @@ export interface ApiOrder {
     label: string;
     amount: number;
     billable: boolean;
+    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   }[];
   linkedSkipOrder?: {
     id: string;

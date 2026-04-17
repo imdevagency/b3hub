@@ -263,6 +263,8 @@ export default function ActiveJobScreen() {
   const [exceptionType, setExceptionType] = React.useState<TransportExceptionType>('OTHER');
   const [exceptionNotes, setExceptionNotes] = React.useState('');
   const [exceptionActualQty, setExceptionActualQty] = React.useState('');
+  const [exceptionPhotoUri, setExceptionPhotoUri] = React.useState<string | null>(null);
+  const [uploadingExceptionPhoto, setUploadingExceptionPhoto] = React.useState(false);
   const [reportingException, setReportingException] = React.useState(false);
   const [resolvingExceptionId, setResolvingExceptionId] = React.useState<string | null>(null);
   const [resolutionById, setResolutionById] = React.useState<Record<string, string>>({});
@@ -459,6 +461,42 @@ export default function ActiveJobScreen() {
     }
   };
 
+  const handleTakeExceptionPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Kamera nav atļauta', 'Liešojiet kameras atļauju lietotnēs iestatījumos.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: false,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0] && job) {
+      const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert('Kļūda', 'Neizdevās iegūt attēla datus.');
+        return;
+      }
+      setUploadingExceptionPhoto(true);
+      try {
+        const mimeType = asset.mimeType ?? 'image/jpeg';
+        const { url } = await api.transportJobs.uploadPickupPhoto(
+          job.id,
+          `data:${mimeType};base64,${asset.base64}`,
+          mimeType,
+          token!,
+        );
+        setExceptionPhotoUri(url);
+      } catch (err) {
+        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās augšupielādēt foto');
+      } finally {
+        setUploadingExceptionPhoto(false);
+      }
+    }
+  };
+
   // ── Fetch return trips when status enters EN_ROUTE_DELIVERY / AT_DELIVERY ──
   useEffect(() => {
     if (!token || !job) return;
@@ -548,6 +586,13 @@ export default function ActiveJobScreen() {
         );
         return;
       }
+      if (!exceptionPhotoUri) {
+        Alert.alert(
+          'Nepieciešams foto',
+          'Lūdzu pievienojiet foto pierādījumu par daļēju piegādi (kravas foto / pavadzīme).',
+        );
+        return;
+      }
     }
 
     setReportingException(true);
@@ -560,6 +605,7 @@ export default function ActiveJobScreen() {
           ...(exceptionType === 'PARTIAL_DELIVERY' && exceptionActualQty
             ? { actualQuantity: parseFloat(exceptionActualQty) }
             : {}),
+          ...(exceptionPhotoUri ? { photoUrls: [exceptionPhotoUri] } : {}),
         },
         token,
       );
@@ -567,6 +613,7 @@ export default function ActiveJobScreen() {
       setExceptionNotes('');
       setExceptionActualQty('');
       setExceptionType('OTHER');
+      setExceptionPhotoUri(null);
       haptics.success();
     } catch (err: unknown) {
       haptics.error();
@@ -913,8 +960,17 @@ export default function ActiveJobScreen() {
     }
     setSurchargeSubmitting(true);
     try {
-      await api.transportJobs.addSurcharge(job.id, { type: surchargeType, amount }, token);
-      toast.success('Papildu maksa pievienota');
+      const result = await api.transportJobs.addSurcharge(
+        job.id,
+        { type: surchargeType, amount },
+        token,
+      );
+      const isPending = result?.approvalStatus === 'PENDING';
+      if (isPending) {
+        toast.info('Piemaksa nosūtīta apstiprināšanai');
+      } else {
+        toast.success('Papildu maksa pievienota');
+      }
       setSurchargeSheetVisible(false);
       setSurchargeAmount('');
       setSurchargeType('WAITING_TIME');
@@ -1862,6 +1918,51 @@ export default function ActiveJobScreen() {
                 value={exceptionActualQty}
                 onChangeText={setExceptionActualQty}
               />
+
+              <RNText
+                style={{
+                  fontSize: 15,
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  color: '#111827',
+                  marginTop: 20,
+                  marginBottom: 12,
+                }}
+              >
+                Pievienot foto pierādījumu
+              </RNText>
+              <TouchableOpacity
+                style={[styles.photoCapture, exceptionPhotoUri ? styles.photoCaptured : null]}
+                onPress={handleTakeExceptionPhoto}
+                activeOpacity={0.8}
+                disabled={uploadingExceptionPhoto}
+              >
+                {exceptionPhotoUri ? (
+                  <View style={styles.photoPreview}>
+                    <Image
+                      source={{ uri: exceptionPhotoUri }}
+                      style={styles.photoThumb}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.photoCheck}>
+                      <CheckCircle2 size={14} color="#111827" />
+                      <Text style={styles.photoCheckText}>Foto pievienots</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.photoPicker}>
+                    {uploadingExceptionPhoto ? (
+                      <ActivityIndicator size="small" color="#111827" />
+                    ) : (
+                      <Camera size={22} color="#6b7280" />
+                    )}
+                    <Text style={styles.photoPickerText}>
+                      {uploadingExceptionPhoto ? 'Augšupielādē...' : 'Fotografēt pavadzīmi'}
+                    </Text>
+                    <Text style={styles.photoPickerHint}>Obligāts daļējai piegādei</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
           )}
 

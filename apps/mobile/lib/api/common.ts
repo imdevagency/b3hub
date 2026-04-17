@@ -80,6 +80,21 @@ function writeRecentGet<T>(key: string, value: T) {
 }
 
 /**
+ * Structured API error that preserves HTTP status and the raw response body.
+ * Use `instanceof ApiError` checks to handle specific error codes from the server.
+ */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly data?: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+/**
  * Thin fetch wrapper with:
  *  - Automatic JSON serialisation / deserialisation
  *  - Configurable timeout (default 10 s)
@@ -128,13 +143,15 @@ export async function apiFetch<T>(
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      let error: { message?: string } = { message: 'Request failed' };
+      let parsed: Record<string, unknown> = { message: 'Request failed' };
       try {
-        error = errText ? JSON.parse(errText) : error;
+        parsed = errText ? JSON.parse(errText) : parsed;
       } catch {
         /* keep default */
       }
-      throw new Error(error.message || `HTTP ${res.status}`);
+      const message =
+        typeof parsed.message === 'string' ? parsed.message : `HTTP ${res.status}`;
+      throw new ApiError(res.status, message, parsed);
     }
 
     // Handle empty body (e.g. 204 No Content)

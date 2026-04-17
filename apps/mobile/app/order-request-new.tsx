@@ -27,6 +27,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { ApiError } from '@/lib/api/common';
 import { UNIT_SHORT, CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES } from '@/lib/materials';
 import type { MaterialCategory, MaterialUnit } from '@/lib/materials';
 import type { SupplierOffer } from '@/lib/api';
@@ -528,6 +529,23 @@ export default function OrderRequestWizard() {
       haptics.success();
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        const data = err.data as { code?: string; currentPrice?: number };
+        if (data?.code === 'PRICE_CHANGED' && data.currentPrice !== undefined) {
+          Alert.alert(
+            'Cena ir mainījusies',
+            `Materiāla cena ir mainījusies uz €${data.currentPrice.toFixed(2)}. Vai vēlaties turpināt?`,
+            [
+              { text: 'Atcelt', style: 'cancel' },
+              {
+                text: 'Apstiprināt',
+                onPress: () => handleSelectOffer({ ...offer, basePrice: data.currentPrice! }),
+              },
+            ],
+          );
+          return;
+        }
+      }
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
     } finally {
       setSubmitting(false);

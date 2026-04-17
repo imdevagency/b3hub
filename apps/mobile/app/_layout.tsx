@@ -10,7 +10,7 @@
  */
 import * as Sentry from '@sentry/react-native';
 import '../global.css';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppProviders } from '@/lib/providers';
 import { flushProofQueue } from '@/lib/proof-queue';
@@ -112,6 +112,7 @@ function MaybeStripe({ children }: { children: React.ReactNode }) {
 
 export default Sentry.wrap(function RootLayout() {
   const notifListener = useRef<{ remove(): void } | null>(null);
+  const notifResponseListener = useRef<{ remove(): void } | null>(null);
 
   const [fontsLoaded] = useFonts({
     Inter_300Light,
@@ -138,6 +139,32 @@ export default Sentry.wrap(function RootLayout() {
       /* Expo Go */
     }
     return () => notifListener.current?.remove();
+  }, []);
+
+  // Route the user to the relevant screen when they tap a push notification.
+  // The notification data payload must contain at least one of: orderId, jobId.
+  useEffect(() => {
+    try {
+      notifResponseListener.current =
+        _Notifications?.addNotificationResponseReceivedListener((response) => {
+          const data = (response.notification.request.content.data ?? {}) as Record<string, string>;
+          const type = data.type as string | undefined;
+
+          if (data.orderId) {
+            // Surcharge approval, order status changes, disputes → buyer order detail
+            router.push(`/(buyer)/order/${data.orderId}` as any);
+          } else if (data.jobId && type === 'JOB_ALERT') {
+            // New job available → driver job board
+            router.push('/(driver)/jobs' as any);
+          } else if (data.jobId) {
+            // Transport job updates (surcharge approved/rejected, delay) → active job
+            router.push('/(driver)/active' as any);
+          }
+        }) ?? null;
+    } catch {
+      /* Expo Go */
+    }
+    return () => notifResponseListener.current?.remove();
   }, []);
 
   useEffect(() => {

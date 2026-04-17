@@ -2302,6 +2302,15 @@ export class TransportJobsService {
         if (order && order.items.length > 0) {
           const totalPlannedQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
+          // actualQuantity must be strictly less than ordered — if it meets or exceeds
+          // the planned amount, this is not a partial delivery; reject it explicitly.
+          if (totalPlannedQty > 0 && dto.actualQuantity >= totalPlannedQty) {
+            throw new BadRequestException(
+              `actualQuantity (${dto.actualQuantity}) cannot meet or exceed the ordered quantity (${totalPlannedQty}). ` +
+              'Use a different exception type (e.g. WRONG_MATERIAL or OTHER) if the delivery was correct.',
+            );
+          }
+
           if (totalPlannedQty > 0 && dto.actualQuantity < totalPlannedQty) {
             const ratio = dto.actualQuantity / totalPlannedQty;
             const newSubtotal = order.subtotal * ratio;
@@ -2614,6 +2623,15 @@ export class TransportJobsService {
 
     const isBillable = dto.billable ?? true;
 
+    // ── Determine if buyer consent is required before charging ───────────────
+    // OTHER type = free-text wildcard, always needs explicit consent.
+    // Any surcharge above €100 on a known type also requires consent.
+    const APPROVAL_THRESHOLD = 100;
+    const requiresApproval =
+      isBillable &&
+      job.orderId &&
+      (dto.type === SurchargeType.OTHER || dto.amount > APPROVAL_THRESHOLD);
+
     // For order-linked jobs: tie to the order. For call-off jobs: tie directly to the transport job.
     const surcharge = await this.prisma.orderSurcharge.create({
       data: {
@@ -2624,13 +2642,38 @@ export class TransportJobsService {
         label: dto.label ?? SURCHARGE_LABELS[dto.type] ?? dto.type,
         amount: dto.amount,
         billable: isBillable,
+        approvalStatus: requiresApproval ? 'PENDING' : 'APPROVED',
       },
     });
+
+    // ── If buyer approval is needed, notify and return early ─────────────────
+    if (requiresApproval && job.orderId) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: job.orderId },
+        select: { createdById: true, orderNumber: true },
+      });
+      if (order?.createdById) {
+        this.notifications
+          .create({
+            userId: order.createdById,
+            type: NotificationType.SURCHARGE_APPROVAL_REQUESTED,
+            title: '⚠️ Piemaksa prasa jūsu apstiprinājumu',
+            message: `Šoferis pievieno "${surcharge.label}" +€${Number(surcharge.amount).toFixed(2)} pasūtījumam #${order.orderNumber ?? job.orderId}. Lūdzu apstiprini vai noraidiet.`,
+            data: { jobId: job.id, orderId: job.orderId, surchargeId: surcharge.id, amount: surcharge.amount },
+          })
+          .catch((err) =>
+            this.logger.error(
+              `addSurcharge: failed to notify buyer for approval: ${(err as Error).message}`,
+            ),
+          );
+      }
+      return { ...surcharge, approvalStatus: 'PENDING' as const };
+    }
 
     // ── Update PaymentIntent so the card charge reflects the new total ────────
     if (isBillable && job.orderId) {
       const allBillable = await this.prisma.orderSurcharge.aggregate({
-        where: { orderId: job.orderId, billable: true },
+        where: { orderId: job.orderId, billable: true, approvalStatus: 'APPROVED' },
         _sum: { amount: true },
       });
       const order = await this.prisma.order.findUnique({
@@ -2708,6 +2751,119 @@ export class TransportJobsService {
     }
 
     return surcharge;
+  }
+
+  /**
+   * Buyer approves a PENDING surcharge attached to their order.
+   * Updates the PaymentIntent to include the newly approved amount.
+   */
+  async approveSurcharge(jobId: string, surchargeId: string, userId: string) {
+    const surcharge = await this.prisma.orderSurcharge.findUnique({
+      where: { id: surchargeId },
+      include: { order: { select: { id: true, createdById: true, orderNumber: true, total: true, paymentStatus: true } } },
+    });
+    if (!surcharge) throw new NotFoundException('Surcharge not found');
+
+    // Verify the surcharge belongs to the given job (via order)
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, jobNumber: true, orderId: true, driverId: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (surcharge.orderId !== job.orderId) throw new ForbiddenException('Surcharge does not belong to this job');
+
+    // Only the order's creator (buyer) may approve
+    if (surcharge.order?.createdById !== userId) {
+      throw new ForbiddenException('Only the order buyer can approve surcharges');
+    }
+    if (surcharge.approvalStatus !== 'PENDING') {
+      throw new BadRequestException(`Surcharge is already ${surcharge.approvalStatus.toLowerCase()}`);
+    }
+
+    const updated = await this.prisma.orderSurcharge.update({
+      where: { id: surchargeId },
+      data: { approvalStatus: 'APPROVED', approvedAt: new Date(), approvedByAdminId: userId },
+    });
+
+    // Recalculate total from all approved billable surcharges and update PI
+    if (surcharge.billable && surcharge.orderId) {
+      const order = surcharge.order!;
+      const approved = await this.prisma.orderSurcharge.aggregate({
+        where: { orderId: surcharge.orderId, billable: true, approvalStatus: 'APPROVED' },
+        _sum: { amount: true },
+      });
+      const newTotal = Number(order.total) + (approved._sum.amount ?? 0);
+
+      if (order.paymentStatus === 'CAPTURED') {
+        this.logger.warn(
+          `approveSurcharge: order ${surcharge.orderId} is CAPTURED; surcharge ${surchargeId} requires manual collection`,
+        );
+      } else {
+        this.payments.updatePaymentIntentAmount(surcharge.orderId, newTotal).catch((err) =>
+          this.logger.error(`approveSurcharge: PI update failed for order ${surcharge.orderId}: ${(err as Error).message}`),
+        );
+      }
+    }
+
+    // Notify driver their surcharge was approved
+    if (job.driverId) {
+      this.notifications
+        .create({
+          userId: job.driverId,
+          type: NotificationType.SURCHARGE_APPROVED,
+          title: '✅ Piemaksa apstiprināta',
+          message: `Pasūtītājs apstiprināja "${surcharge.label}" +€${Number(surcharge.amount).toFixed(2)} (darbs #${job.jobNumber})`,
+          data: { jobId: job.id, surchargeId },
+        })
+        .catch(() => undefined);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Buyer rejects a PENDING surcharge. Marks it REJECTED; nothing is charged.
+   */
+  async rejectSurcharge(jobId: string, surchargeId: string, userId: string, note?: string) {
+    const surcharge = await this.prisma.orderSurcharge.findUnique({
+      where: { id: surchargeId },
+      include: { order: { select: { id: true, createdById: true, orderNumber: true } } },
+    });
+    if (!surcharge) throw new NotFoundException('Surcharge not found');
+
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, jobNumber: true, orderId: true, driverId: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (surcharge.orderId !== job.orderId) throw new ForbiddenException('Surcharge does not belong to this job');
+
+    if (surcharge.order?.createdById !== userId) {
+      throw new ForbiddenException('Only the order buyer can reject surcharges');
+    }
+    if (surcharge.approvalStatus !== 'PENDING') {
+      throw new BadRequestException(`Surcharge is already ${surcharge.approvalStatus.toLowerCase()}`);
+    }
+
+    const updated = await this.prisma.orderSurcharge.update({
+      where: { id: surchargeId },
+      data: { approvalStatus: 'REJECTED', rejectionNote: note ?? null },
+    });
+
+    // Notify driver their surcharge was rejected
+    if (job.driverId) {
+      this.notifications
+        .create({
+          userId: job.driverId,
+          type: NotificationType.SURCHARGE_REJECTED,
+          title: '❌ Piemaksa noraidīta',
+          message: `Pasūtītājs noraidīja "${surcharge.label}" +€${Number(surcharge.amount).toFixed(2)} (darbs #${job.jobNumber})${note ? `: ${note}` : ''}`,
+          data: { jobId: job.id, surchargeId, note },
+        })
+        .catch(() => undefined);
+    }
+
+    return updated;
   }
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -3044,6 +3200,12 @@ export class TransportJobsService {
         reportedById: driverId,
         status: 'OPEN',
       },
+    });
+
+    // Increment reliability penalty counter on driver profile
+    await this.prisma.driverProfile.updateMany({
+      where: { userId: driverId },
+      data: { noShowCount: { increment: 1 } },
     });
 
     const routeLabel = `${job.pickupCity} → ${job.deliveryCity}`;

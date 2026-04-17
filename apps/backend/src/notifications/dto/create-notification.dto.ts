@@ -24,6 +24,9 @@ export enum NotificationType {
   WEIGHT_DISCREPANCY = 'WEIGHT_DISCREPANCY', // weighbridge weight differs >5% from ordered
   INVOICE_ADJUSTED = 'INVOICE_ADJUSTED', // invoice reconciled to actual weight
   SURCHARGE_ADDED = 'SURCHARGE_ADDED',   // seller or driver added a billable surcharge
+  SURCHARGE_APPROVAL_REQUESTED = 'SURCHARGE_APPROVAL_REQUESTED', // surcharge needs buyer consent before charging
+  SURCHARGE_APPROVED = 'SURCHARGE_APPROVED', // buyer approved a pending surcharge
+  SURCHARGE_REJECTED = 'SURCHARGE_REJECTED', // buyer rejected a pending surcharge
   DRIVER_DELAY = 'DRIVER_DELAY',         // driver reported they are running late
   PAYOUT_PENDING = 'PAYOUT_PENDING',     // carrier needs to complete Stripe Connect onboarding
 }

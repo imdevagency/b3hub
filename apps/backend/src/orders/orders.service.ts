@@ -214,6 +214,24 @@ export class OrdersService {
         tiers,
         item.quantity,
       );
+
+      // Price-drift guard: reject if buyer's submitted price differs from current by >1%.
+      // This catches the race where a supplier updates their price while the buyer is
+      // in the order wizard. The mobile app can surface the new price for re-confirmation.
+      const PRICE_TOLERANCE = 0.01;
+      if (
+        item.unitPrice > 0 &&
+        Math.abs(item.unitPrice - resolvedPrice) / resolvedPrice > PRICE_TOLERANCE
+      ) {
+        throw new ConflictException({
+          code: 'PRICE_CHANGED',
+          materialId: item.materialId,
+          submittedPrice: item.unitPrice,
+          currentPrice: resolvedPrice,
+          message: `The price for one or more materials has changed since your session started. Please review and confirm the updated price.`,
+        });
+      }
+
       const enriched: EnrichedItem = {
         ...item,
         resolvedUnitPrice: resolvedPrice,
@@ -1474,6 +1492,8 @@ export class OrdersService {
     // admins can force a cancellation (e.g. to trigger a dispute resolution).
     if (currentUser.userType !== 'ADMIN') {
       const activeTransportStatuses: TransportJobStatus[] = [
+        // AT_PICKUP: driver is physically at the quarry; loading may have begun.
+        TransportJobStatus.AT_PICKUP,
         TransportJobStatus.LOADED,
         TransportJobStatus.EN_ROUTE_DELIVERY,
         TransportJobStatus.AT_DELIVERY,

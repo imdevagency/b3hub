@@ -1008,6 +1008,7 @@ model DriverProfile {
   // Performance
   rating        Float?
   completedJobs Int    @default(0)
+  noShowCount   Int    @default(0)  // incremented on every driver-initiated cancellation
 
   // Status
   available       Boolean @default(true) // legacy; now derived from isOnline + schedule

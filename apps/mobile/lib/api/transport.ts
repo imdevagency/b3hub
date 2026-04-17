@@ -416,12 +416,31 @@ export const transportApi = {
       dto: { type: string; amount: number; label?: string; billable?: boolean },
       token: string,
     ) =>
-      apiFetch<{ id: string; type: string; amount: number; label: string; createdAt: string }>(
+      apiFetch<{ id: string; type: string; amount: number; label: string; approvalStatus: 'PENDING' | 'APPROVED'; createdAt: string }>(
         `/transport-jobs/${id}/surcharges`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: JSON.stringify(dto),
+        },
+      ),
+
+    approveSurcharge: (id: string, surchargeId: string, token: string) =>
+      apiFetch<{ id: string; approvalStatus: string }>(
+        `/transport-jobs/${id}/surcharges/${surchargeId}/approve`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      ),
+
+    rejectSurcharge: (id: string, surchargeId: string, token: string, note?: string) =>
+      apiFetch<{ id: string; approvalStatus: string }>(
+        `/transport-jobs/${id}/surcharges/${surchargeId}/reject`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ note }),
         },
       ),
   },
