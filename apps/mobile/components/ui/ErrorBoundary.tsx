@@ -28,6 +28,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    // Navigation context errors are transient (hot-reload / navigation init race).
+    // Don't show the fallback UI for them — let the tree recover on its own.
+    if (error.message.includes('navigation context')) {
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
 

@@ -182,11 +182,11 @@ export default Sentry.wrap(function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppProviders>
-          {/* Translucent — UI bleeds under status bar, safe-area insets handle spacing */}
-          <StatusBar style="dark" translucent backgroundColor="transparent" />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppProviders>
+        {/* Translucent — UI bleeds under status bar, safe-area insets handle spacing */}
+        <StatusBar style="dark" translucent backgroundColor="transparent" />
+        <ErrorBoundary>
           <MaybeStripe>
             <Stack screenOptions={STACK_SCREEN_OPTIONS}>
               {/* Wizard flows — full-screen swipe-back, same as push (Uber-style) */}
@@ -200,8 +200,8 @@ export default Sentry.wrap(function RootLayout() {
           </MaybeStripe>
           {/* Offline overlay — rendered after Stack so navigation is initialised first */}
           <OfflineBanner />
-        </AppProviders>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </AppProviders>
+    </GestureHandlerRootView>
   );
 });

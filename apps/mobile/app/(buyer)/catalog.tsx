@@ -11,7 +11,6 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
@@ -154,7 +153,6 @@ function CategoryCard({
 // ── Screen ─────────────────────────────────────────────────────────────────
 
 export default function CatalogScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { token } = useAuth();
   const params = useLocalSearchParams<{ projectId?: string; schedule?: string }>();
@@ -417,8 +415,8 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer bg="#ffffff" topBg="#ffffff" standalone noAnimation>
-      <View className="px-5 pt-4 pb-2">
+    <ScreenContainer bg="#ffffff" noAnimation>
+      <View className="px-5 pt-0 pb-2">
         <Text
           className=" font-bold tracking-tight text-gray-900 leading-tight"
           style={{ fontSize: 32 }}

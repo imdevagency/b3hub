@@ -118,7 +118,15 @@ export default function MessagesScreen() {
       setError(null);
       try {
         const data = await api.chat.myRooms(token);
-        setRooms(data);
+        // Deduplicate by jobId — API can occasionally return the same job twice
+        // (e.g. when a user is both buyer and participant), causing duplicate React keys.
+        const seen = new Set<string>();
+        const unique = data.filter((r) => {
+          if (seen.has(r.jobId)) return false;
+          seen.add(r.jobId);
+          return true;
+        });
+        setRooms(unique);
       } catch {
         setError('Neizdevās ielādēt sarakstes');
       } finally {
@@ -179,7 +187,7 @@ export default function MessagesScreen() {
         <FlatList
           data={rooms}
           className="flex-1"
-          keyExtractor={(r) => r.jobId}
+          keyExtractor={(r, i) => r.jobId || String(i)}
           removeClippedSubviews={true}
           initialNumToRender={15}
           renderItem={({ item }) => (
