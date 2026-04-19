@@ -34,6 +34,8 @@ export interface ApiTransportJob {
   statusUpdatedAt?: string | null;
   slaEscalatedAt?: string | null;
   slaEscalationStage?: string | null;
+  statusTimestamps?: Record<string, string> | null;
+  createdAt?: string | null;
   sla?: {
     stage: string | null;
     overdueMinutes: number;

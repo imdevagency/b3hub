@@ -25,11 +25,13 @@
     "send:notif": "node scripts/send-test-notification.mjs",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "docs:generate": "node scripts/generate-instructions.mjs"
+    "docs:generate": "node scripts/generate-instructions.mjs",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "concurrently": "^9.2.1",
+    "patch-package": "^8.0.1",
     "prettier": "^3.2.4",
     "typescript": "^5.7.3"
   },

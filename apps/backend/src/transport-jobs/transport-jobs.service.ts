@@ -184,6 +184,8 @@ export class TransportJobsService {
       },
     },
     truckIndex: true,
+    statusTimestamps: true,
+    createdAt: true,
   } as const;
 
   private statusSortOrder: Record<TransportJobStatus, number> = {
@@ -948,7 +950,13 @@ export class TransportJobsService {
     // Prevents two drivers racing to accept the same job (last-writer-wins race).
     const { count } = await this.prisma.transportJob.updateMany({
       where: { id, status: TransportJobStatus.AVAILABLE },
-      data: { status: TransportJobStatus.ACCEPTED, driverId, carrierId },
+      data: {
+        status: TransportJobStatus.ACCEPTED,
+        driverId,
+        carrierId,
+        acceptedAt: new Date(),
+        statusTimestamps: { ACCEPTED: new Date().toISOString() },
+      },
     });
     if (count === 0) {
       throw new BadRequestException('Job is no longer available');
@@ -1607,10 +1615,16 @@ export class TransportJobsService {
       }
     }
 
+    const existingTimestamps =
+      job.statusTimestamps && typeof job.statusTimestamps === 'object'
+        ? (job.statusTimestamps as Record<string, string>)
+        : {};
+
     const updatedJob = await this.prisma.transportJob.update({
       where: { id },
       data: {
         status: dto.status,
+        statusTimestamps: { ...existingTimestamps, [dto.status]: new Date().toISOString() },
         ...(dto.status === TransportJobStatus.LOADED && dto.weightKg
           ? { actualWeightKg: dto.weightKg }
           : {}),

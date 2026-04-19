@@ -1,0 +1,29 @@
+diff --git a/node_modules/@react-navigation/routers/lib/module/StackRouter.js b/node_modules/@react-navigation/routers/lib/module/StackRouter.js
+index c1459d5..14aa820 100644
+--- a/node_modules/@react-navigation/routers/lib/module/StackRouter.js
++++ b/node_modules/@react-navigation/routers/lib/module/StackRouter.js
+@@ -78,6 +78,24 @@ export function StackRouter(options) {
+       routeParamList
+     }) {
+       const state = partialState;
++      // Guard: partialState can be undefined when nested params have been consumed
++      // and currentState is also undefined (React Navigation bug in 7.5.x).
++      if (!state) {
++        const initialRouteName = options.initialRouteName !== undefined ? options.initialRouteName : routeNames[0];
++        return {
++          stale: false,
++          type: 'stack',
++          key: `stack-${nanoid()}`,
++          index: 0,
++          routeNames,
++          routes: [{
++            key: `${initialRouteName}-${nanoid()}`,
++            name: initialRouteName,
++            params: routeParamList[initialRouteName]
++          }],
++          preloadedRoutes: []
++        };
++      }
+       if (state.stale === false) {
+         return state;
+       }

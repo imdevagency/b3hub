@@ -792,6 +792,10 @@ model TransportJob {
   slaEscalatedAt     DateTime?
   slaEscalationStage String?
 
+  // Per-status timestamps — JSON map of { STATUS: ISO-8601 string }
+  // e.g. { "ACCEPTED": "2026-04-19T10:00:00Z", "EN_ROUTE_PICKUP": "..." }
+  statusTimestamps Json?
+
   // Tracking
   currentLocation  Json?
   estimatedArrival DateTime?

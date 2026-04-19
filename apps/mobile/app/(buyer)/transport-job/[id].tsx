@@ -111,9 +111,35 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 // ── Stepper ────────────────────────────────────────────────────
 
-function StatusStepper({ status }: { status: string }) {
+function StatusStepper({
+  status,
+  timestamps,
+  createdAt,
+}: {
+  status: string;
+  timestamps?: Record<string, string> | null;
+  createdAt?: string | null;
+}) {
   const activeIdx = STATUS_ORDER.indexOf(status);
   const visibleSteps = STATUS_STEPS;
+
+  const fmtTs = (iso: string | undefined) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('lv-LV', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const time = d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' });
+    return `${date}  ${time}`;
+  };
+
+  // Map each visible step key to its timestamp
+  const getTs = (key: string): string | null => {
+    if (key === 'AVAILABLE') return fmtTs(createdAt ?? undefined);
+    return fmtTs(timestamps?.[key]);
+  };
 
   return (
     <View style={s.stepper}>
@@ -121,6 +147,7 @@ function StatusStepper({ status }: { status: string }) {
         const stepIdx = STATUS_ORDER.indexOf(step.key);
         const done = stepIdx < activeIdx;
         const active = stepIdx <= activeIdx;
+        const ts = active ? getTs(step.key) : null;
         return (
           <View key={step.key} style={s.stepRow}>
             <View style={s.stepLeft}>
@@ -133,7 +160,11 @@ function StatusStepper({ status }: { status: string }) {
               <Text style={[s.stepLabel, active ? s.stepLabelActive : s.stepLabelInactive]}>
                 {step.label}
               </Text>
-              {active && <Text style={s.stepHint}>{step.hint}</Text>}
+              {ts ? (
+                <Text style={s.stepTimestamp}>{ts}</Text>
+              ) : active ? (
+                <Text style={s.stepHint}>{step.hint}</Text>
+              ) : null}
             </View>
           </View>
         );
@@ -312,10 +343,12 @@ export default function TransportJobDetailScreen() {
   };
 
   const isActive = job ? ACTIVE_STATUSES.has(job.status) : false;
+  // Show map whenever we have coords — live for active jobs, static for completed
+  const showMap = !!(pickup && delivery);
 
   return (
     <ScreenContainer bg={colors.white}>
-      {isActive ? (
+      {showMap ? (
         <View>
           {/* ── MAP SECTION ── */}
           <View style={{ height: MAP_H, backgroundColor: colors.border }}>
@@ -434,6 +467,29 @@ export default function TransportJobDetailScreen() {
           contentContainerStyle={s.scroll}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
+          {/* ── ETA summary banner — shown when driver is live ── */}
+          {driverLocation && job && (
+            <View style={s.etaBanner}>
+              <View style={s.etaBannerLeft}>
+                <Text style={s.etaBannerOrderNo}>{job.jobNumber}</Text>
+                <Text style={s.etaBannerSub}>
+                  {job.pickupCity} → {job.deliveryCity}
+                </Text>
+              </View>
+              <View style={s.etaBannerRight}>
+                <Text style={s.etaBannerLabel}>Pienāks pēc</Text>
+                <View style={s.etaBannerTimeRow}>
+                  <Clock size={14} color={colors.primary} strokeWidth={2.5} />
+                  <Text style={s.etaBannerTime}>
+                    {etaMin != null
+                      ? `~${etaMin} min`
+                      : `~${haversineKm(driverLocation.lat, driverLocation.lng, delivery?.lat ?? 0, delivery?.lng ?? 0).toFixed(0)} km`}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {/* Hero Header */}
           <View style={s.hero}>
             {st && (
@@ -484,7 +540,11 @@ export default function TransportJobDetailScreen() {
           {job.status !== 'CANCELLED' && (
             <View style={s.card}>
               <Text style={s.cardTitle}>Pasūtījuma statuss</Text>
-              <StatusStepper status={job.status} />
+              <StatusStepper
+                status={job.status}
+                timestamps={job.statusTimestamps}
+                createdAt={job.createdAt}
+              />
             </View>
           )}
 
@@ -866,6 +926,30 @@ const s = StyleSheet.create({
 
   scroll: { backgroundColor: colors.white },
 
+  // ETA banner
+  etaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.white,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  etaBannerLeft: { flex: 1, gap: 2 },
+  etaBannerOrderNo: { fontSize: 15, fontWeight: '700', color: colors.primary },
+  etaBannerSub: { fontSize: 12, color: colors.textMuted },
+  etaBannerRight: { alignItems: 'flex-end', gap: 2 },
+  etaBannerLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  etaBannerTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  etaBannerTime: { fontSize: 18, fontWeight: '800', color: colors.primary },
+
   hero: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24 },
   heroTitle: {
     fontSize: 32,
@@ -924,6 +1008,12 @@ const s = StyleSheet.create({
   stepLabelActive: { color: colors.textPrimary },
   stepLabelInactive: { color: colors.textDisabled },
   stepHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  stepTimestamp: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+    fontVariant: ['tabular-nums'] as any,
+  },
   stepCheck: { color: colors.white, fontSize: 12, fontWeight: '700' },
   stepNum: { fontSize: 12, fontWeight: '700' },
   stepNumActive: { color: colors.white },
