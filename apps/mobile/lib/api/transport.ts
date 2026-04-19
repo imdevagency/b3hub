@@ -58,6 +58,8 @@ export interface ApiTransportJob {
     siteContactName: string | null;
     siteContactPhone: string | null;
     notes: string | null;
+    supplierName: string | null;
+    supplierPhone: string | null;
   } | null;
 }
 

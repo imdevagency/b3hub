@@ -1094,9 +1094,20 @@ export default function ActiveJobScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() =>
-                    handleCall(job.order?.siteContactPhone, job.order?.siteContactName)
-                  }
+                  onPress={() => {
+                    const atPickupStage =
+                      currentStatus === 'ACCEPTED' ||
+                      currentStatus === 'EN_ROUTE_PICKUP' ||
+                      currentStatus === 'AT_PICKUP';
+                    if (atPickupStage) {
+                      handleCall(
+                        job.order?.supplierPhone,
+                        job.order?.supplierName ?? 'Piegādātājs',
+                      );
+                    } else {
+                      handleCall(job.order?.siteContactPhone, job.order?.siteContactName);
+                    }
+                  }}
                   style={{ alignItems: 'center', justifyContent: 'center', gap: 6, width: 64 }}
                 >
                   <View
@@ -1112,7 +1123,11 @@ export default function ActiveJobScreen() {
                     <Phone size={24} color="#111827" />
                   </View>
                   <RNText style={{ fontSize: 12, color: '#4b5563', fontWeight: '600' }}>
-                    Zvanīt
+                    {currentStatus === 'ACCEPTED' ||
+                    currentStatus === 'EN_ROUTE_PICKUP' ||
+                    currentStatus === 'AT_PICKUP'
+                      ? 'Piegādātājs'
+                      : 'Zvanīt'}
                   </RNText>
                 </TouchableOpacity>
 
@@ -1123,7 +1138,8 @@ export default function ActiveJobScreen() {
                         pathname: '/chat/[jobId]',
                         params: {
                           jobId: job.id,
-                          title: `${job.order?.orderNumber ?? job.jobNumber}`,
+                          title:
+                            job.order?.siteContactName ?? job.order?.orderNumber ?? job.jobNumber,
                         },
                       })
                     }

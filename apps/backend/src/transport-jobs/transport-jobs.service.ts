@@ -168,6 +168,18 @@ export class TransportJobsService {
         siteContactName: true,
         siteContactPhone: true,
         notes: true,
+        items: {
+          take: 1,
+          select: {
+            material: {
+              select: {
+                supplier: {
+                  select: { name: true, phone: true },
+                },
+              },
+            },
+          },
+        },
       },
     },
     truckIndex: true,
@@ -242,11 +254,39 @@ export class TransportJobsService {
       status: TransportJobStatus;
       pickupDate: Date;
       deliveryDate: Date;
+      order?: {
+        id: string;
+        orderNumber: string;
+        buyerId?: string;
+        createdById?: string;
+        siteContactName: string | null;
+        siteContactPhone: string | null;
+        notes: string | null;
+        items?: Array<{
+          material?: {
+            supplier?: { name: string; phone: string } | null;
+          } | null;
+        }>;
+      } | null;
     },
   >(job: T) {
     const sla = this.getSlaState(job);
+
+    // Flatten supplier contact from order.items[0].material.supplier
+    let mappedOrder: (Omit<NonNullable<T['order']>, 'items'> & { supplierName: string | null; supplierPhone: string | null }) | null = null;
+    if (job.order) {
+      const { items, ...orderRest } = job.order as NonNullable<T['order']> & { items?: Array<{ material?: { supplier?: { name: string; phone: string } | null } | null }> };
+      const supplier = items?.[0]?.material?.supplier ?? null;
+      mappedOrder = {
+        ...orderRest,
+        supplierName: supplier?.name ?? null,
+        supplierPhone: supplier?.phone ?? null,
+      };
+    }
+
     return {
       ...job,
+      order: mappedOrder,
       sla: {
         stage: sla.stage,
         overdueMinutes: sla.overdueMinutes,

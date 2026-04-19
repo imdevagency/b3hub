@@ -1,2 +1,3 @@
-// Thin wrapper — exposes the global messages screen as a buyer tab route.
-export { default } from '../messages';
+// Messages tab for the buyer role — renders the shared messages screen.
+import MessagesScreen from '../messages';
+export default MessagesScreen;
