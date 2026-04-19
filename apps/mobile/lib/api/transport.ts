@@ -57,6 +57,7 @@ export interface ApiTransportJob {
     orderNumber: string;
     siteContactName: string | null;
     siteContactPhone: string | null;
+    sitePhotoUrl: string | null;
     notes: string | null;
     supplierName: string | null;
     supplierPhone: string | null;

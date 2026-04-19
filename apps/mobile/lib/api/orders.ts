@@ -97,6 +97,7 @@ export interface CreateMaterialOrderInput {
   deliveryFee?: number;
   siteContactName?: string;
   siteContactPhone?: string;
+  sitePhotoUrl?: string;
   notes?: string;
   projectId?: string;
   /** Number of trucks to dispatch (each becomes a separate transport job). */
@@ -230,6 +231,7 @@ export interface ApiOrder {
   notes?: string | null;
   siteContactName?: string | null;
   siteContactPhone?: string | null;
+  sitePhotoUrl?: string | null;
   createdAt: string;
 }
 
@@ -344,6 +346,13 @@ export const ordersApi = {
       apiFetch<void>(`/orders/${orderId}/surcharges/${surchargeId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    uploadSitePhoto: (base64: string, mimeType: string, token: string) =>
+      apiFetch<{ url: string }>('/orders/upload-site-photo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, mimeType }),
       }),
   },
 

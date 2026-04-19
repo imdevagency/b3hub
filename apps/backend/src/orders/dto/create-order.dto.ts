@@ -103,6 +103,11 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
+  sitePhotoUrl?: string;
+
+  @IsOptional()
+  @IsString()
   projectId?: string;
 
   /** Number of trucks to dispatch (default 1). Each truck becomes a separate transport job. */

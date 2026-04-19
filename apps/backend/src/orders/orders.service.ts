@@ -503,6 +503,7 @@ export class OrdersService {
             notes: orderData.notes,
             siteContactName: orderData.siteContactName,
             siteContactPhone: orderData.siteContactPhone,
+            sitePhotoUrl: orderData.sitePhotoUrl ?? null,
             projectId: orderData.projectId ?? null,
             truckCount: orderData.truckCount ?? 1,
             truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
@@ -938,6 +939,8 @@ export class OrdersService {
       updateData.siteContactName = updateOrderDto.siteContactName;
     if (updateOrderDto.siteContactPhone !== undefined)
       updateData.siteContactPhone = updateOrderDto.siteContactPhone;
+    if (updateOrderDto.sitePhotoUrl !== undefined)
+      updateData.sitePhotoUrl = updateOrderDto.sitePhotoUrl;
     // NOTE: paymentStatus is intentionally excluded — only the payments service may change it
 
     return this.prisma.order.update({

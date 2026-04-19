@@ -757,7 +757,10 @@ export default function ActiveJobScreen() {
         );
         return;
       }
-      router.push({ pathname: '/delivery-proof', params: { jobId: job.id } });
+      router.push({
+        pathname: '/delivery-proof',
+        params: { jobId: job.id, sitePhotoUrl: job.order?.sitePhotoUrl ?? '' },
+      });
       return;
     }
 
@@ -1400,6 +1403,29 @@ export default function ActiveJobScreen() {
                   {job.order.notes}
                 </Text>
               </View>
+            </View>
+          ) : null}
+
+          {/* Site photo */}
+          {job.order?.sitePhotoUrl ? (
+            <View style={{ marginBottom: 24 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '800',
+                  color: '#374151',
+                  marginBottom: 8,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}
+              >
+                Izkraušanas vieta
+              </Text>
+              <Image
+                source={{ uri: job.order.sitePhotoUrl }}
+                style={{ width: '100%', height: 180, borderRadius: 16 }}
+                resizeMode="cover"
+              />
             </View>
           ) : null}
 

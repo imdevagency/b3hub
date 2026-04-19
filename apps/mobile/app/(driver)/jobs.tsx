@@ -39,7 +39,7 @@ import {
   mapJob,
   nearbyJobs,
 } from '@/components/driver/job-types';
-import { geocodeLocation } from '@/lib/maps';
+import { geocodeLocation, optimizeRoute } from '@/lib/maps';
 import {
   Settings2,
   Search,
@@ -329,7 +329,9 @@ const JobCard = React.memo(function JobCard({
           €{job.priceTotal.toFixed(0)}
         </Text>
         {job.distanceKm > 0 && (
-          <Text style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 2 }}>
+          <Text
+            style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 2 }}
+          >
             €{(job.priceTotal / job.distanceKm).toFixed(2)}/km
           </Text>
         )}
@@ -346,7 +348,9 @@ const JobCard = React.memo(function JobCard({
               {job.distanceKm} km
             </Text>
           </View>
-          <Text style={{ fontSize: 13, color: colors.textDisabled, marginTop: 4, fontWeight: '600' }}>
+          <Text
+            style={{ fontSize: 13, color: colors.textDisabled, marginTop: 4, fontWeight: '600' }}
+          >
             {job.time}
           </Text>
         </View>
@@ -364,7 +368,14 @@ const JobCard = React.memo(function JobCard({
 
         <View style={{ flex: 1, gap: 18 }}>
           <View>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '700',
+                color: colors.textPrimary,
+                marginBottom: 2,
+              }}
+            >
               {job.fromCity}
             </Text>
             <Text style={{ fontSize: 14, color: colors.textMuted }} numberOfLines={1}>
@@ -372,7 +383,14 @@ const JobCard = React.memo(function JobCard({
             </Text>
           </View>
           <View>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '700',
+                color: colors.textPrimary,
+                marginBottom: 2,
+              }}
+            >
               {job.toCity}
             </Text>
             <Text style={{ fontSize: 14, color: colors.textMuted }} numberOfLines={1}>
@@ -481,13 +499,33 @@ export default function JobsScreen() {
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
   const [accepting, setAccepting] = useState(false);
 
+  // ── Tour (multi-stop route optimisation) ──────────────────────
+  const [tourMode, setTourMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [optimizing, setOptimizing] = useState(false);
+  const [tourResult, setTourResult] = useState<{
+    orderedJobs: TransportJob[];
+    totalKm: number;
+  } | null>(null);
+  const [tourResultVisible, setTourResultVisible] = useState(false);
+
+  // ── Avoid empty runs ──────────────────────────────────────────
+  const [avoidEmptyRuns, setAvoidEmptyRuns] = useState(false);
+  const [returnTripJobs, setReturnTripJobs] = useState<TransportJob[]>([]);
+  const [returnTripsLoading, setReturnTripsLoading] = useState(false);
+  const [lastDeliveryCoords, setLastDeliveryCoords] = useState<{
+    lat: number;
+    lng: number;
+    city: string;
+  } | null>(null);
+
   const fetchJobs = useCallback(async () => {
     if (!token) return;
     try {
       const data = await api.transportJobs.available(token);
       setAllJobs(data.map(mapJob));
     } catch (e) {
-      toast.error('Neizdevās ielādēt darbus')
+      toast.error('Neizdevās ielādēt darbus');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -555,6 +593,11 @@ export default function JobsScreen() {
   }, [savedSearches]);
 
   const filteredJobs = useMemo(() => filterJobs(allJobs, activeFilter), [allJobs, activeFilter]);
+
+  const displayJobs = useMemo(
+    () => (avoidEmptyRuns ? returnTripJobs : filteredJobs),
+    [avoidEmptyRuns, returnTripJobs, filteredJobs],
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -746,7 +789,7 @@ export default function JobsScreen() {
       );
     } catch (err: unknown) {
       haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās pieņemt darbu')
+      toast.error(err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');
     } finally {
       setAccepting(false);
     }
@@ -764,9 +807,88 @@ export default function JobsScreen() {
     }
   };
 
+  const handleOptimizeTour = async () => {
+    const selected = allJobs.filter((j) => selectedIds.has(j.id));
+    if (selected.length < 2) return;
+    setOptimizing(true);
+    try {
+      const stops = selected.map((j) => ({ lat: j.fromLat, lng: j.fromLng, label: j.fromCity }));
+      const result = await optimizeRoute(stops);
+      const orderedJobs = result.visitOrder.map((i) => selected[i]);
+      setTourResult({ orderedJobs, totalKm: result.totalDistanceKm });
+      setTourResultVisible(true);
+    } catch {
+      toast.error('Neizdevās optimizēt maršrutu');
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const handleToggleAvoidEmptyRuns = useCallback(async () => {
+    if (avoidEmptyRuns) {
+      setAvoidEmptyRuns(false);
+      setReturnTripJobs([]);
+      return;
+    }
+    if (!token) return;
+    setAvoidEmptyRuns(true);
+    setReturnTripsLoading(true);
+    try {
+      let coords = lastDeliveryCoords;
+      if (!coords) {
+        const jobs = await api.transportJobs.myJobs(token);
+        const lastDelivered = [...jobs]
+          .filter((j) => j.status === 'DELIVERED' && j.deliveryLat != null && j.deliveryLng != null)
+          .sort((a, b) =>
+            (b.statusUpdatedAt ?? b.deliveryDate).localeCompare(
+              a.statusUpdatedAt ?? a.deliveryDate,
+            ),
+          )[0];
+        if (
+          !lastDelivered ||
+          lastDelivered.deliveryLat == null ||
+          lastDelivered.deliveryLng == null
+        ) {
+          toast.error('Nav atrasta pēdējā piegādes vieta');
+          setAvoidEmptyRuns(false);
+          setReturnTripsLoading(false);
+          return;
+        }
+        coords = {
+          lat: lastDelivered.deliveryLat,
+          lng: lastDelivered.deliveryLng,
+          city: lastDelivered.deliveryCity,
+        };
+        setLastDeliveryCoords(coords);
+      }
+      const trips = await api.transportJobs.returnTrips(coords.lat, coords.lng, 75, token);
+      setReturnTripJobs(trips.map(mapJob));
+    } catch {
+      toast.error('Neizdevās ielādēt atpakaļceļa darbus');
+      setAvoidEmptyRuns(false);
+    } finally {
+      setReturnTripsLoading(false);
+    }
+  }, [avoidEmptyRuns, token, lastDeliveryCoords]);
+
   const renderJobItem = useCallback(
-    ({ item }: { item: TransportJob }) => <JobCard job={item} onAccept={handleAcceptPressed} />,
-    [handleAcceptPressed],
+    ({ item }: { item: TransportJob }) => (
+      <JobCard
+        job={item}
+        onAccept={handleAcceptPressed}
+        tourMode={tourMode}
+        selected={selectedIds.has(item.id)}
+        onToggleSelect={(id) => {
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+          });
+        }}
+      />
+    ),
+    [handleAcceptPressed, tourMode, selectedIds],
   );
 
   const nearbyForSheet = useMemo(
@@ -795,6 +917,20 @@ export default function JobsScreen() {
         onBack={null}
         rightAction={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                setTourMode((v) => {
+                  if (v) setSelectedIds(new Set());
+                  return !v;
+                });
+              }}
+              style={[styles.filterBtn, tourMode && styles.filterBtnActive]}
+              activeOpacity={0.7}
+            >
+              <Route size={22} color="#ffffff" />
+              {tourMode && selectedIds.size > 0 && <View style={styles.filterDot} />}
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
@@ -829,6 +965,30 @@ export default function JobsScreen() {
         )}
       </View>
 
+      {/* ── Avoid empty runs chip ──────────────────────────── */}
+      <View style={styles.avoidEmptyRow}>
+        <TouchableOpacity
+          style={[styles.avoidEmptyChip, avoidEmptyRuns && styles.avoidEmptyChipActive]}
+          onPress={handleToggleAvoidEmptyRuns}
+          activeOpacity={0.75}
+          disabled={returnTripsLoading}
+        >
+          {returnTripsLoading ? (
+            <ActivityIndicator size="small" color={avoidEmptyRuns ? '#fff' : '#111827'} />
+          ) : (
+            <Truck size={14} color={avoidEmptyRuns ? '#fff' : '#374151'} />
+          )}
+          <Text
+            style={[styles.avoidEmptyChipText, avoidEmptyRuns && styles.avoidEmptyChipTextActive]}
+          >
+            Tukšbrauciens
+          </Text>
+          {avoidEmptyRuns && lastDeliveryCoords && (
+            <Text style={styles.avoidEmptyChipSub}>· {lastDeliveryCoords.city}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {/* ── Active filter pill ────────────────────────────── */}
       {activeFilter && <ActiveFilterPill filter={activeFilter} onClear={handleReset} />}
 
@@ -846,8 +1006,8 @@ export default function JobsScreen() {
               longitudeDelta: 2.5,
             }}
             onMapReady={() => {
-              if (filteredJobs.length > 0) {
-                const coords = filteredJobs
+              if (displayJobs.length > 0) {
+                const coords = displayJobs
                   .filter((j) => j.fromLat && j.fromLng)
                   .map((j) => ({ latitude: j.fromLat, longitude: j.fromLng }));
                 if (coords.length > 0) {
@@ -859,7 +1019,7 @@ export default function JobsScreen() {
               }
             }}
           >
-            {filteredJobs
+            {displayJobs
               .filter((j) => j.fromLat && j.fromLng)
               .map((job) => (
                 <Marker
@@ -872,7 +1032,7 @@ export default function JobsScreen() {
                 />
               ))}
           </MapView>
-          {filteredJobs.length === 0 && (
+          {displayJobs.length === 0 && (
             <View
               style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}
             >
@@ -888,11 +1048,13 @@ export default function JobsScreen() {
                   elevation: 4,
                 }}
               >
-                <Text style={{ fontSize: 13, color: colors.textMuted }}>Nav pieejamu darbu kartē</Text>
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                  Nav pieejamu darbu kartē
+                </Text>
               </View>
             </View>
           )}
-          {filteredJobs.length > 0 && (
+          {displayJobs.length > 0 && (
             <View
               style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}
             >
@@ -908,8 +1070,14 @@ export default function JobsScreen() {
                   elevation: 4,
                 }}
               >
-                <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_600SemiBold' }}>
-                  {filteredJobs.length} darb{filteredJobs.length === 1 ? 's' : 'i'} — pieskarieties,
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                    fontFamily: 'Inter_600SemiBold',
+                  }}
+                >
+                  {displayJobs.length} darb{displayJobs.length === 1 ? 's' : 'i'} — pieskarieties,
                   lai pieņemtu
                 </Text>
               </View>
@@ -919,7 +1087,7 @@ export default function JobsScreen() {
       ) : (
         <FlatList
           style={{ flex: 1 }}
-          data={filteredJobs}
+          data={displayJobs}
           keyExtractor={(item) => item.id}
           removeClippedSubviews={true}
           initialNumToRender={8}
@@ -931,7 +1099,7 @@ export default function JobsScreen() {
           }
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
-            filteredJobs.length > 0 ? (
+            displayJobs.length > 0 ? (
               <View style={styles.swipeHint}>
                 <Text style={styles.swipeHintText}>
                   Pieskarieties kartei vai velciet pa kreisi, lai pieņemtu darbu
@@ -944,9 +1112,11 @@ export default function JobsScreen() {
               icon={<Search size={32} color="#9ca3af" />}
               title={t.jobs.empty}
               subtitle={
-                activeFilter
-                  ? t.jobs.emptyDesc
-                  : 'Jauni darbi parādās katru rītu. Ieslēdz paziņojumus, lai saņemtu brīdinājumus par jauniem darbiem.'
+                avoidEmptyRuns
+                  ? 'Nav pieejamu darbu netālu no pēdējās piegādes vietas'
+                  : activeFilter
+                    ? t.jobs.emptyDesc
+                    : 'Jauni darbi parādās katru rītu. Ieslēdz paziņojumus, lai saņemtu brīdinājumus par jauniem darbiem.'
               }
               action={
                 activeFilter ? (
@@ -959,6 +1129,76 @@ export default function JobsScreen() {
           }
         />
       )}
+
+      {/* Tour action bar — shown when tour mode is active */}
+      {tourMode && (
+        <View style={styles.tourBar}>
+          <Text style={styles.tourBarText}>
+            {selectedIds.size > 0
+              ? `${selectedIds.size} darb${selectedIds.size === 1 ? 's' : 'i'} izvēlēti`
+              : 'Izvēlieties darbus maršrutam'}
+          </Text>
+          {selectedIds.size >= 2 && (
+            <TouchableOpacity
+              style={[styles.tourOptBtn, optimizing && { opacity: 0.6 }]}
+              onPress={handleOptimizeTour}
+              disabled={optimizing}
+              activeOpacity={0.8}
+            >
+              {optimizing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.tourOptBtnText}>Optimizēt maršrutu</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Tour result sheet */}
+      <BottomSheet
+        visible={tourResultVisible}
+        onClose={() => setTourResultVisible(false)}
+        title="Optimizēts maršruts"
+        scrollable
+      >
+        {tourResult && (
+          <View style={{ gap: 12, paddingBottom: 16 }}>
+            <View style={styles.tourTotalRow}>
+              <Route size={16} color="#111827" />
+              <Text style={styles.tourTotalText}>
+                Kopā ~{tourResult.totalKm > 0 ? `${tourResult.totalKm} km` : 'aprēķina...'}
+              </Text>
+            </View>
+            {tourResult.orderedJobs.map((job, idx) => (
+              <View key={job.id} style={styles.tourStopRow}>
+                <View style={styles.tourStopIndex}>
+                  <Text style={styles.tourStopIndexText}>{idx + 1}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tourStopRoute}>
+                    {job.fromCity} → {job.toCity}
+                  </Text>
+                  <Text style={styles.tourStopMeta}>
+                    {job.jobNumber} · €{job.priceTotal.toFixed(0)} · {Math.round(job.distanceKm)} km
+                  </Text>
+                </View>
+              </View>
+            ))}
+            <TouchableOpacity
+              style={styles.tourDoneBtn}
+              onPress={() => {
+                setTourResultVisible(false);
+                setTourMode(false);
+                setSelectedIds(new Set());
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.tourDoneBtnText}>Pabeigt</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </BottomSheet>
 
       {/* Save-search modal */}
       <SaveSearchModal
@@ -1249,7 +1489,12 @@ const styles = StyleSheet.create({
   sheetReturnKmText: { fontSize: 11, fontWeight: '700', color: '#166534' },
   sheetReturnCity: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   sheetReturnPrice: { fontSize: 16, fontWeight: '800', color: '#166534', marginLeft: 8 },
-  sheetReturnNone: { fontSize: 13, color: colors.textDisabled, textAlign: 'center', paddingVertical: 8 },
+  sheetReturnNone: {
+    fontSize: 13,
+    color: colors.textDisabled,
+    textAlign: 'center',
+    paddingVertical: 8,
+  },
   sheetAcceptBtn: {
     backgroundColor: colors.primary,
     borderRadius: 999,
@@ -1269,6 +1514,109 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sheetDeclineBtnText: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
+
+  // ── Tour route optimisation ────────────────────────────────────
+  filterBtnActive: {
+    backgroundColor: '#111827',
+  },
+  tourBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.bgCard,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 12,
+  },
+  tourBarText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  tourOptBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 48,
+  },
+  tourOptBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  tourTotalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  tourTotalText: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  tourStopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tourStopIndex: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  tourStopIndexText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  tourStopRoute: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  tourStopMeta: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
+  tourDoneBtn: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+  },
+  tourDoneBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  // ── Avoid empty runs chip ─────────────────────────────────────
+  avoidEmptyRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  avoidEmptyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  avoidEmptyChipActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  avoidEmptyChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  avoidEmptyChipTextActive: {
+    color: '#fff',
+  },
+  avoidEmptyChipSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '500',
+  },
 });
 
 // ── Map styles ────────────────────────────────────────────────────────────────

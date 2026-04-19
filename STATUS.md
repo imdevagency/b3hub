@@ -292,6 +292,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/framework-contracts
 - (buyer)/home
 - (buyer)/invoices
+- (buyer)/messages
 - (buyer)/new-order
 - (buyer)/order/[id]
 - (buyer)/orders
@@ -311,6 +312,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/earnings
 - (driver)/home
 - (driver)/jobs
+- (driver)/messages
 - (driver)/profile
 - (driver)/schedule
 - (driver)/skips
@@ -334,6 +336,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - help
 - index
 - messages
+- notification/[id]
 - notifications
 - order-request-new
 - order/confirmation

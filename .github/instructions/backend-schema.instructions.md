@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (1985 lines, 48 models, 41 enums).
+Schema: `apps/backend/prisma/schema.prisma` (1989 lines, 48 models, 41 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -163,7 +163,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Order — `@@map("orders")`  
-**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `notes`: String?, `internalNotes`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `orderType`: OrderType, `status`: OrderStatus, `paymentStatus`: PaymentStatus, `paymentMethod`: PaymentMethod (@default(CARD))  
 **Relations:** → Company, User, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass
 
@@ -225,7 +225,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### DriverProfile — `@@map("driver_profiles")`  
-**Fields:** `id`: String @id @default(cuid(), `userId`: String @unique, `licenseNumber`: String @unique, `licenseType`: String, `licenseExpiry`: DateTime, `certifications`: String, `rating`: Float?, `completedJobs`: Int @default(0), `available`: Boolean @default(true), `isOnline`: Boolean @default(false), `autoSchedule`: Boolean @default(false), `maxJobsPerDay`: Int?, `currentLocation`: Json?, `stripeConnectId`: String?, `payoutEnabled`: Boolean @default(false), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `userId`: String @unique, `licenseNumber`: String @unique, `licenseType`: String, `licenseExpiry`: DateTime, `certifications`: String, `rating`: Float?, `completedJobs`: Int @default(0), `noShowCount`: Int @default(0), `available`: Boolean @default(true), `isOnline`: Boolean @default(false), `autoSchedule`: Boolean @default(false), `maxJobsPerDay`: Int?, `currentLocation`: Json?, `stripeConnectId`: String?, `payoutEnabled`: Boolean @default(false), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Relations:** → User, DriverSchedule, DriverDateBlock
 
 ---

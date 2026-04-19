@@ -167,6 +167,7 @@ export class TransportJobsService {
         createdById: true,
         siteContactName: true,
         siteContactPhone: true,
+        sitePhotoUrl: true,
         notes: true,
         items: {
           take: 1,

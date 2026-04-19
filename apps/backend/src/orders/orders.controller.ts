@@ -14,8 +14,16 @@ import {
   UseGuards,
   Query,
   BadRequestException,
+  ForbiddenException,
   Res,
 } from '@nestjs/common';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { SupabaseService } from '../supabase/supabase.service';
 import type { Response } from 'express';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, CreateOrderScheduleDto } from './dto/create-order.dto';
@@ -34,11 +42,49 @@ import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 import { ApiTags } from '@nestjs/swagger';
 
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+class UploadSitePhotoDto {
+  @IsString()
+  @IsNotEmpty()
+  base64: string;
+
+  @IsOptional()
+  @IsIn(ALLOWED_PHOTO_TYPES)
+  mimeType?: string;
+}
+
 @ApiTags('Orders')
 @Controller('orders')
 @UseGuards(JwtOrApiKeyGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly supabase: SupabaseService,
+  ) {}
+
+  /**
+   * POST /orders/upload-site-photo
+   * Buyer uploads a base64 image of the unloading point before creating the order.
+   * Returns a Supabase Storage public URL to be passed as sitePhotoUrl on order creation.
+   */
+  @Post('upload-site-photo')
+  async uploadSitePhoto(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: UploadSitePhotoDto,
+  ) {
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+    const mimeType = dto.mimeType ?? 'image/jpeg';
+    const raw = dto.base64.includes(',') ? dto.base64.split(',')[1] : dto.base64;
+    const buffer = Buffer.from(raw, 'base64');
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `site-photos/${user.userId}/${Date.now()}.${ext}`;
+    await this.supabase.uploadFile('site-photos', path, buffer);
+    const url = this.supabase.getPublicUrl('site-photos', path);
+    return { url };
+  }
 
   @Post()
   create(

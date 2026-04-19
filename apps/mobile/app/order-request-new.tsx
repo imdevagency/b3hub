@@ -47,7 +47,10 @@ import {
   CheckCircle2,
   ChevronDown,
   Package,
+  Camera,
+  X,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { TruckIllustration } from '@/components/ui/TruckIllustration';
 import type { TruckType } from '@/components/ui/TruckIllustration';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -225,6 +228,9 @@ export default function OrderRequestWizard() {
     return !isNaN(prefill) && prefill > 0 ? prefill : TRUCK_OPTIONS[0].capacity;
   });
   const [notes, setNotes] = useState('');
+  const [sitePhotoUri, setSitePhotoUri] = useState<string | null>(null);
+  const [sitePhotoUrl, setSitePhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // ── Volume calculator modal ──
   const [calcOpen, setCalcOpen] = useState(false);
@@ -283,6 +289,7 @@ export default function OrderRequestWizard() {
   const [offersError, setOffersError] = useState('');
   const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
   const [priceMaxFilter, setPriceMaxFilter] = useState<number | null>(null);
+  const [distanceMaxFilter, setDistanceMaxFilter] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
@@ -466,6 +473,65 @@ export default function OrderRequestWizard() {
     }
   }, [stepIndex]);
 
+  // ── Site photo upload ──
+  const handlePickSitePhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      if (camStatus !== 'granted') {
+        Alert.alert(
+          'Atļauja liegta',
+          'Lai pievienotu foto, atļaujiet piekļuvi kamerai vai galerijā.',
+        );
+        return;
+      }
+    }
+    Alert.alert('Izkraušanas vietas foto', 'Izvēlieties avotu', [
+      {
+        text: 'Kamera',
+        onPress: async () => {
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.7,
+            base64: true,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadSitePhotoAsset(result.assets[0]);
+          }
+        },
+      },
+      {
+        text: 'Galerija',
+        onPress: async () => {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.7,
+            base64: true,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadSitePhotoAsset(result.assets[0]);
+          }
+        },
+      },
+      { text: 'Atcelt', style: 'cancel' },
+    ]);
+  };
+
+  const uploadSitePhotoAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!asset.base64 || !token) return;
+    setUploadingPhoto(true);
+    try {
+      const mimeType = asset.mimeType ?? 'image/jpeg';
+      const { url } = await api.orders.uploadSitePhoto(asset.base64, mimeType, token);
+      setSitePhotoUri(asset.uri);
+      setSitePhotoUrl(url);
+    } catch {
+      Alert.alert('Kļūda', 'Foto augšupielāde neizdevās. Mēģiniet vēlreiz.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   // ── Submit: buyer selects a specific supplier offer ──
   const handleSelectOffer = async (offer: SupplierOffer) => {
     if (!token || !pickedAddress) return;
@@ -498,6 +564,7 @@ export default function OrderRequestWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          sitePhotoUrl: sitePhotoUrl || undefined,
           projectId: params.projectId || undefined,
           truckCount,
           truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
@@ -733,6 +800,59 @@ export default function OrderRequestWizard() {
           multiline
           style={{ minHeight: 120, textAlignVertical: 'top' }}
         />
+      </View>
+
+      {/* Site photo */}
+      <View className="mt-6 mb-2">
+        <Text className="text-gray-400 text-sm font-semibold mb-2 ml-1">
+          Izkraušanas vietas foto (neobligāti)
+        </Text>
+        {sitePhotoUri ? (
+          <View style={{ position: 'relative' }}>
+            <Image
+              source={{ uri: sitePhotoUri }}
+              style={{ width: '100%', height: 180, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+            <TouchableOpacity
+              onPress={() => {
+                setSitePhotoUri(null);
+                setSitePhotoUrl(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                borderRadius: 16,
+                width: 32,
+                height: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              activeOpacity={0.8}
+            >
+              <X size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={handlePickSitePhoto}
+            disabled={uploadingPhoto}
+            className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex-row items-center justify-center"
+            activeOpacity={0.8}
+            style={{ minHeight: 72 }}
+          >
+            {uploadingPhoto ? (
+              <ActivityIndicator size="small" color="#111827" />
+            ) : (
+              <>
+                <Camera size={20} color="#6b7280" />
+                <Text className="text-gray-500 font-semibold text-sm ml-2">Pievienot foto</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -999,6 +1119,10 @@ export default function OrderRequestWizard() {
     // ── Offers list ──
     const sorted = [...offers]
       .filter((o) => priceMaxFilter == null || o.effectiveUnitPrice <= priceMaxFilter)
+      .filter(
+        (o) =>
+          distanceMaxFilter == null || (o.distanceKm != null && o.distanceKm <= distanceMaxFilter),
+      )
       .sort((a, b) => {
         if (offersSort === 'distance') {
           const da = a.distanceKm ?? Infinity;
@@ -1140,6 +1264,57 @@ export default function OrderRequestWizard() {
                     ]}
                   >
                     {cap === null ? 'Visi' : `≤€${cap}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              <View
+                style={{ width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 6 }}
+              />
+
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: colors.textMuted,
+                  marginRight: 4,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Max km:
+              </Text>
+              {([null, 25, 50, 100] as (number | null)[]).map((km) => (
+                <TouchableOpacity
+                  key={km === null ? 'all-km' : km}
+                  onPress={() => {
+                    haptics.light();
+                    setDistanceMaxFilter(km);
+                  }}
+                  style={[
+                    {
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 100,
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: colors.border,
+                      backgroundColor: '#fff',
+                    },
+                    distanceMaxFilter === km && {
+                      borderColor: colors.textPrimary,
+                      backgroundColor: colors.bgMuted,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      { fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_500Medium' },
+                      distanceMaxFilter === km && {
+                        color: colors.textPrimary,
+                        fontWeight: '600',
+                        fontFamily: 'Inter_600SemiBold',
+                      },
+                    ]}
+                  >
+                    {km === null ? 'Visi' : `≤${km}km`}
                   </Text>
                 </TouchableOpacity>
               ))}

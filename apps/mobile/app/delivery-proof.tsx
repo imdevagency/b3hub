@@ -34,7 +34,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function DeliveryProofScreen() {
   const router = useRouter();
-  const { jobId } = useLocalSearchParams<{ jobId: string }>();
+  const { jobId, sitePhotoUrl } = useLocalSearchParams<{ jobId: string; sitePhotoUrl?: string }>();
   const { token } = useAuth();
 
   const [recipientName, setRecipientName] = useState('');
@@ -146,11 +146,6 @@ export default function DeliveryProofScreen() {
   const handleSubmit = async () => {
     if (!token || !jobId) return;
 
-    if (strokes.length === 0 && !liveStroke) {
-      Alert.alert('Paraksts nepieciešams', 'Lūdzu parakstieties pirms iesniegšanas.');
-      return;
-    }
-
     setSubmitting(true);
     try {
       await api.transportJobs.deliveryProof(
@@ -219,6 +214,21 @@ export default function DeliveryProofScreen() {
       >
         {/* Subtitle */}
         <Text style={styles.subtitle}>{t.deliveryProof.subtitle}</Text>
+
+        {/* ── Site photo reference (buyer's unloading guide) ───────── */}
+        {sitePhotoUrl ? (
+          <View style={styles.section}>
+            <Text style={styles.label}>Izkraušanas vieta</Text>
+            <Image
+              source={{ uri: sitePhotoUrl }}
+              style={{ width: '100%', height: 160, borderRadius: 14 }}
+              resizeMode="cover"
+            />
+            <Text style={{ fontSize: 13, color: colors.textMuted }}>
+              Foto no pasūtītāja — izkraujiet norādītajā vietā
+            </Text>
+          </View>
+        ) : null}
 
         {/* ── Checklist ────────────────────────────────────────────────── */}
         <View style={styles.section}>
@@ -411,12 +421,9 @@ export default function DeliveryProofScreen() {
 
         {/* Submit */}
         <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            (submitting || (strokes.length === 0 && !liveStroke)) && styles.submitBtnDisabled,
-          ]}
+          style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
           onPress={handleSubmit}
-          disabled={submitting || (strokes.length === 0 && !liveStroke)}
+          disabled={submitting}
         >
           {submitting ? (
             <ActivityIndicator color="#fff" />

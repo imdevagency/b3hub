@@ -604,6 +604,9 @@ model Order {
   siteContactName  String?
   siteContactPhone String?
 
+  // Unloading-point photo — buyer can photograph the exact drop zone when placing the order
+  sitePhotoUrl  String?
+
   // Special instructions
   notes         String?
   internalNotes String?
