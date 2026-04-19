@@ -26,7 +26,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/auth-context';
 import { ApiChatMessage } from '@/lib/api';
 import { useChat } from '@/lib/use-chat';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
@@ -158,12 +157,10 @@ export default function ChatScreen() {
     );
   };
 
-  const insets = useSafeAreaInsets();
-
   return (
     <ScreenContainer standalone bg="#f4f5f7" noAnimation>
       {/* Modern Header */}
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+      <View style={[styles.header, { paddingTop: 16 }]}>
         <TouchableOpacity
           style={styles.headerBtn}
           onPress={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
