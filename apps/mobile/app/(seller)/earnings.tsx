@@ -230,7 +230,7 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
               <View
                 style={{
                   height: h,
-                  backgroundColor: bar.isToday ? '#111827' : '#e5e7eb',
+                  backgroundColor: bar.isToday ? colors.textPrimary : colors.border,
                   borderRadius: 6,
                   width: '100%',
                 }}
@@ -239,7 +239,7 @@ function MinimalBarChart({ bars }: { bars: DayBar[] }) {
             <Text
               style={{
                 fontSize: 12,
-                color: bar.isToday ? '#111827' : '#9ca3af',
+                color: bar.isToday ? colors.textPrimary : colors.textDisabled,
                 fontWeight: bar.isToday ? '600' : '500',
               }}
             >
@@ -283,10 +283,10 @@ export default function SellerEarningsScreen() {
       if (url) {
         await Linking.openURL(url);
       } else {
-        toast.error('Neizdevās iegūt saiti.')
+        toast.error('Neizdevās iegūt saiti.');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Neizdevās savienoties ar Stripe.')
+      toast.error(err.message || 'Neizdevās savienoties ar Stripe.');
     } finally {
       setSetupLoading(false);
     }
@@ -314,7 +314,9 @@ export default function SellerEarningsScreen() {
         api.analytics
           .overview(token)
           .then((ov) => setSellerAnalytics(ov.seller ?? null))
-          .catch(() => {});
+          .catch((err) =>
+            console.warn('Seller analytics failed:', err instanceof Error ? err.message : err),
+          );
       } catch (e) {
         if (!silent) showToast('Kļūda ielādējot datus', 'error');
       } finally {
@@ -490,7 +492,7 @@ export default function SellerEarningsScreen() {
                           s.anBarFill,
                           {
                             width: `${Math.max(pct * 100, 2)}%` as any,
-                            backgroundColor: isThisMonth ? '#111827' : '#e5e7eb',
+                            backgroundColor: isThisMonth ? colors.textPrimary : colors.border,
                           },
                         ]}
                       />
@@ -677,7 +679,7 @@ const s = StyleSheet.create({
   },
   segmentActive: {
     backgroundColor: colors.bgCard,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -725,7 +727,7 @@ const s = StyleSheet.create({
   metricDivider: {
     width: 1,
     height: 24,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.border,
   },
 
   // List
@@ -760,7 +762,7 @@ const s = StyleSheet.create({
   anCardLabel: { fontSize: 11, color: colors.textDisabled, fontWeight: '500', marginBottom: 6 },
   anBar: {
     height: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -810,7 +812,13 @@ const s = StyleSheet.create({
   },
   anTopMatsTitle: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 },
   anMatRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  anMatRank: { fontSize: 13, fontWeight: '700', color: colors.textDisabled, width: 16, textAlign: 'center' },
+  anMatRank: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textDisabled,
+    width: 16,
+    textAlign: 'center',
+  },
   anMatLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   anMatLabel: { fontSize: 13, fontWeight: '500', color: colors.textSecondary, flex: 1 },
   anMatAmt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
@@ -822,7 +830,7 @@ const s = StyleSheet.create({
   },
   listBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.bgMuted,
   },
   listLeft: {
     gap: 4,

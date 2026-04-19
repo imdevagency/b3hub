@@ -19,13 +19,15 @@ import {
 import { MaterialsService } from './materials.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
-import { QueryMaterialsDto, SearchMaterialsDto } from './dto/query-materials.dto';
+import {
+  QueryMaterialsDto,
+  SearchMaterialsDto,
+} from './dto/query-materials.dto';
 import { GetOffersDto } from './dto/get-offers.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
-import { IsOptional } from 'class-validator';
 
 /** Checks that the authenticated user has canSell=true (or is ADMIN) */
 function assertCanSell(user: RequestingUser) {
@@ -75,7 +77,10 @@ export class MaterialsController {
       );
     }
     // Force supplierId to the authenticated company — never trust client-provided value
-    return this.materialsService.create({ ...createMaterialDto, supplierId: user.companyId });
+    return this.materialsService.create({
+      ...createMaterialDto,
+      supplierId: user.companyId,
+    });
   }
 
   @Get()
@@ -157,7 +162,12 @@ export class MaterialsController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertCanSell(user);
-    return this.materialsService.uploadMaterialImage(id, dto.base64, dto.mimeType, user);
+    return this.materialsService.uploadMaterialImage(
+      id,
+      dto.base64,
+      dto.mimeType,
+      user,
+    );
   }
 
   /**
@@ -173,7 +183,12 @@ export class MaterialsController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertCanSell(user);
-    return this.materialsService.uploadMaterialDocument(id, dto.base64, dto.mimeType, user);
+    return this.materialsService.uploadMaterialDocument(
+      id,
+      dto.base64,
+      dto.mimeType,
+      user,
+    );
   }
 
   /**

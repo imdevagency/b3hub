@@ -139,7 +139,12 @@ export class SkipHireService {
           message: `Pasūtījums #${orderNumber} reģistrēts. Lūdzu, apmaksājiet pasūtījumu, lai apstiprinātu rezervāciju.`,
           data: { orderId: order.id },
         })
-        .catch((err) => this.logger.warn('Notification create failed (ORDER_CREATED)', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'Notification create failed (ORDER_CREATED)',
+            (err as Error).message,
+          ),
+        );
     }
     return { ...order, clientSecret };
   }
@@ -293,11 +298,24 @@ export class SkipHireService {
     // (COMPLETED, CANCELLED) are one-way — admins cannot re-open them.
     // This prevents accidental status resets that would confuse the carrier.
     const ADMIN_ALLOWED: Partial<Record<SkipHireStatus, SkipHireStatus[]>> = {
-      [SkipHireStatus.PENDING]: [SkipHireStatus.CONFIRMED, SkipHireStatus.CANCELLED],
-      [SkipHireStatus.CONFIRMED]: [SkipHireStatus.DELIVERED, SkipHireStatus.CANCELLED],
+      [SkipHireStatus.PENDING]: [
+        SkipHireStatus.CONFIRMED,
+        SkipHireStatus.CANCELLED,
+      ],
+      [SkipHireStatus.CONFIRMED]: [
+        SkipHireStatus.DELIVERED,
+        SkipHireStatus.CANCELLED,
+      ],
       // Admin can revert DELIVERED → CONFIRMED if the skip was placed incorrectly
-      [SkipHireStatus.DELIVERED]: [SkipHireStatus.COLLECTED, SkipHireStatus.CONFIRMED, SkipHireStatus.CANCELLED],
-      [SkipHireStatus.COLLECTED]: [SkipHireStatus.COMPLETED, SkipHireStatus.CANCELLED],
+      [SkipHireStatus.DELIVERED]: [
+        SkipHireStatus.COLLECTED,
+        SkipHireStatus.CONFIRMED,
+        SkipHireStatus.CANCELLED,
+      ],
+      [SkipHireStatus.COLLECTED]: [
+        SkipHireStatus.COMPLETED,
+        SkipHireStatus.CANCELLED,
+      ],
       // Terminal — no admin override once order is closed
       [SkipHireStatus.COMPLETED]: [],
       [SkipHireStatus.CANCELLED]: [],
@@ -316,9 +334,13 @@ export class SkipHireService {
     });
     // Release funds to carrier when order reaches terminal COMPLETED state
     if (dto.status === SkipHireStatus.COMPLETED) {
-      this.payments.releaseSkipHireFunds(id).catch((err: Error) =>
-        this.logger.error(`Failed to release skip hire funds for order ${id}: ${err.message}`),
-      );
+      this.payments
+        .releaseSkipHireFunds(id)
+        .catch((err: Error) =>
+          this.logger.error(
+            `Failed to release skip hire funds for order ${id}: ${err.message}`,
+          ),
+        );
     }
     if (existing.userId) {
       const label = SKIP_STATUS_LABEL[dto.status];
@@ -331,7 +353,12 @@ export class SkipHireService {
             message: `Konteinera pasūtījums #${existing.orderNumber}: ${label.toLowerCase()}.`,
             data: { orderId: id },
           })
-          .catch((err) => this.logger.warn('Notification create failed (ORDER_CONFIRMED)', (err as Error).message));
+          .catch((err) =>
+            this.logger.warn(
+              'Notification create failed (ORDER_CONFIRMED)',
+              (err as Error).message,
+            ),
+          );
       }
     }
     return updated;
@@ -361,7 +388,12 @@ export class SkipHireService {
           message: `Konteinera pasūtījums #${order.orderNumber} ir atcelts.`,
           data: { orderId: id },
         })
-        .catch((err) => this.logger.warn('Notification create failed (SYSTEM_ALERT cancel)', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'Notification create failed (SYSTEM_ALERT cancel)',
+            (err as Error).message,
+          ),
+        );
     }
     return updated;
   }
@@ -455,7 +487,12 @@ export class SkipHireService {
             message: `Konteinera pasūtījums #${order.orderNumber}: ${label.toLowerCase()}.`,
             data: { orderId: id },
           })
-          .catch((err) => this.logger.warn('Notification create failed (ORDER_DELIVERED)', (err as Error).message));
+          .catch((err) =>
+            this.logger.warn(
+              'Notification create failed (ORDER_DELIVERED)',
+              (err as Error).message,
+            ),
+          );
       }
     }
     return updated;
@@ -467,7 +504,9 @@ export class SkipHireService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `SKP${year}${month}${ms}${rand}`;
   }
 
@@ -482,53 +521,63 @@ export class SkipHireService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async autoCancelStalePendingSkipOrders(): Promise<void> {
-    await withCronLock(this.prisma, 'autoCancelStalePendingSkipOrders', async () => {
-    const now = new Date();
+    await withCronLock(
+      this.prisma,
+      'autoCancelStalePendingSkipOrders',
+      async () => {
+        const now = new Date();
 
-    const stale = await this.prisma.skipHireOrder.findMany({
-      where: {
-        status: SkipHireStatus.PENDING,
-        deliveryDate: { lt: now },
-      },
-      select: { id: true, orderNumber: true, userId: true },
-    });
-
-    if (stale.length === 0) return;
-
-    for (const order of stale) {
-      try {
-        const { count } = await this.prisma.skipHireOrder.updateMany({
-          where: { id: order.id, status: SkipHireStatus.PENDING },
-          data: { status: SkipHireStatus.CANCELLED },
+        const stale = await this.prisma.skipHireOrder.findMany({
+          where: {
+            status: SkipHireStatus.PENDING,
+            deliveryDate: { lt: now },
+          },
+          select: { id: true, orderNumber: true, userId: true },
         });
 
-        if (count === 0) continue; // Already updated concurrently
+        if (stale.length === 0) return;
 
-        this.logger.warn(
-          `Skip hire order ${order.orderNumber} auto-cancelled — deliveryDate passed with no carrier confirmation`,
-        );
+        for (const order of stale) {
+          try {
+            const { count } = await this.prisma.skipHireOrder.updateMany({
+              where: { id: order.id, status: SkipHireStatus.PENDING },
+              data: { status: SkipHireStatus.CANCELLED },
+            });
 
-        if (order.userId) {
-          this.notifications
-            .create({
-              userId: order.userId,
-              type: NotificationType.ORDER_CANCELLED,
-              title: 'Konteinera pasūtījums atcelts',
-              message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo neviens pārvadātājs neapstiprināja rezervāciju līdz piegādes datumam.`,
-              data: { orderId: order.id },
-            })
-            .catch((err) => this.logger.warn('Notification create failed (ORDER_CANCELLED auto)', (err as Error).message));
+            if (count === 0) continue; // Already updated concurrently
+
+            this.logger.warn(
+              `Skip hire order ${order.orderNumber} auto-cancelled — deliveryDate passed with no carrier confirmation`,
+            );
+
+            if (order.userId) {
+              this.notifications
+                .create({
+                  userId: order.userId,
+                  type: NotificationType.ORDER_CANCELLED,
+                  title: 'Konteinera pasūtījums atcelts',
+                  message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo neviens pārvadātājs neapstiprināja rezervāciju līdz piegādes datumam.`,
+                  data: { orderId: order.id },
+                })
+                .catch((err) =>
+                  this.logger.warn(
+                    'Notification create failed (ORDER_CANCELLED auto)',
+                    (err as Error).message,
+                  ),
+                );
+            }
+          } catch (err) {
+            this.logger.error(
+              `autoCancelStalePendingSkipOrders: failed for order ${order.id}: ${(err as Error).message}`,
+            );
+          }
         }
-      } catch (err) {
-        this.logger.error(
-          `autoCancelStalePendingSkipOrders: failed for order ${order.id}: ${(err as Error).message}`,
-        );
-      }
-    }
 
-    this.logger.log(
-      `autoCancelStalePendingSkipOrders: cancelled ${stale.length} stale PENDING skip hire order(s)`,
+        this.logger.log(
+          `autoCancelStalePendingSkipOrders: cancelled ${stale.length} stale PENDING skip hire order(s)`,
+        );
+      },
+      this.logger,
     );
-    }, this.logger);
   }
 }

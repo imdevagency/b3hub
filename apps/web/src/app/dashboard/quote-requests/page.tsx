@@ -65,7 +65,7 @@ const STATUS_CFG: Record<
   },
 };
 
-function fmtEur(n: number) {
+function _fmtEur(n: number) {
   return new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' }).format(n);
 }
 

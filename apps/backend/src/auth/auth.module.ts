@@ -22,7 +22,8 @@ import { PrismaModule } from '../prisma/prisma.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const secret = config.get<string>('JWT_SECRET');
-        if (!secret) throw new Error('JWT_SECRET environment variable is required');
+        if (!secret)
+          throw new Error('JWT_SECRET environment variable is required');
         // Short-lived access tokens — clients must use refresh token to obtain new ones.
         // 15 minutes limits the damage window if an access token is intercepted.
         return { secret, signOptions: { expiresIn: '15m' } };

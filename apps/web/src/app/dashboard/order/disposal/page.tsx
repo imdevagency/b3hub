@@ -154,7 +154,6 @@ export default function DisposalOrderPage() {
     if (!apiKey) return;
 
     loadGoogleMapsScript(apiKey, () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const google = window.google;
       if (!google || !mapDivRef.current || mapInstanceRef.current) return;
 
@@ -193,7 +192,6 @@ export default function DisposalOrderPage() {
             const userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             map.panTo(userPos);
             map.setZoom(14);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             new window.google.maps.Marker({
               position: userPos,
               map,
@@ -220,7 +218,6 @@ export default function DisposalOrderPage() {
 
   // Update marker/center when lat/lng change
   const updateMapPin = useCallback((newLat: number, newLng: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const google = window.google;
     if (!google || !mapInstanceRef.current) return;
 

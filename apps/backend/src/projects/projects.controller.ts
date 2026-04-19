@@ -35,7 +35,8 @@ function isOwnerOrManager(user: RequestingUser): boolean {
 function canViewFinancials(user: RequestingUser): boolean {
   if (!user.companyId) return false;
   if (!user.companyRole) return true; // sole owner
-  if (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') return true;
+  if (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER')
+    return true;
   return user.permViewFinancials === true;
 }
 
@@ -149,7 +150,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project sites');
+      throw new ForbiddenException(
+        'You do not have permission to manage project sites',
+      );
     }
     return this.service.addSite(id, dto, user.companyId);
   }
@@ -163,7 +166,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project sites');
+      throw new ForbiddenException(
+        'You do not have permission to manage project sites',
+      );
     }
     return this.service.updateSite(id, siteId, dto, user.companyId);
   }
@@ -176,7 +181,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project sites');
+      throw new ForbiddenException(
+        'You do not have permission to manage project sites',
+      );
     }
     return this.service.removeSite(id, siteId, user.companyId);
   }

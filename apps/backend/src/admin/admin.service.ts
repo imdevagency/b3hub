@@ -4,7 +4,12 @@
  * review provider applications, and retrieve aggregated statistics.
  * All methods are restricted to ADMIN userType.
  */
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaymentsService } from '../payments/payments.service';
@@ -49,8 +54,12 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
-        id: true, status: true, userType: true,
-        canSell: true, canTransport: true, canSkipHire: true,
+        id: true,
+        status: true,
+        userType: true,
+        canSell: true,
+        canTransport: true,
+        canSkipHire: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -108,11 +117,17 @@ export class AdminService {
         where: { id },
         select: this.userSelect,
       });
-      this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch((err) => this.logger.error('logAdminAction failed', (err as Error).message));
+      this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch(
+        (err) =>
+          this.logger.error('logAdminAction failed', (err as Error).message),
+      );
       return result;
     }
 
-    this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch((err) => this.logger.error('logAdminAction failed', (err as Error).message));
+    this.logAdminAction(adminId, 'UPDATE_USER', 'User', id, user, data).catch(
+      (err) =>
+        this.logger.error('logAdminAction failed', (err as Error).message),
+    );
     return updatedUser;
   }
 
@@ -168,7 +183,9 @@ export class AdminService {
           order: { select: { id: true, orderNumber: true } },
           carrier: { select: { id: true, name: true } },
           driver: { select: { id: true, firstName: true, lastName: true } },
-          vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+          vehicle: {
+            select: { id: true, make: true, model: true, licensePlate: true },
+          },
           exceptions: { where: { status: 'OPEN' }, select: { id: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -203,12 +220,21 @@ export class AdminService {
 
   async updateCompany(
     id: string,
-    data: { verified?: boolean; commissionRate?: number; payoutEnabled?: boolean },
+    data: {
+      verified?: boolean;
+      commissionRate?: number;
+      payoutEnabled?: boolean;
+    },
     adminId: string,
   ) {
     const company = await this.prisma.company.findUnique({
       where: { id },
-      select: { id: true, verified: true, commissionRate: true, payoutEnabled: true },
+      select: {
+        id: true,
+        verified: true,
+        commissionRate: true,
+        payoutEnabled: true,
+      },
     });
     if (!company) throw new NotFoundException('Company not found');
     this.logger.log(`Admin ${adminId} updated company ${id}`);
@@ -231,7 +257,16 @@ export class AdminService {
         _count: { select: { users: true, orders: true } },
       },
     });
-    this.logAdminAction(adminId, 'UPDATE_COMPANY', 'Company', id, company, data).catch((err) => this.logger.error('logAdminAction failed', (err as Error).message));
+    this.logAdminAction(
+      adminId,
+      'UPDATE_COMPANY',
+      'Company',
+      id,
+      company,
+      data,
+    ).catch((err) =>
+      this.logger.error('logAdminAction failed', (err as Error).message),
+    );
     return result;
   }
 
@@ -317,7 +352,8 @@ export class AdminService {
       gmv: Math.round(v.gmv * 100) / 100,
     }));
 
-    const gmvAllTime = Math.round((gmvAllTimeResult._sum.total ?? 0) * 100) / 100;
+    const gmvAllTime =
+      Math.round((gmvAllTimeResult._sum.total ?? 0) * 100) / 100;
     const gmv30d = Math.round((gmv30dResult._sum.total ?? 0) * 100) / 100;
     // Platform commission estimate at default 10% rate
     const commissionEst30d = Math.round(gmv30d * 0.1 * 100) / 100;
@@ -342,7 +378,9 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
       take: limit,
       include: {
-        admin: { select: { id: true, firstName: true, lastName: true, email: true } },
+        admin: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
       },
     });
   }
@@ -393,7 +431,13 @@ export class AdminService {
   ) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id: jobId },
-      select: { id: true, jobNumber: true, status: true, rate: true, pricePerTonne: true },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        rate: true,
+        pricePerTonne: true,
+      },
     });
     if (!job) throw new NotFoundException('Transport job not found');
     if (['COMPLETED', 'CANCELLED'].includes(job.status)) {
@@ -404,12 +448,19 @@ export class AdminService {
 
     const updateData: { rate?: number; pricePerTonne?: number } = {};
     if (data.rate !== undefined) updateData.rate = data.rate;
-    if (data.pricePerTonne !== undefined) updateData.pricePerTonne = data.pricePerTonne;
+    if (data.pricePerTonne !== undefined)
+      updateData.pricePerTonne = data.pricePerTonne;
 
     const updated = await this.prisma.transportJob.update({
       where: { id: jobId },
       data: updateData,
-      select: { id: true, jobNumber: true, rate: true, pricePerTonne: true, status: true },
+      select: {
+        id: true,
+        jobNumber: true,
+        rate: true,
+        pricePerTonne: true,
+        status: true,
+      },
     });
 
     await this.logAdminAction(
@@ -515,17 +566,28 @@ export class AdminService {
   async releasePayment(paymentId: string, adminId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
-      select: { id: true, status: true, orderId: true, order: { select: { orderNumber: true } } },
+      select: {
+        id: true,
+        status: true,
+        orderId: true,
+        order: { select: { orderNumber: true } },
+      },
     });
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.status === 'RELEASED')
       throw new BadRequestException('Payment already released');
     if (payment.status !== 'CAPTURED')
-      throw new BadRequestException(`Cannot release payment in status ${payment.status}`);
+      throw new BadRequestException(
+        `Cannot release payment in status ${payment.status}`,
+      );
     if (!payment.orderId)
-      throw new BadRequestException('Payment has no linked order — manual Stripe transfer required');
+      throw new BadRequestException(
+        'Payment has no linked order — manual Stripe transfer required',
+      );
 
-    this.logger.log(`Admin ${adminId} manually releasing payment ${paymentId} for order ${payment.orderId}`);
+    this.logger.log(
+      `Admin ${adminId} manually releasing payment ${paymentId} for order ${payment.orderId}`,
+    );
     await this.paymentsService.releaseFunds(payment.orderId);
     await this.prisma.adminAuditLog.create({
       data: {
@@ -546,7 +608,7 @@ export class AdminService {
    */
   async getSlaOrders() {
     const now = new Date();
-    const pendingThreshold = new Date(now.getTime() - 4 * 60 * 60 * 1000);   // 4 hours
+    const pendingThreshold = new Date(now.getTime() - 4 * 60 * 60 * 1000); // 4 hours
     const confirmedThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours
 
     const orders = await this.prisma.order.findMany({
@@ -574,7 +636,9 @@ export class AdminService {
 
     return orders.map((o) => ({
       ...o,
-      ageHours: Math.floor((now.getTime() - new Date(o.updatedAt).getTime()) / 3_600_000),
+      ageHours: Math.floor(
+        (now.getTime() - new Date(o.updatedAt).getTime()) / 3_600_000,
+      ),
     }));
   }
 
@@ -612,14 +676,20 @@ export class AdminService {
       const completed = s.orders.filter((o) => o.status === 'COMPLETED').length;
       const cancelled = s.orders.filter((o) => o.status === 'CANCELLED').length;
       const gmv = s.orders
-        .filter((o) => ['COMPLETED', 'IN_PROGRESS', 'DELIVERED'].includes(o.status))
+        .filter((o) =>
+          ['COMPLETED', 'IN_PROGRESS', 'DELIVERED'].includes(o.status),
+        )
         .reduce((sum, o) => sum + (o.total ?? 0), 0);
-      const allDisputes = s.orders.filter((o) => o.dispute != null).map((o) => o.dispute!);
+      const allDisputes = s.orders
+        .filter((o) => o.dispute != null)
+        .map((o) => o.dispute!);
       const openDisputes = allDisputes.filter((d) =>
         ['OPEN', 'UNDER_REVIEW'].includes(d.status),
       ).length;
-      const disputeRate = total > 0 ? Math.round((allDisputes.length / total) * 100) : 0;
-      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      const disputeRate =
+        total > 0 ? Math.round((allDisputes.length / total) * 100) : 0;
+      const completionRate =
+        total > 0 ? Math.round((completed / total) * 100) : 0;
       const activeMaterials = s.materials.filter((m) => m.active).length;
 
       return {

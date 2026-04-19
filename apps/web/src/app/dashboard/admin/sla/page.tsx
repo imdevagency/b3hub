@@ -12,7 +12,7 @@ import { adminGetSlaOrders, type SlaOrder } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertTriangle, Clock, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { RefreshCw, Clock, CheckCircle2, ArrowUpRight } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

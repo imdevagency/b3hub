@@ -4,18 +4,7 @@
  */
 'use client';
 
-import {
-  FileText,
-  Weight,
-  ClipboardCheck,
-  Recycle,
-  Truck,
-  ScrollText,
-  File,
-  Eye,
-  Download,
-  Calendar,
-} from 'lucide-react';
+import { FileText, Weight, ClipboardCheck, Recycle, Truck, ScrollText, File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Document, DocumentType, DocumentStatus } from '@/lib/api';
 

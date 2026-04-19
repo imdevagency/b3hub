@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  Package,
   Truck,
   Archive,
   Star,

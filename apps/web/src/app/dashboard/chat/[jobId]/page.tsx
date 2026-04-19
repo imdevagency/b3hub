@@ -20,13 +20,6 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-  });
-}
-
 // Group messages by calendar day
 function groupByDay(messages: ChatMessage[]): { day: string; msgs: ChatMessage[] }[] {
   const groups: { day: string; msgs: ChatMessage[] }[] = [];

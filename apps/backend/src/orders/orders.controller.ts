@@ -23,9 +23,11 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateDisposalOrderDto } from './dto/create-disposal-order.dto';
 import { CreateFreightOrderDto } from './dto/create-freight-order.dto';
 import { CreateSurchargeDto } from './dto/create-surcharge.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
-import { RequireScope, RequireScopeGuard } from '../auth/guards/require-scope.guard';
+import {
+  RequireScope,
+  RequireScopeGuard,
+} from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { OrderStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -66,10 +68,7 @@ export class OrdersController {
 
   /** GET /orders/export/csv — download all accessible orders as CSV */
   @Get('export/csv')
-  async exportCsv(
-    @CurrentUser() user: RequestingUser,
-    @Res() res: Response,
-  ) {
+  async exportCsv(@CurrentUser() user: RequestingUser, @Res() res: Response) {
     const csv = await this.ordersService.exportCsv(user);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
@@ -94,12 +93,23 @@ export class OrdersController {
     @Query('skip') skip: string = '0',
     @Query('updatedSince') updatedSince?: string,
   ) {
-    if (status !== undefined && !Object.values(OrderStatus).includes(status as OrderStatus)) {
-      throw new BadRequestException(`status must be one of: ${Object.values(OrderStatus).join(', ')}`);
+    if (
+      status !== undefined &&
+      !Object.values(OrderStatus).includes(status as OrderStatus)
+    ) {
+      throw new BadRequestException(
+        `status must be one of: ${Object.values(OrderStatus).join(', ')}`,
+      );
     }
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
-    return this.ordersService.findAll(user, status as OrderStatus | undefined, limitNum, skipNum, updatedSince);
+    return this.ordersService.findAll(
+      user,
+      status as OrderStatus | undefined,
+      limitNum,
+      skipNum,
+      updatedSince,
+    );
   }
 
   /** GET /orders/schedules — list caller's recurring schedules (must be before :id) */
@@ -207,28 +217,19 @@ export class OrdersController {
 
   /** POST /orders/schedules/:id/pause — pause a schedule */
   @Post('schedules/:id/pause')
-  pauseSchedule(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  pauseSchedule(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.pauseSchedule(id, user);
   }
 
   /** POST /orders/schedules/:id/resume — resume a paused schedule */
   @Post('schedules/:id/resume')
-  resumeSchedule(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  resumeSchedule(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.resumeSchedule(id, user);
   }
 
   /** DELETE /orders/schedules/:id — cancel and remove a schedule */
   @Delete('schedules/:id')
-  deleteSchedule(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  deleteSchedule(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.deleteSchedule(id, user);
   }
 }

@@ -55,7 +55,11 @@ export class QuoteRequestsController {
     @CurrentUser() user: RequestingUser,
     @Query() pagination: PaginationDto,
   ) {
-    return this.service.findAll(user.userId, pagination.limit ?? 20, pagination.skip ?? 0);
+    return this.service.findAll(
+      user.userId,
+      pagination.limit ?? 20,
+      pagination.skip ?? 0,
+    );
   }
 
   // ── Supplier endpoints ──────────────────────────────────────
@@ -69,7 +73,11 @@ export class QuoteRequestsController {
     @Query() pagination: PaginationDto,
   ) {
     this.assertCanRespondAsSupplier(user);
-    return this.service.myResponses(user.companyId!, pagination.limit ?? 20, pagination.skip ?? 0);
+    return this.service.myResponses(
+      user.companyId!,
+      pagination.limit ?? 20,
+      pagination.skip ?? 0,
+    );
   }
 
   /** GET /quote-requests/open — supplier sees all open requests with pagination */
@@ -79,7 +87,10 @@ export class QuoteRequestsController {
     @Query() pagination: PaginationDto,
   ) {
     this.assertCanRespondAsSupplier(user);
-    return this.service.findOpenRequests(pagination.limit ?? 20, pagination.skip ?? 0);
+    return this.service.findOpenRequests(
+      pagination.limit ?? 20,
+      pagination.skip ?? 0,
+    );
   }
 
   // ── Buyer endpoints (parameterised) ────────────────────────

@@ -10,7 +10,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { withCronLock } from '../common/utils/cron-lock.util';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { DisputeReason, DisputeStatus, PaymentMethod, PaymentStatus, SkipHireStatus } from '@prisma/client';
+import {
+  DisputeReason,
+  DisputeStatus,
+  PaymentStatus,
+  SkipHireStatus,
+} from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
@@ -63,7 +68,10 @@ export class PaymentsService {
       where: { orderId },
       select: { status: true },
     });
-    if (existingPayment && ['CAPTURED', 'RELEASED', 'REFUNDED'].includes(existingPayment.status)) {
+    if (
+      existingPayment &&
+      ['CAPTURED', 'RELEASED', 'REFUNDED'].includes(existingPayment.status)
+    ) {
       throw new BadRequestException(
         `Payment is already ${existingPayment.status} for this order`,
       );
@@ -107,7 +115,7 @@ export class PaymentsService {
 
     return {
       clientSecret: paymentIntent.client_secret,
-      publishableKey: this.configService.get('STRIPE_PUBLISHABLE_KEY'),
+      publishableKey: this.configService.get<string>('STRIPE_PUBLISHABLE_KEY'),
       paymentIntentId: paymentIntent.id,
     };
   }
@@ -236,7 +244,7 @@ export class PaymentsService {
 
     return {
       clientSecret: paymentIntent.client_secret,
-      publishableKey: this.configService.get('STRIPE_PUBLISHABLE_KEY'),
+      publishableKey: this.configService.get<string>('STRIPE_PUBLISHABLE_KEY'),
       paymentIntentId: paymentIntent.id,
     };
   }
@@ -340,7 +348,9 @@ export class PaymentsService {
             },
           )
           .catch((e) =>
-            this.logger.error(`Failed to notify admins of RELEASED cancellation: ${(e as Error).message}`),
+            this.logger.error(
+              `Failed to notify admins of RELEASED cancellation: ${(e as Error).message}`,
+            ),
           );
       }
       return;
@@ -381,7 +391,9 @@ export class PaymentsService {
           where: { orderId },
           data: { status: PaymentStatus.REFUNDED },
         });
-        this.logger.log(`Order ${orderId} — PaymentIntent cancelled (no charge)`);
+        this.logger.log(
+          `Order ${orderId} — PaymentIntent cancelled (no charge)`,
+        );
       }
     } catch (err) {
       this.logger.error(
@@ -439,7 +451,13 @@ export class PaymentsService {
           include: {
             material: {
               include: {
-                supplier: { select: { id: true, stripeConnectId: true, commissionRate: true } },
+                supplier: {
+                  select: {
+                    id: true,
+                    stripeConnectId: true,
+                    commissionRate: true,
+                  },
+                },
               },
             },
           },
@@ -472,7 +490,10 @@ export class PaymentsService {
     if (!order) throw new BadRequestException('Order not found');
 
     // Total charged to buyer = base order total + all billable surcharges
-    const surchargeTotal = order.surcharges.reduce((s, c) => s + Number(c.amount), 0);
+    const surchargeTotal = order.surcharges.reduce(
+      (s, c) => s + Number(c.amount),
+      0,
+    );
     const totalCents = Math.round((Number(order.total) + surchargeTotal) * 100);
     // Use the highest commissionRate among suppliers on this order, defaulting to 10%
     const supplierRates = order.items.map(
@@ -485,9 +506,16 @@ export class PaymentsService {
     // Determine if a driver is involved; prefer company Connect ID, fall back to
     // individual driver profile Connect ID (owner-operators without a company).
     const deliveredJob = order.transportJobs?.[0];
+    const driverDriver = deliveredJob?.driver as
+      | {
+          company?: { stripeConnectId?: string | null } | null;
+          driverProfile?: { stripeConnectId?: string | null } | null;
+        }
+      | null
+      | undefined;
     const driverConnectId =
-      deliveredJob?.driver?.company?.stripeConnectId ??
-      (deliveredJob?.driver as any)?.driverProfile?.stripeConnectId ??
+      driverDriver?.company?.stripeConnectId ??
+      driverDriver?.driverProfile?.stripeConnectId ??
       null;
 
     // ── Driver payout — use agreed job rate, not a flat percentage ────────────
@@ -499,7 +527,11 @@ export class PaymentsService {
         pricePerTonne: number | null;
         actualWeightKg: number | null;
       };
-      if (job.pricePerTonne != null && job.actualWeightKg != null && job.actualWeightKg > 0) {
+      if (
+        job.pricePerTonne != null &&
+        job.actualWeightKg != null &&
+        job.actualWeightKg > 0
+      ) {
         // Per-tonne pricing: pricePerTonne × actual tonnes
         const actualTonnes = job.actualWeightKg / 1000;
         driverCents = Math.round(job.pricePerTonne * actualTonnes * 100);
@@ -571,7 +603,9 @@ export class PaymentsService {
               },
             )
             .catch((e) =>
-              this.logger.error(`Failed to notify admins of skipped payout: ${(e as Error).message}`),
+              this.logger.error(
+                `Failed to notify admins of skipped payout: ${(e as Error).message}`,
+              ),
             );
         }
         continue;
@@ -627,7 +661,9 @@ export class PaymentsService {
               },
             )
             .catch((notifErr) =>
-              this.logger.error(`Failed to notify admins of driver transfer failure: ${(notifErr as Error).message}`),
+              this.logger.error(
+                `Failed to notify admins of driver transfer failure: ${(notifErr as Error).message}`,
+              ),
             );
         }
       }
@@ -653,7 +689,9 @@ export class PaymentsService {
             },
           )
           .catch((e) =>
-            this.logger.error(`Failed to notify admins of skipped driver payout: ${(e as Error).message}`),
+            this.logger.error(
+              `Failed to notify admins of skipped driver payout: ${(e as Error).message}`,
+            ),
           );
       }
     }
@@ -695,7 +733,11 @@ export class PaymentsService {
             data: { orderId },
           },
         )
-        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Notification dispatch failed: ${(err as Error).message}`,
+          ),
+        );
     }
 
     // Notify driver that the job is fully closed and their payout is en route
@@ -709,7 +751,11 @@ export class PaymentsService {
           message: `Piegāde ir apstiprināta. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
           data: { orderId },
         })
-        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Notification dispatch failed: ${(err as Error).message}`,
+          ),
+        );
     }
   }
 
@@ -741,7 +787,13 @@ export class PaymentsService {
           include: {
             material: {
               include: {
-                supplier: { select: { id: true, stripeConnectId: true, commissionRate: true } },
+                supplier: {
+                  select: {
+                    id: true,
+                    stripeConnectId: true,
+                    commissionRate: true,
+                  },
+                },
               },
             },
           },
@@ -782,22 +834,35 @@ export class PaymentsService {
     }
 
     // Use invoice total as source of truth; fallback to order total + surcharges
-    const surchargeTotal = order.surcharges.reduce((s, c) => s + Number(c.amount), 0);
+    const surchargeTotal = order.surcharges.reduce(
+      (s, c) => s + Number(c.amount),
+      0,
+    );
     const totalCents = Math.round(
-      (invoice.total > 0 ? invoice.total : Number(order.total) + surchargeTotal) * 100,
+      (invoice.total > 0
+        ? invoice.total
+        : Number(order.total) + surchargeTotal) * 100,
     );
 
     const supplierRates = order.items.map(
       (i) => i.material.supplier.commissionRate ?? 10,
     );
-    const commissionPct = Math.max(...(supplierRates.length ? supplierRates : [10])) / 100;
+    const commissionPct =
+      Math.max(...(supplierRates.length ? supplierRates : [10])) / 100;
     const platformFeeCents = Math.round(totalCents * commissionPct);
     const payoutCents = totalCents - platformFeeCents;
 
     const deliveredJob = order.transportJobs?.[0];
+    const driverDriver2 = deliveredJob?.driver as
+      | {
+          company?: { stripeConnectId?: string | null } | null;
+          driverProfile?: { stripeConnectId?: string | null } | null;
+        }
+      | null
+      | undefined;
     const driverConnectId =
-      deliveredJob?.driver?.company?.stripeConnectId ??
-      (deliveredJob?.driver as any)?.driverProfile?.stripeConnectId ??
+      driverDriver2?.company?.stripeConnectId ??
+      driverDriver2?.driverProfile?.stripeConnectId ??
       null;
 
     let driverCents = 0;
@@ -807,8 +872,14 @@ export class PaymentsService {
         pricePerTonne: number | null;
         actualWeightKg: number | null;
       };
-      if (job.pricePerTonne != null && job.actualWeightKg != null && job.actualWeightKg > 0) {
-        driverCents = Math.round((job.pricePerTonne * job.actualWeightKg) / 1000 * 100);
+      if (
+        job.pricePerTonne != null &&
+        job.actualWeightKg != null &&
+        job.actualWeightKg > 0
+      ) {
+        driverCents = Math.round(
+          ((job.pricePerTonne * job.actualWeightKg) / 1000) * 100,
+        );
       } else if (job.rate && job.rate > 0) {
         driverCents = Math.round(job.rate * 100);
       } else {
@@ -824,26 +895,43 @@ export class PaymentsService {
     const transferGroup = `order_${orderId}`;
     const currency = order.currency.toLowerCase();
 
-    const supplierIds = [...new Set(order.items.map((i) => i.material.supplier.id))];
-    const perSupplierCents = Math.round(sellerCents / (supplierIds.length || 1));
+    const supplierIds = [
+      ...new Set(order.items.map((i) => i.material.supplier.id)),
+    ];
+    const perSupplierCents = Math.round(
+      sellerCents / (supplierIds.length || 1),
+    );
 
     for (const supplierId of supplierIds) {
-      const supplierItem = order.items.find((i) => i.material.supplier.id === supplierId);
+      const supplierItem = order.items.find(
+        (i) => i.material.supplier.id === supplierId,
+      );
       const supplierConnectId = supplierItem?.material.supplier.stripeConnectId;
       if (!supplierConnectId) {
         this.logger.error(
           `releaseInvoiceOrderFunds: supplier ${supplierId} has no Connect account — manual payout required for order ${orderId}`,
         );
-        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 });
+        const admins = await this.prisma.user.findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+          take: 50,
+        });
         if (admins.length > 0) {
           await this.notifications
-            .createForMany(admins.map((a) => a.id), {
-              type: NotificationType.SYSTEM_ALERT,
-              title: '🚨 Piegādātāja izmaksa izlaista',
-              message: `Rēķins pasūtījumam ${orderId}: piegādātājam ${supplierId} nav Stripe Connect konta. Nepieciešama manuāla iejaukšanās.`,
-              data: { orderId, supplierId },
-            })
-            .catch((e) => this.logger.error(`Failed to notify admins: ${(e as Error).message}`));
+            .createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Piegādātāja izmaksa izlaista',
+                message: `Rēķins pasūtījumam ${orderId}: piegādātājam ${supplierId} nav Stripe Connect konta. Nepieciešama manuāla iejaukšanās.`,
+                data: { orderId, supplierId },
+              },
+            )
+            .catch((e) =>
+              this.logger.error(
+                `Failed to notify admins: ${(e as Error).message}`,
+              ),
+            );
         }
         continue;
       }
@@ -870,23 +958,36 @@ export class PaymentsService {
           currency,
           destination: driverConnectId,
           transfer_group: transferGroup,
-          metadata: { orderId, driverId: deliveredJob?.driverId ?? '', source: 'invoice' },
+          metadata: {
+            orderId,
+            driverId: deliveredJob?.driverId ?? '',
+            source: 'invoice',
+          },
         });
       } catch (err) {
         this.logger.error(
           `releaseInvoiceOrderFunds: driver transfer failed for order ${orderId}: ${(err as Error).message}`,
         );
-        const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 });
+        const admins = await this.prisma.user.findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+          take: 50,
+        });
         if (admins.length > 0) {
           await this.notifications
-            .createForMany(admins.map((a) => a.id), {
-              type: NotificationType.SYSTEM_ALERT,
-              title: '🚨 Vadītāja izmaksa neizdevās',
-              message: `Rēķins pasūtījumam ${orderId}: vadītāja Stripe izmaksa neizdevās — ${(err as Error).message}. Nepieciešama manuāla izmaksa vadītājam ${deliveredJob?.driverId ?? 'nezināms'}.`,
-              data: { orderId, driverId: deliveredJob?.driverId ?? null },
-            })
+            .createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Vadītāja izmaksa neizdevās',
+                message: `Rēķins pasūtījumam ${orderId}: vadītāja Stripe izmaksa neizdevās — ${(err as Error).message}. Nepieciešama manuāla izmaksa vadītājam ${deliveredJob?.driverId ?? 'nezināms'}.`,
+                data: { orderId, driverId: deliveredJob?.driverId ?? null },
+              },
+            )
             .catch((notifErr) =>
-              this.logger.error(`Failed to notify admins: ${(notifErr as Error).message}`),
+              this.logger.error(
+                `Failed to notify admins: ${(notifErr as Error).message}`,
+              ),
             );
         }
       }
@@ -913,13 +1014,20 @@ export class PaymentsService {
     });
     if (sellerUserIds.length > 0) {
       this.notifications
-        .createForMany(sellerUserIds.map((u) => u.id), {
-          type: NotificationType.PAYMENT_RECEIVED,
-          title: 'Maksājums saņemts',
-          message: `Līdzekļi par pasūtījumu #${orderId.slice(-6).toUpperCase()} ir izmaksāti uz jūsu Stripe kontu.`,
-          data: { orderId },
-        })
-        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+        .createForMany(
+          sellerUserIds.map((u) => u.id),
+          {
+            type: NotificationType.PAYMENT_RECEIVED,
+            title: 'Maksājums saņemts',
+            message: `Līdzekļi par pasūtījumu #${orderId.slice(-6).toUpperCase()} ir izmaksāti uz jūsu Stripe kontu.`,
+            data: { orderId },
+          },
+        )
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Notification dispatch failed: ${(err as Error).message}`,
+          ),
+        );
     }
 
     // Notify driver
@@ -933,7 +1041,11 @@ export class PaymentsService {
           message: `Piegāde ir apstiprināta. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
           data: { orderId },
         })
-        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Notification dispatch failed: ${(err as Error).message}`,
+          ),
+        );
     }
   }
 
@@ -961,7 +1073,9 @@ export class PaymentsService {
           select: {
             id: true,
             companyId: true,
-            company: { select: { stripeConnectId: true, commissionRate: true } },
+            company: {
+              select: { stripeConnectId: true, commissionRate: true },
+            },
             driverProfile: { select: { stripeConnectId: true } },
           },
         },
@@ -994,13 +1108,20 @@ export class PaymentsService {
     }
 
     const totalCents = Math.round(invoice.total * 100);
-    const commissionPct = ((job.driver?.company?.commissionRate ?? 10) as number) / 100;
+    const commissionPct = (job.driver?.company?.commissionRate ?? 10) / 100;
     const platformFeeCents = Math.round(totalCents * commissionPct);
     const driverCents = totalCents - platformFeeCents;
 
+    const driverDriver3 = job.driver as
+      | {
+          company?: { stripeConnectId?: string | null } | null;
+          driverProfile?: { stripeConnectId?: string | null } | null;
+        }
+      | null
+      | undefined;
     const driverConnectId =
-      (job.driver as any)?.company?.stripeConnectId ??
-      (job.driver as any)?.driverProfile?.stripeConnectId ??
+      driverDriver3?.company?.stripeConnectId ??
+      driverDriver3?.driverProfile?.stripeConnectId ??
       null;
 
     if (!driverConnectId) {
@@ -1081,7 +1202,11 @@ export class PaymentsService {
         message: `Pasūtītājs ir apmaksājis darbu ${job.jobNumber}. Jūsu atalgojums tiek pārskaitīts uz jūsu Stripe kontu.`,
         data: { jobId },
       })
-      .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+      .catch((err: unknown) =>
+        this.logger.warn(
+          `Notification dispatch failed: ${(err as Error).message}`,
+        ),
+      );
   }
 
   /**
@@ -1096,7 +1221,9 @@ export class PaymentsService {
       this.logger.error(
         'CRITICAL: Stripe webhook received but STRIPE_WEBHOOK_SECRET is not configured — rejecting so Stripe retries',
       );
-      throw new BadRequestException('Webhook processing unavailable — server misconfiguration');
+      throw new BadRequestException(
+        'Webhook processing unavailable — server misconfiguration',
+      );
     }
 
     let event: Stripe.Event;
@@ -1123,13 +1250,23 @@ export class PaymentsService {
               where: { orderId },
               data: { status: 'AUTHORIZED' },
             })
-            .catch((err) => this.logger.error(`Webhook DB sync failed for payment on order ${orderId}`, err));
+            .catch((err) =>
+              this.logger.error(
+                `Webhook DB sync failed for payment on order ${orderId}`,
+                err,
+              ),
+            );
           await this.prisma.order
             .update({
               where: { id: orderId },
               data: { paymentStatus: 'AUTHORIZED' },
             })
-            .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus AUTHORIZED`, err));
+            .catch((err) =>
+              this.logger.error(
+                `Webhook DB sync failed for order ${orderId} paymentStatus AUTHORIZED`,
+                err,
+              ),
+            );
         }
         break;
       }
@@ -1144,13 +1281,23 @@ export class PaymentsService {
               where: { orderId },
               data: { status: 'CAPTURED' },
             })
-            .catch((err) => this.logger.error(`Webhook DB sync failed for payment on order ${orderId}`, err));
+            .catch((err) =>
+              this.logger.error(
+                `Webhook DB sync failed for payment on order ${orderId}`,
+                err,
+              ),
+            );
           await this.prisma.order
             .update({
               where: { id: orderId },
               data: { paymentStatus: 'CAPTURED' },
             })
-            .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus CAPTURED`, err));
+            .catch((err) =>
+              this.logger.error(
+                `Webhook DB sync failed for order ${orderId} paymentStatus CAPTURED`,
+                err,
+              ),
+            );
         }
         if (skipHireOrderId) {
           const confirmedSkip = await this.prisma.skipHireOrder
@@ -1170,7 +1317,10 @@ export class PaymentsService {
               },
             })
             .catch((err) => {
-              this.logger.error(`Webhook: failed to confirm skip-hire order ${skipHireOrderId}`, err);
+              this.logger.error(
+                `Webhook: failed to confirm skip-hire order ${skipHireOrderId}`,
+                err,
+              );
               return null;
             });
 
@@ -1188,13 +1338,21 @@ export class PaymentsService {
                 .toISOString()
                 .split('T')[0];
               this.notifications
-                .createForMany(carrierUsers.map((u) => u.id), {
-                  type: NotificationType.ORDER_CONFIRMED,
-                  title: '📦 Jauns konteinera pasūtījums',
-                  message: `Pasūtījums #${confirmedSkip.orderNumber} apmaksāts. Piegāde: ${confirmedSkip.location}, ${deliveryDay}.`,
-                  data: { skipOrderId: confirmedSkip.id },
-                })
-                .catch((err) => this.logger.warn('Notification (skip order confirmed) failed', (err as Error).message));
+                .createForMany(
+                  carrierUsers.map((u) => u.id),
+                  {
+                    type: NotificationType.ORDER_CONFIRMED,
+                    title: '📦 Jauns konteinera pasūtījums',
+                    message: `Pasūtījums #${confirmedSkip.orderNumber} apmaksāts. Piegāde: ${confirmedSkip.location}, ${deliveryDay}.`,
+                    data: { skipOrderId: confirmedSkip.id },
+                  },
+                )
+                .catch((err) =>
+                  this.logger.warn(
+                    'Notification (skip order confirmed) failed',
+                    (err as Error).message,
+                  ),
+                );
             }
           }
         }
@@ -1210,13 +1368,23 @@ export class PaymentsService {
               where: { orderId },
               data: { status: 'FAILED' },
             })
-            .catch((err) => this.logger.error(`Webhook DB sync failed for payment on order ${orderId}`, err));
+            .catch((err) =>
+              this.logger.error(
+                `Webhook DB sync failed for payment on order ${orderId}`,
+                err,
+              ),
+            );
           await this.prisma.order
             .update({
               where: { id: orderId },
               data: { paymentStatus: 'FAILED' },
             })
-            .catch((err) => this.logger.error(`Webhook DB sync failed for order ${orderId} paymentStatus FAILED`, err));
+            .catch((err) =>
+              this.logger.error(
+                `Webhook DB sync failed for order ${orderId} paymentStatus FAILED`,
+                err,
+              ),
+            );
         }
         break;
       }
@@ -1234,13 +1402,23 @@ export class PaymentsService {
                 where: { id: payment.id },
                 data: { status: 'REFUNDED' },
               })
-              .catch((err) => this.logger.error(`Webhook DB sync failed for payment ${payment.id} REFUNDED`, err));
+              .catch((err) =>
+                this.logger.error(
+                  `Webhook DB sync failed for payment ${payment.id} REFUNDED`,
+                  err,
+                ),
+              );
             await this.prisma.order
               .update({
                 where: { id: payment.orderId },
                 data: { paymentStatus: 'REFUNDED' },
               })
-              .catch((err) => this.logger.error(`Webhook DB sync failed for order ${payment.orderId} paymentStatus REFUNDED`, err));
+              .catch((err) =>
+                this.logger.error(
+                  `Webhook DB sync failed for order ${payment.orderId} paymentStatus REFUNDED`,
+                  err,
+                ),
+              );
           }
         }
         break;
@@ -1248,28 +1426,40 @@ export class PaymentsService {
 
       // Stripe externally cancelled the PaymentIntent (e.g. bank / 3DS / expired authorization)
       case 'payment_intent.canceled': {
-        const pi = event.data.object as Stripe.PaymentIntent;
+        const pi = event.data.object;
         const orderId = pi.metadata?.orderId;
         if (orderId) {
           // Only update if the order is still in a pre-capture state — don't clobber COMPLETED/CANCELLED by other paths
           const order = await this.prisma.order.findUnique({
             where: { id: orderId },
-            select: { status: true, paymentStatus: true, createdById: true, orderNumber: true },
+            select: {
+              status: true,
+              paymentStatus: true,
+              createdById: true,
+              orderNumber: true,
+            },
           });
           if (order && !['COMPLETED', 'CANCELLED'].includes(order.status)) {
-            await this.prisma.$transaction([
-              this.prisma.payment.update({
-                where: { orderId },
-                data: { status: PaymentStatus.FAILED },
-              }),
-              this.prisma.order.update({
-                where: { id: orderId },
-                data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
-              }),
-            ]).catch((err) =>
-              this.logger.error(`payment_intent.canceled: failed to cancel order ${orderId}`, err),
+            await this.prisma
+              .$transaction([
+                this.prisma.payment.update({
+                  where: { orderId },
+                  data: { status: PaymentStatus.FAILED },
+                }),
+                this.prisma.order.update({
+                  where: { id: orderId },
+                  data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+                }),
+              ])
+              .catch((err) =>
+                this.logger.error(
+                  `payment_intent.canceled: failed to cancel order ${orderId}`,
+                  err,
+                ),
+              );
+            this.logger.warn(
+              `payment_intent.canceled: order ${orderId} cancelled by Stripe`,
             );
-            this.logger.warn(`payment_intent.canceled: order ${orderId} cancelled by Stripe`);
 
             // Notify the buyer so they know the order was not placed
             if (order.createdById) {
@@ -1281,7 +1471,11 @@ export class PaymentsService {
                   message: `Pasūtījums #${order.orderNumber} tika atcelts, jo banka vai Stripe atcēla maksājuma autorizāciju. Lūdzu, mēģiniet no jauna.`,
                   data: { orderId },
                 })
-                .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+                .catch((err: unknown) =>
+                  this.logger.warn(
+                    `Notification dispatch failed: ${(err as Error).message}`,
+                  ),
+                );
             }
           }
         }
@@ -1290,7 +1484,7 @@ export class PaymentsService {
 
       // Stripe Connect account status changed (e.g. seller restricted by Stripe compliance)
       case 'account.updated': {
-        const account = event.data.object as Stripe.Account;
+        const account = event.data.object;
         const chargesEnabled = account.charges_enabled ?? false;
         const payoutsEnabled = account.payouts_enabled ?? false;
 
@@ -1317,11 +1511,17 @@ export class PaymentsService {
                   type: NotificationType.SYSTEM_ALERT,
                   title: 'Stripe account restricted',
                   message: `Stripe Connect account ${account.id}${company ? ` (${company.name})` : ''} has been restricted. charges_enabled=${chargesEnabled}, payouts_enabled=${payoutsEnabled}`,
-                  data: { accountId: account.id, companyId: company?.id ?? null },
+                  data: {
+                    accountId: account.id,
+                    companyId: company?.id ?? null,
+                  },
                 },
               )
               .catch((err) =>
-                this.logger.error(`account.updated: failed to notify admins`, err),
+                this.logger.error(
+                  `account.updated: failed to notify admins`,
+                  err,
+                ),
               );
           }
         }
@@ -1330,7 +1530,7 @@ export class PaymentsService {
 
       // Stripe Payment Link completed — buyer paid their NET-terms invoice online
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         const invoiceId = session.metadata?.invoiceId;
         const orderId = session.metadata?.orderId;
         const transportJobId = session.metadata?.transportJobId;
@@ -1437,10 +1637,11 @@ export class PaymentsService {
     }
 
     // Map the incoming reason string to the DisputeReason enum (default OTHER for unknown values)
-    const disputeReason: DisputeReason =
-      Object.values(DisputeReason).includes(reason as DisputeReason)
-        ? (reason as DisputeReason)
-        : DisputeReason.OTHER;
+    const disputeReason: DisputeReason = Object.values(DisputeReason).includes(
+      reason as DisputeReason,
+    )
+      ? (reason as DisputeReason)
+      : DisputeReason.OTHER;
 
     const disputeEntry =
       `[DISPUTE ${new Date().toISOString()}] Reason: ${reason}` +
@@ -1547,7 +1748,10 @@ export class PaymentsService {
           data: { status: 'COMPLETED', internalNotes: updatedNotes },
         }),
         this.prisma.dispute.updateMany({
-          where: { orderId, status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
+          where: {
+            orderId,
+            status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] },
+          },
           data: {
             status: DisputeStatus.REJECTED,
             resolution: adminNote ?? 'Dispute rejected — delivery confirmed.',
@@ -1568,7 +1772,11 @@ export class PaymentsService {
           message: `Jūsu sūdzība par pasūtījumu #${order.orderNumber} ir izskatīta. Piegāde apstiprināta.`,
           data: { orderId },
         })
-        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Notification dispatch failed: ${(err as Error).message}`,
+          ),
+        );
     } else {
       // Uphold dispute — refund buyer, cancel order
       await this.prisma.$transaction([
@@ -1577,7 +1785,10 @@ export class PaymentsService {
           data: { status: 'CANCELLED', internalNotes: updatedNotes },
         }),
         this.prisma.dispute.updateMany({
-          where: { orderId, status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
+          where: {
+            orderId,
+            status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] },
+          },
           data: {
             status: DisputeStatus.RESOLVED,
             resolution: adminNote ?? 'Dispute upheld — refund issued.',
@@ -1598,7 +1809,11 @@ export class PaymentsService {
           message: `Jūsu sūdzība par pasūtījumu #${order.orderNumber} ir apstiprināta. Atmaksa tiks apstrādāta 5-10 darba dienu laikā.`,
           data: { orderId },
         })
-        .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            `Notification dispatch failed: ${(err as Error).message}`,
+          ),
+        );
     }
 
     return { ok: true, resolution };
@@ -1614,75 +1829,84 @@ export class PaymentsService {
    */
   @Cron(CronExpression.EVERY_6_HOURS)
   async warnExpiringAuthorizations(): Promise<void> {
-    await withCronLock(this.prisma, 'warnExpiringAuthorizations', async () => {
-    if (!this.stripe) return;
+    await withCronLock(
+      this.prisma,
+      'warnExpiringAuthorizations',
+      async () => {
+        if (!this.stripe) return;
 
-    const now = new Date();
-    const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const now = new Date();
+        const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Orders confirmed 6+ days ago with payment still only AUTHORIZED (not captured)
-    const atRisk = await this.prisma.order.findMany({
-      where: {
-        status: 'CONFIRMED',
-        paymentStatus: PaymentStatus.AUTHORIZED,
-        updatedAt: { lte: sixDaysAgo },
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        updatedAt: true,
-        createdById: true,
-        items: {
-          select: { material: { select: { supplierId: true } } },
-          take: 1,
-        },
-      },
-    });
-
-    for (const order of atRisk) {
-      const isExpired = order.updatedAt <= sevenDaysAgo;
-      const supplierId = order.items[0]?.material?.supplierId;
-
-      if (isExpired) {
-        // Authorization has almost certainly expired — log for admin review
-        this.logger.warn(
-          `warnExpiringAuthorizations: order ${order.orderNumber} (${order.id}) has an authorization older than 7 days — capture will likely fail`,
-        );
-      }
-
-      // Notify seller to re-confirm / take action
-      if (supplierId) {
-        const sellerUsers = await this.prisma.user.findMany({
-          where: { companyId: supplierId, canSell: true },
-          select: { id: true },
+        // Orders confirmed 6+ days ago with payment still only AUTHORIZED (not captured)
+        const atRisk = await this.prisma.order.findMany({
+          where: {
+            status: 'CONFIRMED',
+            paymentStatus: PaymentStatus.AUTHORIZED,
+            updatedAt: { lte: sixDaysAgo },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            updatedAt: true,
+            createdById: true,
+            items: {
+              select: { material: { select: { supplierId: true } } },
+              take: 1,
+            },
+          },
         });
-        if (sellerUsers.length > 0) {
-          await this.notifications
-            .createForMany(
-              sellerUsers.map((u) => u.id),
-              {
-                type: NotificationType.SYSTEM_ALERT,
-                title: isExpired
-                  ? '🚨 Maksājuma autorizācija ir beigusies'
-                  : '⚠️ Maksājuma autorizācija drīz beigsies',
-                message: isExpired
-                  ? `Pasūtījums #${order.orderNumber}: maksājuma autorizācija jau ir beidzies. Sazinieties ar atbalstu.`
-                  : `Pasūtījums #${order.orderNumber}: pircēja maksājuma autorizācija beigsies 24 stundu laikā. Apstipriniet pasūtījumu nekavējoties.`,
-                data: { orderId: order.id, isExpired },
-              },
-            )
-            .catch((err: unknown) => this.logger.warn(`Notification dispatch failed: ${(err as Error).message}`));
-        }
-      }
-    }
 
-    if (atRisk.length > 0) {
-      this.logger.warn(
-        `warnExpiringAuthorizations: ${atRisk.length} order(s) at risk of expired Stripe authorization`,
-      );
-    }
-    }, this.logger);
+        for (const order of atRisk) {
+          const isExpired = order.updatedAt <= sevenDaysAgo;
+          const supplierId = order.items[0]?.material?.supplierId;
+
+          if (isExpired) {
+            // Authorization has almost certainly expired — log for admin review
+            this.logger.warn(
+              `warnExpiringAuthorizations: order ${order.orderNumber} (${order.id}) has an authorization older than 7 days — capture will likely fail`,
+            );
+          }
+
+          // Notify seller to re-confirm / take action
+          if (supplierId) {
+            const sellerUsers = await this.prisma.user.findMany({
+              where: { companyId: supplierId, canSell: true },
+              select: { id: true },
+            });
+            if (sellerUsers.length > 0) {
+              await this.notifications
+                .createForMany(
+                  sellerUsers.map((u) => u.id),
+                  {
+                    type: NotificationType.SYSTEM_ALERT,
+                    title: isExpired
+                      ? '🚨 Maksājuma autorizācija ir beigusies'
+                      : '⚠️ Maksājuma autorizācija drīz beigsies',
+                    message: isExpired
+                      ? `Pasūtījums #${order.orderNumber}: maksājuma autorizācija jau ir beidzies. Sazinieties ar atbalstu.`
+                      : `Pasūtījums #${order.orderNumber}: pircēja maksājuma autorizācija beigsies 24 stundu laikā. Apstipriniet pasūtījumu nekavējoties.`,
+                    data: { orderId: order.id, isExpired },
+                  },
+                )
+                .catch((err: unknown) =>
+                  this.logger.warn(
+                    `Notification dispatch failed: ${(err as Error).message}`,
+                  ),
+                );
+            }
+          }
+        }
+
+        if (atRisk.length > 0) {
+          this.logger.warn(
+            `warnExpiringAuthorizations: ${atRisk.length} order(s) at risk of expired Stripe authorization`,
+          );
+        }
+      },
+      this.logger,
+    );
   }
 
   /**
@@ -1694,7 +1918,10 @@ export class PaymentsService {
    * @param orderId  the order whose payment should be updated
    * @param newTotal the new total in EUR (float); converted to cents internally
    */
-  async updatePaymentIntentAmount(orderId: string, newTotal: number): Promise<void> {
+  async updatePaymentIntentAmount(
+    orderId: string,
+    newTotal: number,
+  ): Promise<void> {
     if (!this.stripe) {
       this.logger.warn(
         `updatePaymentIntentAmount: Stripe not configured — skipping for order ${orderId}`,
@@ -1702,7 +1929,9 @@ export class PaymentsService {
       return;
     }
 
-    const payment = await this.prisma.payment.findUnique({ where: { orderId } });
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId },
+    });
 
     if (!payment || !payment.stripePaymentId) {
       // No payment intent yet (e.g. buyer hasn't initiated checkout) — nothing to update
@@ -1791,7 +2020,8 @@ export class PaymentsService {
       );
 
       // Get Stripe Connect account status
-      let stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE' = 'NOT_CONNECTED';
+      let stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE' =
+        'NOT_CONNECTED';
       const company = await this.prisma.company.findUnique({
         where: { id: companyId },
         select: { stripeConnectId: true },
@@ -1802,9 +2032,7 @@ export class PaymentsService {
             company.stripeConnectId,
           );
           stripeStatus =
-            acct.charges_enabled && acct.payouts_enabled
-              ? 'ACTIVE'
-              : 'PENDING';
+            acct.charges_enabled && acct.payouts_enabled ? 'ACTIVE' : 'PENDING';
         } catch {
           stripeStatus = 'PENDING';
         }
@@ -1840,7 +2068,9 @@ export class PaymentsService {
         include: {
           order: {
             include: {
-              payment: { select: { driverPayout: true, status: true, currency: true } },
+              payment: {
+                select: { driverPayout: true, status: true, currency: true },
+              },
               buyer: { select: { name: true } },
             },
           },
@@ -1853,7 +2083,8 @@ export class PaymentsService {
         0,
       );
 
-      let stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE' = 'NOT_CONNECTED';
+      let stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE' =
+        'NOT_CONNECTED';
       const driverProfile = await this.prisma.driverProfile.findUnique({
         where: { userId: user.userId },
         select: { stripeConnectId: true, payoutEnabled: true },
@@ -1964,11 +2195,15 @@ export class PaymentsService {
     });
 
     if (!order) {
-      this.logger.warn(`releaseSkipHireFunds: skip order ${skipOrderId} not found`);
+      this.logger.warn(
+        `releaseSkipHireFunds: skip order ${skipOrderId} not found`,
+      );
       return;
     }
     if (!order.stripePaymentId) {
-      this.logger.warn(`releaseSkipHireFunds: skip order ${skipOrderId} has no stripePaymentId — manual payout required`);
+      this.logger.warn(
+        `releaseSkipHireFunds: skip order ${skipOrderId} has no stripePaymentId — manual payout required`,
+      );
       return;
     }
     if (!order.carrierId || !order.carrier?.stripeConnectId) {
@@ -1978,7 +2213,9 @@ export class PaymentsService {
       return;
     }
     if (!this.stripe) {
-      this.logger.warn(`releaseSkipHireFunds: Stripe not configured — skipping for skip order ${skipOrderId}`);
+      this.logger.warn(
+        `releaseSkipHireFunds: Stripe not configured — skipping for skip order ${skipOrderId}`,
+      );
       return;
     }
 

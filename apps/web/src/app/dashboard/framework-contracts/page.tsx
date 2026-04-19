@@ -203,12 +203,12 @@ function MaterialSearchInput({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (value.length < 2) {
-      setResults([]);
-      return;
-    }
-    setFetching(true);
     const t = setTimeout(() => {
+      if (value.length < 2) {
+        setResults([]);
+        return;
+      }
+      setFetching(true);
       getMaterials(token, { search: value })
         .then(setResults)
         .catch(() => setResults([]))

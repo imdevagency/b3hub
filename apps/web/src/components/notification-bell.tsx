@@ -17,10 +17,8 @@ import {
   MessageSquare,
   FileText,
   Scale,
-  X,
   RefreshCw,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import {
   getNotifications,
@@ -28,7 +26,6 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   type AppNotification,
-  type NotificationType,
 } from '@/lib/api';
 
 const TYPE_META: Record<string, { icon: React.ElementType }> = {
@@ -202,32 +199,43 @@ export function NotificationBell() {
                     <div
                       key={n.id}
                       className={`group relative flex items-start gap-4 p-4 border-b border-gray-50 last:border-0 transition-colors ${
-                        n.isRead ? 'bg-white opacity-70 hover:bg-gray-50' : 'bg-blue-50/30 hover:bg-blue-50/50'
+                        n.isRead
+                          ? 'bg-white opacity-70 hover:bg-gray-50'
+                          : 'bg-blue-50/30 hover:bg-blue-50/50'
                       }`}
                     >
-                      <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-full mt-0.5 ${
-                        n.isRead ? 'bg-gray-100 text-gray-400' : 'bg-black text-white'
-                      }`}>
+                      <div
+                        className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-full mt-0.5 ${
+                          n.isRead ? 'bg-gray-100 text-gray-400' : 'bg-black text-white'
+                        }`}
+                      >
                         <Icon className="h-4 w-4" strokeWidth={2} />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0 pr-6">
                         <div className="flex items-center justify-between gap-2">
-                          <p className={`text-sm truncate leading-tight ${n.isRead ? 'font-medium text-gray-600' : 'font-bold text-gray-900'}`}>
+                          <p
+                            className={`text-sm truncate leading-tight ${n.isRead ? 'font-medium text-gray-600' : 'font-bold text-gray-900'}`}
+                          >
                             {cleanTitle}
                           </p>
                           <p className="text-[10px] font-medium text-gray-400 shrink-0">
                             {fmtRelative(n.createdAt)}
                           </p>
                         </div>
-                        <p className={`text-[13px] mt-1 leading-relaxed line-clamp-2 ${n.isRead ? 'text-gray-500' : 'text-gray-700'}`}>
+                        <p
+                          className={`text-[13px] mt-1 leading-relaxed line-clamp-2 ${n.isRead ? 'text-gray-500' : 'text-gray-700'}`}
+                        >
                           {cleanMessage}
                         </p>
                       </div>
 
                       {!n.isRead && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleMarkOne(n.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkOne(n.id);
+                          }}
                           className="absolute right-4 top-4 opacity-100 md:opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-900 transition-all"
                           aria-label="Atzīmēt lasītu"
                           title="Atzīmēt izlasītu"
@@ -245,7 +253,9 @@ export function NotificationBell() {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 text-center">
-              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Rāda pēdējos 10</p>
+              <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+                Rāda pēdējos 10
+              </p>
             </div>
           )}
         </div>

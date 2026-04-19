@@ -455,7 +455,9 @@ describe('OrdersService — Error Handling', () => {
             deliveryState: 'LV',
             deliveryPostal: 'LV-1010',
             deliveryFee: 0,
-            items: [{ materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 }],
+            items: [
+              { materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 },
+            ],
           },
           driver,
         ),
@@ -484,7 +486,9 @@ describe('OrdersService — Error Handling', () => {
             deliveryState: 'LV',
             deliveryPostal: 'LV-1010',
             deliveryFee: 0,
-            items: [{ materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 }],
+            items: [
+              { materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 10 },
+            ],
           },
           userWithoutCompany,
         ),
@@ -528,7 +532,9 @@ describe('OrdersService — Error Handling', () => {
             deliveryState: 'LV',
             deliveryPostal: 'LV-1010',
             deliveryFee: 0,
-            items: [{ materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 1000 }],
+            items: [
+              { materialId: 'm1', quantity: 1, unit: 'TONNE', unitPrice: 1000 },
+            ],
           },
           buyer,
         ),
@@ -537,19 +543,31 @@ describe('OrdersService — Error Handling', () => {
   });
 
   describe('updateStatus — full allowed transition map', () => {
-    const cases: Array<{ from: OrderStatus; to: OrderStatus; allowed: boolean }> = [
+    const cases: Array<{
+      from: OrderStatus;
+      to: OrderStatus;
+      allowed: boolean;
+    }> = [
       { from: OrderStatus.DRAFT, to: OrderStatus.PENDING, allowed: true },
       { from: OrderStatus.DRAFT, to: OrderStatus.CANCELLED, allowed: true },
       { from: OrderStatus.PENDING, to: OrderStatus.CONFIRMED, allowed: true },
       { from: OrderStatus.PENDING, to: OrderStatus.CANCELLED, allowed: true },
-      { from: OrderStatus.CONFIRMED, to: OrderStatus.IN_PROGRESS, allowed: true },
+      {
+        from: OrderStatus.CONFIRMED,
+        to: OrderStatus.IN_PROGRESS,
+        allowed: true,
+      },
       { from: OrderStatus.CONFIRMED, to: OrderStatus.DELIVERED, allowed: true },
       { from: OrderStatus.CONFIRMED, to: OrderStatus.COMPLETED, allowed: true },
       { from: OrderStatus.DELIVERED, to: OrderStatus.COMPLETED, allowed: true },
       // Illegal transitions
       { from: OrderStatus.PENDING, to: OrderStatus.DELIVERED, allowed: false },
       { from: OrderStatus.COMPLETED, to: OrderStatus.PENDING, allowed: false },
-      { from: OrderStatus.DELIVERED, to: OrderStatus.CANCELLED, allowed: false },
+      {
+        from: OrderStatus.DELIVERED,
+        to: OrderStatus.CANCELLED,
+        allowed: false,
+      },
     ];
 
     cases.forEach(({ from, to, allowed }) => {
@@ -566,7 +584,9 @@ describe('OrdersService — Error Handling', () => {
             id: 'order-1',
             status: to,
           });
-          await expect(service.updateStatus('order-1', to)).resolves.toBeDefined();
+          await expect(
+            service.updateStatus('order-1', to),
+          ).resolves.toBeDefined();
         } else {
           await expect(service.updateStatus('order-1', to)).rejects.toThrow(
             BadRequestException,

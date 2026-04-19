@@ -152,7 +152,9 @@ export function validateEnv(config: Record<string, unknown>) {
 
   // Production-only: fail hard if any critical secret is absent.
   if (validatedConfig.NODE_ENV === Environment.Production) {
-    const missing = REQUIRED_IN_PRODUCTION.filter((key) => !validatedConfig[key]);
+    const missing = REQUIRED_IN_PRODUCTION.filter(
+      (key) => !validatedConfig[key],
+    );
     if (missing.length > 0) {
       throw new Error(
         `Production startup blocked — missing required secrets:\n${missing.map((k) => `  • ${k}`).join('\n')}\n` +
@@ -163,4 +165,3 @@ export function validateEnv(config: Record<string, unknown>) {
 
   return validatedConfig;
 }
-

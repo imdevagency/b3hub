@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { MapsService } from './maps.service';
 import { RoutePolylineDto } from './dto/route-polyline.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -47,7 +55,9 @@ export class MapsController {
       throw new BadRequestException('lat must be a number between -90 and 90');
     }
     if (!Number.isFinite(lngNum) || lngNum < -180 || lngNum > 180) {
-      throw new BadRequestException('lng must be a number between -180 and 180');
+      throw new BadRequestException(
+        'lng must be a number between -180 and 180',
+      );
     }
     const address = await this.mapsService.reverseGeocode(latNum, lngNum);
     return { address };

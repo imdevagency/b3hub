@@ -54,7 +54,9 @@ export class AuthService {
 
     // Terms must be explicitly accepted — guard at service layer too
     if (!termsAccepted) {
-      throw new BadRequestException('You must accept the Terms of Service and Privacy Policy to register.');
+      throw new BadRequestException(
+        'You must accept the Terms of Service and Privacy Policy to register.',
+      );
     }
 
     // Check if user already exists
@@ -70,8 +72,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // Generate email verification token
-    const { rawToken: rawVerifyToken, hashed: hashedVerifyToken, expiry: verifyExpiry } =
-      this.generateSecureToken(EMAIL_VERIFY_TTL_MS);
+    const {
+      rawToken: rawVerifyToken,
+      hashed: hashedVerifyToken,
+      expiry: verifyExpiry,
+    } = this.generateSecureToken(EMAIL_VERIFY_TTL_MS);
 
     // Create user — always BUYER type; extra roles become provider applications
     const user = await this.prisma.user.create({
@@ -157,8 +162,19 @@ export class AuthService {
     );
 
     // Send welcome + verification emails (non-blocking)
-    this.email.sendEmailVerification(email, firstName ?? email, rawVerifyToken).catch((err) => this.logger.warn('sendEmailVerification failed', (err as Error).message));
-    this.email.sendWelcome(email, firstName ?? email).catch((err) => this.logger.warn('sendWelcome failed', (err as Error).message));
+    this.email
+      .sendEmailVerification(email, firstName ?? email, rawVerifyToken)
+      .catch((err) =>
+        this.logger.warn(
+          'sendEmailVerification failed',
+          (err as Error).message,
+        ),
+      );
+    this.email
+      .sendWelcome(email, firstName ?? email)
+      .catch((err) =>
+        this.logger.warn('sendWelcome failed', (err as Error).message),
+      );
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
 
@@ -194,8 +210,12 @@ export class AuthService {
 
     // Check account lockout
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const secondsLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
-      this.logger.warn(`AUTH_LOCKED userId=${user.id} email=${email} ip=${ip ?? 'unknown'} remainingSecs=${secondsLeft}`);
+      const secondsLeft = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 1000,
+      );
+      this.logger.warn(
+        `AUTH_LOCKED userId=${user.id} email=${email} ip=${ip ?? 'unknown'} remainingSecs=${secondsLeft}`,
+      );
       throw new ForbiddenException(
         `Account temporarily locked. Try again in ${secondsLeft} seconds.`,
       );
@@ -210,13 +230,19 @@ export class AuthService {
         where: { id: user.id },
         data: {
           failedLoginAttempts: attempts,
-          lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+          lockedUntil: shouldLock
+            ? new Date(Date.now() + LOCKOUT_DURATION_MS)
+            : null,
         },
       });
       if (shouldLock) {
-        this.logger.warn(`AUTH_LOCKOUT userId=${user.id} email=${email} ip=${ip ?? 'unknown'} attempts=${attempts}`);
+        this.logger.warn(
+          `AUTH_LOCKOUT userId=${user.id} email=${email} ip=${ip ?? 'unknown'} attempts=${attempts}`,
+        );
       } else {
-        this.logger.warn(`AUTH_FAIL email=${email} ip=${ip ?? 'unknown'} attempts=${attempts}`);
+        this.logger.warn(
+          `AUTH_FAIL email=${email} ip=${ip ?? 'unknown'} attempts=${attempts}`,
+        );
       }
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -231,7 +257,9 @@ export class AuthService {
 
     // Check if user is active
     if (user.status !== 'ACTIVE' && user.status !== 'PENDING') {
-      this.logger.warn(`AUTH_SUSPENDED userId=${user.id} email=${email} ip=${ip ?? 'unknown'} status=${user.status}`);
+      this.logger.warn(
+        `AUTH_SUSPENDED userId=${user.id} email=${email} ip=${ip ?? 'unknown'} status=${user.status}`,
+      );
       throw new UnauthorizedException('Account is not active');
     }
 
@@ -262,7 +290,9 @@ export class AuthService {
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(user.id);
 
-    this.logger.log(`AUTH_SUCCESS userId=${user.id} email=${email} ip=${ip ?? 'unknown'}`);
+    this.logger.log(
+      `AUTH_SUCCESS userId=${user.id} email=${email} ip=${ip ?? 'unknown'}`,
+    );
     return {
       user: userWithoutPassword,
       token,
@@ -330,7 +360,8 @@ export class AuthService {
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
     const isPureTransportIndividual =
       isTransport && !user.canSell && !user.isCompany;
-    if (user.userType === 'BUYER' && !isPureTransportIndividual) modes.push('BUYER');
+    if (user.userType === 'BUYER' && !isPureTransportIndividual)
+      modes.push('BUYER');
     if (user.canSell) modes.push('SUPPLIER');
     if (isTransport) modes.push('CARRIER');
 
@@ -377,7 +408,8 @@ export class AuthService {
       throw new BadRequestException('Email is already verified');
     }
 
-    const { rawToken, hashed, expiry } = this.generateSecureToken(EMAIL_VERIFY_TTL_MS);
+    const { rawToken, hashed, expiry } =
+      this.generateSecureToken(EMAIL_VERIFY_TTL_MS);
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -386,7 +418,12 @@ export class AuthService {
 
     this.email
       .sendEmailVerification(user.email ?? '', user.firstName ?? '', rawToken)
-      .catch((err) => this.logger.warn('sendEmailVerification (resend) failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'sendEmailVerification (resend) failed',
+          (err as Error).message,
+        ),
+      );
 
     return { ok: true };
   }
@@ -431,7 +468,9 @@ export class AuthService {
     // Always return ok to prevent user enumeration
     if (!user) return { ok: true };
 
-    const { rawToken, hashed, expiry } = this.generateSecureToken(60 * 60 * 1000); // 1 hour
+    const { rawToken, hashed, expiry } = this.generateSecureToken(
+      60 * 60 * 1000,
+    ); // 1 hour
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -441,7 +480,9 @@ export class AuthService {
     // Send password reset email
     this.email
       .sendPasswordReset(user.email ?? '', user.firstName ?? '', rawToken)
-      .catch((err) => this.logger.warn('sendPasswordReset failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn('sendPasswordReset failed', (err as Error).message),
+      );
 
     // Surface raw token only when explicitly enabled — never in production
     const exposeDevToken =
@@ -473,19 +514,17 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-    await this.prisma.user.update(
-      {
-        where: { id: user.id },
-        data: {
-          password: hashedPassword,
-          resetToken: null,
-          resetTokenExpiry: null,
-          // Revoke all sessions so stolen-then-reset tokens can't still log in
-          refreshToken: null,
-          refreshTokenExpiry: null,
-        },
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+        // Revoke all sessions so stolen-then-reset tokens can't still log in
+        refreshToken: null,
+        refreshTokenExpiry: null,
       },
-    );
+    });
 
     return { ok: true };
   }
@@ -500,7 +539,9 @@ export class AuthService {
 
     // Check lockout (same mechanism as login)
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const secondsLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
+      const secondsLeft = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 1000,
+      );
       throw new ForbiddenException(
         `Account temporarily locked. Try again in ${secondsLeft} seconds.`,
       );
@@ -515,7 +556,9 @@ export class AuthService {
         where: { id: userId },
         data: {
           failedLoginAttempts: attempts,
-          lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+          lockedUntil: shouldLock
+            ? new Date(Date.now() + LOCKOUT_DURATION_MS)
+            : null,
         },
       });
       throw new BadRequestException('Esošā parole nav pareiza');
@@ -703,7 +746,10 @@ export class AuthService {
         firstName: 'Deleted',
         lastName: 'User',
         avatar: null,
-        password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS),
+        password: await bcrypt.hash(
+          crypto.randomBytes(32).toString('hex'),
+          BCRYPT_ROUNDS,
+        ),
         // Revoke all tokens
         refreshToken: null,
         refreshTokenExpiry: null,

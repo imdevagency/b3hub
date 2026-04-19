@@ -84,65 +84,76 @@ export class FrameworkContractsService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async expireContracts(): Promise<void> {
-    await withCronLock(this.prisma, 'expireContracts', async () => {
-    const now = new Date();
-    const expired = await this.prisma.frameworkContract.findMany({
-      where: {
-        status: FrameworkContractStatus.ACTIVE,
-        endDate: { lt: now },
-      },
-      select: {
-        id: true,
-        contractNumber: true,
-        createdById: true,
-        buyerId: true,
-        supplierId: true,
-      },
-    });
-
-    if (expired.length === 0) return;
-
-    await this.prisma.frameworkContract.updateMany({
-      where: {
-        id: { in: expired.map((c) => c.id) },
-        status: FrameworkContractStatus.ACTIVE,
-      },
-      data: { status: FrameworkContractStatus.EXPIRED },
-    });
-
-    this.logger.log(`expireContracts: expired ${expired.length} contract(s)`);
-
-    // Notify owners and supplier company members
-    for (const contract of expired) {
-      const recipientIds = new Set<string>();
-      if (contract.createdById) recipientIds.add(contract.createdById);
-
-      // Also notify any managers/owners in the buyer and supplier companies
-      const companyIds = [
-        contract.buyerId,
-        contract.supplierId,
-      ].filter(Boolean) as string[];
-
-      if (companyIds.length > 0) {
-        const members = await this.prisma.user.findMany({
-          where: { companyId: { in: companyIds } },
-          select: { id: true },
+    await withCronLock(
+      this.prisma,
+      'expireContracts',
+      async () => {
+        const now = new Date();
+        const expired = await this.prisma.frameworkContract.findMany({
+          where: {
+            status: FrameworkContractStatus.ACTIVE,
+            endDate: { lt: now },
+          },
+          select: {
+            id: true,
+            contractNumber: true,
+            createdById: true,
+            buyerId: true,
+            supplierId: true,
+          },
         });
-        members.forEach((m) => recipientIds.add(m.id));
-      }
 
-      if (recipientIds.size > 0) {
-        this.notifications
-          .createForMany(Array.from(recipientIds), {
-            type: NotificationType.SYSTEM_ALERT,
-            title: 'Ietvarlīgums ir beidzies',
-            message: `Ietvarlīgums ${contract.contractNumber} ir beidzies. Lūdzu, atjauniniet vai noslēdziet jaunu līgumu.`,
-            data: { contractId: contract.id },
-          })
-          .catch((err) => this.logger.warn('Notification (contract expired) failed', (err as Error).message));
-      }
-    }
-    }, this.logger);
+        if (expired.length === 0) return;
+
+        await this.prisma.frameworkContract.updateMany({
+          where: {
+            id: { in: expired.map((c) => c.id) },
+            status: FrameworkContractStatus.ACTIVE,
+          },
+          data: { status: FrameworkContractStatus.EXPIRED },
+        });
+
+        this.logger.log(
+          `expireContracts: expired ${expired.length} contract(s)`,
+        );
+
+        // Notify owners and supplier company members
+        for (const contract of expired) {
+          const recipientIds = new Set<string>();
+          if (contract.createdById) recipientIds.add(contract.createdById);
+
+          // Also notify any managers/owners in the buyer and supplier companies
+          const companyIds = [contract.buyerId, contract.supplierId].filter(
+            Boolean,
+          ) as string[];
+
+          if (companyIds.length > 0) {
+            const members = await this.prisma.user.findMany({
+              where: { companyId: { in: companyIds } },
+              select: { id: true },
+            });
+            members.forEach((m) => recipientIds.add(m.id));
+          }
+
+          if (recipientIds.size > 0) {
+            this.notifications
+              .createForMany(Array.from(recipientIds), {
+                type: NotificationType.SYSTEM_ALERT,
+                title: 'Ietvarlīgums ir beidzies',
+                message: `Ietvarlīgums ${contract.contractNumber} ir beidzies. Lūdzu, atjauniniet vai noslēdziet jaunu līgumu.`,
+                data: { contractId: contract.id },
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  'Notification (contract expired) failed',
+                  (err as Error).message,
+                ),
+              );
+          }
+        }
+      },
+      this.logger,
+    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -152,7 +163,9 @@ export class FrameworkContractsService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `FC${year}${month}${ms}${rand}`;
   }
 
@@ -161,7 +174,9 @@ export class FrameworkContractsService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `TRJ${year}${month}${ms}${rand}`;
   }
 
@@ -172,7 +187,12 @@ export class FrameworkContractsService {
   ) {
     const contract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
-      select: { buyerId: true, createdById: true, supplierId: true, status: true },
+      select: {
+        buyerId: true,
+        createdById: true,
+        supplierId: true,
+        status: true,
+      },
     });
     if (!contract) throw new NotFoundException('Framework contract not found');
     const isBuyer =
@@ -355,7 +375,9 @@ export class FrameworkContractsService {
       const isBuyer =
         ownership.buyerId === companyId || ownership.createdById === userId;
       if (!isBuyer) {
-        throw new ForbiddenException('Only the buyer can change contract status');
+        throw new ForbiddenException(
+          'Only the buyer can change contract status',
+        );
       }
     }
 
@@ -395,7 +417,9 @@ export class FrameworkContractsService {
     const isBuyer =
       ownership.buyerId === companyId || ownership.createdById === userId;
     if (!isBuyer) {
-      throw new ForbiddenException('Only the buyer can add positions to a contract');
+      throw new ForbiddenException(
+        'Only the buyer can add positions to a contract',
+      );
     }
 
     return this.prisma.frameworkPosition.create({
@@ -425,7 +449,9 @@ export class FrameworkContractsService {
     const isBuyer =
       ownership.buyerId === companyId || ownership.createdById === userId;
     if (!isBuyer) {
-      throw new ForbiddenException('Only the buyer can remove positions from a contract');
+      throw new ForbiddenException(
+        'Only the buyer can remove positions from a contract',
+      );
     }
     // Positions cannot be removed once the contract is active
     if (ownership.status !== FrameworkContractStatus.DRAFT) {
@@ -520,7 +546,8 @@ export class FrameworkContractsService {
           pickupDate: new Date(dto.pickupDate),
           pickupLat: dto.pickupLat ?? null,
           pickupLng: dto.pickupLng ?? null,
-          deliveryAddress: dto.deliveryAddress ?? position.deliveryAddress ?? '',
+          deliveryAddress:
+            dto.deliveryAddress ?? position.deliveryAddress ?? '',
           deliveryCity: dto.deliveryCity ?? position.deliveryCity ?? '',
           deliveryState: '',
           deliveryPostal: '',
@@ -571,11 +598,13 @@ export class FrameworkContractsService {
 
     // After the call-off is created, check if the position is now fully consumed.
     // If so, notify both parties so they know to set up a contract amendment.
-    (async () => {
+    void (async () => {
       try {
         const pos = await this.prisma.frameworkPosition.findFirst({
           where: { id: positionId },
-          include: { callOffs: { select: { cargoWeight: true, status: true } } },
+          include: {
+            callOffs: { select: { cargoWeight: true, status: true } },
+          },
         });
         if (!pos) return;
 
@@ -584,7 +613,8 @@ export class FrameworkContractsService {
           .reduce((s, j) => s + (j.cargoWeight ?? 0), 0);
         const remainingQty = pos.agreedQty - newConsumed;
         const isExhausted = remainingQty <= 0;
-        const isNearlyExhausted = !isExhausted && remainingQty / pos.agreedQty <= 0.1; // < 10% left
+        const isNearlyExhausted =
+          !isExhausted && remainingQty / pos.agreedQty <= 0.1; // < 10% left
 
         if (!isExhausted && !isNearlyExhausted) return;
 
@@ -689,7 +719,8 @@ export class FrameworkContractsService {
       buyer: c.buyer,
       supplier: c.supplier,
       createdBy: c.createdBy,
-      projectId: (c as unknown as { projectId?: string | null }).projectId ?? null,
+      projectId:
+        (c as unknown as { projectId?: string | null }).projectId ?? null,
       totalCallOffs: c._count?.callOffJobs ?? 0,
       totalAgreedQty: totalAgreed,
       totalConsumedQty: totalConsumed,
@@ -713,8 +744,10 @@ export class FrameworkContractsService {
       select: { id: true, buyerId: true, isFieldContract: true },
     });
     if (!contract) throw new NotFoundException('Contract not found');
-    if (contract.buyerId !== companyId) throw new ForbiddenException('Access denied');
-    if (!contract.isFieldContract) throw new BadRequestException('Not a field contract');
+    if (contract.buyerId !== companyId)
+      throw new ForbiddenException('Access denied');
+    if (!contract.isFieldContract)
+      throw new BadRequestException('Not a field contract');
 
     return this.prisma.invoice.findMany({
       where: { advanceForContractId: contractId },
@@ -748,11 +781,20 @@ export class FrameworkContractsService {
   ) {
     const contract = await this.prisma.frameworkContract.findUnique({
       where: { id: contractId },
-      select: { id: true, contractNumber: true, title: true, buyerId: true, status: true, isFieldContract: true },
+      select: {
+        id: true,
+        contractNumber: true,
+        title: true,
+        buyerId: true,
+        status: true,
+        isFieldContract: true,
+      },
     });
     if (!contract) throw new NotFoundException('Contract not found');
     if (!contract.isFieldContract) {
-      throw new BadRequestException('Only field contracts support advance invoices');
+      throw new BadRequestException(
+        'Only field contracts support advance invoices',
+      );
     }
     if (contract.buyerId !== companyId) {
       throw new ForbiddenException('Contract does not belong to your company');
@@ -801,7 +843,12 @@ export class FrameworkContractsService {
   async markAdvancePaid(invoiceId: string) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId },
-      select: { id: true, subtotal: true, paymentStatus: true, advanceForContractId: true },
+      select: {
+        id: true,
+        subtotal: true,
+        paymentStatus: true,
+        advanceForContractId: true,
+      },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     if (!invoice.advanceForContractId) {

@@ -3,12 +3,27 @@
  * Admin-only endpoints for user management, platform stats,
  * and provider application approval workflow.
  */
-import { Controller, Get, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { PagePaginationDto } from '../common/dto/pagination.dto';
@@ -72,7 +87,10 @@ export class AdminController {
   /** GET /admin/jobs — all transport jobs (paginated) */
   @Get('jobs')
   getTransportJobs(@Query() pagination: PagePaginationDto) {
-    return this.service.getTransportJobs(pagination.page ?? 1, pagination.limit ?? 50);
+    return this.service.getTransportJobs(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+    );
   }
 
   /** GET /admin/companies — all companies */
@@ -94,7 +112,9 @@ export class AdminController {
   /** GET /admin/audit-logs — recent admin mutations for compliance review */
   @Get('audit-logs')
   getAuditLogs(@Query('limit') limit?: string) {
-    return this.service.getAuditLogs(limit ? Math.min(Number(limit), 500) : 200);
+    return this.service.getAuditLogs(
+      limit ? Math.min(Number(limit), 500) : 200,
+    );
   }
 
   /**

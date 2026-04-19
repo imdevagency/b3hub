@@ -82,7 +82,7 @@ describe('SkipHireService', () => {
     }).compile();
 
     service = module.get(SkipHireService);
-    prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prisma = module.get(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -101,7 +101,9 @@ describe('SkipHireService', () => {
     };
 
     it('throws BadRequestException when selected carrier has no pricing for the skip size', async () => {
-      (prisma.carrierPricing.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prisma.carrierPricing.findUnique as jest.Mock<any>).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.create({ ...baseDto, carrierId: 'carrier-1' }),
@@ -110,7 +112,9 @@ describe('SkipHireService', () => {
 
     it('uses platform default MIDI price (129) when no carrier is selected', async () => {
       (prisma.skipHireOrder.count as jest.Mock<any>).mockResolvedValue(0);
-      (prisma.skipHireOrder.create as jest.Mock<any>).mockResolvedValue(stubOrder());
+      (prisma.skipHireOrder.create as jest.Mock<any>).mockResolvedValue(
+        stubOrder(),
+      );
 
       await service.create(baseDto);
 
@@ -149,7 +153,11 @@ describe('SkipHireService', () => {
   describe('getQuotes', () => {
     it('returns empty array when no carrier pricing exists', async () => {
       (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([]);
-      const result = await service.getQuotes(SkipSize.MIDI, 'Riga', '2026-06-01');
+      const result = await service.getQuotes(
+        SkipSize.MIDI,
+        'Riga',
+        '2026-06-01',
+      );
       expect(result).toEqual([]);
     });
 
@@ -171,7 +179,11 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(SkipSize.MIDI, 'Riga', '2026-06-01');
+      const result = await service.getQuotes(
+        SkipSize.MIDI,
+        'Riga',
+        '2026-06-01',
+      );
       expect(result).toHaveLength(0);
     });
 
@@ -193,7 +205,11 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(SkipSize.MIDI, 'Riga', '2026-06-01');
+      const result = await service.getQuotes(
+        SkipSize.MIDI,
+        'Riga',
+        '2026-06-01',
+      );
       expect(result).toHaveLength(0);
     });
 
@@ -215,7 +231,11 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(SkipSize.MIDI, 'Riga', '2026-06-01');
+      const result = await service.getQuotes(
+        SkipSize.MIDI,
+        'Riga',
+        '2026-06-01',
+      );
       expect(result).toHaveLength(0);
     });
 
@@ -251,7 +271,11 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(SkipSize.MIDI, 'Riga', '2026-06-01');
+      const result = await service.getQuotes(
+        SkipSize.MIDI,
+        'Riga',
+        '2026-06-01',
+      );
       expect(result).toHaveLength(2);
       expect(result[0].price).toBe(119);
       expect(result[1].price).toBe(149);
@@ -262,11 +286,15 @@ describe('SkipHireService', () => {
 
   describe('findOne', () => {
     it('throws NotFoundException when order does not exist', async () => {
-      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(null);
-      await expect(service.findOne('missing')).rejects.toThrow(NotFoundException);
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
+        null,
+      );
+      await expect(service.findOne('missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('throws ForbiddenException when non-admin accesses another user\'s order', async () => {
+    it("throws ForbiddenException when non-admin accesses another user's order", async () => {
       (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ userId: 'owner-user' }),
       );
@@ -301,18 +329,18 @@ describe('SkipHireService', () => {
       (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.COMPLETED, userId: 'user-1' }),
       );
-      await expect(
-        service.cancel('skip-1', 'user-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.cancel('skip-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException when cancelling a COLLECTED order', async () => {
       (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.COLLECTED, userId: 'user-1' }),
       );
-      await expect(
-        service.cancel('skip-1', 'user-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.cancel('skip-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('allows cancellation of PENDING orders', async () => {
@@ -335,9 +363,7 @@ describe('SkipHireService', () => {
         stubOrder({ status: SkipHireStatus.CANCELLED }),
       );
 
-      await expect(
-        service.cancel('skip-1', 'user-1'),
-      ).resolves.toBeDefined();
+      await expect(service.cancel('skip-1', 'user-1')).resolves.toBeDefined();
     });
   });
 
@@ -388,7 +414,11 @@ describe('SkipHireService', () => {
         canSkipHire: false,
       });
       await expect(
-        service.updateCarrierStatus('skip-1', SkipHireStatus.DELIVERED, 'driver-1'),
+        service.updateCarrierStatus(
+          'skip-1',
+          SkipHireStatus.DELIVERED,
+          'driver-1',
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -398,10 +428,17 @@ describe('SkipHireService', () => {
         canSkipHire: true,
       });
       (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
-        stubOrder({ carrierId: 'other-carrier', status: SkipHireStatus.CONFIRMED }),
+        stubOrder({
+          carrierId: 'other-carrier',
+          status: SkipHireStatus.CONFIRMED,
+        }),
       );
       await expect(
-        service.updateCarrierStatus('skip-1', SkipHireStatus.DELIVERED, 'driver-1'),
+        service.updateCarrierStatus(
+          'skip-1',
+          SkipHireStatus.DELIVERED,
+          'driver-1',
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -415,7 +452,11 @@ describe('SkipHireService', () => {
         stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.PENDING }),
       );
       await expect(
-        service.updateCarrierStatus('skip-1', SkipHireStatus.COLLECTED, 'driver-1'),
+        service.updateCarrierStatus(
+          'skip-1',
+          SkipHireStatus.COLLECTED,
+          'driver-1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -429,7 +470,11 @@ describe('SkipHireService', () => {
         stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.CONFIRMED }),
       );
       await expect(
-        service.updateCarrierStatus('skip-1', SkipHireStatus.COLLECTED, 'driver-1'),
+        service.updateCarrierStatus(
+          'skip-1',
+          SkipHireStatus.COLLECTED,
+          'driver-1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -439,7 +484,11 @@ describe('SkipHireService', () => {
         canSkipHire: true,
       });
       (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
-        stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.CONFIRMED, userId: 'user-1' }),
+        stubOrder({
+          carrierId: 'carrier-1',
+          status: SkipHireStatus.CONFIRMED,
+          userId: 'user-1',
+        }),
       );
       (prisma.skipHireOrder.update as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.DELIVERED }),
@@ -459,7 +508,11 @@ describe('SkipHireService', () => {
         canSkipHire: true,
       });
       (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
-        stubOrder({ carrierId: 'carrier-1', status: SkipHireStatus.DELIVERED, userId: 'user-1' }),
+        stubOrder({
+          carrierId: 'carrier-1',
+          status: SkipHireStatus.DELIVERED,
+          userId: 'user-1',
+        }),
       );
       (prisma.skipHireOrder.update as jest.Mock<any>).mockResolvedValue(
         stubOrder({ status: SkipHireStatus.COLLECTED }),

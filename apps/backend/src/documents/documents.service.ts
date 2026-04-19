@@ -277,11 +277,23 @@ export class DocumentsService {
     await this.supabase.uploadFile('documents', storagePath, fileBuffer);
     const fileUrl = this.supabase.getPublicUrl('documents', storagePath);
 
-    const links: Array<{ entityType: DocumentEntityType; entityId: string; role: DocumentLinkRole }> = [];
+    const links: Array<{
+      entityType: DocumentEntityType;
+      entityId: string;
+      role: DocumentLinkRole;
+    }> = [];
     if (params.orderId)
-      links.push({ entityType: DocumentEntityType.ORDER, entityId: params.orderId, role: DocumentLinkRole.PRIMARY });
+      links.push({
+        entityType: DocumentEntityType.ORDER,
+        entityId: params.orderId,
+        role: DocumentLinkRole.PRIMARY,
+      });
     if (params.transportJobId)
-      links.push({ entityType: DocumentEntityType.TRANSPORT_JOB, entityId: params.transportJobId, role: DocumentLinkRole.PRIMARY });
+      links.push({
+        entityType: DocumentEntityType.TRANSPORT_JOB,
+        entityId: params.transportJobId,
+        role: DocumentLinkRole.PRIMARY,
+      });
 
     return this.prisma.document.create({
       data: {
@@ -357,7 +369,12 @@ export class DocumentsService {
     let resolvedPdfUrl = pdfUrl;
     if (!resolvedPdfUrl) {
       try {
-        const pdfBuffer = await this.buildWeighingSlipPdf({ weight, unit, orderId, orderNumber });
+        const pdfBuffer = await this.buildWeighingSlipPdf({
+          weight,
+          unit,
+          orderId,
+          orderNumber,
+        });
         const storagePath = `weighing-slips/${orderId}_${Date.now()}.pdf`;
         await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
         resolvedPdfUrl = this.supabase.getPublicUrl('documents', storagePath);
@@ -433,8 +450,10 @@ export class DocumentsService {
       // ── Details ───────────────────────────────────────────────────────────
       doc.fillColor('#111827').fontSize(10).font('Helvetica');
       const y = 116;
-      const label = (text: string, row: number) => doc.text(text, 50, y + row * 22);
-      const value = (text: string, row: number) => doc.text(text, 220, y + row * 22);
+      const label = (text: string, row: number) =>
+        doc.text(text, 50, y + row * 22);
+      const value = (text: string, row: number) =>
+        doc.text(text, 220, y + row * 22);
 
       label('Datums:', 0);
       value(dateStr, 0);
@@ -465,15 +484,24 @@ export class DocumentsService {
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#6b7280')
-        .text(`Apstiprināts B3Hub platformā · ${dateStr}`, 50, y + (weightRow + 2) * 22 + 30);
+        .text(
+          `Apstiprināts B3Hub platformā · ${dateStr}`,
+          50,
+          y + (weightRow + 2) * 22 + 30,
+        );
 
       doc
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#9ca3af')
-        .text('B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv', 50, 750, {
-          align: 'center',
-        });
+        .text(
+          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+          50,
+          750,
+          {
+            align: 'center',
+          },
+        );
 
       doc.end();
     });
@@ -906,9 +934,7 @@ export class DocumentsService {
           .text('Kravas veids:', 50, cargoY + 28)
           .text(params.cargoType, 180, cargoY + 28);
       }
-      doc
-        .text('Svars:', 50, cargoY + 46)
-        .text(weightDisplay, 180, cargoY + 46);
+      doc.text('Svars:', 50, cargoY + 46).text(weightDisplay, 180, cargoY + 46);
 
       // ── Transport section ────────────────────────────────────────────────
       const transY = cargoY + 86;
@@ -954,11 +980,7 @@ export class DocumentsService {
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#6b7280')
-        .text(
-          `Apstiprināts B3Hub platformā · ${dateStr}`,
-          50,
-          stampY + 32,
-        );
+        .text(`Apstiprināts B3Hub platformā · ${dateStr}`, 50, stampY + 32);
 
       // ── Footer ───────────────────────────────────────────────────────────
       doc

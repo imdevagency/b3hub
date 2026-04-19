@@ -11,7 +11,6 @@ import {
   Check,
   Package,
   Ruler,
-  ArrowRight,
   Trash2,
   Leaf,
   Box,

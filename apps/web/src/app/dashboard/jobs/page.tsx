@@ -8,7 +8,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
-  ChevronUp,
   MapPin,
   Truck,
   Ruler,
@@ -22,7 +21,6 @@ import {
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/ui/page-header';
@@ -241,7 +239,6 @@ function mapApiJob(j: ApiTransportJob): TransportJob {
   };
 }
 
-const RADIUS_OPTIONS = [25, 50, 100, 150, 200];
 const LS_KEY = 'b3hub_web_saved_job_searches';
 
 export default function JobsPage() {
@@ -353,7 +350,6 @@ export default function JobsPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.canTransport]);
 
   const filteredJobs = filterJobs(allJobs, activeFilter, geocodeCacheRef.current);

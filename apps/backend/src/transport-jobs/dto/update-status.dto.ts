@@ -1,4 +1,12 @@
-import { IsEnum, IsOptional, IsNumber, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsUrl,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { TransportJobStatus } from '@prisma/client';
 
 const ALLOWED_DRIVER_STATUSES: TransportJobStatus[] = [

@@ -15,9 +15,7 @@ import type { Request } from 'express';
 export class LoggingThrottlerGuard extends ThrottlerGuard {
   private readonly logger = new Logger('RateLimit');
 
-  protected async throwThrottlingException(
-    context: ExecutionContext,
-  ): Promise<void> {
+  protected throwThrottlingException(context: ExecutionContext): Promise<void> {
     const req = context.switchToHttp().getRequest<Request>();
     this.logger.warn(
       `RATE_LIMIT ${req.method} ${req.originalUrl} [${req.ip ?? 'unknown'}]`,

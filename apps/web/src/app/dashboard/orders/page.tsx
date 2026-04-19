@@ -32,7 +32,6 @@ import { useBuyerOrders } from '@/hooks/use-buyer-orders';
 import { useMode } from '@/lib/mode-context';
 import {
   ArrowRight,
-  CheckCircle,
   Download,
   Link2,
   Package,

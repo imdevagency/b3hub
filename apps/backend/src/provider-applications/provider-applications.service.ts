@@ -27,7 +27,10 @@ export class ProviderApplicationsService {
   ) {}
 
   /** Public — submit a provider application */
-  async create(dto: CreateProviderApplicationDto, authenticatedUserId?: string) {
+  async create(
+    dto: CreateProviderApplicationDto,
+    authenticatedUserId?: string,
+  ) {
     if (!dto.appliesForSell && !dto.appliesForTransport) {
       throw new BadRequestException(
         'Must apply for at least one capability (sell or transport)',
@@ -69,11 +72,20 @@ export class ProviderApplicationsService {
     // Notify applicant their submission was received (non-blocking)
     this.email
       .sendApplicationReceived(application.email, application.firstName ?? '')
-      .catch((err) => this.logger.warn('sendApplicationReceived failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'sendApplicationReceived failed',
+          (err as Error).message,
+        ),
+      );
 
     // Alert all admins so they can promptly review the new application
     this.prisma.user
-      .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+      .findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+        take: 50,
+      })
       .then((admins) => {
         if (admins.length === 0) return;
         const roleLabel = [
@@ -180,7 +192,12 @@ export class ProviderApplicationsService {
         canSell: app.appliesForSell,
         canTransport: app.appliesForTransport,
       })
-      .catch((err) => this.logger.warn('sendApplicationApproved failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'sendApplicationApproved failed',
+          (err as Error).message,
+        ),
+      );
 
     this.prisma.adminAuditLog
       .create({
@@ -193,7 +210,12 @@ export class ProviderApplicationsService {
           after: { status: 'APPROVED', reviewNote: reviewNote ?? null },
         },
       })
-      .catch((err) => this.logger.error('adminAuditLog (APPROVE_APPLICATION) failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.error(
+          'adminAuditLog (APPROVE_APPLICATION) failed',
+          (err as Error).message,
+        ),
+      );
 
     this.logger.log(
       `Provider application ${id} approved by admin ${reviewedByUserId}`,
@@ -221,7 +243,12 @@ export class ProviderApplicationsService {
     // Notify applicant of rejection (non-blocking)
     this.email
       .sendApplicationRejected(app.email, app.firstName ?? '', reviewNote)
-      .catch((err) => this.logger.warn('sendApplicationRejected failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'sendApplicationRejected failed',
+          (err as Error).message,
+        ),
+      );
 
     this.prisma.adminAuditLog
       .create({
@@ -234,7 +261,12 @@ export class ProviderApplicationsService {
           after: { status: 'REJECTED', reviewNote: reviewNote ?? null },
         },
       })
-      .catch((err) => this.logger.error('adminAuditLog (REJECT_APPLICATION) failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.error(
+          'adminAuditLog (REJECT_APPLICATION) failed',
+          (err as Error).message,
+        ),
+      );
 
     this.logger.log(
       `Provider application ${id} rejected by admin ${reviewedByUserId}`,

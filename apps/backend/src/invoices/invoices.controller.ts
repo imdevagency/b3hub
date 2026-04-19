@@ -16,9 +16,11 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { InvoicesService } from './invoices.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
-import { RequireScope, RequireScopeGuard } from '../auth/guards/require-scope.guard';
+import {
+  RequireScope,
+  RequireScopeGuard,
+} from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { PagePaginationDto } from '../common/dto/pagination.dto';
@@ -28,7 +30,8 @@ function canViewFinancials(user: RequestingUser): boolean {
   // Other company members require the explicit permViewFinancials flag.
   // Solo users (no company) always have access to their own invoices.
   if (!user.companyId) return true;
-  if (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') return true;
+  if (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER')
+    return true;
   return user.permViewFinancials === true;
 }
 
@@ -103,7 +106,12 @@ export class InvoicesController {
         'Only admins can manually mark invoices as paid',
       );
     }
-    return this.invoicesService.markAsPaid(id, user.userId, user.companyId, true);
+    return this.invoicesService.markAsPaid(
+      id,
+      user.userId,
+      user.companyId,
+      true,
+    );
   }
 
   /** GET /invoices/:id/pdf — stream PDF to client */
@@ -151,16 +159,16 @@ export class InvoicesController {
 
   /** GET /invoices/export/csv — download all user invoices as CSV */
   @Get('export/csv')
-  async exportCsv(
-    @CurrentUser() user: RequestingUser,
-    @Res() res: Response,
-  ) {
+  async exportCsv(@CurrentUser() user: RequestingUser, @Res() res: Response) {
     if (!canViewFinancials(user)) {
       throw new ForbiddenException(
         'You do not have permission to view invoices',
       );
     }
-    const csv = await this.invoicesService.exportCsv(user.userId, user.companyId);
+    const csv = await this.invoicesService.exportCsv(
+      user.userId,
+      user.companyId,
+    );
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',

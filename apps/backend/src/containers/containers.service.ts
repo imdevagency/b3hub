@@ -21,7 +21,9 @@ import {
 } from '@prisma/client';
 
 /** Maps ContainerOrderStatus transitions → parent Order.status */
-const CONTAINER_TO_ORDER_STATUS: Partial<Record<ContainerOrderStatus, OrderStatus>> = {
+const CONTAINER_TO_ORDER_STATUS: Partial<
+  Record<ContainerOrderStatus, OrderStatus>
+> = {
   [ContainerOrderStatus.DELIVERED]: OrderStatus.CONFIRMED,
   [ContainerOrderStatus.IN_USE]: OrderStatus.IN_PROGRESS,
   [ContainerOrderStatus.PICKED_UP]: OrderStatus.DELIVERED,
@@ -376,7 +378,9 @@ export class ContainersService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `ORD-${year}${month}${ms}${rand}`;
   }
 }

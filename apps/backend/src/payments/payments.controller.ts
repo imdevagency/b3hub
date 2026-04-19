@@ -18,7 +18,13 @@ import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
-import { IsString, IsOptional, MinLength, MaxLength, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  IsIn,
+} from 'class-validator';
 
 class ReportDisputeDto {
   @IsString()
@@ -114,7 +120,12 @@ export class PaymentsController {
     if (user.userType !== 'ADMIN') {
       throw new ForbiddenException('Only admins can resolve disputes');
     }
-    return this.paymentsService.resolveDispute(orderId, dto.resolution, dto.adminNote, user);
+    return this.paymentsService.resolveDispute(
+      orderId,
+      dto.resolution,
+      dto.adminNote,
+      user,
+    );
   }
 
   /**

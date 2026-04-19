@@ -40,7 +40,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('JWT_SECRET') ?? (() => { throw new Error('JWT_SECRET environment variable is required'); })(),
+      secretOrKey:
+        config.get<string>('JWT_SECRET') ??
+        (() => {
+          throw new Error('JWT_SECRET environment variable is required');
+        })(),
     });
   }
 
@@ -53,7 +57,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       select: { tokenVersion: true },
     });
     if (!dbUser || dbUser.tokenVersion > tokenVer) {
-      throw new UnauthorizedException('Token has been invalidated. Please log in again.');
+      throw new UnauthorizedException(
+        'Token has been invalidated. Please log in again.',
+      );
     }
 
     return {

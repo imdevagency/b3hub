@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { MessageSquare, RefreshCw, Send, CheckCheck, RotateCcw, User, Clock } from 'lucide-react';
+import { MessageSquare, RefreshCw, Send, CheckCheck, RotateCcw, User } from 'lucide-react';
 
 function formatTime(iso: string) {
   const d = new Date(iso);

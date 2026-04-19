@@ -151,7 +151,9 @@ function LogRow({ log }: { log: AdminAuditLog }) {
             <span className="text-xs text-muted-foreground font-mono truncate">{log.entityId}</span>
           </div>
           {log.note && (
-            <p className="text-xs text-muted-foreground italic truncate">"{log.note}"</p>
+            <p className="text-xs text-muted-foreground italic truncate">
+              &ldquo;{log.note}&rdquo;
+            </p>
           )}
         </div>
 

@@ -290,7 +290,9 @@ export default function CatalogScreen() {
       .then((data) => {
         setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
       })
-      .catch(() => {})
+      .catch((err) =>
+        console.warn('Materials fetch failed:', err instanceof Error ? err.message : err),
+      )
       .finally(() => setRefreshing(false));
   }, [token, nearMeCoords]);
 

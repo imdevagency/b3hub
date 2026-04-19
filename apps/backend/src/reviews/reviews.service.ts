@@ -151,7 +151,9 @@ export class ReviewsService {
     // Resolve the company to attribute the rating to
     const companyId = job.carrierId ?? job.driver?.companyId;
     if (!companyId) {
-      throw new BadRequestException('Cannot resolve carrier company for this job');
+      throw new BadRequestException(
+        'Cannot resolve carrier company for this job',
+      );
     }
 
     const review = await this.prisma.review.create({
@@ -204,7 +206,9 @@ export class ReviewsService {
       return { reviewed: !!r && r.reviewerId === userId };
     }
     if (transportJobId) {
-      const r = await this.prisma.review.findUnique({ where: { transportJobId } });
+      const r = await this.prisma.review.findUnique({
+        where: { transportJobId },
+      });
       return { reviewed: !!r && r.reviewerId === userId };
     }
     return { reviewed: false };

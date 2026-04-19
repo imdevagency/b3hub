@@ -26,10 +26,12 @@ export async function withCronLock(
   try {
     await fn();
   } finally {
-    await prisma
-      .$queryRaw`SELECT pg_advisory_unlock(hashtext(${lockName})::bigint)`
-      .catch((err: unknown) =>
-        logger.error(`Failed to release cron lock "${lockName}"`, (err as Error).message),
-      );
+    await prisma.$queryRaw`SELECT pg_advisory_unlock(hashtext(${lockName})::bigint)`.catch(
+      (err: unknown) =>
+        logger.error(
+          `Failed to release cron lock "${lockName}"`,
+          (err as Error).message,
+        ),
+    );
   }
 }

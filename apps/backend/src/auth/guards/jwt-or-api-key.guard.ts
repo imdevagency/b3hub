@@ -44,7 +44,8 @@ export class JwtOrApiKeyGuard implements CanActivate {
     // Route to API key validation
     if (token.startsWith('b3_live_')) {
       const result = await this.apiKeysService.validateKey(token);
-      if (!result) throw new UnauthorizedException('Invalid or expired API key');
+      if (!result)
+        throw new UnauthorizedException('Invalid or expired API key');
 
       // Synthesize a RequestingUser — ERP context, no personal user ID
       const synthetic: RequestingUser & { apiScopes: string[] } = {

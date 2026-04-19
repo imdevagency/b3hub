@@ -318,7 +318,6 @@ function WizardInline({
     const apiKey = getGoogleMapsPublicKey();
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const google = window.google;
       if (!google || !mapDivRef.current || mapInstanceRef.current) return;
       const map = new google.maps.Map(mapDivRef.current, {
@@ -352,7 +351,6 @@ function WizardInline({
   }, []);
 
   const updateMapPin = useCallback((lat: number, lng: number) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const google = window.google;
     if (!google || !mapInstanceRef.current) return;
     const position = { lat, lng };

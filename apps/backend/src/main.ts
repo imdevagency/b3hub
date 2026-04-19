@@ -10,10 +10,14 @@ import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { json } from 'express';
+import type { Application } from 'express';
 import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter, AllExceptionsFilter } from './common/filters/http-exception.filter';
+import {
+  HttpExceptionFilter,
+  AllExceptionsFilter,
+} from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -24,18 +28,24 @@ async function bootstrap() {
   // Trust the first hop from a reverse proxy (Railway, Fly.io, Render, etc.).
   // Required for req.ip to reflect the real client IP, not the proxy.
   // Must be set before any middleware that reads req.ip.
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  (app.getHttpAdapter().getInstance() as Application).set('trust proxy', 1);
 
   // HTTPS redirect in production — runs before all other middleware.
   // x-forwarded-proto is set by the reverse proxy to 'https' when the
   // client used TLS. Any plain-http request gets a permanent redirect.
   if (process.env.NODE_ENV === 'production') {
-    app.use((req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
-      if (req.headers['x-forwarded-proto'] !== 'https') {
-        return res.redirect(301, `https://${req.headers.host}${req.url}`);
-      }
-      next();
-    });
+    app.use(
+      (
+        req: import('express').Request,
+        res: import('express').Response,
+        next: import('express').NextFunction,
+      ) => {
+        if (req.headers['x-forwarded-proto'] !== 'https') {
+          return res.redirect(301, `https://${req.headers.host}${req.url}`);
+        }
+        next();
+      },
+    );
   }
 
   // Increase JSON body limit to support base64-encoded photo uploads
@@ -54,8 +64,7 @@ async function bootstrap() {
 
   // CORS — tight in production, open in development
   // Reads ALLOWED_ORIGIN or CORS_ORIGIN (comma-separated list of origins)
-  const rawOrigin =
-    process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN;
+  const rawOrigin = process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN;
   const allowedOrigin = rawOrigin
     ? rawOrigin.split(',').map((o) => o.trim())
     : process.env.NODE_ENV === 'production'
@@ -87,7 +96,9 @@ async function bootstrap() {
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('B3Hub API')
-      .setDescription('B3Hub construction logistics platform — REST API reference')
+      .setDescription(
+        'B3Hub construction logistics platform — REST API reference',
+      )
       .setVersion('1.0')
       .addBearerAuth(
         { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -98,18 +109,20 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document, {
       swaggerOptions: { persistAuthorization: true },
     });
-    new Logger('Swagger').log('Docs available at http://localhost:3000/api/docs');
+    new Logger('Swagger').log(
+      'Docs available at http://localhost:3000/api/docs',
+    );
   }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
   const bootstrapLogger = new Logger('Bootstrap');
   const scheme = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  bootstrapLogger.log(
-    `Application is running on: ${scheme}://0.0.0.0:${port}`,
-  );
+  bootstrapLogger.log(`Application is running on: ${scheme}://0.0.0.0:${port}`);
   if (process.env.NODE_ENV === 'production') {
-    bootstrapLogger.log('HTTPS enforced: HTTP requests will be redirected to HTTPS (301)');
+    bootstrapLogger.log(
+      'HTTPS enforced: HTTP requests will be redirected to HTTPS (301)',
+    );
     bootstrapLogger.log('HSTS: max-age=31536000; includeSubDomains; preload');
   }
 }

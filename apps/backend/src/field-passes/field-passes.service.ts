@@ -60,8 +60,17 @@ export class FieldPassesService {
     const pass = await this.prisma.fieldPass.findUnique({
       where: { id },
       include: {
-        company: { select: { name: true, legalName: true, registrationNum: true } },
-        contract: { select: { contractNumber: true, title: true, prepaidBalance: true, prepaidUsed: true } },
+        company: {
+          select: { name: true, legalName: true, registrationNum: true },
+        },
+        contract: {
+          select: {
+            contractNumber: true,
+            title: true,
+            prepaidBalance: true,
+            prepaidUsed: true,
+          },
+        },
         createdBy: { select: { firstName: true, lastName: true, email: true } },
       },
     });
@@ -95,7 +104,9 @@ export class FieldPassesService {
       throw new BadRequestException('Contract is not a field access contract');
     }
     if (contract.status !== FrameworkContractStatus.ACTIVE) {
-      throw new BadRequestException('Contract must be ACTIVE to create field passes');
+      throw new BadRequestException(
+        'Contract must be ACTIVE to create field passes',
+      );
     }
     if (contract.buyerId !== companyId) {
       throw new ForbiddenException('Contract does not belong to your company');
@@ -130,7 +141,9 @@ export class FieldPassesService {
         status: FieldPassStatus.ACTIVE,
       },
       include: {
-        company: { select: { name: true, legalName: true, registrationNum: true } },
+        company: {
+          select: { name: true, legalName: true, registrationNum: true },
+        },
         contract: { select: { contractNumber: true, title: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
@@ -139,7 +152,9 @@ export class FieldPassesService {
     // Generate PDF async — update record when done
     this.generateAndAttachPdf(pass.id, pass, contract.contractNumber).catch(
       (err) =>
-        this.logger.error(`PDF generation failed for pass ${pass.id}: ${(err as Error).message}`),
+        this.logger.error(
+          `PDF generation failed for pass ${pass.id}: ${(err as Error).message}`,
+        ),
     );
 
     // Decrement available balance (fire-and-forget — non-critical for immediate response)
@@ -149,7 +164,9 @@ export class FieldPassesService {
         data: { prepaidUsed: { increment: 1 } }, // 1 pass unit; can be weight-based later
       })
       .catch((err) =>
-        this.logger.error(`Balance decrement failed for contract ${dto.contractId}: ${(err as Error).message}`),
+        this.logger.error(
+          `Balance decrement failed for contract ${dto.contractId}: ${(err as Error).message}`,
+        ),
       );
 
     return pass;
@@ -192,7 +209,9 @@ export class FieldPassesService {
         unloadingPoint: true,
         estimatedTonnes: true,
         revokedReason: true,
-        company: { select: { name: true, legalName: true, registrationNum: true } },
+        company: {
+          select: { name: true, legalName: true, registrationNum: true },
+        },
         contract: { select: { contractNumber: true, title: true } },
       },
     });
@@ -216,18 +235,23 @@ export class FieldPassesService {
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async expireStale() {
-    await withCronLock(this.prisma, 'fieldPassExpireStale', async () => {
-    const result = await this.prisma.fieldPass.updateMany({
-      where: {
-        status: FieldPassStatus.ACTIVE,
-        validTo: { lt: new Date() },
+    await withCronLock(
+      this.prisma,
+      'fieldPassExpireStale',
+      async () => {
+        const result = await this.prisma.fieldPass.updateMany({
+          where: {
+            status: FieldPassStatus.ACTIVE,
+            validTo: { lt: new Date() },
+          },
+          data: { status: FieldPassStatus.EXPIRED },
+        });
+        if (result.count > 0) {
+          this.logger.log(`Auto-expired ${result.count} field pass(es)`);
+        }
       },
-      data: { status: FieldPassStatus.EXPIRED },
-    });
-    if (result.count > 0) {
-      this.logger.log(`Auto-expired ${result.count} field pass(es)`);
-    }
-    }, this.logger);
+      this.logger,
+    );
   }
 
   // ── PDF generation ──────────────────────────────────────────────────────────
@@ -244,7 +268,11 @@ export class FieldPassesService {
       wasteDescription?: string | null;
       unloadingPoint?: string | null;
       estimatedTonnes?: number | null;
-      company: { name: string; legalName: string; registrationNum?: string | null };
+      company: {
+        name: string;
+        legalName: string;
+        registrationNum?: string | null;
+      };
       contract: { contractNumber: string; title: string };
     },
     contractNumber: string,
@@ -272,7 +300,11 @@ export class FieldPassesService {
       wasteDescription?: string | null;
       unloadingPoint?: string | null;
       estimatedTonnes?: number | null;
-      company: { name: string; legalName: string; registrationNum?: string | null };
+      company: {
+        name: string;
+        legalName: string;
+        registrationNum?: string | null;
+      };
       contract: { contractNumber: string; title: string };
     },
     _contractNumber: string,
@@ -285,11 +317,18 @@ export class FieldPassesService {
       doc.on('error', reject);
 
       const fmt = (d: Date) =>
-        d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        d.toLocaleDateString('lv-LV', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
 
       // ── Header ──
       doc.fontSize(20).font('Helvetica-Bold').text('B3 LAUKUMI', 50, 50);
-      doc.fontSize(12).font('Helvetica').text('Caurlaides izziņa / Site Access Pass', 50, 75);
+      doc
+        .fontSize(12)
+        .font('Helvetica')
+        .text('Caurlaides izziņa / Site Access Pass', 50, 75);
       doc.moveTo(50, 95).lineTo(545, 95).stroke();
 
       // ── Pass number + status ──
@@ -301,7 +340,10 @@ export class FieldPassesService {
       doc.fillColor('#000000');
 
       // ── Company block ──
-      doc.fontSize(11).font('Helvetica-Bold').text('Uzņēmums / Company', 50, 160);
+      doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .text('Uzņēmums / Company', 50, 160);
       doc
         .font('Helvetica')
         .fontSize(11)
@@ -315,18 +357,21 @@ export class FieldPassesService {
         );
 
       // ── Vehicle ──
-      doc.fontSize(11).font('Helvetica-Bold').text('Automašīna / Vehicle', 320, 160);
       doc
-        .font('Helvetica')
-        .fontSize(14)
-        .text(pass.vehiclePlate, 320, 175);
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .text('Automašīna / Vehicle', 320, 160);
+      doc.font('Helvetica').fontSize(14).text(pass.vehiclePlate, 320, 175);
       if (pass.driverName) {
         doc.fontSize(11).text(`Šoferis: ${pass.driverName}`, 320, 193);
       }
 
       // ── Validity ──
       doc.moveTo(50, 220).lineTo(545, 220).stroke();
-      doc.fontSize(11).font('Helvetica-Bold').text('Derīguma termiņš / Valid', 50, 232);
+      doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .text('Derīguma termiņš / Valid', 50, 232);
       doc
         .font('Helvetica')
         .fontSize(12)
@@ -334,13 +379,23 @@ export class FieldPassesService {
 
       // ── Waste / cargo details ──
       doc.moveTo(50, 275).lineTo(545, 275).stroke();
-      doc.fontSize(11).font('Helvetica-Bold').text('Kravas informācija / Cargo Details', 50, 287);
+      doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .text('Kravas informācija / Cargo Details', 50, 287);
 
       const rows: [string, string][] = [];
-      if (pass.wasteClassCode) rows.push(['Atkritumu kods / Waste code', pass.wasteClassCode]);
-      if (pass.wasteDescription) rows.push(['Atkritumu apraksts / Description', pass.wasteDescription]);
-      if (pass.unloadingPoint) rows.push(['Izkraušanas vieta / Unloading point', pass.unloadingPoint]);
-      if (pass.estimatedTonnes) rows.push(['Paredzamais svars / Est. weight', `${pass.estimatedTonnes} t`]);
+      if (pass.wasteClassCode)
+        rows.push(['Atkritumu kods / Waste code', pass.wasteClassCode]);
+      if (pass.wasteDescription)
+        rows.push(['Atkritumu apraksts / Description', pass.wasteDescription]);
+      if (pass.unloadingPoint)
+        rows.push(['Izkraušanas vieta / Unloading point', pass.unloadingPoint]);
+      if (pass.estimatedTonnes)
+        rows.push([
+          'Paredzamais svars / Est. weight',
+          `${pass.estimatedTonnes} t`,
+        ]);
 
       let y = 303;
       for (const [label, value] of rows) {
@@ -350,12 +405,19 @@ export class FieldPassesService {
       }
 
       // ── Contract ref ──
-      doc.moveTo(50, y + 10).lineTo(545, y + 10).stroke();
+      doc
+        .moveTo(50, y + 10)
+        .lineTo(545, y + 10)
+        .stroke();
       doc
         .font('Helvetica')
         .fontSize(10)
         .fillColor('#666666')
-        .text(`Līgums / Contract: ${pass.contract.contractNumber} — ${pass.contract.title}`, 50, y + 22);
+        .text(
+          `Līgums / Contract: ${pass.contract.contractNumber} — ${pass.contract.title}`,
+          50,
+          y + 22,
+        );
 
       // ── Footer warning ──
       doc

@@ -285,10 +285,10 @@ export default function EarningsScreen() {
       if (url) {
         await Linking.openURL(url);
       } else {
-        toast.error('Neizdevās iegūt saiti.')
+        toast.error('Neizdevās iegūt saiti.');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Neizdevās savienoties ar Stripe.')
+      toast.error(err.message || 'Neizdevās savienoties ar Stripe.');
     } finally {
       setSetupLoading(false);
     }
@@ -307,7 +307,9 @@ export default function EarningsScreen() {
         api.analytics
           .overview(token)
           .then((ov) => setCarrierAnalytics(ov.carrier ?? null))
-          .catch(() => {});
+          .catch((err) =>
+            console.warn('Carrier analytics failed:', err instanceof Error ? err.message : err),
+          );
         const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
         setStats(s);
         setHistory(h);
@@ -367,7 +369,14 @@ export default function EarningsScreen() {
       <ScreenContainer bg="#ffffff" topBg="#ffffff">
         <TopBar transparent />
         <View className="px-5 pt-2 pb-6">
-          <Text style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: '800',
+              color: colors.textPrimary,
+              letterSpacing: -0.8,
+            }}
+          >
             Izpeļņa
           </Text>
         </View>
@@ -394,7 +403,14 @@ export default function EarningsScreen() {
         }
       >
         <View className="px-5 pt-1 pb-4">
-          <Text style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: '800',
+              color: colors.textPrimary,
+              letterSpacing: -0.8,
+            }}
+          >
             Izpeļņa
           </Text>
         </View>
@@ -403,7 +419,14 @@ export default function EarningsScreen() {
           <View className="mx-5 mb-8 bg-gray-50 rounded-3xl p-5 border border-gray-100">
             <View className="flex-row items-center mb-3">
               <AlertCircle size={20} color="#ea580c" />
-              <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginLeft: 8 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '800',
+                  color: colors.textPrimary,
+                  marginLeft: 8,
+                }}
+              >
                 Aktivizēt izmaksas
               </Text>
             </View>
@@ -490,7 +513,14 @@ export default function EarningsScreen() {
           >
             {period === 'today' ? 'Šodien' : period === 'week' ? 'Šonedēļ' : 'Mēnesī'}
           </Text>
-          <Text style={{ fontSize: 64, fontWeight: '800', color: colors.textPrimary, letterSpacing: -2.5 }}>
+          <Text
+            style={{
+              fontSize: 64,
+              fontWeight: '800',
+              color: colors.textPrimary,
+              letterSpacing: -2.5,
+            }}
+          >
             €{heroAmount.toFixed(2)}
           </Text>
         </View>
@@ -504,33 +534,54 @@ export default function EarningsScreen() {
         <View className="flex-row px-5 mb-12">
           <View className="flex-1 items-center justify-center">
             <Text
-              style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+              style={{
+                fontSize: 22,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+              }}
             >
               {stats.completedJobs}
             </Text>
-            <Text style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 4 }}>
+            <Text
+              style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 4 }}
+            >
               Braucieni
             </Text>
           </View>
           <View className="w-[1px] bg-gray-100 h-10 self-center" />
           <View className="flex-1 items-center justify-center">
             <Text
-              style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+              style={{
+                fontSize: 22,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+              }}
             >
               €{stats.pendingPayout.toFixed(0)}
             </Text>
-            <Text style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 4 }}>
+            <Text
+              style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 4 }}
+            >
               Gaida apmaksu
             </Text>
           </View>
           <View className="w-[1px] bg-gray-100 h-10 self-center" />
           <View className="flex-1 items-center justify-center">
             <Text
-              style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+              style={{
+                fontSize: 22,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+              }}
             >
               --:--
             </Text>
-            <Text style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 4 }}>
+            <Text
+              style={{ fontSize: 13, color: colors.textDisabled, fontWeight: '600', marginTop: 4 }}
+            >
               Stundas
             </Text>
           </View>
@@ -551,7 +602,10 @@ export default function EarningsScreen() {
                 return (
                   <View key={m.month} style={es.barRow}>
                     <Text
-                      style={[es.barLabel, isThisMonth && { color: colors.textPrimary, fontWeight: '700' }]}
+                      style={[
+                        es.barLabel,
+                        isThisMonth && { color: colors.textPrimary, fontWeight: '700' },
+                      ]}
                     >
                       {mo}/{y?.slice(2)}
                     </Text>
@@ -632,22 +686,46 @@ export default function EarningsScreen() {
               <View className="flex-row">
                 <View className="flex-1">
                   <Text
-                    style={{ fontSize: 28, fontWeight: '800', color: colors.textPrimary, letterSpacing: -1 }}
+                    style={{
+                      fontSize: 28,
+                      fontWeight: '800',
+                      color: colors.textPrimary,
+                      letterSpacing: -1,
+                    }}
                   >
                     €{(stripeAvailable ?? 0).toFixed(2)}
                   </Text>
-                  <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: colors.textMuted,
+                      fontWeight: '500',
+                      marginTop: 2,
+                    }}
+                  >
                     Pieejams uzreiz
                   </Text>
                 </View>
                 <View className="w-[1px] bg-gray-200 mx-4" />
                 <View className="flex-1">
                   <Text
-                    style={{ fontSize: 28, fontWeight: '800', color: colors.textDisabled, letterSpacing: -1 }}
+                    style={{
+                      fontSize: 28,
+                      fontWeight: '800',
+                      color: colors.textDisabled,
+                      letterSpacing: -1,
+                    }}
                   >
                     €{(stripePending ?? 0).toFixed(2)}
                   </Text>
-                  <Text style={{ fontSize: 14, color: colors.textDisabled, fontWeight: '500', marginTop: 2 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: colors.textDisabled,
+                      fontWeight: '500',
+                      marginTop: 2,
+                    }}
+                  >
                     Apstrādē
                   </Text>
                 </View>
@@ -685,7 +763,12 @@ export default function EarningsScreen() {
                 color: '#6366f1',
               },
               { step: '3', label: 'Nauda atbrīvota', sub: 'Stripe atlikumā', color: '#f59e0b' },
-              { step: '4', label: 'Izmaksa uz banku', sub: '1–2 dienu laikā', color: colors.textPrimary },
+              {
+                step: '4',
+                label: 'Izmaksa uz banku',
+                sub: '1–2 dienu laikā',
+                color: colors.textPrimary,
+              },
             ].map((item, i, arr) => (
               <View key={item.step} className="flex-row items-start" style={{ gap: 16 }}>
                 <View className="items-center" style={{ width: 28 }}>
@@ -705,7 +788,14 @@ export default function EarningsScreen() {
                   <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }}>
                     {item.label}
                   </Text>
-                  <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: colors.textMuted,
+                      fontWeight: '500',
+                      marginTop: 2,
+                    }}
+                  >
                     {item.sub}
                   </Text>
                 </View>
@@ -718,7 +808,12 @@ export default function EarningsScreen() {
         <View>
           <View className="px-5 pb-2 flex-row justify-between items-end">
             <Text
-              style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+              style={{
+                fontSize: 22,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+              }}
             >
               Visi braucieni
             </Text>

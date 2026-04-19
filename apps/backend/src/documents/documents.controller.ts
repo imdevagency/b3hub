@@ -122,7 +122,9 @@ export class DocumentsController {
     },
   ) {
     if (!body.fileBase64 || !body.mimeType || !body.type || !body.title) {
-      throw new BadRequestException('fileBase64, mimeType, type, and title are required');
+      throw new BadRequestException(
+        'fileBase64, mimeType, type, and title are required',
+      );
     }
     // Strip data-URI prefix if present (e.g. "data:application/pdf;base64,...")
     const base64Data = body.fileBase64.replace(/^data:[^;]+;base64,/, '');

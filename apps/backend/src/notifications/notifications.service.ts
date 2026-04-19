@@ -27,7 +27,9 @@ export class NotificationsService {
 
     // Fire push notification if the user has a registered token
     this.sendPush(dto.userId, dto.title, dto.message).catch((err) =>
-      this.logger.warn(`Push notification failed for user ${dto.userId}: ${err instanceof Error ? err.message : String(err)}`),
+      this.logger.warn(
+        `Push notification failed for user ${dto.userId}: ${err instanceof Error ? err.message : String(err)}`,
+      ),
     );
 
     return notification;

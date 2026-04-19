@@ -356,8 +356,11 @@ export class ProjectsService {
   ) {
     await this.assertMember(id, companyId);
 
-    const site = await this.prisma.projectSite.findUnique({ where: { id: siteId } });
-    if (!site || site.projectId !== id) throw new NotFoundException('Site not found');
+    const site = await this.prisma.projectSite.findUnique({
+      where: { id: siteId },
+    });
+    if (!site || site.projectId !== id)
+      throw new NotFoundException('Site not found');
 
     if (dto.isDefault) {
       await this.prisma.projectSite.updateMany({
@@ -381,8 +384,11 @@ export class ProjectsService {
 
   async removeSite(id: string, siteId: string, companyId?: string) {
     await this.assertMember(id, companyId);
-    const site = await this.prisma.projectSite.findUnique({ where: { id: siteId } });
-    if (!site || site.projectId !== id) throw new NotFoundException('Site not found');
+    const site = await this.prisma.projectSite.findUnique({
+      where: { id: siteId },
+    });
+    if (!site || site.projectId !== id)
+      throw new NotFoundException('Site not found');
     await this.prisma.projectSite.delete({ where: { id: siteId } });
     return { deleted: 1 };
   }
@@ -393,7 +399,10 @@ export class ProjectsService {
     contractValue: number,
     budgetAmount: number | null,
     orders: { total: number; status: string }[],
-    transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[] = [],
+    transportJobs: {
+      distanceKm: number | null;
+      vehicle: { vehicleType: string } | null;
+    }[] = [],
   ) {
     const materialCosts = orders
       .filter((o) => COMMITTED_STATUSES.includes(o.status as OrderStatus))
@@ -452,7 +461,10 @@ export class ProjectsService {
     orders: {
       total: number;
       status: string;
-      transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[];
+      transportJobs: {
+        distanceKm: number | null;
+        vehicle: { vehicleType: string } | null;
+      }[];
     }[];
   }) {
     const allJobs = p.orders.flatMap((o) => o.transportJobs);
@@ -515,7 +527,10 @@ export class ProjectsService {
         unitPrice: number;
         total: number;
       }[];
-      transportJobs: { distanceKm: number | null; vehicle: { vehicleType: string } | null }[];
+      transportJobs: {
+        distanceKm: number | null;
+        vehicle: { vehicleType: string } | null;
+      }[];
     }[];
     frameworkContracts: {
       id: string;

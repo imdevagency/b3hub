@@ -10,7 +10,15 @@ import { MaterialsModule } from '../materials/materials.module';
 import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, PaymentsModule, InvoicesModule, UpdatesModule, MaterialsModule, DocumentsModule],
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    PaymentsModule,
+    InvoicesModule,
+    UpdatesModule,
+    MaterialsModule,
+    DocumentsModule,
+  ],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

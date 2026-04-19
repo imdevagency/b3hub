@@ -31,11 +31,25 @@ import {
   ResolveTransportExceptionDto,
 } from './dto/report-exception.dto';
 import { ReportDelayDto } from './dto/report-delay.dto';
-import { IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
-import { RequireScope, RequireScopeGuard } from '../auth/guards/require-scope.guard';
+import {
+  RequireScope,
+  RequireScopeGuard,
+} from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ReviewsService } from '../reviews/reviews.service';
@@ -125,7 +139,11 @@ export class TransportJobsController {
     @Query() pagination: PaginationDto,
     @Query('updatedSince') updatedSince?: string,
   ) {
-    return this.service.findAvailable(pagination.limit ?? 20, pagination.skip ?? 0, updatedSince);
+    return this.service.findAvailable(
+      pagination.limit ?? 20,
+      pagination.skip ?? 0,
+      updatedSince,
+    );
   }
 
   /** GET /transport-jobs/export/csv — download driver's completed jobs as CSV */
@@ -161,7 +179,11 @@ export class TransportJobsController {
     @CurrentUser() user: RequestingUser,
     @Query() pagination: PaginationDto,
   ) {
-    return this.service.findMyJobs(user.userId, pagination.limit ?? 20, pagination.skip ?? 0);
+    return this.service.findMyJobs(
+      user.userId,
+      pagination.limit ?? 20,
+      pagination.skip ?? 0,
+    );
   }
 
   /**
@@ -173,7 +195,11 @@ export class TransportJobsController {
     @CurrentUser() user: RequestingUser,
     @Query() pagination: PaginationDto,
   ) {
-    return this.service.findMyRequests(user.userId, pagination.limit ?? 20, pagination.skip ?? 0);
+    return this.service.findMyRequests(
+      user.userId,
+      pagination.limit ?? 20,
+      pagination.skip ?? 0,
+    );
   }
 
   /**
@@ -189,7 +215,9 @@ export class TransportJobsController {
     @Query('radiusKm') radiusKm?: string,
   ) {
     if (!user.canTransport) {
-      throw new ForbiddenException('Only approved drivers can query return trips');
+      throw new ForbiddenException(
+        'Only approved drivers can query return trips',
+      );
     }
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
@@ -197,10 +225,15 @@ export class TransportJobsController {
       throw new BadRequestException('lat must be a number between -90 and 90');
     }
     if (!Number.isFinite(lngNum) || lngNum < -180 || lngNum > 180) {
-      throw new BadRequestException('lng must be a number between -180 and 180');
+      throw new BadRequestException(
+        'lng must be a number between -180 and 180',
+      );
     }
     const radiusNum = radiusKm ? parseFloat(radiusKm) : 50;
-    const clampedRadius = Math.min(Math.max(Number.isFinite(radiusNum) ? radiusNum : 50, 1), 500);
+    const clampedRadius = Math.min(
+      Math.max(Number.isFinite(radiusNum) ? radiusNum : 50, 1),
+      500,
+    );
     return this.service.findReturnTrips(latNum, lngNum, clampedRadius);
   }
 
@@ -292,7 +325,9 @@ export class TransportJobsController {
   @Post(':id/accept')
   accept(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     if (!user.canTransport) {
-      throw new ForbiddenException('Only approved drivers can accept transport jobs');
+      throw new ForbiddenException(
+        'Only approved drivers can accept transport jobs',
+      );
     }
     return this.service.accept(id, user.userId);
   }
@@ -306,7 +341,9 @@ export class TransportJobsController {
   @Post(':id/decline-offer')
   declineOffer(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     if (!user.canTransport) {
-      throw new ForbiddenException('Only approved drivers can decline job offers');
+      throw new ForbiddenException(
+        'Only approved drivers can decline job offers',
+      );
     }
     return this.service.declineOffer(id, user.userId);
   }
@@ -451,7 +488,9 @@ export class TransportJobsController {
       throw new BadRequestException('File storage is not configured');
     }
     const mimeType = dto.mimeType ?? 'image/jpeg';
-    const raw = dto.base64.includes(',') ? dto.base64.split(',')[1] : dto.base64;
+    const raw = dto.base64.includes(',')
+      ? dto.base64.split(',')[1]
+      : dto.base64;
     const buffer = Buffer.from(raw, 'base64');
     const ext = mimeType === 'image/png' ? 'png' : 'jpg';
     const path = `pickup-photos/${id}/${Date.now()}.${ext}`;

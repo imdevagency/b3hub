@@ -9,7 +9,14 @@ import { PaymentsModule } from '../payments/payments.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 
 @Module({
-  imports: [NotificationsModule, DocumentsModule, UpdatesModule, EmailModule, PaymentsModule, ReviewsModule],
+  imports: [
+    NotificationsModule,
+    DocumentsModule,
+    UpdatesModule,
+    EmailModule,
+    PaymentsModule,
+    ReviewsModule,
+  ],
   controllers: [TransportJobsController],
   providers: [TransportJobsService],
   exports: [TransportJobsService],

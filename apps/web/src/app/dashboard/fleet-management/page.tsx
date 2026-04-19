@@ -158,17 +158,17 @@ function VehicleRow({
           </div>
         </div>
       </div>
-      
+
       <div className="flex items-center justify-end sm:justify-between gap-4 mt-3 sm:mt-0 pl-16 sm:pl-4 shrink-0">
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
-            v.status === 'ACTIVE' 
-              ? 'bg-green-50 text-green-700' 
-              : v.status === 'IN_USE' 
-              ? 'bg-blue-50 text-blue-700' 
-              : v.status === 'MAINTENANCE' 
-              ? 'bg-orange-50 text-orange-700' 
-              : 'bg-gray-100 text-gray-500'
+            v.status === 'ACTIVE'
+              ? 'bg-green-50 text-green-700'
+              : v.status === 'IN_USE'
+                ? 'bg-blue-50 text-blue-700'
+                : v.status === 'MAINTENANCE'
+                  ? 'bg-orange-50 text-orange-700'
+                  : 'bg-gray-100 text-gray-500'
           }`}
         >
           {status.label}
@@ -233,7 +233,10 @@ function VehicleEmptyState({ hasVehicles, onAdd }: { hasVehicles: boolean; onAdd
           : 'Pievienojiet savu pirmo transportlīdzekli, lai varētu pieņemt pasūtījumus.'}
       </p>
       {!hasVehicles && onAdd && (
-        <Button className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2" onClick={onAdd}>
+        <Button
+          className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2"
+          onClick={onAdd}
+        >
           <Plus className="h-4 w-4" />
           Pievienot transportlīdzekli
         </Button>
@@ -422,7 +425,9 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
                       setShowTypeMenu(false);
                     }}
                   >
-                    <span className={typeFilter === k ? 'font-semibold text-black' : 'text-gray-600'}>
+                    <span
+                      className={typeFilter === k ? 'font-semibold text-black' : 'text-gray-600'}
+                    >
                       {v}
                     </span>
                   </button>
@@ -451,7 +456,10 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
             <span className="hidden sm:inline">Atjaunot</span>
           </Button>
           {!isReadOnly && (
-            <Button className="flex-1 md:flex-none h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2" onClick={openAdd}>
+            <Button
+              className="flex-1 md:flex-none h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2"
+              onClick={openAdd}
+            >
               <Plus className="h-4 w-4" />
               Pievienot
             </Button>
@@ -891,12 +899,6 @@ function ContainersTab({ token }: { token: string }) {
   const containerSizeLabel = (s: ContainerSize) =>
     CONTAINER_SIZES.find((x) => x.value === s)?.label ?? s;
 
-  const statusColor: Record<string, string> = {
-    AVAILABLE: 'bg-green-50 text-green-700 border-green-200',
-    RENTED: 'bg-blue-50 text-blue-700 border-blue-200',
-    MAINTENANCE: 'bg-amber-50 text-amber-700 border-amber-200',
-    RETIRED: 'bg-gray-100 text-gray-400 border-gray-200',
-  };
   const statusLabel: Record<string, string> = {
     AVAILABLE: 'Pieejams',
     RENTED: 'Iznomāts',
@@ -908,7 +910,10 @@ function ContainersTab({ token }: { token: string }) {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <p className="text-sm font-medium text-gray-500">{containers.length} konteineri flotē</p>
-        <Button className="h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2" onClick={() => setShowAdd(true)}>
+        <Button
+          className="h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2"
+          onClick={() => setShowAdd(true)}
+        >
           <Plus className="h-4 w-4" />
           Pievienot konteineru
         </Button>
@@ -922,9 +927,16 @@ function ContainersTab({ token }: { token: string }) {
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
             <Package className="h-6 w-6 text-gray-500" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Konteineru parks ir tukšs</h3>
-          <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-gray-500">Pievienojiet pirmo konteineru, lai varētu piedāvāt konteineru servisu.</p>
-          <Button className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2" onClick={() => setShowAdd(true)}>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+            Konteineru parks ir tukšs
+          </h3>
+          <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-gray-500">
+            Pievienojiet pirmo konteineru, lai varētu piedāvāt konteineru servisu.
+          </p>
+          <Button
+            className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2"
+            onClick={() => setShowAdd(true)}
+          >
             <Plus className="h-4 w-4" />
             Pievienot pirmo konteineru
           </Button>
@@ -932,7 +944,10 @@ function ContainersTab({ token }: { token: string }) {
       ) : (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden flex flex-col">
           {containers.map((c) => (
-            <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/80 transition-all bg-white group">
+            <div
+              key={c.id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/80 transition-all bg-white group"
+            >
               <div className="flex items-center gap-4 min-w-0">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 shrink-0">
                   <Package className="h-5 w-5 text-gray-700" />
@@ -955,17 +970,17 @@ function ContainersTab({ token }: { token: string }) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-end sm:justify-between gap-4 mt-3 sm:mt-0 pl-16 sm:pl-4 shrink-0">
                 <span
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
                     c.status === 'AVAILABLE'
                       ? 'bg-green-50 text-green-700'
                       : c.status === 'RENTED'
-                      ? 'bg-blue-50 text-blue-700'
-                      : c.status === 'MAINTENANCE'
-                      ? 'bg-orange-50 text-orange-700'
-                      : 'bg-gray-100 text-gray-500'
+                        ? 'bg-blue-50 text-blue-700'
+                        : c.status === 'MAINTENANCE'
+                          ? 'bg-orange-50 text-orange-700'
+                          : 'bg-gray-100 text-gray-500'
                   }`}
                 >
                   {statusLabel[c.status] ?? c.status}

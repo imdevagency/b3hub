@@ -174,7 +174,10 @@ export class OrdersService {
       }),
     ]);
     const materialMap = new Map(materialsRaw.map((m) => [m.id, m]));
-    const tiersByMaterial = new Map<string, { minQty: number; unitPrice: number }[]>();
+    const tiersByMaterial = new Map<
+      string,
+      { minQty: number; unitPrice: number }[]
+    >();
     for (const tier of tiersRaw) {
       const list = tiersByMaterial.get(tier.materialId) ?? [];
       list.push({ minQty: tier.minQty, unitPrice: tier.unitPrice });
@@ -221,7 +224,8 @@ export class OrdersService {
       const PRICE_TOLERANCE = 0.01;
       if (
         item.unitPrice > 0 &&
-        Math.abs(item.unitPrice - resolvedPrice) / resolvedPrice > PRICE_TOLERANCE
+        Math.abs(item.unitPrice - resolvedPrice) / resolvedPrice >
+          PRICE_TOLERANCE
       ) {
         throw new ConflictException({
           code: 'PRICE_CHANGED',
@@ -334,7 +338,11 @@ export class OrdersService {
           );
           // Alert admins — buyer's creditUsed may be permanently overstated
           this.prisma.user
-            .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+            .findMany({
+              where: { userType: 'ADMIN' },
+              select: { id: true },
+              take: 50,
+            })
             .then((admins) => {
               if (admins.length === 0) return;
               return this.notifications.createForMany(
@@ -351,7 +359,12 @@ export class OrdersService {
                 },
               );
             })
-            .catch((err) => this.logger.warn('Admin credit-rollback notification failed', (err as Error).message));
+            .catch((err) =>
+              this.logger.warn(
+                'Admin credit-rollback notification failed',
+                (err as Error).message,
+              ),
+            );
         });
       }
       throw err;
@@ -406,7 +419,12 @@ export class OrdersService {
                       data: { materialId: item.materialId },
                     },
                   )
-                  .catch((err) => this.logger.warn('Out-of-stock supplier notification failed', (err as Error).message));
+                  .catch((err) =>
+                    this.logger.warn(
+                      'Out-of-stock supplier notification failed',
+                      (err as Error).message,
+                    ),
+                  );
               }
             }
 
@@ -441,6 +459,7 @@ export class OrdersService {
     items: Array<{
       materialId: string;
       quantity: number;
+
       unit: any;
       unitPrice: number;
       resolvedUnitPrice: number;
@@ -456,100 +475,108 @@ export class OrdersService {
     // possible under concurrent load.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-    const orderNumber = this.generateOrderNumber();
-    const subtotal = items.reduce(
-      (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
-      0,
-    );
-    const tax = subtotal * VAT_RATE;
-    const total = subtotal + tax + (orderData.deliveryFee || 0);
+        const orderNumber = this.generateOrderNumber();
+        const subtotal = items.reduce(
+          (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
+          0,
+        );
+        const tax = subtotal * VAT_RATE;
+        const total = subtotal + tax + (orderData.deliveryFee || 0);
 
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber,
-        orderType: orderData.orderType,
-        buyerId: buyerCompanyId,
-        createdById: userId,
-        deliveryAddress: orderData.deliveryAddress,
-        deliveryCity: orderData.deliveryCity,
-        deliveryState: orderData.deliveryState ?? '',
-        deliveryPostal: orderData.deliveryPostal ?? '',
-        deliveryLat: orderData.deliveryLat ?? null,
-        deliveryLng: orderData.deliveryLng ?? null,
-        deliveryDate: orderData.deliveryDate
-          ? new Date(orderData.deliveryDate)
-          : undefined,
-        deliveryWindow: orderData.deliveryWindow,
-        deliveryFee: orderData.deliveryFee ?? 0,
-        notes: orderData.notes,
-        siteContactName: orderData.siteContactName,
-        siteContactPhone: orderData.siteContactPhone,
-        projectId: orderData.projectId ?? null,
-        truckCount: orderData.truckCount ?? 1,
-        truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
-        subtotal,
-        tax,
-        total,
-        currency: 'EUR',
-        status: OrderStatus.PENDING,
-        paymentStatus: 'PENDING',
-        paymentMethod,
-        items: {
-          create: items.map((item) => ({
-            materialId: item.materialId,
-            quantity: item.quantity,
-            unit: item.unit,
-            unitPrice: item.resolvedUnitPrice,
-            total: item.resolvedUnitPrice * item.quantity,
-          })),
-        },
-      },
-      include: {
-        items: {
+        const order = await this.prisma.order.create({
+          data: {
+            orderNumber,
+            orderType: orderData.orderType,
+            buyerId: buyerCompanyId,
+            createdById: userId,
+            deliveryAddress: orderData.deliveryAddress,
+            deliveryCity: orderData.deliveryCity,
+            deliveryState: orderData.deliveryState ?? '',
+            deliveryPostal: orderData.deliveryPostal ?? '',
+            deliveryLat: orderData.deliveryLat ?? null,
+            deliveryLng: orderData.deliveryLng ?? null,
+            deliveryDate: orderData.deliveryDate
+              ? new Date(orderData.deliveryDate)
+              : undefined,
+            deliveryWindow: orderData.deliveryWindow,
+            deliveryFee: orderData.deliveryFee ?? 0,
+            notes: orderData.notes,
+            siteContactName: orderData.siteContactName,
+            siteContactPhone: orderData.siteContactPhone,
+            projectId: orderData.projectId ?? null,
+            truckCount: orderData.truckCount ?? 1,
+            truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
+            subtotal,
+            tax,
+            total,
+            currency: 'EUR',
+            status: OrderStatus.PENDING,
+            paymentStatus: 'PENDING',
+            paymentMethod,
+            items: {
+              create: items.map((item) => ({
+                materialId: item.materialId,
+                quantity: item.quantity,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                unit: item.unit,
+                unitPrice: item.resolvedUnitPrice,
+                total: item.resolvedUnitPrice * item.quantity,
+              })),
+            },
+          },
           include: {
-            material: {
+            items: {
+              include: {
+                material: {
+                  select: {
+                    name: true,
+                    category: true,
+                    images: true,
+                  },
+                },
+              },
+            },
+            buyer: {
               select: {
                 name: true,
-                category: true,
-                images: true,
+                email: true,
+                phone: true,
               },
             },
           },
-        },
-        buyer: {
-          select: {
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
+        });
 
-    // Email (fire-and-forget)
-    if (order.buyer?.email) {
-      this.email
-        .sendOrderConfirmation(order.buyer.email, order.buyer.name ?? '', {
-          orderNumber: order.orderNumber,
-          total: Number(order.total),
-          currency: order.currency ?? 'EUR',
-          deliveryAddress: order.deliveryAddress ?? undefined,
-          deliveryCity: order.deliveryCity ?? undefined,
-          items: order.items.map((i) => ({
-            quantity: Number(i.quantity),
-            unit: i.unit,
-            material: { name: i.material.name },
-          })),
-        })
-        .catch((err) => this.logger.warn('sendOrderConfirmation email failed', (err as Error).message));
-    }
+        // Email (fire-and-forget)
+        if (order.buyer?.email) {
+          this.email
+            .sendOrderConfirmation(order.buyer.email, order.buyer.name ?? '', {
+              orderNumber: order.orderNumber,
+              total: Number(order.total),
+              currency: order.currency ?? 'EUR',
+              deliveryAddress: order.deliveryAddress ?? undefined,
+              deliveryCity: order.deliveryCity ?? undefined,
+              items: order.items.map((i) => ({
+                quantity: Number(i.quantity),
+                unit: i.unit,
+                material: { name: i.material.name },
+              })),
+            })
+            .catch((err) =>
+              this.logger.warn(
+                'sendOrderConfirmation email failed',
+                (err as Error).message,
+              ),
+            );
+        }
 
-    // Notify sellers (fire-and-forget)
-    this.notifyOrderSellers(order.id, order.orderNumber).catch((err) => this.logger.warn('notifyOrderSellers failed', (err as Error).message));
+        // Notify sellers (fire-and-forget)
+        this.notifyOrderSellers(order.id, order.orderNumber).catch((err) =>
+          this.logger.warn('notifyOrderSellers failed', (err as Error).message),
+        );
 
-    return order;
-      } catch (err: any) {
-        if (err?.code === 'P2002' && attempt === 0) {
+        return order;
+      } catch (err: unknown) {
+        if ((err as { code?: string })?.code === 'P2002' && attempt === 0) {
           this.logger.warn(
             `Order number collision on attempt ${attempt + 1}, retrying...`,
           );
@@ -573,7 +600,11 @@ export class OrdersService {
 
     // Broadcast WebSocket events first (fire-and-forget, one per supplier)
     for (const supplierId of supplierIds) {
-      this.updates.broadcastSellerNewOrder({ companyId: supplierId, orderId, orderNumber });
+      this.updates.broadcastSellerNewOrder({
+        companyId: supplierId,
+        orderId,
+        orderNumber,
+      });
     }
 
     // Batch-fetch all supplier members in a single query (avoids N+1)
@@ -590,7 +621,12 @@ export class OrdersService {
           message: `Saņemts jauns pasūtījums #${orderNumber} jūsu materiāliem.`,
           data: { orderId },
         })
-        .catch((err) => this.logger.warn('Seller ORDER_CREATED notification failed', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'Seller ORDER_CREATED notification failed',
+            (err as Error).message,
+          ),
+        );
     }
   }
 
@@ -892,7 +928,10 @@ export class OrdersService {
       updateData.deliveryWindow = updateOrderDto.deliveryWindow;
     // Only admins may change the delivery fee — buyers could exploit this to
     // reduce the amount captured in reconcileInvoiceWeight.
-    if (updateOrderDto.deliveryFee !== undefined && currentUser.userType === 'ADMIN')
+    if (
+      updateOrderDto.deliveryFee !== undefined &&
+      currentUser.userType === 'ADMIN'
+    )
       updateData.deliveryFee = updateOrderDto.deliveryFee;
     if (updateOrderDto.notes) updateData.notes = updateOrderDto.notes;
     if (updateOrderDto.siteContactName !== undefined)
@@ -958,7 +997,10 @@ export class OrdersService {
 
     // Spawn transport job(s) when seller confirms (MATERIAL orders only).
     // Transport jobs appear on the driver board only after the supplier is ready to load.
-    if (status === OrderStatus.CONFIRMED && order.orderType === OrderType.MATERIAL) {
+    if (
+      status === OrderStatus.CONFIRMED &&
+      order.orderType === OrderType.MATERIAL
+    ) {
       this.spawnTransportJobFromOrder(id).catch((err) => {
         this.logger.error(
           `spawnTransportJobFromOrder failed for order ${id}:`,
@@ -969,10 +1011,13 @@ export class OrdersService {
 
     // Capture payment when seller confirms the order (fire-and-forget, non-fatal).
     // INVOICE-method orders skip card capture — buyer pays via Payment Link / bank transfer.
-    if (status === OrderStatus.CONFIRMED && order.paymentMethod !== PaymentMethod.INVOICE) {
+    if (
+      status === OrderStatus.CONFIRMED &&
+      order.paymentMethod !== PaymentMethod.INVOICE
+    ) {
       this.payments.capturePayment(id).catch(async (err) => {
         this.logger.error(
-          `capturePayment failed for order ${id}: ${err.message}`,
+          `capturePayment failed for order ${id}: ${(err as Error).message}`,
         );
 
         // Notify the buyer so they can re-attempt payment
@@ -984,7 +1029,12 @@ export class OrdersService {
             message: `Pasūtījums #${order.orderNumber} apstiprināts, taču maksājuma iekasēšana neizdevās. Lūdzu, sazinieties ar atbalstu vai mēģiniet atkārtoti.`,
             data: { orderId: id },
           })
-          .catch((err) => this.logger.warn('Buyer payment-failed notification failed', (err as Error).message));
+          .catch((err) =>
+            this.logger.warn(
+              'Buyer payment-failed notification failed',
+              (err as Error).message,
+            ),
+          );
 
         // Alert admins for manual intervention
         const admins = await this.prisma.user.findMany({
@@ -999,11 +1049,16 @@ export class OrdersService {
               {
                 type: NotificationType.SYSTEM_ALERT,
                 title: '🚨 Maksājuma iekasēšana neizdevās',
-                message: `Pasūtījums #${order.orderNumber} (${id}): capturePayment kļūda — ${err.message}. Nepieciešama manuāla iejaukšanās.`,
+                message: `Pasūtījums #${order.orderNumber} (${id}): capturePayment kļūda — ${(err as Error).message}. Nepieciešama manuāla iejaukšanās.`,
                 data: { orderId: id },
               },
             )
-            .catch((err2) => this.logger.warn('Admin capture-failed notification failed', (err2 as Error).message));
+            .catch((err2) =>
+              this.logger.warn(
+                'Admin capture-failed notification failed',
+                (err2 as Error).message,
+              ),
+            );
         }
       });
     }
@@ -1014,7 +1069,7 @@ export class OrdersService {
         .releaseFunds(id)
         .catch((err) =>
           this.logger.error(
-            `releaseFunds failed for order ${id}: ${err.message}`,
+            `releaseFunds failed for order ${id}: ${(err as Error).message}`,
           ),
         );
       // Also release the buyer's credit exposure now that payment has been captured
@@ -1107,7 +1162,12 @@ export class OrdersService {
                 message: `Pasūtījums #${order.orderNumber} ir atcelts. Jūsu transporta darbs tika atcelts.`,
                 data: { orderId: id, jobId: job.id },
               })
-              .catch((err) => this.logger.warn('Driver job-cancelled notification failed', (err as Error).message));
+              .catch((err) =>
+                this.logger.warn(
+                  'Driver job-cancelled notification failed',
+                  (err as Error).message,
+                ),
+              );
           }
         }
       }
@@ -1140,7 +1200,12 @@ export class OrdersService {
     if (notif) {
       this.notifications
         .create({ userId: order.createdById, ...notif, data: { orderId: id } })
-        .catch((err) => this.logger.warn('Status-change notification failed', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'Status-change notification failed',
+            (err as Error).message,
+          ),
+        );
     }
 
     // Broadcast real-time status change to subscribed clients (fire-and-forget)
@@ -1160,7 +1225,12 @@ export class OrdersService {
           orderNumber: order.orderNumber,
           status,
         })
-        .catch((err) => this.logger.warn('sendOrderStatusUpdate email failed', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'sendOrderStatusUpdate email failed',
+            (err as Error).message,
+          ),
+        );
     }
 
     return updated;
@@ -1213,13 +1283,25 @@ export class OrdersService {
    * (no transport job). Transitions order to IN_PROGRESS and, when weight is
    * provided, auto-generates a WEIGHING_SLIP document for the buyer.
    */
-  async startLoading(id: string, currentUser: RequestingUser, weightKg?: number) {
+  async startLoading(
+    id: string,
+    currentUser: RequestingUser,
+    weightKg?: number,
+  ) {
     // Fetch createdById before the status update (we need it for the weighing slip)
-    const existing = weightKg != null && weightKg > 0
-      ? await this.prisma.order.findUnique({ where: { id }, select: { createdById: true } })
-      : null;
+    const existing =
+      weightKg != null && weightKg > 0
+        ? await this.prisma.order.findUnique({
+            where: { id },
+            select: { createdById: true },
+          })
+        : null;
 
-    const order = await this.updateStatusAsUser(id, OrderStatus.IN_PROGRESS, currentUser);
+    const order = await this.updateStatusAsUser(
+      id,
+      OrderStatus.IN_PROGRESS,
+      currentUser,
+    );
 
     if (weightKg != null && weightKg > 0 && existing) {
       const weightTonnes = weightKg / 1000;
@@ -1231,7 +1313,9 @@ export class OrdersService {
           't',
         );
       } catch (err) {
-        this.logger.warn(`startLoading: failed to generate WEIGHING_SLIP for order ${id}: ${err}`);
+        this.logger.warn(
+          `startLoading: failed to generate WEIGHING_SLIP for order ${id}: ${err}`,
+        );
       }
     }
 
@@ -1347,7 +1431,12 @@ export class OrdersService {
               message: `Pasūtījums ir atcelts piegādātāja dēļ. Jūsu transporta darbs ir noņemts.`,
               data: { orderId: id, jobId: job.id },
             })
-            .catch((err) => this.logger.warn('sellerCancel driver notification failed', (err as Error).message));
+            .catch((err) =>
+              this.logger.warn(
+                'sellerCancel driver notification failed',
+                (err as Error).message,
+              ),
+            );
         }
       }
     }
@@ -1380,13 +1469,18 @@ export class OrdersService {
 
     // Restore stock for each item
     for (const item of order.items) {
-      if (!item.materialId || !(item as any).quantity) continue;
+      if (!item.materialId || !item.quantity) continue;
       this.prisma.$executeRaw`
         UPDATE materials
-        SET "stockQty" = "stockQty" + ${(item as any).quantity as number},
+        SET "stockQty" = "stockQty" + ${Number(item.quantity)},
             "inStock" = true
         WHERE id = ${item.materialId} AND "stockQty" IS NOT NULL
-      `.catch((err) => this.logger.warn(`sellerCancel stock restore failed for ${item.materialId}`, (err as Error).message));
+      `.catch((err) =>
+        this.logger.warn(
+          `sellerCancel stock restore failed for ${item.materialId}`,
+          (err as Error).message,
+        ),
+      );
     }
 
     // Notify buyer with a seller-specific message
@@ -1398,7 +1492,12 @@ export class OrdersService {
         message: `Diemžēl piegādātājs atcēla jūsu pasūtījumu #${order.orderNumber}. Iemesls: ${reason}. Ja maksājums tika veikts, tas tiks atmaksāts.`,
         data: { orderId: id, reason },
       })
-      .catch((err) => this.logger.warn('sellerCancel buyer notification failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'sellerCancel buyer notification failed',
+          (err as Error).message,
+        ),
+      );
 
     // If the order was already confirmed or in progress, alert admins — this is
     // a supply-chain disruption the buyer cannot self-serve around.
@@ -1407,7 +1506,11 @@ export class OrdersService {
       order.status === OrderStatus.IN_PROGRESS
     ) {
       this.prisma.user
-        .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+        .findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+          take: 50,
+        })
         .then((admins) => {
           if (admins.length === 0) return;
           return this.notifications.createForMany(
@@ -1440,8 +1543,13 @@ export class OrdersService {
   async confirmReceipt(id: string, currentUser: RequestingUser) {
     const order = await this.findOne(id, currentUser);
 
-    if (order.createdById !== currentUser.userId && currentUser.userType !== 'ADMIN') {
-      throw new ForbiddenException('Only the buyer who placed this order can confirm receipt');
+    if (
+      order.createdById !== currentUser.userId &&
+      currentUser.userType !== 'ADMIN'
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer who placed this order can confirm receipt',
+      );
     }
 
     if (order.status !== OrderStatus.DELIVERED) {
@@ -1470,8 +1578,13 @@ export class OrdersService {
     // Only the buyer who placed the order (or an admin) may cancel it.
     // Sellers and drivers can view the order via findOne but must not be able
     // to cancel it — they have separate seller-cancel / dispute flows.
-    if (currentUser.userType !== 'ADMIN' && order.createdById !== currentUser.userId) {
-      throw new ForbiddenException('Only the buyer who placed this order can cancel it');
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      order.createdById !== currentUser.userId
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer who placed this order can cancel it',
+      );
     }
 
     if (order.status === OrderStatus.CANCELLED) {
@@ -1570,7 +1683,12 @@ export class OrdersService {
               message: `Pasūtījums #${order.orderNumber} ir atcelts. Jūsu transporta darbs tika atcelts.`,
               data: { orderId: id, jobId: job.id },
             })
-            .catch((err) => this.logger.warn('Cancel driver notification failed', (err as Error).message));
+            .catch((err) =>
+              this.logger.warn(
+                'Cancel driver notification failed',
+                (err as Error).message,
+              ),
+            );
         }
       }
     }
@@ -1593,7 +1711,7 @@ export class OrdersService {
     // Restore stock for each order item so the supplier's listing reflects
     // available inventory again. Only restore if the item had a resolved quantity
     // (not disposal/freight orders that don't consume material stock).
-    const items = (order as any).items as
+    const items = order.items as
       | Array<{ materialId?: string | null; quantity?: number | null }>
       | undefined;
     if (items?.length) {
@@ -1626,7 +1744,12 @@ export class OrdersService {
         message: `Pasūtījums #${order.orderNumber} ir atcelts.`,
         data: { orderId: id },
       })
-      .catch((err) => this.logger.warn('Cancel buyer notification failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'Cancel buyer notification failed',
+          (err as Error).message,
+        ),
+      );
 
     return updated;
   }
@@ -1635,30 +1758,36 @@ export class OrdersService {
     const { userId, canSell, canTransport, companyId } = currentUser;
 
     // ── Always compute buyer section ──────────────────────────────────────────
-    const [activeOrders, awaitingDelivery, totalMatOrders, skipHireOrders, transportJobs, documents] =
-      await Promise.all([
-        // Active = orders being processed (not yet dispatched)
-        this.prisma.order.count({
-          where: {
-            createdById: userId,
-            status: {
-              in: [
-                OrderStatus.PENDING,
-                OrderStatus.CONFIRMED,
-                OrderStatus.IN_PROGRESS,
-              ],
-            },
+    const [
+      activeOrders,
+      awaitingDelivery,
+      totalMatOrders,
+      skipHireOrders,
+      transportJobs,
+      documents,
+    ] = await Promise.all([
+      // Active = orders being processed (not yet dispatched)
+      this.prisma.order.count({
+        where: {
+          createdById: userId,
+          status: {
+            in: [
+              OrderStatus.PENDING,
+              OrderStatus.CONFIRMED,
+              OrderStatus.IN_PROGRESS,
+            ],
           },
-        }),
-        // Awaiting delivery = confirmed by seller, truck en-route but not yet arrived
-        this.prisma.order.count({
-          where: { createdById: userId, status: OrderStatus.CONFIRMED },
-        }),
-        this.prisma.order.count({ where: { createdById: userId } }),
-        this.prisma.skipHireOrder.count({ where: { userId } }),
-        this.prisma.transportJob.count({ where: { requestedById: userId } }),
-        this.prisma.document.count({ where: { ownerId: userId } }),
-      ]);
+        },
+      }),
+      // Awaiting delivery = confirmed by seller, truck en-route but not yet arrived
+      this.prisma.order.count({
+        where: { createdById: userId, status: OrderStatus.CONFIRMED },
+      }),
+      this.prisma.order.count({ where: { createdById: userId } }),
+      this.prisma.skipHireOrder.count({ where: { userId } }),
+      this.prisma.transportJob.count({ where: { requestedById: userId } }),
+      this.prisma.document.count({ where: { ownerId: userId } }),
+    ]);
 
     const buyer = {
       activeOrders,
@@ -1852,7 +1981,12 @@ export class OrdersService {
       },
     });
 
-    if (!order || order.orderType !== OrderType.MATERIAL || order.items.length === 0) return;
+    if (
+      !order ||
+      order.orderType !== OrderType.MATERIAL ||
+      order.items.length === 0
+    )
+      return;
 
     const firstItem = order.items[0];
     if (!firstItem.material?.supplier) {
@@ -1865,7 +1999,9 @@ export class OrdersService {
     const supplier = firstItem.material.supplier;
     const totalWeight = order.items.reduce((sum, i) => sum + i.quantity, 0);
     const cargoType = firstItem.material.name;
-    const baseDate = order.deliveryDate ? new Date(order.deliveryDate) : new Date();
+    const baseDate = order.deliveryDate
+      ? new Date(order.deliveryDate)
+      : new Date();
 
     const truckCount = Math.max(1, order.truckCount ?? 1);
     const intervalMs = (order.truckIntervalMinutes ?? 60) * 60 * 1000;
@@ -1893,7 +2029,8 @@ export class OrdersService {
     const effectiveFee = (order.deliveryFee ?? 0) > 0 ? order.deliveryFee : 0;
     const driverRate = effectiveFee / truckCount;
     // pricePerTonne = driver rate for this truck ÷ tonnes per truck
-    const pricePerTonne = weightPerTruck > 0 ? driverRate / weightPerTruck : null;
+    const pricePerTonne =
+      weightPerTruck > 0 ? driverRate / weightPerTruck : null;
 
     for (let i = 0; i < truckCount; i++) {
       const jobNumber = this.generateTransportJobNumber();
@@ -1913,9 +2050,13 @@ export class OrdersService {
           deliveryCity: order.deliveryCity,
           deliveryState: order.deliveryState ?? '',
           deliveryPostal: order.deliveryPostal ?? '',
-          deliveryDate: distanceKm != null
-            ? new Date(pickupDate.getTime() + Math.ceil(distanceKm / 60 + 1.5) * 3_600_000)
-            : new Date(pickupDate.getTime() + 4 * 3_600_000),
+          deliveryDate:
+            distanceKm != null
+              ? new Date(
+                  pickupDate.getTime() +
+                    Math.ceil(distanceKm / 60 + 1.5) * 3_600_000,
+                )
+              : new Date(pickupDate.getTime() + 4 * 3_600_000),
           cargoType,
           cargoWeight: weightPerTruck,
           rate: driverRate,
@@ -1997,7 +2138,10 @@ export class OrdersService {
     const deliveryCity = center.city;
     const deliveryState = center.state ?? '';
     const deliveryPostal = center.postalCode ?? '';
-    const centerCoords = center.coordinates as { lat?: number; lng?: number } | null;
+    const centerCoords = center.coordinates as {
+      lat?: number;
+      lng?: number;
+    } | null;
     const deliveryLat = centerCoords?.lat ?? null;
     const deliveryLng = centerCoords?.lng ?? null;
 
@@ -2211,7 +2355,9 @@ export class OrdersService {
           message: `Pasūtījumam #${order.orderNumber} pievienota papildu maksa: ${dto.label} — €${dto.amount.toFixed(2)}.`,
           data: { orderId: order.id, surchargeId: surcharge.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return surcharge;
@@ -2323,70 +2469,80 @@ export class OrdersService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async autoCompleteDeliveredOrders(): Promise<void> {
-    await withCronLock(this.prisma, 'autoCompleteDeliveredOrders', async () => {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1_000); // 24 hrs ago
+    await withCronLock(
+      this.prisma,
+      'autoCompleteDeliveredOrders',
+      async () => {
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1_000); // 24 hrs ago
 
-    const stale = await this.prisma.order.findMany({
-      where: {
-        status: OrderStatus.DELIVERED,
-        updatedAt: { lt: cutoff },
-        // Do not auto-complete orders with an open or under-review dispute.
-        // Funds must not be released until the dispute is resolved by admin.
-        NOT: {
-          dispute: { status: { in: ['OPEN', 'UNDER_REVIEW'] } },
-        },
-      },
-      select: { id: true, orderNumber: true, total: true, createdById: true },
-    });
-
-    if (stale.length === 0) return;
-
-    for (const order of stale) {
-      try {
-        const { count } = await this.prisma.order.updateMany({
-          where: { id: order.id, status: OrderStatus.DELIVERED },
-          data: { status: OrderStatus.COMPLETED },
+        const stale = await this.prisma.order.findMany({
+          where: {
+            status: OrderStatus.DELIVERED,
+            updatedAt: { lt: cutoff },
+            // Do not auto-complete orders with an open or under-review dispute.
+            // Funds must not be released until the dispute is resolved by admin.
+            NOT: {
+              dispute: { status: { in: ['OPEN', 'UNDER_REVIEW'] } },
+            },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            total: true,
+            createdById: true,
+          },
         });
 
-        if (count === 0) continue; // Concurrent update or dispute moved it away
-        // Release funds — fire-and-forget, non-fatal
-        this.payments
-          .releaseFunds(order.id)
-          .catch((err) =>
-            this.logger.error(
-              `autoComplete: releaseFunds failed for order ${order.id}: ${
-                (err as Error).message
-              }`,
-            ),
-          );
-        // Release buyer credit exposure
-        if (order.total) {
-          this.prisma.$executeRaw`
+        if (stale.length === 0) return;
+
+        for (const order of stale) {
+          try {
+            const { count } = await this.prisma.order.updateMany({
+              where: { id: order.id, status: OrderStatus.DELIVERED },
+              data: { status: OrderStatus.COMPLETED },
+            });
+
+            if (count === 0) continue; // Concurrent update or dispute moved it away
+            // Release funds — fire-and-forget, non-fatal
+            this.payments
+              .releaseFunds(order.id)
+              .catch((err) =>
+                this.logger.error(
+                  `autoComplete: releaseFunds failed for order ${order.id}: ${
+                    (err as Error).message
+                  }`,
+                ),
+              );
+            // Release buyer credit exposure
+            if (order.total) {
+              this.prisma.$executeRaw`
             UPDATE buyer_profiles
             SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(
               order.total,
             )})
             WHERE "userId" = ${order.createdById}
           `.catch((err) =>
+                this.logger.error(
+                  `autoComplete: credit release failed for order ${order.id}: ${
+                    (err as Error).message
+                  }`,
+                ),
+              );
+            }
+            this.logger.log(
+              `autoCompleteDeliveredOrders: order ${order.orderNumber} auto-completed`,
+            );
+          } catch (err) {
             this.logger.error(
-              `autoComplete: credit release failed for order ${order.id}: ${
+              `autoCompleteDeliveredOrders: failed for order ${order.id}: ${
                 (err as Error).message
               }`,
-            ),
-          );
+            );
+          }
         }
-        this.logger.log(
-          `autoCompleteDeliveredOrders: order ${order.orderNumber} auto-completed`,
-        );
-      } catch (err) {
-        this.logger.error(
-          `autoCompleteDeliveredOrders: failed for order ${order.id}: ${
-            (err as Error).message
-          }`,
-        );
-      }
-    }
-    }, this.logger);
+      },
+      this.logger,
+    );
   }
 
   /**
@@ -2403,97 +2559,112 @@ export class OrdersService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async autoCancelStalePendingOrders(): Promise<void> {
-    await withCronLock(this.prisma, 'autoCancelStalePendingOrders', async () => {
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1_000); // 48 hrs ago
+    await withCronLock(
+      this.prisma,
+      'autoCancelStalePendingOrders',
+      async () => {
+        const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1_000); // 48 hrs ago
 
-    const stale = await this.prisma.order.findMany({
-      where: {
-        status: OrderStatus.PENDING,
-        createdAt: { lt: cutoff },
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        createdById: true,
-        total: true,
-        items: { select: { materialId: true, quantity: true } },
-      },
-    });
-
-    if (stale.length === 0) return;
-
-    for (const order of stale) {
-      try {
-        const { count } = await this.prisma.order.updateMany({
-          where: { id: order.id, status: OrderStatus.PENDING },
-          data: { status: OrderStatus.CANCELLED },
+        const stale = await this.prisma.order.findMany({
+          where: {
+            status: OrderStatus.PENDING,
+            createdAt: { lt: cutoff },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            createdById: true,
+            total: true,
+            items: { select: { materialId: true, quantity: true } },
+          },
         });
 
-        if (count === 0) continue; // Concurrent update beat us
+        if (stale.length === 0) return;
 
-        // Void the Stripe PaymentIntent (fire-and-forget)
-        this.payments
-          .voidOrRefund(order.id)
-          .catch((err) =>
-            this.logger.error(
-              `autoCancelStale: voidOrRefund failed for order ${order.id}: ${
-                (err as Error).message
-              }`,
-            ),
-          );
+        for (const order of stale) {
+          try {
+            const { count } = await this.prisma.order.updateMany({
+              where: { id: order.id, status: OrderStatus.PENDING },
+              data: { status: OrderStatus.CANCELLED },
+            });
 
-        // Release buyer credit
-        if (order.total) {
-          this.prisma.$executeRaw`
+            if (count === 0) continue; // Concurrent update beat us
+
+            // Void the Stripe PaymentIntent (fire-and-forget)
+            this.payments
+              .voidOrRefund(order.id)
+              .catch((err) =>
+                this.logger.error(
+                  `autoCancelStale: voidOrRefund failed for order ${order.id}: ${
+                    (err as Error).message
+                  }`,
+                ),
+              );
+
+            // Release buyer credit
+            if (order.total) {
+              this.prisma.$executeRaw`
             UPDATE buyer_profiles
             SET "creditUsed" = GREATEST(0, "creditUsed" - ${Number(
               order.total,
             )})
             WHERE "userId" = ${order.createdById}
           `.catch((err) =>
-            this.logger.error(
-              `autoCancelStale: credit release failed for order ${order.id}: ${
-                (err as Error).message
-              }`,
-            ),
-          );
-        }
+                this.logger.error(
+                  `autoCancelStale: credit release failed for order ${order.id}: ${
+                    (err as Error).message
+                  }`,
+                ),
+              );
+            }
 
-        // Restore stockQty for each ordered item
-        for (const item of order.items) {
-          if (!item.materialId || !item.quantity) continue;
-          this.prisma.$executeRaw`
+            // Restore stockQty for each ordered item
+            for (const item of order.items) {
+              if (!item.materialId || !item.quantity) continue;
+              this.prisma.$executeRaw`
             UPDATE materials
             SET "stockQty" = "stockQty" + ${item.quantity},
                 "inStock" = true
             WHERE id = ${item.materialId}
               AND "stockQty" IS NOT NULL
-          `.catch((err) => this.logger.warn(`autoCancelStalePendingOrders stock restore failed for ${item.materialId}`, (err as Error).message));
+          `.catch((err) =>
+                this.logger.warn(
+                  `autoCancelStalePendingOrders stock restore failed for ${item.materialId}`,
+                  (err as Error).message,
+                ),
+              );
+            }
+
+            // Notify buyer
+            this.notifications
+              .create({
+                userId: order.createdById,
+                type: NotificationType.ORDER_CANCELLED,
+                title: 'Pasūtījums atcelts',
+                message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo piegādātājs 48 stundu laikā neapstiprināja pasūtījumu.`,
+                data: { orderId: order.id },
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  'autoCancelStalePendingOrders buyer notification failed',
+                  (err as Error).message,
+                ),
+              );
+
+            this.logger.log(
+              `autoCancelStalePendingOrders: order ${order.orderNumber} auto-cancelled (no seller response in 48h)`,
+            );
+          } catch (err) {
+            this.logger.error(
+              `autoCancelStalePendingOrders: failed for order ${order.id}: ${
+                (err as Error).message
+              }`,
+            );
+          }
         }
-
-        // Notify buyer
-        this.notifications
-          .create({
-            userId: order.createdById,
-            type: NotificationType.ORDER_CANCELLED,
-            title: 'Pasūtījums atcelts',
-            message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo piegādātājs 48 stundu laikā neapstiprināja pasūtījumu.`,
-            data: { orderId: order.id },
-          })
-          .catch((err) => this.logger.warn('autoCancelStalePendingOrders buyer notification failed', (err as Error).message));
-
-        this.logger.log(
-          `autoCancelStalePendingOrders: order ${order.orderNumber} auto-cancelled (no seller response in 48h)`,
-        );
-      } catch (err) {
-        this.logger.error(
-          `autoCancelStalePendingOrders: failed for order ${order.id}: ${
-            (err as Error).message
-          }`,
-        );
-      }
-    }
-    }, this.logger);
+      },
+      this.logger,
+    );
   }
 
   // ─── Recurring order schedules ─────────────────────────────────────────────
@@ -2592,122 +2763,140 @@ export class OrdersService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_6AM)
   async runScheduledOrders(): Promise<void> {
-    await withCronLock(this.prisma, 'runScheduledOrders', async () => {
-    const now = new Date();
-    const due = await this.prisma.orderSchedule.findMany({
-      where: {
-        enabled: true,
-        nextRunAt: { lte: now },
-        OR: [{ endsAt: null }, { endsAt: { gte: now } }],
-      },
-      include: { createdBy: true },
-    });
-
-    for (const schedule of due) {
-      try {
-        const items = schedule.itemsSnapshot as {
-          materialId: string;
-          quantity: number;
-          unit: string;
-        }[];
-        // Resolve delivery date = nextRunAt date
-        const deliveryDate = schedule.nextRunAt.toISOString().split('T')[0];
-        const requestingUser: RequestingUser = {
-          id: schedule.createdById,
-          userId: schedule.createdById,
-          userType: schedule.createdBy.userType as 'BUYER',
-          isCompany: schedule.createdBy.isCompany,
-          canSell: schedule.createdBy.canSell,
-          canTransport: schedule.createdBy.canTransport,
-          canSkipHire: schedule.createdBy.canSkipHire,
-          companyId: schedule.createdBy.companyId ?? undefined,
-          permCreateContracts: schedule.createdBy.permCreateContracts,
-          permReleaseCallOffs: schedule.createdBy.permReleaseCallOffs,
-          permManageOrders: schedule.createdBy.permManageOrders,
-          permViewFinancials: schedule.createdBy.permViewFinancials,
-          permManageTeam: schedule.createdBy.permManageTeam,
-        };
-
-        const dto: CreateOrderDto = {
-          orderType: schedule.orderType as OrderType,
-          deliveryAddress: schedule.deliveryAddress,
-          deliveryCity: schedule.deliveryCity,
-          deliveryState: schedule.deliveryState,
-          deliveryPostal: schedule.deliveryPostal,
-          deliveryDate,
-          deliveryWindow: schedule.deliveryWindow ?? undefined,
-          deliveryFee: schedule.deliveryFee,
-          notes: schedule.notes
-            ? `[Atkārtots] ${schedule.notes}`
-            : '[Atkārtots pasūtījums]',
-          siteContactName: schedule.siteContactName ?? undefined,
-          siteContactPhone: schedule.siteContactPhone ?? undefined,
-          projectId: schedule.projectId ?? undefined,
-          deliveryLat: schedule.deliveryLat ?? undefined,
-          deliveryLng: schedule.deliveryLng ?? undefined,
-          items: items.map((i) => ({
-            materialId: i.materialId,
-            quantity: i.quantity,
-            unit: i.unit as import('@prisma/client').MaterialUnit,
-            unitPrice: 0, // resolved during create()
-          })),
-        };
-
-        const created = await this.create(dto, requestingUser);
-        // Link order(s) back to schedule.
-        // When the cart contains items from multiple suppliers, create() returns
-        // { orders: [...] } instead of a plain order object. Handle both shapes.
-        const orderIds: string[] =
-          'orders' in (created as any)
-            ? (created as any).orders.map((o: { id: string }) => o.id)
-            : [(created as any).id as string];
-        for (const orderId of orderIds) {
-          await this.prisma.order.update({
-            where: { id: orderId },
-            data: { scheduleId: schedule.id },
-          });
-        }
-
-        // Advance nextRunAt
-        const nextRun = new Date(
-          schedule.nextRunAt.getTime() + schedule.intervalDays * 86_400_000,
-        );
-        const shouldDisable =
-          schedule.endsAt != null && nextRun > schedule.endsAt;
-        await this.prisma.orderSchedule.update({
-          where: { id: schedule.id },
-          data: { nextRunAt: nextRun, enabled: !shouldDisable },
+    await withCronLock(
+      this.prisma,
+      'runScheduledOrders',
+      async () => {
+        const now = new Date();
+        const due = await this.prisma.orderSchedule.findMany({
+          where: {
+            enabled: true,
+            nextRunAt: { lte: now },
+            OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+          },
+          include: { createdBy: true },
         });
 
-        this.logger.log(
-          `runScheduledOrders: spawned order from schedule ${schedule.id}`,
-        );
-      } catch (err) {
-        this.logger.error(
-          `runScheduledOrders: failed for schedule ${schedule.id}: ${
-            (err as Error).message
-          }`,
-        );
-        // Notify buyer so they can investigate
-        this.notifications
-          .create({
-            userId: schedule.createdById,
-            type: NotificationType.SYSTEM_ALERT,
-            title: 'Atkārtots pasūtījums neizdevās',
-            message: `Automātiskais pasūtījums neizdevās: ${(err as Error).message}. Grafiks tika apturēts — pārbaudiet savus pasūtījumu iestatījumus.`,
-            data: { scheduleId: schedule.id },
-          })
-          .catch((err) => this.logger.warn('runScheduledOrders buyer notification failed', (err as Error).message));
-        // Pause the schedule to prevent repeated failures
-        this.prisma.orderSchedule
-          .update({
-            where: { id: schedule.id },
-            data: { enabled: false },
-          })
-          .catch((err) => this.logger.error('runScheduledOrders schedule pause failed', (err as Error).message));
-      }
-    }
-    }, this.logger);
+        for (const schedule of due) {
+          try {
+            const items = schedule.itemsSnapshot as {
+              materialId: string;
+              quantity: number;
+              unit: string;
+            }[];
+            // Resolve delivery date = nextRunAt date
+            const deliveryDate = schedule.nextRunAt.toISOString().split('T')[0];
+            const requestingUser: RequestingUser = {
+              id: schedule.createdById,
+              userId: schedule.createdById,
+              userType: schedule.createdBy.userType as 'BUYER',
+              isCompany: schedule.createdBy.isCompany,
+              canSell: schedule.createdBy.canSell,
+              canTransport: schedule.createdBy.canTransport,
+              canSkipHire: schedule.createdBy.canSkipHire,
+              companyId: schedule.createdBy.companyId ?? undefined,
+              permCreateContracts: schedule.createdBy.permCreateContracts,
+              permReleaseCallOffs: schedule.createdBy.permReleaseCallOffs,
+              permManageOrders: schedule.createdBy.permManageOrders,
+              permViewFinancials: schedule.createdBy.permViewFinancials,
+              permManageTeam: schedule.createdBy.permManageTeam,
+            };
+
+            const dto: CreateOrderDto = {
+              orderType: schedule.orderType as OrderType,
+              deliveryAddress: schedule.deliveryAddress,
+              deliveryCity: schedule.deliveryCity,
+              deliveryState: schedule.deliveryState,
+              deliveryPostal: schedule.deliveryPostal,
+              deliveryDate,
+              deliveryWindow: schedule.deliveryWindow ?? undefined,
+              deliveryFee: schedule.deliveryFee,
+              notes: schedule.notes
+                ? `[Atkārtots] ${schedule.notes}`
+                : '[Atkārtots pasūtījums]',
+              siteContactName: schedule.siteContactName ?? undefined,
+              siteContactPhone: schedule.siteContactPhone ?? undefined,
+              projectId: schedule.projectId ?? undefined,
+              deliveryLat: schedule.deliveryLat ?? undefined,
+              deliveryLng: schedule.deliveryLng ?? undefined,
+              items: items.map((i) => ({
+                materialId: i.materialId,
+                quantity: i.quantity,
+                unit: i.unit as import('@prisma/client').MaterialUnit,
+                unitPrice: 0, // resolved during create()
+              })),
+            };
+
+            const created = await this.create(dto, requestingUser);
+            // Link order(s) back to schedule.
+            // When the cart contains items from multiple suppliers, create() returns
+            // { orders: [...] } instead of a plain order object. Handle both shapes.
+            const createdObj = created as {
+              orders?: Array<{ id: string }>;
+              id?: string;
+            };
+            const orderIds: string[] = createdObj.orders
+              ? createdObj.orders.map((o) => o.id)
+              : [createdObj.id!];
+            for (const orderId of orderIds) {
+              await this.prisma.order.update({
+                where: { id: orderId },
+                data: { scheduleId: schedule.id },
+              });
+            }
+
+            // Advance nextRunAt
+            const nextRun = new Date(
+              schedule.nextRunAt.getTime() + schedule.intervalDays * 86_400_000,
+            );
+            const shouldDisable =
+              schedule.endsAt != null && nextRun > schedule.endsAt;
+            await this.prisma.orderSchedule.update({
+              where: { id: schedule.id },
+              data: { nextRunAt: nextRun, enabled: !shouldDisable },
+            });
+
+            this.logger.log(
+              `runScheduledOrders: spawned order from schedule ${schedule.id}`,
+            );
+          } catch (err) {
+            this.logger.error(
+              `runScheduledOrders: failed for schedule ${schedule.id}: ${
+                (err as Error).message
+              }`,
+            );
+            // Notify buyer so they can investigate
+            this.notifications
+              .create({
+                userId: schedule.createdById,
+                type: NotificationType.SYSTEM_ALERT,
+                title: 'Atkārtots pasūtījums neizdevās',
+                message: `Automātiskais pasūtījums neizdevās: ${(err as Error).message}. Grafiks tika apturēts — pārbaudiet savus pasūtījumu iestatījumus.`,
+                data: { scheduleId: schedule.id },
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  'runScheduledOrders buyer notification failed',
+                  (err as Error).message,
+                ),
+              );
+            // Pause the schedule to prevent repeated failures
+            this.prisma.orderSchedule
+              .update({
+                where: { id: schedule.id },
+                data: { enabled: false },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  'runScheduledOrders schedule pause failed',
+                  (err as Error).message,
+                ),
+              );
+          }
+        }
+      },
+      this.logger,
+    );
   }
 
   /** Export the requesting user's orders as a UTF-8 CSV string. */
@@ -2771,39 +2960,58 @@ export class OrdersService {
     const rows: string[] = [];
     for (const o of orders) {
       if (o.items.length === 0) {
-        rows.push([
-          esc(o.orderNumber),
-          esc(o.status),
-          esc(o.orderType),
-          esc(o.buyer?.name),
-          esc(o.deliveryAddress),
-          esc(o.deliveryCity),
-          esc(o.deliveryDate ? o.deliveryDate.toISOString().slice(0, 10) : null),
-          '', '', '', '', '', '',
-          esc(o.total != null ? Number(o.total).toFixed(2) : null),
-          esc(o.currency),
-          esc(o.createdAt.toISOString().slice(0, 10)),
-        ].join(','));
-      } else {
-        for (const item of o.items) {
-          rows.push([
+        rows.push(
+          [
             esc(o.orderNumber),
             esc(o.status),
             esc(o.orderType),
             esc(o.buyer?.name),
             esc(o.deliveryAddress),
             esc(o.deliveryCity),
-            esc(o.deliveryDate ? o.deliveryDate.toISOString().slice(0, 10) : null),
-            esc(item.material?.name),
-            esc(item.material?.category),
-            esc(item.quantity),
-            esc(item.unit),
-            esc(item.unitPrice != null ? Number(item.unitPrice).toFixed(2) : null),
-            esc(item.total != null ? Number(item.total).toFixed(2) : null),
+            esc(
+              o.deliveryDate ? o.deliveryDate.toISOString().slice(0, 10) : null,
+            ),
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
             esc(o.total != null ? Number(o.total).toFixed(2) : null),
             esc(o.currency),
             esc(o.createdAt.toISOString().slice(0, 10)),
-          ].join(','));
+          ].join(','),
+        );
+      } else {
+        for (const item of o.items) {
+          rows.push(
+            [
+              esc(o.orderNumber),
+              esc(o.status),
+              esc(o.orderType),
+              esc(o.buyer?.name),
+              esc(o.deliveryAddress),
+              esc(o.deliveryCity),
+              esc(
+                o.deliveryDate
+                  ? o.deliveryDate.toISOString().slice(0, 10)
+                  : null,
+              ),
+              esc(item.material?.name),
+              esc(item.material?.category),
+              esc(item.quantity),
+              esc(item.unit),
+              esc(
+                item.unitPrice != null
+                  ? Number(item.unitPrice).toFixed(2)
+                  : null,
+              ),
+              esc(item.total != null ? Number(item.total).toFixed(2) : null),
+              esc(o.total != null ? Number(o.total).toFixed(2) : null),
+              esc(o.currency),
+              esc(o.createdAt.toISOString().slice(0, 10)),
+            ].join(','),
+          );
         }
       }
     }

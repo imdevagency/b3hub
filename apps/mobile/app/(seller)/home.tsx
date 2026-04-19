@@ -109,7 +109,9 @@ export default function SellerHomeScreen() {
       api.notifications
         .unreadCount(token)
         .then((res) => setUnreadCount(res.count))
-        .catch(() => {});
+        .catch((err) =>
+          console.warn('Unread count failed:', err instanceof Error ? err.message : err),
+        );
       const companyId = user?.company?.id;
       if (companyId) {
         api.materials
@@ -172,7 +174,7 @@ export default function SellerHomeScreen() {
               >
                 Sāciet pārdot
               </Text>
- <Text className="text-gray-400 mb-6 font-medium leading-5" style={{ fontSize: 15 }}>
+              <Text className="text-gray-400 mb-6 font-medium leading-5" style={{ fontSize: 15 }}>
                 Izpildiet 3 soļus, lai saņemtu pirmo pasūtījumu
               </Text>
               {[
@@ -316,7 +318,12 @@ export default function SellerHomeScreen() {
                       </View>
                     </View>
                     <Text
-                      style={{ fontSize: 15, fontWeight: '600', color: colors.textMuted, marginTop: 32 }}
+                      style={{
+                        fontSize: 15,
+                        fontWeight: '600',
+                        color: colors.textMuted,
+                        marginTop: 32,
+                      }}
                     >
                       Pagaidām nav jaunu pieprasījumu
                     </Text>
@@ -347,7 +354,12 @@ export default function SellerHomeScreen() {
           {/* RECENT ORDERS HEADER */}
           <View className="flex-row justify-between items-center mb-2">
             <Text
-              style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+              style={{
+                fontSize: 20,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+              }}
             >
               Pēdējie pasūtījumi
             </Text>
@@ -366,7 +378,9 @@ export default function SellerHomeScreen() {
           ) : recentOrders.length === 0 ? (
             <View className="items-center py-10" style={{ gap: 12 }}>
               <Inbox size={32} color="#d1d5db" />
- <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>Pagaidām nav pasūtījumu</Text>
+              <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>
+                Pagaidām nav pasūtījumu
+              </Text>
             </View>
           ) : (
             recentOrders.map((order, i) => {

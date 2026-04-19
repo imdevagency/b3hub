@@ -33,7 +33,9 @@ export class SavedAddressesService {
   }
 
   async update(id: string, dto: UpdateSavedAddressDto, user: RequestingUser) {
-    const existing = await this.prisma.savedAddress.findUnique({ where: { id } });
+    const existing = await this.prisma.savedAddress.findUnique({
+      where: { id },
+    });
     if (!existing) throw new NotFoundException('Adrese nav atrasta');
     if (existing.userId !== user.id)
       throw new ForbiddenException('Nav atļauts rediģēt šo adresi');
@@ -48,7 +50,9 @@ export class SavedAddressesService {
   }
 
   async remove(id: string, user: RequestingUser) {
-    const existing = await this.prisma.savedAddress.findUnique({ where: { id } });
+    const existing = await this.prisma.savedAddress.findUnique({
+      where: { id },
+    });
     if (!existing) throw new NotFoundException('Adrese nav atrasta');
     if (existing.userId !== user.id)
       throw new ForbiddenException('Nav atļauts dzēst šo adresi');
@@ -57,7 +61,9 @@ export class SavedAddressesService {
   }
 
   async setDefault(id: string, user: RequestingUser) {
-    const existing = await this.prisma.savedAddress.findUnique({ where: { id } });
+    const existing = await this.prisma.savedAddress.findUnique({
+      where: { id },
+    });
     if (!existing) throw new NotFoundException('Adrese nav atrasta');
     if (existing.userId !== user.id)
       throw new ForbiddenException('Nav atļauts mainīt šo adresi');

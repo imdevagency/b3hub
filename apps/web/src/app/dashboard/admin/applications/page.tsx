@@ -216,7 +216,7 @@ export default function AdminApplicationsPage() {
 
   useEffect(() => {
     load(filter);
-  }, [filter]);
+  }, [filter, load]);
 
   const handleApprove = async (id: string) => {
     if (!token) return;

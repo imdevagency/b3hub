@@ -8,7 +8,13 @@ import { ConfigModule } from '@nestjs/config';
 import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
-  imports: [PrismaModule, EmailModule, NotificationsModule, ConfigModule, PaymentsModule],
+  imports: [
+    PrismaModule,
+    EmailModule,
+    NotificationsModule,
+    ConfigModule,
+    PaymentsModule,
+  ],
   controllers: [InvoicesController],
   providers: [InvoicesService],
   exports: [InvoicesService],

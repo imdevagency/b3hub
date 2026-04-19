@@ -17,14 +17,7 @@ import {
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import {
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  ArrowUpRight,
-  Receipt,
-  AlertTriangle,
-} from 'lucide-react';
+import { RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -197,7 +197,7 @@ export class EmailService {
 
     const address = [order.deliveryAddress, order.deliveryCity]
       .filter(Boolean)
-      .map((s) => this.escape(s!))
+      .map((s) => this.escape(s))
       .join(', ');
 
     await this.send({
@@ -317,7 +317,10 @@ export class EmailService {
     order: { orderNumber: string; status: string },
   ) {
     const safeBuyerName = this.escape(buyerName);
-    const STATUS_COPY: Record<string, { subject: string; title: string; body: string }> = {
+    const STATUS_COPY: Record<
+      string,
+      { subject: string; title: string; body: string }
+    > = {
       CONFIRMED: {
         subject: `Pasūtījums #${order.orderNumber} apstiprināts — B3Hub`,
         title: 'Pasūtījums apstiprināts!',
@@ -356,7 +359,13 @@ export class EmailService {
   async sendQuoteRequestReceived(
     to: string,
     sellerName: string,
-    rfq: { requestNumber: string; category: string; quantity: number; unit: string; city: string },
+    rfq: {
+      requestNumber: string;
+      category: string;
+      quantity: number;
+      unit: string;
+      city: string;
+    },
   ) {
     const safeSellerName = this.escape(sellerName);
     await this.send({
@@ -386,7 +395,12 @@ export class EmailService {
   async sendDriverJobAssigned(
     to: string,
     driverName: string,
-    job: { jobNumber: string; pickupCity: string; deliveryCity: string; scheduledDate?: Date },
+    job: {
+      jobNumber: string;
+      pickupCity: string;
+      deliveryCity: string;
+      scheduledDate?: Date;
+    },
   ) {
     const safeDriverName = this.escape(driverName);
     const dateStr = job.scheduledDate
@@ -420,7 +434,12 @@ export class EmailService {
   async sendInvoiceOverdue(
     to: string,
     buyerName: string,
-    invoice: { invoiceNumber: string; total: number; daysLate: number; orderId: string },
+    invoice: {
+      invoiceNumber: string;
+      total: number;
+      daysLate: number;
+      orderId: string;
+    },
   ) {
     const safeBuyerName = this.escape(buyerName);
     await this.send({
@@ -433,7 +452,10 @@ export class EmailService {
           <p>Rēķins <strong>#${invoice.invoiceNumber}</strong> par summu <strong>€${invoice.total.toFixed(2)}</strong> ir nokavēts par <strong>${invoice.daysLate} dienu(ām)</strong>.</p>
           <p>Lūdzu, veiciet maksājumu pēc iespējas ātrāk, lai izvairītos no turpmākām sekām. Jautājumu gadījumā sazinieties ar mums: <a href="mailto:support@b3hub.lv">support@b3hub.lv</a>.</p>
         `,
-        cta: { label: 'Apmaksāt rēķinu', url: `${this.webUrl}/dashboard/invoices` },
+        cta: {
+          label: 'Apmaksāt rēķinu',
+          url: `${this.webUrl}/dashboard/invoices`,
+        },
       }),
     });
   }
@@ -442,7 +464,13 @@ export class EmailService {
   async sendInvoiceReminder(
     to: string,
     buyerName: string,
-    invoice: { invoiceNumber: string; total: number; dueDate: Date; daysUntilDue: number; orderId: string },
+    invoice: {
+      invoiceNumber: string;
+      total: number;
+      dueDate: Date;
+      daysUntilDue: number;
+      orderId: string;
+    },
   ) {
     const safeBuyerName = this.escape(buyerName);
     const dueDateStr = invoice.dueDate.toLocaleDateString('lv-LV');
@@ -456,7 +484,10 @@ export class EmailService {
           <p>Atgādinām, ka rēķins <strong>#${invoice.invoiceNumber}</strong> par summu <strong>€${invoice.total.toFixed(2)}</strong> jāsamaksā līdz <strong>${dueDateStr}</strong>.</p>
           <p>Apmaksājiet savlaicīgi, lai izvairītos no nokavēšanas.</p>
         `,
-        cta: { label: 'Apmaksāt rēķinu', url: `${this.webUrl}/dashboard/invoices` },
+        cta: {
+          label: 'Apmaksāt rēķinu',
+          url: `${this.webUrl}/dashboard/invoices`,
+        },
       }),
     });
   }
@@ -465,10 +496,17 @@ export class EmailService {
   async sendWeighDiscrepancy(
     to: string,
     buyerName: string,
-    data: { jobNumber: string; orderNumber: string; expectedTonnes: number; actualTonnes: number; diffPct: number },
+    data: {
+      jobNumber: string;
+      orderNumber: string;
+      expectedTonnes: number;
+      actualTonnes: number;
+      diffPct: number;
+    },
   ) {
     const safeBuyerName = this.escape(buyerName);
-    const direction = data.actualTonnes > data.expectedTonnes ? 'vairāk' : 'mazāk';
+    const direction =
+      data.actualTonnes > data.expectedTonnes ? 'vairāk' : 'mazāk';
     await this.send({
       to,
       subject: `Svara neatbilstība — Darbs #${data.jobNumber} — B3Hub`,
@@ -484,7 +522,10 @@ export class EmailService {
           </table>
           <p>Ja ir pretenzijas, lūdzu sazinieties ar mums 48 stundu laikā.</p>
         `,
-        cta: { label: 'Skatīt pasūtījumu', url: `${this.webUrl}/dashboard/orders` },
+        cta: {
+          label: 'Skatīt pasūtījumu',
+          url: `${this.webUrl}/dashboard/orders`,
+        },
       }),
     });
   }

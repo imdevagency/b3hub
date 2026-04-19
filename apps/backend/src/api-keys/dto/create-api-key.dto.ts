@@ -1,6 +1,12 @@
-import { IsString, IsArray, IsOptional, ArrayMinSize, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsOptional,
+  ArrayMinSize,
+  IsDateString,
+} from 'class-validator';
 
-const VALID_SCOPES = [
+export const VALID_SCOPES = [
   'orders:read',
   'orders:write',
   'invoices:read',

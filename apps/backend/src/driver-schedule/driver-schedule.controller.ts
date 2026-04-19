@@ -32,7 +32,9 @@ export class DriverScheduleController {
 
   private assertIsDriver(user: RequestingUser): void {
     if (!user.canTransport) {
-      throw new ForbiddenException('Only approved drivers can manage their schedule');
+      throw new ForbiddenException(
+        'Only approved drivers can manage their schedule',
+      );
     }
   }
 

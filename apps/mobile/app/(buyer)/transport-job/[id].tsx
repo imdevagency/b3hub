@@ -37,7 +37,6 @@ import { haptics } from '@/lib/haptics';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import { useTransportJob, ACTIVE_STATUSES } from '@/lib/use-transport-job';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -163,7 +162,7 @@ function InfoRow({
   return (
     <View style={s.infoRow}>
       <View style={s.infoLabelRow}>
-        <Icon size={16} color="#9ca3af" strokeWidth={2} />
+        <Icon size={16} color={colors.textDisabled} strokeWidth={2} />
         <Text style={s.infoLabel}>{label}</Text>
       </View>
       <Text style={[s.infoValue, { flexShrink: 1, textAlign: 'right' }]} numberOfLines={2}>
@@ -180,7 +179,6 @@ export default function TransportJobDetailScreen() {
   const { token } = useAuth();
   const toast = useToast();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraRefHandle | null>(null);
 
   const { job, loading, reload: loadJob } = useTransportJob(id);
@@ -280,7 +278,7 @@ export default function TransportJobDetailScreen() {
       haptics.success();
     } catch (err) {
       haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu')
+      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
     } finally {
       setRatingLoading(false);
     }
@@ -316,11 +314,11 @@ export default function TransportJobDetailScreen() {
   const isActive = job ? ACTIVE_STATUSES.has(job.status) : false;
 
   return (
-    <ScreenContainer bg="#ffffff">
+    <ScreenContainer bg={colors.white}>
       {isActive ? (
         <View>
           {/* ── MAP SECTION ── */}
-          <View style={{ height: MAP_H, backgroundColor: '#e5e7eb' }}>
+          <View style={{ height: MAP_H, backgroundColor: colors.border }}>
             <BaseMap
               cameraRef={cameraRef}
               center={pickup ? [pickup.lng, pickup.lat] : [24.1052, 56.9496]}
@@ -331,7 +329,12 @@ export default function TransportJobDetailScreen() {
               onMapReady={() => setMapReady(true)}
             >
               {route && (
-                <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
+                <RouteLayer
+                  id="job-route"
+                  coordinates={route.coords}
+                  color={colors.primary}
+                  width={4}
+                />
               )}
               {pickup && (
                 <Marker
@@ -339,7 +342,7 @@ export default function TransportJobDetailScreen() {
                   anchor={{ x: 0.5, y: 1 }}
                 >
                   <View style={s.pinPickup}>
-                    <MapPin size={16} color="#fff" strokeWidth={2.5} />
+                    <MapPin size={16} color={colors.white} strokeWidth={2.5} />
                   </View>
                 </Marker>
               )}
@@ -349,7 +352,7 @@ export default function TransportJobDetailScreen() {
                   anchor={{ x: 0.5, y: 1 }}
                 >
                   <View style={s.pinDelivery}>
-                    <Navigation size={14} color="#fff" strokeWidth={2.5} />
+                    <Navigation size={14} color={colors.white} strokeWidth={2.5} />
                   </View>
                 </Marker>
               )}
@@ -361,7 +364,7 @@ export default function TransportJobDetailScreen() {
                   tracksViewChanges={false}
                 >
                   <View style={s.pinDriver}>
-                    <Truck size={13} color="#fff" strokeWidth={2.5} />
+                    <Truck size={13} color={colors.white} strokeWidth={2.5} />
                   </View>
                 </Marker>
               )}
@@ -377,7 +380,7 @@ export default function TransportJobDetailScreen() {
               activeOpacity={0.8}
               hitSlop={12}
             >
-              <ArrowLeft size={20} color="#111827" strokeWidth={2} />
+              <ArrowLeft size={20} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
 
             {/* Floating status + type pill */}
@@ -448,7 +451,7 @@ export default function TransportJobDetailScreen() {
               <Text style={s.cardTitle}>Pārvadātājs</Text>
               <View style={s.driverRow}>
                 <View style={s.driverAvatar}>
-                  <User size={20} color="#374151" />
+                  <User size={20} color={colors.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.driverName}>
@@ -470,7 +473,7 @@ export default function TransportJobDetailScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Phone size={14} color="#fff" strokeWidth={2} />
+                    <Phone size={14} color={colors.white} strokeWidth={2} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -573,7 +576,7 @@ export default function TransportJobDetailScreen() {
               <Text style={s.cardTitle}>Kontaktpersona</Text>
               <View style={s.driverRow}>
                 <View style={s.driverAvatar}>
-                  <User size={20} color="#374151" />
+                  <User size={20} color={colors.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   {job.order.siteContactName && (
@@ -592,7 +595,7 @@ export default function TransportJobDetailScreen() {
                     }}
                     activeOpacity={0.8}
                   >
-                    <Phone size={14} color="#fff" strokeWidth={2} />
+                    <Phone size={14} color={colors.white} strokeWidth={2} />
                     <Text style={s.callBtnText}>Zvanīt</Text>
                   </TouchableOpacity>
                 )}
@@ -622,7 +625,7 @@ export default function TransportJobDetailScreen() {
           {job.pickupPhotoUrl && (
             <View style={s.card}>
               <View style={s.slipHeader}>
-                <FileText size={16} color="#6b7280" />
+                <FileText size={16} color={colors.textMuted} />
                 <Text style={s.cardTitle}>Svēršanas zīme</Text>
               </View>
               <Image source={{ uri: job.pickupPhotoUrl }} style={s.slipThumb} resizeMode="cover" />
@@ -654,7 +657,7 @@ export default function TransportJobDetailScreen() {
               disabled={cancelling}
               activeOpacity={0.85}
             >
-              <XCircle size={16} color="#b91c1c" />
+              <XCircle size={16} color={colors.dangerText} />
               <Text style={s.cancelBtnText}>{cancelling ? 'Atceļ...' : 'Atcelt pasūtījumu'}</Text>
             </TouchableOpacity>
           )}
@@ -696,7 +699,7 @@ export default function TransportJobDetailScreen() {
                   <TextInput
                     style={s.ratingInput}
                     placeholder="Komentārs (nav obligāts)"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.textDisabled}
                     value={ratingComment}
                     onChangeText={setRatingComment}
                     multiline
@@ -712,7 +715,7 @@ export default function TransportJobDetailScreen() {
                     activeOpacity={0.85}
                   >
                     {ratingLoading ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <ActivityIndicator size="small" color={colors.white} />
                     ) : (
                       <Text style={s.ratingSubmitText}>Iesniegt vērtējumu</Text>
                     )}
@@ -733,7 +736,7 @@ export default function TransportJobDetailScreen() {
               }}
               activeOpacity={0.85}
             >
-              <RotateCcw size={16} color="#fff" />
+              <RotateCcw size={16} color={colors.white} />
               <Text style={s.reorderBtnText}>Pasūtīt vēlreiz</Text>
             </TouchableOpacity>
           )}
@@ -754,10 +757,10 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.15,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -770,11 +773,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -785,18 +788,18 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
   },
   distBadge: {
     position: 'absolute',
     bottom: 12,
     right: 16,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  distText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  distText: { fontSize: 12, fontWeight: '600', color: colors.white },
 
   // Live driver badge
   driverBadge: {
@@ -806,11 +809,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -820,20 +823,20 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
   },
-  driverBadgeText: { fontSize: 13, fontWeight: '600', color: '#000' },
+  driverBadgeText: { fontSize: 13, fontWeight: '600', color: colors.black },
 
   // Map markers
   pinPickup: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.white,
   },
   pinDelivery: {
     width: 32,
@@ -843,31 +846,31 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.white,
   },
   pinDriver: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
+    borderColor: colors.white,
+    shadowColor: colors.black,
     shadowOpacity: 0.4,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
     elevation: 6,
   },
 
-  scroll: { backgroundColor: '#fff' },
+  scroll: { backgroundColor: colors.white },
 
   hero: { paddingHorizontal: 24, paddingTop: 6, paddingBottom: 24 },
   heroTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#000',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
     marginBottom: 4,
   },
@@ -876,15 +879,15 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.textMuted },
   backLink: {
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  backLinkText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  backLinkText: { color: colors.white, fontWeight: '600', fontSize: 14 },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     paddingVertical: 20,
     paddingHorizontal: 24,
     gap: 12,
@@ -892,7 +895,7 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
 
@@ -907,19 +910,23 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepDotActive: { backgroundColor: '#000' },
-  stepDotInactive: { backgroundColor: colors.bgMuted, borderWidth: 1.5, borderColor: colors.border },
+  stepDotActive: { backgroundColor: colors.black },
+  stepDotInactive: {
+    backgroundColor: colors.bgMuted,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
   stepLine: { width: 1.5, flex: 1, minHeight: 20, marginVertical: 4 },
-  stepLineActive: { backgroundColor: '#000' },
-  stepLineInactive: { backgroundColor: '#e5e7eb' },
+  stepLineActive: { backgroundColor: colors.black },
+  stepLineInactive: { backgroundColor: colors.border },
   stepContent: { flex: 1, paddingBottom: 24 },
   stepLabel: { fontSize: 15, fontWeight: '600' },
-  stepLabelActive: { color: '#000' },
+  stepLabelActive: { color: colors.textPrimary },
   stepLabelInactive: { color: colors.textDisabled },
   stepHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  stepCheck: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  stepCheck: { color: colors.white, fontSize: 12, fontWeight: '700' },
   stepNum: { fontSize: 12, fontWeight: '700' },
-  stepNumActive: { color: '#fff' },
+  stepNumActive: { color: colors.white },
   stepNumInactive: { color: colors.textDisabled },
 
   // ── Route
@@ -928,15 +935,15 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     marginTop: 4,
   },
   routeDotDest: { backgroundColor: colors.danger, borderRadius: 0, width: 9, height: 9 },
   routeInfo: { flex: 1 },
-  routePlace: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 2 },
+  routePlace: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
   routeAddr: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
   routeDistRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4 },
-  routeLine: { width: 2, height: 24, backgroundColor: '#e5e7eb', marginLeft: 3.5 },
+  routeLine: { width: 2, height: 24, backgroundColor: colors.border, marginLeft: 3.5 },
   routeDist: { fontSize: 12, color: colors.textDisabled, fontWeight: '500' },
 
   // ── Info rows
@@ -948,7 +955,7 @@ const s = StyleSheet.create({
   },
   infoLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   infoLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
-  infoValue: { fontSize: 14, color: '#000', fontWeight: '600' },
+  infoValue: { fontSize: 14, color: colors.textPrimary, fontWeight: '600' },
 
   // ── Driver
   driverRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -960,18 +967,18 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  driverName: { fontSize: 15, fontWeight: '600', color: '#000' },
+  driverName: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   driverSub: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  callBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  callBtnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
 
   // ── Pricing
   priceRow: {
@@ -981,7 +988,7 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   priceLabel: { fontSize: 14, color: colors.textMuted },
-  priceValue: { fontSize: 15, fontWeight: '700', color: '#000' },
+  priceValue: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
 
   // ── Weighing slip
   slipHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1007,11 +1014,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#fff7f7',
+    backgroundColor: colors.dangerBg,
     borderRadius: 8,
     paddingVertical: 14,
     borderWidth: 1.5,
-    borderColor: '#fca5a5',
+    borderColor: colors.danger,
     marginHorizontal: 24,
     marginTop: 8,
   },
@@ -1022,12 +1029,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     borderRadius: 8,
     paddingVertical: 14,
     marginHorizontal: 24,
   },
-  reorderBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  reorderBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
   // Driver rating
   ratingDriverName: { fontSize: 14, color: colors.textSecondary, marginBottom: 12 },
   starsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
@@ -1038,20 +1045,20 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#000',
+    color: colors.textPrimary,
     minHeight: 70,
     textAlignVertical: 'top',
     marginBottom: 14,
   },
   ratingSubmitBtn: {
-    backgroundColor: '#000',
+    backgroundColor: colors.black,
     borderRadius: 8,
     paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ratingSubmitDisabled: { opacity: 0.4 },
-  ratingSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  ratingSubmitText: { fontSize: 15, fontWeight: '700', color: colors.white },
   ratingThanks: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
   ratingThanksText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
 });

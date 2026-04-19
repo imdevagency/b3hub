@@ -88,7 +88,9 @@ export default function DriverHomeScreen() {
       api.driverSchedule
         .getStatus(token)
         .then((s) => setIsOnline(s.isOnline ?? true))
-        .catch(() => {}),
+        .catch((err) =>
+          console.warn('Driver schedule status failed:', err instanceof Error ? err.message : err),
+        ),
       api.transportJobs
         .available(token)
         .then((jobs: ApiTransportJob[]) => {
@@ -125,7 +127,9 @@ export default function DriverHomeScreen() {
           setTodayEarnings(earnings);
           setUpcomingJobs(upcoming.slice(0, 3));
         })
-        .catch(() => {}),
+        .catch((err) =>
+          console.warn('Driver jobs/earnings failed:', err instanceof Error ? err.message : err),
+        ),
     ]);
   }, [token]);
 
@@ -176,16 +180,24 @@ export default function DriverHomeScreen() {
           disabled={hasActiveJob || togglingOnline}
         >
           {togglingOnline ? (
-            <ActivityIndicator size="small" color="#6b7280" style={{ marginRight: 4 }} />
+            <ActivityIndicator size="small" color={colors.textMuted} style={{ marginRight: 4 }} />
           ) : (
             <View
               style={[
                 s.statusDot,
-                { backgroundColor: hasActiveJob ? '#10b981' : isOnline ? '#111827' : '#9ca3af' },
+                {
+                  backgroundColor: hasActiveJob
+                    ? '#10b981'
+                    : isOnline
+                      ? colors.primary
+                      : colors.textDisabled,
+                },
               ]}
             />
           )}
-          <Text style={[s.statusText, !isOnline && !hasActiveJob && { color: colors.textDisabled }]}>
+          <Text
+            style={[s.statusText, !isOnline && !hasActiveJob && { color: colors.textDisabled }]}
+          >
             {hasActiveJob ? 'Strādā' : isOnline ? 'Tiešsaistē' : 'Bezsaistē'}
           </Text>
         </TouchableOpacity>
@@ -300,7 +312,7 @@ export default function DriverHomeScreen() {
                     </View>
                     <View style={s.upcomingCardRight}>
                       <Text style={s.upcomingEarning}>€{job.rate?.toFixed(0) ?? '—'}</Text>
-                      <ArrowRight size={14} color="#9ca3af" />
+                      <ArrowRight size={14} color={colors.textDisabled} />
                     </View>
                   </TouchableOpacity>
                 );
@@ -319,7 +331,7 @@ export default function DriverHomeScreen() {
               }}
             >
               <View style={s.vehiclePromptIcon}>
-                <Truck size={20} color="#ffffff" />
+                <Truck size={20} color={colors.white} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.vehiclePromptTitle}>Pievienojiet transportlīdzekli</Text>
@@ -345,12 +357,14 @@ export default function DriverHomeScreen() {
             <Text style={s.primaryActionText}>
               {hasActiveJob ? 'ATVĒRT DARBU' : 'MEKLĒT DARBUS'}
             </Text>
-            {!hasActiveJob && <ChevronRight size={24} color="#fff" style={{ marginLeft: 4 }} />}
+            {!hasActiveJob && (
+              <ChevronRight size={24} color={colors.white} style={{ marginLeft: 4 }} />
+            )}
           </TouchableOpacity>
 
           {/* Empty hint — only when not loading and no jobs nearby */}
           {fetchError && (
-            <Text style={[s.noJobsHint, { color: '#ef4444' }]}>
+            <Text style={[s.noJobsHint, { color: colors.danger }]}>
               Neizdevās ielādēt datus — pārbaudiet savienojumu
             </Text>
           )}
@@ -419,9 +433,9 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.danger,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.white,
   },
 
   // Status Pill
@@ -429,11 +443,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 999,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 3,
@@ -442,7 +456,12 @@ const s = StyleSheet.create({
   statusOffline: { backgroundColor: colors.bgMuted, borderColor: '#d1d5db' },
   statusActive: {},
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, textTransform: 'uppercase' },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textTransform: 'uppercase',
+  },
 
   // Bottom Sheet
   bottomSheet: {
@@ -450,12 +469,12 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingTop: 12,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.15,
     shadowRadius: 25,
     shadowOffset: { width: 0, height: -6 },
@@ -466,7 +485,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.border,
     marginBottom: 16,
   },
   sheetHeader: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 24 },
@@ -494,14 +513,14 @@ const s = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 20,
     height: 62,
-    shadowColor: '#000',
+    shadowColor: colors.black,
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 8,
     marginBottom: 24,
   },
-  primaryActionActive: { backgroundColor: '#059669' },
-  primaryActionText: { color: '#fff', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+  primaryActionActive: { backgroundColor: colors.success },
+  primaryActionText: { color: colors.white, fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
   noJobsHint: { fontSize: 13, color: colors.textDisabled, textAlign: 'center', marginTop: 10 },
 
   // Vehicle first-run prompt
@@ -524,7 +543,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  vehiclePromptTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  vehiclePromptTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
   vehiclePromptSub: { fontSize: 12, color: colors.textMuted },
 
   // Quick Actions

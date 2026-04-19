@@ -140,11 +140,11 @@ describe('PaymentsService', () => {
     }).compile();
 
     service = module.get(PaymentsService);
-    prisma = module.get(PrismaService) as jest.Mocked<PrismaService>;
-    notifications = module.get(NotificationsService) as jest.Mocked<NotificationsService>;
+    prisma = module.get(PrismaService);
+    notifications = module.get(NotificationsService);
 
     // Patch the private stripe instance with our mock
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     (service as any).stripe = {
       paymentIntents: stripeIntentsMock,
       transfers: stripeTransfersMock,
@@ -193,7 +193,9 @@ describe('PaymentsService', () => {
     });
 
     it('creates a PaymentIntent with capture_method = manual', async () => {
-      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(makeOrder());
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
+        makeOrder(),
+      );
       stripeIntentsMock.create.mockResolvedValue({
         id: 'pi_123',
         client_secret: 'secret_abc',
@@ -208,7 +210,9 @@ describe('PaymentsService', () => {
     });
 
     it('returns clientSecret and publishableKey', async () => {
-      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(makeOrder());
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
+        makeOrder(),
+      );
       stripeIntentsMock.create.mockResolvedValue({
         id: 'pi_123',
         client_secret: 'cs_test',
@@ -311,7 +315,9 @@ describe('PaymentsService', () => {
     });
 
     it('calculates 5 % platform fee from total', async () => {
-      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(
+        basePayment,
+      );
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 100, currency: 'EUR', transportJobs: [] }),
       );
@@ -322,14 +328,17 @@ describe('PaymentsService', () => {
       await service.releaseFunds('order-1');
 
       // platformFee = 5 % of 100 = 5 → sellerCents = 9500
-      const call = (stripeTransfersMock.create as jest.Mock<any>).mock.calls[0][0] as {
+      const call = (stripeTransfersMock.create as jest.Mock<any>).mock
+        .calls[0][0] as {
         amount: number;
       };
       expect(call.amount).toBe(9500);
     });
 
     it('allocates 20 % of net to driver when a DELIVERED transport job exists', async () => {
-      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(
+        basePayment,
+      );
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({
           total: 100,
@@ -352,8 +361,8 @@ describe('PaymentsService', () => {
 
       await service.releaseFunds('order-1');
 
-      const calls = (stripeTransfersMock.create as jest.Mock<any>).mock.calls as
-        Array<[{ amount: number; destination: string }]>;
+      const calls = (stripeTransfersMock.create as jest.Mock<any>).mock
+        .calls as Array<[{ amount: number; destination: string }]>;
       const driverCall = calls.find(([c]) => c.destination === 'acct_driver');
       expect(driverCall).toBeDefined();
       // net = 9500 cents; driver share = 20 % = 1900
@@ -361,7 +370,9 @@ describe('PaymentsService', () => {
     });
 
     it('sends 100 % of net to seller when there is no driver', async () => {
-      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(
+        basePayment,
+      );
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 100, currency: 'EUR', transportJobs: [] }),
       );
@@ -373,12 +384,15 @@ describe('PaymentsService', () => {
 
       // Only one transfer (to supplier), no driver transfer
       expect(stripeTransfersMock.create).toHaveBeenCalledTimes(1);
-      const call = (stripeTransfersMock.create as jest.Mock<any>).mock.calls[0][0] as { amount: number };
+      const call = (stripeTransfersMock.create as jest.Mock<any>).mock
+        .calls[0][0] as { amount: number };
       expect(call.amount).toBe(9500);
     });
 
     it('marks payment as RELEASED in DB after successful transfers', async () => {
-      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(basePayment);
+      (prisma.payment.findUnique as jest.Mock<any>).mockResolvedValue(
+        basePayment,
+      );
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
         makeOrder({ total: 50, currency: 'EUR', transportJobs: [] }),
       );
@@ -430,7 +444,11 @@ describe('PaymentsService', () => {
 
     it('allows dispute when caller belongs to buyer company', async () => {
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
-        makeOrder({ status: 'DELIVERED', buyerId: 'company-1', createdById: 'other-user' }),
+        makeOrder({
+          status: 'DELIVERED',
+          buyerId: 'company-1',
+          createdById: 'other-user',
+        }),
       );
       (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
       (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([]);
@@ -446,7 +464,11 @@ describe('PaymentsService', () => {
 
     it('allows dispute when caller is the order creator (solo user)', async () => {
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
-        makeOrder({ status: 'DELIVERED', buyerId: 'other-company', createdById: 'u1' }),
+        makeOrder({
+          status: 'DELIVERED',
+          buyerId: 'other-company',
+          createdById: 'u1',
+        }),
       );
       (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
       (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([]);
@@ -470,10 +492,17 @@ describe('PaymentsService', () => {
         { id: 'admin-2' },
       ]);
 
-      await service.reportDispute('order-1', 'short delivery', undefined, makeUser());
+      await service.reportDispute(
+        'order-1',
+        'short delivery',
+        undefined,
+        makeUser(),
+      );
       expect(notifications.createForMany).toHaveBeenCalledWith(
         ['admin-1', 'admin-2'],
-        expect.objectContaining({ data: expect.objectContaining({ orderId: 'order-1' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ orderId: 'order-1' }),
+        }),
       );
     });
   });

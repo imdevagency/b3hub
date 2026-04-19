@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/AddressAutocomplete';
 import { createTransportOrder, type TransportVehicleType } from '@/lib/api/orders';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import { Truck, CheckCircle2, ChevronRight, MapPin, CalendarDays, Loader2 } from 'lucide-react';
+import { Truck, CheckCircle2, ChevronRight, MapPin, Loader2 } from 'lucide-react';
 import { WizardShell } from '@/components/order/WizardShell';
 
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
@@ -124,7 +124,6 @@ export default function TransportOrderPage() {
     const apiKey = getGoogleMapsPublicKey();
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const google = window.google;
       if (!google || !mapDivRef.current || mapInstanceRef.current) return;
       const map = new google.maps.Map(mapDivRef.current, {
@@ -168,7 +167,6 @@ export default function TransportOrderPage() {
   }, []);
 
   const updateRoutePolyline = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const google = window.google;
     if (!google || !mapInstanceRef.current) return;
     if (
@@ -209,7 +207,6 @@ export default function TransportOrderPage() {
       if (result.lat !== undefined && result.lng !== undefined) {
         setPickupLat(result.lat);
         setPickupLng(result.lng);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const google = window.google;
         if (!google || !mapInstanceRef.current) return;
         const pos = { lat: result.lat, lng: result.lng };
@@ -246,7 +243,6 @@ export default function TransportOrderPage() {
       if (result.lat !== undefined && result.lng !== undefined) {
         setDropoffLat(result.lat);
         setDropoffLng(result.lng);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const google = window.google;
         if (!google || !mapInstanceRef.current) return;
         const pos = { lat: result.lat, lng: result.lng };

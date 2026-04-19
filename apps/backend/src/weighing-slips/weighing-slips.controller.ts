@@ -36,7 +36,8 @@ export class WeighingSlipsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!passId) throw new ForbiddenException('passId query param is required');
-    const companyId = user.userType === 'ADMIN' ? undefined : user.companyId ?? undefined;
+    const companyId =
+      user.userType === 'ADMIN' ? undefined : (user.companyId ?? undefined);
     return this.service.findByPass(passId, companyId);
   }
 
@@ -51,7 +52,9 @@ export class WeighingSlipsController {
   ) {
     // Allow: admins, or users with canSell flag (recycler/site operators)
     if (user.userType !== 'ADMIN' && !user.canSell) {
-      throw new ForbiddenException('Only site operators or admins can record weighing slips');
+      throw new ForbiddenException(
+        'Only site operators or admins can record weighing slips',
+      );
     }
     return this.service.create(dto);
   }

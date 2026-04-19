@@ -18,7 +18,9 @@ export class MapsService {
   constructor(private readonly configService: ConfigService) {}
 
   private getApiKey(): string {
-    const key = this.configService.get<string>('GOOGLE_MAPS_SERVER_API_KEY')?.trim() ?? '';
+    const key =
+      this.configService.get<string>('GOOGLE_MAPS_SERVER_API_KEY')?.trim() ??
+      '';
     if (!key) this.logger.warn('GOOGLE_MAPS_SERVER_API_KEY is not configured');
     return key;
   }
@@ -33,49 +35,51 @@ export class MapsService {
     if (!apiKey) return null;
 
     try {
-    const res = await fetch(
-      'https://routes.googleapis.com/directions/v2:computeRoutes',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'routes.polyline.encodedPolyline',
+      const res = await fetch(
+        'https://routes.googleapis.com/directions/v2:computeRoutes',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': 'routes.polyline.encodedPolyline',
+          },
+          body: JSON.stringify({
+            origin: {
+              location: {
+                latLng: {
+                  latitude: input.originLat,
+                  longitude: input.originLng,
+                },
+              },
+            },
+            destination: {
+              location: {
+                latLng: {
+                  latitude: input.destLat,
+                  longitude: input.destLng,
+                },
+              },
+            },
+            travelMode: 'DRIVE',
+            routingPreference: 'TRAFFIC_AWARE',
+          }),
         },
-        body: JSON.stringify({
-          origin: {
-            location: {
-              latLng: {
-                latitude: input.originLat,
-                longitude: input.originLng,
-              },
-            },
-          },
-          destination: {
-            location: {
-              latLng: {
-                latitude: input.destLat,
-                longitude: input.destLng,
-              },
-            },
-          },
-          travelMode: 'DRIVE',
-          routingPreference: 'TRAFFIC_AWARE',
-        }),
-      },
-    );
+      );
 
-    if (!res.ok) {
-      this.logger.warn(`Google Routes API failed with status ${res.status}`);
-      return null;
-    }
+      if (!res.ok) {
+        this.logger.warn(`Google Routes API failed with status ${res.status}`);
+        return null;
+      }
 
-    const data = (await res.json()) as {
-      routes?: Array<{ polyline?: { encodedPolyline?: string } }>;
-    };
-    return data.routes?.[0]?.polyline?.encodedPolyline ?? null;
+      const data = (await res.json()) as {
+        routes?: Array<{ polyline?: { encodedPolyline?: string } }>;
+      };
+      return data.routes?.[0]?.polyline?.encodedPolyline ?? null;
     } catch (e) {
-      this.logger.warn(`getRouteEncodedPolyline failed: ${e instanceof Error ? e.message : String(e)}`);
+      this.logger.warn(
+        `getRouteEncodedPolyline failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return null;
     }
   }
@@ -93,7 +97,7 @@ export class MapsService {
         `&key=${apiKey}`;
       const res = await fetch(url);
       if (!res.ok) return [];
-      const data = await res.json() as { predictions?: PlaceSuggestion[] };
+      const data = (await res.json()) as { predictions?: PlaceSuggestion[] };
       return (data.predictions ?? []).slice(0, 8);
     } catch (e) {
       this.logger.warn('Places autocomplete failed', e);
@@ -113,7 +117,7 @@ export class MapsService {
         `&key=${apiKey}`;
       const res = await fetch(url);
       if (!res.ok) return null;
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         result?: { geometry?: { location?: PlaceLatLng } };
       };
       return data.result?.geometry?.location ?? null;
@@ -124,7 +128,9 @@ export class MapsService {
   }
 
   /** Forward geocode — convert a free-text address string into lat/lng. */
-  async forwardGeocode(address: string): Promise<{ lat: number; lng: number } | null> {
+  async forwardGeocode(
+    address: string,
+  ): Promise<{ lat: number; lng: number } | null> {
     const apiKey = this.getApiKey();
     if (!apiKey) return null;
     try {
@@ -135,8 +141,10 @@ export class MapsService {
         `&key=${apiKey}`;
       const res = await fetch(url);
       if (!res.ok) return null;
-      const data = await res.json() as {
-        results?: Array<{ geometry: { location: { lat: number; lng: number } } }>;
+      const data = (await res.json()) as {
+        results?: Array<{
+          geometry: { location: { lat: number; lng: number } };
+        }>;
       };
       const loc = data.results?.[0]?.geometry?.location;
       return loc ?? null;
@@ -158,8 +166,13 @@ export class MapsService {
         `&key=${apiKey}`;
       const res = await fetch(url);
       if (!res.ok) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-      const data = await res.json() as { results?: Array<{ formatted_address: string }> };
-      return data.results?.[0]?.formatted_address ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      const data = (await res.json()) as {
+        results?: Array<{ formatted_address: string }>;
+      };
+      return (
+        data.results?.[0]?.formatted_address ??
+        `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+      );
     } catch (e) {
       this.logger.warn('Reverse geocode failed', e);
       return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;

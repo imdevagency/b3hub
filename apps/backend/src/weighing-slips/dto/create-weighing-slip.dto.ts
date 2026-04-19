@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsPositive, IsOptional, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsPositive,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class CreateWeighingSlipDto {
   @IsString()

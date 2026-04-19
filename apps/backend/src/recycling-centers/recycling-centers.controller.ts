@@ -51,7 +51,9 @@ export class RecyclingCentersController {
   ) {
     assertIsCarrierOp(user);
     if (!user.companyId) {
-      throw new ForbiddenException('A linked company is required to create a recycling center');
+      throw new ForbiddenException(
+        'A linked company is required to create a recycling center',
+      );
     }
     return this.service.create(dto, user.companyId);
   }
@@ -92,7 +94,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsCarrierOp(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.update(id, dto, user.companyId);
   }
 
@@ -100,7 +103,8 @@ export class RecyclingCentersController {
   @Delete(':id')
   deactivate(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     assertIsCarrierOp(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.deactivate(id, user.companyId);
   }
 
@@ -114,7 +118,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsCarrierOp(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.createWasteRecord(centerId, dto, user.companyId);
   }
 
@@ -125,7 +130,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsCarrierOp(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.getWasteRecords(centerId, user.companyId);
   }
 
@@ -138,7 +144,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsCarrierOp(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.updateWasteRecord(
       centerId,
       recordId,

@@ -54,32 +54,42 @@ export class AnalyticsService {
       : { createdById: userId };
 
     const now = new Date();
-    const [orderBreakdown, arAging, monthlySpend, rawItems, deliveredJobs] = await Promise.all([
-      // Orders by status
-      this.prisma.order.groupBy({
-        by: ['status'],
-        where: buyerWhere,
-        _count: { id: true },
-        _sum: { total: true },
-      }),
-      // Invoice AR aging — outstanding invoices past due date
-      this.getArAging(userId, companyId),
-      // Monthly spend for current year
-      this.getMonthlySpend(userId, companyId),
-      // Order items for material category breakdown
-      this.prisma.orderItem.findMany({
-        where: { order: buyerWhere },
-        select: { total: true, quantity: true, material: { select: { category: true } } },
-      }),
-      // Delivered transport jobs for CO2 estimate
-      this.prisma.transportJob.findMany({
-        where: { status: 'DELIVERED', order: buyerWhere, distanceKm: { not: null } },
-        select: { distanceKm: true, requiredVehicleEnum: true },
-      }),
-    ]);
+    const [orderBreakdown, arAging, monthlySpend, rawItems, deliveredJobs] =
+      await Promise.all([
+        // Orders by status
+        this.prisma.order.groupBy({
+          by: ['status'],
+          where: buyerWhere,
+          _count: { id: true },
+          _sum: { total: true },
+        }),
+        // Invoice AR aging — outstanding invoices past due date
+        this.getArAging(userId, companyId),
+        // Monthly spend for current year
+        this.getMonthlySpend(userId, companyId),
+        // Order items for material category breakdown
+        this.prisma.orderItem.findMany({
+          where: { order: buyerWhere },
+          select: {
+            total: true,
+            quantity: true,
+            material: { select: { category: true } },
+          },
+        }),
+        // Delivered transport jobs for CO2 estimate
+        this.prisma.transportJob.findMany({
+          where: {
+            status: 'DELIVERED',
+            order: buyerWhere,
+            distanceKm: { not: null },
+          },
+          select: { distanceKm: true, requiredVehicleEnum: true },
+        }),
+      ]);
 
     // Material spend breakdown by category
-    const catMap: Record<string, { totalSpent: number; orderCount: number }> = {};
+    const catMap: Record<string, { totalSpent: number; orderCount: number }> =
+      {};
     for (const item of rawItems) {
       const cat = item.material.category;
       if (!catMap[cat]) catMap[cat] = { totalSpent: 0, orderCount: 0 };
@@ -96,7 +106,14 @@ export class AnalyticsService {
       return sum + (job.distanceKm ?? 0) * factor;
     }, 0);
 
-    return { orderBreakdown, arAging, monthlySpend, materialBreakdown, co2Kg, asOf: now.toISOString() };
+    return {
+      orderBreakdown,
+      arAging,
+      monthlySpend,
+      materialBreakdown,
+      co2Kg,
+      asOf: now.toISOString(),
+    };
   }
 
   private async getArAging(userId: string, companyId?: string) {
@@ -392,7 +409,7 @@ export class AnalyticsService {
     const map: Record<string, number> = {};
 
     for (const r of records) {
-      const date = getDate ? getDate(r) : ((r as any).createdAt as Date);
+      const date = getDate ? getDate(r) : (r as { createdAt: Date }).createdAt;
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       map[key] = (map[key] ?? 0) + getValue(r);
     }
@@ -441,7 +458,10 @@ export class AnalyticsService {
           deliveryAddress: true,
           deliveryCity: true,
           total: true,
-          items: { select: { material: { select: { name: true, category: true } } }, take: 1 },
+          items: {
+            select: { material: { select: { name: true, category: true } } },
+            take: 1,
+          },
         },
         orderBy: { deliveryDate: 'asc' },
       }),
@@ -461,7 +481,12 @@ export class AnalyticsService {
               deliveryAddress: true,
               deliveryCity: true,
               total: true,
-              items: { select: { material: { select: { name: true, category: true } } }, take: 1 },
+              items: {
+                select: {
+                  material: { select: { name: true, category: true } },
+                },
+                take: 1,
+              },
             },
             orderBy: { deliveryDate: 'asc' },
           })
@@ -495,7 +520,10 @@ export class AnalyticsService {
               order: {
                 select: {
                   orderNumber: true,
-                  items: { select: { material: { select: { name: true } } }, take: 1 },
+                  items: {
+                    select: { material: { select: { name: true } } },
+                    take: 1,
+                  },
                 },
               },
             },
@@ -553,7 +581,8 @@ export class AnalyticsService {
     }
 
     return entries.sort(
-      (a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime(),
+      (a, b) =>
+        new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime(),
     );
   }
 
@@ -571,12 +600,16 @@ export class AnalyticsService {
       doc.on('error', reject);
 
       const euro = (v: number) =>
-        `EUR ${v.toLocaleString('en-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` ;
+        `EUR ${v.toLocaleString('en-LV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       const pct = (v: number) => `${Math.round(v)}%`;
       const today = new Date().toLocaleDateString('lv-LV');
 
       // ── Header ──────────────────────────────────────────────────────────
-      doc.fontSize(24).font('Helvetica-Bold').fillColor('#111827').text('B3Hub', 50, 50);
+      doc
+        .fontSize(24)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('B3Hub', 50, 50);
       doc
         .fontSize(10)
         .font('Helvetica')
@@ -599,7 +632,11 @@ export class AnalyticsService {
 
       const sectionTitle = (title: string) => {
         y += 12;
-        doc.fontSize(14).font('Helvetica-Bold').fillColor('#111827').text(title, 50, y);
+        doc
+          .fontSize(14)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text(title, 50, y);
         y += 22;
         doc.moveTo(50, y).lineTo(545, y).strokeColor('#e5e7eb').stroke();
         y += 10;
@@ -625,23 +662,37 @@ export class AnalyticsService {
         const totalSpend = buyer.monthlySpend.reduce((s, m) => s + m.value, 0);
         row('Kopējie izdevumi (pēdējie 12 mēn.)', euro(totalSpend), true);
         if ((buyer.co2Kg ?? 0) > 0) {
-          row('CO₂ emisijas (aprēķināts)', `${Math.round(buyer.co2Kg).toLocaleString('lv-LV')} kg`);
+          row(
+            'CO₂ emisijas (aprēķināts)',
+            `${Math.round(buyer.co2Kg).toLocaleString('lv-LV')} kg`,
+          );
         }
         y += 6;
 
         // Monthly spend (last 6)
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Mēnešu izdevumi', 50, y);
+        doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#6b7280')
+          .text('Mēnešu izdevumi', 50, y);
         y += 16;
         for (const m of buyer.monthlySpend.slice(-6)) {
           const [yr, mo] = m.month.split('-');
-          const label = new Date(Number(yr), Number(mo) - 1).toLocaleString('lv-LV', { month: 'long', year: 'numeric' });
+          const label = new Date(Number(yr), Number(mo) - 1).toLocaleString(
+            'lv-LV',
+            { month: 'long', year: 'numeric' },
+          );
           row(label, euro(m.value));
         }
         y += 6;
 
         // Material breakdown
         if (buyer.materialBreakdown?.length) {
-          doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Izdevumi pēc materiāla', 50, y);
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .fillColor('#6b7280')
+            .text('Izdevumi pēc materiāla', 50, y);
           y += 16;
           for (const b of buyer.materialBreakdown.slice(0, 5)) {
             row(b.category, euro(b.totalSpent));
@@ -650,26 +701,43 @@ export class AnalyticsService {
         }
 
         // Order breakdown
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Pasūtījumi pēc statusa', 50, y);
+        doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#6b7280')
+          .text('Pasūtījumi pēc statusa', 50, y);
         y += 16;
         for (const b of buyer.orderBreakdown) {
-          row(b.status, `${b._count.id} (${euro(b._sum?.total ?? 0)})`); // eslint-disable-line @typescript-eslint/no-explicit-any
+          row(b.status, `${b._count.id} (${euro(b._sum?.total ?? 0)})`);
         }
       }
 
       // ── Seller section ───────────────────────────────────────────────────
       if (seller) {
-        if (y > 650) { doc.addPage(); y = 50; }
+        if (y > 650) {
+          doc.addPage();
+          y = 50;
+        }
         sectionTitle('Ieņēmumi (Piegādātājs)');
-        const totalRevenue = seller.monthlyRevenue.reduce((s, m) => s + m.value, 0);
+        const totalRevenue = seller.monthlyRevenue.reduce(
+          (s, m) => s + m.value,
+          0,
+        );
         row('Kopējie ieņēmumi (pēdējie 12 mēn.)', euro(totalRevenue), true);
-        row('Vidējais vērtējums', `${seller.performanceStats.avgRating.toFixed(1)} (${seller.performanceStats.totalReviews} atsauksmes)`);
+        row(
+          'Vidējais vērtējums',
+          `${seller.performanceStats.avgRating.toFixed(1)} (${seller.performanceStats.totalReviews} atsauksmes)`,
+        );
         row('Izpildes rādītājs', pct(seller.performanceStats.completionRate));
         row('Laicīgums', pct(seller.performanceStats.onTimeRate));
         y += 6;
 
         if (seller.topMaterials.length) {
-          doc.fontSize(10).font('Helvetica-Bold').fillColor('#6b7280').text('Populārākie materiāli', 50, y);
+          doc
+            .fontSize(10)
+            .font('Helvetica-Bold')
+            .fillColor('#6b7280')
+            .text('Populārākie materiāli', 50, y);
           y += 16;
           for (const m of seller.topMaterials) {
             row(m.material?.name ?? '-', euro(m.revenue));
@@ -679,9 +747,15 @@ export class AnalyticsService {
 
       // ── Carrier section ──────────────────────────────────────────────────
       if (carrier) {
-        if (y > 650) { doc.addPage(); y = 50; }
+        if (y > 650) {
+          doc.addPage();
+          y = 50;
+        }
         sectionTitle('Ienākumi (Pārvadātājs)');
-        const totalEarnings = carrier.monthlyEarnings.reduce((s, m) => s + m.value, 0);
+        const totalEarnings = carrier.monthlyEarnings.reduce(
+          (s, m) => s + m.value,
+          0,
+        );
         row('Kopējie ienākumi (pēdējie 12 mēn.)', euro(totalEarnings), true);
         row('Flotes noslodze', pct(carrier.fleetUtilization.utilizationRate));
         row('Transportlīdzekļi kopā', `${carrier.fleetUtilization.total}`);
@@ -694,9 +768,14 @@ export class AnalyticsService {
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#9ca3af')
-        .text('B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv', 50, 750, {
-          align: 'center',
-        });
+        .text(
+          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+          50,
+          750,
+          {
+            align: 'center',
+          },
+        );
 
       doc.end();
     });

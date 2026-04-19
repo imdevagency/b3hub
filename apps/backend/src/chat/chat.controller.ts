@@ -70,6 +70,11 @@ export class ChatController {
     @Body() dto: UploadImageDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    return this.service.uploadChatImage(jobId, user.userId, dto.base64, dto.mimeType);
+    return this.service.uploadChatImage(
+      jobId,
+      user.userId,
+      dto.base64,
+      dto.mimeType,
+    );
   }
 }

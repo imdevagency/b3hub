@@ -406,16 +406,25 @@ export default function OrderDetailScreen() {
       {/* Uber-style hero header */}
       <View style={s.heroHeader}>
         <View style={s.heroLeft}>
-          <Text style={s.heroOrderNumber} numberOfLines={1}>
-            {order.orderNumber}
-          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 6,
+            }}
+          >
+            <Text style={s.heroOrderNumber} numberOfLines={1}>
+              {order.orderNumber}
+            </Text>
+            <StatusPill label={st.label} bg="#f3f4f6" color="#111827" size="md" />
+          </View>
           {order.items[0]?.material?.name ? (
             <Text style={s.heroMaterial} numberOfLines={1}>
               {order.items[0].material.name}
             </Text>
           ) : null}
         </View>
-        <StatusPill label={st.label} bg={st.bg} color={st.color} size="md" />
       </View>
 
       <ScrollView
@@ -644,7 +653,7 @@ export default function OrderDetailScreen() {
             };
             return (
               <InfoSection
-                icon={<Truck size={14} color="#6b7280" />}
+                icon={<Truck size={14} color="#111827" />}
                 title={
                   order.transportJobs.length > 1
                     ? `Kravas auto (${order.transportJobs.length})`
@@ -683,7 +692,7 @@ export default function OrderDetailScreen() {
           })()}
 
         {/* Order items */}
-        <InfoSection icon={<Package size={14} color="#6b7280" />} title="Preces">
+        <InfoSection icon={<Package size={14} color="#111827" />} title="Preces">
           {order.items.map((item, idx) => (
             <View key={idx} style={[s.itemRow, idx < order.items.length - 1 && s.itemBorder]}>
               <View style={{ flex: 1 }}>
@@ -774,11 +783,10 @@ export default function OrderDetailScreen() {
         </InfoSection>
 
         {/* Delivery details */}
-        <InfoSection icon={<MapPin size={14} color="#6b7280" />} title="Piegādes dati">
-          <DetailRow label="Adrese" value={order.deliveryAddress} />
-          <DetailRow label="Pilsēta" value={order.deliveryCity} />
+        <InfoSection icon={<MapPin size={14} color="#111827" />} title="Piegādes informācija">
+          <DetailRow label="Adrese" value={`${order.deliveryAddress}\n${order.deliveryCity}`} />
           <DetailRow
-            label="Datums"
+            label="Piegādes datums"
             value={order.deliveryDate ? formatDate(order.deliveryDate) : null}
           />
           {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
@@ -803,7 +811,7 @@ export default function OrderDetailScreen() {
 
         {/* Documents — CMR, weighing slip (shown after delivery) */}
         {order.status === 'DELIVERED' && documents.length > 0 && (
-          <InfoSection icon={<FileDown size={14} color="#6b7280" />} title="Dokumenti">
+          <InfoSection icon={<FileDown size={14} color="#111827" />} title="Dokumenti">
             {documents.map((doc) => {
               const docLabel =
                 doc.type === 'WEIGHING_SLIP'
@@ -848,7 +856,7 @@ export default function OrderDetailScreen() {
             if (!proof) return null;
             return (
               <InfoSection
-                icon={<Camera size={14} color="#6b7280" />}
+                icon={<Camera size={14} color="#111827" />}
                 title="Piegādes pierādījums"
                 right={
                   <Text style={s.proofTime}>
@@ -888,7 +896,7 @@ export default function OrderDetailScreen() {
 
         {/* Buyer info */}
         {order.buyer && (
-          <InfoSection icon={<User size={14} color="#6b7280" />} title="Pasūtītājs">
+          <InfoSection icon={<User size={14} color="#111827" />} title="Pasūtītājs">
             <DetailRow label="Vārds" value={order.buyer?.name ?? ''} />
             <DetailRow label="Tālrunis" value={order.buyer?.phone} last />
           </InfoSection>

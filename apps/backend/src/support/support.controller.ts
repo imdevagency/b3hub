@@ -1,7 +1,16 @@
 /**
  * Support chat controller — /api/v1/support
  */
-import { Body, Controller, ForbiddenException, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SupportService } from './support.service';
 import { SendSupportMessageDto } from './dto/send-support-message.dto';
@@ -57,10 +66,7 @@ export class SupportController {
 
   /** GET /support/admin/threads/:id — get a specific thread with messages */
   @Get('admin/threads/:id')
-  adminGetThread(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  adminGetThread(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     if (user.userType !== 'ADMIN') {
       throw new ForbiddenException();
     }

@@ -27,8 +27,7 @@ import { PrismaService } from '../prisma/prisma.service';
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       // Mirror the same CORS logic as the REST API in main.ts
-      const raw =
-        process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN ?? '';
+      const raw = process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN ?? '';
       const allowed = raw
         .split(',')
         .map((o) => o.trim())
@@ -100,7 +99,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
-    if (!data?.jobId || typeof data.jobId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.jobId)) {
+    if (
+      !data?.jobId ||
+      typeof data.jobId !== 'string' ||
+      !/^[0-9a-f-]{36}$/i.test(data.jobId)
+    ) {
       throw new WsException('jobId must be a valid UUID');
     }
 
@@ -139,7 +142,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { jobId: string },
   ) {
-    if (!data?.jobId || typeof data.jobId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.jobId)) return;
+    if (
+      !data?.jobId ||
+      typeof data.jobId !== 'string' ||
+      !/^[0-9a-f-]{36}$/i.test(data.jobId)
+    )
+      return;
     void client.leave(`job:${data.jobId}`);
   }
 
@@ -149,7 +157,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { orderId: string },
   ) {
-    if (!data?.orderId || typeof data.orderId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.orderId)) {
+    if (
+      !data?.orderId ||
+      typeof data.orderId !== 'string' ||
+      !/^[0-9a-f-]{36}$/i.test(data.orderId)
+    ) {
       throw new WsException('orderId must be a valid UUID');
     }
 
@@ -184,7 +196,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { orderId: string },
   ) {
-    if (!data?.orderId || typeof data.orderId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.orderId)) return;
+    if (
+      !data?.orderId ||
+      typeof data.orderId !== 'string' ||
+      !/^[0-9a-f-]{36}$/i.test(data.orderId)
+    )
+      return;
     void client.leave(`order:${data.orderId}`);
   }
 

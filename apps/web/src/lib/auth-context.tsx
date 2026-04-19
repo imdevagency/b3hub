@@ -74,7 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => setIsLoading(false));
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

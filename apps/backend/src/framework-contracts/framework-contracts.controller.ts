@@ -148,7 +148,8 @@ export class FrameworkContractsController {
     @Body() dto: CreateAdvanceInvoiceDto,
     @CurrentUser() user: RequestingUser,
   ) {
-    if (!user.companyId) throw new ForbiddenException('Company account required');
+    if (!user.companyId)
+      throw new ForbiddenException('Company account required');
     return this.service.createAdvanceInvoice(
       id,
       dto.amount,

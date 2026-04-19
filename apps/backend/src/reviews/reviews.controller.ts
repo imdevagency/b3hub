@@ -38,7 +38,8 @@ export class ReviewsController {
     return this.service.findByCompany(companyId);
   }
 
-  private static readonly UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  private static readonly UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   /** GET /reviews/status — check if the user has already reviewed an order/job */
   @Get('status')
@@ -51,12 +52,23 @@ export class ReviewsController {
     if (orderId !== undefined && !ReviewsController.UUID_RE.test(orderId)) {
       throw new BadRequestException('orderId must be a valid UUID');
     }
-    if (skipOrderId !== undefined && !ReviewsController.UUID_RE.test(skipOrderId)) {
+    if (
+      skipOrderId !== undefined &&
+      !ReviewsController.UUID_RE.test(skipOrderId)
+    ) {
       throw new BadRequestException('skipOrderId must be a valid UUID');
     }
-    if (transportJobId !== undefined && !ReviewsController.UUID_RE.test(transportJobId)) {
+    if (
+      transportJobId !== undefined &&
+      !ReviewsController.UUID_RE.test(transportJobId)
+    ) {
       throw new BadRequestException('transportJobId must be a valid UUID');
     }
-    return this.service.getReviewStatus(user.userId, orderId, skipOrderId, transportJobId);
+    return this.service.getReviewStatus(
+      user.userId,
+      orderId,
+      skipOrderId,
+      transportJobId,
+    );
   }
 }

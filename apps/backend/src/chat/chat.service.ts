@@ -92,7 +92,12 @@ export class ChatService {
           chatMessages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
-            select: { body: true, senderName: true, createdAt: true, imageUrl: true },
+            select: {
+              body: true,
+              senderName: true,
+              createdAt: true,
+              imageUrl: true,
+            },
           },
         },
         orderBy: { updatedAt: 'desc' },
@@ -102,7 +107,9 @@ export class ChatService {
           orderId: { not: null },
           OR: [
             { order: { createdById: userId } },
-            { order: { items: { some: { material: { supplierId: userId } } } } },
+            {
+              order: { items: { some: { material: { supplierId: userId } } } },
+            },
           ],
         },
         distinct: ['orderId'],
@@ -144,7 +151,12 @@ export class ChatService {
         orderNumber: m.order!.orderNumber,
         status: m.order!.status,
         deliveryCity: m.order!.deliveryCity,
-        lastMessage: { body: m.body, senderName: m.senderName, createdAt: m.createdAt, imageUrl: m.imageUrl },
+        lastMessage: {
+          body: m.body,
+          senderName: m.senderName,
+          createdAt: m.createdAt,
+          imageUrl: m.imageUrl,
+        },
       }));
 
     return [...jobRooms, ...orderRooms].sort(

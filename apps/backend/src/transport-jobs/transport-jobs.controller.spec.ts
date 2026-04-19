@@ -36,7 +36,11 @@ describe('TransportJobsController', () => {
     createDriverReview: jest.fn<any>(),
   } as unknown as import('../reviews/reviews.service').ReviewsService;
 
-  const controller = new TransportJobsController(service, reviewsService, {} as any);
+  const controller = new TransportJobsController(
+    service,
+    reviewsService,
+    {} as any,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();

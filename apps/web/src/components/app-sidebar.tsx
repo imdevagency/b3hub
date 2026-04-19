@@ -424,7 +424,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [activeMode, token, user?.canSell, user?.companyRole, user?.permManageOrders, user?.userType]);
+  }, [
+    activeMode,
+    token,
+    user?.canSell,
+    user?.canTransport,
+    user?.companyRole,
+    user?.isCompany,
+    user?.permManageOrders,
+    user?.userType,
+  ]);
 
   const itemBadgeCountByHref = React.useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {

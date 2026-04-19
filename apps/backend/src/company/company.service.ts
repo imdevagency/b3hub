@@ -115,7 +115,10 @@ export class CompanyService {
     // otherwise auto-geocode when any address field changes.
     let resolvedLat: number | undefined = dto.lat;
     let resolvedLng: number | undefined = dto.lng;
-    const addressChanged = dto.street !== undefined || dto.city !== undefined || dto.postalCode !== undefined;
+    const addressChanged =
+      dto.street !== undefined ||
+      dto.city !== undefined ||
+      dto.postalCode !== undefined;
     if (resolvedLat == null && resolvedLng == null && addressChanged) {
       const existing = await this.prisma.company.findUnique({
         where: { id: companyId },
@@ -126,12 +129,16 @@ export class CompanyService {
       const postal = dto.postalCode ?? existing?.postalCode ?? '';
       const country = existing?.country ?? 'LV';
       if (city) {
-        const addressStr = [street, city, postal, country].filter(Boolean).join(', ');
+        const addressStr = [street, city, postal, country]
+          .filter(Boolean)
+          .join(', ');
         const coords = await this.maps.forwardGeocode(addressStr);
         if (coords) {
           resolvedLat = coords.lat;
           resolvedLng = coords.lng;
-          this.logger.log(`Auto-geocoded company ${companyId}: ${addressStr} → ${coords.lat},${coords.lng}`);
+          this.logger.log(
+            `Auto-geocoded company ${companyId}: ${addressStr} → ${coords.lat},${coords.lng}`,
+          );
         }
       }
     }

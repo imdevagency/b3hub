@@ -29,7 +29,8 @@ export class FieldPassesController {
   /** GET /field-passes — list my company's passes */
   @Get()
   findAll(@CurrentUser() user: RequestingUser) {
-    if (!user.companyId) throw new ForbiddenException('Company account required');
+    if (!user.companyId)
+      throw new ForbiddenException('Company account required');
     return this.service.findAll(user.companyId);
   }
 
@@ -60,11 +61,9 @@ export class FieldPassesController {
 
   /** POST /field-passes — create a new pass */
   @Post()
-  create(
-    @Body() dto: CreateFieldPassDto,
-    @CurrentUser() user: RequestingUser,
-  ) {
-    if (!user.companyId) throw new ForbiddenException('Company account required');
+  create(@Body() dto: CreateFieldPassDto, @CurrentUser() user: RequestingUser) {
+    if (!user.companyId)
+      throw new ForbiddenException('Company account required');
     return this.service.create(dto, user.userId, user.companyId);
   }
 

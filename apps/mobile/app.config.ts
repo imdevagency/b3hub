@@ -1,5 +1,4 @@
 import type { ExpoConfig, ConfigContext } from 'expo/config';
-import { colors } from '@/lib/theme';
 
 /**
  * Dynamic Expo config.
@@ -74,7 +73,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     splash: {
       image: './assets/splash-icon.png',
       resizeMode: 'contain',
-      backgroundColor: colors.bgCard,
+      backgroundColor: '#ffffff',
     },
     // runtimeVersion: sdkVersion for development so Expo Go recognises the runtime.
     // appVersion for production/staging so OTA updates are strictly versioned.
@@ -166,7 +165,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-notifications',
         {
-          color: colors.danger,
+          color: '#dc2626',
           defaultChannel: 'default',
         },
       ],

@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { TransportJobStatus } from '@prisma/client';
 import { TransportJobsService } from './transport-jobs.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -24,7 +28,9 @@ function makeDriver(overrides: Partial<RequestingUser> = {}): RequestingUser {
   } as RequestingUser;
 }
 
-function makeDispatcher(overrides: Partial<RequestingUser> = {}): RequestingUser {
+function makeDispatcher(
+  overrides: Partial<RequestingUser> = {},
+): RequestingUser {
   return makeDriver({
     id: 'dispatcher-1',
     userId: 'dispatcher-1',
@@ -103,7 +109,14 @@ describe('TransportJobsService', () => {
     releaseFunds: (jest.fn() as any).mockResolvedValue(undefined),
   } as any;
 
-  const service = new TransportJobsService(prisma, notifications, documents, updates, email, payments);
+  const service = new TransportJobsService(
+    prisma,
+    notifications,
+    documents,
+    updates,
+    email,
+    payments,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -391,7 +404,10 @@ describe('TransportJobsService', () => {
 
   describe('createAsUser', () => {
     it('blocks a plain driver (no company role) from creating jobs', async () => {
-      const plainDriver = makeDriver({ isCompany: false, companyRole: undefined });
+      const plainDriver = makeDriver({
+        isCompany: false,
+        companyRole: undefined,
+      });
 
       await expect(
         service.createAsUser(

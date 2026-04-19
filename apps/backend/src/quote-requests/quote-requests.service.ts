@@ -19,6 +19,7 @@ import { EmailService } from '../email/email.service';
 import { CreateQuoteRequestDto } from './dto/create-quote-request.dto';
 import { CreateQuoteResponseDto } from './dto/create-quote-response.dto';
 import {
+  MaterialCategory,
   OrderStatus,
   OrderType,
   PaymentStatus,
@@ -76,7 +77,9 @@ export class QuoteRequestsService {
     );
 
     // Notify sellers who stock this material category
-    this.notifySellersOfNewRfq(request).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+    this.notifySellersOfNewRfq(request).catch((err) =>
+      this.logger.error(err instanceof Error ? err.message : String(err)),
+    );
 
     return request;
   }
@@ -95,7 +98,12 @@ export class QuoteRequestsService {
         canSell: true,
         email: { not: null },
         company: {
-          materials: { some: { category: request.materialCategory as any, inStock: true } },
+          materials: {
+            some: {
+              category: request.materialCategory as MaterialCategory,
+              inStock: true,
+            },
+          },
         },
       },
       select: { id: true, email: true, firstName: true, lastName: true },
@@ -103,7 +111,8 @@ export class QuoteRequestsService {
 
     for (const seller of sellers) {
       if (!seller.email) continue;
-      const sellerName = `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
+      const sellerName =
+        `${seller.firstName ?? ''} ${seller.lastName ?? ''}`.trim();
       this.email
         .sendQuoteRequestReceived(seller.email, sellerName, {
           requestNumber: request.requestNumber,
@@ -112,7 +121,9 @@ export class QuoteRequestsService {
           unit: request.unit,
           city: request.deliveryCity,
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
   }
 
@@ -132,12 +143,15 @@ export class QuoteRequestsService {
   async cancel(id: string, userId: string) {
     const req = await this.prisma.quoteRequest.findUnique({ where: { id } });
     if (!req) throw new NotFoundException('Quote request not found');
-    if (req.buyerId !== userId) throw new ForbiddenException('Not your request');
+    if (req.buyerId !== userId)
+      throw new ForbiddenException('Not your request');
     if (
       req.status !== QuoteRequestStatus.PENDING &&
       req.status !== QuoteRequestStatus.QUOTED
     ) {
-      throw new BadRequestException('Only PENDING or QUOTED requests can be cancelled');
+      throw new BadRequestException(
+        'Only PENDING or QUOTED requests can be cancelled',
+      );
     }
     return this.prisma.quoteRequest.update({
       where: { id },
@@ -203,7 +217,9 @@ export class QuoteRequestsService {
       const { count: reqCount } = await tx.quoteRequest.updateMany({
         where: {
           id: requestId,
-          status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
+          status: {
+            in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED],
+          },
         },
         data: { status: QuoteRequestStatus.ACCEPTED },
       });
@@ -224,8 +240,12 @@ export class QuoteRequestsService {
       }
 
       // Keep return shape compatible with downstream destructuring
-      const updReq = await tx.quoteRequest.findUniqueOrThrow({ where: { id: requestId } });
-      const updResp = await tx.quoteResponse.findUniqueOrThrow({ where: { id: responseId } });
+      const updReq = await tx.quoteRequest.findUniqueOrThrow({
+        where: { id: requestId },
+      });
+      const updResp = await tx.quoteResponse.findUniqueOrThrow({
+        where: { id: responseId },
+      });
 
       // Reject other responses
       await tx.quoteResponse.updateMany({
@@ -243,7 +263,11 @@ export class QuoteRequestsService {
       });
 
       const _d = new Date();
-      const orderNumber = `ORD${_d.getFullYear().toString().slice(-2)}${(_d.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+      const orderNumber = `ORD${_d.getFullYear().toString().slice(-2)}${(_d.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(
+        Math.random() * 100,
+      )
+        .toString()
+        .padStart(2, '0')}`;
       const unitPrice = response.pricePerUnit;
       const subtotal = Math.round(unitPrice * req.quantity * 100) / 100;
       const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
@@ -346,7 +370,12 @@ export class QuoteRequestsService {
           message: `Pircējs pieņēma jūsu piedāvājumu par pieprasījumu #${req.requestNumber}.`,
           data: { requestId, orderId: order.id },
         })
-        .catch((err) => this.logger.warn('Quote accepted supplier notification failed', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'Quote accepted supplier notification failed',
+            (err as Error).message,
+          ),
+        );
     }
 
     // Notify buyer — order pending; they need to pay to proceed
@@ -358,7 +387,12 @@ export class QuoteRequestsService {
         message: `Piedāvājums #${req.requestNumber} pieņemts. Apmaksājiet pasūtījumu, lai meistars varētu to apstiprināt.`,
         data: { orderId: order.id },
       })
-        .catch((err) => this.logger.warn('Quote accepted buyer notification failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'Quote accepted buyer notification failed',
+          (err as Error).message,
+        ),
+      );
     try {
       const supplier = await this.prisma.company.findUnique({
         where: { id: response.supplierId },
@@ -367,7 +401,11 @@ export class QuoteRequestsService {
 
       if (supplier) {
         const _jd = new Date();
-        const jobNumber = `TRJ${_jd.getFullYear().toString().slice(-2)}${(_jd.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
+        const jobNumber = `TRJ${_jd.getFullYear().toString().slice(-2)}${(_jd.getMonth() + 1).toString().padStart(2, '0')}${(Date.now() % 100_000).toString().padStart(5, '0')}${Math.floor(
+          Math.random() * 100,
+        )
+          .toString()
+          .padStart(2, '0')}`;
         const pickupDate = new Date();
         pickupDate.setDate(pickupDate.getDate() + (response.etaDays ?? 1));
         const deliveryDate = new Date(pickupDate);
@@ -438,7 +476,11 @@ export class QuoteRequestsService {
 
     // Prevent duplicate/spam responses from the same supplier
     const duplicate = await this.prisma.quoteResponse.findFirst({
-      where: { requestId, supplierId: companyId, status: QuoteResponseStatus.PENDING },
+      where: {
+        requestId,
+        supplierId: companyId,
+        status: QuoteResponseStatus.PENDING,
+      },
       select: { id: true },
     });
     if (duplicate) {
@@ -480,7 +522,12 @@ export class QuoteRequestsService {
         message: `Saņemts jauns piedāvājums par pieprasījumu #${req.requestNumber}.`,
         data: { requestId },
       })
-      .catch((err) => this.logger.warn('Quote received buyer notification failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'Quote received buyer notification failed',
+          (err as Error).message,
+        ),
+      );
 
     return resp;
   }
@@ -548,7 +595,10 @@ export class QuoteRequestsService {
       }),
       this.prisma.quoteResponse.count({ where: { supplierId: companyId } }),
     ]);
-    return { data, pagination: { total, limit, skip, hasMore: skip + limit < total } };
+    return {
+      data,
+      pagination: { total, limit, skip, hasMore: skip + limit < total },
+    };
   }
 
   // ─── Scheduled tasks ──────────────────────────────────────────
@@ -563,32 +613,39 @@ export class QuoteRequestsService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async expireStaleQuotes(): Promise<void> {
-    await withCronLock(this.prisma, 'expireStaleQuotes', async () => {
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000); // 7 days ago
-    const expiredRequests = await this.prisma.quoteRequest.updateMany({
-      where: {
-        status: { in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED] },
-        createdAt: { lt: cutoff },
-      },
-      data: { status: QuoteRequestStatus.EXPIRED },
-    });
+    await withCronLock(
+      this.prisma,
+      'expireStaleQuotes',
+      async () => {
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000); // 7 days ago
+        const expiredRequests = await this.prisma.quoteRequest.updateMany({
+          where: {
+            status: {
+              in: [QuoteRequestStatus.PENDING, QuoteRequestStatus.QUOTED],
+            },
+            createdAt: { lt: cutoff },
+          },
+          data: { status: QuoteRequestStatus.EXPIRED },
+        });
 
-    // Expire individual responses whose validity window has closed
-    const expiredResponses = await this.prisma.quoteResponse.updateMany({
-      where: {
-        status: QuoteResponseStatus.PENDING,
-        validUntil: { not: null, lt: new Date() },
-      },
-      data: { status: QuoteResponseStatus.EXPIRED },
-    });
+        // Expire individual responses whose validity window has closed
+        const expiredResponses = await this.prisma.quoteResponse.updateMany({
+          where: {
+            status: QuoteResponseStatus.PENDING,
+            validUntil: { not: null, lt: new Date() },
+          },
+          data: { status: QuoteResponseStatus.EXPIRED },
+        });
 
-    if (expiredRequests.count > 0 || expiredResponses.count > 0) {
-      this.logger.log(
-        `Expiry cron: ${expiredRequests.count} quote requests → EXPIRED, ` +
-          `${expiredResponses.count} quote responses → EXPIRED`,
-      );
-    }
-    }, this.logger);
+        if (expiredRequests.count > 0 || expiredResponses.count > 0) {
+          this.logger.log(
+            `Expiry cron: ${expiredRequests.count} quote requests → EXPIRED, ` +
+              `${expiredResponses.count} quote responses → EXPIRED`,
+          );
+        }
+      },
+      this.logger,
+    );
   }
 
   // ─── Helpers ─────────────────────────────────────────────────
@@ -597,7 +654,9 @@ export class QuoteRequestsService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `QR${year}${month}${ms}${rand}`;
   }
 }

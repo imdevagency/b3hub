@@ -30,11 +30,15 @@ export class DisputesController {
     return this.disputesService.create(dto, user);
   }
 
-  private static readonly UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  private static readonly UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   /** List disputes. Admin sees all; buyer sees own. Optional ?orderId= filter. */
   @Get()
-  findAll(@Query('orderId') orderId: string | undefined, @CurrentUser() user: RequestingUser) {
+  findAll(
+    @Query('orderId') orderId: string | undefined,
+    @CurrentUser() user: RequestingUser,
+  ) {
     if (orderId !== undefined && !DisputesController.UUID_RE.test(orderId)) {
       throw new BadRequestException('orderId must be a valid UUID');
     }

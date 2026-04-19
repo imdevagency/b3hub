@@ -38,17 +38,21 @@ export class ApiKeysService {
 
   private assertOwnerOrManager(user: RequestingUser): void {
     if (user.companyRole !== 'OWNER' && user.companyRole !== 'MANAGER') {
-      throw new ForbiddenException('Only company owners or managers can manage API keys');
+      throw new ForbiddenException(
+        'Only company owners or managers can manage API keys',
+      );
     }
   }
 
   async create(user: RequestingUser, dto: CreateApiKeyDto) {
-    if (!user.companyId) throw new ForbiddenException('No company associated with this account');
+    if (!user.companyId)
+      throw new ForbiddenException('No company associated with this account');
     this.assertOwnerOrManager(user);
 
     // Validate scopes
     const invalid = dto.scopes.filter((s) => !VALID_SCOPES.has(s));
-    if (invalid.length) throw new BadRequestException(`Invalid scopes: ${invalid.join(', ')}`);
+    if (invalid.length)
+      throw new BadRequestException(`Invalid scopes: ${invalid.join(', ')}`);
 
     // Generate key: b3_live_ + 40 random hex chars
     const rawKey = `b3_live_${randomBytes(20).toString('hex')}`;
@@ -67,7 +71,9 @@ export class ApiKeysService {
       },
     });
 
-    this.logger.log(`API key created: ${record.id} (${dto.label}) for company ${user.companyId}`);
+    this.logger.log(
+      `API key created: ${record.id} (${dto.label}) for company ${user.companyId}`,
+    );
 
     // Return the plaintext key exactly once
     return {
@@ -82,7 +88,8 @@ export class ApiKeysService {
   }
 
   async list(user: RequestingUser) {
-    if (!user.companyId) throw new ForbiddenException('No company associated with this account');
+    if (!user.companyId)
+      throw new ForbiddenException('No company associated with this account');
     this.assertOwnerOrManager(user);
 
     const keys = await this.prisma.apiKey.findMany({
@@ -103,14 +110,16 @@ export class ApiKeysService {
   }
 
   async revoke(user: RequestingUser, keyId: string) {
-    if (!user.companyId) throw new ForbiddenException('No company associated with this account');
+    if (!user.companyId)
+      throw new ForbiddenException('No company associated with this account');
     this.assertOwnerOrManager(user);
 
     const key = await this.prisma.apiKey.findFirst({
       where: { id: keyId, companyId: user.companyId },
     });
     if (!key) throw new NotFoundException('API key not found');
-    if (key.revokedAt) throw new BadRequestException('API key is already revoked');
+    if (key.revokedAt)
+      throw new BadRequestException('API key is already revoked');
 
     await this.prisma.apiKey.update({
       where: { id: keyId },
@@ -151,7 +160,11 @@ export class ApiKeysService {
     // Fire-and-forget lastUsedAt update
     this.prisma.apiKey
       .update({ where: { id: key.id }, data: { lastUsedAt: new Date() } })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.warn(
+          `Failed to update lastUsedAt for key ${key.id}: ${(err as Error).message}`,
+        ),
+      );
 
     return { companyId: key.companyId, scopes: key.scopes, keyId: key.id };
   }

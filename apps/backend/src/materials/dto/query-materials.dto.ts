@@ -22,7 +22,9 @@ export class QueryMaterialsDto {
   supplierId?: string;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : undefined)
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : undefined,
+  )
   @IsBoolean()
   isRecycled?: boolean;
 

@@ -192,12 +192,12 @@ export default function IncomingOrdersPage() {
   const hasAccess = isSeller || isRecycler;
 
   const [tab, setTab] = useState<'material' | 'disposal'>('material');
+  // Recycler-only users default to the disposal tab (derived, no effect needed)
+  const effectiveTab: 'material' | 'disposal' = isRecycler && !isSeller ? 'disposal' : tab;
 
   useEffect(() => {
     if (!isLoading && user && !hasAccess) router.replace('/dashboard');
-    // Default to disposal tab if recycler-only user
-    if (!isLoading && user && isRecycler && !isSeller) setTab('disposal');
-  }, [user, isLoading, hasAccess, isRecycler, isSeller, router]);
+  }, [user, isLoading, hasAccess, router]);
 
   if (!token || (user && !hasAccess)) {
     return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;
@@ -218,7 +218,7 @@ export default function IncomingOrdersPage() {
           <button
             onClick={() => setTab('material')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              tab === 'material'
+              effectiveTab === 'material'
                 ? 'bg-background shadow text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -228,7 +228,7 @@ export default function IncomingOrdersPage() {
           <button
             onClick={() => setTab('disposal')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              tab === 'disposal'
+              effectiveTab === 'disposal'
                 ? 'bg-background shadow text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -238,8 +238,8 @@ export default function IncomingOrdersPage() {
         </div>
       )}
 
-      {tab === 'material' && isSeller && <SupplierView token={token} />}
-      {tab === 'disposal' && isRecycler && token && <DisposalIncomingView token={token} />}
+      {effectiveTab === 'material' && isSeller && <SupplierView token={token} />}
+      {effectiveTab === 'disposal' && isRecycler && token && <DisposalIncomingView token={token} />}
     </div>
   );
 }

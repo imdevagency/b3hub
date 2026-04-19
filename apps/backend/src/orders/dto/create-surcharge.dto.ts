@@ -1,4 +1,11 @@
-import { IsEnum, IsString, IsNumber, IsBoolean, IsOptional, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { SurchargeType } from '@prisma/client';
 
 export class CreateSurchargeDto {

@@ -47,17 +47,27 @@ export class WeighingSlipsService {
 
   async create(dto: CreateWeighingSlipDto) {
     if (dto.tareTonnes >= dto.grossTonnes) {
-      throw new BadRequestException('Tare weight must be less than gross weight');
+      throw new BadRequestException(
+        'Tare weight must be less than gross weight',
+      );
     }
 
     const pass = await this.prisma.fieldPass.findUnique({
       where: { id: dto.fieldPassId },
-      select: { id: true, status: true, validFrom: true, validTo: true, actualNetTonnes: true },
+      select: {
+        id: true,
+        status: true,
+        validFrom: true,
+        validTo: true,
+        actualNetTonnes: true,
+      },
     });
     if (!pass) throw new NotFoundException('Field pass not found');
 
     if (pass.status === FieldPassStatus.REVOKED) {
-      throw new BadRequestException('Cannot record weighing for a revoked pass');
+      throw new BadRequestException(
+        'Cannot record weighing for a revoked pass',
+      );
     }
 
     const now = new Date();
@@ -65,7 +75,8 @@ export class WeighingSlipsService {
       throw new BadRequestException('Field pass has expired');
     }
 
-    const netTonnes = Math.round((dto.grossTonnes - dto.tareTonnes) * 1000) / 1000;
+    const netTonnes =
+      Math.round((dto.grossTonnes - dto.tareTonnes) * 1000) / 1000;
     const slipNumber = await this.generateSlipNumber();
 
     const slip = await this.prisma.weighingSlip.create({
@@ -99,7 +110,8 @@ export class WeighingSlipsService {
   // ── Void a slip (admin / operator error correction) ─────────────────────────
 
   async void(id: string, dto: VoidWeighingSlipDto, isAdmin: boolean) {
-    if (!isAdmin) throw new ForbiddenException('Only admins can void weighing slips');
+    if (!isAdmin)
+      throw new ForbiddenException('Only admins can void weighing slips');
 
     const slip = await this.prisma.weighingSlip.findUnique({ where: { id } });
     if (!slip) throw new NotFoundException('Weighing slip not found');

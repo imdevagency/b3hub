@@ -231,10 +231,10 @@ export class TransportJobsService {
     };
   }
 
-  private async evaluateAndEscalateSla(jobId: string) {
+  private evaluateAndEscalateSla(_jobId: string): Promise<void> {
     // Compatibility mode: some environments have not yet applied SLA columns.
     // Keep endpoints functional by skipping persistent SLA escalation writes.
-    return;
+    return Promise.resolve();
   }
 
   private mapWithSla<
@@ -311,7 +311,9 @@ export class TransportJobsService {
       dto.pickupLat,
       dto.pickupLng,
       job.id,
-    ).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+    ).catch((err) =>
+      this.logger.error(err instanceof Error ? err.message : String(err)),
+    );
 
     this.logger.log(
       `Transport job ${job.jobNumber} created (${dto.pickupCity} → ${dto.deliveryCity})`,
@@ -352,7 +354,10 @@ export class TransportJobsService {
       // Prefer live driver location, fall back to company base
       let driverLat: number | null = null;
       let driverLng: number | null = null;
-      const loc = driver.driverProfile?.currentLocation as { lat?: number; lng?: number } | null;
+      const loc = driver.driverProfile?.currentLocation as {
+        lat?: number;
+        lng?: number;
+      } | null;
       if (loc?.lat && loc?.lng) {
         driverLat = loc.lat;
         driverLng = loc.lng;
@@ -368,7 +373,12 @@ export class TransportJobsService {
       }
 
       const maxKm = driver.company?.serviceRadiusKm ?? 200;
-      const distKm = this.haversineKm(driverLat, driverLng, pickupLat, pickupLng);
+      const distKm = this.haversineKm(
+        driverLat,
+        driverLng,
+        pickupLat,
+        pickupLng,
+      );
       if (distKm <= maxKm) {
         eligible.push(driver.id);
       }
@@ -388,7 +398,9 @@ export class TransportJobsService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     return `TRJ${year}${month}${ms}${rand}`;
   }
 
@@ -429,7 +441,10 @@ export class TransportJobsService {
 
     // Convert actual weight to tonnes (same unit as order quantity)
     const actualTonnes = actualWeightKg / 1000;
-    const orderedTonnes = tonneItems.reduce((sum, i) => sum + Number(i.quantity), 0);
+    const orderedTonnes = tonneItems.reduce(
+      (sum, i) => sum + Number(i.quantity),
+      0,
+    );
 
     // Skip if within 1% tolerance
     const diff = Math.abs(actualTonnes - orderedTonnes);
@@ -440,8 +455,10 @@ export class TransportJobsService {
     // are reconciled correctly (e.g. different grades of aggregate at different prices).
     const unitPrice =
       orderedTonnes > 0
-        ? tonneItems.reduce((sum, i) => sum + Number(i.unitPrice) * Number(i.quantity), 0) /
-          orderedTonnes
+        ? tonneItems.reduce(
+            (sum, i) => sum + Number(i.unitPrice) * Number(i.quantity),
+            0,
+          ) / orderedTonnes
         : Number(tonneItems[0].unitPrice);
     const actualSubtotal = Math.round(actualTonnes * unitPrice * 100) / 100;
     const storedSubtotal = Number(order.subtotal);
@@ -484,17 +501,24 @@ export class TransportJobsService {
         message: `Pasūtījums #${order.orderNumber}: faktiskais svars ${actualTonnes.toFixed(2)} t (pasūtīts ${orderedTonnes.toFixed(2)} t, starpība ${delta} t). Rēķins ${direction}. Jauna summa: €${(actualTotal + deliveryFee).toFixed(2)}.`,
         data: { orderId, invoiceId: invoice.id },
       })
-      .catch((err) => this.logger.warn('Invoice reconcile buyer notification failed', (err as Error).message));
+      .catch((err) =>
+        this.logger.warn(
+          'Invoice reconcile buyer notification failed',
+          (err as Error).message,
+        ),
+      );
 
     // Sync Stripe PaymentIntent to the new total so the buyer is charged
     // the correct amount based on actual delivered weight.
     // Swallow errors gracefully — a captured/released payment cannot be adjusted
     // (Stripe will refuse), but the invoice + order totals are already corrected.
-    this.payments.updatePaymentIntentAmount(orderId, actualTotal + deliveryFee).catch((err) => {
-      this.logger.warn(
-        `reconcileInvoiceWeight: could not update PaymentIntent for order ${orderId} — ${(err as Error).message}`,
-      );
-    });
+    this.payments
+      .updatePaymentIntentAmount(orderId, actualTotal + deliveryFee)
+      .catch((err) => {
+        this.logger.warn(
+          `reconcileInvoiceWeight: could not update PaymentIntent for order ${orderId} — ${(err as Error).message}`,
+        );
+      });
 
     this.logger.log(
       `Invoice ${invoice.id} reconciled for order ${orderId}: ${orderedTonnes}t ordered → ${actualTonnes.toFixed(3)}t actual (€${order.total} → €${(actualTotal + deliveryFee).toFixed(2)})`,
@@ -522,7 +546,11 @@ export class TransportJobsService {
   }
 
   // ── Available jobs (job board) ─────────────────────────────────
-  async findAvailable(limit: number = 20, skip: number = 0, updatedSince?: string) {
+  async findAvailable(
+    limit: number = 20,
+    skip: number = 0,
+    updatedSince?: string,
+  ) {
     const baseWhere = {
       status: TransportJobStatus.AVAILABLE,
       ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
@@ -858,7 +886,10 @@ export class TransportJobsService {
       where: { userId: driverId },
       select: { licenseExpiry: true },
     });
-    if (driverProfile?.licenseExpiry && driverProfile.licenseExpiry < new Date()) {
+    if (
+      driverProfile?.licenseExpiry &&
+      driverProfile.licenseExpiry < new Date()
+    ) {
       throw new BadRequestException(
         `Jūsu vadītāja apliecība ir beigusies (${driverProfile.licenseExpiry.toISOString().split('T')[0]}). Atjauniniet apliecību, lai pieņemtu darbus.`,
       );
@@ -898,7 +929,9 @@ export class TransportJobsService {
           message: `${updatedJob.jobNumber} • ${updatedJob.pickupCity} → ${updatedJob.deliveryCity}`,
           data: { jobId: updatedJob.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return updatedJob;
@@ -906,7 +939,9 @@ export class TransportJobsService {
 
   // ── Decline an offered job ────────────────────────────────────
   async declineOffer(jobId: string, driverId: string) {
-    const job = await this.prisma.transportJob.findUnique({ where: { id: jobId } });
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+    });
     if (!job) throw new NotFoundException('Transport job not found');
 
     if (job.offeredToDriverId !== driverId) {
@@ -935,40 +970,42 @@ export class TransportJobsService {
   // ── Auto-dispatch cron — run every 30 s ───────────────────────
   @Cron('*/30 * * * * *')
   async runAutoDispatch() {
-    await withCronLock(this.prisma, 'runAutoDispatch', async () => {
-    const now = new Date();
-    const jobs = await this.prisma.transportJob.findMany({
-      where: {
-        status: TransportJobStatus.AVAILABLE,
-        OR: [
-          { offeredToDriverId: null },
-          { offerExpiresAt: { lt: now } },
-        ],
-      },
-      select: {
-        id: true,
-        pickupLat: true,
-        pickupLng: true,
-        pickupCity: true,
-        deliveryCity: true,
-        cargoType: true,
-        distanceKm: true,
-        declinedDriverIds: true,
-        offeredToDriverId: true,
-        offerExpiresAt: true,
-        requestedById: true,
-        order: { select: { createdById: true } },
-      },
-    });
+    await withCronLock(
+      this.prisma,
+      'runAutoDispatch',
+      async () => {
+        const now = new Date();
+        const jobs = await this.prisma.transportJob.findMany({
+          where: {
+            status: TransportJobStatus.AVAILABLE,
+            OR: [{ offeredToDriverId: null }, { offerExpiresAt: { lt: now } }],
+          },
+          select: {
+            id: true,
+            pickupLat: true,
+            pickupLng: true,
+            pickupCity: true,
+            deliveryCity: true,
+            cargoType: true,
+            distanceKm: true,
+            declinedDriverIds: true,
+            offeredToDriverId: true,
+            offerExpiresAt: true,
+            requestedById: true,
+            order: { select: { createdById: true } },
+          },
+        });
 
-    for (const job of jobs) {
-      await this.dispatchToNextDriver(job).catch((err) =>
-        this.logger.error(
-          `runAutoDispatch: failed for job ${job.id}: ${(err as Error).message}`,
-        ),
-      );
-    }
-    }, this.logger);
+        for (const job of jobs) {
+          await this.dispatchToNextDriver(job).catch((err) =>
+            this.logger.error(
+              `runAutoDispatch: failed for job ${job.id}: ${(err as Error).message}`,
+            ),
+          );
+        }
+      },
+      this.logger,
+    );
   }
 
   private async dispatchToNextDriver(job: {
@@ -989,9 +1026,7 @@ export class TransportJobsService {
     // If the previous offer expired (driver did not respond), treat them as
     // declined so they are not re-offered the same job indefinitely.
     const expiredDriverId =
-      job.offeredToDriverId &&
-      job.offerExpiresAt &&
-      job.offerExpiresAt < now
+      job.offeredToDriverId && job.offerExpiresAt && job.offerExpiresAt < now
         ? job.offeredToDriverId
         : null;
 
@@ -1031,7 +1066,10 @@ export class TransportJobsService {
         continue;
       }
 
-      const loc = driver.driverProfile?.currentLocation as { lat?: number; lng?: number } | null;
+      const loc = driver.driverProfile?.currentLocation as {
+        lat?: number;
+        lng?: number;
+      } | null;
       const driverLat = loc?.lat ?? driver.company?.lat ?? null;
       const driverLng = loc?.lng ?? driver.company?.lng ?? null;
 
@@ -1041,7 +1079,12 @@ export class TransportJobsService {
       }
 
       const maxKm = driver.company?.serviceRadiusKm ?? 200;
-      const distKm = this.haversineKm(driverLat, driverLng, job.pickupLat, job.pickupLng);
+      const distKm = this.haversineKm(
+        driverLat,
+        driverLng,
+        job.pickupLat,
+        job.pickupLng,
+      );
       if (distKm <= maxKm) {
         scored.push({ id: driver.id, distKm });
       }
@@ -1077,7 +1120,9 @@ export class TransportJobsService {
         message: `${job.cargoType}${job.distanceKm ? ` • ${Math.round(job.distanceKm)} km` : ''} — pieņem 45 s laikā`,
         data: { jobId: job.id, offerExpiresAt: offerExpiresAt.toISOString() },
       })
-      .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+      .catch((err) =>
+        this.logger.error(err instanceof Error ? err.message : String(err)),
+      );
 
     this.logger.log(
       `Auto-dispatch: job ${job.id} offered to driver ${nextDriver.id} (${Math.round(nextDriver.distKm)} km away)`,
@@ -1185,7 +1230,9 @@ export class TransportJobsService {
           message: `Darbs ${updated.jobNumber} tika pārdalīts citam šoferim`,
           data: { jobId: updated.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return updated;
@@ -1237,19 +1284,23 @@ export class TransportJobsService {
     const note = body.note ?? 'Admin emergency reassignment';
 
     // Log an exception so the incident is traceable
-    await this.prisma.transportJobException.create({
-      data: {
-        transportJobId: id,
-        type: 'OTHER',
-        notes: `Force-reassigned by admin. ${note}. Previous driver: ${job.driverId ?? 'none'}. New driver: ${body.driverId}.`,
-        reportedById: body.driverId,
-        status: 'RESOLVED',
-        resolution: 'Reassigned by admin',
-        resolvedAt: new Date(),
-      },
-    }).catch((err) =>
-      this.logger.warn(`Could not log force-reassign exception for job ${id}: ${(err as Error).message}`),
-    );
+    await this.prisma.transportJobException
+      .create({
+        data: {
+          transportJobId: id,
+          type: 'OTHER',
+          notes: `Force-reassigned by admin. ${note}. Previous driver: ${job.driverId ?? 'none'}. New driver: ${body.driverId}.`,
+          reportedById: body.driverId,
+          status: 'RESOLVED',
+          resolution: 'Reassigned by admin',
+          resolvedAt: new Date(),
+        },
+      })
+      .catch((err) =>
+        this.logger.warn(
+          `Could not log force-reassign exception for job ${id}: ${(err as Error).message}`,
+        ),
+      );
 
     // Notify old driver they've been removed
     if (job.driverId && job.driverId !== body.driverId) {
@@ -1261,7 +1312,9 @@ export class TransportJobsService {
           message: `Darbs ${updated.jobNumber} tika pārsūtīts citam šoferim. Iemesls: ${note}`,
           data: { jobId: updated.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     // Notify new driver
@@ -1273,7 +1326,9 @@ export class TransportJobsService {
         message: `${updated.jobNumber} • ${updated.pickupCity} → ${updated.deliveryCity} (pārcelts statusā: ${updated.status})`,
         data: { jobId: updated.id },
       })
-      .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+      .catch((err) =>
+        this.logger.error(err instanceof Error ? err.message : String(err)),
+      );
 
     // Write audit trail
     if (adminId) {
@@ -1284,8 +1339,14 @@ export class TransportJobsService {
             action: 'FORCE_REASSIGN_JOB',
             entityType: 'TransportJob',
             entityId: id,
-            before: { driverId: job.driverId ?? null, vehicleId: job.vehicleId ?? null },
-            after: { driverId: body.driverId, vehicleId: body.vehicleId ?? job.vehicleId },
+            before: {
+              driverId: job.driverId ?? null,
+              vehicleId: job.vehicleId ?? null,
+            },
+            after: {
+              driverId: body.driverId,
+              vehicleId: body.vehicleId ?? job.vehicleId,
+            },
             note: body.note ?? null,
           },
         })
@@ -1333,7 +1394,9 @@ export class TransportJobsService {
           message: `Darbs ${updated.jobNumber} ir noņemts no jūsu saraksta${reason ? `: ${reason}` : ''}`,
           data: { jobId: updated.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return updated;
@@ -1346,7 +1409,14 @@ export class TransportJobsService {
   ) {
     const driver = await this.prisma.user.findUnique({
       where: { id: driverId },
-      select: { id: true, firstName: true, lastName: true, email: true, canTransport: true, companyId: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        canTransport: true,
+        companyId: true,
+      },
     });
     if (!driver || !driver.canTransport) {
       throw new BadRequestException('User is not a valid driver');
@@ -1365,7 +1435,10 @@ export class TransportJobsService {
       where: { userId: driverId },
       select: { licenseExpiry: true },
     });
-    if (assignDriverProfile?.licenseExpiry && assignDriverProfile.licenseExpiry < new Date()) {
+    if (
+      assignDriverProfile?.licenseExpiry &&
+      assignDriverProfile.licenseExpiry < new Date()
+    ) {
       throw new BadRequestException(
         `Šofera ${driver.firstName} ${driver.lastName} vadītāja apliecība ir beigusies (${assignDriverProfile.licenseExpiry.toISOString().split('T')[0]}). Atjauniniet apliecību pirms piešķiršanas.`,
       );
@@ -1435,10 +1508,13 @@ export class TransportJobsService {
         message: `${updated.jobNumber} • ${updated.pickupCity} → ${updated.deliveryCity}`,
         data: { jobId: updated.id },
       })
-      .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+      .catch((err) =>
+        this.logger.error(err instanceof Error ? err.message : String(err)),
+      );
 
     if (driver.email) {
-      const driverName = `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim();
+      const driverName =
+        `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim();
       this.email
         .sendDriverJobAssigned(driver.email, driverName, {
           jobNumber: updated.jobNumber,
@@ -1446,7 +1522,9 @@ export class TransportJobsService {
           deliveryCity: updated.deliveryCity,
           scheduledDate: updated.pickupDate,
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return updated;
@@ -1514,25 +1592,44 @@ export class TransportJobsService {
       if (order?.createdById) {
         const weight = dto.weightKg ?? updatedJob.cargoWeight;
         this.documents
-          .generateWeighingSlip(orderId, order.createdById, weight ?? 0, 't', undefined, order.orderNumber)
-          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+          .generateWeighingSlip(
+            orderId,
+            order.createdById,
+            weight ?? 0,
+            't',
+            undefined,
+            order.orderNumber,
+          )
+          .catch((err) =>
+            this.logger.error(err instanceof Error ? err.message : String(err)),
+          );
       }
 
       // Reconcile invoice if actual weight differs from the ordered quantity
       if (dto.weightKg) {
-        this.reconcileInvoiceWeight(orderId, dto.weightKg).catch((err) => this.logger.warn('reconcileInvoiceWeight failed', (err as Error).message));
+        this.reconcileInvoiceWeight(orderId, dto.weightKg).catch((err) =>
+          this.logger.warn(
+            'reconcileInvoiceWeight failed',
+            (err as Error).message,
+          ),
+        );
       }
 
       // Weigh-bridge discrepancy alert: notify buyer if >5% difference
       if (dto.weightKg && updatedJob.cargoWeight) {
         const actualTonnes = dto.weightKg / 1000;
         const expectedTonnes = Number(updatedJob.cargoWeight);
-        const diffPct = Math.abs(actualTonnes - expectedTonnes) / expectedTonnes * 100;
+        const diffPct =
+          (Math.abs(actualTonnes - expectedTonnes) / expectedTonnes) * 100;
         if (diffPct > 5) {
           // Fetch buyer contact details
           const orderForAlert = await this.prisma.order.findUnique({
             where: { id: orderId },
-            select: { createdById: true, orderNumber: true, createdBy: { select: { email: true, firstName: true } } },
+            select: {
+              createdById: true,
+              orderNumber: true,
+              createdBy: { select: { email: true, firstName: true } },
+            },
           });
           const buyer = orderForAlert?.createdBy;
           if (buyer?.email) {
@@ -1546,7 +1643,11 @@ export class TransportJobsService {
                 actualTonnes,
                 diffPct,
               })
-              .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+              .catch((err) =>
+                this.logger.error(
+                  err instanceof Error ? err.message : String(err),
+                ),
+              );
             if (orderForAlert?.createdById) {
               this.notifications
                 .create({
@@ -1556,7 +1657,11 @@ export class TransportJobsService {
                   message: `Job #${updatedJob.jobNumber}: ${diffPct.toFixed(1)}% starpība starp pasūtīto (${expectedTonnes.toFixed(1)}t) un svētītāja (${actualTonnes.toFixed(1)}t) svaru`,
                   data: { jobId: updatedJob.id },
                 })
-                .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+                .catch((err) =>
+                  this.logger.error(
+                    err instanceof Error ? err.message : String(err),
+                  ),
+                );
             }
           }
         }
@@ -1571,7 +1676,9 @@ export class TransportJobsService {
           createdById: true,
           orderNumber: true,
           items: {
-            select: { material: { select: { supplier: { select: { id: true } } } } },
+            select: {
+              material: { select: { supplier: { select: { id: true } } } },
+            },
           },
         },
       });
@@ -1579,7 +1686,9 @@ export class TransportJobsService {
 
       // Resolve unique supplier company IDs and their user accounts for push notifications
       const supplierCompanyIds = [
-        ...new Set(orderForNotify?.items.map((i) => i.material.supplier.id) ?? []),
+        ...new Set(
+          orderForNotify?.items.map((i) => i.material.supplier.id) ?? [],
+        ),
       ];
       const getSupplierUserIds = async () => {
         if (supplierCompanyIds.length === 0) return [];
@@ -1600,15 +1709,26 @@ export class TransportJobsService {
           // ── Notify seller: a driver has accepted and will arrive at the quarry ──
           const truckPlate = updatedJob.vehicle?.licensePlate;
           const truckInfo = truckPlate ? ` • ${truckPlate}` : '';
-          getSupplierUserIds().then((sellerIds) => {
-            if (sellerIds.length === 0) return;
-            return this.notifications.createForMany(sellerIds, {
-              type: NotificationType.SYSTEM_ALERT,
-              title: '🚛 Šoferis pieņēmis darbu',
-              message: `${driverName} dodas uz iekraušanas vietu${truckInfo} • ${orderNum}. Sagatavojiet iekraušanu.`,
-              data: { jobId: updatedJob.id, orderId, driverName, licensePlate: truckPlate ?? null },
-            });
-          }).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+          getSupplierUserIds()
+            .then((sellerIds) => {
+              if (sellerIds.length === 0) return;
+              return this.notifications.createForMany(sellerIds, {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚛 Šoferis pieņēmis darbu',
+                message: `${driverName} dodas uz iekraušanas vietu${truckInfo} • ${orderNum}. Sagatavojiet iekraušanu.`,
+                data: {
+                  jobId: updatedJob.id,
+                  orderId,
+                  driverName,
+                  licensePlate: truckPlate ?? null,
+                },
+              });
+            })
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
 
           this.notifications
             .create({
@@ -1618,18 +1738,28 @@ export class TransportJobsService {
               message: `${driverName} dodas uz iekraušanas vietu • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
         } else if (dto.status === TransportJobStatus.AT_PICKUP) {
           // ── Notify seller: driver has arrived at the quarry ───────────────
-          getSupplierUserIds().then((sellerIds) => {
-            if (sellerIds.length === 0) return;
-            return this.notifications.createForMany(sellerIds, {
-              type: NotificationType.SYSTEM_ALERT,
-              title: '🚛 Šoferis ir ieradies',
-              message: `${driverName} ir ieradies iekraušanas vietā • ${orderNum}. Lūdzu apstipriniet iekraušanu.`,
-              data: { jobId: updatedJob.id, orderId },
-            });
-          }).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+          getSupplierUserIds()
+            .then((sellerIds) => {
+              if (sellerIds.length === 0) return;
+              return this.notifications.createForMany(sellerIds, {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚛 Šoferis ir ieradies',
+                message: `${driverName} ir ieradies iekraušanas vietā • ${orderNum}. Lūdzu apstipriniet iekraušanu.`,
+                data: { jobId: updatedJob.id, orderId },
+              });
+            })
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
         } else if (dto.status === TransportJobStatus.LOADED) {
           this.notifications
             .create({
@@ -1639,10 +1769,16 @@ export class TransportJobsService {
               message: `Krava iekrauta${updatedJob.actualWeightKg != null ? ` • ${(updatedJob.actualWeightKg / 1000).toFixed(2)} t` : ''} • ${orderNum}`,
               data: {
                 jobId: updatedJob.id,
-                ...(updatedJob.pickupPhotoUrl ? { pickupPhotoUrl: updatedJob.pickupPhotoUrl } : {}),
+                ...(updatedJob.pickupPhotoUrl
+                  ? { pickupPhotoUrl: updatedJob.pickupPhotoUrl }
+                  : {}),
               },
             })
-            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
         } else if (dto.status === TransportJobStatus.EN_ROUTE_DELIVERY) {
           this.notifications
             .create({
@@ -1652,7 +1788,11 @@ export class TransportJobsService {
               message: `${driverName} dodas uz piegādes vietu • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
         } else if (dto.status === TransportJobStatus.AT_DELIVERY) {
           this.notifications
             .create({
@@ -1662,7 +1802,11 @@ export class TransportJobsService {
               message: `${driverName} ir ieradies piegādes vietā • ${orderNum}`,
               data: { jobId: updatedJob.id },
             })
-            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
         } else if (dto.status === TransportJobStatus.DELIVERED) {
           this.notifications
             .create({
@@ -1672,18 +1816,28 @@ export class TransportJobsService {
               message: `Pasūtījums ${orderNum} ir veiksmīgi piegādāts.`,
               data: { jobId: updatedJob.id },
             })
-            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
 
           // ── Notify seller: their order has been delivered, payout pending ──
-          getSupplierUserIds().then((sellerIds) => {
-            if (sellerIds.length === 0) return;
-            return this.notifications.createForMany(sellerIds, {
-              type: NotificationType.TRANSPORT_COMPLETED,
-              title: '✅ Pasūtījums piegādāts',
-              message: `Pasūtījums ${orderNum} ir piegādāts. Maksājums tiks izmaksāts pēc apstiprināšanas.`,
-              data: { jobId: updatedJob.id, orderId },
-            });
-          }).catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+          getSupplierUserIds()
+            .then((sellerIds) => {
+              if (sellerIds.length === 0) return;
+              return this.notifications.createForMany(sellerIds, {
+                type: NotificationType.TRANSPORT_COMPLETED,
+                title: '✅ Pasūtījums piegādāts',
+                message: `Pasūtījums ${orderNum} ir piegādāts. Maksājums tiks izmaksāts pēc apstiprināšanas.`,
+                data: { jobId: updatedJob.id, orderId },
+              });
+            })
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
         }
       }
     }
@@ -1713,8 +1867,7 @@ export class TransportJobsService {
           },
         },
       });
-      const sellerOwnerId2 =
-        order2?.items[0]?.material?.supplier?.users[0]?.id;
+      const sellerOwnerId2 = order2?.items[0]?.material?.supplier?.users[0]?.id;
       if (order2?.createdById) {
         const driver = updatedJob.driver;
         this.documents
@@ -1781,8 +1934,7 @@ export class TransportJobsService {
     // ── Driver nearby notification ────────────────────────────────────────────
     // Fire once when driver is within 5 km of delivery site while heading there.
     const headingToDelivery =
-      job.status === 'EN_ROUTE_DELIVERY' ||
-      job.status === 'LOADED';
+      job.status === 'EN_ROUTE_DELIVERY' || job.status === 'LOADED';
     if (
       headingToDelivery &&
       job.deliveryLat != null &&
@@ -1808,7 +1960,9 @@ export class TransportJobsService {
               data: { jobId: id },
             })
             .catch((err) =>
-              this.logger.warn(`Driver nearby notification failed for job ${id}: ${err instanceof Error ? err.message : String(err)}`),
+              this.logger.warn(
+                `Driver nearby notification failed for job ${id}: ${err instanceof Error ? err.message : String(err)}`,
+              ),
             );
         }
       }
@@ -1822,14 +1976,23 @@ export class TransportJobsService {
       job.status === 'EN_ROUTE_DELIVERY' ||
       job.status === 'AT_DELIVERY' ||
       job.status === 'LOADED';
-    const destLat = headingToDeliveryForEta ? job.deliveryLat : (job.pickupLat ?? job.deliveryLat);
-    const destLng = headingToDeliveryForEta ? job.deliveryLng : (job.pickupLng ?? job.deliveryLng);
+    const destLat = headingToDeliveryForEta
+      ? job.deliveryLat
+      : (job.pickupLat ?? job.deliveryLat);
+    const destLng = headingToDeliveryForEta
+      ? job.deliveryLng
+      : (job.pickupLng ?? job.deliveryLng);
     let estimatedArrivalMin: number | null = null;
     if (destLat != null && destLng != null) {
       const distKm = this.haversineKm(dto.lat, dto.lng, destLat, destLng);
       estimatedArrivalMin = Math.max(1, Math.round((distKm / 50) * 60));
     }
-    this.updates.broadcastJobLocation({ jobId: id, lat: dto.lat, lng: dto.lng, estimatedArrivalMin });
+    this.updates.broadcastJobLocation({
+      jobId: id,
+      lat: dto.lat,
+      lng: dto.lng,
+      estimatedArrivalMin,
+    });
 
     return location;
   }
@@ -1879,7 +2042,8 @@ export class TransportJobsService {
       },
     });
     if (!job) throw new NotFoundException('Transport job not found');
-    if (job.driverId !== driverId) throw new ForbiddenException('This is not your job');
+    if (job.driverId !== driverId)
+      throw new ForbiddenException('This is not your job');
 
     const activeStatuses: TransportJobStatus[] = [
       TransportJobStatus.EN_ROUTE_PICKUP,
@@ -1888,8 +2052,10 @@ export class TransportJobsService {
       TransportJobStatus.EN_ROUTE_DELIVERY,
       TransportJobStatus.AT_DELIVERY,
     ];
-    if (!activeStatuses.includes(job.status as TransportJobStatus)) {
-      throw new BadRequestException('Can only report delay on an active in-progress job');
+    if (!activeStatuses.includes(job.status)) {
+      throw new BadRequestException(
+        'Can only report delay on an active in-progress job',
+      );
     }
 
     const driverName = job.driver
@@ -1997,8 +2163,7 @@ export class TransportJobsService {
           },
         },
       });
-      const sellerOwnerId =
-        order?.items[0]?.material?.supplier?.users[0]?.id;
+      const sellerOwnerId = order?.items[0]?.material?.supplier?.users[0]?.id;
       if (order?.createdById) {
         const driver = delivered.driver;
         this.documents
@@ -2048,7 +2213,10 @@ export class TransportJobsService {
             where: {
               orderId: job.orderId,
               status: {
-                notIn: [TransportJobStatus.DELIVERED, TransportJobStatus.CANCELLED],
+                notIn: [
+                  TransportJobStatus.DELIVERED,
+                  TransportJobStatus.CANCELLED,
+                ],
               },
             },
           });
@@ -2084,21 +2252,27 @@ export class TransportJobsService {
 
       // If the invoice is already PAID (buyer paid upfront via Payment Link),
       // trigger driver payout now — releaseFundsForJob will skip if not yet paid.
-      this.payments.releaseFundsForJob(id).catch((err: Error) =>
-        this.logger.warn(`releaseFundsForJob on delivery failed for standalone job ${id}: ${err.message}`),
-      );
+      this.payments
+        .releaseFundsForJob(id)
+        .catch((err: Error) =>
+          this.logger.warn(
+            `releaseFundsForJob on delivery failed for standalone job ${id}: ${err.message}`,
+          ),
+        );
     }
 
     // Payout nudge: if the carrier hasn't completed Stripe Connect onboarding,
     // notify the driver so they know to finish setup before funds can be released.
     if (job.driverId) {
-      (async () => {
+      void (async () => {
         try {
           const driverUser = await this.prisma.user.findUnique({
             where: { id: job.driverId! },
             select: {
               id: true,
-              company: { select: { payoutEnabled: true, stripeConnectId: true } },
+              company: {
+                select: { payoutEnabled: true, stripeConnectId: true },
+              },
             },
           });
           if (driverUser?.company && !driverUser.company.payoutEnabled) {
@@ -2111,7 +2285,9 @@ export class TransportJobsService {
                 data: { jobId: id },
               })
               .catch((err) =>
-                this.logger.error(err instanceof Error ? err.message : String(err)),
+                this.logger.error(
+                  err instanceof Error ? err.message : String(err),
+                ),
               );
           }
         } catch (err) {
@@ -2213,7 +2389,9 @@ export class TransportJobsService {
             undefined,
             order.orderNumber,
           )
-          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+          .catch((err) =>
+            this.logger.error(err instanceof Error ? err.message : String(err)),
+          );
       }
     }
 
@@ -2226,7 +2404,9 @@ export class TransportJobsService {
           title: '✅ Iekraušana apstiprināta',
           message: `Darbs ${updatedJob.jobNumber} — varat doties uz piegādes vietu`,
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return updatedJob;
@@ -2264,7 +2444,10 @@ export class TransportJobsService {
     }
 
     // PARTIAL_DELIVERY requires an actual quantity so we can adjust the order total
-    if (dto.type === 'PARTIAL_DELIVERY' && (dto.actualQuantity == null || dto.actualQuantity < 0)) {
+    if (
+      dto.type === 'PARTIAL_DELIVERY' &&
+      (dto.actualQuantity == null || dto.actualQuantity < 0)
+    ) {
       throw new BadRequestException(
         'actualQuantity is required and must be ≥ 0 when reporting a PARTIAL_DELIVERY',
       );
@@ -2274,9 +2457,10 @@ export class TransportJobsService {
       data: {
         transportJobId: id,
         type: dto.type,
-        notes: dto.type === 'PARTIAL_DELIVERY' && dto.actualQuantity != null
-          ? `${dto.notes}\n[actualQuantity=${dto.actualQuantity}]`
-          : dto.notes,
+        notes:
+          dto.type === 'PARTIAL_DELIVERY' && dto.actualQuantity != null
+            ? `${dto.notes}\n[actualQuantity=${dto.actualQuantity}]`
+            : dto.notes,
         photoUrls: dto.photoUrls ?? [],
         reportedById: user.userId,
       },
@@ -2292,7 +2476,11 @@ export class TransportJobsService {
     // order subtotal (tax scales with goods value; delivery fee is fixed).
     // The updated amount is pushed to the Stripe PaymentIntent immediately so
     // the buyer is only charged for what was actually delivered.
-    if (dto.type === 'PARTIAL_DELIVERY' && dto.actualQuantity != null && job.order?.id) {
+    if (
+      dto.type === 'PARTIAL_DELIVERY' &&
+      dto.actualQuantity != null &&
+      job.order?.id
+    ) {
       try {
         const order = await this.prisma.order.findUnique({
           where: { id: job.order.id },
@@ -2300,14 +2488,17 @@ export class TransportJobsService {
         });
 
         if (order && order.items.length > 0) {
-          const totalPlannedQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+          const totalPlannedQty = order.items.reduce(
+            (sum, item) => sum + item.quantity,
+            0,
+          );
 
           // actualQuantity must be strictly less than ordered — if it meets or exceeds
           // the planned amount, this is not a partial delivery; reject it explicitly.
           if (totalPlannedQty > 0 && dto.actualQuantity >= totalPlannedQty) {
             throw new BadRequestException(
               `actualQuantity (${dto.actualQuantity}) cannot meet or exceed the ordered quantity (${totalPlannedQty}). ` +
-              'Use a different exception type (e.g. WRONG_MATERIAL or OTHER) if the delivery was correct.',
+                'Use a different exception type (e.g. WRONG_MATERIAL or OTHER) if the delivery was correct.',
             );
           }
 
@@ -2359,22 +2550,37 @@ export class TransportJobsService {
                 select: { id: true },
               });
               if (capturedInvoice) {
-                const refundAmount = Math.round((Number(order.total) - newTotal) * 100) / 100;
+                const refundAmount =
+                  Math.round((Number(order.total) - newTotal) * 100) / 100;
                 this.prisma.user
-                  .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+                  .findMany({
+                    where: { userType: 'ADMIN' },
+                    select: { id: true },
+                    take: 50,
+                  })
                   .then((admins) => {
                     if (admins.length === 0) return;
                     return this.notifications.createForMany(
                       admins.map((a) => a.id),
                       {
                         type: NotificationType.SYSTEM_ALERT,
-                        title: '⚠️ Daļēja piegāde — manuāla atmaksa nepieciešama',
+                        title:
+                          '⚠️ Daļēja piegāde — manuāla atmaksa nepieciešama',
                         message: `Pasūtījums #${order.orderNumber ?? order.id}: piegādāts ${dto.actualQuantity} no ${totalPlannedQty} (${Math.round(ratio * 100)}%). Rēķins ${capturedInvoice.id} jau iekasēts. Atmaksa aptuveni €${refundAmount.toFixed(2)}. Nepieciešama manuāla korekcija Stripe Dashboard.`,
-                        data: { orderId: order.id, invoiceId: capturedInvoice.id, refundAmount },
+                        data: {
+                          orderId: order.id,
+                          invoiceId: capturedInvoice.id,
+                          refundAmount,
+                        },
                       },
                     );
                   })
-                  .catch((err) => this.logger.warn('Partial delivery admin notification failed', (err as Error).message));
+                  .catch((err) =>
+                    this.logger.warn(
+                      'Partial delivery admin notification failed',
+                      (err as Error).message,
+                    ),
+                  );
               }
             }
           }
@@ -2396,7 +2602,10 @@ export class TransportJobsService {
       TransportJobStatus.EN_ROUTE_PICKUP,
       TransportJobStatus.AT_PICKUP,
     ];
-    if (dto.type === 'DRIVER_NO_SHOW' && reQueueableStatuses.includes(job.status)) {
+    if (
+      dto.type === 'DRIVER_NO_SHOW' &&
+      reQueueableStatuses.includes(job.status)
+    ) {
       const prevDriverId = job.driverId;
       await this.prisma.transportJob.update({
         where: { id },
@@ -2407,7 +2616,9 @@ export class TransportJobsService {
           offeredToDriverId: null,
           offerExpiresAt: null,
           // Add the no-show driver to declinedDriverIds so they are not re-offered
-          ...(prevDriverId ? { declinedDriverIds: { push: prevDriverId } } : {}),
+          ...(prevDriverId
+            ? { declinedDriverIds: { push: prevDriverId } }
+            : {}),
         },
       });
       if (prevDriverId) {
@@ -2419,7 +2630,12 @@ export class TransportJobsService {
             message: `Neierašanās reģistrēta — ${job.jobNumber}. Jūsu piešķiršana ir noņemta.`,
             data: { jobId: id },
           })
-          .catch((err) => this.logger.warn('Driver no-show notification failed', (err as Error).message));
+          .catch((err) =>
+            this.logger.warn(
+              'Driver no-show notification failed',
+              (err as Error).message,
+            ),
+          );
       }
       this.logger.warn(
         `reportException DRIVER_NO_SHOW: job ${job.jobNumber} (${id}) reset to AVAILABLE immediately`,
@@ -2432,7 +2648,11 @@ export class TransportJobsService {
     // Ops must investigate and arrange a re-delivery or refund.
     if (dto.type === 'WRONG_MATERIAL' || dto.type === 'REJECTED_DELIVERY') {
       this.prisma.user
-        .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+        .findMany({
+          where: { userType: 'ADMIN' },
+          select: { id: true },
+          take: 50,
+        })
         .then((admins) => {
           if (admins.length === 0) return;
           const labelMap: Record<string, string> = {
@@ -2491,7 +2711,9 @@ export class TransportJobsService {
           message: `${msg} • Ziņoja: ${actorName}`,
           data: { jobId: id, exceptionId: ex.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     // Send a separate, buyer-friendly notification to the order owner so they
@@ -2506,7 +2728,9 @@ export class TransportJobsService {
           message: `${exceptionLabel} — ${job.pickupCity} → ${job.deliveryCity}. Lūdzu, sekojiet līdzi pasūtījuma statusam vai sazinieties ar atbalstu.`,
           data: { jobId: id, exceptionId: ex.id, exceptionType: dto.type },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return ex;
@@ -2561,7 +2785,9 @@ export class TransportJobsService {
           message: `Darbs ${job.jobNumber} • ${dto.resolution}`,
           data: { jobId: id, exceptionId: resolved.id },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     return resolved;
@@ -2585,16 +2811,31 @@ export class TransportJobsService {
    */
   async addSurcharge(
     jobId: string,
-    dto: { type: SurchargeType; label?: string; amount: number; billable?: boolean },
+    dto: {
+      type: SurchargeType;
+      label?: string;
+      amount: number;
+      billable?: boolean;
+    },
     driverId: string,
   ) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id: jobId },
-      select: { id: true, jobNumber: true, driverId: true, orderId: true, status: true, frameworkContractId: true, requestedById: true },
+      select: {
+        id: true,
+        jobNumber: true,
+        driverId: true,
+        orderId: true,
+        status: true,
+        frameworkContractId: true,
+        requestedById: true,
+      },
     });
     if (!job) throw new NotFoundException('Transport job not found');
     if (job.driverId !== driverId) {
-      throw new ForbiddenException('Only the assigned driver can add surcharges');
+      throw new ForbiddenException(
+        'Only the assigned driver can add surcharges',
+      );
     }
     if (!job.orderId && !job.frameworkContractId && !job.requestedById) {
       // Edge case: orphaned job with no order and no requester — reject to avoid silent data loss
@@ -2606,8 +2847,10 @@ export class TransportJobsService {
       TransportJobStatus.DELIVERED,
       TransportJobStatus.CANCELLED,
     ];
-    if (nonEditableStatuses.includes(job.status as TransportJobStatus)) {
-      throw new BadRequestException('Cannot add surcharges to a completed or cancelled job');
+    if (nonEditableStatuses.includes(job.status)) {
+      throw new BadRequestException(
+        'Cannot add surcharges to a completed or cancelled job',
+      );
     }
 
     const SURCHARGE_LABELS: Partial<Record<SurchargeType, string>> = {
@@ -2659,7 +2902,12 @@ export class TransportJobsService {
             type: NotificationType.SURCHARGE_APPROVAL_REQUESTED,
             title: '⚠️ Piemaksa prasa jūsu apstiprinājumu',
             message: `Šoferis pievieno "${surcharge.label}" +€${Number(surcharge.amount).toFixed(2)} pasūtījumam #${order.orderNumber ?? job.orderId}. Lūdzu apstiprini vai noraidiet.`,
-            data: { jobId: job.id, orderId: job.orderId, surchargeId: surcharge.id, amount: surcharge.amount },
+            data: {
+              jobId: job.id,
+              orderId: job.orderId,
+              surchargeId: surcharge.id,
+              amount: surcharge.amount,
+            },
           })
           .catch((err) =>
             this.logger.error(
@@ -2673,12 +2921,21 @@ export class TransportJobsService {
     // ── Update PaymentIntent so the card charge reflects the new total ────────
     if (isBillable && job.orderId) {
       const allBillable = await this.prisma.orderSurcharge.aggregate({
-        where: { orderId: job.orderId, billable: true, approvalStatus: 'APPROVED' },
+        where: {
+          orderId: job.orderId,
+          billable: true,
+          approvalStatus: 'APPROVED',
+        },
         _sum: { amount: true },
       });
       const order = await this.prisma.order.findUnique({
         where: { id: job.orderId },
-        select: { total: true, createdById: true, orderNumber: true, paymentStatus: true },
+        select: {
+          total: true,
+          createdById: true,
+          orderNumber: true,
+          paymentStatus: true,
+        },
       });
       if (order) {
         const newTotal = Number(order.total) + (allBillable._sum.amount ?? 0);
@@ -2690,7 +2947,11 @@ export class TransportJobsService {
             `addSurcharge: order ${job.orderId} payment is CAPTURED; surcharge ${surcharge.id} (€${surcharge.amount}) requires manual collection`,
           );
           this.prisma.user
-            .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+            .findMany({
+              where: { userType: 'ADMIN' },
+              select: { id: true },
+              take: 50,
+            })
             .then((admins) => {
               if (admins.length === 0) return;
               return this.notifications.createForMany(
@@ -2699,17 +2960,28 @@ export class TransportJobsService {
                   type: NotificationType.SYSTEM_ALERT,
                   title: '⚠️ Piemaksa prasa manuālu iekasēšanu',
                   message: `Pasūtījumam #${order.orderNumber ?? job.orderId} tika pievienota piemaksa "${surcharge.label}" €${Number(surcharge.amount).toFixed(2)}, taču maksājums jau ir iekasēts. Piemaksas ID: ${surcharge.id}. Nepieciešama manuāla iekasēšana vai rēķins.`,
-                  data: { orderId: job.orderId, surchargeId: surcharge.id, amount: surcharge.amount },
+                  data: {
+                    orderId: job.orderId,
+                    surchargeId: surcharge.id,
+                    amount: surcharge.amount,
+                  },
                 },
               );
             })
-            .catch((err) => this.logger.warn('Surcharge admin notification failed', (err as Error).message));
+            .catch((err) =>
+              this.logger.warn(
+                'Surcharge admin notification failed',
+                (err as Error).message,
+              ),
+            );
         } else {
-          this.payments.updatePaymentIntentAmount(job.orderId, newTotal).catch((err) =>
-            this.logger.error(
-              `addSurcharge: failed to update PaymentIntent for order ${job.orderId}: ${(err as Error).message}`,
-            ),
-          );
+          this.payments
+            .updatePaymentIntentAmount(job.orderId, newTotal)
+            .catch((err) =>
+              this.logger.error(
+                `addSurcharge: failed to update PaymentIntent for order ${job.orderId}: ${(err as Error).message}`,
+              ),
+            );
         }
 
         // ── Notify buyer so they aren't surprised by a higher charge ─────────
@@ -2760,7 +3032,17 @@ export class TransportJobsService {
   async approveSurcharge(jobId: string, surchargeId: string, userId: string) {
     const surcharge = await this.prisma.orderSurcharge.findUnique({
       where: { id: surchargeId },
-      include: { order: { select: { id: true, createdById: true, orderNumber: true, total: true, paymentStatus: true } } },
+      include: {
+        order: {
+          select: {
+            id: true,
+            createdById: true,
+            orderNumber: true,
+            total: true,
+            paymentStatus: true,
+          },
+        },
+      },
     });
     if (!surcharge) throw new NotFoundException('Surcharge not found');
 
@@ -2770,26 +3052,39 @@ export class TransportJobsService {
       select: { id: true, jobNumber: true, orderId: true, driverId: true },
     });
     if (!job) throw new NotFoundException('Transport job not found');
-    if (surcharge.orderId !== job.orderId) throw new ForbiddenException('Surcharge does not belong to this job');
+    if (surcharge.orderId !== job.orderId)
+      throw new ForbiddenException('Surcharge does not belong to this job');
 
     // Only the order's creator (buyer) may approve
     if (surcharge.order?.createdById !== userId) {
-      throw new ForbiddenException('Only the order buyer can approve surcharges');
+      throw new ForbiddenException(
+        'Only the order buyer can approve surcharges',
+      );
     }
     if (surcharge.approvalStatus !== 'PENDING') {
-      throw new BadRequestException(`Surcharge is already ${surcharge.approvalStatus.toLowerCase()}`);
+      throw new BadRequestException(
+        `Surcharge is already ${surcharge.approvalStatus.toLowerCase()}`,
+      );
     }
 
     const updated = await this.prisma.orderSurcharge.update({
       where: { id: surchargeId },
-      data: { approvalStatus: 'APPROVED', approvedAt: new Date(), approvedByAdminId: userId },
+      data: {
+        approvalStatus: 'APPROVED',
+        approvedAt: new Date(),
+        approvedByAdminId: userId,
+      },
     });
 
     // Recalculate total from all approved billable surcharges and update PI
     if (surcharge.billable && surcharge.orderId) {
-      const order = surcharge.order!;
+      const order = surcharge.order;
       const approved = await this.prisma.orderSurcharge.aggregate({
-        where: { orderId: surcharge.orderId, billable: true, approvalStatus: 'APPROVED' },
+        where: {
+          orderId: surcharge.orderId,
+          billable: true,
+          approvalStatus: 'APPROVED',
+        },
         _sum: { amount: true },
       });
       const newTotal = Number(order.total) + (approved._sum.amount ?? 0);
@@ -2799,9 +3094,13 @@ export class TransportJobsService {
           `approveSurcharge: order ${surcharge.orderId} is CAPTURED; surcharge ${surchargeId} requires manual collection`,
         );
       } else {
-        this.payments.updatePaymentIntentAmount(surcharge.orderId, newTotal).catch((err) =>
-          this.logger.error(`approveSurcharge: PI update failed for order ${surcharge.orderId}: ${(err as Error).message}`),
-        );
+        this.payments
+          .updatePaymentIntentAmount(surcharge.orderId, newTotal)
+          .catch((err) =>
+            this.logger.error(
+              `approveSurcharge: PI update failed for order ${surcharge.orderId}: ${(err as Error).message}`,
+            ),
+          );
       }
     }
 
@@ -2824,10 +3123,17 @@ export class TransportJobsService {
   /**
    * Buyer rejects a PENDING surcharge. Marks it REJECTED; nothing is charged.
    */
-  async rejectSurcharge(jobId: string, surchargeId: string, userId: string, note?: string) {
+  async rejectSurcharge(
+    jobId: string,
+    surchargeId: string,
+    userId: string,
+    note?: string,
+  ) {
     const surcharge = await this.prisma.orderSurcharge.findUnique({
       where: { id: surchargeId },
-      include: { order: { select: { id: true, createdById: true, orderNumber: true } } },
+      include: {
+        order: { select: { id: true, createdById: true, orderNumber: true } },
+      },
     });
     if (!surcharge) throw new NotFoundException('Surcharge not found');
 
@@ -2836,13 +3142,18 @@ export class TransportJobsService {
       select: { id: true, jobNumber: true, orderId: true, driverId: true },
     });
     if (!job) throw new NotFoundException('Transport job not found');
-    if (surcharge.orderId !== job.orderId) throw new ForbiddenException('Surcharge does not belong to this job');
+    if (surcharge.orderId !== job.orderId)
+      throw new ForbiddenException('Surcharge does not belong to this job');
 
     if (surcharge.order?.createdById !== userId) {
-      throw new ForbiddenException('Only the order buyer can reject surcharges');
+      throw new ForbiddenException(
+        'Only the order buyer can reject surcharges',
+      );
     }
     if (surcharge.approvalStatus !== 'PENDING') {
-      throw new BadRequestException(`Surcharge is already ${surcharge.approvalStatus.toLowerCase()}`);
+      throw new BadRequestException(
+        `Surcharge is already ${surcharge.approvalStatus.toLowerCase()}`,
+      );
     }
 
     const updated = await this.prisma.orderSurcharge.update({
@@ -2868,116 +3179,137 @@ export class TransportJobsService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async releaseStaleAcceptedJobs(): Promise<void> {
-    await withCronLock(this.prisma, 'releaseStaleAcceptedJobs', async () => {
-    const now = new Date();
-    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+    await withCronLock(
+      this.prisma,
+      'releaseStaleAcceptedJobs',
+      async () => {
+        const now = new Date();
+        const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
 
-    const stale = await this.prisma.transportJob.findMany({
-      where: {
-        status: { in: [TransportJobStatus.ASSIGNED, TransportJobStatus.ACCEPTED] },
-        driverId: { not: null },
-        OR: [
-          // Has a pickup date that was more than 4 hours ago
-          {
-            pickupDate: { lt: new Date(now.getTime() - 4 * 60 * 60 * 1000) },
+        const stale = await this.prisma.transportJob.findMany({
+          where: {
+            status: {
+              in: [TransportJobStatus.ASSIGNED, TransportJobStatus.ACCEPTED],
+            },
+            driverId: { not: null },
+            OR: [
+              // Has a pickup date that was more than 4 hours ago
+              {
+                pickupDate: {
+                  lt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
+                },
+              },
+              // Or was last updated 6+ hours ago with no pickup date progress
+              {
+                updatedAt: { lt: sixHoursAgo },
+              },
+            ],
           },
-          // Or was last updated 6+ hours ago with no pickup date progress
-          {
-            updatedAt: { lt: sixHoursAgo },
-          },
-        ],
-      },
-      select: {
-        id: true,
-        jobNumber: true,
-        driverId: true,
-        driver: { select: { firstName: true, lastName: true } },
-        requestedById: true,
-        orderId: true,
-        order: {
           select: {
-            createdById: true,
-            orderNumber: true,
-            items: {
-              select: { material: { select: { supplier: { select: { id: true } } } } },
+            id: true,
+            jobNumber: true,
+            driverId: true,
+            driver: { select: { firstName: true, lastName: true } },
+            requestedById: true,
+            orderId: true,
+            order: {
+              select: {
+                createdById: true,
+                orderNumber: true,
+                items: {
+                  select: {
+                    material: {
+                      select: { supplier: { select: { id: true } } },
+                    },
+                  },
+                },
+              },
             },
           },
-        },
-      },
-    });
+        });
 
-    for (const job of stale) {
-      await this.prisma.transportJob
-        .update({
-          where: { id: job.id },
-          data: {
-            status: TransportJobStatus.AVAILABLE,
-            driverId: null,
-          },
-        })
-        .catch((err) =>
-          this.logger.error(
-            `releaseStaleAcceptedJobs: failed to reset job ${job.id}: ${(err as Error).message}`,
-          ),
-        );
+        for (const job of stale) {
+          await this.prisma.transportJob
+            .update({
+              where: { id: job.id },
+              data: {
+                status: TransportJobStatus.AVAILABLE,
+                driverId: null,
+              },
+            })
+            .catch((err) =>
+              this.logger.error(
+                `releaseStaleAcceptedJobs: failed to reset job ${job.id}: ${(err as Error).message}`,
+              ),
+            );
 
-      const driverName = job.driver
-        ? `${job.driver.firstName} ${job.driver.lastName}`
-        : 'Piešķirtais vadītājs';
-      const orderNum = job.order?.orderNumber ?? job.jobNumber;
+          const driverName = job.driver
+            ? `${job.driver.firstName} ${job.driver.lastName}`
+            : 'Piešķirtais vadītājs';
+          const orderNum = job.order?.orderNumber ?? job.jobNumber;
 
-      // Notify the order creator (buyer) that the job needs a new driver
-      const notifyIds = new Set<string>();
-      if (job.requestedById) notifyIds.add(job.requestedById);
-      if (job.order?.createdById) notifyIds.add(job.order.createdById);
+          // Notify the order creator (buyer) that the job needs a new driver
+          const notifyIds = new Set<string>();
+          if (job.requestedById) notifyIds.add(job.requestedById);
+          if (job.order?.createdById) notifyIds.add(job.order.createdById);
 
-      if (notifyIds.size > 0) {
-        this.notifications
-          .createForMany(Array.from(notifyIds), {
-            type: NotificationType.SYSTEM_ALERT,
-            title: '⚠️ Transporta darbs — vadītājs neieradās',
-            message: `Darbs #${job.jobNumber}: ${driverName} nav sācis darbu. Darbs ir atkal pieejams citiem vadītājiem.`,
-            data: { jobId: job.id },
-          })
-          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
-      }
-
-      // Notify the seller (quarry) — they were told the driver was coming and
-      // may be holding a loading slot. Cancel the loading preparation.
-      if (job.orderId && job.order?.items && job.order.items.length > 0) {
-        const supplierCompanyIds = [
-          ...new Set(
-            job.order.items
-              .map((i) => i.material?.supplier?.id)
-              .filter((id): id is string => id != null),
-          ),
-        ];
-        if (supplierCompanyIds.length > 0) {
-          const sellerUsers = await this.prisma.user.findMany({
-            where: { companyId: { in: supplierCompanyIds } },
-            select: { id: true },
-          });
-          if (sellerUsers.length > 0) {
+          if (notifyIds.size > 0) {
             this.notifications
-              .createForMany(
-                sellerUsers.map((u) => u.id),
-                {
-                  type: NotificationType.SYSTEM_ALERT,
-                  title: '⚠️ Vadītājs neieradās',
-                  message: `${driverName} nav ieradies iekraušanai • ${orderNum}. Darbs piešķirts citam vadītājam. Sagatavojieties citam piegādes laikam.`,
-                  data: { jobId: job.id, orderId: job.orderId },
-                },
-              )
-              .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+              .createForMany(Array.from(notifyIds), {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '⚠️ Transporta darbs — vadītājs neieradās',
+                message: `Darbs #${job.jobNumber}: ${driverName} nav sācis darbu. Darbs ir atkal pieejams citiem vadītājiem.`,
+                data: { jobId: job.id },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  err instanceof Error ? err.message : String(err),
+                ),
+              );
           }
-        }
-      }
 
-      this.logger.warn(
-        `releaseStaleAcceptedJobs: job ${job.jobNumber} (${job.id}) reset to AVAILABLE — driver ${job.driverId} did not start`,
-      );
-    }
-    }, this.logger);
+          // Notify the seller (quarry) — they were told the driver was coming and
+          // may be holding a loading slot. Cancel the loading preparation.
+          if (job.orderId && job.order?.items && job.order.items.length > 0) {
+            const supplierCompanyIds = [
+              ...new Set(
+                job.order.items
+                  .map((i) => i.material?.supplier?.id)
+                  .filter((id): id is string => id != null),
+              ),
+            ];
+            if (supplierCompanyIds.length > 0) {
+              const sellerUsers = await this.prisma.user.findMany({
+                where: { companyId: { in: supplierCompanyIds } },
+                select: { id: true },
+              });
+              if (sellerUsers.length > 0) {
+                this.notifications
+                  .createForMany(
+                    sellerUsers.map((u) => u.id),
+                    {
+                      type: NotificationType.SYSTEM_ALERT,
+                      title: '⚠️ Vadītājs neieradās',
+                      message: `${driverName} nav ieradies iekraušanai • ${orderNum}. Darbs piešķirts citam vadītājam. Sagatavojieties citam piegādes laikam.`,
+                      data: { jobId: job.id, orderId: job.orderId },
+                    },
+                  )
+                  .catch((err) =>
+                    this.logger.error(
+                      err instanceof Error ? err.message : String(err),
+                    ),
+                  );
+              }
+            }
+          }
+
+          this.logger.warn(
+            `releaseStaleAcceptedJobs: job ${job.jobNumber} (${job.id}) reset to AVAILABLE — driver ${job.driverId} did not start`,
+          );
+        }
+      },
+      this.logger,
+    );
   }
 
   /**
@@ -2990,81 +3322,100 @@ export class TransportJobsService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async alertJobsWithNoDriver(): Promise<void> {
-    await withCronLock(this.prisma, 'alertJobsWithNoDriver', async () => {
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    await withCronLock(
+      this.prisma,
+      'alertJobsWithNoDriver',
+      async () => {
+        const now = new Date();
+        const twentyFourHoursAgo = new Date(
+          now.getTime() - 24 * 60 * 60 * 1000,
+        );
+        const fortyEightHoursAgo = new Date(
+          now.getTime() - 48 * 60 * 60 * 1000,
+        );
 
-    const unassigned = await this.prisma.transportJob.findMany({
-      where: {
-        status: TransportJobStatus.AVAILABLE,
-        driverId: null,
-        createdAt: { lte: twentyFourHoursAgo },
-      },
-      select: {
-        id: true,
-        jobNumber: true,
-        createdAt: true,
-        requestedById: true,
-        orderId: true,
-        order: { select: { createdById: true, orderNumber: true } },
-      },
-    });
-
-    for (const job of unassigned) {
-      const isCritical = job.createdAt <= fortyEightHoursAgo;
-      const hoursOpen = Math.floor((now.getTime() - job.createdAt.getTime()) / 3_600_000);
-
-      // Notify the buyer / requester
-      const notifyIds = new Set<string>();
-      if (job.requestedById) notifyIds.add(job.requestedById);
-      if (job.order?.createdById) notifyIds.add(job.order.createdById);
-
-      if (notifyIds.size > 0) {
-        this.notifications
-          .createForMany(Array.from(notifyIds), {
-            type: NotificationType.SYSTEM_ALERT,
-            title: isCritical
-              ? '🚨 Transporta darbs bez vadītāja (48h)'
-              : '⚠️ Transporta darbs bez vadītāja (24h)',
-            message: isCritical
-              ? `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Sazinieties ar atbalstu — iespējams, nepieciešams pielāgot nosacījumus.`
-              : `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Mēs meklējam pieejamus vadītājus.`,
-            data: { jobId: job.id },
-          })
-          .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
-      }
-
-      // Escalate critical cases to admin
-      if (isCritical) {
-        const admins = await this.prisma.user.findMany({
-          where: { userType: 'ADMIN' },
-          select: { id: true },
-          take: 50,
+        const unassigned = await this.prisma.transportJob.findMany({
+          where: {
+            status: TransportJobStatus.AVAILABLE,
+            driverId: null,
+            createdAt: { lte: twentyFourHoursAgo },
+          },
+          select: {
+            id: true,
+            jobNumber: true,
+            createdAt: true,
+            requestedById: true,
+            orderId: true,
+            order: { select: { createdById: true, orderNumber: true } },
+          },
         });
-        if (admins.length > 0) {
-          this.notifications
-            .createForMany(
-              admins.map((a) => a.id),
-              {
+
+        for (const job of unassigned) {
+          const isCritical = job.createdAt <= fortyEightHoursAgo;
+          const hoursOpen = Math.floor(
+            (now.getTime() - job.createdAt.getTime()) / 3_600_000,
+          );
+
+          // Notify the buyer / requester
+          const notifyIds = new Set<string>();
+          if (job.requestedById) notifyIds.add(job.requestedById);
+          if (job.order?.createdById) notifyIds.add(job.order.createdById);
+
+          if (notifyIds.size > 0) {
+            this.notifications
+              .createForMany(Array.from(notifyIds), {
                 type: NotificationType.SYSTEM_ALERT,
-                title: '🚨 Transporta darbs bez vadītāja — 48h',
-                message: `Darbs #${job.jobNumber} (pasūtījums ${job.order?.orderNumber ?? job.orderId}) — ${hoursOpen}h bez vadītāja. Nepieciešama manuāla iejaukšanās.`,
-                data: { jobId: job.id, orderId: job.orderId },
-              },
-            )
-            .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+                title: isCritical
+                  ? '🚨 Transporta darbs bez vadītāja (48h)'
+                  : '⚠️ Transporta darbs bez vadītāja (24h)',
+                message: isCritical
+                  ? `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Sazinieties ar atbalstu — iespējams, nepieciešams pielāgot nosacījumus.`
+                  : `Darbs #${job.jobNumber} jau ${hoursOpen} stundas gaida vadītāju. Mēs meklējam pieejamus vadītājus.`,
+                data: { jobId: job.id },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  err instanceof Error ? err.message : String(err),
+                ),
+              );
+          }
+
+          // Escalate critical cases to admin
+          if (isCritical) {
+            const admins = await this.prisma.user.findMany({
+              where: { userType: 'ADMIN' },
+              select: { id: true },
+              take: 50,
+            });
+            if (admins.length > 0) {
+              this.notifications
+                .createForMany(
+                  admins.map((a) => a.id),
+                  {
+                    type: NotificationType.SYSTEM_ALERT,
+                    title: '🚨 Transporta darbs bez vadītāja — 48h',
+                    message: `Darbs #${job.jobNumber} (pasūtījums ${job.order?.orderNumber ?? job.orderId}) — ${hoursOpen}h bez vadītāja. Nepieciešama manuāla iejaukšanās.`,
+                    data: { jobId: job.id, orderId: job.orderId },
+                  },
+                )
+                .catch((err) =>
+                  this.logger.error(
+                    err instanceof Error ? err.message : String(err),
+                  ),
+                );
+            }
+            this.logger.error(
+              `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — CRITICAL: ${hoursOpen}h AVAILABLE with no driver`,
+            );
+          } else {
+            this.logger.warn(
+              `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — ${hoursOpen}h AVAILABLE with no driver`,
+            );
+          }
         }
-        this.logger.error(
-          `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — CRITICAL: ${hoursOpen}h AVAILABLE with no driver`,
-        );
-      } else {
-        this.logger.warn(
-          `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — ${hoursOpen}h AVAILABLE with no driver`,
-        );
-      }
-    }
-    }, this.logger);
+      },
+      this.logger,
+    );
   }
 
   /** Export the driver's completed jobs as a UTF-8 CSV string for accounting. */
@@ -3117,23 +3468,25 @@ export class TransportJobsService {
       'Pabeigts',
     ];
 
-    const rows = jobs.map((j) => [
-      esc(j.jobNumber),
-      esc(j.order?.orderNumber),
-      esc(j.jobType),
-      esc(j.pickupCity),
-      esc(j.deliveryCity),
-      esc(j.pickupDate ? j.pickupDate.toISOString().slice(0, 10) : null),
-      esc(j.deliveryDate ? j.deliveryDate.toISOString().slice(0, 10) : null),
-      esc(j.distanceKm != null ? Number(j.distanceKm).toFixed(1) : null),
-      esc(j.cargoWeight != null ? Number(j.cargoWeight).toFixed(2) : null),
-      esc(j.actualWeightKg),
-      esc(j.rate != null ? Number(j.rate).toFixed(2) : null),
-      esc(j.currency),
-      esc(j.vehicle?.vehicleType),
-      esc(j.vehicle?.licensePlate),
-      esc(j.updatedAt.toISOString().slice(0, 10)),
-    ].join(','));
+    const rows = jobs.map((j) =>
+      [
+        esc(j.jobNumber),
+        esc(j.order?.orderNumber),
+        esc(j.jobType),
+        esc(j.pickupCity),
+        esc(j.deliveryCity),
+        esc(j.pickupDate ? j.pickupDate.toISOString().slice(0, 10) : null),
+        esc(j.deliveryDate ? j.deliveryDate.toISOString().slice(0, 10) : null),
+        esc(j.distanceKm != null ? Number(j.distanceKm).toFixed(1) : null),
+        esc(j.cargoWeight != null ? Number(j.cargoWeight).toFixed(2) : null),
+        esc(j.actualWeightKg),
+        esc(j.rate != null ? Number(j.rate).toFixed(2) : null),
+        esc(j.currency),
+        esc(j.vehicle?.vehicleType),
+        esc(j.vehicle?.licensePlate),
+        esc(j.updatedAt.toISOString().slice(0, 10)),
+      ].join(','),
+    );
 
     return [headers.join(','), ...rows].join('\r\n');
   }
@@ -3211,7 +3564,8 @@ export class TransportJobsService {
     const routeLabel = `${job.pickupCity} → ${job.deliveryCity}`;
 
     // Notify buyer if job linked to an order
-    const buyerUserId = job.order?.createdById ?? job.requestedById ?? undefined;
+    const buyerUserId =
+      job.order?.createdById ?? job.requestedById ?? undefined;
     if (buyerUserId) {
       this.notifications
         .create({
@@ -3221,7 +3575,9 @@ export class TransportJobsService {
           message: `${job.jobNumber} • ${routeLabel}. Meklējam jaunu šoferi.`,
           data: { jobId },
         })
-        .catch((err) => this.logger.error(err instanceof Error ? err.message : String(err)));
+        .catch((err) =>
+          this.logger.error(err instanceof Error ? err.message : String(err)),
+        );
     }
 
     this.logger.warn(
@@ -3269,7 +3625,8 @@ export class TransportJobsService {
     const existing = await this.prisma.driverRating.findUnique({
       where: { transportJobId },
     });
-    if (existing) throw new ConflictException('You already rated this delivery');
+    if (existing)
+      throw new ConflictException('You already rated this delivery');
 
     const driverRating = await this.prisma.driverRating.create({
       data: {
@@ -3293,7 +3650,9 @@ export class TransportJobsService {
       where: { transportJobId },
       select: { id: true, rating: true },
     });
-    return { rated: !!rating && (await this.isJobDriver(transportJobId, driverId)) };
+    return {
+      rated: !!rating && (await this.isJobDriver(transportJobId, driverId)),
+    };
   }
 
   private async isJobDriver(jobId: string, driverId: string): Promise<boolean> {

@@ -40,6 +40,9 @@ import {
   Plus,
   Send,
   Clock,
+  Sun,
+  Moon,
+  CalendarClock,
   Zap as ZapIcon,
   CheckCircle2,
   ChevronDown,
@@ -740,24 +743,12 @@ export default function OrderRequestWizard() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <Text className="text-gray-900 font-extrabold text-2xl tracking-tight mb-2">
-        Vēlamais piegādes laiks
-      </Text>
-      <Text className="text-gray-500 font-medium text-sm mb-6">
-        Informējiet piegādātāju, kad precei jābūt objektā.
-      </Text>
-
       {/* Inline calendar */}
-      <View className="mb-6">
-        <Text className="text-gray-400 text-sm font-semibold mb-3 ml-1">Piegādes datums</Text>
-        <View
-          style={{
-            borderRadius: 16,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
+      <View className="mb-10">
+        <Text className="text-gray-900 text-base font-bold tracking-tight mb-4 ml-1">
+          Piegādes datums
+        </Text>
+        <View className="bg-transparent">
           <RNCalendar
             current={deliveryDate || new Date().toISOString().split('T')[0]}
             minDate={new Date().toISOString().split('T')[0]}
@@ -777,18 +768,20 @@ export default function OrderRequestWizard() {
               haptics.light();
             }}
             theme={{
-              calendarBackground: '#ffffff',
+              calendarBackground: 'transparent',
               textSectionTitleColor: '#6b7280',
               selectedDayBackgroundColor: '#111827',
               selectedDayTextColor: '#ffffff',
-              todayTextColor: '#2563eb',
+              todayTextColor: '#111827',
               dayTextColor: '#111827',
               textDisabledColor: '#d1d5db',
               arrowColor: '#111827',
               monthTextColor: '#111827',
               textDayFontSize: 15,
-              textMonthFontSize: 16,
+              textMonthFontSize: 17,
               textDayHeaderFontSize: 13,
+              textDayFontWeight: '500',
+              textMonthFontWeight: '700',
             }}
             firstDay={1}
             enableSwipeMonths
@@ -797,14 +790,16 @@ export default function OrderRequestWizard() {
       </View>
 
       {/* Time window selection (Any, AM, PM) */}
-      <View className="mb-8">
-        <Text className="text-gray-400 text-sm font-semibold mb-3 ml-1">Dienas laiks</Text>
+      <View className="mb-10">
+        <Text className="text-gray-900 text-base font-bold tracking-tight mb-4 ml-1">
+          Dienas laiks
+        </Text>
         <View className="flex-row gap-3">
           {(
             [
-              { id: 'ANY', label: 'Jebkurā laikā', icon: Clock },
-              { id: 'AM', label: 'Rīta pusē', icon: Clock },
-              { id: 'PM', label: 'Pēcpusdienā', icon: Clock },
+              { id: 'ANY', label: 'Jebkurā laikā', icon: CalendarClock },
+              { id: 'AM', label: 'Rīta pusē', icon: Sun },
+              { id: 'PM', label: 'Pēcpusdienā', icon: Moon },
             ] as const
           ).map((w, i) => {
             const active = deliveryWindow === w.id;
@@ -812,14 +807,14 @@ export default function OrderRequestWizard() {
             return (
               <TouchableOpacity
                 key={i}
-                className={`flex-1 rounded-[24px] p-4 items-center justify-center border ${
-                  active ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'
+                className={`flex-1 rounded-2xl p-4 items-center justify-center ${
+                  active ? 'bg-gray-900' : 'bg-gray-50'
                 }`}
                 onPress={() => setDeliveryWindow(w.id)}
                 activeOpacity={0.8}
               >
-                <Icon size={20} color={active ? '#ffffff' : '#6b7280'} className="mb-2" />
-                <Text className={`font-bold text-sm ${active ? 'text-white' : 'text-gray-600'}`}>
+                <Icon size={20} color={active ? '#ffffff' : '#9ca3af'} className="mb-2" />
+                <Text className={`font-bold text-xs ${active ? 'text-white' : 'text-gray-500'}`}>
                   {w.label}
                 </Text>
               </TouchableOpacity>
@@ -828,17 +823,11 @@ export default function OrderRequestWizard() {
         </View>
       </View>
 
-      <View className="bg-gray-50 rounded-2xl p-4 flex-row mt-4 mb-6 border border-gray-200">
-        <View className="bg-white w-10 h-10 rounded-xl items-center justify-center mr-4 shadow-sm border border-gray-100">
-          <ZapIcon size={18} color="#111827" />
-        </View>
+      <View className="flex-row items-center mt-2 mb-6 px-1">
+        <ZapIcon size={16} color="#9ca3af" className="mr-3" />
         <View className="flex-1">
-          <Text className="text-gray-900 font-bold text-sm mb-0.5 tracking-tight">
-            Kā notiek piegāde?
-          </Text>
-          <Text className="text-gray-500 font-medium text-xs leading-snug">
-            Pārdevēji piedāvās savu labāko cenu atbilstoši Jūsu izvēlētajam piegādes datumam un
-            laikam. Varat to apstiprināt vai noraidīt.
+          <Text className="text-gray-500 flex-wrap font-medium text-xs leading-snug">
+            Pārdevēji piedāvās labāko cenu atbilstoši izvēlētajam piegādes laikam.
           </Text>
         </View>
       </View>

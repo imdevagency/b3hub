@@ -30,7 +30,9 @@ export class MaterialsService {
     const material = await this.prisma.material.create({
       data: {
         ...createMaterialDto,
-        specifications: createMaterialDto.specifications as Prisma.InputJsonValue ?? Prisma.JsonNull,
+        specifications:
+          (createMaterialDto.specifications as Prisma.InputJsonValue) ??
+          Prisma.JsonNull,
       },
       include: {
         supplier: {
@@ -59,7 +61,18 @@ export class MaterialsService {
     lat?: number;
     lng?: number;
   }) {
-    const { category, supplierId, isRecycled, inStock, search, priceMax, limit = 40, skip = 0, lat, lng } = filters ?? {};
+    const {
+      category,
+      supplierId,
+      isRecycled,
+      inStock,
+      search,
+      priceMax,
+      limit = 40,
+      skip = 0,
+      lat,
+      lng,
+    } = filters ?? {};
 
     const where = {
       active: true,
@@ -72,7 +85,9 @@ export class MaterialsService {
         ? {
             OR: [
               { name: { contains: search, mode: 'insensitive' as const } },
-              { description: { contains: search, mode: 'insensitive' as const } },
+              {
+                description: { contains: search, mode: 'insensitive' as const },
+              },
             ],
           }
         : {}),
@@ -119,7 +134,9 @@ export class MaterialsService {
           Math.cos((sLat * Math.PI) / 180) *
             Math.cos((lat * Math.PI) / 180) *
             Math.sin(dLng / 2) ** 2;
-        const distKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        const distKm = Math.round(
+          R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
+        );
         const radius = m.deliveryRadiusKm ?? null;
         return radius == null || distKm <= radius;
       });
@@ -132,8 +149,15 @@ export class MaterialsService {
     });
 
     // Use filtered count for pagination so hasMore is accurate
-    const filteredTotal = lat != null && lng != null ? filteredItems.length : total;
-    return { items, total: filteredTotal, limit: Math.min(limit, 100), skip, hasMore: skip + items.length < filteredTotal };
+    const filteredTotal =
+      lat != null && lng != null ? filteredItems.length : total;
+    return {
+      items,
+      total: filteredTotal,
+      limit: Math.min(limit, 100),
+      skip,
+      hasMore: skip + items.length < filteredTotal,
+    };
   }
 
   async findOne(id: string) {
@@ -170,10 +194,7 @@ export class MaterialsService {
   ) {
     const material = await this.findOne(id);
 
-    if (
-      currentUser &&
-      currentUser.userType !== 'ADMIN'
-    ) {
+    if (currentUser && currentUser.userType !== 'ADMIN') {
       if (!currentUser.companyId) {
         throw new ForbiddenException('Your account is not linked to a company');
       }
@@ -187,7 +208,10 @@ export class MaterialsService {
       data: {
         ...updateMaterialDto,
         ...(updateMaterialDto.specifications !== undefined
-          ? { specifications: updateMaterialDto.specifications as Prisma.InputJsonValue }
+          ? {
+              specifications:
+                updateMaterialDto.specifications as Prisma.InputJsonValue,
+            }
           : {}),
       } as Parameters<typeof this.prisma.material.update>[0]['data'],
       include: {
@@ -208,10 +232,7 @@ export class MaterialsService {
   ) {
     const material = await this.findOne(id);
 
-    if (
-      currentUser &&
-      currentUser.userType !== 'ADMIN'
-    ) {
+    if (currentUser && currentUser.userType !== 'ADMIN') {
       if (!currentUser.companyId) {
         throw new ForbiddenException('Your account is not linked to a company');
       }
@@ -280,7 +301,14 @@ export class MaterialsService {
         ...(params.quantity
           ? {
               OR: [{ minOrder: null }, { minOrder: { lte: params.quantity } }],
-              AND: [{ OR: [{ maxOrder: null }, { maxOrder: { gte: params.quantity } }] }],
+              AND: [
+                {
+                  OR: [
+                    { maxOrder: null },
+                    { maxOrder: { gte: params.quantity } },
+                  ],
+                },
+              ],
             }
           : {}),
       },
@@ -304,7 +332,7 @@ export class MaterialsService {
 
     // ── Compute supplier performance in one query ──────────────────────────
     const supplierIds = [...new Set(listings.map((m) => m.supplierId))];
-    let perfMap: Record<string, { total: number; completed: number }> = {};
+    const perfMap: Record<string, { total: number; completed: number }> = {};
     if (supplierIds.length > 0) {
       const orderItems = await this.prisma.orderItem.findMany({
         where: { material: { supplierId: { in: supplierIds } } },
@@ -317,7 +345,10 @@ export class MaterialsService {
         const sid = row.material.supplierId;
         if (!perfMap[sid]) perfMap[sid] = { total: 0, completed: 0 };
         perfMap[sid].total++;
-        if (row.order.status === 'DELIVERED' || row.order.status === 'COMPLETED') {
+        if (
+          row.order.status === 'DELIVERED' ||
+          row.order.status === 'COMPLETED'
+        ) {
           perfMap[sid].completed++;
         }
       }
@@ -326,7 +357,12 @@ export class MaterialsService {
     // If coordinates provided, filter by delivery radius and add distance
     let results = listings.map((m) => {
       let distanceKm: number | null = null;
-      if (params.lat != null && params.lng != null && m.supplier.lat != null && m.supplier.lng != null) {
+      if (
+        params.lat != null &&
+        params.lng != null &&
+        m.supplier.lat != null &&
+        m.supplier.lng != null
+      ) {
         // Haversine approximation (good enough for ~500 km)
         const R = 6371;
         const suppLat = m.supplier.lat;
@@ -345,7 +381,11 @@ export class MaterialsService {
       // Strip internal lat/lng from the response payload
       const { lat: _lat, lng: _lng, ...supplierPublic } = m.supplier;
       // Apply volume price tier if the material has any
-      const effectivePrice = this.resolvePrice(m.basePrice, m.priceTiers ?? [], params.quantity);
+      const effectivePrice = this.resolvePrice(
+        m.basePrice,
+        m.priceTiers ?? [],
+        params.quantity,
+      );
       // Supplier performance score
       const perf = perfMap[m.supplierId];
       const completionRate =
@@ -353,13 +393,14 @@ export class MaterialsService {
           ? Math.round((perf.completed / perf.total) * 100)
           : null;
       // Distance-based delivery fee: €1.20/km standard rate (null when distance unknown)
-      const DELIVERY_RATE_EUR_PER_KM = 1.20;
+      const DELIVERY_RATE_EUR_PER_KM = 1.2;
       const deliveryFee =
         distanceKm != null
           ? Math.round(distanceKm * DELIVERY_RATE_EUR_PER_KM * 100) / 100
           : null;
       // ETA: simple model — 60 km/h average laden speed + 1.5 h loading/unloading buffer
-      const etaHours = distanceKm != null ? Math.round(distanceKm / 60 + 1.5) : null;
+      const etaHours =
+        distanceKm != null ? Math.round(distanceKm / 60 + 1.5) : null;
       // Time-of-day awareness: if placing an order after 14:00 local (EET UTC+2/+3),
       // a "same-day" delivery is no longer feasible even if distance is short.
       const nowHourUtc = new Date().getUTCHours();
@@ -369,11 +410,12 @@ export class MaterialsService {
         etaHours == null
           ? 'Rīt'
           : etaHours <= 3 && !tooLateForToday
-          ? `~${etaHours} h`
-          : etaHours <= 8 && !tooLateForToday
-          ? 'Šodien'
-          : 'Rīt';
-      const etaDays = etaHours == null || etaHours > 8 || tooLateForToday ? 2 : 1;
+            ? `~${etaHours} h`
+            : etaHours <= 8 && !tooLateForToday
+              ? 'Šodien'
+              : 'Rīt';
+      const etaDays =
+        etaHours == null || etaHours > 8 || tooLateForToday ? 2 : 1;
       return {
         ...m,
         supplier: supplierPublic,
@@ -381,7 +423,9 @@ export class MaterialsService {
         effectiveUnitPrice: effectivePrice,
         deliveryFee,
         totalPrice:
-          Math.round((effectivePrice * params.quantity + (deliveryFee ?? 0)) * 100) / 100,
+          Math.round(
+            (effectivePrice * params.quantity + (deliveryFee ?? 0)) * 100,
+          ) / 100,
         etaDays,
         etaHours,
         etaLabel,
@@ -435,7 +479,10 @@ export class MaterialsService {
     currentUser: { userType: string; companyId?: string },
   ) {
     const material = await this.findOne(materialId);
-    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      material.supplierId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('You do not own this material');
     }
     // Replace all existing tiers atomically
@@ -444,7 +491,11 @@ export class MaterialsService {
       ...(tiers.length > 0
         ? [
             this.prisma.materialPriceTier.createMany({
-              data: tiers.map((t) => ({ materialId, minQty: t.minQty, unitPrice: t.unitPrice })),
+              data: tiers.map((t) => ({
+                materialId,
+                minQty: t.minQty,
+                unitPrice: t.unitPrice,
+              })),
             }),
           ]
         : []),
@@ -463,7 +514,10 @@ export class MaterialsService {
     currentUser: { userType: string; companyId?: string },
   ): Promise<{ images: string[] }> {
     const material = await this.findOne(materialId);
-    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      material.supplierId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('You do not own this material');
     }
 
@@ -502,7 +556,10 @@ export class MaterialsService {
     currentUser: { userType: string; companyId?: string },
   ): Promise<{ certificates: string[] }> {
     const material = await this.findOne(materialId);
-    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      material.supplierId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('You do not own this material');
     }
 
@@ -536,7 +593,10 @@ export class MaterialsService {
     currentUser: { userType: string; companyId?: string },
   ): Promise<{ certificates: string[] }> {
     const material = await this.findOne(materialId);
-    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      material.supplierId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('You do not own this material');
     }
 
@@ -564,7 +624,10 @@ export class MaterialsService {
     currentUser: { userType: string; companyId?: string },
   ) {
     const material = await this.findOne(materialId);
-    if (currentUser.userType !== 'ADMIN' && material.supplierId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      material.supplierId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('You do not own this material');
     }
 
@@ -596,11 +659,16 @@ export class MaterialsService {
     if (!block || block.materialId !== materialId) {
       throw new NotFoundException('Availability block not found');
     }
-    if (currentUser.userType !== 'ADMIN' && block.material.supplierId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      block.material.supplierId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('You do not own this material');
     }
 
-    await this.prisma.materialAvailabilityBlock.delete({ where: { id: blockId } });
+    await this.prisma.materialAvailabilityBlock.delete({
+      where: { id: blockId },
+    });
     return { deleted: true };
   }
 }

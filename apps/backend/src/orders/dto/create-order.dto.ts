@@ -9,7 +9,6 @@ import {
   Max,
   MaxLength,
   Min,
-  IsBoolean,
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';

@@ -1,4 +1,11 @@
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export enum FreightVehicleType {
   TIPPER_SMALL = 'TIPPER_SMALL', // 10 t / 8 m³

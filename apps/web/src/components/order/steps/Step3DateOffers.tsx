@@ -6,6 +6,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { CheckCircle2, Loader2, Package, Star, Truck, X } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
@@ -334,7 +335,14 @@ export function Step3DateOffers({
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-100 shrink-0 overflow-hidden">
                         {offer.logo.startsWith('http') ? (
-                          <img src={offer.logo} alt="" className="h-full w-full object-contain" />
+                          <Image
+                            src={offer.logo}
+                            alt=""
+                            width={44}
+                            height={44}
+                            unoptimized
+                            className="h-full w-full object-contain"
+                          />
                         ) : (
                           <span className="text-sm font-bold text-gray-600">{offer.logo}</span>
                         )}

@@ -41,7 +41,10 @@ export class DisputesService {
     }
 
     // Only the buyer company or admin can raise a dispute
-    if (currentUser.userType !== 'ADMIN' && order.buyerId !== currentUser.companyId) {
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      order.buyerId !== currentUser.companyId
+    ) {
       throw new ForbiddenException('Order does not belong to your company');
     }
 
@@ -51,7 +54,9 @@ export class DisputesService {
       order.status !== 'DELIVERED' &&
       order.status !== 'COMPLETED'
     ) {
-      throw new ForbiddenException('Disputes can only be raised on delivered orders');
+      throw new ForbiddenException(
+        'Disputes can only be raised on delivered orders',
+      );
     }
 
     // One dispute per order
@@ -76,11 +81,17 @@ export class DisputesService {
       },
     });
 
-    this.logger.log(`Dispute ${dispute.id} raised for order ${dto.orderId} by user ${currentUser.userId}`);
+    this.logger.log(
+      `Dispute ${dispute.id} raised for order ${dto.orderId} by user ${currentUser.userId}`,
+    );
 
     // Alert all admins so they can review promptly
     this.prisma.user
-      .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+      .findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+        take: 50,
+      })
       .then((admins) =>
         Promise.all(
           admins.map((admin) =>
@@ -92,12 +103,19 @@ export class DisputesService {
                 message: `Pirćējs iesniedzis strīdu par pasūtījumu #${dispute.order.orderNumber}. Iemesls: ${dto.reason}.`,
                 data: { orderId: dto.orderId, disputeId: dispute.id },
               })
-              .catch((err) => this.logger.warn('Admin dispute-filed notification failed', (err as Error).message)),
+              .catch((err) =>
+                this.logger.warn(
+                  'Admin dispute-filed notification failed',
+                  (err as Error).message,
+                ),
+              ),
           ),
         ),
       )
       .catch((err) =>
-        this.logger.error(`Failed to notify admins of dispute ${dispute.id}: ${(err as Error).message}`),
+        this.logger.error(
+          `Failed to notify admins of dispute ${dispute.id}: ${(err as Error).message}`,
+        ),
       );
 
     return dispute;
@@ -128,7 +146,12 @@ export class DisputesService {
       orderBy: { createdAt: 'desc' },
       include: {
         order: {
-          select: { id: true, orderNumber: true, status: true, deliveryAddress: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            deliveryAddress: true,
+          },
         },
         raisedBy: {
           select: { id: true, firstName: true, lastName: true, email: true },
@@ -142,7 +165,13 @@ export class DisputesService {
       where: { id },
       include: {
         order: {
-          select: { id: true, orderNumber: true, status: true, deliveryAddress: true, buyerId: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            deliveryAddress: true,
+            buyerId: true,
+          },
         },
         raisedBy: {
           select: { id: true, firstName: true, lastName: true, email: true },
@@ -177,7 +206,9 @@ export class DisputesService {
     }
 
     const resolvedAt =
-      dto.status === 'RESOLVED' || dto.status === 'REJECTED' ? new Date() : undefined;
+      dto.status === 'RESOLVED' || dto.status === 'REJECTED'
+        ? new Date()
+        : undefined;
 
     const updated = await this.prisma.dispute.update({
       where: { id },
@@ -196,7 +227,9 @@ export class DisputesService {
       },
     });
 
-    this.logger.log(`Dispute ${id} updated to status ${dto.status} by admin ${currentUser.userId}`);
+    this.logger.log(
+      `Dispute ${id} updated to status ${dto.status} by admin ${currentUser.userId}`,
+    );
 
     // When admin resolves in buyer's favour → refund buyer + cancel the order.
     // Cancelling the order is critical: it prevents the auto-complete cron from
@@ -236,7 +269,9 @@ export class DisputesService {
       this.payments
         .voidOrRefund(updated.order.id)
         .catch((err) =>
-          this.logger.error(`voidOrRefund failed after dispute RESOLVED for order ${updated.order.id}: ${(err as Error).message}`),
+          this.logger.error(
+            `voidOrRefund failed after dispute RESOLVED for order ${updated.order.id}: ${(err as Error).message}`,
+          ),
         );
     }
 
@@ -257,25 +292,37 @@ export class DisputesService {
       this.payments
         .releaseFunds(updated.order.id)
         .catch((err) =>
-          this.logger.error(`releaseFunds failed after dispute REJECTED for order ${updated.order.id}: ${(err as Error).message}`),
+          this.logger.error(
+            `releaseFunds failed after dispute REJECTED for order ${updated.order.id}: ${(err as Error).message}`,
+          ),
         );
     }
 
     // Notify the buyer of the outcome
     if (dto.status === 'RESOLVED' || dto.status === 'REJECTED') {
-      const resolutionText = dto.resolution ? ` Rezolūcija: ${dto.resolution}.` : '';
+      const resolutionText = dto.resolution
+        ? ` Rezolūcija: ${dto.resolution}.`
+        : '';
       this.notifications
         .create({
           userId: updated.raisedBy.id,
           type: NotificationType.DISPUTE_RESOLVED,
-          title: dto.status === 'RESOLVED' ? '✅ Strīds atrisināts' : 'ℹ️ Strīds noraidīts',
+          title:
+            dto.status === 'RESOLVED'
+              ? '✅ Strīds atrisināts'
+              : 'ℹ️ Strīds noraidīts',
           message:
             dto.status === 'RESOLVED'
               ? `Jūsu strīds par pasūtījumu #${updated.order.orderNumber} ir atrisināts jūsu labā. Atlīdzība tiek apstrādāta.${resolutionText}`
               : `Jūsu strīds par pasūtījumu #${updated.order.orderNumber} tika noraidīts.${resolutionText}`,
           data: { orderId: updated.order.id, disputeId: id },
         })
-        .catch((err) => this.logger.warn('Dispute resolution buyer notification failed', (err as Error).message));
+        .catch((err) =>
+          this.logger.warn(
+            'Dispute resolution buyer notification failed',
+            (err as Error).message,
+          ),
+        );
     }
 
     return updated;

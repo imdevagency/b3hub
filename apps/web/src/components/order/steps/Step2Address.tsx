@@ -32,8 +32,8 @@ interface Props {
 
 export function Step2Address({
   value,
-  lat,
-  lng,
+  lat: _lat,
+  lng: _lng,
   onAddressChange,
   onNext,
   onBack,
@@ -42,8 +42,6 @@ export function Step2Address({
   nextLabel,
 }: Props) {
   const [input, setInput] = useState(value);
-  const [localLat, setLocalLat] = useState<number | undefined>(lat);
-  const [localLng, setLocalLng] = useState<number | undefined>(lng);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [savedOpen, setSavedOpen] = useState(false);
   const [savedLoading, setSavedLoading] = useState(true);
@@ -58,8 +56,6 @@ export function Step2Address({
   function handleSavedSelect(saved: SavedAddress) {
     const addr = `${saved.address}, ${saved.city}`;
     setInput(addr);
-    setLocalLat(saved.lat ?? undefined);
-    setLocalLng(saved.lng ?? undefined);
     onAddressChange(addr, saved.lat ?? undefined, saved.lng ?? undefined, saved.city);
     setSavedOpen(false);
   }
@@ -68,8 +64,6 @@ export function Step2Address({
     if (place.lat == null || place.lng == null) return;
     const addr = [place.address, place.city].filter(Boolean).join(', ');
     setInput(addr);
-    setLocalLat(place.lat);
-    setLocalLng(place.lng);
     onAddressChange(addr, place.lat, place.lng, place.city);
   }
 

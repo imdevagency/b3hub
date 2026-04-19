@@ -60,8 +60,7 @@ export interface SellerNewOrderPayload {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      const raw =
-        process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN ?? '';
+      const raw = process.env.ALLOWED_ORIGIN ?? process.env.CORS_ORIGIN ?? '';
       const allowed = raw
         .split(',')
         .map((o) => o.trim())
@@ -81,7 +80,9 @@ export interface SellerNewOrderPayload {
   },
   namespace: '/updates',
 })
-export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class UpdatesGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
@@ -108,7 +109,9 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
       return;
     }
     (client.data as Record<string, unknown>).userId = payload.sub;
-    this.logger.debug(`[Updates WS] Connected: ${String(payload.sub)} (${client.id})`);
+    this.logger.debug(
+      `[Updates WS] Connected: ${String(payload.sub)} (${client.id})`,
+    );
   }
 
   handleDisconnect(client: Socket) {
@@ -117,7 +120,8 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   // ── Client subscriptions ───────────────────────────────────────────────────
 
-  private static readonly UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  private static readonly UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   private assertUUID(value: unknown, name: string): asserts value is string {
     if (typeof value !== 'string' || !UpdatesGateway.UUID_RE.test(value)) {
@@ -181,21 +185,26 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { companyId: string },
   ) {
-    if (!data?.companyId || !UpdatesGateway.UUID_RE.test(data.companyId)) return;
+    if (!data?.companyId || !UpdatesGateway.UUID_RE.test(data.companyId))
+      return;
     void client.leave(`seller:${data.companyId}`);
   }
 
   // ── Called by service layer after DB updates ──────────────────────────────
 
   broadcastOrderStatus(payload: OrderStatusPayload) {
-    this.server.to(`order:${payload.orderId}`).emit('orderStatusChanged', payload);
+    this.server
+      .to(`order:${payload.orderId}`)
+      .emit('orderStatusChanged', payload);
   }
 
   broadcastJobStatus(payload: JobStatusPayload) {
     this.server.to(`job:${payload.jobId}`).emit('jobStatusChanged', payload);
     // If the job is linked to an order, also notify order watchers
     if (payload.orderId) {
-      this.server.to(`order:${payload.orderId}`).emit('jobStatusChanged', payload);
+      this.server
+        .to(`order:${payload.orderId}`)
+        .emit('jobStatusChanged', payload);
     }
   }
 
@@ -204,7 +213,9 @@ export class UpdatesGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   broadcastSellerNewOrder(payload: SellerNewOrderPayload) {
-    this.server.to(`seller:${payload.companyId}`).emit('sellerNewOrder', payload);
+    this.server
+      .to(`seller:${payload.companyId}`)
+      .emit('sellerNewOrder', payload);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

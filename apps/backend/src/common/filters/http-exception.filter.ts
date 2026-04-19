@@ -39,7 +39,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
-          : (exceptionResponse as Record<string, unknown>)['message'] ?? 'client error';
+          : ((exceptionResponse as Record<string, unknown>)['message'] ??
+            'client error');
       this.logger.warn(`${logContext} → ${status}: ${JSON.stringify(message)}`);
     }
 
@@ -74,7 +75,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const logContext = `${request.method} ${request.originalUrl} [${request.ip ?? 'unknown'}]`;
 
     if (exception instanceof Error) {
-      this.logger.error(`${logContext} → ${status}: ${exception.message}`, exception.stack);
+      this.logger.error(
+        `${logContext} → ${status}: ${exception.message}`,
+        exception.stack,
+      );
     } else {
       this.logger.error(`${logContext} → ${status}: ${String(exception)}`);
     }

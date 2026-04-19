@@ -24,10 +24,15 @@ export class RequireScopeGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    const requiredScope = this.reflector.get<string>(SCOPE_KEY, ctx.getHandler());
+    const requiredScope = this.reflector.get<string>(
+      SCOPE_KEY,
+      ctx.getHandler(),
+    );
     if (!requiredScope) return true; // no scope required
 
-    const req = ctx.switchToHttp().getRequest<Request & { apiScopes?: string[] }>();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { apiScopes?: string[] }>();
     if (!req.apiScopes) return true; // JWT user — skip scope check
 
     if (!req.apiScopes.includes(requiredScope)) {
