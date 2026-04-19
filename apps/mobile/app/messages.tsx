@@ -2,10 +2,10 @@
  * Messages screen.
  * Conversation list view for the in-app chat on mobile.
  */
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { ApiChatRoom } from '@/lib/api';
@@ -13,16 +13,9 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonJobRow } from '@/components/ui/Skeleton';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
-import { colors, spacing, radius, shadows } from '@/lib/theme';
-import {
-  MessageCircle,
-  Truck,
-  Trash2,
-  ChevronRight,
-  PackageOpen,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react-native';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { getJobStatus } from '@/lib/status';
+import { MessageCircle, Truck, Trash2, AlertCircle, RefreshCw } from 'lucide-react-native';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,26 +32,6 @@ function formatRelative(iso: string): string {
   return `${diffD} d.`;
 }
 
-/** Map job status to a human label + pill colours */
-function getStatusStyle(status: string): { label: string; bg: string; color: string } {
-  switch (status) {
-    case 'PENDING':
-      return { label: 'Gaida', bg: colors.warningBg, color: colors.warningText };
-    case 'CONFIRMED':
-      return { label: 'Apstiprināts', bg: '#dbeafe', color: '#1d4ed8' };
-    case 'LOADING':
-      return { label: 'Iekraujas', bg: '#ede9fe', color: '#6d28d9' };
-    case 'IN_TRANSIT':
-      return { label: 'Ceļā', bg: '#dbeafe', color: '#1d4ed8' };
-    case 'DELIVERED':
-      return { label: 'Piegādāts', bg: colors.successBg, color: colors.successText };
-    case 'COMPLETED':
-      return { label: 'Pabeigts', bg: colors.successBg, color: colors.successText };
-    default:
-      return { label: status, bg: colors.badgeNeutralBg, color: colors.badgeNeutralText };
-  }
-}
-
 // ─── Room card ────────────────────────────────────────────────────────────────
 
 function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void }) {
@@ -72,7 +45,7 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
     item.pickupCity && item.deliveryCity
       ? `${item.pickupCity} → ${item.deliveryCity}`
       : item.jobNumber;
-  const st = getStatusStyle(item.status);
+  const st = getJobStatus(item.status);
 
   return (
     <TouchableOpacity
@@ -103,9 +76,7 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
             {route}
           </Text>
           <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
-          <Text className="text-xs font-medium" style={{ color: st.color }}>
-            {st.label}
-          </Text>
+          <StatusPill label={st.label} bg={st.bg} color={st.color} size="sm" />
         </View>
 
         {/* Bottom row: Message Preview */}

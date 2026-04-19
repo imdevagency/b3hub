@@ -25,6 +25,7 @@ import { haptics } from '@/lib/haptics';
 import { Divider } from '@/components/ui/Divider';
 import { SIZE_LABEL } from '@/lib/materials';
 import { colors } from '@/lib/theme';
+import { getOrderStatus } from '@/lib/status';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -372,32 +373,11 @@ const DRIVER_TRANSIT_STATUSES = new Set([
   'AT_DELIVERY',
 ]);
 
-function getStatusStyle(status: string) {
-  switch (status) {
-    case 'IN_PROGRESS':
-    case 'ACCEPTED':
-    case 'CONFIRMED':
-      return { color: colors.success, label: 'Izpildē' };
-    case 'DELIVERED':
-    case 'COMPLETED':
-      return { color: colors.textMuted, label: 'Pabeigts' };
-    case 'PENDING':
-    case 'OPEN':
-    case 'SUBMITTED':
-      return { color: '#d97706', label: 'Gaida' };
-    case 'CANCELLED':
-    case 'REJECTED':
-      return { color: colors.danger, label: 'Atcelts' };
-    default:
-      return { color: colors.textMuted, label: status };
-  }
-}
-
 // ── Specialized Rows ──────────────────────────────────────────
 
 function MaterialRow({ item }: { item: ApiOrder }) {
   const router = useRouter();
-  const st = getStatusStyle(item.status);
+  const st = getOrderStatus(item.status);
 
   const itemsCount = item.items?.length || 0;
   const firstItemName = item.items?.[0]?.material?.name || 'Materiāli';
@@ -429,7 +409,7 @@ function MaterialRow({ item }: { item: ApiOrder }) {
 
 function TransportRow({ item }: { item: ApiTransportJob }) {
   const router = useRouter();
-  const st = getStatusStyle(item.status);
+  const st = getOrderStatus(item.status);
 
   const title =
     (item.pickupAddress?.split(',')[0] || 'Iekraušana') +
@@ -455,7 +435,7 @@ function TransportRow({ item }: { item: ApiTransportJob }) {
 
 function DisposalRow({ item }: { item: ApiTransportJob }) {
   const router = useRouter();
-  const st = getStatusStyle(item.status);
+  const st = getOrderStatus(item.status);
 
   const title = 'Atkritumu izvešana';
   const address = item.pickupAddress?.split(',')[0] || '';
@@ -479,7 +459,7 @@ function DisposalRow({ item }: { item: ApiTransportJob }) {
 
 function SkipRow({ item }: { item: SkipHireOrder }) {
   const router = useRouter();
-  const st = getStatusStyle(item.status);
+  const st = getOrderStatus(item.status);
 
   const size = SIZE_LABEL[item.skipSize as string] ?? item.skipSize;
   const title = `Konteiners ${size}`;
@@ -504,7 +484,7 @@ function SkipRow({ item }: { item: SkipHireOrder }) {
 
 function RfqRow({ item }: { item: QuoteRequest }) {
   const router = useRouter();
-  const st = getStatusStyle(item.status);
+  const st = getOrderStatus(item.status);
 
   const title = item.materialName || 'Cenu aptauja';
   const quotes = `${item.responses?.length || 0} piedāvājumi`;

@@ -12,12 +12,7 @@ import {
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-
-function formatDate(iso: string): string {
-  if (!iso) return '—';
-  const d = new Date(iso + 'T00:00:00');
-  return d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long', year: 'numeric' });
-}
+import { formatDate } from '@/lib/format';
 
 const VEHICLE_LABELS: Record<string, string> = {
   TIPPER_SMALL: 'Mazais pašizgāzējs (5 t)',
