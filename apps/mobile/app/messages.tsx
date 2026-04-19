@@ -64,8 +64,6 @@ function getStatusStyle(status: string): { label: string; bg: string; color: str
 function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void }) {
   const isDisposal = item.jobType === 'WASTE_COLLECTION';
   const Icon = isDisposal ? Trash2 : Truck;
-  const accentColor = isDisposal ? '#059669' : '#2563eb'; // emerald-600 vs blue-600
-  const iconBg = isDisposal ? 'bg-emerald-50' : 'bg-blue-50';
   const title =
     item.otherParticipantName ??
     item.cargoType ??
@@ -78,29 +76,22 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 
   return (
     <TouchableOpacity
-      className="flex-row items-center p-4 bg-white mx-4 mb-3 rounded-2xl shadow-sm"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-      }}
+      className="flex-row items-center py-4 px-5 bg-white border-b border-gray-100"
       activeOpacity={0.7}
       onPress={onPress}
     >
-      <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${iconBg}`}>
-        <Icon size={22} color={accentColor} strokeWidth={2} />
+      <View className="w-14 h-14 rounded-full bg-gray-100 items-center justify-center mr-4">
+        <Icon size={24} color="#111827" strokeWidth={1.5} />
       </View>
 
-      <View className="flex-1">
+      <View className="flex-1 justify-center">
         {/* Top row: Title + Time */}
-        <View className="flex-row items-center justify-between mb-0.5">
-          <Text className="text-base font-bold text-gray-900 flex-1 mr-2" numberOfLines={1}>
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-base font-semibold text-gray-900 flex-1 mr-2" numberOfLines={1}>
             {title}
           </Text>
           {item.lastMessage && (
-            <Text className="text-xs font-medium text-gray-400">
+            <Text className="text-xs text-gray-500">
               {formatRelative(item.lastMessage.createdAt)}
             </Text>
           )}
@@ -108,27 +99,23 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 
         {/* Middle row: Route + Status */}
         <View className="flex-row items-center mb-1">
-          <Text
-            className="text-sm font-medium text-gray-700"
-            style={{ flexShrink: 1 }}
-            numberOfLines={1}
-          >
+          <Text className="text-sm text-gray-500" style={{ flexShrink: 1 }} numberOfLines={1}>
             {route}
           </Text>
           <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
-          <Text className="text-xs font-bold" style={{ color: st.color }}>
+          <Text className="text-xs font-medium" style={{ color: st.color }}>
             {st.label}
           </Text>
         </View>
 
         {/* Bottom row: Message Preview */}
         {item.lastMessage ? (
-          <Text className="text-sm text-gray-500 leading-5" numberOfLines={1}>
-            <Text className="font-semibold text-gray-700">{item.lastMessage.senderName}: </Text>
+          <Text className="text-sm text-gray-600 leading-5" numberOfLines={1}>
+            <Text className="font-medium text-gray-900">{item.lastMessage.senderName}: </Text>
             {item.lastMessage.body}
           </Text>
         ) : (
-          <Text className="text-sm text-gray-400 italic mt-0.5">Vēl nav ziņojumu</Text>
+          <Text className="text-sm text-gray-400 mt-0.5">Vēl nav ziņojumu</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -182,8 +169,8 @@ export default function MessagesScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg="#f4f5f7" noAnimation>
-      <ScreenHeader title={t.nav.messages} onBack={handleBack} />
+    <ScreenContainer bg="#ffffff" noAnimation>
+      <ScreenHeader title={t.nav.messages} onBack={handleBack} noBorder />
 
       {loading ? (
         <View className="px-4 py-4 gap-4 flex-1">
@@ -251,11 +238,11 @@ export default function MessagesScreen() {
               tintColor="#111827"
             />
           }
-          contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View className="px-6 pt-2 pb-3">
-              <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <View className="px-5 py-4 border-b border-gray-100">
+              <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 {rooms.length} {rooms.length === 1 ? 'Saruna' : 'Sarunas'}
               </Text>
             </View>

@@ -20,7 +20,6 @@ import {
   User,
   Phone,
   AlertCircle,
-  MessageCircle,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -333,26 +332,6 @@ export default function SellerOrderDetailScreen() {
             )}
           </TouchableOpacity>
         )}
-
-        {/* Chat with driver — shown when there is an active transport job */}
-        {order.transportJobs && order.transportJobs.length > 0 && (
-          <TouchableOpacity
-            style={s.chatBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/chat/[jobId]',
-                params: {
-                  jobId: order.transportJobs[0].id,
-                  title: 'Šoferis',
-                },
-              } as any)
-            }
-            activeOpacity={0.75}
-          >
-            <MessageCircle size={16} color="#111827" />
-            <Text style={s.chatBtnText}>Rakstīt šoferim</Text>
-          </TouchableOpacity>
-        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -438,21 +417,4 @@ const s = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
-  chatBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.bgCard,
-    marginTop: 4,
-  },
-  chatBtnText: {
-    fontSize: fontSizes.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  } as any,
 });
