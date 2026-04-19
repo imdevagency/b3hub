@@ -41,6 +41,8 @@ export interface ApiChatRoom {
   pickupCity: string | null;
   deliveryCity: string | null;
   status: string;
+  otherParticipantId: string | null;
+  otherParticipantName: string | null;
   lastMessage: { body: string; senderName: string; createdAt: string } | null;
 }
 

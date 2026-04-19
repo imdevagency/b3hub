@@ -39,6 +39,7 @@ import {
   FileText,
   Package,
   Send,
+  MessageCircle,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -181,7 +182,12 @@ function LoadingModal({
           <ScrollView contentContainerStyle={{ padding: 20, gap: 24 }}>
             <View className="pb-6 border-b border-gray-100">
               <Text
-                style={{ fontSize: 26, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+                style={{
+                  fontSize: 26,
+                  fontWeight: '800',
+                  color: colors.textPrimary,
+                  letterSpacing: -0.5,
+                }}
               >
                 {order.material}
               </Text>
@@ -272,6 +278,7 @@ function OrderCard({
   onStartLoading,
   actioning,
   onPress,
+  onChat,
   batchMode = false,
   isSelected = false,
   onToggleSelect,
@@ -282,6 +289,7 @@ function OrderCard({
   onStartLoading: (id: string) => void;
   actioning: string | null;
   onPress: () => void;
+  onChat?: () => void;
   batchMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -302,7 +310,12 @@ function OrderCard({
         <View className="flex-row justify-between items-start mb-1">
           <View className="flex-1 pr-4">
             <Text
-              style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.3 }}
+              style={{
+                fontSize: 18,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.3,
+              }}
             >
               {order.material}
             </Text>
@@ -419,7 +432,9 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#111827" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>Noraidīt</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>
+                Noraidīt
+              </Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -432,7 +447,9 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>Apstiprināt</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
+                Apstiprināt
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -457,10 +474,31 @@ function OrderCard({
         </View>
       )}
 
+      {/* Chat with driver button — shown when transport is active */}
+      {!batchMode &&
+        order.transportJobId &&
+        (order.status === 'LOADING' || order.status === 'DISPATCHED') && (
+          <TouchableOpacity
+            className="flex-row items-center justify-center rounded-full py-3 mb-4 bg-gray-100"
+            style={{
+              gap: 7,
+              marginTop: order.status === 'PENDING' || order.status === 'CONFIRMED' ? 0 : 12,
+            }}
+            onPress={onChat}
+            activeOpacity={0.7}
+          >
+            <MessageCircle size={15} color="#374151" />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151' }}>
+              Rakstīt šoferim
+            </Text>
+          </TouchableOpacity>
+        )}
+
       {/* No-action spacer for other statuses */}
-      {!batchMode && order.status !== 'PENDING' && order.status !== 'CONFIRMED' && (
-        <View className="mb-4" />
-      )}
+      {!batchMode &&
+        order.status !== 'PENDING' &&
+        order.status !== 'CONFIRMED' &&
+        !order.transportJobId && <View className="mb-4" />}
     </View>
   );
 }
@@ -662,6 +700,15 @@ export default function IncomingScreen() {
         onStartLoading={handleStartLoading}
         actioning={actioning}
         onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
+        onChat={
+          order.transportJobId
+            ? () =>
+                router.push({
+                  pathname: '/chat/[jobId]',
+                  params: { jobId: order.transportJobId!, title: 'Šoferis' },
+                } as any)
+            : undefined
+        }
         batchMode={batchMode}
         isSelected={batchSelectedIds.has(order.id)}
         onToggleSelect={() => toggleBatchSelect(order.id)}

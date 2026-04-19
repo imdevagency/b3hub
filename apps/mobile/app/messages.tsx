@@ -66,7 +66,10 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
   const Icon = isDisposal ? Trash2 : Truck;
   const accentColor = isDisposal ? '#059669' : '#2563eb'; // emerald-600 vs blue-600
   const iconBg = isDisposal ? 'bg-emerald-50' : 'bg-blue-50';
-  const title = item.cargoType ?? (isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana');
+  const title =
+    item.otherParticipantName ??
+    item.cargoType ??
+    (isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana');
   const route =
     item.pickupCity && item.deliveryCity
       ? `${item.pickupCity} → ${item.deliveryCity}`
@@ -75,7 +78,14 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 
   return (
     <TouchableOpacity
-      className="flex-row items-center px-5 py-4 bg-white"
+      className="flex-row items-center p-4 bg-white mx-4 mb-3 rounded-2xl shadow-sm"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+      }}
       activeOpacity={0.7}
       onPress={onPress}
     >
@@ -172,15 +182,15 @@ export default function MessagesScreen() {
   );
 
   return (
-    <ScreenContainer standalone bg="#ffffff" noAnimation>
+    <ScreenContainer standalone bg="#f4f5f7" noAnimation>
       <ScreenHeader title={t.nav.messages} onBack={handleBack} />
 
       {loading ? (
-        <View className="px-4 py-4 gap-4 bg-white flex-1">
+        <View className="px-4 py-4 gap-4 flex-1">
           <SkeletonJobRow count={5} />
         </View>
       ) : error ? (
-        <View className="flex-1 bg-white items-center justify-center px-10 gap-3">
+        <View className="flex-1 items-center justify-center px-10 gap-3">
           <View className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-1 border border-red-100">
             <AlertCircle size={28} color="#ef4444" strokeWidth={1.6} />
           </View>
@@ -196,7 +206,7 @@ export default function MessagesScreen() {
           </TouchableOpacity>
         </View>
       ) : rooms.length === 0 ? (
-        <View className="flex-1 bg-white items-center justify-center px-10 min-h-[400px]">
+        <View className="flex-1 items-center justify-center px-10 min-h-[400px]">
           <View className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
             <MessageCircle size={28} color="#d1d5db" strokeWidth={1.5} />
           </View>
@@ -210,7 +220,7 @@ export default function MessagesScreen() {
       ) : (
         <FlatList
           data={rooms}
-          className="bg-white flex-1"
+          className="flex-1"
           keyExtractor={(r) => r.jobId}
           removeClippedSubviews={true}
           initialNumToRender={15}
@@ -224,6 +234,7 @@ export default function MessagesScreen() {
                   params: {
                     jobId: item.jobId,
                     title:
+                      item.otherParticipantName ??
                       item.cargoType ??
                       (item.jobType === 'WASTE_COLLECTION'
                         ? 'Atkritumu izvešana'
@@ -233,7 +244,6 @@ export default function MessagesScreen() {
               }}
             />
           )}
-          ItemSeparatorComponent={() => <View className="h-px bg-gray-50 ml-[84px]" />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -241,10 +251,10 @@ export default function MessagesScreen() {
               tintColor="#111827"
             />
           }
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View className="px-5 pt-5 pb-3">
+            <View className="px-6 pt-2 pb-3">
               <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                 {rooms.length} {rooms.length === 1 ? 'Saruna' : 'Sarunas'}
               </Text>

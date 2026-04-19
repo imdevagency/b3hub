@@ -89,6 +89,10 @@ export class ChatService {
           pickupCity: true,
           deliveryCity: true,
           status: true,
+          driverId: true,
+          requestedById: true,
+          driver: { select: { id: true, firstName: true, lastName: true } },
+          order: { select: { createdById: true, createdBy: { select: { id: true, firstName: true, lastName: true } } } },
           chatMessages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
@@ -131,17 +135,30 @@ export class ChatService {
       }),
     ]);
 
-    const jobRooms = jobs.map((j) => ({
-      type: 'job' as const,
-      jobId: j.id,
-      jobNumber: j.jobNumber,
-      jobType: j.jobType,
-      cargoType: j.cargoType,
-      pickupCity: j.pickupCity,
-      deliveryCity: j.deliveryCity,
-      status: j.status,
-      lastMessage: j.chatMessages[0] ?? null,
-    }));
+    const jobRooms = jobs.map((j) => {
+      const iAmDriver = j.driverId === userId;
+      const other = iAmDriver
+        ? j.order?.createdBy ?? null
+        : j.driver ?? null;
+      const otherParticipantId = other?.id ?? null;
+      const otherParticipantName = other
+        ? `${other.firstName} ${other.lastName}`.trim()
+        : null;
+
+      return {
+        type: 'job' as const,
+        jobId: j.id,
+        jobNumber: j.jobNumber,
+        jobType: j.jobType,
+        cargoType: j.cargoType,
+        pickupCity: j.pickupCity,
+        deliveryCity: j.deliveryCity,
+        status: j.status,
+        otherParticipantId,
+        otherParticipantName,
+        lastMessage: j.chatMessages[0] ?? null,
+      };
+    });
 
     const orderRooms = orderMsgs
       .filter((m) => m.orderId && m.order)
