@@ -76,7 +76,7 @@ export default function NewOrderScreen() {
                 }}
                 onPress={() => {
                   haptics.light();
-                  router.push(svc.route as any);
+                  router.push(svc.route);
                 }}
               >
                 <View style={{ flex: 1 }}>

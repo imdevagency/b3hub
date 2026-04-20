@@ -232,6 +232,8 @@ export interface ApiOrder {
   siteContactName?: string | null;
   siteContactPhone?: string | null;
   sitePhotoUrl?: string | null;
+  truckCount?: number | null;
+  scheduleIntervalMinutes?: number | null;
   createdAt: string;
 }
 

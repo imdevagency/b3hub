@@ -117,7 +117,7 @@ export default function SellerHomeScreen() {
         api.materials
           .getAll(token, { supplierId: companyId })
           .then((data) => {
-            const items = Array.isArray(data) ? data : ((data as any).items ?? []);
+            const items = Array.isArray(data) ? data : data.items;
             setMaterialCount(items.length);
           })
           .catch(() => setMaterialCount(null));
@@ -197,7 +197,7 @@ export default function SellerHomeScreen() {
                     onPress={() => {
                       if (!step.route) return;
                       haptics.light();
-                      router.push(step.route as any);
+                      router.push(step.route);
                     }}
                     activeOpacity={step.route ? 0.75 : 1}
                     className={`flex-row items-center ${i < 2 ? 'mb-4' : ''}`}
@@ -231,7 +231,7 @@ export default function SellerHomeScreen() {
               activeOpacity={0.9}
               onPress={() => {
                 haptics.medium();
-                router.push('/(seller)/incoming' as any);
+                router.push('/(seller)/incoming');
               }}
               className={`rounded-3xl p-5 min-h-[160px] justify-between ${
                 pendingCount !== null && pendingCount > 0 ? 'bg-gray-900' : 'bg-gray-100'
@@ -363,7 +363,7 @@ export default function SellerHomeScreen() {
             >
               Pēdējie pasūtījumi
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(seller)/incoming' as any)}>
+            <TouchableOpacity onPress={() => router.push('/(seller)/incoming')}>
               <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textMuted }}>Visi</Text>
             </TouchableOpacity>
           </View>
@@ -392,7 +392,7 @@ export default function SellerHomeScreen() {
                   activeOpacity={0.7}
                   onPress={() => {
                     haptics.light();
-                    router.push(`/(seller)/order/${order.id}` as any);
+                    router.push(`/(seller)/order/${order.id}`);
                   }}
                 >
                   <View className="flex-1 pr-3">

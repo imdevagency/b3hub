@@ -619,7 +619,7 @@ export default function SellerEarningsScreen() {
                   key={item.id}
                   style={[s.listItem, i < filteredHistory.length - 1 && s.listBorder]}
                   activeOpacity={0.7}
-                  onPress={() => router.push(`/(seller)/order/${item.id}` as any)}
+                  onPress={() => router.push(`/(seller)/order/${item.id}`)}
                 >
                   <View style={s.listLeft}>
                     <Text style={s.listTime}>{item.date}</Text>

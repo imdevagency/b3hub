@@ -244,7 +244,7 @@ export default function CatalogScreen() {
       api.materials
         .getAll(token, params)
         .then((data) => {
-          setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
+          setAllMaterials(Array.isArray(data) ? data : data.items);
         })
         .catch(() => setAllMaterials([]))
         .finally(() => setLoading(false));
@@ -286,7 +286,7 @@ export default function CatalogScreen() {
     api.materials
       .getAll(token, params)
       .then((data) => {
-        setAllMaterials(Array.isArray(data) ? data : ((data as any).items ?? []));
+        setAllMaterials(Array.isArray(data) ? data : data.items);
       })
       .catch((err) =>
         console.warn('Materials fetch failed:', err instanceof Error ? err.message : err),

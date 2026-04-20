@@ -153,13 +153,13 @@ export default Sentry.wrap(function RootLayout() {
 
           if (data.orderId) {
             // Surcharge approval, order status changes, disputes → buyer order detail
-            router.push(`/(buyer)/order/${data.orderId}` as any);
+            router.push(`/(buyer)/order/${data.orderId}`);
           } else if (data.jobId && type === 'JOB_ALERT') {
             // New job available → driver job board
-            router.push('/(driver)/jobs' as any);
+            router.push('/(driver)/jobs');
           } else if (data.jobId) {
             // Transport job updates (surcharge approved/rejected, delay) → active job
-            router.push('/(driver)/active' as any);
+            router.push('/(driver)/active');
           }
         }) ?? null;
     } catch {

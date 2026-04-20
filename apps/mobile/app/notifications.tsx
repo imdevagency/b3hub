@@ -197,7 +197,7 @@ function NotifCard({
     haptics.light();
     if (!notif.isRead) onMarkRead(notif.id);
     notifStore.set(notif);
-    router.push(`/notification/${notif.id}` as any);
+    router.push(`/notification/${notif.id}`);
   };
 
   return (
@@ -285,7 +285,7 @@ export default function NotificationsScreen() {
     <ScreenContainer standalone bg="#ffffff" noAnimation>
       <ScreenHeader
         title={unreadCount > 0 ? `Paziņojumi (${unreadCount})` : 'Paziņojumi'}
-        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome))}
         rightAction={
           unreadCount > 0 ? (
             <TouchableOpacity

@@ -141,7 +141,7 @@ export default function ProjectsScreen() {
           <TouchableOpacity
             onPress={() => {
               haptics.light();
-              router.push('/(buyer)/project/new' as any);
+              router.push('/(buyer)/project/new');
             }}
             style={{
               width: 36,
@@ -167,7 +167,7 @@ export default function ProjectsScreen() {
             project={item}
             onPress={() => {
               haptics.light();
-              router.push(`/(buyer)/project/${item.id}` as any);
+              router.push(`/(buyer)/project/${item.id}`);
             }}
           />
         )}
@@ -182,7 +182,7 @@ export default function ProjectsScreen() {
             subtitle="Jūsu projekti parādīsies šeit"
             action={
               <TouchableOpacity
-                onPress={() => router.push('/(buyer)/project/new' as any)}
+                onPress={() => router.push('/(buyer)/project/new')}
                 activeOpacity={0.8}
               >
                 <Text className="text-white font-bold text-base bg-gray-900 px-6 py-3 rounded-full overflow-hidden text-center mt-6">

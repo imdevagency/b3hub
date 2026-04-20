@@ -254,7 +254,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
-              router.push('/(buyer)/profile' as any);
+              router.push('/(buyer)/profile');
             }}
           >
             <View className="w-10 h-10 bg-amber-100 rounded-full items-center justify-center mr-3">
@@ -285,14 +285,14 @@ export default function HomeScreen() {
             activeOpacity={0.9}
             onPress={() => {
               haptics.light();
-              if (activeCount > 1) return router.push('/(buyer)/orders' as any);
+              if (activeCount > 1) return router.push('/(buyer)/orders');
               const route =
                 activeItem.kind === 'skip'
                   ? `/(buyer)/skip-order/${activeItem.id}`
                   : activeItem.kind === 'transport'
                     ? `/(buyer)/transport-job/${activeItem.id}`
                     : `/(buyer)/order/${activeItem.id}`;
-              router.push(route as any);
+              router.push(route);
             }}
           >
             <View className="p-6">
@@ -361,7 +361,7 @@ export default function HomeScreen() {
                   style={{ width: '48%' }}
                   onPress={() => {
                     haptics.light();
-                    router.push(svc.route as any);
+                    router.push(svc.route);
                   }}
                   activeOpacity={0.7}
                 >

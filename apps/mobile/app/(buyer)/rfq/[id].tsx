@@ -162,7 +162,7 @@ export default function RfqDetailScreen() {
           <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
           <TouchableOpacity
             onPress={() =>
-              router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any)
+              router.canGoBack() ? router.back() : router.replace('/(buyer)/orders')
             }
             style={{
               marginTop: 16,
@@ -405,7 +405,7 @@ export default function RfqDetailScreen() {
         primaryLabel="Apmaksāt tagad"
         onPrimary={() => {
           setAcceptResultVisible(false);
-          if (acceptedOrderId) router.replace(`/(buyer)/order/${acceptedOrderId}` as any);
+          if (acceptedOrderId) router.replace(`/(buyer)/order/${acceptedOrderId}`);
         }}
         secondaryLabel="Vēlāk"
         onSecondary={() => {

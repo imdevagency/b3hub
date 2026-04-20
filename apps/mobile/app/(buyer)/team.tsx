@@ -150,7 +150,13 @@ function MemberDetailsSheet({
   onRemove: (id: string) => void;
   currentUserRole?: string;
 }) {
-  const [perms, setPerms] = useState<MemberPermissions>({} as any);
+  const [perms, setPerms] = useState<MemberPermissions>({
+    permCreateContracts: false,
+    permReleaseCallOffs: false,
+    permManageOrders: false,
+    permViewFinancials: false,
+    permManageTeam: false,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

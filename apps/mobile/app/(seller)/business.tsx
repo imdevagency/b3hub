@@ -62,7 +62,7 @@ function BizRow({ tool }: { tool: BizTool }) {
       activeOpacity={0.7}
       onPress={() => {
         haptics.light();
-        router.push(tool.route as any);
+        router.push(tool.route);
       }}
     >
       <View style={[s.iconWrap, { backgroundColor: tool.iconBg }]}>

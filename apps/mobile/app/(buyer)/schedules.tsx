@@ -143,7 +143,7 @@ export default function SchedulesScreen() {
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
-              router.push('/(buyer)/catalog?schedule=1' as any);
+              router.push('/(buyer)/catalog?schedule=1');
             }}
             style={s.addBtn}
           >
@@ -167,7 +167,7 @@ export default function SchedulesScreen() {
           action={
             <TouchableOpacity
               style={s.emptyBtn}
-              onPress={() => router.push('/(buyer)/catalog?schedule=1' as any)}
+              onPress={() => router.push('/(buyer)/catalog?schedule=1')}
               activeOpacity={0.8}
             >
               <Text style={s.emptyBtnText}>Izveidot tagad</Text>

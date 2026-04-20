@@ -162,7 +162,7 @@ export default function SettingsScreen() {
     <ScreenContainer standalone>
       <ScreenHeader
         title={t.nav.settings}
-        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome))}
       />
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -283,7 +283,7 @@ export default function SettingsScreen() {
             label="Nomainīt paroli"
             onPress={() => {
               haptics.light();
-              router.push('/change-password' as any);
+              router.push('/change-password');
             }}
           />
           <View style={styles.divider} />

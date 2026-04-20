@@ -93,10 +93,10 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     price: o.total ?? 0,
     status: statusMap[o.status] ?? 'PENDING',
     paymentStatus: o.paymentStatus ?? undefined,
-    transportJobId: (o as any).transportJobs?.[0]?.id,
+    transportJobId: o.transportJobs?.[0]?.id,
     deliveryWindow: o.deliveryWindow ?? undefined,
     notes: o.notes ?? undefined,
-    truckCount: (o as any).truckCount ?? undefined,
+    truckCount: o.truckCount ?? undefined,
     siteContactName: o.siteContactName ?? undefined,
     siteContactPhone: o.siteContactPhone ?? undefined,
   };
@@ -675,7 +675,7 @@ export default function IncomingScreen() {
         onReject={handleReject}
         onStartLoading={handleStartLoading}
         actioning={actioning}
-        onPress={() => router.push(`/(seller)/order/${order.id}` as any)}
+        onPress={() => router.push(`/(seller)/order/${order.id}`)}
         batchMode={batchMode}
         isSelected={batchSelectedIds.has(order.id)}
         onToggleSelect={() => toggleBatchSelect(order.id)}
@@ -772,7 +772,7 @@ export default function IncomingScreen() {
                 }
                 onPress={() => {
                   haptics.light();
-                  setSection(s.key as any);
+                  setSection(s.key);
                 }}
               >
                 <Text
@@ -940,7 +940,7 @@ export default function IncomingScreen() {
                   orders.length === 0 ? (
                     <TouchableOpacity
                       className="mt-3 bg-gray-900 rounded-full px-6 py-3"
-                      onPress={() => router.push('/(seller)/catalog' as any)}
+                      onPress={() => router.push('/(seller)/catalog')}
                     >
                       <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>
                         Pārbaudīt katalogu →

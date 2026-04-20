@@ -163,7 +163,7 @@ export default function ChatScreen() {
       <View style={[styles.header, { paddingTop: 16 }]}>
         <TouchableOpacity
           style={styles.headerBtn}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome as any))}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome))}
         >
           <ChevronLeft size={24} color="#111827" />
         </TouchableOpacity>

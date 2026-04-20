@@ -94,7 +94,7 @@ export default function ReviewScreen() {
     api.reviews
       .status({ orderId, skipOrderId }, token)
       .then(({ reviewed }) => setAlreadyReviewed(reviewed))
-      .catch(() => {})
+      .catch((err) => console.warn('Failed to load review status:', err))
       .finally(() => setChecking(false));
   }, [token, orderId, skipOrderId]);
 
@@ -118,7 +118,7 @@ export default function ReviewScreen() {
       haptics.success();
       setDone(true);
       setTimeout(() => {
-        router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any);
+        router.canGoBack() ? router.back() : router.replace('/(buyer)/orders');
       }, 2000);
     } catch (err: unknown) {
       Alert.alert(
@@ -131,7 +131,7 @@ export default function ReviewScreen() {
   };
 
   return (
-    <ScreenContainer standalone >
+    <ScreenContainer standalone>
       <ScreenHeader title="Novērtējums" />
 
       <KeyboardAvoidingView
@@ -203,7 +203,7 @@ export default function ReviewScreen() {
               <TouchableOpacity
                 style={s.skipBtn}
                 onPress={() =>
-                  router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any)
+                  router.canGoBack() ? router.back() : router.replace('/(buyer)/orders')
                 }
                 activeOpacity={0.7}
               >

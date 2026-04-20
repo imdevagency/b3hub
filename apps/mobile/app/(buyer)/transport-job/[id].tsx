@@ -234,7 +234,7 @@ export default function TransportJobDetailScreen() {
         .then(({ reviewed }) => {
           if (reviewed) setRatingSubmitted(true);
         })
-        .catch(() => {});
+        .catch((err) => console.warn('Failed to load review status:', err));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job?.id, job?.status, token]);

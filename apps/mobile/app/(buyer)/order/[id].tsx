@@ -157,7 +157,7 @@ export default function OrderDetailScreen() {
       .then((disputes) => {
         if (disputes.length > 0) setDisputeFiled(true);
       })
-      .catch(() => {});
+      .catch((err) => console.warn('Failed to load disputes:', err));
   }, [token, id, order?.id]);
 
   // Amendment sheet state
@@ -502,7 +502,7 @@ export default function OrderDetailScreen() {
             activeOpacity={0.82}
             onPress={() => {
               haptics.light();
-              router.push(`/(buyer)/transport-job/${activeJob.id}` as any);
+              router.push(`/(buyer)/transport-job/${activeJob.id}`);
             }}
           >
             <View style={s.liveTrackLeft}>
@@ -539,12 +539,10 @@ export default function OrderDetailScreen() {
                   {driver.firstName} {driver.lastName}
                 </Text>
                 {/* Driver rating & completed jobs */}
-                {(driver as any).driverProfile?.rating != null ? (
+                {driver.driverProfile?.rating != null ? (
                   <View style={s.driverRatingRow}>
                     <Star size={12} color="#111827" fill="#111827" />
-                    <Text style={s.driverRatingText}>
-                      {((driver as any).driverProfile.rating as number).toFixed(1)}
-                    </Text>
+                    <Text style={s.driverRatingText}>{driver.driverProfile.rating.toFixed(1)}</Text>
                   </View>
                 ) : null}
                 {vehicle ? <Text style={s.driverPlate}>{vehicle.licensePlate}</Text> : null}
@@ -595,11 +593,11 @@ export default function OrderDetailScreen() {
 
         {/* Weight discrepancy alert — when actual ≠ ordered by > 5% */}
         {(() => {
-          const jobWithWeight = order.transportJobs?.find((j) => (j as any).actualWeightKg != null);
+          const jobWithWeight = order.transportJobs?.find((j) => j.actualWeightKg != null);
           if (!jobWithWeight) return null;
-          const actualKg = (jobWithWeight as any).actualWeightKg as number;
+          const actualKg = jobWithWeight.actualWeightKg!;
           const orderedKg = order.items.reduce(
-            (sum: number, item: any) => (item.unit === 'TONNE' ? sum + item.quantity * 1000 : sum),
+            (sum: number, item) => (item.unit === 'TONNE' ? sum + item.quantity * 1000 : sum),
             0,
           );
           if (!orderedKg) return null;
@@ -675,7 +673,7 @@ export default function OrderDetailScreen() {
                       key={job.id}
                       onPress={() => {
                         haptics.light();
-                        router.push(`/(buyer)/transport-job/${job.id}` as any);
+                        router.push(`/(buyer)/transport-job/${job.id}`);
                       }}
                       activeOpacity={0.75}
                     >

@@ -107,7 +107,9 @@ function StatusTimeline({ status }: { status: string }) {
   const currentIdx = STEP_ORDER.indexOf(status);
   if (status === 'CANCELLED') {
     return (
-      <View style={[s.timelineRow, { backgroundColor: colors.dangerBg, borderRadius: 12, padding: 14 }]}>
+      <View
+        style={[s.timelineRow, { backgroundColor: colors.dangerBg, borderRadius: 12, padding: 14 }]}
+      >
         <Text style={{ fontSize: 14, fontWeight: '600', color: colors.dangerText }}>
           Pasūtījums atcelts
         </Text>
@@ -170,14 +172,14 @@ export default function SkipOrderDetailScreen() {
       api.reviews
         .status({ skipOrderId: order.id }, token)
         .then(({ reviewed }) => setAlreadyRated(reviewed))
-        .catch(() => {});
+        .catch((err) => console.warn('Failed to load review status:', err));
     }
   }, [order?.id, order?.status, token]);
 
   useEffect(() => {
     if (error) {
-      toast.error('Neizdevās ielādēt pasūtījumu.')
-      router.canGoBack() ? router.back() : router.replace('/(buyer)/orders' as any);
+      toast.error('Neizdevās ielādēt pasūtījumu.');
+      router.canGoBack() ? router.back() : router.replace('/(buyer)/orders');
     }
   }, [error, router]);
 
@@ -412,7 +414,7 @@ export default function SkipOrderDetailScreen() {
             api.skipHire
               .getById(id, token)
               .then(setOrder)
-              .catch(() => {});
+              .catch((err) => console.warn('Failed to refresh skip order:', err));
           }}
           token={token}
           skipOrderId={order.id}

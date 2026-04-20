@@ -72,7 +72,7 @@ export default function ProfileScreen() {
     api.providerApplications
       .mine(token)
       .then(setApplications)
-      .catch(() => {});
+      .catch((err) => console.warn('Failed to load applications:', err));
   }, [token]);
 
   const ROLE_THEME: Record<string, string> = {
@@ -256,7 +256,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon={BarChart2}
               label="Analītika"
-              onPress={() => router.push('/(buyer)/analytics' as any)}
+              onPress={() => router.push('/(buyer)/analytics')}
               hideBorder
             />
           )}
@@ -266,23 +266,23 @@ export default function ProfileScreen() {
               <MenuItem
                 icon={Euro}
                 label="Izpeļņa"
-                onPress={() => router.push('/(seller)/earnings' as any)}
+                onPress={() => router.push('/(seller)/earnings')}
               />
               <MenuItem
                 icon={FileText}
                 label="Cenu pieprasījumi"
                 value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined}
-                onPress={() => router.push('/(seller)/quotes' as any)}
+                onPress={() => router.push('/(seller)/quotes')}
               />
               <MenuItem
                 icon={FileCheck}
                 label="Pavadzīmes"
-                onPress={() => router.push('/(seller)/documents' as any)}
+                onPress={() => router.push('/(seller)/documents')}
               />
               <MenuItem
                 icon={Handshake}
                 label="Ilgtermiņa līgumi"
-                onPress={() => router.push('/(seller)/framework-contracts' as any)}
+                onPress={() => router.push('/(seller)/framework-contracts')}
                 hideBorder
               />
             </>
@@ -293,27 +293,27 @@ export default function ProfileScreen() {
               <MenuItem
                 icon={Euro}
                 label="Izpeļņa"
-                onPress={() => router.push('/(driver)/earnings' as any)}
+                onPress={() => router.push('/(driver)/earnings')}
               />
               <MenuItem
                 icon={Truck}
                 label="Transporti"
-                onPress={() => router.push('/(driver)/vehicles' as any)}
+                onPress={() => router.push('/(driver)/vehicles')}
               />
               <MenuItem
                 icon={Package}
                 label="Konteineri (Skips)"
-                onPress={() => router.push('/(driver)/skips' as any)}
+                onPress={() => router.push('/(driver)/skips')}
               />
               <MenuItem
                 icon={FileCheck}
                 label="Pavadzīmes"
-                onPress={() => router.push('/(driver)/documents' as any)}
+                onPress={() => router.push('/(driver)/documents')}
               />
               <MenuItem
                 icon={Target}
                 label="Pārvadātāja iestatījumi"
-                onPress={() => router.push('/(driver)/carrier-settings' as any)}
+                onPress={() => router.push('/(driver)/carrier-settings')}
                 hideBorder
               />
             </>
@@ -342,7 +342,7 @@ export default function ProfileScreen() {
                       icon={Package}
                       label="Piegādātāja pieteikums"
                       status="REJECTED"
-                      onReapply={() => router.push('/(auth)/apply-role?type=supplier' as any)}
+                      onReapply={() => router.push('/(auth)/apply-role?type=supplier')}
                       hideBorder={!!user?.canTransport}
                     />
                   );
@@ -352,7 +352,7 @@ export default function ProfileScreen() {
                     icon={Package}
                     label="Kļūt par piegādātāju"
                     hideBorder={!!user?.canTransport}
-                    onPress={() => router.push('/(auth)/apply-role?type=supplier' as any)}
+                    onPress={() => router.push('/(auth)/apply-role?type=supplier')}
                   />
                 );
               })()}
@@ -376,7 +376,7 @@ export default function ProfileScreen() {
                       icon={Truck}
                       label="Pārvadātāja pieteikums"
                       status="REJECTED"
-                      onReapply={() => router.push('/(auth)/apply-role?type=carrier' as any)}
+                      onReapply={() => router.push('/(auth)/apply-role?type=carrier')}
                       hideBorder
                     />
                   );
@@ -386,7 +386,7 @@ export default function ProfileScreen() {
                     icon={Truck}
                     label="Kļūt par pārvadātāju"
                     hideBorder
-                    onPress={() => router.push('/(auth)/apply-role?type=carrier' as any)}
+                    onPress={() => router.push('/(auth)/apply-role?type=carrier')}
                   />
                 );
               })()}
@@ -406,22 +406,18 @@ export default function ProfileScreen() {
                   ? 'Tikai lietotnē'
                   : 'Ieslēgti'
             }
-            onPress={() => router.push('/notifications' as any)}
+            onPress={() => router.push('/notifications')}
           />
           <MenuItem
             icon={MessageCircle}
             label="Ziņojumi"
-            onPress={() => router.push('/messages' as any)}
+            onPress={() => router.push('/messages')}
           />
-          <MenuItem
-            icon={Settings}
-            label="Iestatījumi"
-            onPress={() => router.push('/settings' as any)}
-          />
+          <MenuItem icon={Settings} label="Iestatījumi" onPress={() => router.push('/settings')} />
           <MenuItem
             icon={HelpCircle}
             label="Palīdzība / BUJ"
-            onPress={() => router.push('/help' as any)}
+            onPress={() => router.push('/help')}
           />
 
           {/* Language Toggle inline item */}

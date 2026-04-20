@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
-import { useOrders, UnifiedOrder } from '@/lib/use-orders';
+import { useOrders, UnifiedOrder, orderSearchText } from '@/lib/use-orders';
 import type { ApiOrder, ApiTransportJob, SkipHireOrder, QuoteRequest } from '@/lib/api';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -47,18 +47,7 @@ export default function OrdersScreen() {
     let base = tabFiltered;
     if (query.trim().length >= 2) {
       const q = query.trim().toLowerCase();
-      base = base.filter((i) => {
-        const d = i.data as any;
-        const parts: string[] = [];
-        if (d.orderNumber) parts.push(d.orderNumber);
-        if (d.jobNumber) parts.push(d.jobNumber);
-        if (d.deliveryAddress) parts.push(d.deliveryAddress);
-        if (d.pickupAddress) parts.push(d.pickupAddress);
-        if (d.dropoffAddress) parts.push(d.dropoffAddress);
-        if (d.material?.name) parts.push(d.material.name);
-        if (d.title) parts.push(d.title);
-        return parts.join(' ').toLowerCase().includes(q);
-      });
+      base = base.filter((i) => orderSearchText(i).includes(q));
     }
     return base;
   }, [tabFiltered, query]);

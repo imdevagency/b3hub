@@ -128,7 +128,7 @@ export default function NewProjectScreen() {
       );
       haptics.success();
       toast.success('Projekts izveidots!');
-      router.replace(`/(buyer)/project/${project.id}` as any);
+      router.replace(`/(buyer)/project/${project.id}`);
     } catch (e: unknown) {
       haptics.error();
       toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot projektu.')

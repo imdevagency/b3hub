@@ -166,7 +166,7 @@ export default function OrderWizard() {
           data.filter((o) => !o.linkedSkipOrder && ACTIVE_ORDER_STATUSES.includes(o.status)),
         ),
       )
-      .catch(() => {})
+      .catch((err) => console.warn('Failed to load orders:', err))
       .finally(() => setMatOrdersLoading(false));
   }, [step, token, matOrders.length]);
 
@@ -201,7 +201,7 @@ export default function OrderWizard() {
     }
     // Submit
     if (!token) {
-      toast.info('Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.')
+      toast.info('Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.');
       return;
     }
     if (!state.location || !state.wasteCategory || !state.skipSize) return;
@@ -284,7 +284,7 @@ export default function OrderWizard() {
       if (fromCamera) {
         const { granted } = await ImagePicker.requestCameraPermissionsAsync();
         if (!granted) {
-          toast.error('Lai pievienotu foto, atļauj piekļuvi kamerai.')
+          toast.error('Lai pievienotu foto, atļauj piekļuvi kamerai.');
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -611,7 +611,9 @@ export default function OrderWizard() {
                         onPress={() => setLinkedMaterialOrderId(null)}
                         activeOpacity={0.75}
                       >
-                        <Text style={[s.matOrderNum, { color: colors.textMuted }]}>Noņemt saiti</Text>
+                        <Text style={[s.matOrderNum, { color: colors.textMuted }]}>
+                          Noņemt saiti
+                        </Text>
                       </TouchableOpacity>
                     )}
                     {matOrders.map((o) => {
@@ -687,7 +689,13 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
-  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500', lineHeight: 20 },
+  addressText: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
   addressPlaceholder: { color: colors.textDisabled, fontWeight: '400' },
   sectionLabel: {
     fontSize: 18,
@@ -731,7 +739,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   windowChipActive: { backgroundColor: '#000', borderColor: '#000' },
-  windowChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
+  windowChipText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   windowChipTextActive: { color: '#fff' },
   summaryCard: {
     backgroundColor: '#fff',
@@ -752,7 +765,13 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  addressValue: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '600', lineHeight: 22 },
+  addressValue: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
   detailRow: {
     paddingVertical: 14,
     paddingHorizontal: 4,

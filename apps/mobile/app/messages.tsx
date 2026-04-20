@@ -103,7 +103,7 @@ export default function MessagesScreen() {
     : user?.canSell
       ? '/(seller)/home'
       : '/(buyer)/home';
-  const handleBack = () => (router.canGoBack() ? router.back() : router.replace(homeRoute as any));
+  const handleBack = () => (router.canGoBack() ? router.back() : router.replace(homeRoute));
   const [rooms, setRooms] = useState<ApiChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

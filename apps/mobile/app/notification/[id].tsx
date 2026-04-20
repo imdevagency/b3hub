@@ -240,7 +240,7 @@ export default function NotificationDetailScreen() {
         <ScreenHeader
           title="Paziņojums"
           onBack={() =>
-            router.canGoBack() ? router.back() : router.replace('/notifications' as any)
+            router.canGoBack() ? router.back() : router.replace('/notifications')
           }
         />
         <View style={s.center}>
@@ -248,7 +248,7 @@ export default function NotificationDetailScreen() {
           <Text style={s.emptyText}>Paziņojums nav pieejams</Text>
           <TouchableOpacity
             style={s.backBtn}
-            onPress={() => router.replace('/notifications' as any)}
+            onPress={() => router.replace('/notifications')}
           >
             <Text style={s.backBtnText}>Uz paziņojumiem</Text>
           </TouchableOpacity>
@@ -263,7 +263,7 @@ export default function NotificationDetailScreen() {
   const message = stripEmojis(notif.message);
 
   const handleAction = () => {
-    if (deepLink) router.replace(deepLink as any);
+    if (deepLink) router.replace(deepLink);
   };
 
   return (
@@ -271,7 +271,7 @@ export default function NotificationDetailScreen() {
       <ScreenHeader
         title="Paziņojums"
         onBack={() =>
-          router.canGoBack() ? router.back() : router.replace('/notifications' as any)
+          router.canGoBack() ? router.back() : router.replace('/notifications')
         }
       />
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>

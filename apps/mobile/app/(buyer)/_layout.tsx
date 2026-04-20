@@ -31,7 +31,7 @@ function BuyerLayoutContent() {
     } else if (!isLoading && user && !availableModes.includes('BUYER')) {
       // Pure carrier or pure supplier — they have no buyer mode; send to their home
       const home = MODE_HOME[availableModes[0] ?? 'BUYER'];
-      router.replace(home as any);
+      router.replace(home);
     }
   }, [user, isLoading, availableModes, router]);
 

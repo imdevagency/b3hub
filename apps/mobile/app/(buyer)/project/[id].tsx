@@ -485,7 +485,7 @@ export default function ProjectDetailScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
                       style={[styles.orderRow, { flex: 1 }]}
-                      onPress={() => router.push(`/(buyer)/order/${order.id}` as any)}
+                      onPress={() => router.push(`/(buyer)/order/${order.id}`)}
                       activeOpacity={0.75}
                     >
                       <View style={styles.orderLeft}>
@@ -548,7 +548,7 @@ export default function ProjectDetailScreen() {
                   <TouchableOpacity
                     style={styles.orderRow}
                     activeOpacity={0.75}
-                    onPress={() => router.push(`/(buyer)/framework-contract/${fc.id}` as any)}
+                    onPress={() => router.push(`/(buyer)/framework-contract/${fc.id}`)}
                   >
                     <Handshake size={14} color={colors.textMuted} />
                     <View style={styles.orderLeft}>

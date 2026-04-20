@@ -24,7 +24,7 @@ export default function Index() {
         if (!seen) {
           router.replace('/(auth)/onboarding');
         } else {
-          router.replace(MODE_HOME[mode] as any);
+          router.replace(MODE_HOME[mode]);
         }
       }, 50);
       return () => clearTimeout(t);

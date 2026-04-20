@@ -562,7 +562,7 @@ export default function JobsScreen() {
         }
         setTodayStats({ earnings, completed });
       })
-      .catch(() => {});
+      .catch((err) => console.warn('Failed to load today stats:', err));
     return () => controller.abort();
   }, [token]);
   // Load saved searches on mount
