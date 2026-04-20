@@ -234,4 +234,21 @@ export class MaterialsController {
     assertCanSell(user);
     return this.materialsService.removeAvailabilityBlock(id, blockId, user);
   }
+
+  /**
+   * PATCH /materials/:id/feature
+   * Admin-only: toggle the featured flag on a material listing.
+   * Body: { featured: boolean }
+   */
+  @Patch(':id/feature')
+  setFeatured(
+    @Param('id') id: string,
+    @Body() dto: { featured: boolean },
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can feature listings');
+    }
+    return this.materialsService.setFeatured(id, dto.featured);
+  }
 }

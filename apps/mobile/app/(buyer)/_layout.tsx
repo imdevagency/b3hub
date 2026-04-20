@@ -28,6 +28,9 @@ function BuyerLayoutContent() {
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/(auth)/welcome');
+    } else if (!isLoading && user && user.userType === 'ADMIN') {
+      // Admin users must use the web portal — no admin UI exists on mobile
+      // (stays in place; a blocking overlay is rendered below)
     } else if (!isLoading && user && !availableModes.includes('BUYER')) {
       // Pure carrier or pure supplier — they have no buyer mode; send to their home
       const home = MODE_HOME[availableModes[0] ?? 'BUYER'];
@@ -121,6 +124,20 @@ function BuyerLayoutContent() {
           <ActivityIndicator size="large" color="#111827" />
         </View>
       )}
+      {/* Admin guard overlay — admin users must use the web portal */}
+      {!isLoading && user?.userType === 'ADMIN' && (
+        <View style={ls.loadingOverlay}>
+          <Text style={ls.adminTitle}>Administratora panelis</Text>
+          <Text style={ls.adminSub}>Lūdzu izmantojiet tīmekļa portālu</Text>
+          <TouchableOpacity
+            style={ls.adminLogout}
+            onPress={() => router.replace('/(auth)/welcome')}
+            activeOpacity={0.8}
+          >
+            <Text style={ls.adminLogoutText}>Iziet</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -132,6 +149,28 @@ const ls = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 999,
+  },
+  adminTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  adminSub: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 24,
+  },
+  adminLogout: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+  },
+  adminLogoutText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   avatarBtn: {
     width: 38,

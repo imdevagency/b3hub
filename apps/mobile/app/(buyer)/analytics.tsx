@@ -5,17 +5,37 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type AnalyticsOverview, type BuyerAnalytics } from '@/lib/api';
-import { BarChart2, Leaf, Package, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import { BarChart2, Leaf, Package, TrendingUp, AlertTriangle, Download } from 'lucide-react-native';
 import type { ArAging } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
 import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
+import { API_URL } from '@/lib/api/common';
+
+// Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
+let FileSystem: typeof import('expo-file-system') | null = null;
+let Sharing: typeof import('expo-sharing') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  FileSystem = require('expo-file-system');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  Sharing = require('expo-sharing');
+} catch {
+  /* fallback — download unavailable */
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -88,6 +108,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function AnalyticsScreen() {
   const { token } = useAuth();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const fetcher = useCallback(async () => {
     if (!token) return;
@@ -96,6 +117,33 @@ export default function AnalyticsScreen() {
   }, [token]);
 
   const { loading, refreshing, error, onRefresh } = useScreenLoad(fetcher);
+
+  const handleDownloadPdf = async () => {
+    if (!token || !FileSystem || !Sharing) {
+      return;
+    }
+    setDownloading(true);
+    try {
+      const url = `${API_URL}/analytics/export-pdf`;
+      const fileUri = `${(FileSystem as any).documentDirectory ?? ''}analytics-report.pdf`;
+      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (downloadRes.status !== 200) throw new Error('Neizdevās lejupielādēt atskaiti');
+      if (Platform.OS === 'ios') {
+        await Sharing.shareAsync(downloadRes.uri, {
+          UTI: 'com.adobe.pdf',
+          mimeType: 'application/pdf',
+        });
+      } else {
+        await Sharing.shareAsync(downloadRes.uri);
+      }
+    } catch {
+      // silent — sharing dialog handles user feedback
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const buyer: BuyerAnalytics | null = overview?.buyer ?? null;
 
@@ -116,7 +164,19 @@ export default function AnalyticsScreen() {
 
   return (
     <ScreenContainer bg="#f4f5f7">
-      <ScreenHeader title="Analītika" />
+      <ScreenHeader
+        title="Analītika"
+        rightAction={
+          <TouchableOpacity
+            onPress={handleDownloadPdf}
+            style={{ padding: 4 }}
+            activeOpacity={0.7}
+            disabled={downloading}
+          >
+            <Download size={22} color="#ffffff" />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.scroll}

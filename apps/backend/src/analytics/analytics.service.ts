@@ -10,6 +10,7 @@
  * All data comes from existing tables — no new schema changes required.
  */
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -779,5 +780,48 @@ export class AnalyticsService {
 
       doc.end();
     });
+  }
+
+  // ─── Nightly supplier stats cache ────────────────────────────────────────
+
+  /**
+   * Batch-refreshes onTimePct + fulfillmentPct on all active supplier companies.
+   * Runs nightly at 02:00 so catalog reads are always hitting indexed columns,
+   * not running per-query aggregations.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async refreshSupplierStats(): Promise<void> {
+    const suppliers = await this.prisma.company.findMany({
+      where: { materials: { some: { active: true } } },
+      select: { id: true },
+    });
+
+    for (const supplier of suppliers) {
+      const [totalOrders, completedOrders, onTimeRate] = await Promise.all([
+        this.prisma.order.count({
+          where: { items: { some: { material: { supplierId: supplier.id } } } },
+        }),
+        this.prisma.order.count({
+          where: {
+            status: OrderStatus.COMPLETED,
+            items: { some: { material: { supplierId: supplier.id } } },
+          },
+        }),
+        this.getOnTimeDeliveryRate(supplier.id),
+      ]);
+
+      const fulfillmentPct =
+        totalOrders > 0
+          ? Math.round((completedOrders / totalOrders) * 100)
+          : null;
+
+      await this.prisma.company.update({
+        where: { id: supplier.id },
+        data: {
+          onTimePct: onTimeRate > 0 ? onTimeRate : null,
+          fulfillmentPct,
+        },
+      });
+    }
   }
 }

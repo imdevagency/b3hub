@@ -259,6 +259,10 @@ export default function EarningsScreen() {
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
   const [carrierAnalytics, setCarrierAnalytics] = useState<CarrierAnalytics | null>(null);
 
+  // Only company owners/managers see fleet-wide carrier analytics; individual drivers
+  // (no companyRole, or companyRole=DRIVER/MEMBER) see only their personal data.
+  const canViewFleetAnalytics = user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER';
+
   const handleSetupPayouts = async () => {
     if (!token) return;
     try {
@@ -285,13 +289,16 @@ export default function EarningsScreen() {
           api.transportJobs.myJobs(token),
           api.getBalance(token).catch(() => null),
         ]);
-        // Fetch carrier analytics in parallel (non-critical)
-        api.analytics
-          .overview(token)
-          .then((ov) => setCarrierAnalytics(ov.carrier ?? null))
-          .catch((err) =>
-            console.warn('Carrier analytics failed:', err instanceof Error ? err.message : err),
-          );
+        // Carrier analytics (fleet utilization, monthly breakdown) are only relevant
+        // for OWNER / MANAGER — skip the fetch entirely for individual drivers.
+        if (canViewFleetAnalytics) {
+          api.analytics
+            .overview(token)
+            .then((ov) => setCarrierAnalytics(ov.carrier ?? null))
+            .catch((err) =>
+              console.warn('Carrier analytics failed:', err instanceof Error ? err.message : err),
+            );
+        }
         const { stats: s, history: h, dailyChart: dc } = computeStats(jobs);
         setStats(s);
         setHistory(h);

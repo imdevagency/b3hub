@@ -76,7 +76,7 @@ const ORDER_STEPS = [
 // ── Main Screen ────────────────────────────────────────────────
 
 export default function OrderDetailScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -374,7 +374,10 @@ export default function OrderDetailScreen() {
   );
   const driver = activeJob?.driver;
   const vehicle = activeJob?.vehicle;
-  const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
+  // Company members without permManageOrders cannot cancel or amend orders.
+  // Solo users (no companyRole) always have full access.
+  const canManageOrders = !user?.companyRole || (user?.permManageOrders ?? false);
+  const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status) && canManageOrders;
   const canPay =
     !paymentProcessing &&
     order.status === 'PENDING' &&
@@ -952,13 +955,15 @@ export default function OrderDetailScreen() {
               </View>
             )}
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity
-                style={[{ flex: 1 }, s.secondaryActionBtn]}
-                onPress={() => openAmend()}
-                activeOpacity={0.8}
-              >
-                <Text style={s.secondaryActionBtnText}>Labot</Text>
-              </TouchableOpacity>
+              {canManageOrders && (
+                <TouchableOpacity
+                  style={[{ flex: 1 }, s.secondaryActionBtn]}
+                  onPress={() => openAmend()}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.secondaryActionBtnText}>Labot</Text>
+                </TouchableOpacity>
+              )}
               {canCancel && (
                 <TouchableOpacity
                   style={[{ flex: 1 }, s.secondaryActionBtn, s.secondaryActionBtnDanger]}

@@ -18,6 +18,7 @@ export interface ApiMaterial {
   deliveryRadiusKm?: number | null;
   inStock: boolean;
   isRecycled: boolean;
+  featured?: boolean;
   /** Quantity currently in stock (null = unlimited / not tracked) */
   stockQty?: number | null;
   /** Supabase Storage URLs for product photos */
@@ -26,6 +27,8 @@ export interface ApiMaterial {
     id: string;
     name: string;
     city?: string | null;
+    onTimePct?: number | null;
+    fulfillmentPct?: number | null;
   };
 }
 
@@ -58,6 +61,12 @@ export interface SupplierOffer {
   quality?: string | null;
   /** Specification / certificate PDF URLs */
   certificates?: string[];
+  /** True if this listing is admin-featured (floats to top) */
+  featured?: boolean;
+  /** Cached on-time delivery % from nightly cron (null if fewer than 10 orders) */
+  onTimePct?: number | null;
+  /** Cached order fulfillment % from nightly cron */
+  fulfillmentPct?: number | null;
   supplier: {
     id: string;
     name: string;

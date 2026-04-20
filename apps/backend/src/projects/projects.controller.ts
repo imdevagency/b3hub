@@ -10,9 +10,11 @@ import {
   Delete,
   Body,
   Param,
+  Res,
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -72,6 +74,28 @@ export class ProjectsController {
       );
     }
     return this.service.getFinancials(id, user.companyId);
+  }
+
+  /** GET /projects/:id/co2-report.pdf — downloadable branded CO₂ emissions report */
+  @Get(':id/co2-report.pdf')
+  async getCo2Report(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Res() res: Response,
+  ) {
+    if (!canViewFinancials(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view project financials',
+      );
+    }
+    const buffer = await this.service.generateCo2Report(id, user.companyId);
+    const filename = `co2-report-${id}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.send(buffer);
   }
 
   /** POST /projects — create project (OWNER / MANAGER / permManageOrders) */

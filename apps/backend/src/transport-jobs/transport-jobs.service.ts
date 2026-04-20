@@ -3429,6 +3429,23 @@ export class TransportJobsService {
               );
           }
 
+          // Notify the driver that their job has been unassigned
+          if (job.driverId) {
+            this.notifications
+              .create({
+                userId: job.driverId,
+                type: NotificationType.SYSTEM_ALERT,
+                title: 'Darbs noņemts',
+                message: `Darbs #${job.jobNumber} ir noņemts, jo netika uzsākts laikā. Darbs ir piešķirts citam vadītājam.`,
+                data: { jobId: job.id },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  err instanceof Error ? err.message : String(err),
+                ),
+              );
+          }
+
           // Notify the seller (quarry) — they were told the driver was coming and
           // may be holding a loading slot. Cancel the loading preparation.
           if (job.orderId && job.order?.items && job.order.items.length > 0) {

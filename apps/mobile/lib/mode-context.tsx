@@ -10,7 +10,13 @@ export const MODE_HOME: Record<AppMode, string> = {
 };
 
 /** Derive the best default mode from the user's role flags. */
-function defaultModeForUser(user: { canSell: boolean; canTransport: boolean } | null): AppMode {
+function defaultModeForUser(
+  user: {
+    canSell: boolean;
+    canTransport: boolean;
+    isCompany: boolean;
+  } | null,
+): AppMode {
   if (!user) return 'BUYER';
   // Capability flags are canonical for seller/driver access.
   if (user.canTransport && !user.canSell) return 'CARRIER';
@@ -32,23 +38,27 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const availableModes = useMemo<AppMode[]>(() => {
     const modes: AppMode[] = [];
-    // Pure carrier (approved, no sell) → skip buyer mode
-    // Pure supplier (approved, no transport) → skip buyer mode
-    // Mixed or unapproved → always include buyer
-    const isPureCarrier = !!(user?.canTransport && !user?.canSell);
-    const isPureSupplier = !!(user?.canSell && !user?.canTransport);
-    if (!isPureCarrier && !isPureSupplier) modes.push('BUYER');
+    // Mirror backend logic: only a solo individual driver (canTransport, !canSell, !isCompany)
+    // should skip buyer mode. Suppliers and carrier-company owners keep buyer access.
+    const isPureTransportIndividual = !!(user?.canTransport && !user?.canSell && !user?.isCompany);
+    if (!isPureTransportIndividual) modes.push('BUYER');
     if (user?.canSell) modes.push('SUPPLIER');
     if (user?.canTransport) modes.push('CARRIER');
     if (modes.length === 0) modes.push('BUYER'); // fallback
     return modes;
-  }, [user?.canSell, user?.canTransport]);
+  }, [user?.canSell, user?.canTransport, user?.isCompany]);
 
   const [mode, setModeState] = useState<AppMode>(() => defaultModeForUser(user));
 
   // Re-derive mode when user logs in or out so drivers/sellers land in the right UI.
   useEffect(() => {
-    setModeState(defaultModeForUser(user));
+    setModeState(
+      defaultModeForUser(
+        user
+          ? { canSell: user.canSell, canTransport: user.canTransport, isCompany: user.isCompany }
+          : null,
+      ),
+    );
   }, [user?.id]);
 
   // Re-validate current mode if capabilities change mid-session (e.g. admin revokes canSell).

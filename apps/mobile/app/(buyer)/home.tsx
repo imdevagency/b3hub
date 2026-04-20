@@ -347,41 +347,43 @@ export default function HomeScreen() {
         )}
 
         {/* Actions Grid */}
-        <View className="px-5">
-          <Text className=" font-bold tracking-tight text-gray-900 mb-4" style={{ fontSize: 22 }}>
-            Ko vēlaties pasūtīt?
-          </Text>
-          <View className="flex-row flex-wrap justify-between">
-            {SERVICES.map((svc) => {
-              const Icon = svc.icon;
-              return (
-                <TouchableOpacity
-                  key={svc.id}
-                  className="bg-gray-100 p-4 rounded-[24px] mb-3"
-                  style={{ width: '48%' }}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(svc.route);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View className="mb-6 bg-white self-start p-3.5 rounded-full shadow-sm">
-                    <Icon size={22} color="#111827" strokeWidth={2.5} />
-                  </View>
-                  <Text className="text-gray-900 font-bold text-base tracking-tight mb-1">
-                    {svc.label}
-                  </Text>
-                  <Text
-                    className="text-gray-500 font-medium line-clamp-1 leading-tight"
-                    style={{ fontSize: 13 }}
+        {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
+          <View className="px-5">
+            <Text className=" font-bold tracking-tight text-gray-900 mb-4" style={{ fontSize: 22 }}>
+              Ko vēlaties pasūtīt?
+            </Text>
+            <View className="flex-row flex-wrap justify-between">
+              {SERVICES.map((svc) => {
+                const Icon = svc.icon;
+                return (
+                  <TouchableOpacity
+                    key={svc.id}
+                    className="bg-gray-100 p-4 rounded-[24px] mb-3"
+                    style={{ width: '48%' }}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(svc.route);
+                    }}
+                    activeOpacity={0.7}
                   >
-                    {svc.sub}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+                    <View className="mb-6 bg-white self-start p-3.5 rounded-full shadow-sm">
+                      <Icon size={22} color="#111827" strokeWidth={2.5} />
+                    </View>
+                    <Text className="text-gray-900 font-bold text-base tracking-tight mb-1">
+                      {svc.label}
+                    </Text>
+                    <Text
+                      className="text-gray-500 font-medium line-clamp-1 leading-tight"
+                      style={{ fontSize: 13 }}
+                    >
+                      {svc.sub}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );

@@ -228,7 +228,7 @@ const FILTERS: { key: InvoiceStatus | 'ALL'; label: string }[] = [
 ];
 
 export default function InvoicesScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const toast = useToast();
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,6 +236,9 @@ export default function InvoicesScreen() {
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
+
+  // Company members without permViewFinancials cannot see invoice data.
+  const canViewFinancials = !user?.companyRole || (user?.permViewFinancials ?? false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -319,6 +322,19 @@ export default function InvoicesScreen() {
     );
   }
 
+  if (!canViewFinancials) {
+    return (
+      <ScreenContainer bg="#fff">
+        <ScreenHeader title="Rēķini" />
+        <EmptyState
+          icon={<AlertCircle size={32} color="#d1d5db" />}
+          title="Nepietiekamas tiesības"
+          subtitle="Lūdzu sazinieties ar uzņēmuma administratoru, lai piešķirtu piekļuvi finansēm."
+        />
+      </ScreenContainer>
+    );
+  }
+
   return (
     <ScreenContainer bg="#fff">
       <ScreenHeader title="Rēķini" />
@@ -332,7 +348,9 @@ export default function InvoicesScreen() {
           {overdueCount > 0 && (
             <View style={[s.summaryChip, s.summaryChipRed]}>
               <AlertCircle size={12} color="#dc2626" />
-              <Text style={[s.summaryChipText, { color: colors.danger }]}>{overdueCount} kavēts</Text>
+              <Text style={[s.summaryChipText, { color: colors.danger }]}>
+                {overdueCount} kavēts
+              </Text>
             </View>
           )}
           {paidCount > 0 && (
@@ -538,7 +556,11 @@ const m = StyleSheet.create({
   refLabel: { fontSize: 13, color: colors.textDisabled },
   refVal: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.bgMuted, marginVertical: 12 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.bgMuted,
+    marginVertical: 12,
+  },
 
   // Line items
   lineItem: {

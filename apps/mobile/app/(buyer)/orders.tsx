@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, RefreshControl, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/lib/auth-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import {
   Plus,
@@ -29,7 +30,12 @@ import { getOrderStatus } from '@/lib/status';
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { unified, loading, refreshing, onRefresh: refresh, query, setQuery, error } = useOrders();
+
+  // Company members without permManageOrders cannot create or modify orders.
+  // Solo users (no companyRole) always have full access.
+  const canManageOrders = !user?.companyRole || (user?.permManageOrders ?? false);
 
   const [activeTab, setActiveTab] = useState<'active' | 'done'>('active');
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -128,15 +134,17 @@ export default function OrdersScreen() {
               >
                 <Search size={24} color="#111827" />
               </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  haptics.light();
-                  setShowTypePicker(true);
-                }}
-              >
-                <Plus size={24} color="#111827" />
-              </TouchableOpacity>
+              {canManageOrders && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    haptics.light();
+                    setShowTypePicker(true);
+                  }}
+                >
+                  <Plus size={24} color="#111827" />
+                </TouchableOpacity>
+              )}
             </View>
           }
         />
@@ -200,57 +208,59 @@ export default function OrdersScreen() {
       />
 
       {/* ── Minimal Order Sheet ──────────────────────────────── */}
-      <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
-        <View className="pb-10 pt-2 px-2">
-          <Text className="text-xl font-bold text-gray-900 mb-6 px-4">Ko pasūtīsiet?</Text>
+      {canManageOrders && (
+        <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
+          <View className="pb-10 pt-2 px-2">
+            <Text className="text-xl font-bold text-gray-900 mb-6 px-4">Ko pasūtīsiet?</Text>
 
-          <SheetRow
-            icon={<Package size={22} color="#111827" />}
-            title="Materiāli"
-            subtitle="Piegāde uz objektu"
-            onPress={() => {
-              setShowTypePicker(false);
-              router.push('/(buyer)/catalog');
-            }}
-          />
-          <SheetRow
-            icon={<HardHat size={22} color="#111827" />}
-            title="Konteiners"
-            subtitle="Noma un izvešana"
-            onPress={() => {
-              setShowTypePicker(false);
-              router.push('/order');
-            }}
-          />
-          <SheetRow
-            icon={<Trash2 size={22} color="#111827" />}
-            title="Utilizācija"
-            subtitle="Būvgružu izvešana"
-            onPress={() => {
-              setShowTypePicker(false);
-              router.push('/disposal');
-            }}
-          />
-          <SheetRow
-            icon={<Truck size={22} color="#111827" />}
-            title="Transports"
-            subtitle="Tehnikas pārvadājumi"
-            onPress={() => {
-              setShowTypePicker(false);
-              router.push('/transport');
-            }}
-          />
-          <SheetRow
-            icon={<FileText size={22} color="#111827" />}
-            title="Cenu aptauja"
-            subtitle="Saņemiet piedāvājumus"
-            onPress={() => {
-              setShowTypePicker(false);
-              router.push('/order-request-new');
-            }}
-          />
-        </View>
-      </BottomSheet>
+            <SheetRow
+              icon={<Package size={22} color="#111827" />}
+              title="Materiāli"
+              subtitle="Piegāde uz objektu"
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/(buyer)/catalog');
+              }}
+            />
+            <SheetRow
+              icon={<HardHat size={22} color="#111827" />}
+              title="Konteiners"
+              subtitle="Noma un izvešana"
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/order');
+              }}
+            />
+            <SheetRow
+              icon={<Trash2 size={22} color="#111827" />}
+              title="Utilizācija"
+              subtitle="Būvgružu izvešana"
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/disposal');
+              }}
+            />
+            <SheetRow
+              icon={<Truck size={22} color="#111827" />}
+              title="Transports"
+              subtitle="Tehnikas pārvadājumi"
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/transport');
+              }}
+            />
+            <SheetRow
+              icon={<FileText size={22} color="#111827" />}
+              title="Cenu aptauja"
+              subtitle="Saņemiet piedāvājumus"
+              onPress={() => {
+                setShowTypePicker(false);
+                router.push('/order-request-new');
+              }}
+            />
+          </View>
+        </BottomSheet>
+      )}
     </ScreenContainer>
   );
 }

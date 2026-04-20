@@ -103,13 +103,16 @@ export class MaterialsService {
               name: true,
               logo: true,
               rating: true,
+              onTimePct: true,
+              fulfillmentPct: true,
               city: true,
               lat: true,
               lng: true,
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        // Featured listings always appear first, then newest
+        orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
         take: Math.min(limit, 100), // hard cap at 100 per page
         skip,
       }),
@@ -323,11 +326,13 @@ export class MaterialsService {
             phone: true,
             lat: true,
             lng: true,
+            onTimePct: true,
+            fulfillmentPct: true,
           },
         },
         priceTiers: { orderBy: { minQty: 'asc' } },
       },
-      orderBy: { basePrice: 'asc' },
+      orderBy: [{ featured: 'desc' }, { basePrice: 'asc' }],
     });
 
     // ── Compute supplier performance in one query ──────────────────────────
@@ -379,7 +384,7 @@ export class MaterialsService {
         );
       }
       // Strip internal lat/lng from the response payload
-      const { lat: _lat, lng: _lng, ...supplierPublic } = m.supplier;
+      const { lat: _lat, lng: _lng, onTimePct, fulfillmentPct, ...supplierPublic } = m.supplier;
       // Apply volume price tier if the material has any
       const effectivePrice = this.resolvePrice(
         m.basePrice,
@@ -432,6 +437,8 @@ export class MaterialsService {
         isInstant: true,
         completionRate,
         totalOrders: perf?.total ?? 0,
+        onTimePct: onTimePct ?? null,
+        fulfillmentPct: fulfillmentPct ?? null,
       };
     });
 
@@ -670,5 +677,14 @@ export class MaterialsService {
       where: { id: blockId },
     });
     return { deleted: true };
+  }
+
+  /** Toggle featured status — admin only (enforced at controller layer). */
+  async setFeatured(id: string, featured: boolean) {
+    return this.prisma.material.update({
+      where: { id },
+      data: { featured },
+      select: { id: true, name: true, featured: true },
+    });
   }
 }

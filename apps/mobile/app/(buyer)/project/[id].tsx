@@ -15,6 +15,7 @@ import {
   Alert,
   TextInput,
   Text as RNText,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -42,6 +43,7 @@ import {
   CheckCircle2,
   Circle,
   Link2,
+  Download,
 } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -49,6 +51,19 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/Toast';
 import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
+import { API_URL } from '@/lib/api/common';
+
+// Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
+let FileSystem: typeof import('expo-file-system') | null = null;
+let Sharing: typeof import('expo-sharing') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  FileSystem = require('expo-file-system');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  Sharing = require('expo-sharing');
+} catch {
+  /* fallback — download unavailable */
+}
 
 // ─── Status config ────────────────────────────────────────────────────────
 
@@ -173,6 +188,7 @@ export default function ProjectDetailScreen() {
   const [loadingUnassigned, setLoadingUnassigned] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -188,7 +204,7 @@ export default function ProjectDetailScreen() {
         setSites(sitesData);
         setDocuments(docsData);
       } catch {
-        toast.error('Neizdevās ielādēt projektu')
+        toast.error('Neizdevās ielādēt projektu');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -223,7 +239,7 @@ export default function ProjectDetailScreen() {
       const updated = await api.projects.getSites(id, token);
       setSites(updated);
     } catch {
-      toast.error('Neizdevās pievienot darbavietu')
+      toast.error('Neizdevās pievienot darbavietu');
     } finally {
       setAddingSite(false);
     }
@@ -241,7 +257,7 @@ export default function ProjectDetailScreen() {
             await api.projects.removeSite(id, siteId, token);
             setSites((prev) => prev.filter((s) => s.id !== siteId));
           } catch {
-            toast.error('Neizdevās dzēst darbavietu')
+            toast.error('Neizdevās dzēst darbavietu');
           }
         },
       },
@@ -257,7 +273,7 @@ export default function ProjectDetailScreen() {
       const all = await api.orders.myOrders(token);
       setUnassignedOrders(all.filter((o: any) => !o.project));
     } catch {
-      toast.error('Neizdevās ielādēt pasūtījumus')
+      toast.error('Neizdevās ielādēt pasūtījumus');
     } finally {
       setLoadingUnassigned(false);
     }
@@ -272,9 +288,37 @@ export default function ProjectDetailScreen() {
       setSelectedOrderIds([]);
       load(true);
     } catch {
-      toast.error('Neizdevās piesaistīt pasūtījumus')
+      toast.error('Neizdevās piesaistīt pasūtījumus');
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleDownloadCo2 = async () => {
+    if (!token || !id || !FileSystem || !Sharing) {
+      toast.error('Lejupielāde nav pieejama šajā ierīcē.');
+      return;
+    }
+    setDownloading(true);
+    try {
+      const url = `${API_URL}/projects/${id}/co2-report.pdf`;
+      const fileUri = `${(FileSystem as any).documentDirectory ?? ''}co2-report-${id}.pdf`;
+      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (downloadRes.status !== 200) throw new Error('Neizdevās lejupielādēt CO\u2082 atskaiti');
+      if (Platform.OS === 'ios') {
+        await Sharing.shareAsync(downloadRes.uri, {
+          UTI: 'com.adobe.pdf',
+          mimeType: 'application/pdf',
+        });
+      } else {
+        await Sharing.shareAsync(downloadRes.uri);
+      }
+    } catch {
+      toast.error('Neizdevās lejupielādēt CO\u2082 atskaiti.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -290,7 +334,7 @@ export default function ProjectDetailScreen() {
             await api.projects.unassignOrder(id, orderId, token);
             load(true);
           } catch {
-            toast.error('Neizdevās noņemt pasūtījumu')
+            toast.error('Neizdevās noņemt pasūtījumu');
           }
         },
       },
@@ -311,18 +355,28 @@ export default function ProjectDetailScreen() {
       <ScreenHeader
         title="Projekts"
         rightAction={
-          <TouchableOpacity
-            onPress={() =>
-              router.push({
-                pathname: '/(buyer)/catalog',
-                params: { projectId: project.id },
-              } as any)
-            }
-            style={{ padding: 4 }}
-            activeOpacity={0.7}
-          >
-            <Plus size={22} color="#ffffff" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              onPress={handleDownloadCo2}
+              style={{ padding: 4 }}
+              activeOpacity={0.7}
+              disabled={downloading}
+            >
+              <Download size={22} color="#ffffff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: '/(buyer)/catalog',
+                  params: { projectId: project.id },
+                } as any)
+              }
+              style={{ padding: 4 }}
+              activeOpacity={0.7}
+            >
+              <Plus size={22} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
         }
       />
       <ScrollView

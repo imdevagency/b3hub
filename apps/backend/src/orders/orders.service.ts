@@ -3020,6 +3020,22 @@ export class OrdersService {
             this.logger.log(
               `runScheduledOrders: spawned order from schedule ${schedule.id}`,
             );
+
+            // Notify the buyer that their recurring order was auto-placed
+            this.notifications
+              .create({
+                userId: schedule.createdById,
+                type: NotificationType.ORDER_CONFIRMED,
+                title: 'Atkārtots pasūtījums izveidots',
+                message: `Automātiskais pasūtījums tika izveidots veiksmīgi (grafiks ${schedule.id.slice(-6).toUpperCase()}).`,
+                data: { scheduleId: schedule.id, orderIds },
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  'runScheduledOrders spawn notification failed',
+                  (err as Error).message,
+                ),
+              );
           } catch (err) {
             this.logger.error(
               `runScheduledOrders: failed for schedule ${schedule.id}: ${
