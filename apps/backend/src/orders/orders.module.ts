@@ -1,1 +1,28 @@
-import { Module } from '@nestjs/common';\nimport { OrdersService } from './orders.service';\nimport { OrdersController } from './orders.controller';\nimport { PrismaModule } from '../prisma/prisma.module';\nimport { NotificationsModule } from '../notifications/notifications.module';\nimport { PaymentsModule } from '../payments/payments.module';\nimport { InvoicesModule } from '../invoices/invoices.module';\nimport { UpdatesModule } from '../updates/updates.module';\nimport { MaterialsModule } from '../materials/materials.module';\nimport { DocumentsModule } from '../documents/documents.module';\nimport { SupabaseModule } from '../supabase/supabase.module';\n\n@Module({\n  imports: [\n    PrismaModule,\n    NotificationsModule,\n    PaymentsModule,\n    InvoicesModule,\n    UpdatesModule,\n    MaterialsModule,\n    DocumentsModule,\n    SupabaseModule,\n  ],\n  controllers: [OrdersController],\n  providers: [OrdersService],\n  exports: [OrdersService],\n})\nexport class OrdersModule {}
+import { Module } from '@nestjs/common';
+import { OrdersService } from './orders.service';
+import { OrdersController } from './orders.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { InvoicesModule } from '../invoices/invoices.module';
+import { UpdatesModule } from '../updates/updates.module';
+import { MaterialsModule } from '../materials/materials.module';
+import { DocumentsModule } from '../documents/documents.module';
+import { SupabaseModule } from '../supabase/supabase.module';
+
+@Module({
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    PaymentsModule,
+    InvoicesModule,
+    UpdatesModule,
+    MaterialsModule,
+    DocumentsModule,
+    SupabaseModule,
+  ],
+  controllers: [OrdersController],
+  providers: [OrdersService],
+  exports: [OrdersService],
+})
+export class OrdersModule {}

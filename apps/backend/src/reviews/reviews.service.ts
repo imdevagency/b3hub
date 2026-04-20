@@ -172,6 +172,17 @@ export class ReviewsService {
     );
 
     await this.recomputeRating(companyId);
+
+    // Recompute and persist the individual driver's average rating
+    const driverAgg = await this.prisma.review.aggregate({
+      where: { driverId: job.driverId },
+      _avg: { rating: true },
+    });
+    await this.prisma.driverProfile.updateMany({
+      where: { userId: job.driverId },
+      data: { rating: driverAgg._avg.rating ?? null },
+    });
+
     return review;
   }
 

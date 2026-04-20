@@ -42,7 +42,7 @@ export class HealthController {
             },
           });
         }
-        return { stripe: { status: 'up' } };
+        return Promise.resolve({ stripe: { status: 'up' } });
       },
       // 3. Supabase — verify the project URL is set
       (): Promise<HealthIndicatorResult> => {
@@ -55,7 +55,7 @@ export class HealthController {
             },
           });
         }
-        return { supabase: { status: 'up' } };
+        return Promise.resolve({ supabase: { status: 'up' } });
       },
     ]);
   }

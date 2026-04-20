@@ -593,10 +593,45 @@ export class TransportJobsService {
     limit: number = 20,
     skip: number = 0,
     updatedSince?: string,
+    driverId?: string,
   ) {
+    // If we know the driver, restrict to jobs their vehicles can handle.
+    // Jobs with no requiredVehicleEnum are visible to everyone.
+    let vehicleTypeFilter:
+      | { requiredVehicleEnum: null | { in: import('@prisma/client').VehicleType[] } }
+      | undefined;
+
+    if (driverId) {
+      const driverVehicles = await this.prisma.vehicle.findMany({
+        where: {
+          status: { in: ['ACTIVE', 'IN_USE'] },
+          OR: [{ ownerId: driverId }, { company: { users: { some: { id: driverId } } } }],
+        },
+        select: { vehicleType: true },
+      });
+      const driverTypes = [
+        ...new Set(driverVehicles.map((v) => v.vehicleType)),
+      ] as import('@prisma/client').VehicleType[];
+
+      if (driverTypes.length > 0) {
+        vehicleTypeFilter = {
+          requiredVehicleEnum: { in: driverTypes },
+        };
+      }
+    }
+
     const baseWhere = {
       status: TransportJobStatus.AVAILABLE,
       ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
+      // Show jobs that have no vehicle requirement OR match a type the driver has
+      ...(vehicleTypeFilter
+        ? {
+            OR: [
+              { requiredVehicleEnum: null },
+              { requiredVehicleEnum: vehicleTypeFilter.requiredVehicleEnum },
+            ],
+          }
+        : {}),
     };
     const [jobs, total] = await Promise.all([
       this.prisma.transportJob.findMany({
@@ -623,6 +658,9 @@ export class TransportJobsService {
               orderNumber: order.orderNumber,
               buyerId: order.buyerId,
               createdById: order.createdById,
+              siteContactName: null,
+              siteContactPhone: null,
+              notes: null,
             }
           : null,
       };
@@ -936,6 +974,47 @@ export class TransportJobsService {
       throw new BadRequestException(
         `Jūsu vadītāja apliecība ir beigusies (${driverProfile.licenseExpiry.toISOString().split('T')[0]}). Atjauniniet apliecību, lai pieņemtu darbus.`,
       );
+    }
+
+    // Vehicle type gate: if the job requires a specific vehicle type,
+    // the driver must have an ACTIVE vehicle of that type with valid insurance & inspection.
+    if (job.requiredVehicleEnum) {
+      const matchingVehicles = await this.prisma.vehicle.findMany({
+        where: {
+          vehicleType: job.requiredVehicleEnum,
+          status: { in: ['ACTIVE', 'IN_USE'] },
+          OR: [{ ownerId: driverId }, { company: { users: { some: { id: driverId } } } }],
+        },
+        select: {
+          id: true,
+          licensePlate: true,
+          insuranceExpiry: true,
+          inspectionExpiry: true,
+        },
+      });
+
+      if (matchingVehicles.length === 0) {
+        throw new BadRequestException(
+          `Šim darbam nepieciešams transportlīdzeklis: ${job.requiredVehicleType ?? job.requiredVehicleEnum}. Reģistrējiet piemērotu transportlīdzekli.`,
+        );
+      }
+
+      const now = new Date();
+      const compliantVehicle = matchingVehicles.find(
+        (v) =>
+          (!v.insuranceExpiry || v.insuranceExpiry > now) &&
+          (!v.inspectionExpiry || v.inspectionExpiry > now),
+      );
+
+      if (!compliantVehicle) {
+        const v = matchingVehicles[0];
+        const expired: string[] = [];
+        if (v.insuranceExpiry && v.insuranceExpiry <= now) expired.push('apdrošināšana');
+        if (v.inspectionExpiry && v.inspectionExpiry <= now) expired.push('tehniskā apskate');
+        throw new BadRequestException(
+          `Transportlīdzeklim ${v.licensePlate} ir beigusies: ${expired.join(', ')}. Atjauniniet dokumentus, lai pieņemtu darbus.`,
+        );
+      }
     }
 
     // Resolve driver's carrier company so carrierId is set on the job —
@@ -2190,6 +2269,14 @@ export class TransportJobsService {
       },
       select: this.jobSelect,
     });
+
+    // Increment driver's completed job counter
+    if (job.driverId) {
+      await this.prisma.driverProfile.updateMany({
+        where: { userId: job.driverId },
+        data: { completedJobs: { increment: 1 } },
+      });
+    }
 
     // Auto-generate DELIVERY_NOTE (CMR) for the buyer and mark the linked order as DELIVERED
     if (job.orderId) {

@@ -64,8 +64,8 @@ export class AdminController {
 
   /** GET /admin/users — all users list */
   @Get('users')
-  getUsers() {
-    return this.service.getUsers();
+  getUsers(@Query() pagination: PagePaginationDto) {
+    return this.service.getUsers(pagination.page ?? 1, pagination.limit ?? 50);
   }
 
   /** PATCH /admin/users/:id — toggle flags / status */

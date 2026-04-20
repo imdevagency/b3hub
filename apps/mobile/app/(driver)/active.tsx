@@ -63,6 +63,7 @@ import {
   MessageCircle,
   MoreHorizontal,
   ChevronRight,
+  BarChart2,
 } from 'lucide-react-native';
 
 // ── Status progression ────────────────────────────────────────────────────────
@@ -1253,6 +1254,14 @@ export default function ActiveJobScreen() {
                   <Text style={styles.rateBuyerBtnText}>Novērtēt pasūtītāju</Text>
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                style={styles.viewStatsBtn}
+                onPress={() => router.push(`/(driver)/job-stat/${job.id}`)}
+                activeOpacity={0.8}
+              >
+                <BarChart2 size={15} color="#6b7280" />
+                <Text style={styles.viewStatsBtnText}>Brašana statistika</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>

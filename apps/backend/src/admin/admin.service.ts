@@ -43,11 +43,18 @@ export class AdminService {
     },
   } as const;
 
-  async getUsers() {
-    return this.prisma.user.findMany({
-      select: this.userSelect,
-      orderBy: { createdAt: 'desc' },
-    });
+  async getUsers(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        select: this.userSelect,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.user.count(),
+    ]);
+    return { data, total, page, limit };
   }
 
   async updateUser(id: string, data: UpdateUserDto, adminId: string) {

@@ -302,6 +302,22 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
   },
+  viewStatsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#fff',
+  },
+  viewStatsBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
   cancelJobBtn: {
     alignItems: 'center',
     justifyContent: 'center',

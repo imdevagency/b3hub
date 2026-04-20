@@ -10,28 +10,12 @@ import {
   Alert,
   RefreshControl,
   StyleSheet,
-  Modal,
-  Image,
-  Pressable,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { t } from '@/lib/translations';
-import {
-  Check,
-  Clock,
-  TrendingUp,
-  ChevronRight,
-  AlertCircle,
-  MapPin,
-  Package,
-  Ruler,
-  Scale,
-  Camera,
-  X,
-  Truck,
-} from 'lucide-react-native';
+import { Check, Clock, ChevronRight, AlertCircle, Truck } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiTransportJob, type CarrierAnalytics } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -273,8 +257,6 @@ export default function EarningsScreen() {
   });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [dailyChart, setDailyChart] = useState<DayBar[]>([]);
-  const [selectedJob, setSelectedJob] = useState<HistoryEntry | null>(null);
-  const [photoFullscreen, setPhotoFullscreen] = useState<string | null>(null);
   const [carrierAnalytics, setCarrierAnalytics] = useState<CarrierAnalytics | null>(null);
 
   const handleSetupPayouts = async () => {
@@ -834,7 +816,7 @@ export default function EarningsScreen() {
                   activeOpacity={0.7}
                   onPress={() => {
                     haptics.light();
-                    setSelectedJob(item);
+                    router.push(`/(driver)/job-stat/${item.id}`);
                   }}
                 >
                   <View className="flex-1 pr-4 gap-1">
@@ -874,277 +856,11 @@ export default function EarningsScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* ── Job detail bottom sheet ── */}
-      <Modal
-        visible={selectedJob !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedJob(null)}
-      >
-        <Pressable style={es.backdrop} onPress={() => setSelectedJob(null)}>
-          <Pressable style={es.sheet} onPress={(e) => e.stopPropagation()}>
-            {selectedJob && (
-              <>
-                {/* Handle */}
-                <View style={es.handle} />
-
-                {/* Header */}
-                <View style={es.sheetHeader}>
-                  <View>
-                    <Text style={es.sheetJobNum}>#{selectedJob.jobNumber}</Text>
-                    <Text style={es.sheetRoute}>{selectedJob.route}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setSelectedJob(null)} activeOpacity={0.7}>
-                    <X size={22} color="#9ca3af" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Earn row */}
-                <View style={es.earnRow}>
-                  <Text style={es.earnAmount}>€{selectedJob.amount.toFixed(2)}</Text>
-                  <Text style={es.earnDate}>{selectedJob.date}</Text>
-                </View>
-
-                {/* Detail rows */}
-                <View style={es.detailBlock}>
-                  {/* Pickup */}
-                  <View style={es.detailRow}>
-                    <MapPin size={16} color="#6b7280" />
-                    <View style={es.detailTexts}>
-                      <Text style={es.detailLabel}>Iekraušana</Text>
-                      <Text style={es.detailValue}>
-                        {selectedJob.pickupAddress}, {selectedJob.pickupCity}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Delivery */}
-                  <View style={[es.detailRow, es.detailRowBt]}>
-                    <MapPin size={16} color="#111827" />
-                    <View style={es.detailTexts}>
-                      <Text style={es.detailLabel}>Izkraušana</Text>
-                      <Text style={es.detailValue}>
-                        {selectedJob.deliveryAddress}, {selectedJob.deliveryCity}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Distance */}
-                  {selectedJob.distanceKm != null && (
-                    <View style={[es.detailRow, es.detailRowBt]}>
-                      <Ruler size={16} color="#6b7280" />
-                      <View style={es.detailTexts}>
-                        <Text style={es.detailLabel}>Attālums</Text>
-                        <Text style={es.detailValue}>{Math.round(selectedJob.distanceKm)} km</Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Cargo */}
-                  <View style={[es.detailRow, es.detailRowBt]}>
-                    <Package size={16} color="#6b7280" />
-                    <View style={es.detailTexts}>
-                      <Text style={es.detailLabel}>Krava</Text>
-                      <Text style={es.detailValue}>{selectedJob.cargoType}</Text>
-                    </View>
-                  </View>
-
-                  {/* Actual weight */}
-                  {(selectedJob.actualWeightKg != null || selectedJob.cargoWeight != null) && (
-                    <View style={[es.detailRow, es.detailRowBt]}>
-                      <Scale size={16} color="#6b7280" />
-                      <View style={es.detailTexts}>
-                        <Text style={es.detailLabel}>
-                          {selectedJob.actualWeightKg != null
-                            ? 'Faktiskais svars (svari)'
-                            : 'Plānotais svars'}
-                        </Text>
-                        <Text style={es.detailValue}>
-                          {selectedJob.actualWeightKg != null
-                            ? `${(selectedJob.actualWeightKg / 1000).toFixed(3)} t`
-                            : `${selectedJob.cargoWeight} t`}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Per-tonne rate */}
-                  {selectedJob.pricePerTonne != null && (
-                    <View style={[es.detailRow, es.detailRowBt]}>
-                      <TrendingUp size={16} color="#6b7280" />
-                      <View style={es.detailTexts}>
-                        <Text style={es.detailLabel}>Cena par tonnu</Text>
-                        <Text style={es.detailValue}>
-                          €{selectedJob.pricePerTonne.toFixed(2)}/t
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-
-                {/* Pickup photo */}
-                {selectedJob.pickupPhotoUrl && (
-                  <View style={es.photoSection}>
-                    <View style={es.photoLabelRow}>
-                      <Camera size={14} color="#6b7280" />
-                      <Text style={es.photoLabel}>Svaru kvīts foto</Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => setPhotoFullscreen(selectedJob.pickupPhotoUrl)}
-                      activeOpacity={0.85}
-                    >
-                      <Image
-                        source={{ uri: selectedJob.pickupPhotoUrl }}
-                        style={es.pickupPhoto}
-                        resizeMode="cover"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* ── Fullscreen photo modal ── */}
-      <Modal
-        visible={photoFullscreen !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setPhotoFullscreen(null)}
-      >
-        <Pressable style={es.fsBackdrop} onPress={() => setPhotoFullscreen(null)}>
-          {photoFullscreen && (
-            <Image source={{ uri: photoFullscreen }} style={es.fsPhoto} resizeMode="contain" />
-          )}
-        </Pressable>
-      </Modal>
     </ScreenContainer>
   );
 }
 
-// ── Detail sheet styles ───────────────────────────────────────────────────
-
 const es = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  sheetJobNum: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textDisabled,
-    marginBottom: 2,
-  },
-  sheetRoute: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.4,
-  },
-  earnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
-    marginBottom: 16,
-  },
-  earnAmount: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.8,
-  },
-  earnDate: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  detailBlock: {
-    marginBottom: 20,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
-    gap: 12,
-  },
-  detailRowBt: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#f3f4f6',
-  },
-  detailTexts: {
-    flex: 1,
-    gap: 2,
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: colors.textDisabled,
-    fontWeight: '500',
-  },
-  detailValue: {
-    fontSize: 15,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  photoSection: {
-    gap: 8,
-  },
-  photoLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  photoLabel: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  pickupPhoto: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: colors.bgMuted,
-  },
-  fsBackdrop: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fsPhoto: {
-    width: '100%',
-    height: '100%',
-  },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',

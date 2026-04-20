@@ -131,18 +131,22 @@ export class TransportJobsController {
   /**
    * GET /transport-jobs
    * Returns all AVAILABLE jobs for the job board with pagination.
+   * If called by a driver (canTransport), filters to jobs matching their vehicle types.
    */
   @Get()
   @UseGuards(RequireScopeGuard)
   @RequireScope('transport:read')
   findAvailable(
     @Query() pagination: PaginationDto,
+    @CurrentUser() user: RequestingUser,
     @Query('updatedSince') updatedSince?: string,
   ) {
+    const driverId = user.canTransport ? user.userId : undefined;
     return this.service.findAvailable(
       pagination.limit ?? 20,
       pagination.skip ?? 0,
       updatedSince,
+      driverId,
     );
   }
 

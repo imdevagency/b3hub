@@ -131,6 +131,7 @@ export class FrameworkContractsService {
             const members = await this.prisma.user.findMany({
               where: { companyId: { in: companyIds } },
               select: { id: true },
+              take: 200,
             });
             members.forEach((m) => recipientIds.add(m.id));
           }
@@ -632,11 +633,13 @@ export class FrameworkContractsService {
         const buyerUsers = await this.prisma.user.findMany({
           where: { companyId: contract.buyer.id },
           select: { id: true },
+          take: 200,
         });
         const supplierUsers = contract.supplier
           ? await this.prisma.user.findMany({
               where: { companyId: contract.supplier.id },
               select: { id: true },
+              take: 200,
             })
           : [];
         buyerUsers.forEach((u) => notifyIds.add(u.id));
