@@ -6,52 +6,48 @@ import { Text } from '@/components/ui/text';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
-
-const { width } = Dimensions.get('window');
+import { Map } from 'lucide-react-native';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
-    <ScreenContainer standalone bg="#000" topInset={0}>
-      <StatusBar style="light" />
+    <ScreenContainer standalone bg="#FFFFFF" topInset={0}>
+      <StatusBar style="dark" />
 
-      <View className="flex-1 justify-between" style={{ paddingTop: insets.top + 20 }}>
-        {/* Top half: Logo */}
-        <View className="px-6 pt-10">
-          <Text
-            className="text-white text-3xl tracking-tighter"
-            style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
-          >
-            B3
-          </Text>
+      <View
+        className="flex-1 justify-between bg-white"
+        style={{ paddingTop: insets.top + 40, paddingBottom: Math.max(insets.bottom + 16, 40) }}
+      >
+        <View className="flex-1 items-center justify-center">
+          <Map size={140} color="#3b82f6" strokeWidth={1.5} />
         </View>
 
-        {/* Bottom half: Value prop & actions */}
-        <View className="px-6 pb-8" style={{ paddingBottom: Math.max(insets.bottom + 16, 40) }}>
+        <View className="px-6 pb-2 items-center w-full">
           <Text
-            className="text-white tracking-tight mb-4"
+            className="text-center tracking-tight mb-4"
             style={{
-              fontSize: 56,
-              lineHeight: 60,
+              color: '#111827',
+              fontSize: 32,
+              lineHeight: 40,
               fontFamily: 'Inter_800ExtraBold',
               fontWeight: '800',
             }}
           >
-            Būvē{'\n'}ātrāk.
+            Būvē{'\n'}ātrāk. Jebkur.
           </Text>
 
           <Text
-            className="text-gray-400 text-lg leading-relaxed mb-10"
-            style={{ fontFamily: 'Inter_500Medium', fontWeight: '500' }}
+            className="text-center text-base leading-relaxed mb-10 px-4"
+            style={{ color: '#6B7280', fontFamily: 'Inter_400Regular', fontWeight: '400' }}
           >
-            Materiāli, transports un atkritumi{'\n'}vienā viegli lietojamā lietotnē.
+            Materiāli, transports un atkritumi vienā viegli lietojamā lietotnē.
           </Text>
 
-          <View className="gap-y-4">
+          <View className="gap-y-4 w-full">
             <TouchableOpacity
-              className="w-full h-14 bg-white rounded-full items-center justify-center flex-row"
+              className="w-full h-14 bg-black rounded-full items-center justify-center flex-row"
               activeOpacity={0.9}
               onPress={() => {
                 haptics.light();
@@ -59,7 +55,7 @@ export default function WelcomeScreen() {
               }}
             >
               <Text
-                className="text-black text-lg"
+                className="text-white text-lg"
                 style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}
               >
                 Sākt
@@ -75,16 +71,10 @@ export default function WelcomeScreen() {
               }}
             >
               <Text
-                className="text-gray-400 text-base"
-                style={{ fontFamily: 'Inter_500Medium', fontWeight: '500' }}
+                className="text-base"
+                style={{ color: '#111827', fontFamily: 'Inter_500Medium', fontWeight: '500' }}
               >
-                Jau ir konts?{' '}
-                <Text
-                  className="text-white"
-                  style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}
-                >
-                  Pierakstīties
-                </Text>
+                Pierakstīties
               </Text>
             </TouchableOpacity>
           </View>
