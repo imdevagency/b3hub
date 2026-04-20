@@ -20,6 +20,15 @@ import {
   Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { FileText } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { getAllTransportJobs, getTransportJobLocation, type ApiTransportJob } from '@/lib/api';
 import { PageContainer } from '@/components/ui/page-container';
@@ -168,6 +177,7 @@ export default function FleetPage() {
   const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>(
     {},
   );
+  const [selectedJob, setSelectedJob] = useState<ApiTransportJob | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -441,32 +451,32 @@ export default function FleetPage() {
               <table className="min-w-full text-sm">
                 <thead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 border-b-2 border-border/30">
                   <tr>
-                    <th className="px-4 py-4 text-left">Darba nr.</th>
-                    <th className="px-4 py-4 text-left">Veids</th>
-                    <th className="px-4 py-4 text-left">Maršruts</th>
-                    <th className="px-4 py-4 text-left">Krava</th>
-                    <th className="px-4 py-4 text-left">Šoferis / Transports</th>
-                    <th className="px-4 py-4 text-left">Datums</th>
-                    <th className="px-4 py-4 text-left">Statuss</th>
+                    <th className="px-3 py-3 pl-5 text-left">Darba nr.</th>
+                    <th className="px-3 py-3 text-left">Veids</th>
+                    <th className="px-3 py-3 text-left">Maršruts</th>
+                    <th className="px-3 py-3 text-left">Krava</th>
+                    <th className="px-3 py-3 text-left">Šoferis / Transports</th>
+                    <th className="px-3 py-3 text-left">Datums</th>
+                    <th className="px-3 py-3 text-left">Statuss</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
                   {filtered.map((job) => (
                     <tr
                       key={job.id}
-                      onClick={() => router.push(`/dashboard/transport-jobs/${job.id}`)}
-                      className="group hover:bg-muted/30 transition-colors duration-300 cursor-pointer"
+                      onClick={() => setSelectedJob(job)}
+                      className={`group transition-colors duration-200 cursor-pointer border-l-2 ${selectedJob?.id === job.id ? 'border-primary bg-primary/5 hover:bg-primary/10' : 'border-transparent hover:bg-muted/30'}`}
                     >
                       {/* Job number */}
-                      <td className="px-5 py-4 font-mono text-xs font-semibold text-muted-foreground/80 group-hover:text-foreground transition-colors">
+                      <td className="px-3 py-3 pl-5 font-mono text-xs font-semibold text-muted-foreground/80 group-hover:text-foreground transition-colors">
                         {job.jobNumber}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3">
                         <span className="text-xs font-medium">
                           {JOB_TYPE_LV[job.jobType] ?? job.jobType}
                         </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-2 font-medium text-sm">
                           <span>{job.pickupCity}</span>
                           <span className="text-muted-foreground/50">→</span>
@@ -478,7 +488,7 @@ export default function FleetPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3">
                         <p className="font-semibold text-sm">{job.cargoType}</p>
                         {job.cargoWeight && (
                           <p className="text-xs text-muted-foreground font-medium">
@@ -486,7 +496,7 @@ export default function FleetPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3">
                         {job.driver ? (
                           <div>
                             <div className="flex items-center gap-2">
@@ -517,7 +527,7 @@ export default function FleetPage() {
                           </button>
                         )}
                       </td>
-                      <td className="px-4 py-4 text-xs font-medium text-muted-foreground/80">
+                      <td className="px-3 py-3 text-xs font-medium text-muted-foreground/80">
                         {formatDate(job.pickupDate)}
                         {job.pickupWindow && (
                           <p className="text-muted-foreground mt-0.5">{job.pickupWindow}</p>
@@ -538,6 +548,286 @@ export default function FleetPage() {
             </div>
           </div>
         ))}
+      {/* Side Sheet for Job Details */}
+      <Sheet open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJob(null)}>
+        <SheetContent
+          className="flex flex-col gap-0 p-0 sm:max-w-[440px] w-full border-l shadow-2xl"
+          aria-describedby="job-details"
+        >
+          {selectedJob && (
+            <>
+              <SheetHeader className="px-6 py-4 flex-row items-center justify-between border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur z-10 space-y-0 text-left">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <StatusBadge status={selectedJob.status} />
+                  </div>
+                  <SheetTitle className="text-xl font-bold font-mono tracking-tight">
+                    {selectedJob.jobNumber}
+                  </SheetTitle>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full shadow-sm h-8 text-xs font-semibold"
+                  onClick={() => router.push(`/dashboard/transport-jobs/${selectedJob.id}`)}
+                >
+                  Pilns skats
+                </Button>
+                <SheetDescription className="sr-only">Informācija par darbu</SheetDescription>
+              </SheetHeader>
+
+              <Tabs defaultValue="status" className="flex-1 flex flex-col overflow-hidden">
+                <div className="px-6 mt-4">
+                  <TabsList className="grid w-full grid-cols-4 h-10 p-1 mb-2 bg-muted/50 rounded-xl">
+                    <TabsTrigger value="status" className="rounded-lg text-xs font-semibold">
+                      Statuss
+                    </TabsTrigger>
+                    <TabsTrigger value="details" className="rounded-lg text-xs font-semibold">
+                      Detaļas
+                    </TabsTrigger>
+                    <TabsTrigger value="comments" className="rounded-lg text-xs font-semibold">
+                      Piezīmes
+                    </TabsTrigger>
+                    <TabsTrigger value="docs" className="rounded-lg text-xs font-semibold">
+                      Dokum.
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 h-full pb-8">
+                  {/* Status Tab */}
+                  <TabsContent value="status" className="space-y-6 mt-4 pb-4">
+                    {/* Fake Map implementation to look like the mock */}
+                    <div className="w-full h-[180px] bg-muted/40 rounded-2xl border border-border/80 flex items-center justify-center relative overflow-hidden">
+                      <Map className="w-10 h-10 text-muted-foreground/30 absolute" />
+                      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:10px_10px]" />
+                      <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-sm px-2 py-1 rounded-lg border shadow-sm text-[10px] font-medium flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-primary" /> Maršruts
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-2xl border border-border/50">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                          Iekraušana
+                        </p>
+                        <p className="text-sm font-semibold">{selectedJob.pickupCity}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {selectedJob.pickupAddress || 'Adrese nav norādīta'}
+                        </p>
+                        <div className="mt-3">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                            Pikaps līdz
+                          </p>
+                          <p className="text-xs font-medium">
+                            {formatDate(selectedJob.pickupDate)}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                          Izkraušana
+                        </p>
+                        <p className="text-sm font-semibold">{selectedJob.deliveryCity}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {selectedJob.deliveryAddress || 'Adrese nav norādīta'}
+                        </p>
+                        <div className="mt-3">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">
+                            Piegāde līdz
+                          </p>
+                          <p className="text-xs font-medium">
+                            {selectedJob.deliveryDate
+                              ? formatDate(selectedJob.deliveryDate)
+                              : 'Nav norādīts'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-8">
+                      <h4 className="text-sm font-bold flex items-center gap-2">Darba progress</h4>
+                      <div className="relative mt-5 pl-1">
+                        <div className="absolute top-2 bottom-4 left-[19px] w-[2px] bg-border/50" />
+                        <div className="space-y-8 relative z-10">
+                          {/* Step 1 */}
+                          <div className="flex items-start gap-5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-[2.5px] border-primary bg-primary/10 shadow-sm text-primary">
+                              <CheckCircle2 className="h-4 w-4" strokeWidth={3} />
+                            </div>
+                            <div className="pt-1.5">
+                              <p className="text-sm font-bold leading-none">Darbs pieņemts</p>
+                              <p className="mt-2 text-xs text-muted-foreground/80 font-medium">
+                                Šoferis {selectedJob.driver?.firstName}{' '}
+                                {selectedJob.driver?.lastName} sāka darbu
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Step 2 */}
+                          <div className="flex items-start gap-5">
+                            <div
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-[2.5px] shadow-sm transition-colors duration-300 ${['LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY', 'DELIVERED'].includes(selectedJob.status) ? 'border-primary bg-white dark:bg-zinc-950 text-primary' : 'border-dashed border-border/70 bg-muted/20 text-muted-foreground/40'}`}
+                            >
+                              <Package
+                                className="h-4 w-4"
+                                strokeWidth={
+                                  [
+                                    'LOADED',
+                                    'EN_ROUTE_DELIVERY',
+                                    'AT_DELIVERY',
+                                    'DELIVERED',
+                                  ].includes(selectedJob.status)
+                                    ? 3
+                                    : 2
+                                }
+                              />
+                            </div>
+                            <div className="pt-1.5">
+                              <p
+                                className={`text-sm font-bold leading-none ${['LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY', 'DELIVERED'].includes(selectedJob.status) ? 'text-foreground' : 'text-muted-foreground'}`}
+                              >
+                                Krava paņemta
+                              </p>
+                              {['LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY', 'DELIVERED'].includes(
+                                selectedJob.status,
+                              ) ? (
+                                <p className="mt-2 text-xs text-muted-foreground/80 font-medium">
+                                  Piekrauts punktā {selectedJob.pickupCity}
+                                </p>
+                              ) : (
+                                <p className="mt-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground/50">
+                                  Gaida atzīmi
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Step 3 */}
+                          <div className="flex items-start gap-5">
+                            <div
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-[2.5px] shadow-sm transition-colors duration-300 ${selectedJob.status === 'DELIVERED' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600' : 'border-dashed border-border/70 bg-muted/20 text-muted-foreground/40'}`}
+                            >
+                              <MapPin
+                                className="h-4 w-4"
+                                strokeWidth={selectedJob.status === 'DELIVERED' ? 3 : 2}
+                              />
+                            </div>
+                            <div className="pt-1.5">
+                              <p
+                                className={`text-sm font-bold leading-none ${selectedJob.status === 'DELIVERED' ? 'text-foreground' : 'text-muted-foreground'}`}
+                              >
+                                Piegādāts
+                              </p>
+                              {selectedJob.status === 'DELIVERED' ? (
+                                <p className="mt-2.5 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/15 border border-emerald-500/20 px-2 py-0.5 rounded-sm inline-flex leading-none tracking-wide uppercase">
+                                  Pateicība saņemta
+                                </p>
+                              ) : (
+                                <p className="mt-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground/50">
+                                  Gaida piegādi
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Details Tab */}
+                  <TabsContent value="details" className="space-y-6 mt-4">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-2">
+                          Informācija par transportlīdzekli
+                        </h4>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                            <User className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold">
+                              {selectedJob.driver?.firstName}{' '}
+                              {selectedJob.driver?.lastName || 'Nav norādīts'}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                              {selectedJob.vehicle?.licensePlate || 'Nav auto reģ.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-y-4 py-3 border-y border-border/50">
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground/70 mb-1">
+                            Darba tips
+                          </p>
+                          <p className="text-sm font-medium">
+                            {JOB_TYPE_LV[selectedJob.jobType] ?? selectedJob.jobType}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground/70 mb-1">
+                            Kravas veids
+                          </p>
+                          <p className="text-sm font-medium">{selectedJob.cargoType}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground/70 mb-1">
+                            Masa
+                          </p>
+                          <p className="text-sm font-medium">
+                            {selectedJob.cargoWeight
+                              ? `${selectedJob.cargoWeight} tonnas`
+                              : 'Nav norādīta'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground/70 mb-1">
+                            Attālums
+                          </p>
+                          <p className="text-sm font-medium">
+                            {selectedJob.distanceKm
+                              ? `${selectedJob.distanceKm} km`
+                              : 'Nav norādīts'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Comments Tab */}
+                  <TabsContent value="comments" className="mt-4">
+                    <div className="h-40 flex flex-col items-center justify-center text-center border-2 border-dashed border-border/60 rounded-2xl p-6">
+                      <p className="text-sm font-medium text-foreground mb-1">Nav piezīmju</p>
+                      <p className="text-xs text-muted-foreground">
+                        Šoferis un dispečers var pievienot komentārus šeit.
+                      </p>
+                      <Button variant="outline" size="sm" className="mt-4 rounded-xl">
+                        Pievienot piezīmi
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  {/* Docs Tab */}
+                  <TabsContent value="docs" className="mt-4">
+                    <div className="h-40 flex flex-col items-center justify-center text-center border-2 border-dashed border-border/60 rounded-2xl p-6">
+                      <FileText className="w-8 h-8 text-muted-foreground/40 mb-3" />
+                      <p className="text-sm font-medium text-foreground mb-1">
+                        Nav pievienotu dokumentu
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Piem. Pavadzīmes (BOL), E-pavadzīmes, svari.
+                      </p>
+                    </div>
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </PageContainer>
   );
 }
