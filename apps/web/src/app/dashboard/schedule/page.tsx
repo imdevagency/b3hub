@@ -31,6 +31,13 @@ import {
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { PageHeader } from '@/components/ui/page-header';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { fmtDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -58,34 +65,35 @@ function TimePicker({ value, onChange }: { value: string; onChange: (v: string) 
   const hh = h?.padStart(2, '0') ?? '00';
   const mm = MINUTES.includes(m ?? '') ? (m ?? '00') : '00';
 
-  const selectCls =
-    'rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-300 appearance-none cursor-pointer';
-
   return (
-    <div className="flex items-center gap-0.5">
-      <select
-        value={hh}
-        onChange={(e) => onChange(`${e.target.value}:${mm}`)}
-        className={selectCls}
-      >
-        {HOURS.map((hr) => (
-          <option key={hr} value={hr}>
-            {hr}
-          </option>
-        ))}
-      </select>
+    <div className="flex items-center gap-1">
+      <Select value={hh} onValueChange={(v) => onChange(`${v}:${mm}`)}>
+        <SelectTrigger className="w-[60px] h-8 text-xs font-mono px-2 py-1">
+          <SelectValue placeholder="HH" />
+        </SelectTrigger>
+        <SelectContent align="center">
+          <div className="max-h-[200px] overflow-y-auto">
+            {HOURS.map((hr) => (
+              <SelectItem key={hr} value={hr} className="text-xs font-mono justify-center">
+                {hr}
+              </SelectItem>
+            ))}
+          </div>
+        </SelectContent>
+      </Select>
       <span className="text-slate-400 text-xs font-mono">:</span>
-      <select
-        value={mm}
-        onChange={(e) => onChange(`${hh}:${e.target.value}`)}
-        className={selectCls}
-      >
-        {MINUTES.map((mn) => (
-          <option key={mn} value={mn}>
-            {mn}
-          </option>
-        ))}
-      </select>
+      <Select value={mm} onValueChange={(v) => onChange(`${hh}:${v}`)}>
+        <SelectTrigger className="w-[60px] h-8 text-xs font-mono px-2 py-1">
+          <SelectValue placeholder="MM" />
+        </SelectTrigger>
+        <SelectContent align="center">
+          {MINUTES.map((mn) => (
+            <SelectItem key={mn} value={mn} className="text-xs font-mono justify-center">
+              {mn}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

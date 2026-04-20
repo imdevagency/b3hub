@@ -304,7 +304,7 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto py-8">
+      <div className="py-8">
         <h1 className="text-3xl font-light mb-8 tracking-tight">Analītika</h1>
         <div className="py-12 text-muted-foreground text-sm">Neizdevās ielādēt datus: {error}</div>
       </div>
@@ -318,7 +318,7 @@ export default function AnalyticsPage() {
   const totalEarnings = carrier?.monthlyEarnings.reduce((s, m) => s + m.value, 0) ?? 0;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 w-full animate-in fade-in duration-500">
+    <div className="w-full py-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between mb-12">
         <h1 className="text-3xl font-light tracking-tight">Analītika</h1>
         <div className="flex items-center gap-3">
