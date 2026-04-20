@@ -1,17 +1,36 @@
 /**
  * Active jobs page — /dashboard/active
- * Real-time view of the carrier's currently in-progress transport job
- * with live GPS tracking map.
+ * Control-tower view: live GPS map + job list with late flags, exception badges,
+ * and a detail panel showing status timeline when a job is selected.
  */
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { RefreshCw, Truck, MapPin, Package, Radio } from 'lucide-react';
+import {
+  RefreshCw,
+  Truck,
+  MapPin,
+  Package,
+  Radio,
+  AlertTriangle,
+  X,
+  Clock,
+  CheckCircle2,
+  Circle,
+  PhoneCall,
+  Calendar,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { getAllTransportJobs, getTransportJobLocation, type ApiTransportJob } from '@/lib/api';
+import {
+  getAllTransportJobs,
+  getTransportJobLocation,
+  getOpenTransportExceptions,
+  type ApiTransportJob,
+  type ApiTransportJobException,
+} from '@/lib/api';
 
 const FleetMap = dynamic(
   () => import('@/components/fleet-map').then((m) => ({ default: m.FleetMap })),
@@ -57,6 +76,57 @@ const STATUS_CONFIG: Record<string, { label: string; dot: string; text: string; 
   },
 };
 
+// Full ordered status list for the timeline
+const STATUS_TIMELINE: { key: string; label: string }[] = [
+  { key: 'ASSIGNED', label: 'Piešķirts' },
+  { key: 'ACCEPTED', label: 'Pieņemts' },
+  { key: 'EN_ROUTE_PICKUP', label: 'Ceļā uz iekraušanu' },
+  { key: 'AT_PICKUP', label: 'Iekraušanas vietā' },
+  { key: 'LOADED', label: 'Iekrauts' },
+  { key: 'EN_ROUTE_DELIVERY', label: 'Ceļā uz piegādi' },
+  { key: 'AT_DELIVERY', label: 'Piegādes vietā' },
+  { key: 'DELIVERED', label: 'Piegādāts' },
+];
+
+const EXCEPTION_TYPE_LABELS: Record<string, string> = {
+  DRIVER_NO_SHOW: 'Vadītājs neieradās',
+  SUPPLIER_NOT_READY: 'Piegādātājs nav gatavs',
+  WRONG_MATERIAL: 'Nepareizs materiāls',
+  PARTIAL_DELIVERY: 'Daļēja piegāde',
+  REJECTED_DELIVERY: 'Piegāde noraidīta',
+  SITE_CLOSED: 'Objekts slēgts',
+  OVERWEIGHT: 'Pārslogots',
+  OTHER: 'Cits',
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function isLate(job: ApiTransportJob): boolean {
+  const deadline = new Date(job.deliveryDate).getTime();
+  return Date.now() > deadline;
+}
+
+function fmt(iso: string): string {
+  return new Date(iso).toLocaleString('lv-LV', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleString('lv-LV', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────────
+
 function StatusBadge({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[status] ?? {
     label: status,
@@ -79,19 +149,21 @@ function StatusBadge({ status }: { status: string }) {
 function JobCard({
   job,
   selected,
+  openExceptionCount,
   onClick,
 }: {
   job: ApiTransportJob;
   selected: boolean;
+  openExceptionCount: number;
   onClick: () => void;
 }) {
   const driver = job.driver
     ? `${job.driver.firstName ?? ''} ${job.driver.lastName ?? ''}`.trim()
     : 'Nav vadītāja';
-
   const material = job.cargoType ?? '—';
   const pickup = job.pickupCity ?? '—';
   const delivery = job.deliveryCity ?? '—';
+  const late = isLate(job);
 
   return (
     <button
@@ -102,6 +174,7 @@ function JobCard({
           : 'border-slate-200 bg-white hover:border-slate-400 hover:shadow-sm'
       }`}
     >
+      {/* Top row: job number + badges */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p
@@ -116,9 +189,26 @@ function JobCard({
             {driver}
           </p>
         </div>
-        <StatusBadge status={job.status} />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <StatusBadge status={job.status} />
+          <div className="flex items-center gap-1">
+            {late && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                <Clock className="h-3 w-3" />
+                Kavējas
+              </span>
+            )}
+            {openExceptionCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                <AlertTriangle className="h-3 w-3" />
+                {openExceptionCount}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Route */}
       <div
         className={`mt-3 flex items-center gap-2 text-xs ${selected ? 'text-slate-300' : 'text-slate-500'}`}
       >
@@ -128,13 +218,238 @@ function JobCard({
         </span>
       </div>
 
+      {/* Cargo */}
       <div
         className={`mt-1.5 flex items-center gap-2 text-xs ${selected ? 'text-slate-300' : 'text-slate-500'}`}
       >
         <Package className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">{material}</span>
+        <span className="truncate">
+          {material}
+          {job.cargoWeight ? ` · ${job.cargoWeight} t` : ''}
+        </span>
+      </div>
+
+      {/* Delivery deadline */}
+      <div
+        className={`mt-1.5 flex items-center gap-2 text-xs ${
+          late
+            ? selected
+              ? 'text-red-300'
+              : 'text-red-600 font-medium'
+            : selected
+              ? 'text-slate-300'
+              : 'text-slate-500'
+        }`}
+      >
+        <Calendar className="h-3.5 w-3.5 shrink-0" />
+        <span>Pieg. līdz {fmt(job.deliveryDate)}</span>
       </div>
     </button>
+  );
+}
+
+// ── Status timeline ───────────────────────────────────────────────────────────
+
+function StatusTimeline({
+  currentStatus,
+  timestamps,
+}: {
+  currentStatus: string;
+  timestamps: Record<string, string> | null | undefined;
+}) {
+  const currentIdx = STATUS_TIMELINE.findIndex((s) => s.key === currentStatus);
+
+  return (
+    <div className="flex flex-col gap-0">
+      {STATUS_TIMELINE.map((step, idx) => {
+        const ts = timestamps?.[step.key];
+        const isDone = idx < currentIdx || ts !== undefined;
+        const isCurrent = step.key === currentStatus;
+
+        return (
+          <div key={step.key} className="flex items-start gap-3">
+            {/* Connector line + icon */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                  isCurrent
+                    ? 'border-slate-900 bg-slate-900'
+                    : isDone
+                      ? 'border-emerald-500 bg-emerald-500'
+                      : 'border-slate-200 bg-white'
+                }`}
+              >
+                {isCurrent ? (
+                  <span className="h-2 w-2 rounded-full bg-white" />
+                ) : isDone ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                ) : (
+                  <Circle className="h-3.5 w-3.5 text-slate-300" />
+                )}
+              </div>
+              {idx < STATUS_TIMELINE.length - 1 && (
+                <div
+                  className={`w-0.5 flex-1 ${isDone && !isCurrent ? 'bg-emerald-300' : 'bg-slate-200'}`}
+                  style={{ minHeight: 20 }}
+                />
+              )}
+            </div>
+
+            {/* Label + timestamp */}
+            <div className="pb-4 pt-0.5">
+              <p
+                className={`text-sm font-medium ${
+                  isCurrent ? 'text-slate-900' : isDone ? 'text-slate-700' : 'text-slate-400'
+                }`}
+              >
+                {step.label}
+              </p>
+              {ts && <p className="mt-0.5 text-xs text-slate-500">{fmt(ts)}</p>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Job detail panel ──────────────────────────────────────────────────────────
+
+function JobDetailPanel({
+  job,
+  exceptions,
+  onClose,
+}: {
+  job: ApiTransportJob;
+  exceptions: ApiTransportJobException[];
+  onClose: () => void;
+}) {
+  const driver = job.driver
+    ? `${job.driver.firstName ?? ''} ${job.driver.lastName ?? ''}`.trim()
+    : 'Nav vadītāja';
+  const late = isLate(job);
+  const openExceptions = exceptions.filter(
+    (e) => e.transportJobId === job.id && e.status === 'OPEN',
+  );
+  const timestamps = job.statusTimestamps as Record<string, string> | null | undefined;
+
+  return (
+    <aside className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white overflow-hidden">
+      {/* Panel header */}
+      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            #{job.jobNumber ?? job.id.slice(-6).toUpperCase()}
+          </p>
+          <p className="truncate text-sm font-bold text-slate-900">{driver}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {late && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+              <Clock className="h-3 w-3" />
+              Kavējas
+            </span>
+          )}
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {/* Job info */}
+        <div className="border-b border-slate-100 px-4 py-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div>
+              <p className="text-xs text-slate-500">Iekraušana</p>
+              <p className="font-medium text-slate-900">{job.pickupCity}</p>
+              <p className="text-xs text-slate-500 truncate">{job.pickupAddress}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Piegāde</p>
+              <p className="font-medium text-slate-900">{job.deliveryCity}</p>
+              <p className="text-xs text-slate-500 truncate">{job.deliveryAddress}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Iekraušana plānota</p>
+              <p className="font-medium text-slate-900">{fmtDate(job.pickupDate)}</p>
+            </div>
+            <div>
+              <p className={`text-xs ${late ? 'text-red-500 font-medium' : 'text-slate-500'}`}>
+                Piegāde plānota
+              </p>
+              <p className={`font-medium ${late ? 'text-red-700' : 'text-slate-900'}`}>
+                {fmtDate(job.deliveryDate)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Krava</p>
+              <p className="font-medium text-slate-900">{job.cargoType}</p>
+            </div>
+            {job.cargoWeight && (
+              <div>
+                <p className="text-xs text-slate-500">Svars</p>
+                <p className="font-medium text-slate-900">{job.cargoWeight} t</p>
+              </div>
+            )}
+            {job.vehicle && (
+              <div className="col-span-2">
+                <p className="text-xs text-slate-500">Transportlīdzeklis</p>
+                <p className="font-medium text-slate-900">{job.vehicle.licensePlate}</p>
+              </div>
+            )}
+            {job.driver?.phone && (
+              <div className="col-span-2">
+                <p className="text-xs text-slate-500">Vadītāja tālrunis</p>
+                <a
+                  href={`tel:${job.driver.phone}`}
+                  className="inline-flex items-center gap-1.5 font-medium text-slate-900 hover:text-blue-600"
+                >
+                  <PhoneCall className="h-3.5 w-3.5" />
+                  {job.driver.phone}
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Open exceptions */}
+        {openExceptions.length > 0 && (
+          <div className="border-b border-slate-100 px-4 py-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
+              Atklātas problēmas ({openExceptions.length})
+            </p>
+            <div className="flex flex-col gap-2">
+              {openExceptions.map((ex) => (
+                <div key={ex.id} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-amber-800">
+                        {EXCEPTION_TYPE_LABELS[ex.type] ?? ex.type}
+                      </p>
+                      <p className="mt-0.5 text-xs text-amber-700 line-clamp-2">{ex.notes}</p>
+                      <p className="mt-1 text-xs text-amber-600">{fmt(ex.createdAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Status timeline */}
+        <div className="px-4 py-4">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Statusa vēsture
+          </p>
+          <StatusTimeline currentStatus={job.status} timestamps={timestamps} />
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -144,6 +459,7 @@ export default function ActiveTrackingPage() {
   const { token, user, isLoading } = useAuth();
   const router = useRouter();
   const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
+  const [exceptions, setExceptions] = useState<ApiTransportJobException[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>(
@@ -164,9 +480,13 @@ export default function ActiveTrackingPage() {
       if (!token) return;
       if (!silent) setLoading(true);
       try {
-        const all = await getAllTransportJobs(token);
+        const [all, openExceptions] = await Promise.all([
+          getAllTransportJobs(token),
+          getOpenTransportExceptions(token).catch(() => [] as ApiTransportJobException[]),
+        ]);
         const active = all.filter((j) => ACTIVE_STATUSES.has(j.status));
         setJobs(active);
+        setExceptions(openExceptions);
       } catch (err) {
         console.warn('Failed to load active jobs', err instanceof Error ? err.message : err);
       } finally {
@@ -204,7 +524,7 @@ export default function ActiveTrackingPage() {
     };
   }, [fetchJobs]);
 
-  // Poll per-job GPS every 10 s (faster than job-list poll)
+  // Poll per-job GPS every 10 s
   useEffect(() => {
     fetchLiveLocations(jobs);
     gpsIntervalRef.current = setInterval(() => fetchLiveLocations(jobs), 10_000);
@@ -213,8 +533,22 @@ export default function ActiveTrackingPage() {
     };
   }, [jobs, fetchLiveLocations]);
 
+  // Build exception count map: jobId → open count
+  const exceptionCountMap = exceptions.reduce<Record<string, number>>((acc, ex) => {
+    if (ex.status === 'OPEN') {
+      acc[ex.transportJobId] = (acc[ex.transportJobId] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
+
   const selectedJob = jobs.find((j) => j.id === selectedId) ?? null;
   const mapJobs = selectedJob ? [selectedJob] : jobs;
+
+  // Summary counts for header
+  const lateCount = jobs.filter(isLate).length;
+  const exceptionCount = Object.keys(exceptionCountMap).filter((id) =>
+    jobs.some((j) => j.id === id),
+  ).length;
 
   return (
     <div className="flex h-full flex-col gap-0">
@@ -226,9 +560,23 @@ export default function ActiveTrackingPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-900">Aktīvās piegādes</h1>
-            <p className="text-xs text-slate-500">
-              Atjaunojas ik 15 sek. · {jobs.length} aktīv{jobs.length === 1 ? 'a' : 'as'}
-            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-slate-500">
+                Atjaunojas ik 15 sek. · {jobs.length} aktīv{jobs.length === 1 ? 'a' : 'as'}
+              </p>
+              {lateCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                  <Clock className="h-3 w-3" />
+                  {lateCount} kavējas
+                </span>
+              )}
+              {exceptionCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                  <AlertTriangle className="h-3 w-3" />
+                  {exceptionCount} problēm{exceptionCount === 1 ? 'a' : 'as'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <Button
@@ -265,8 +613,8 @@ export default function ActiveTrackingPage() {
         </div>
       ) : (
         <div className="flex flex-1 overflow-hidden">
-          {/* Job list */}
-          <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-slate-200 bg-slate-50 p-4">
+          {/* Job list sidebar */}
+          <aside className="flex w-72 shrink-0 flex-col gap-3 overflow-y-auto border-r border-slate-200 bg-slate-50 p-4">
             {selectedId && (
               <button
                 onClick={() => setSelectedId(null)}
@@ -280,6 +628,7 @@ export default function ActiveTrackingPage() {
                 key={job.id}
                 job={job}
                 selected={job.id === selectedId}
+                openExceptionCount={exceptionCountMap[job.id] ?? 0}
                 onClick={() => setSelectedId(job.id === selectedId ? null : job.id)}
               />
             ))}
@@ -289,6 +638,15 @@ export default function ActiveTrackingPage() {
           <div className="flex-1 overflow-hidden">
             <FleetMap jobs={mapJobs} liveLocations={liveLocations} />
           </div>
+
+          {/* Detail panel — slides in when a job is selected */}
+          {selectedJob && (
+            <JobDetailPanel
+              job={selectedJob}
+              exceptions={exceptions}
+              onClose={() => setSelectedId(null)}
+            />
+          )}
         </div>
       )}
     </div>

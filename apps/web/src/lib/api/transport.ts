@@ -51,10 +51,12 @@ export interface ApiTransportJob {
   buyerOfferedRate: number | null;
   currency: string;
   status: TransportJobStatus;
+  statusTimestamps?: Record<string, string> | null;
   acceptedAt?: string | null;
   statusUpdatedAt?: string | null;
   slaEscalatedAt?: string | null;
   slaEscalationStage?: string | null;
+  estimatedArrival?: string | null;
   sla?: {
     stage: string | null;
     overdueMinutes: number;
