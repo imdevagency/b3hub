@@ -941,6 +941,21 @@ export class TransportJobsService {
       throw new BadRequestException('Job is no longer available');
     }
 
+    // Guard: reject if the linked order is still PENDING (unpaid).
+    // RFQ orders create transport jobs before payment is confirmed — a driver
+    // must not be able to start executing a job for an order that hasn't been paid.
+    if (job.orderId) {
+      const linkedOrder = await this.prisma.order.findUnique({
+        where: { id: job.orderId },
+        select: { status: true },
+      });
+      if (linkedOrder?.status === OrderStatus.PENDING) {
+        throw new BadRequestException(
+          'Šis darbs nav pieejams, jo saistītā pasūtījuma apmaksa vēl nav apstiprināta.',
+        );
+      }
+    }
+
     // Respect exclusive offer window: only the offered driver may accept while
     // the offer is still live. Once it expires any driver may accept again.
     if (
@@ -1120,7 +1135,7 @@ export class TransportJobsService {
             offeredToDriverId: true,
             offerExpiresAt: true,
             requestedById: true,
-            order: { select: { createdById: true } },
+            order: { select: { createdById: true, status: true } },
           },
         });
 
@@ -1148,8 +1163,12 @@ export class TransportJobsService {
     offeredToDriverId?: string | null;
     offerExpiresAt?: Date | null;
     requestedById?: string | null;
-    order?: { createdById: string } | null;
+    order?: { createdById: string; status?: string } | null;
   }) {
+    // Skip auto-dispatch for jobs linked to unpaid (PENDING) orders.
+    // RFQ orders create transport jobs eagerly before seller confirmation;
+    // dispatch must wait until the order is confirmed and payment captured.
+    if (job.order?.status === OrderStatus.PENDING) return;
     const now = new Date();
     // If the previous offer expired (driver did not respond), treat them as
     // declined so they are not re-offered the same job indefinitely.

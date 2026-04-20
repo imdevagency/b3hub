@@ -1174,6 +1174,41 @@ export class OrdersService {
           }
         }
       }
+
+      // Notify seller company members so they stop preparing the load.
+      // Fetch only the supplier IDs — a separate lightweight query avoids
+      // reworking the main order select above.
+      this.prisma.orderItem
+        .findMany({
+          where: { orderId: id },
+          select: { material: { select: { supplierId: true } } },
+        })
+        .then(async (itemsForNotif) => {
+          const sellerCompanyIds = [
+            ...new Set(itemsForNotif.map((i) => i.material.supplierId)),
+          ];
+          if (sellerCompanyIds.length === 0) return;
+          const sellerUsers = await this.prisma.user.findMany({
+            where: { companyId: { in: sellerCompanyIds } },
+            select: { id: true },
+          });
+          if (sellerUsers.length === 0) return;
+          return this.notifications.createForMany(
+            sellerUsers.map((u) => u.id),
+            {
+              type: NotificationType.ORDER_CANCELLED,
+              title: 'Pasūtījums atcelts',
+              message: `Pasūtījums #${order.orderNumber} ir atcelts. Lūdzu apturiet sagatavošanos kraušanai.`,
+              data: { orderId: id },
+            },
+          );
+        })
+        .catch((err) =>
+          this.logger.warn(
+            'Seller cancel notification failed',
+            (err as Error).message,
+          ),
+        );
     }
 
     // Notify buyer of status change (fire-and-forget)
@@ -1695,6 +1730,39 @@ export class OrdersService {
         }
       }
     }
+
+    // Notify seller company members so they stop preparing the load (buyer cancel path).
+    this.prisma.orderItem
+      .findMany({
+        where: { orderId: id },
+        select: { material: { select: { supplierId: true } } },
+      })
+      .then(async (itemsForNotif) => {
+        const sellerCompanyIds = [
+          ...new Set(itemsForNotif.map((i) => i.material.supplierId)),
+        ];
+        if (sellerCompanyIds.length === 0) return;
+        const sellerUsers = await this.prisma.user.findMany({
+          where: { companyId: { in: sellerCompanyIds } },
+          select: { id: true },
+        });
+        if (sellerUsers.length === 0) return;
+        return this.notifications.createForMany(
+          sellerUsers.map((u) => u.id),
+          {
+            type: NotificationType.ORDER_CANCELLED,
+            title: 'Pasūtījums atcelts',
+            message: `Pasūtījums #${order.orderNumber} ir atcelts pircēja dēļ. Lūdzu apturiet sagatavošanos kraušanai.`,
+            data: { orderId: id },
+          },
+        );
+      })
+      .catch((err) =>
+        this.logger.warn(
+          'cancel: seller notification failed',
+          (err as Error).message,
+        ),
+      );
 
     // Release credit on cancellation — use raw SQL with GREATEST(0,...) as a safety
     // floor so a hypothetical double-decrement can never produce a negative balance.
@@ -2593,6 +2661,59 @@ export class OrdersService {
 
             if (count === 0) continue; // Concurrent update beat us
 
+            // Cascade-cancel transport jobs so drivers aren't left mid-route
+            // for an order that has been auto-cancelled.
+            const cronCancelableStatuses: TransportJobStatus[] = [
+              TransportJobStatus.AVAILABLE,
+              TransportJobStatus.ASSIGNED,
+              TransportJobStatus.ACCEPTED,
+              TransportJobStatus.EN_ROUTE_PICKUP,
+              TransportJobStatus.AT_PICKUP,
+              TransportJobStatus.LOADED,
+              TransportJobStatus.EN_ROUTE_DELIVERY,
+              TransportJobStatus.AT_DELIVERY,
+            ];
+            const jobsForOrder = await this.prisma.transportJob.findMany({
+              where: {
+                orderId: order.id,
+                status: { in: cronCancelableStatuses },
+              },
+              select: { id: true, driverId: true },
+            });
+            if (jobsForOrder.length > 0) {
+              await this.prisma.transportJob
+                .updateMany({
+                  where: {
+                    orderId: order.id,
+                    status: { in: cronCancelableStatuses },
+                  },
+                  data: { status: TransportJobStatus.CANCELLED },
+                })
+                .catch((err) =>
+                  this.logger.error(
+                    `autoCancelStale: job cascade failed for order ${order.id}: ${(err as Error).message}`,
+                  ),
+                );
+              for (const job of jobsForOrder) {
+                if (job.driverId) {
+                  this.notifications
+                    .create({
+                      userId: job.driverId,
+                      type: NotificationType.ORDER_CANCELLED,
+                      title: 'Darbs atcelts',
+                      message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts. Jūsu transporta darbs ir noņemts.`,
+                      data: { orderId: order.id, jobId: job.id },
+                    })
+                    .catch((err) =>
+                      this.logger.warn(
+                        'autoCancelStale: driver notification failed',
+                        (err as Error).message,
+                      ),
+                    );
+                }
+              }
+            }
+
             // Void the Stripe PaymentIntent (fire-and-forget)
             this.payments
               .voidOrRefund(order.id)
@@ -2650,6 +2771,40 @@ export class OrdersService {
               .catch((err) =>
                 this.logger.warn(
                   'autoCancelStalePendingOrders buyer notification failed',
+                  (err as Error).message,
+                ),
+              );
+
+            // Notify seller(s) that this order has been auto-cancelled — they were
+            // notified when it was placed and may still be expecting to confirm it.
+            this.prisma.orderItem
+              .findMany({
+                where: { orderId: order.id },
+                select: { material: { select: { supplierId: true } } },
+              })
+              .then(async (itemsForNotif) => {
+                const sellerCompanyIds = [
+                  ...new Set(itemsForNotif.map((i) => i.material.supplierId)),
+                ];
+                if (sellerCompanyIds.length === 0) return;
+                const sellerUsers = await this.prisma.user.findMany({
+                  where: { companyId: { in: sellerCompanyIds } },
+                  select: { id: true },
+                });
+                if (sellerUsers.length === 0) return;
+                return this.notifications.createForMany(
+                  sellerUsers.map((u) => u.id),
+                  {
+                    type: NotificationType.ORDER_CANCELLED,
+                    title: 'Pasūtījums automātiski atcelts',
+                    message: `Pasūtījums #${order.orderNumber} tika automātiski atcelts, jo netika apstiprināts 48 stundu laikā.`,
+                    data: { orderId: order.id },
+                  },
+                );
+              })
+              .catch((err) =>
+                this.logger.warn(
+                  'autoCancelStalePendingOrders seller notification failed',
                   (err as Error).message,
                 ),
               );

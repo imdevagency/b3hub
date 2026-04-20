@@ -379,6 +379,16 @@ export class SkipHireService {
       where: { id },
       data: { status: SkipHireStatus.CANCELLED },
     });
+
+    // Void the PaymentIntent (PENDING) or issue a full refund (CAPTURED)
+    this.payments
+      .refundSkipHireOrder(id)
+      .catch((err) =>
+        this.logger.error(
+          `refundSkipHireOrder failed on cancel for skip order ${order.orderNumber}: ${(err as Error).message}`,
+        ),
+      );
+
     if (order.userId) {
       this.notifications
         .create({
@@ -549,6 +559,15 @@ export class SkipHireService {
             this.logger.warn(
               `Skip hire order ${order.orderNumber} auto-cancelled — deliveryDate passed with no carrier confirmation`,
             );
+
+            // Void/refund the buyer's payment (PaymentIntent may still be open)
+            this.payments
+              .refundSkipHireOrder(order.id)
+              .catch((err) =>
+                this.logger.error(
+                  `refundSkipHireOrder failed in auto-cancel for skip order ${order.orderNumber}: ${(err as Error).message}`,
+                ),
+              );
 
             if (order.userId) {
               this.notifications

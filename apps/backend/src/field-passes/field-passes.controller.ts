@@ -15,8 +15,8 @@ import { FieldPassesService } from './field-passes.service';
 import { CreateFieldPassDto } from './dto/create-field-pass.dto';
 import { RevokeFieldPassDto } from './dto/revoke-field-pass.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -46,8 +46,8 @@ export class FieldPassesController {
    * No auth required — gate kiosk or driver's phone can call this
    * by scanning the QR code on the printed pass.
    */
+  @Public()
   @Get('validate/:passNumber')
-  @UseGuards(OptionalJwtAuthGuard)
   validate(@Param('passNumber') passNumber: string) {
     return this.service.validateByPassNumber(passNumber);
   }

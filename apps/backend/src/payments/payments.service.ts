@@ -2246,4 +2246,88 @@ export class PaymentsService {
       // Non-fatal — log for manual reconciliation rather than crashing the status update
     }
   }
+
+  /**
+   * Void or refund payment for a skip-hire order that is being cancelled.
+   *
+   * Skip-hire orders store `stripePaymentId` directly on the `SkipHireOrder`
+   * record (unlike regular orders which use the `Payment` table).
+   *
+   * - paymentStatus PENDING → buyer's card was never charged (PaymentIntent open
+   *   but not completed) → cancel the PaymentIntent.
+   * - paymentStatus CAPTURED → buyer was charged → issue a full Stripe refund.
+   * - paymentStatus REFUNDED / no stripePaymentId → no-op.
+   *
+   * Non-fatal by design — a Stripe failure must not block the cancellation.
+   */
+  async refundSkipHireOrder(skipOrderId: string): Promise<void> {
+    if (!this.stripe) {
+      this.logger.warn(
+        `refundSkipHireOrder: Stripe not configured — skipping for skip order ${skipOrderId}`,
+      );
+      return;
+    }
+
+    const order = await this.prisma.skipHireOrder.findUnique({
+      where: { id: skipOrderId },
+      select: { stripePaymentId: true, paymentStatus: true, orderNumber: true },
+    });
+
+    if (!order) {
+      this.logger.warn(
+        `refundSkipHireOrder: skip order ${skipOrderId} not found`,
+      );
+      return;
+    }
+
+    if (!order.stripePaymentId) {
+      // Buyer never completed checkout — nothing to void
+      return;
+    }
+
+    if (
+      order.paymentStatus === PaymentStatus.REFUNDED ||
+      order.paymentStatus === PaymentStatus.RELEASED
+    ) {
+      return;
+    }
+
+    try {
+      if (order.paymentStatus === PaymentStatus.CAPTURED) {
+        // Funds already captured — issue a full refund
+        const pi = await this.stripe.paymentIntents.retrieve(
+          order.stripePaymentId,
+        );
+        const chargeId =
+          typeof pi.latest_charge === 'string'
+            ? pi.latest_charge
+            : (pi.latest_charge?.id ?? null);
+
+        if (chargeId) {
+          await this.stripe.refunds.create({ charge: chargeId });
+        } else {
+          this.logger.warn(
+            `refundSkipHireOrder: no charge found on PaymentIntent for skip order ${order.orderNumber}`,
+          );
+        }
+      } else {
+        // PENDING (not yet captured) — cancel the PaymentIntent to release the hold
+        await this.stripe.paymentIntents.cancel(order.stripePaymentId);
+      }
+
+      await this.prisma.skipHireOrder.update({
+        where: { id: skipOrderId },
+        data: { paymentStatus: PaymentStatus.REFUNDED },
+      });
+
+      this.logger.log(
+        `refundSkipHireOrder: payment voided/refunded for skip order ${order.orderNumber}`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `refundSkipHireOrder failed for skip order ${skipOrderId}: ${(err as Error).message}`,
+      );
+      // Non-fatal — cancellation proceeds; finance team reconciles manually
+    }
+  }
 }
