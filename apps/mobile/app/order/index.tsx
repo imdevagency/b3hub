@@ -16,7 +16,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  TextInput,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -48,6 +47,9 @@ import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { colors } from '@/lib/theme';
 import { useToast } from '@/components/ui/Toast';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { TextInputField } from '@/components/ui/TextInputField';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -392,7 +394,7 @@ export default function OrderWizard() {
             contentContainerStyle={s.contentPad}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={s.sectionLabel}>Piegādes datums</Text>
+            <SectionLabel label="Piegādes datums" />
             <View
               style={{
                 marginBottom: 16,
@@ -439,7 +441,7 @@ export default function OrderWizard() {
             </View>
 
             {/* Delivery window */}
-            <Text style={[s.sectionLabel, { marginTop: 16 }]}>Vēlamais piegādes laiks</Text>
+            <SectionLabel label="Vēlamais piegādes laiks" style={{ marginTop: 16 }} />
             <View style={s.windowRow}>
               {(
                 [
@@ -464,7 +466,7 @@ export default function OrderWizard() {
             </View>
 
             {/* Summary */}
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kopsavilkums</Text>
+            <SectionLabel label="Kopsavilkums" style={{ marginTop: 20 }} />
             <View style={s.summaryCard}>
               <View style={s.addressRow}>
                 <MapPin size={14} color="#374151" />
@@ -492,27 +494,21 @@ export default function OrderWizard() {
             </View>
 
             {/* Contact */}
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
+            <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
             <View style={{ gap: 10, marginBottom: 8 }}>
-              <TextInput
-                style={s.input}
+              <TextInputField
                 placeholder="Kontaktpersona"
-                placeholderTextColor="#9ca3af"
                 value={contactName}
                 onChangeText={setContactName}
               />
-              <TextInput
-                style={s.input}
+              <TextInputField
                 placeholder="Tālrunis"
-                placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
                 value={contactPhone}
                 onChangeText={setContactPhone}
               />
-              <TextInput
-                style={[s.input, s.inputMulti]}
+              <TextInputField
                 placeholder="Piezīmes (piem., piekļuves kods, vārtu atvēršana)"
-                placeholderTextColor="#9ca3af"
                 multiline
                 value={notes}
                 onChangeText={setNotes}
@@ -539,9 +535,7 @@ export default function OrderWizard() {
               </TouchableOpacity>
             )}
 
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>
-              Izkraušanas punkta foto (neobligāti)
-            </Text>
+            <SectionLabel label="Izkraušanas punkta foto (neobligāti)" style={{ marginTop: 20 }} />
             <View style={s.photoCard}>
               {unloadingPointPhotoUrl ? (
                 <View style={s.photoPreviewWrap}>
@@ -578,7 +572,7 @@ export default function OrderWizard() {
               )}
             </View>
             {/* ── Link to material order (optional) ── */}
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Saistīt ar materiālu pasūtījumu</Text>
+            <SectionLabel label="Saistīt ar materiālu pasūtījumu" style={{ marginTop: 20 }} />
             <TouchableOpacity
               style={s.matLinkToggle}
               onPress={() => setShowMatLink((v) => !v)}
@@ -663,18 +657,6 @@ export default function OrderWizard() {
   );
 }
 
-// ── Summary helper ────────────────────────────────────────────────
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.detailRow}>
-      <Text style={s.detailLabel}>{label}</Text>
-      <Text style={s.detailValue} numberOfLines={2}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 // ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   content: { flex: 1 },
@@ -697,13 +679,6 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
   addressPlaceholder: { color: colors.textDisabled, fontWeight: '400' },
-  sectionLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: 8,
-    marginBottom: 16,
-  },
   dayStrip: { flexGrow: 0 },
   dayChip: {
     alignItems: 'center',
@@ -772,34 +747,6 @@ const s = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 22,
   },
-  detailRow: {
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  detailLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
-  detailValue: {
-    flex: 1,
-    textAlign: 'right',
-    fontSize: 15,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: colors.bgSubtle,
-    borderWidth: 0,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  inputMulti: { height: 80, textAlignVertical: 'top' },
   saveAddrRow: {
     flexDirection: 'row',
     alignItems: 'center',

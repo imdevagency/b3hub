@@ -10,16 +10,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-  Linking,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
@@ -31,12 +22,6 @@ import {
   Trash2,
   AlertTriangle,
   Check,
-  User,
-  Phone,
-  AlignLeft,
-  CreditCard,
-  Weight,
-  Truck,
   Bookmark,
   type LucideIcon,
 } from 'lucide-react-native';
@@ -95,6 +80,9 @@ LocaleConfig.defaultLocale = 'lv';
 
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
 
 // ── Draft persistence ────────────────────────────────────────────
@@ -482,7 +470,12 @@ export default function DisposalWizard() {
   const ctaDisabled =
     (step === 1 && selectedWastes.length === 0) || (step === 2 && !picked) || loading;
 
-  const ctaLabel = step === 4 ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}` : step === 3 ? `Turpināt • no €${activeTruck.fromPrice * numTrucks}` : 'Turpināt';
+  const ctaLabel =
+    step === 4
+      ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}`
+      : step === 3
+        ? `Turpināt • no €${activeTruck.fromPrice * numTrucks}`
+        : 'Turpināt';
 
   const onCTA = useCallback(async () => {
     if (step === 4) {
@@ -601,8 +594,12 @@ export default function DisposalWizard() {
                     </View>
 
                     <View style={s.wasteInfo}>
-                      <Text style={[s.wasteLabel, isSel && { color: colors.white }]}>{opt.label}</Text>
-                      <Text style={[s.wasteDesc, isSel && { color: colors.textDisabled }]}>{opt.desc}</Text>
+                      <Text style={[s.wasteLabel, isSel && { color: colors.white }]}>
+                        {opt.label}
+                      </Text>
+                      <Text style={[s.wasteDesc, isSel && { color: colors.textDisabled }]}>
+                        {opt.desc}
+                      </Text>
                     </View>
 
                     <View style={[s.checkboxOuter, isSel && s.checkboxOuterSel]}>
@@ -635,7 +632,7 @@ export default function DisposalWizard() {
               {TIPPER_TRUCKS.map((t) => {
                 const isSel = selectedTruckType === t.type;
                 const priceFrom = t.fromPrice * (isSel ? numTrucks : 1);
-                
+
                 return (
                   <TouchableOpacity
                     key={t.type}
@@ -659,60 +656,154 @@ export default function DisposalWizard() {
                     activeOpacity={0.9}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={{ width: 64, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                      <View
+                        style={{
+                          width: 64,
+                          height: 44,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
                         <TruckIllustration type={t.type} height={32} />
                       </View>
                       <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={{ fontSize: 16, fontWeight: isSel ? '700' : '600', color: colors.textPrimary }}>
+                        <Text
+                          style={{
+                            fontSize: 16,
+                            fontWeight: isSel ? '700' : '600',
+                            color: colors.textPrimary,
+                          }}
+                        >
                           {t.label}
                         </Text>
                         <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
                           {t.capacity} t · {t.volume} m³
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 16, fontWeight: isSel ? '800' : '600', color: colors.textPrimary }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: isSel ? '800' : '600',
+                          color: colors.textPrimary,
+                        }}
+                      >
                         €{priceFrom}
                       </Text>
                     </View>
 
                     {isSel && (
-                      <View style={{ 
-                        marginTop: 16, 
-                        paddingTop: 16, 
-                        borderTopWidth: 1, 
-                        borderColor: '#E5E7EB',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                      }}>
-                         <View>
-                           <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '500' }}>Kopējais apjoms</Text>
-                           <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 }}>
-                             ≈ {t.capacity * numTrucks} t · ≈ {t.volume * numTrucks} m³
-                           </Text>
-                         </View>
+                      <View
+                        style={{
+                          marginTop: 16,
+                          paddingTop: 16,
+                          borderTopWidth: 1,
+                          borderColor: '#E5E7EB',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <View>
+                          <Text
+                            style={{ color: colors.textMuted, fontSize: 13, fontWeight: '500' }}
+                          >
+                            Kopējais apjoms
+                          </Text>
+                          <Text
+                            style={{
+                              color: colors.textPrimary,
+                              fontSize: 15,
+                              fontWeight: '700',
+                              marginTop: 2,
+                            }}
+                          >
+                            ≈ {t.capacity * numTrucks} t · ≈ {t.volume * numTrucks} m³
+                          </Text>
+                        </View>
 
-                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 24, padding: 4 }}>
-                            <TouchableOpacity
-                              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: numTrucks <= 1 ? 'transparent' : '#ffffff', alignItems: 'center', justifyContent: 'center', shadowColor: numTrucks > 1 ? '#000' : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: numTrucks > 1 ? 2 : 0 }}
-                              disabled={numTrucks <= 1}
-                              onPress={() => { haptics.light(); setNumTrucks(n => n - 1); }}
-                              activeOpacity={0.7}
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: '#F3F4F6',
+                            borderRadius: 24,
+                            padding: 4,
+                          }}
+                        >
+                          <TouchableOpacity
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 18,
+                              backgroundColor: numTrucks <= 1 ? 'transparent' : '#ffffff',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              shadowColor: numTrucks > 1 ? '#000' : 'transparent',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.1,
+                              shadowRadius: 3,
+                              elevation: numTrucks > 1 ? 2 : 0,
+                            }}
+                            disabled={numTrucks <= 1}
+                            onPress={() => {
+                              haptics.light();
+                              setNumTrucks((n) => n - 1);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 20,
+                                color: numTrucks <= 1 ? '#9CA3AF' : '#111827',
+                                fontWeight: '500',
+                              }}
                             >
-                               <Text style={{ fontSize: 20, color: numTrucks <= 1 ? '#9CA3AF' : '#111827', fontWeight: '500' }}>−</Text>
-                            </TouchableOpacity>
-                            <Text style={{ color: '#111827', fontSize: 16, fontWeight: '700', minWidth: 32, textAlign: 'center' }}>
-                              {numTrucks}
+                              −
                             </Text>
-                            <TouchableOpacity
-                              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: numTrucks >= 6 ? 'transparent' : '#ffffff', alignItems: 'center', justifyContent: 'center', shadowColor: numTrucks < 6 ? '#000' : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: numTrucks < 6 ? 2 : 0 }}
-                              disabled={numTrucks >= 6}
-                              onPress={() => { haptics.light(); setNumTrucks(n => n + 1); }}
-                              activeOpacity={0.7}
+                          </TouchableOpacity>
+                          <Text
+                            style={{
+                              color: '#111827',
+                              fontSize: 16,
+                              fontWeight: '700',
+                              minWidth: 32,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {numTrucks}
+                          </Text>
+                          <TouchableOpacity
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 18,
+                              backgroundColor: numTrucks >= 6 ? 'transparent' : '#ffffff',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              shadowColor: numTrucks < 6 ? '#000' : 'transparent',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.1,
+                              shadowRadius: 3,
+                              elevation: numTrucks < 6 ? 2 : 0,
+                            }}
+                            disabled={numTrucks >= 6}
+                            onPress={() => {
+                              haptics.light();
+                              setNumTrucks((n) => n + 1);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 20,
+                                color: numTrucks >= 6 ? '#9CA3AF' : '#111827',
+                                fontWeight: '500',
+                              }}
                             >
-                               <Text style={{ fontSize: 20, color: numTrucks >= 6 ? '#9CA3AF' : '#111827', fontWeight: '500' }}>+</Text>
-                            </TouchableOpacity>
-                         </View>
+                              +
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -722,40 +813,18 @@ export default function DisposalWizard() {
 
             {/* ── Optional details ── */}
             <View style={{ gap: 12, paddingBottom: 16 }}>
-              <TextInput
-                style={{
-                  backgroundColor: '#F3F4F6',
-                  borderRadius: 16,
-                  borderWidth: 0,
-                  paddingHorizontal: 16,
-                  paddingVertical: 16,
-                  fontSize: 15,
-                  color: colors.textPrimary,
-                }}
+              <TextInputField
                 placeholder={`Neobligāti: Aptuvenais svars (piem. ${activeTruck.capacity * numTrucks} t)`}
-                placeholderTextColor="#9CA3AF"
                 value={weightText}
                 onChangeText={setWeightText}
                 keyboardType="decimal-pad"
                 returnKeyType="done"
               />
-              <TextInput
-                style={{
-                  backgroundColor: '#F3F4F6',
-                  borderRadius: 16,
-                  borderWidth: 0,
-                  paddingHorizontal: 16,
-                  paddingVertical: 16,
-                  fontSize: 15,
-                  color: colors.textPrimary,
-                  minHeight: 100,
-                  textAlignVertical: 'top',
-                }}
+              <TextInputField
                 placeholder="Neobligāti: Papildu informācija autovadītājam..."
-                placeholderTextColor="#9CA3AF"
+                multiline
                 value={desc}
                 onChangeText={setDesc}
-                multiline
               />
             </View>
           </ScrollView>
@@ -768,7 +837,7 @@ export default function DisposalWizard() {
             contentContainerStyle={s.pad}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={s.sectionLabel}>Savākšanas datums</Text>
+            <SectionLabel label="Savākšanas datums" />
             <View
               style={{
                 marginBottom: 16,
@@ -819,7 +888,7 @@ export default function DisposalWizard() {
             </View>
 
             {/* Pickup window */}
-            <Text style={s.sectionLabel}>Vēlamais savākšanas laiks</Text>
+            <SectionLabel label="Vēlamais savākšanas laiks" />
             <View style={s.windowRow}>
               {(
                 [
@@ -841,7 +910,7 @@ export default function DisposalWizard() {
               ))}
             </View>
 
-            <Text style={s.sectionLabel}>Kopsavilkums</Text>
+            <SectionLabel label="Kopsavilkums" />
             <View style={s.summaryCard}>
               <View style={s.addressRow}>
                 <MapPin size={18} color="#111827" />
@@ -850,7 +919,6 @@ export default function DisposalWizard() {
                 </Text>
               </View>
               <DetailRow
-                icon={Trash2}
                 label="Atkritumu veids"
                 value={
                   selectedWastes.length
@@ -858,13 +926,8 @@ export default function DisposalWizard() {
                     : '—'
                 }
               />
+              <DetailRow label="Transports" value={`${numTrucks} × ${activeTruck.label}`} />
               <DetailRow
-                icon={Truck}
-                label="Transports"
-                value={`${numTrucks} × ${activeTruck.label}`}
-              />
-              <DetailRow
-                icon={Weight}
                 label="Apjoms"
                 value={(() => {
                   const parsed = parseFloat(weightText);
@@ -874,47 +937,31 @@ export default function DisposalWizard() {
                 })()}
               />
               <DetailRow
-                icon={CreditCard}
                 label="Orientējošā cena"
                 value={`no €${activeTruck.fromPrice * numTrucks} + PVN 21%`}
-                isLast
+                last
               />
             </View>
 
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
-            <View style={{ marginBottom: 8 }}>
-              <View style={s.uberInputWrapper}>
-                <User size={20} color="#9ca3af" style={s.uberInputIcon} />
-                <TextInput
-                  style={s.uberInput}
-                  placeholder="Kontaktpersona"
-                  placeholderTextColor="#9ca3af"
-                  value={contactName}
-                  onChangeText={setContactName}
-                />
-              </View>
-              <View style={s.uberInputWrapper}>
-                <Phone size={20} color="#9ca3af" style={s.uberInputIcon} />
-                <TextInput
-                  style={s.uberInput}
-                  placeholder="Tālrunis"
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="phone-pad"
-                  value={contactPhone}
-                  onChangeText={setContactPhone}
-                />
-              </View>
-              <View style={[s.uberInputWrapper, { alignItems: 'flex-start' }]}>
-                <AlignLeft size={20} color="#9ca3af" style={[s.uberInputIcon, { marginTop: 16 }]} />
-                <TextInput
-                  style={[s.uberInput, s.uberInputMulti]}
-                  placeholder="Piezīmes un norādījumi (piem., piekļuves kods, šaurā iebraukšana)"
-                  placeholderTextColor="#9ca3af"
-                  multiline
-                  value={notes}
-                  onChangeText={setNotes}
-                />
-              </View>
+            <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
+            <View style={{ gap: 10, marginBottom: 8 }}>
+              <TextInputField
+                placeholder="Kontaktpersona"
+                value={contactName}
+                onChangeText={setContactName}
+              />
+              <TextInputField
+                placeholder="Tālrunis"
+                keyboardType="phone-pad"
+                value={contactPhone}
+                onChangeText={setContactPhone}
+              />
+              <TextInputField
+                placeholder="Piezīmes un norādījumi (piem., piekļuves kods, šaurā iebraukšana)"
+                multiline
+                value={notes}
+                onChangeText={setNotes}
+              />
             </View>
 
             {/* Save address toggle */}
@@ -944,31 +991,6 @@ export default function DisposalWizard() {
   );
 }
 
-// ── Summary helper ────────────────────────────────────────────────
-function DetailRow({
-  label,
-  value,
-  icon: Icon,
-  isLast,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ElementType;
-  isLast?: boolean;
-}) {
-  return (
-    <View style={[s.detailRow, isLast && { borderBottomWidth: 0, paddingBottom: 0 }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        {Icon && <Icon size={16} color="#6b7280" />}
-        <Text style={s.detailLabel}>{label}</Text>
-      </View>
-      <Text style={s.detailValue} numberOfLines={2}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 // ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   content: { flex: 1 },
@@ -985,14 +1007,6 @@ const s = StyleSheet.create({
   },
   addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500' },
   placeholder: { color: colors.textDisabled, fontWeight: '400' },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textMuted,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
 
   // Waste grid
   // Waste list styles
@@ -1137,7 +1151,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   windowChipActive: { backgroundColor: '#000000' },
-  windowChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
+  windowChipText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   windowChipTextActive: { color: colors.white },
 
   // Save address toggle
@@ -1180,49 +1199,11 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  addressValue: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '600', lineHeight: 22 },
-  detailRow: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  detailLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
-  detailValue: {
+  addressValue: {
     flex: 1,
-    textAlign: 'right',
     fontSize: 15,
     color: colors.textPrimary,
     fontWeight: '600',
-  },
-
-  uberInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bgMuted,
-    borderRadius: 16,
-    borderWidth: 0,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  uberInputWrapFocus: {
-    borderColor: '#000',
-  },
-  uberInputIcon: {
-    marginRight: 12,
-  },
-  uberInput: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  uberInputMulti: {
-    height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 16,
+    lineHeight: 22,
   },
 });

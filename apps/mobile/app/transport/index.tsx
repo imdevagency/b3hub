@@ -24,6 +24,9 @@ import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -497,13 +500,14 @@ export default function TransportWizard() {
                 dropoffAddress={dropoffPicked?.address ?? 'Izkraušanas adrese nav izvēlēta'}
               />
               {route && (
-                <Text style={[s.routeMeta, { textAlign: "center", marginTop: 8, letterSpacing: 0.5 }]}>
+                <Text
+                  style={[s.routeMeta, { textAlign: 'center', marginTop: 8, letterSpacing: 0.5 }]}
+                >
                   {route.distanceKm.toFixed(1)} km · {route.durationLabel}
                 </Text>
               )}
             </View>
 
-            
             <Text style={s.sectionTitle}>Ieteicamie</Text>
             <View style={{ gap: 0, marginBottom: 24 }}>
               {VEHICLE_OPTIONS.map((v) => {
@@ -518,9 +522,7 @@ export default function TransportWizard() {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View
-                      style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}
-                    >
+                    <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
                       <TruckIllustration type={v.type} />
                     </View>
                     <View style={{ flex: 1, paddingLeft: 12 }}>
@@ -562,12 +564,10 @@ export default function TransportWizard() {
               })}
             </ScrollView>
 
-
             {activeDesc === 'Cits' && (
-              <TextInput
-                style={[s.input, { marginBottom: 16 }]}
+              <TextInputField
+                containerStyle={{ marginBottom: 16 }}
                 placeholder="Aprakstiet kravu (piem., iekārtas, mēbeles, paletes)..."
-                placeholderTextColor="#9ca3af"
                 value={otherText}
                 onChangeText={(t) => {
                   setOtherText(t);
@@ -603,7 +603,7 @@ export default function TransportWizard() {
             contentContainerStyle={s.pad}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={s.sectionLabel}>Pārvadāšanas datums</Text>
+            <SectionLabel label="Pārvadāšanas datums" />
             <View
               style={{
                 marginBottom: 16,
@@ -651,7 +651,7 @@ export default function TransportWizard() {
             </View>
 
             {/* Pickup window */}
-            <Text style={s.sectionLabel}>Vēlamais iekraušanas laiks</Text>
+            <SectionLabel label="Vēlamais iekraušanas laiks" />
             <View style={s.windowRow}>
               {(
                 [
@@ -673,7 +673,7 @@ export default function TransportWizard() {
               ))}
             </View>
 
-            <Text style={s.sectionLabel}>Cena un Kopsavilkums</Text>
+            <SectionLabel label="Cena un Kopsavilkums" />
             <View style={s.detailCard}>
               <DetailRow
                 label="Maršruts"
@@ -698,7 +698,7 @@ export default function TransportWizard() {
               )}
             </View>
 
-            <Text style={s.sectionLabel}>Sūtīšana</Text>
+            <SectionLabel label="Sūtīšana" />
             <View style={[s.summaryCard, { marginBottom: 12 }]}>
               <RouteStops
                 pickupAddress={pickupPicked?.address ?? '—'}
@@ -744,35 +744,27 @@ export default function TransportWizard() {
               </TouchableOpacity>
             )}
 
-            <Text style={[s.sectionLabel, { marginTop: 20 }]}>Kontaktinformācija</Text>
+            <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
             <View style={{ gap: 10, marginBottom: 8 }}>
-              <TextInput
-                style={s.input}
+              <TextInputField
                 placeholder="Kontaktpersona"
-                placeholderTextColor="#9ca3af"
                 value={siteContactName}
                 onChangeText={setSiteContactName}
               />
-              <TextInput
-                style={s.input}
+              <TextInputField
                 placeholder="Tālrunis"
-                placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
                 value={siteContactPhone}
                 onChangeText={setSiteContactPhone}
               />
-              <TextInput
-                style={[s.input, s.inputMulti]}
+              <TextInputField
                 placeholder="Piezīmes un norādījumi (piem., bīstamas kravas brīdinājumi, iekraušanas instrukcijas)"
-                placeholderTextColor="#9ca3af"
                 multiline
                 value={notes}
                 onChangeText={setNotes}
               />
-              <TextInput
-                style={s.input}
+              <TextInputField
                 placeholder="Jūsu piedāvātā cena (€) — pēc izvēles"
-                placeholderTextColor="#9ca3af"
                 keyboardType="numeric"
                 value={offeredRateText}
                 onChangeText={setOfferedRateText}
@@ -818,25 +810,18 @@ function RouteStops({
   );
 }
 
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.detailRow}>
-      <Text style={s.detailLabel}>{label}</Text>
-      <Text style={s.detailValue} numberOfLines={2}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 // ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   content: { flex: 1 },
   pad: { padding: 20, paddingBottom: 32 },
   hint: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
-  sectionLabel: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, marginBottom: 16, marginTop: 8 },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 16,
+    marginTop: 8,
+  },
 
   routeLiteCard: {
     backgroundColor: 'transparent',
@@ -862,7 +847,13 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
-  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500', lineHeight: 20 },
+  addressText: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
   placeholder: { color: colors.textDisabled, fontWeight: '400' },
 
   // Pickup reference row (step 2)
@@ -906,7 +897,6 @@ const s = StyleSheet.create({
   vehicleSubSel: { color: '#4b5563' },
   vehiclePrice: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
   vehiclePriceSel: { color: '#000' },
-  
 
   // Cargo chips
   cargoChip: {
@@ -967,7 +957,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   windowChipActive: { backgroundColor: '#000000' },
-  windowChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
+  windowChipText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   windowChipTextActive: { color: colors.white },
 
   // Summary card
@@ -975,14 +970,7 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingVertical: 12,
   },
-  
-  
-  
-  
-  
-  
-  
-  
+
   summaryMetaRow: {
     marginTop: 10,
     paddingTop: 10,
@@ -995,7 +983,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
 
-    uberRouteBox: {
+  uberRouteBox: {
     flexDirection: 'row',
     marginBottom: 16,
     backgroundColor: colors.bgSubtle,
@@ -1021,41 +1009,6 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
     marginBottom: 10,
   },
-  detailRow: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  detailValue: {
-    flex: 1,
-    textAlign: 'right',
-    fontSize: 15,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-
-  // Inputs
-  input: {
-    backgroundColor: colors.bgMuted,
-    borderWidth: 0,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  inputMulti: { height: 80, textAlignVertical: 'top' },
-
-  // Save address toggle
   saveAddrRow: {
     flexDirection: 'row',
     alignItems: 'center',
