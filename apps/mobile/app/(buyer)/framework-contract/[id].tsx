@@ -8,6 +8,7 @@ import React, { useCallback, useState } from 'react';
 import {
   Modal,
   Pressable,
+  TouchableOpacity,
   View,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
+  type ApiAdvanceInvoice,
   type ApiFrameworkContract,
   type ApiFrameworkPosition,
   type FrameworkContractStatus,
@@ -40,7 +42,16 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/Toast';
-import { Calendar, Clock, Package, Send, Trash2, TrendingUp, Truck } from 'lucide-react-native';
+import {
+  Calendar,
+  Clock,
+  Package,
+  Receipt,
+  Send,
+  Trash2,
+  TrendingUp,
+  Truck,
+} from 'lucide-react-native';
 import { colors } from '@/lib/theme';
 
 const CONTRACT_STATUS: Record<
@@ -214,15 +225,35 @@ export default function FrameworkContractDetailScreen() {
   const [datePickerFor, setDatePickerFor] = useState<'pickup' | 'delivery' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Advance invoices
+  const [advanceInvoices, setAdvanceInvoices] = useState<ApiAdvanceInvoice[]>([]);
+  const [isFieldContract, setIsFieldContract] = useState(false);
+  const [showAdvanceForm, setShowAdvanceForm] = useState(false);
+  const [advanceAmount, setAdvanceAmount] = useState('');
+  const [advanceNotes, setAdvanceNotes] = useState('');
+  const [creatingAdvance, setCreatingAdvance] = useState(false);
+
   const load = useCallback(
     async (skeleton = true) => {
       if (!token || !id) return;
       if (skeleton) setLoading(true);
       try {
-        const data = await api.frameworkContracts.get(String(id), token);
+        const [data, advances] = await Promise.all([
+          api.frameworkContracts.get(String(id), token),
+          api.frameworkContracts
+            .listAdvanceInvoices(String(id), token)
+            .then((v) => v)
+            .catch((): ApiAdvanceInvoice[] | null => null),
+        ]);
         setContract(data);
+        if (advances !== null) {
+          setAdvanceInvoices(advances);
+          setIsFieldContract(true);
+        } else {
+          setIsFieldContract(false);
+        }
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt līgumu')
+        toast.error(e instanceof Error ? e.message : 'Neizdevās ielādēt līgumu');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -245,9 +276,37 @@ export default function FrameworkContractDetailScreen() {
       setContract(updated);
       haptics.success();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Neizdevās aktivizēt līgumu')
+      toast.error(e instanceof Error ? e.message : 'Neizdevās aktivizēt līgumu');
     } finally {
       setActivating(false);
+    }
+  };
+
+  const handleCreateAdvance = async () => {
+    if (!token || !contract) return;
+    const amount = parseFloat(advanceAmount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Ievadiet derīgu summu.');
+      return;
+    }
+    setCreatingAdvance(true);
+    try {
+      const newInvoice = await api.frameworkContracts.createAdvanceInvoice(
+        contract.id,
+        amount,
+        advanceNotes.trim() || undefined,
+        token,
+      );
+      setAdvanceInvoices((prev) => [...prev, newInvoice]);
+      setAdvanceAmount('');
+      setAdvanceNotes('');
+      setShowAdvanceForm(false);
+      haptics.success();
+      toast.success('Avansa rēķins izveidots!');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot avansa rēķinu.');
+    } finally {
+      setCreatingAdvance(false);
     }
   };
 
@@ -298,7 +357,7 @@ export default function FrameworkContractDetailScreen() {
       );
       load(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot darba uzdevumu')
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot darba uzdevumu');
     } finally {
       setSubmitting(false);
     }
@@ -570,6 +629,118 @@ export default function FrameworkContractDetailScreen() {
                   </Text>
                 </View>
               ))}
+            </InfoSection>
+          </>
+        ) : null}
+
+        {/* Advance Invoices */}
+        {advanceInvoices.length > 0 || isFieldContract ? (
+          <>
+            <SectionLabel label="Avansa rēķini" />
+            <InfoSection
+              icon={<Receipt size={14} color="#6b7280" />}
+              title="Avansa maksājumi"
+              right={
+                !showAdvanceForm ? (
+                  <TouchableOpacity onPress={() => setShowAdvanceForm(true)}>
+                    <Text size="sm" style={s.advanceAddLink}>
+                      + Pievienot
+                    </Text>
+                  </TouchableOpacity>
+                ) : undefined
+              }
+            >
+              {advanceInvoices.length === 0 && (
+                <View style={s.advanceEmptyWrap}>
+                  <Text variant="muted" size="sm">
+                    Nav avansa rēķinu.
+                  </Text>
+                </View>
+              )}
+              {advanceInvoices.map((inv, idx) => (
+                <View
+                  key={inv.id}
+                  style={[s.advRow, idx < advanceInvoices.length - 1 && s.advRowBorder]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text size="sm" style={s.advNumber}>
+                      {inv.invoiceNumber}
+                    </Text>
+                    <Text variant="muted" size="sm">
+                      Termiņš: {formatDateShort(inv.dueDate)}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    <Text style={s.advTotal}>
+                      €{inv.total.toLocaleString('lv-LV', { minimumFractionDigits: 2 })}
+                    </Text>
+                    <StatusPill
+                      label={
+                        inv.paymentStatus === 'PAID'
+                          ? 'Apmaksāts'
+                          : inv.paymentStatus === 'OVERDUE'
+                            ? 'Kavēts'
+                            : 'Gaida'
+                      }
+                      bg={
+                        inv.paymentStatus === 'PAID'
+                          ? '#dcfce7'
+                          : inv.paymentStatus === 'OVERDUE'
+                            ? '#fef2f2'
+                            : '#fef3c7'
+                      }
+                      color={
+                        inv.paymentStatus === 'PAID'
+                          ? colors.successText
+                          : inv.paymentStatus === 'OVERDUE'
+                            ? colors.dangerText
+                            : '#92400e'
+                      }
+                      size="sm"
+                    />
+                  </View>
+                </View>
+              ))}
+
+              {showAdvanceForm && (
+                <View style={s.advForm}>
+                  <Text style={s.fieldLabel}>Summa (€) *</Text>
+                  <TextInput
+                    style={s.input}
+                    value={advanceAmount}
+                    onChangeText={setAdvanceAmount}
+                    placeholder="Piem. 500.00"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={s.fieldLabel}>Piezīmes</Text>
+                  <TextInput
+                    style={[s.input, s.inputMulti]}
+                    value={advanceNotes}
+                    onChangeText={setAdvanceNotes}
+                    placeholder="Papildinformācija..."
+                    placeholderTextColor="#9ca3af"
+                    multiline
+                    numberOfLines={2}
+                  />
+                  <View style={s.advFormActions}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onPress={() => {
+                        setShowAdvanceForm(false);
+                        setAdvanceAmount('');
+                        setAdvanceNotes('');
+                      }}
+                    >
+                      Atcelt
+                    </Button>
+                    <Button size="sm" onPress={handleCreateAdvance} isLoading={creatingAdvance}>
+                      Izveidot rēķinu
+                    </Button>
+                  </View>
+                </View>
+              )}
             </InfoSection>
           </>
         ) : null}
@@ -851,4 +1022,20 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
+
+  // Advance invoices
+  advanceAddLink: { color: colors.primary, fontWeight: '700' },
+  advanceEmptyWrap: { paddingHorizontal: 14, paddingVertical: 10 },
+  advRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  advRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  advNumber: { fontWeight: '600', color: colors.textPrimary },
+  advTotal: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  advForm: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4, gap: 8 },
+  advFormActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end', marginTop: 4 },
 });

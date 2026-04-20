@@ -15,8 +15,24 @@ import {
 } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
-import { api, type AnalyticsOverview, type BuyerAnalytics } from '@/lib/api';
-import { BarChart2, Leaf, Package, TrendingUp, AlertTriangle, Download } from 'lucide-react-native';
+import {
+  api,
+  type AnalyticsOverview,
+  type BuyerAnalytics,
+  type DeliveryCalendarEvent,
+  type SupplierScore,
+} from '@/lib/api';
+import {
+  BarChart2,
+  Leaf,
+  Package,
+  TrendingUp,
+  AlertTriangle,
+  Download,
+  Calendar,
+  Star,
+  MapPin,
+} from 'lucide-react-native';
 import type { ArAging } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -108,12 +124,20 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function AnalyticsScreen() {
   const { token } = useAuth();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<DeliveryCalendarEvent[]>([]);
+  const [supplierScores, setSupplierScores] = useState<SupplierScore[]>([]);
   const [downloading, setDownloading] = useState(false);
 
   const fetcher = useCallback(async () => {
     if (!token) return;
-    const data = await api.analytics.overview(token);
+    const [data, events, scores] = await Promise.all([
+      api.analytics.overview(token),
+      api.analytics.deliveryCalendar(token).catch(() => [] as DeliveryCalendarEvent[]),
+      api.analytics.supplierScores(token).catch(() => [] as SupplierScore[]),
+    ]);
     setOverview(data);
+    setCalendarEvents(events);
+    setSupplierScores(scores);
   }, [token]);
 
   const { loading, refreshing, error, onRefresh } = useScreenLoad(fetcher);
@@ -342,6 +366,78 @@ export default function AnalyticsScreen() {
             </View>
           </SectionCard>
         )}
+
+        {/* Delivery calendar — upcoming confirmed deliveries */}
+        {calendarEvents.length > 0 && (
+          <SectionCard title="Gaidāmās piegādes">
+            {calendarEvents.slice(0, 8).map((ev, index) => {
+              const date = new Date(ev.deliveryDate);
+              const dayStr = date.toLocaleDateString('lv-LV', { day: '2-digit', month: 'short' });
+              const roleColor =
+                ev.role === 'BUYER' ? '#3b82f6' : ev.role === 'SELLER' ? '#8b5cf6' : '#f59e0b';
+              const roleLabel =
+                ev.role === 'BUYER'
+                  ? 'Pircējs'
+                  : ev.role === 'SELLER'
+                    ? 'Pārdevējs'
+                    : 'Transportēšana';
+              return (
+                <View
+                  key={ev.id + ev.role}
+                  style={[styles.calRow, index > 0 && styles.calRowBorder]}
+                >
+                  <View style={styles.calDateBox}>
+                    <Calendar size={12} color="#9ca3af" />
+                    <Text style={styles.calDate}>{dayStr}</Text>
+                  </View>
+                  <View style={styles.calBody}>
+                    <Text style={styles.calRef} numberOfLines={1}>
+                      {ev.ref ? `#${ev.ref}` : ev.type === 'ORDER' ? 'Pasūtījums' : 'Darbs'}{' '}
+                      {ev.materialName ? `· ${ev.materialName}` : ''}
+                    </Text>
+                    {ev.city ? (
+                      <View style={styles.calCityRow}>
+                        <MapPin size={10} color="#9ca3af" />
+                        <Text style={styles.calCity}>{ev.city}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={[styles.calRoleBadge, { backgroundColor: `${roleColor}18` }]}>
+                    <Text style={[styles.calRoleText, { color: roleColor }]}>{roleLabel}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </SectionCard>
+        )}
+
+        {/* Top supplier leaderboard — public data */}
+        {supplierScores.length > 0 && (
+          <SectionCard title="Labākie piegādātāji">
+            {supplierScores.slice(0, 5).map((s, i) => (
+              <View
+                key={s.companyId}
+                style={[styles.supplierRow, i > 0 && styles.supplierRowBorder]}
+              >
+                <Text style={styles.supplierRank}>#{i + 1}</Text>
+                <View style={styles.supplierBody}>
+                  <Text style={styles.supplierName} numberOfLines={1}>
+                    {s.name}
+                  </Text>
+                  {s.city ? <Text style={styles.supplierCity}>{s.city}</Text> : null}
+                </View>
+                <View style={styles.supplierStats}>
+                  <View style={styles.supplierStat}>
+                    <Star size={11} color="#f59e0b" />
+                    <Text style={styles.supplierStatText}>{s.avgRating.toFixed(1)}</Text>
+                  </View>
+                  <Text style={styles.supplierStatSep}>·</Text>
+                  <Text style={styles.supplierStatText}>{Math.round(s.completionRate)}%</Text>
+                </View>
+              </View>
+            ))}
+          </SectionCard>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -526,5 +622,104 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontWeight: '700',
     textAlign: 'right',
+  },
+  // Delivery calendar
+  calRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 10,
+  },
+  calRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#f9fafb',
+  },
+  calDateBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: 60,
+  },
+  calDate: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+  calBody: {
+    flex: 1,
+    gap: 2,
+  },
+  calRef: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  calCityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  calCity: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  calRoleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  calRoleText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  // Supplier leaderboard
+  supplierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 10,
+  },
+  supplierRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#f9fafb',
+  },
+  supplierRank: {
+    width: 28,
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textDisabled,
+    textAlign: 'center',
+  },
+  supplierBody: {
+    flex: 1,
+    gap: 1,
+  },
+  supplierName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  supplierCity: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  supplierStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  supplierStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  supplierStatText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  supplierStatSep: {
+    fontSize: 13,
+    color: colors.textDisabled,
   },
 });

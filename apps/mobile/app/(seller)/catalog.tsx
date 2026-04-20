@@ -42,7 +42,13 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import type { ApiMaterial, MaterialCategory, MaterialUnit } from '@/lib/api';
+import type {
+  ApiMaterial,
+  MaterialCategory,
+  MaterialUnit,
+  ApiMaterialTier,
+  ApiAvailabilityBlock,
+} from '@/lib/api';
 import { colors } from '@/lib/theme';
 
 // ── Constants ──────────────────────────────────────────────────
@@ -510,6 +516,19 @@ function ListingModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const toast = useToast();
 
+  // Price tiers
+  const [tiers, setTiers] = useState<{ minQty: string; unitPrice: string }[]>([]);
+  const [newTierQty, setNewTierQty] = useState('');
+  const [newTierPrice, setNewTierPrice] = useState('');
+  const [savingTiers, setSavingTiers] = useState(false);
+
+  // Availability blocks
+  const [availBlocks, setAvailBlocks] = useState<ApiAvailabilityBlock[]>([]);
+  const [newBlockStart, setNewBlockStart] = useState('');
+  const [newBlockEnd, setNewBlockEnd] = useState('');
+  const [newBlockNote, setNewBlockNote] = useState('');
+  const [savingBlock, setSavingBlock] = useState(false);
+
   useEffect(() => {
     if (visible) {
       if (initial) {
@@ -532,6 +551,89 @@ function ListingModal({
       }
     }
   }, [visible, initial]);
+
+  // Load tiers + availability when edit modal opens
+  useEffect(() => {
+    if (visible && initial?.id && token) {
+      api.materials.materials
+        .getTiers(initial.id, token)
+        .then((data: ApiMaterialTier[]) =>
+          setTiers(data.map((t) => ({ minQty: String(t.minQty), unitPrice: String(t.unitPrice) }))),
+        )
+        .catch(() => {});
+      api.materials.materials
+        .getAvailability(initial.id, token)
+        .then(setAvailBlocks)
+        .catch(() => {});
+    }
+    if (!visible) {
+      setTiers([]);
+      setAvailBlocks([]);
+      setNewTierQty('');
+      setNewTierPrice('');
+      setNewBlockStart('');
+      setNewBlockEnd('');
+      setNewBlockNote('');
+    }
+  }, [visible, initial?.id, token]);
+
+  const handleSaveTiers = async () => {
+    if (!initial?.id) return;
+    const parsed: ApiMaterialTier[] = tiers
+      .map((t) => ({
+        minQty: parseFloat(t.minQty),
+        unitPrice: parseFloat(t.unitPrice.replace(',', '.')),
+      }))
+      .filter((t) => !isNaN(t.minQty) && t.minQty > 0 && !isNaN(t.unitPrice) && t.unitPrice > 0);
+    setSavingTiers(true);
+    try {
+      const saved = await api.materials.materials.setTiers(initial.id, parsed, token);
+      setTiers(
+        saved.map((t: ApiMaterialTier) => ({
+          minQty: String(t.minQty),
+          unitPrice: String(t.unitPrice),
+        })),
+      );
+      haptics.success();
+      toast.success('Cenu pakāpes saglabātas!');
+    } catch {
+      toast.error('Neizdevās saglabāt pakāpes.');
+    } finally {
+      setSavingTiers(false);
+    }
+  };
+
+  const handleAddBlock = async () => {
+    if (!initial?.id || !newBlockStart || !newBlockEnd) return;
+    setSavingBlock(true);
+    try {
+      const newBlock = await api.materials.materials.addAvailabilityBlock(
+        initial.id,
+        { startDate: newBlockStart, endDate: newBlockEnd, note: newBlockNote.trim() || undefined },
+        token,
+      );
+      setAvailBlocks((prev) => [...prev, newBlock]);
+      setNewBlockStart('');
+      setNewBlockEnd('');
+      setNewBlockNote('');
+      haptics.success();
+    } catch {
+      toast.error('Neizdevās pievienot bloķējumu.');
+    } finally {
+      setSavingBlock(false);
+    }
+  };
+
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!initial?.id) return;
+    try {
+      await api.materials.materials.removeAvailabilityBlock(initial.id, blockId, token);
+      setAvailBlocks((prev) => prev.filter((b) => b.id !== blockId));
+      haptics.light();
+    } catch {
+      toast.error('Neizdevās dzēst bloķējumu.');
+    }
+  };
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -744,6 +846,133 @@ function ListingModal({
               </TouchableOpacity>
             </ScrollView>
           </View>
+
+          {/* Price Tiers — edit mode only */}
+          {isEditMode && (
+            <View style={s.formGroup}>
+              <Text style={s.label}>Apjoma cenas (pakāpes)</Text>
+              {tiers.length === 0 && (
+                <Text style={s.hintText}>Nav pakāpju — visi pasūtījumi izmanto bāzes cenu.</Text>
+              )}
+              {tiers.map((tier, idx) => (
+                <View key={idx} style={s.tierRow}>
+                  <Text style={s.tierLabel}>No {tier.minQty} vien.</Text>
+                  <Text style={s.tierPrice}>€{tier.unitPrice}</Text>
+                  <TouchableOpacity
+                    onPress={() => setTiers((prev) => prev.filter((_, i) => i !== idx))}
+                    hitSlop={8}
+                  >
+                    <X size={16} color={colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <View style={s.tierAddRow}>
+                <TextInput
+                  style={[s.input, s.tierInput]}
+                  placeholder="Min. vien."
+                  placeholderTextColor="#9ca3af"
+                  value={newTierQty}
+                  onChangeText={setNewTierQty}
+                  keyboardType="decimal-pad"
+                />
+                <TextInput
+                  style={[s.input, s.tierInput]}
+                  placeholder="€/vien."
+                  placeholderTextColor="#9ca3af"
+                  value={newTierPrice}
+                  onChangeText={setNewTierPrice}
+                  keyboardType="decimal-pad"
+                />
+                <TouchableOpacity
+                  style={s.tierAddBtn}
+                  onPress={() => {
+                    if (!newTierQty || !newTierPrice) return;
+                    setTiers((prev) => [...prev, { minQty: newTierQty, unitPrice: newTierPrice }]);
+                    setNewTierQty('');
+                    setNewTierPrice('');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Plus size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={[s.saveBtn, { marginTop: 8 }, savingTiers && { opacity: 0.6 }]}
+                onPress={handleSaveTiers}
+                disabled={savingTiers}
+                activeOpacity={0.8}
+              >
+                {savingTiers ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={s.saveBtnText}>Saglabāt pakāpes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Availability Blocks — edit mode only */}
+          {isEditMode && (
+            <View style={s.formGroup}>
+              <Text style={s.label}>Nepieejamības periodi</Text>
+              {availBlocks.length === 0 && (
+                <Text style={s.hintText}>Nav bloķētu periodu — materiāls ir pieejams vienmēr.</Text>
+              )}
+              {availBlocks.map((block) => (
+                <View key={block.id} style={s.tierRow}>
+                  <Text style={s.tierLabel} numberOfLines={1}>
+                    {block.startDate.slice(0, 10)} – {block.endDate.slice(0, 10)}
+                    {block.note ? `  ${block.note}` : ''}
+                  </Text>
+                  <TouchableOpacity onPress={() => handleDeleteBlock(block.id)} hitSlop={8}>
+                    <Trash2 size={16} color={colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <View style={[s.tierAddRow, { flexDirection: 'column', gap: 8 }]}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="GGGG-MM-DD sākums"
+                    placeholderTextColor="#9ca3af"
+                    value={newBlockStart}
+                    onChangeText={setNewBlockStart}
+                  />
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="GGGG-MM-DD beigas"
+                    placeholderTextColor="#9ca3af"
+                    value={newBlockEnd}
+                    onChangeText={setNewBlockEnd}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="Iemesls (neobligāts)"
+                    placeholderTextColor="#9ca3af"
+                    value={newBlockNote}
+                    onChangeText={setNewBlockNote}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      s.tierAddBtn,
+                      (!newBlockStart || !newBlockEnd || savingBlock) && { opacity: 0.5 },
+                    ]}
+                    onPress={handleAddBlock}
+                    disabled={!newBlockStart || !newBlockEnd || savingBlock}
+                    activeOpacity={0.7}
+                  >
+                    {savingBlock ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Plus size={18} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Actions */}
           <View style={{ gap: 12, marginTop: 24 }}>
@@ -1400,4 +1629,32 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   bulkBarBtnText: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
+
+  // Tiers & availability
+  hintText: { fontSize: 13, color: colors.textMuted, marginBottom: 8 },
+  tierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  tierLabel: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  tierPrice: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  tierAddRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  tierInput: { flex: 1, minWidth: 0 },
+  tierAddBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

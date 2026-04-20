@@ -12,12 +12,10 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { t } from '@/lib/translations';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -26,7 +24,6 @@ import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder, type OpenQuoteRequest } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 import { colors } from '@/lib/theme';
 import {
   X,
@@ -484,7 +481,7 @@ export default function IncomingScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const openQuoteCount = useOpenQuoteCount();
+  const insets = useSafeAreaInsets();
   const [section, setSection] = useState<'orders' | 'quotes'>('orders');
   const [quoteRequests, setQuoteRequests] = useState<OpenQuoteRequest[]>([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
@@ -582,7 +579,7 @@ export default function IncomingScreen() {
     useCallback(() => {
       fetchOrders();
       fetchQuotes();
-    }, [fetchOrders]),
+    }, [fetchOrders, fetchQuotes]),
   );
 
   const { sellerNewOrder } = useLiveUpdates({ sellerCompanyId: user?.company?.id ?? null, token });
@@ -695,7 +692,7 @@ export default function IncomingScreen() {
 
   if (fetching && !refreshing) {
     return (
-      <ScreenContainer bg="white">
+      <ScreenContainer bg="#ffffff">
         <View style={{ padding: 24, gap: 16 }}>
           <SkeletonCard count={3} />
         </View>
@@ -749,8 +746,8 @@ export default function IncomingScreen() {
               },
               {
                 key: 'quotes',
-                label: `Cenas${openQuoteCount > 0 ? ` · ${openQuoteCount}` : ''}`,
-                dot: openQuoteCount > 0,
+                label: `Cenas${quoteRequests.length > 0 ? ` · ${quoteRequests.length}` : ''}`,
+                dot: quoteRequests.length > 0,
               },
             ] as const
           ).map((s) => {
@@ -956,7 +953,10 @@ export default function IncomingScreen() {
 
       {/* ── Batch confirm bar ── */}
       {batchMode && batchSelectedIds.size > 0 && (
-        <View className="absolute bottom-0 left-0 right-0 bg-gray-900 flex-row items-center justify-between px-5 pt-4 pb-8">
+        <View
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+          className="absolute bottom-0 left-0 right-0 bg-gray-900 flex-row items-center justify-between px-5 pt-4"
+        >
           <Text style={{ color: '#f9fafb', fontSize: 15, fontWeight: '600' }}>
             {batchSelectedIds.size} atlasīti
           </Text>

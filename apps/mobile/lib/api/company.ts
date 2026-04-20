@@ -126,6 +126,18 @@ export interface CreateCallOffInput {
   notes?: string;
 }
 
+export interface ApiAdvanceInvoice {
+  id: string;
+  invoiceNumber: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentStatus: string;
+  dueDate: string | null;
+  paidDate: string | null;
+  createdAt: string;
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────
 
 export const companyApi = {
@@ -232,6 +244,23 @@ export const companyApi = {
     activate: (id: string, token: string) =>
       apiFetch<ApiFrameworkContract>(`/framework-contracts/${id}/activate`, {
         method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    createAdvanceInvoice: (
+      contractId: string,
+      amount: number,
+      notes: string | undefined,
+      token: string,
+    ) =>
+      apiFetch<ApiAdvanceInvoice>(`/framework-contracts/${contractId}/advance-invoice`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount, notes }),
+      }),
+
+    listAdvanceInvoices: (contractId: string, token: string) =>
+      apiFetch<ApiAdvanceInvoice[]>(`/framework-contracts/${contractId}/advance-invoices`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
   },

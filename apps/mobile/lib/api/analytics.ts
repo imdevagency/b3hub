@@ -87,11 +87,46 @@ export interface AnalyticsOverview {
   carrier: CarrierAnalytics | null;
 }
 
+export interface DeliveryCalendarEvent {
+  id: string;
+  type: 'ORDER' | 'JOB';
+  ref: string | null;
+  status: string;
+  deliveryDate: string;
+  address: string | null;
+  city: string | null;
+  materialName: string | null;
+  amount: number;
+  role: 'BUYER' | 'SELLER' | 'CARRIER';
+}
+
+export interface SupplierScore {
+  companyId: string;
+  name: string;
+  city: string | null;
+  companyType: string;
+  avgRating: number;
+  completionRate: number;
+  totalOrders: number;
+  onTimeRate: number;
+  totalReviews: number;
+}
+
 // ─── API ──────────────────────────────────────────────────────────────────
 
 export const analyticsApi = {
   overview: (token: string) =>
     apiFetch<AnalyticsOverview>('/analytics/overview', {
       headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  deliveryCalendar: (token: string) =>
+    apiFetch<DeliveryCalendarEvent[]>('/analytics/delivery-calendar', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  supplierScores: (token?: string) =>
+    apiFetch<SupplierScore[]>('/analytics/suppliers', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     }),
 };

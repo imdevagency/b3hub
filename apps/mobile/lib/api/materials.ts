@@ -6,6 +6,19 @@ export type { MaterialCategory, MaterialUnit };
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
+export interface ApiMaterialTier {
+  minQty: number;
+  unitPrice: number;
+}
+
+export interface ApiAvailabilityBlock {
+  id: string;
+  materialId: string;
+  startDate: string;
+  endDate: string;
+  note: string | null;
+}
+
 export interface ApiMaterial {
   id: string;
   name: string;
@@ -204,5 +217,39 @@ export const materialsApi = {
         headers: { Authorization: `Bearer ${token}` },
       });
     },
+
+    getTiers: (id: string, token: string) =>
+      apiFetch<ApiMaterialTier[]>(`/materials/${id}/tiers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    setTiers: (id: string, tiers: ApiMaterialTier[], token: string) =>
+      apiFetch<ApiMaterialTier[]>(`/materials/${id}/tiers`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(tiers),
+      }),
+
+    getAvailability: (id: string, token: string) =>
+      apiFetch<ApiAvailabilityBlock[]>(`/materials/${id}/availability`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    addAvailabilityBlock: (
+      id: string,
+      dto: { startDate: string; endDate: string; note?: string },
+      token: string,
+    ) =>
+      apiFetch<ApiAvailabilityBlock>(`/materials/${id}/availability`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(dto),
+      }),
+
+    removeAvailabilityBlock: (id: string, blockId: string, token: string) =>
+      apiFetch<void>(`/materials/${id}/availability/${blockId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 };

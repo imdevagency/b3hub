@@ -235,6 +235,7 @@ export default function InvoicesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
   // Company members without permViewFinancials cannot see invoice data.
@@ -304,6 +305,34 @@ export default function InvoicesScreen() {
     }
   };
 
+  const handleDownloadCsv = async () => {
+    if (!token || !FileSystem || !Sharing) {
+      toast.error('Lejupielāde nav pieejama šajā ierīcē.');
+      return;
+    }
+    setDownloadingCsv(true);
+    haptics.light();
+    try {
+      const fileUri = `${(FileSystem as any).documentDirectory ?? ''}invoices-${new Date().toISOString().slice(0, 10)}.csv`;
+      const downloadRes = await FileSystem.downloadAsync(
+        `${API_URL}/invoices/export/csv`,
+        fileUri,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (downloadRes.status !== 200) throw new Error('Neizdevās eksportēt CSV');
+      await Sharing.shareAsync(downloadRes.uri, {
+        mimeType: 'text/csv',
+        UTI: 'public.comma-separated-values-text',
+      });
+      haptics.success();
+    } catch (err) {
+      haptics.error();
+      toast.error(err instanceof Error ? err.message : 'Neizdevās eksportēt rēķinus.');
+    } finally {
+      setDownloadingCsv(false);
+    }
+  };
+
   const visible = filter === 'ALL' ? invoices : invoices.filter((i) => i.status === filter);
   const totalOwed = invoices
     .filter((i) => i.status === 'ISSUED' || i.status === 'OVERDUE')
@@ -337,7 +366,23 @@ export default function InvoicesScreen() {
 
   return (
     <ScreenContainer bg="#fff">
-      <ScreenHeader title="Rēķini" />
+      <ScreenHeader
+        title="Rēķini"
+        rightAction={
+          <TouchableOpacity
+            onPress={handleDownloadCsv}
+            style={{ padding: 4 }}
+            activeOpacity={0.7}
+            disabled={downloadingCsv}
+          >
+            {downloadingCsv ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Download size={22} color="#ffffff" />
+            )}
+          </TouchableOpacity>
+        }
+      />
       {/* ── Summary ── */}
       <View style={s.summary}>
         <View style={s.summaryMain}>

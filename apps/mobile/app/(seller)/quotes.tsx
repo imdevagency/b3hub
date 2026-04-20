@@ -24,21 +24,11 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  MapPin,
   Package,
-  Clock,
-  User,
   CheckCircle2,
   Send,
-  SlidersHorizontal,
-  RefreshCw,
   Minus,
   Plus,
-  Leaf,
-  Box,
-  Zap,
-  Droplets,
-  Trash2,
   ClipboardList,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -50,34 +40,6 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const ACCENT = '#111827';
-const ACCENT_LIGHT = '#dcfce7';
-const ACCENT_DIM = '#374151';
-const WARN_BG = '#f3f4f6';
-const WARN_COLOR = '#6b7280';
-const BLUE_BG = '#f3f4f6';
-const BLUE_COLOR = '#111827';
-
-// Material category → icon + color
-interface MaterialIcon {
-  Icon: React.ComponentType<any>;
-}
-
-const CATEGORY_ICONS: Record<string, MaterialIcon> = {
-  SAND: { Icon: Package },
-  GRAVEL: { Icon: Box },
-  STONE: { Icon: Box },
-  CONCRETE: { Icon: Zap },
-  SOIL: { Icon: Leaf },
-  RECYCLED_CONCRETE: { Icon: Zap },
-  RECYCLED_SOIL: { Icon: Leaf },
-  ASPHALT: { Icon: Box },
-  CLAY: { Icon: Droplets },
-  OTHER: { Icon: Package },
-};
 
 const sq = t.sellerQuotes;
 
@@ -168,7 +130,7 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
       {done ? (
         /* Success state */
         <View style={styles.successBox}>
-          <CheckCircle2 size={48} color={ACCENT} />
+          <CheckCircle2 size={48} color="#111827" />
           <Text style={styles.successTitle}>{sq.successTitle}</Text>
           <Text style={styles.successMsg}>{sq.successMsg}</Text>
         </View>
@@ -201,7 +163,7 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
               }}
               hitSlop={8}
             >
-              <Minus size={18} color={ACCENT} />
+              <Minus size={18} color="#111827" />
             </TouchableOpacity>
             <Text style={styles.stepValue}>{etaDays}</Text>
             <TouchableOpacity
@@ -212,7 +174,7 @@ function ProposalModal({ request, visible, onClose, onSuccess, token }: Proposal
               }}
               hitSlop={8}
             >
-              <Plus size={18} color={ACCENT} />
+              <Plus size={18} color="#111827" />
             </TouchableOpacity>
           </View>
 
@@ -524,29 +486,55 @@ export default function SellerQuotesScreen() {
     : requests;
 
   return (
-    <ScreenContainer bg="white">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader title={sq.title} />
 
       {/* Tab switcher */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'open' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('open')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabBtnText, activeTab === 'open' && styles.tabBtnTextActive]}>
-            Pieprasījumi{requests.length > 0 ? ` (${requests.length})` : ''}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'mine' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('mine')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabBtnText, activeTab === 'mine' && styles.tabBtnTextActive]}>
-            Mani piedāvājumi{myResponses.length > 0 ? ` (${myResponses.length})` : ''}
-          </Text>
-        </TouchableOpacity>
+      <View className="px-4 pt-3 pb-3">
+        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
+          {(
+            [
+              {
+                key: 'open' as const,
+                label: `Pieprasījumi${requests.length > 0 ? ` · ${requests.length}` : ''}`,
+              },
+              {
+                key: 'mine' as const,
+                label: `Mani piedāvājumi${myResponses.length > 0 ? ` · ${myResponses.length}` : ''}`,
+              },
+            ] as const
+          ).map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                className={`flex-1 items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white' : ''}`}
+                style={
+                  active
+                    ? {
+                        shadowColor: '#000',
+                        shadowOpacity: 0.06,
+                        shadowRadius: 4,
+                        elevation: 1,
+                        shadowOffset: { width: 0, height: 1 },
+                      }
+                    : {}
+                }
+                onPress={() => {
+                  haptics.light();
+                  setActiveTab(tab.key);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={{ fontSize: 14, fontWeight: '600', color: active ? '#111827' : '#6b7280' }}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {activeTab === 'mine' ? (
@@ -713,34 +701,6 @@ export default function SellerQuotesScreen() {
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bgCard },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 4,
-    backgroundColor: colors.bgCard,
-  },
-
-  // Tab bar
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
-    backgroundColor: colors.bgMuted,
-    alignItems: 'center',
-  },
-  tabBtnActive: { backgroundColor: colors.primary },
-  tabBtnText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-  tabBtnTextActive: { color: colors.white },
-
   // My response row
   myrRow: {
     backgroundColor: colors.bgCard,
@@ -768,13 +728,6 @@ const styles = StyleSheet.create({
   myrEta: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   myrNotes: { fontSize: 13, color: colors.textSecondary },
   myrDate: { fontSize: 11, color: colors.textDisabled },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: 16,
-    letterSpacing: -0.5,
-  },
   countChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -865,7 +818,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailLabel: { fontSize: 14, color: colors.textMuted, minWidth: 80 },
-  detailValue: { fontSize: 14, color: colors.textPrimary, fontWeight: '500', flex: 1, lineHeight: 20 },
+  detailValue: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 20,
+  },
 
   requestNumber: { fontSize: 12, color: colors.textDisabled, marginTop: 12, marginBottom: 8 },
 
