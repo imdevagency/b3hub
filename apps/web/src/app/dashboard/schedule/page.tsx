@@ -23,21 +23,21 @@ import {
   Info,
   Loader2,
   Power,
-  RefreshCw,
   Settings2,
   Trash2,
-  Truck,
-  XCircle,
+  CalendarDays,
+  WifiOff,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { PageHeader } from '@/components/ui/page-header';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { PageSpinner } from '@/components/ui/page-spinner';
+import { EmptyState } from '@/components/ui/empty-state';
+import { cn } from '@/lib/utils';
 import { fmtDate } from '@/lib/format';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -55,45 +55,46 @@ const DAYS = [
 const DEFAULT_START = '07:00';
 const DEFAULT_END = '18:00';
 
-// ── 24-hour time picker ───────────────────────────────────────────────────────
-
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-const MINUTES = ['00', '15', '30', '45'];
+// ── Time input ────────────────────────────────────────────────────────────────
 
 function TimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [h, m] = (value ?? '00:00').split(':');
-  const hh = h?.padStart(2, '0') ?? '00';
-  const mm = MINUTES.includes(m ?? '') ? (m ?? '00') : '00';
+  const [h, m] = (value ?? '00:00').split(':').map(Number);
+  const hours = isNaN(h) ? 0 : h;
+  const mins = isNaN(m) ? 0 : m;
+
+  const fmt = (n: number) => String(n).padStart(2, '0');
+
+  const stepTime = (deltaMins: number) => {
+    const total = hours * 60 + mins + deltaMins;
+    const clamped = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+    onChange(`${fmt(Math.floor(clamped / 60))}:${fmt(clamped % 60)}`);
+  };
 
   return (
-    <div className="flex items-center gap-1">
-      <Select value={hh} onValueChange={(v) => onChange(`${v}:${mm}`)}>
-        <SelectTrigger className="w-[60px] h-8 text-xs font-mono px-2 py-1">
-          <SelectValue placeholder="HH" />
-        </SelectTrigger>
-        <SelectContent align="center">
-          <div className="max-h-[200px] overflow-y-auto">
-            {HOURS.map((hr) => (
-              <SelectItem key={hr} value={hr} className="text-xs font-mono justify-center">
-                {hr}
-              </SelectItem>
-            ))}
-          </div>
-        </SelectContent>
-      </Select>
-      <span className="text-slate-400 text-xs font-mono">:</span>
-      <Select value={mm} onValueChange={(v) => onChange(`${hh}:${v}`)}>
-        <SelectTrigger className="w-[60px] h-8 text-xs font-mono px-2 py-1">
-          <SelectValue placeholder="MM" />
-        </SelectTrigger>
-        <SelectContent align="center">
-          {MINUTES.map((mn) => (
-            <SelectItem key={mn} value={mn} className="text-xs font-mono justify-center">
-              {mn}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="flex items-center bg-muted/40 rounded-xl p-1 border border-border/50 shadow-sm transition-colors hover:border-border/80">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background"
+        onClick={() => stepTime(-15)}
+      >
+        <span className="text-lg leading-none font-medium">−</span>
+      </Button>
+      <div className="w-14 text-center font-mono text-sm font-bold tabular-nums">
+        {fmt(hours)}
+        <span className="text-muted-foreground/60 mx-0.5">:</span>
+        {fmt(mins)}
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background"
+        onClick={() => stepTime(15)}
+      >
+        <span className="text-lg leading-none font-medium">+</span>
+      </Button>
     </div>
   );
 }
@@ -110,82 +111,6 @@ function buildDefaultSchedule(existing: DriverScheduleDay[]): DriverScheduleDay[
       }
     );
   });
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function OnlineToggle({
-  isOnline,
-  effectiveOnline,
-  autoSchedule,
-  loading,
-  onToggle,
-}: {
-  isOnline: boolean;
-  effectiveOnline: boolean;
-  autoSchedule: boolean;
-  loading: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div
-      className={[
-        'rounded-2xl p-6 flex items-center justify-between gap-4 transition-colors duration-500',
-        effectiveOnline
-          ? 'bg-green-50 border border-green-200'
-          : 'bg-slate-50 border border-slate-200',
-      ].join(' ')}
-    >
-      <div className="flex items-center gap-4">
-        <div
-          className={[
-            'w-14 h-14 rounded-2xl flex items-center justify-center',
-            effectiveOnline ? 'bg-green-100' : 'bg-slate-200',
-          ].join(' ')}
-        >
-          <Truck
-            className={['h-7 w-7', effectiveOnline ? 'text-green-600' : 'text-slate-500'].join(' ')}
-          />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span
-              className={[
-                'inline-block w-2.5 h-2.5 rounded-full',
-                effectiveOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-400',
-              ].join(' ')}
-            />
-            <p className="text-lg font-bold text-slate-900">
-              {effectiveOnline ? 'Tiešsaistē' : 'Bezsaistē'}
-            </p>
-          </div>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {autoSchedule
-              ? 'Automātiskais režīms — statuss mainās pēc grafika'
-              : effectiveOnline
-                ? 'Redzams darbā jaunajiem pasūtījumiem'
-                : 'Jauni pasūtījumi netiek piedāvāti'}
-          </p>
-        </div>
-      </div>
-
-      {!autoSchedule && (
-        <button
-          onClick={onToggle}
-          disabled={loading}
-          className={[
-            'flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm',
-            isOnline
-              ? 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-              : 'bg-green-600 hover:bg-green-700 text-white',
-          ].join(' ')}
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-          {isOnline ? 'Iet bezsaistē' : 'Iet tiešsaistē'}
-        </button>
-      )}
-    </div>
-  );
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -298,65 +223,97 @@ export default function DriverSchedulePage() {
 
   if (!token || !user?.canTransport) return null;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
-  }
+  if (loading) return <PageSpinner />;
 
   if (!data) {
     return (
-      <div className="p-8 text-center text-slate-500">
-        <p>Nav vadītāja profila. Sazinieties ar uzņēmuma administratoru.</p>
+      <div className="max-w-xl mx-auto py-20">
+        <EmptyState
+          icon={CalendarOff}
+          title="Nav vadītāja profila"
+          description="Sazinieties ar uzņēmuma administratoru, lai aktivizētu vadītāja piekļuvi."
+        />
       </div>
     );
   }
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* ── Header ── */}
-      <PageHeader
-        title="Darba grafiks"
-        description="Pārvaldiet savu pieejamību, darba laiku un brīvdienas"
-      />
+  const effectiveOnline = data.effectiveOnline;
 
-      {/* ── Online/Offline toggle ── */}
-      <OnlineToggle
-        isOnline={data.isOnline}
-        effectiveOnline={data.effectiveOnline}
-        autoSchedule={data.autoSchedule}
-        loading={toggling}
-        onToggle={handleToggle}
-      />
+  return (
+    <div className="max-w-xl mx-auto pb-20">
+      <PageHeader title="Darba grafiks" description="Pārvaldi savu pieejamību un darba laikus" />
+
+      {/* ── Status Section ── */}
+      <div className="px-1 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div
+            className={cn(
+              'w-4 h-4 rounded-full',
+              effectiveOnline
+                ? 'bg-green-500 shadow-[0_0_12px_2px_rgba(34,197,94,0.4)]'
+                : 'bg-muted-foreground/30',
+            )}
+          />
+          <div>
+            <h2
+              className={cn(
+                'text-2xl font-bold tracking-tight',
+                effectiveOnline ? 'text-green-600' : 'text-foreground',
+              )}
+            >
+              {effectiveOnline ? 'Tiešsaistē' : 'Bezsaistē'}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {data.autoSchedule
+                ? 'Statuss mainās automātiski'
+                : effectiveOnline
+                  ? 'Gaidām jaunus pasūtījumus!'
+                  : 'Jaunus pasūtījumus nesaņemsi.'}
+            </p>
+          </div>
+        </div>
+        {!data.autoSchedule && (
+          <Button
+            onClick={handleToggle}
+            disabled={toggling}
+            variant={data.isOnline ? 'secondary' : 'default'}
+            size="lg"
+            className={cn(
+              'rounded-full font-bold px-8',
+              !data.isOnline && 'bg-black text-white hover:bg-zinc-800',
+            )}
+          >
+            {toggling ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : data.isOnline ? (
+              'Apturēt'
+            ) : (
+              'Gatavs darbam'
+            )}
+          </Button>
+        )}
+      </div>
+
+      <Separator className="my-2" />
 
       {/* ── Weekly schedule ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-            <Settings2 className="h-4 w-4" />
-            Iknedēļas darba laiks
-          </h2>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span>Auto-režīms</span>
-            <Switch
-              checked={autoSchedule}
-              onCheckedChange={(v) => setAutoSchedule(v)}
-              className="data-[state=checked]:bg-green-500"
-            />
+      <div className="py-6">
+        <div className="flex items-center justify-between mb-6 px-1">
+          <h3 className="text-lg font-bold tracking-tight">Iknedēļas grafiks</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground">Auto-režīms</span>
+            <Switch checked={autoSchedule} onCheckedChange={(v) => setAutoSchedule(v)} />
           </div>
         </div>
 
         {autoSchedule && (
-          <div className="flex items-start gap-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
-            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            Auto-režīmā statuss tiek automātiski mainīts uz tiešsaistē/bezsaistē saskaņā ar zemāk
-            norādīto grafiku.
+          <div className="mb-6 px-4 py-3 rounded-xl bg-muted/50 text-sm text-muted-foreground flex gap-3 items-start">
+            <Info className="h-5 w-5 shrink-0 text-foreground" />
+            <p>Programma automātiski pārslēgs tavu statusu atbilstoši šim grafikam.</p>
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           {DAYS.map(({ dow, label }) => {
             const day = schedule.find((d) => d.dayOfWeek === dow) ?? {
               dayOfWeek: dow,
@@ -367,148 +324,147 @@ export default function DriverSchedulePage() {
             return (
               <div
                 key={dow}
-                className={[
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                className={cn(
+                  'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border transition-colors',
                   day.enabled
-                    ? 'bg-green-50 border border-green-100'
-                    : 'bg-slate-50 border border-slate-100',
-                ].join(' ')}
+                    ? 'border-border bg-card'
+                    : 'border-dashed border-border/60 bg-muted/30',
+                )}
               >
-                {/* Day toggle */}
-                <Switch
-                  checked={day.enabled}
-                  onCheckedChange={(v) => updateDay(dow, { enabled: v })}
-                  className="shrink-0 data-[state=checked]:bg-green-500"
-                />
-
-                {/* Day name */}
-                <span
-                  className={[
-                    'w-24 text-sm font-medium',
-                    day.enabled ? 'text-slate-800' : 'text-slate-400',
-                  ].join(' ')}
-                >
-                  {label}
-                </span>
-
-                {/* Time inputs */}
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={day.enabled}
+                    onCheckedChange={(v) => updateDay(dow, { enabled: v })}
+                  />
+                  <span
+                    className={cn(
+                      'font-semibold',
+                      day.enabled ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {label}
+                  </span>
+                </div>
                 {day.enabled ? (
-                  <div className="flex items-center gap-2 ml-auto">
+                  <div className="flex items-center gap-2">
                     <TimePicker
                       value={day.startTime}
                       onChange={(v) => updateDay(dow, { startTime: v })}
                     />
-                    <span className="text-slate-400 text-xs">—</span>
+                    <span className="text-muted-foreground">—</span>
                     <TimePicker
                       value={day.endTime}
                       onChange={(v) => updateDay(dow, { endTime: v })}
                     />
                   </div>
                 ) : (
-                  <span className="ml-auto text-xs text-slate-400">Brīvdiena</span>
+                  <span className="text-sm font-medium text-muted-foreground">Nav pieejams</span>
                 )}
               </div>
             );
           })}
         </div>
-      </div>
 
-      {/* ── Preferences ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700">Preferences</h2>
-        <div className="flex items-center justify-between gap-4">
+        <div className="mt-6 flex items-center justify-between p-4 rounded-2xl border border-border bg-card">
           <div>
-            <p className="text-sm text-slate-700 font-medium">Maks. darbu skaits dienā</p>
-            <p className="text-xs text-slate-400 mt-0.5">Atstājiet tukšu — bez ierobežojuma</p>
+            <p className="font-semibold">Dienas limits</p>
+            <p className="text-sm text-muted-foreground">
+              Maksimālais darbu skaits (tukšs = bez limita)
+            </p>
           </div>
-          <input
+          <Input
             type="number"
             min={1}
-            max={10}
+            max={15}
             value={maxJobs}
             onChange={(e) => setMaxJobs(e.target.value === '' ? '' : Number(e.target.value))}
             placeholder="—"
-            className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-20 text-center font-bold text-lg h-12 rounded-xl"
           />
         </div>
+
+        <Button
+          onClick={handleSaveSchedule}
+          disabled={saving}
+          size="lg"
+          className="w-full mt-6 rounded-full font-bold text-base h-14 bg-black hover:bg-zinc-800 text-white"
+        >
+          {saving ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : saveOk ? (
+            <>
+              <CheckCircle2 className="h-5 w-5 mr-2 text-green-400" />
+              Saglabāts
+            </>
+          ) : (
+            'Saglabāt grafiku'
+          )}
+        </Button>
       </div>
 
-      {/* ── Save schedule button ── */}
-      <button
-        onClick={handleSaveSchedule}
-        disabled={saving}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 text-sm transition-colors"
-      >
-        {saving ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : saveOk ? (
-          <CheckCircle2 className="h-4 w-4" />
-        ) : (
-          <RefreshCw className="h-4 w-4" />
-        )}
-        {saveOk ? 'Saglabāts!' : 'Saglabāt grafiku'}
-      </button>
+      <Separator className="my-2" />
 
       {/* ── Blocked dates ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-          <CalendarOff className="h-4 w-4 text-red-500" />
-          Bloķētās dienas
-        </h2>
+      <div className="py-6">
+        <div className="flex items-center justify-between mb-6 px-1">
+          <h3 className="text-lg font-bold tracking-tight">Bloķētās dienas</h3>
+          {data.dateBlocks.length > 0 && (
+            <Badge variant="secondary" className="rounded-full px-3">
+              {data.dateBlocks.length}
+            </Badge>
+          )}
+        </div>
 
-        {/* Add new block */}
-        <div className="flex gap-2">
-          <input
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <Input
             type="date"
             value={blockDate}
             min={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setBlockDate(e.target.value)}
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="flex-1 h-12 rounded-xl px-4"
           />
-          <input
+          <Input
             type="text"
             value={blockReason}
             onChange={(e) => setBlockReason(e.target.value)}
-            placeholder="Iemesls (nav obligāts)"
-            className="flex-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="Iemesls..."
+            className="flex-2 h-12 rounded-xl px-4"
           />
-          <button
+          <Button
             onClick={handleBlockDate}
             disabled={!blockDate || adding}
-            className="flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 text-sm font-medium disabled:opacity-40 transition-colors"
+            size="lg"
+            className="h-12 w-full sm:w-auto rounded-xl px-8 font-bold bg-black hover:bg-zinc-800 text-white shrink-0"
           >
-            {adding ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CalendarPlus className="h-3.5 w-3.5" />
-            )}
-            Pievienot
-          </button>
+            {adding ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Pievienot'}
+          </Button>
         </div>
 
-        {/* List */}
         {data.dateBlocks.length === 0 ? (
-          <div className="py-6 text-center text-slate-400 text-sm">Nav bloķētu dienu</div>
+          <EmptyState
+            icon={CalendarOff}
+            title="Nav izņēmumu"
+            description="Jūs būsiet pieejams atbilstoši regulārajam grafikam."
+          />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {data.dateBlocks.map((b) => (
               <div
                 key={b.id}
-                className="flex items-center justify-between gap-3 rounded-xl bg-red-50 border border-red-100 px-4 py-2.5"
+                className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card"
               >
-                <div className="flex items-center gap-2.5">
-                  <XCircle className="h-4 w-4 text-red-400 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">{fmtDate(b.blockedDate)}</p>
-                    {b.reason && <p className="text-xs text-slate-500">{b.reason}</p>}
-                  </div>
+                <div>
+                  <p className="font-bold">{fmtDate(b.blockedDate)}</p>
+                  {b.reason && <p className="text-sm text-muted-foreground">{b.reason}</p>}
                 </div>
-                <button
+                <Button
                   onClick={() => handleUnblock(b.id)}
-                  className="p-1.5 rounded-lg hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                  <Trash2 className="h-5 w-5" />
+                </Button>
               </div>
             ))}
           </div>
