@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   RefreshCw,
@@ -21,6 +22,8 @@ import {
   Circle,
   PhoneCall,
   Calendar,
+  ExternalLink,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -401,16 +404,32 @@ function JobDetailPanel({
                 <p className="font-medium text-slate-900">{job.vehicle.licensePlate}</p>
               </div>
             )}
-            {job.driver?.phone && (
-              <div className="col-span-2">
-                <p className="text-xs text-slate-500">Vadītāja tālrunis</p>
-                <a
-                  href={`tel:${job.driver.phone}`}
-                  className="inline-flex items-center gap-1.5 font-medium text-slate-900 hover:text-blue-600"
-                >
-                  <PhoneCall className="h-3.5 w-3.5" />
-                  {job.driver.phone}
-                </a>
+            {job.driver && (
+              <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Vadītājs
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200">
+                    <User className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {job.driver.firstName} {job.driver.lastName}
+                    </p>
+                    {job.driver.phone ? (
+                      <a
+                        href={`tel:${job.driver.phone}`}
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        <PhoneCall className="h-3 w-3" />
+                        {job.driver.phone}
+                      </a>
+                    ) : (
+                      <p className="text-xs text-slate-400">Nav tālruņa</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -448,6 +467,17 @@ function JobDetailPanel({
           </p>
           <StatusTimeline currentStatus={job.status} timestamps={timestamps} />
         </div>
+
+        {/* Full-detail link */}
+        <div className="border-t border-slate-100 px-4 py-4">
+          <Link
+            href={`/dashboard/transport-jobs/${job.id}`}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Skatīt pilnas detaļas
+          </Link>
+        </div>
       </div>
     </aside>
   );
@@ -468,9 +498,17 @@ export default function ActiveTrackingPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Restrict to dispatcher/carrier users only
+  // Restrict to dispatcher-capable users only (DRIVER role cannot call /fleet)
   useEffect(() => {
-    if (!isLoading && user && !user.canTransport && user.userType !== 'ADMIN') {
+    if (isLoading) return;
+    if (!user) return;
+    if (user.userType === 'ADMIN') return;
+    // DRIVER companyRole users are field workers — redirect them to their jobs list
+    if (user.companyRole === 'DRIVER') {
+      router.replace('/dashboard/transport-jobs');
+      return;
+    }
+    if (!user.canTransport) {
       router.replace('/dashboard');
     }
   }, [isLoading, user, router]);

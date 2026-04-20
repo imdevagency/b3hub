@@ -454,7 +454,8 @@ export default function FleetPage() {
                   {filtered.map((job) => (
                     <tr
                       key={job.id}
-                      className="group hover:bg-muted/30 transition-colors duration-300"
+                      onClick={() => router.push(`/dashboard/transport-jobs/${job.id}`)}
+                      className="group hover:bg-muted/30 transition-colors duration-300 cursor-pointer"
                     >
                       {/* Job number */}
                       <td className="px-5 py-4 font-mono text-xs font-semibold text-muted-foreground/80 group-hover:text-foreground transition-colors">
@@ -506,7 +507,10 @@ export default function FleetPage() {
                           </div>
                         ) : (
                           <button
-                            onClick={() => router.push('/dashboard/jobs')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push('/dashboard/jobs');
+                            }}
                             className="inline-flex items-center text-xs font-bold text-primary hover:text-primary/80 transition-colors"
                           >
                             + Piešķirt šoferi

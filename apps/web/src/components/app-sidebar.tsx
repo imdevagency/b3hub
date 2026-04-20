@@ -299,19 +299,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
 
       if (!isDispatcher) {
-        // Non-dispatcher drivers get a quick link to their active job GPS view
-        sections = sections.map((section) => {
-          if (section.id !== 'carrier-jobs') return section;
-          const dashboardItem = section.items[0];
-          return {
-            ...section,
-            items: [
-              dashboardItem,
-              { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: MapPin },
-              ...section.items.slice(1),
-            ],
-          };
-        });
+        // Non-dispatcher carrier users without a DRIVER companyRole get the fleet control tower link
+        // DRIVER role users are redirected away from /active, so don't show the link to them
+        if (user?.companyRole !== 'DRIVER') {
+          sections = sections.map((section) => {
+            if (section.id !== 'carrier-jobs') return section;
+            const dashboardItem = section.items[0];
+            return {
+              ...section,
+              items: [
+                dashboardItem,
+                { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: MapPin },
+                ...section.items.slice(1),
+              ],
+            };
+          });
+        }
       }
     }
 

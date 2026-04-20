@@ -17,7 +17,7 @@ async function main() {
 
   // ── Demo accounts ──────────────────────────────────────────────────────────
   const accounts = [
-    // 🌟 Demo account — all roles enabled (buyer + sell + transport + admin)
+    // 🌟 Demo account — all roles enabled (buyer + sell + transport + dispatcher)
     {
       email: 'demo@demo.com',
       firstName: 'Demo',
@@ -28,6 +28,12 @@ async function main() {
       canSell: true,
       canTransport: true,
       canSkipHire: true,
+      companyRole: 'OWNER' as any,
+      permCreateContracts: true,
+      permReleaseCallOffs: true,
+      permManageOrders: true,
+      permViewFinancials: true,
+      permManageTeam: true,
     },
     // 🛒 Pure buyer — construction company, orders materials & skips
     {
@@ -99,6 +105,14 @@ async function main() {
         isCompany: account.isCompany,
         status: UserStatus.ACTIVE,
         phone: account.phone,
+        ...(( account as any).companyRole !== undefined ? {
+          companyRole: (account as any).companyRole,
+          permCreateContracts: (account as any).permCreateContracts ?? false,
+          permReleaseCallOffs: (account as any).permReleaseCallOffs ?? false,
+          permManageOrders: (account as any).permManageOrders ?? false,
+          permViewFinancials: (account as any).permViewFinancials ?? false,
+          permManageTeam: (account as any).permManageTeam ?? false,
+        } : {}),
       },
       create: {
         ...account,
