@@ -627,6 +627,9 @@ model Order {
   scheduleId String?
   schedule   OrderSchedule? @relation(fields: [scheduleId], references: [id])
 
+  // Public tracking — unauthenticated share link
+  trackingToken String? @unique
+
   // Relations
   items           OrderItem[]
   containerOrders ContainerOrder[]
@@ -641,6 +644,7 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([trackingToken])
   @@index([projectId])
   @@index([scheduleId])
   @@index([buyerId])

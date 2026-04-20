@@ -4,6 +4,7 @@
  * Handles creation, status transitions (pending → confirmed → delivered),
  * invoice generation triggers, and order history queries.
  */
+import { randomBytes } from 'crypto';
 import {
   Injectable,
   Logger,
@@ -476,6 +477,7 @@ export class OrdersService {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const orderNumber = this.generateOrderNumber();
+        const trackingToken = randomBytes(16).toString('hex');
         const subtotal = items.reduce(
           (sum, i) => sum + i.resolvedUnitPrice * i.quantity,
           0,
@@ -486,6 +488,7 @@ export class OrdersService {
         const order = await this.prisma.order.create({
           data: {
             orderNumber,
+            trackingToken,
             orderType: orderData.orderType,
             buyerId: buyerCompanyId,
             createdById: userId,

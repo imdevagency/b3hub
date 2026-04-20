@@ -49,6 +49,7 @@ import { SupportModule } from './support/support.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { FieldPassesModule } from './field-passes/field-passes.module';
 import { WeighingSlipsModule } from './weighing-slips/weighing-slips.module';
+import { TrackingModule } from './tracking/tracking.module';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { WeighingSlipsModule } from './weighing-slips/weighing-slips.module';
     ApiKeysModule,
     FieldPassesModule,
     WeighingSlipsModule,
+    TrackingModule,
   ],
   controllers: [AppController],
   providers: [
