@@ -106,6 +106,7 @@ export class SkipHireService {
         price,
         currency: 'EUR',
         status: SkipHireStatus.PENDING,
+        statusTimestamps: { PENDING: new Date().toISOString() },
         contactName: dto.contactName,
         contactEmail: dto.contactEmail,
         contactPhone: dto.contactPhone,
@@ -248,12 +249,20 @@ export class SkipHireService {
     return this.prisma.skipHireOrder.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+      },
     });
   }
 
   // ── Single order ───────────────────────────────────────────────
   async findOne(id: string, userId?: string, isAdmin = false) {
-    const order = await this.prisma.skipHireOrder.findUnique({ where: { id } });
+    const order = await this.prisma.skipHireOrder.findUnique({
+      where: { id },
+      include: {
+        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+      },
+    });
     if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
     if (!isAdmin && order.userId !== userId) {
       throw new ForbiddenException('You do not have access to this order');
@@ -283,6 +292,9 @@ export class SkipHireService {
     return this.prisma.skipHireOrder.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      include: {
+        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+      },
     });
   }
 
@@ -328,9 +340,16 @@ export class SkipHireService {
       );
     }
 
+    const existingTimestamps =
+      existing.statusTimestamps && typeof existing.statusTimestamps === 'object'
+        ? (existing.statusTimestamps as Record<string, string>)
+        : {};
     const updated = await this.prisma.skipHireOrder.update({
       where: { id },
-      data: { status: dto.status },
+      data: {
+        status: dto.status,
+        statusTimestamps: { ...existingTimestamps, [dto.status]: new Date().toISOString() },
+      },
     });
     // Release funds to carrier when order reaches terminal COMPLETED state
     if (dto.status === SkipHireStatus.COMPLETED) {
@@ -375,9 +394,16 @@ export class SkipHireService {
         'Cannot cancel an order that is already completed or collected',
       );
     }
+    const existingTs =
+      order.statusTimestamps && typeof order.statusTimestamps === 'object'
+        ? (order.statusTimestamps as Record<string, string>)
+        : {};
     const updated = await this.prisma.skipHireOrder.update({
       where: { id },
-      data: { status: SkipHireStatus.CANCELLED },
+      data: {
+        status: SkipHireStatus.CANCELLED,
+        statusTimestamps: { ...existingTs, CANCELLED: new Date().toISOString() },
+      },
     });
 
     // Void the PaymentIntent (PENDING) or issue a full refund (CAPTURED)
@@ -482,9 +508,16 @@ export class SkipHireService {
         `Expected next status to be ${expectedNext}`,
       );
 
+    const existingTs2 =
+      order.statusTimestamps && typeof order.statusTimestamps === 'object'
+        ? (order.statusTimestamps as Record<string, string>)
+        : {};
     const updated = await this.prisma.skipHireOrder.update({
       where: { id },
-      data: { status: newStatus },
+      data: {
+        status: newStatus,
+        statusTimestamps: { ...existingTs2, [newStatus]: new Date().toISOString() },
+      },
     });
     if (order.userId) {
       const label = SKIP_STATUS_LABEL[newStatus];

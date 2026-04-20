@@ -62,7 +62,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { OfferCard } from '@/components/order/OfferCard';
-import { s, oc } from './order-request-new-styles';
+import { s, oc } from './_order-request-new-styles';
 
 const DRAFT_KEY = '@b3hub_wizard_draft';
 

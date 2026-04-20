@@ -638,6 +638,9 @@ model Order {
   // Public tracking — unauthenticated share link
   trackingToken String? @unique
 
+  // Timestamps for each status transition — { STATUS: ISO8601 }
+  statusTimestamps Json?
+
   // Relations
   items           OrderItem[]
   containerOrders ContainerOrder[]
@@ -1277,6 +1280,9 @@ model SkipHireOrder {
 
   // Reverse relation — the material order that this skip is linked to (if any)
   linkedMaterialOrder Order? @relation("LinkedMaterialOrder")
+
+  // Per-status timestamps: { PENDING: "2024-01-01T00:00:00.000Z", CONFIRMED: "...", ... }
+  statusTimestamps Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

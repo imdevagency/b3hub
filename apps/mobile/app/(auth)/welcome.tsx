@@ -1,16 +1,21 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Text } from '@/components/ui/text';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
-import { Map } from 'lucide-react-native';
+import { JobRouteMap } from '@/components/ui/JobRouteMap';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  // Demo static route: quarry (pickup) → Rīga city centre (delivery)
+  const demoPickup = { lat: 56.9756, lng: 24.122, label: 'Karjers' };
+  const demoDelivery = { lat: 56.9466, lng: 24.1053, label: 'Būvobjekts' };
+  const demoCurrent = { lat: 56.962, lng: 24.113 };
 
   return (
     <ScreenContainer standalone bg="#FFFFFF" topInset={0}>
@@ -20,8 +25,16 @@ export default function WelcomeScreen() {
         className="flex-1 justify-between bg-white"
         style={{ paddingTop: insets.top + 40, paddingBottom: Math.max(insets.bottom + 16, 40) }}
       >
-        <View className="flex-1 items-center justify-center">
-          <Map size={140} color="#3b82f6" strokeWidth={1.5} />
+        <View className="flex-1 items-center justify-center w-full overflow-hidden">
+          <JobRouteMap
+            pickup={demoPickup}
+            delivery={demoDelivery}
+            current={demoCurrent}
+            height={null}
+            borderRadius={0}
+            style={{ flex: 1, width: '100%' }}
+            showToPickupLeg={false}
+          />
         </View>
 
         <View className="px-6 pb-2 items-center w-full">

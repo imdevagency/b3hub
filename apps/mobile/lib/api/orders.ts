@@ -234,6 +234,7 @@ export interface ApiOrder {
   sitePhotoUrl?: string | null;
   truckCount?: number | null;
   scheduleIntervalMinutes?: number | null;
+  statusTimestamps?: Record<string, string> | null;
   createdAt: string;
 }
 

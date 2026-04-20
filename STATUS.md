@@ -184,6 +184,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - saved-addresses
 - skip-hire
 - support
+- tracking
 - transport-jobs
 - updates
 - vehicles
@@ -270,6 +271,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - forgot-password
 - order
 - reset-password
+- track/[token]
 <!-- END GEN -->
 
 ### Mobile Screens
@@ -311,6 +313,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/documents
 - (driver)/earnings
 - (driver)/home
+- (driver)/job-stat/[id]
 - (driver)/jobs
 - (driver)/messages
 - (driver)/profile

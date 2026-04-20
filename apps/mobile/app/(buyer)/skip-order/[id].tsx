@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Linking,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 // Guard: expo-clipboard requires a native build (not available in Expo Go)
 let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
@@ -36,6 +36,7 @@ import {
   XCircle,
   RotateCcw,
   Copy,
+  Building2,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -46,9 +47,17 @@ import { t } from '@/lib/translations';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { formatDate } from '@/lib/format';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { useToast } from '@/components/ui/Toast';
 import { colors } from '@/lib/theme';
+import { BaseMap } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
+let Marker: any = null;
+try {
+  const maps = require('react-native-maps');
+  Marker = maps.Marker;
+} catch {
+  /* Expo Go */
+}
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -62,7 +71,7 @@ const SKIP_STEPS: { key: string; label: string; hint: string }[] = [
 
 const STEP_ORDER = ['PENDING', 'CONFIRMED', 'DELIVERED', 'COLLECTED', 'COMPLETED'];
 
-// SIZE_LABEL imported from @/lib/materials
+const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
 
 const WASTE_LABEL: Record<string, string> = {
   MIXED: 'Jaukts',
@@ -72,6 +81,9 @@ const WASTE_LABEL: Record<string, string> = {
   METAL_SCRAP: 'Metāls',
   ELECTRONICS_WEEE: 'Elektronika',
 };
+
+const { height: SCREEN_H } = Dimensions.get('window');
+const MAP_H = Math.round(SCREEN_H * 0.3);
 
 // ── Detail Row ─────────────────────────────────────────────────
 
@@ -103,8 +115,34 @@ function Row({
 
 // ── Status Timeline ────────────────────────────────────────────
 
-function StatusTimeline({ status }: { status: string }) {
+function StatusTimeline({
+  status,
+  timestamps,
+  createdAt,
+}: {
+  status: string;
+  timestamps?: Record<string, string> | null;
+  createdAt?: string;
+}) {
   const currentIdx = STEP_ORDER.indexOf(status);
+
+  const fmtTs = (iso: string | undefined) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('lv-LV', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const time = d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' });
+    return `${date}  ${time}`;
+  };
+
+  const getTs = (key: string): string | null => {
+    if (key === 'PENDING') return fmtTs(timestamps?.PENDING ?? createdAt);
+    return fmtTs(timestamps?.[key]);
+  };
+
   if (status === 'CANCELLED') {
     return (
       <View
@@ -113,6 +151,11 @@ function StatusTimeline({ status }: { status: string }) {
         <Text style={{ fontSize: 14, fontWeight: '600', color: colors.dangerText }}>
           Pasūtījums atcelts
         </Text>
+        {fmtTs(timestamps?.CANCELLED) && (
+          <Text style={{ fontSize: 12, color: colors.dangerText, marginTop: 2 }}>
+            {fmtTs(timestamps?.CANCELLED)}
+          </Text>
+        )}
       </View>
     );
   }
@@ -121,6 +164,7 @@ function StatusTimeline({ status }: { status: string }) {
       {SKIP_STEPS.map((step, idx) => {
         const done = idx < currentIdx;
         const active = idx === currentIdx;
+        const ts = done || active ? getTs(step.key) : null;
         return (
           <View key={step.key} style={s.timelineItem}>
             <View style={s.timelineLeft}>
@@ -138,7 +182,11 @@ function StatusTimeline({ status }: { status: string }) {
               <Text style={[s.timelineLabel, (done || active) && s.timelineLabelActive]}>
                 {step.label}
               </Text>
-              {active && <Text style={s.timelineHint}>{step.hint}</Text>}
+              {ts ? (
+                <Text style={s.timelineTimestamp}>{ts}</Text>
+              ) : active ? (
+                <Text style={s.timelineHint}>{step.hint}</Text>
+              ) : null}
             </View>
           </View>
         );
@@ -154,18 +202,39 @@ export default function SkipOrderDetailScreen() {
   const { token } = useAuth();
   const toast = useToast();
   const router = useRouter();
+  const cameraRef = useRef<CameraRefHandle | null>(null);
   const { order, setOrder, loading, error, reload } = useSkipOrder(id);
   const [refreshing, setRefreshing] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     reload();
-    // reload sets loading, but doesn't resolve a promise — give it a moment
     setTimeout(() => setRefreshing(false), 1000);
-  };
+  }, [reload]);
+
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  // Auto-refresh every 15 s while order is in an active state
+  useEffect(() => {
+    if (!order || !ACTIVE_STATUSES.has(order.status)) return;
+    const interval = setInterval(reload, 15_000);
+    return () => clearInterval(interval);
+  }, [order?.status, reload]);
+
+  // Fit map to delivery pin once map is ready
+  useEffect(() => {
+    if (!mapReady || !order?.lat || !order?.lng) return;
+    setTimeout(() => {
+      cameraRef.current?.setCamera({
+        centerCoordinate: [order.lng!, order.lat!],
+        zoomLevel: 14,
+        animationDuration: 400,
+      });
+    }, 300);
+  }, [mapReady, order?.lat, order?.lng]);
 
   useEffect(() => {
     if (order && token && (order.status === 'COLLECTED' || order.status === 'COMPLETED')) {
@@ -197,6 +266,7 @@ export default function SkipOrderDetailScreen() {
   const status = t.skipHire.status[order.status] ?? t.skipHire.status.PENDING;
   const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
+  const hasCoords = order.lat != null && order.lng != null;
 
   const handleCancel = () => {
     haptics.heavy();
@@ -232,6 +302,34 @@ export default function SkipOrderDetailScreen() {
 
   return (
     <ScreenContainer bg="#ffffff">
+      {/* ── Map (when coords available) — above header, like transport job ── */}
+      {hasCoords && (
+        <View style={{ height: MAP_H, backgroundColor: colors.border }}>
+          <BaseMap
+            cameraRef={cameraRef}
+            center={[order.lng!, order.lat!]}
+            zoom={14}
+            style={{ flex: 1 }}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            onMapReady={() => setMapReady(true)}
+          >
+            {Marker && (
+              <Marker
+                coordinate={{ latitude: order.lat!, longitude: order.lng! }}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={s.pinDelivery}>
+                  <MapPin size={14} color={colors.white} strokeWidth={2.5} />
+                </View>
+              </Marker>
+            )}
+          </BaseMap>
+        </View>
+      )}
+
       {/* ── Header ── */}
       <ScreenHeader
         title={`#${order.orderNumber}`}
@@ -260,8 +358,39 @@ export default function SkipOrderDetailScreen() {
         {/* ── Status timeline ── */}
         <View style={s.section}>
           <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Statuss</Text>
-          <StatusTimeline status={order.status} />
+          <StatusTimeline
+            status={order.status}
+            timestamps={order.statusTimestamps}
+            createdAt={order.createdAt}
+          />
         </View>
+
+        {/* ── Carrier info (once confirmed) ── */}
+        {order.carrier && (
+          <View style={s.section}>
+            <Text style={[s.sectionTitle, { marginBottom: 12 }]}>Pārvadātājs</Text>
+            <View style={s.card}>
+              <Row label="Uzņēmums" value={order.carrier.name} icon={Building2} />
+              {order.carrier.phone && (
+                <TouchableOpacity
+                  style={s.row}
+                  onPress={() =>
+                    Linking.openURL(`tel:${order.carrier!.phone}`).catch(() =>
+                      Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
+                    )
+                  }
+                  activeOpacity={0.7}
+                >
+                  <Phone size={18} color="#9ca3af" style={{ marginTop: 1 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.rowLabel}>Telefons</Text>
+                    <Text style={[s.rowValue, { color: '#2563eb' }]}>{order.carrier.phone}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* ── Order details ── */}
         <View style={s.section}>
@@ -410,7 +539,6 @@ export default function SkipOrderDetailScreen() {
           onSuccess={() => {
             setShowRating(false);
             setAlreadyRated(true);
-            // Refresh order state
             api.skipHire
               .getById(id, token)
               .then(setOrder)
@@ -551,6 +679,21 @@ const s = StyleSheet.create({
   timelineLabel: { fontSize: 14, fontWeight: '600', color: colors.textDisabled },
   timelineLabelActive: { color: colors.textPrimary },
   timelineHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  timelineTimestamp: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 
   timelineRow: {},
+
+  pinDelivery: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
 });

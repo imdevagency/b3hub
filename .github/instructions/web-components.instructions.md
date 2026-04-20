@@ -506,6 +506,10 @@ Wrap page sections that may throw.
 
 ---
 
+#### `tabs` — `@/components/ui/tabs`
+
+---
+
 #### `textarea` — `@/components/ui/textarea`
 
 ---

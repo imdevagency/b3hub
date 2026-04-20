@@ -154,7 +154,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 <!-- GEN:mobile-routes -->
 - `(auth)` — apply-role, forgot-password, login, onboarding, register, welcome
 - `(buyer)` — analytics, business, catalog, certificates, disputes, documents, field-passes, framework-contract/, framework-contracts, home, invoices, messages, new-order, order/, orders, profile, project/, projects, rfq/, saved-addresses, schedules, skip-order/, team, transport-job/
-- `(driver)` — active, active-styles, carrier-settings, documents, earnings, home, jobs, messages, profile, schedule, skips, vehicles
+- `(driver)` — active, active-styles, carrier-settings, documents, earnings, home, job-stat/, jobs, messages, profile, schedule, skips, vehicles
 - `(seller)` — business, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, order/, profile, quotes
 <!-- END GEN -->
 

@@ -116,6 +116,13 @@ export const s = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
   },
+  stepTs: {
+    fontSize: 8,
+    color: '#9ca3af',
+    textAlign: 'center' as const,
+    fontFamily: 'Inter_400Regular',
+    marginTop: -2,
+  },
   stepHint: {
     fontSize: 12,
     color: colors.textMuted,

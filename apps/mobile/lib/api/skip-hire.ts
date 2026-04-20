@@ -38,7 +38,9 @@ export interface SkipHireOrder {
   notes?: string | null;
   unloadingPointPhotoUrl?: string | null;
   carrierId?: string | null;
+  carrier?: { id: string; name: string; phone?: string | null; rating?: number | null } | null;
   deliveryWindow?: string | null;
+  statusTimestamps?: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
 }

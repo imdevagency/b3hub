@@ -515,6 +515,7 @@ export class OrdersService {
             total,
             currency: 'EUR',
             status: OrderStatus.PENDING,
+            statusTimestamps: { PENDING: new Date().toISOString() },
             paymentStatus: 'PENDING',
             paymentMethod,
             items: {
@@ -981,9 +982,10 @@ export class OrdersService {
       );
     }
 
+    const prevTs = (order.statusTimestamps as Record<string, string> | null) ?? {};
     const updated = await this.prisma.order.update({
       where: { id },
-      data: { status },
+      data: { status, statusTimestamps: { ...prevTs, [status]: new Date().toISOString() } },
     });
 
     // Auto-create an invoice on CONFIRMED (or DELIVERED as fallback), unless one already exists
@@ -1446,6 +1448,15 @@ export class OrdersService {
       return this.prisma.order.findUniqueOrThrow({ where: { id } });
     }
 
+    // Stamp the CANCELLED timestamp (non-fatal if it fails)
+    const sellerCancelPrevTs = (order.statusTimestamps as Record<string, string> | null) ?? {};
+    await this.prisma.order
+      .update({
+        where: { id },
+        data: { statusTimestamps: { ...sellerCancelPrevTs, CANCELLED: new Date().toISOString() } },
+      })
+      .catch(() => {});
+
     // Cascade-cancel assigned (but not yet loaded) transport jobs
     const cancelableJobStatuses: TransportJobStatus[] = [
       TransportJobStatus.AVAILABLE,
@@ -1677,6 +1688,15 @@ export class OrdersService {
         where: { id },
       })) as typeof order;
     }
+
+    // Stamp the CANCELLED timestamp (non-fatal if it fails)
+    const cancelPrevTs = (order.statusTimestamps as Record<string, string> | null) ?? {};
+    await this.prisma.order
+      .update({
+        where: { id },
+        data: { statusTimestamps: { ...cancelPrevTs, CANCELLED: new Date().toISOString() } },
+      })
+      .catch(() => {});
 
     // Void the Stripe PaymentIntent or issue a full refund depending on capture state.
     // Fire-and-forget — payment failure must never block order cancellation.

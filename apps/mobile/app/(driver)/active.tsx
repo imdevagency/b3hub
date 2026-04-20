@@ -34,7 +34,7 @@ import { startLocationTracking, stopLocationTracking } from '@/lib/location-task
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { ActiveJobMap } from '@/components/driver/ActiveJobMap';
 import { InlineTab } from '@/components/driver/InlineTab';
-import { styles } from './active-styles';
+import { styles } from './_active-styles';
 import { haptics } from '@/lib/haptics';
 import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonDetail } from '@/components/ui/Skeleton';

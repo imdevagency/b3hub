@@ -343,7 +343,7 @@ export default function OrderWizard() {
     return (
       <InlineAddressStep
         picked={picked}
-        onPick={setPicked}
+        onPick={handlePickConfirm}
         onConfirm={onCTA}
         onCancel={goBack}
         contextLabel="Piegādes adrese"

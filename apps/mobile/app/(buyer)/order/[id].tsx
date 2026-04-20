@@ -50,7 +50,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
 import { useToast } from '@/components/ui/Toast';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatDateTime } from '@/lib/format';
 import { colors } from '@/lib/theme';
 import { s } from './order-detail-styles';
 
@@ -150,8 +150,9 @@ export default function OrderDetailScreen() {
   };
 
   // Load existing dispute from server so confirm-receipt is always properly blocked
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   React.useEffect(() => {
-    if (!token || !id || !order) return;
+    if (!token || !id || !UUID_RE.test(id) || !order) return;
     api
       .listDisputes(token, id)
       .then((disputes) => {
@@ -455,6 +456,8 @@ export default function OrderDetailScreen() {
                 {ORDER_STEPS.map((step, i) => {
                   const done = i < stepperIdx;
                   const active = i === stepperIdx;
+                  const tsRaw = order.statusTimestamps?.[step.key];
+                  const tsLabel = tsRaw ? formatDateTime(tsRaw) : null;
                   return (
                     <View key={step.key} style={s.stepCol}>
                       <View style={[s.stepDot, done && s.stepDotDone, active && s.stepDotActive]}>
@@ -467,6 +470,11 @@ export default function OrderDetailScreen() {
                       >
                         {step.short}
                       </Text>
+                      {tsLabel ? (
+                        <Text style={s.stepTs} numberOfLines={1}>
+                          {tsLabel}
+                        </Text>
+                      ) : null}
                     </View>
                   );
                 })}
