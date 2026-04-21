@@ -161,9 +161,15 @@ function UserDrawer({
                   <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="break-all">{u.email}</span>
                   {u.emailVerified ? (
-                    <ShieldCheck className="h-4 w-4 text-green-500 shrink-0" title="Verificēts" />
+                    <ShieldCheck
+                      className="h-4 w-4 text-green-500 shrink-0"
+                      aria-label="Verificēts"
+                    />
                   ) : (
-                    <ShieldOff className="h-4 w-4 text-amber-400 shrink-0" title="Nav verificēts" />
+                    <ShieldOff
+                      className="h-4 w-4 text-amber-400 shrink-0"
+                      aria-label="Nav verificēts"
+                    />
                   )}
                 </div>
               )}

@@ -1,5 +1,5 @@
 /**
- * Next.js middleware.
+ * Next.js proxy (previously: middleware).
  * Runs on every request — checks for a valid JWT cookie/header and redirects
  * unauthenticated users away from protected /dashboard/* routes.
  */
@@ -29,9 +29,9 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
-// ── Middleware ──────────────────────────────────────────────────────────────
+// ── Proxy ──────────────────────────────────────────────────────────────────
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths and Next.js internals

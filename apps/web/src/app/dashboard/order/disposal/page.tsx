@@ -17,8 +17,13 @@ import {
   type PlaceAddress,
   AddressAutocomplete,
 } from '@/components/ui/AddressAutocomplete';
-import { createDisposalOrder, getMyOrders, type ApiOrder } from '@/lib/api/orders';
-import { type WasteType, type DisposalTruckType } from '@/lib/api/containers';
+import {
+  createDisposalOrder,
+  getMyOrders,
+  type ApiOrder,
+  type WasteType,
+  type DisposalTruckType,
+} from '@/lib/api/orders';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import {
   Trash2,

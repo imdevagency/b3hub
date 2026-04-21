@@ -12,8 +12,7 @@ import { getMyOrders, confirmOrder, cancelOrder, type ApiOrder } from '@/lib/api
 import { SupplierView } from '../orders/page';
 import { Recycle, MapPin, CalendarDays, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { fmtDate } from '@/lib/format';
-import { ORDER_STATUS } from '@/lib/status-config';
-import { Badge } from '@/components/ui/badge';
+import { ORDER_STATUS, StatusBadgeHex } from '@/lib/status-config';
 import { Button } from '@/components/ui/button';
 
 // ── Disposal orders view for recycler companies ───────────────────────────────
@@ -103,10 +102,7 @@ function DisposalIncomingView({ token }: { token: string }) {
         </div>
       )}
       {orders.map((order) => {
-        const statusMeta = ORDER_STATUS[order.status] ?? {
-          label: order.status,
-          color: 'bg-muted text-muted-foreground',
-        };
+        const statusMeta = ORDER_STATUS[order.status];
         const isPending = order.status === 'PENDING';
         const wasteLabel = (order as ApiOrder & { wasteType?: string }).wasteType
           ? (WASTE_TYPE_LABELS[(order as ApiOrder & { wasteType?: string }).wasteType!] ??
@@ -123,9 +119,7 @@ function DisposalIncomingView({ token }: { token: string }) {
                 {wasteLabel && (
                   <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{wasteLabel}</span>
                 )}
-                <Badge className={`text-[10px] px-2 h-4 ${statusMeta.color}`}>
-                  {statusMeta.label}
-                </Badge>
+                <StatusBadgeHex cfg={statusMeta} />
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">

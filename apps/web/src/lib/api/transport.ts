@@ -33,6 +33,7 @@ export interface ApiTransportJob {
   requiredVehicleEnum: string | null;
   cargoType: string;
   cargoWeight: number | null;
+  actualWeightKg: number | null;
   pickupAddress: string;
   pickupCity: string;
   pickupLat: number | null;

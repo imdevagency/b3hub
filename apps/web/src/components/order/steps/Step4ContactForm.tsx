@@ -105,11 +105,7 @@ export function Step4ContactForm({
               <span className="font-semibold text-gray-900">
                 {sizeInfo?.label} ({sizeInfo?.volume})
               </span>
-              {wasteInfo && (
-                <span className="text-gray-500 ml-1">
-                  — {wasteInfo.emoji} {wasteInfo.label}
-                </span>
-              )}
+              {wasteInfo && <span className="text-gray-500 ml-1">— {wasteInfo.label}</span>}
             </div>
           </div>
           <div className="flex items-center gap-3 px-4 py-3 text-sm">
