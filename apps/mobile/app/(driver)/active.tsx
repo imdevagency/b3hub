@@ -33,11 +33,10 @@ import {
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { ActiveJobMap } from '@/components/driver/ActiveJobMap';
-import { InlineTab } from '@/components/driver/InlineTab';
 import { styles } from './_active-styles';
 import { haptics } from '@/lib/haptics';
-import { estimateCo2Kg, formatCo2 } from '@/lib/co2';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -51,11 +50,9 @@ import {
   ArrowLeft,
   Phone,
   Truck,
-  Clock,
   CheckCircle2,
   AlertCircle,
   Camera,
-  Plus,
   PlusCircle,
   FileText,
   Clock as ClockIcon,
@@ -110,11 +107,6 @@ const SURCHARGE_TYPE_OPTIONS = [
   { value: 'OTHER', label: 'Cita piemaksa' },
 ] as const;
 
-const SLA_STAGE_LABEL: Record<string, string> = {
-  PICKUP_DELAY: 'Kavēta iekraušana',
-  DELIVERY_DELAY: 'Kavēta piegāde',
-};
-
 const DOC_LABELS: Record<string, string> = {
   DELIVERY_PROOF: 'Piegādes apliecinājums',
   WEIGHING_SLIP: 'Svēršanas biļete',
@@ -138,7 +130,6 @@ export default function ActiveJobScreen() {
   const jobRef = useRef<ApiTransportJob | null>(null);
   // Return trips — fetched automatically when nearing delivery
   const [returnTrips, setReturnTrips] = React.useState<ApiReturnTripJob[]>([]);
-  const [returnTripsLoading, setReturnTripsLoading] = React.useState(false);
   const [acceptingReturnId, setAcceptingReturnId] = React.useState<string | null>(null);
   const [deliveryBlockers, setDeliveryBlockers] = React.useState<string[]>([]);
   const [readinessLoading, setReadinessLoading] = React.useState(false);
@@ -153,9 +144,7 @@ export default function ActiveJobScreen() {
   const [resolvingExceptionId, setResolvingExceptionId] = React.useState<string | null>(null);
   const [resolutionById, setResolutionById] = React.useState<Record<string, string>>({});
 
-  // Remove the hardcoded old styles and structure to start clean on bottom sheet
   const [activeTab, setActiveTab] = React.useState<'navigate' | 'details' | 'issues'>('navigate');
-  const [swipeConfirmValue, setSwipeConfirmValue] = React.useState(0);
   const [returnTripsSheetVisible, setReturnTripsSheetVisible] = React.useState(false);
 
   // ── Weight ticket modal ──────────────────────────────────────
@@ -387,15 +376,13 @@ export default function ActiveJobScreen() {
     const status = job.status as JobStatus;
     if (!RETURN_TRIP_STATUSES.includes(status)) return;
     if (job.deliveryLat == null || job.deliveryLng == null) return;
-    setReturnTripsLoading(true);
     api.transportJobs
       .returnTrips(job.deliveryLat, job.deliveryLng, 75, token)
       .then((trips) => setReturnTrips(trips))
       .catch((err) => {
         toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt atgriešanās darbus');
         setReturnTrips([]);
-      })
-      .finally(() => setReturnTripsLoading(false));
+      });
   }, [token, job?.status, job?.deliveryLat, job?.deliveryLng]);
 
   // ── Readiness check before AT_DELIVERY → DELIVERED ───────────
@@ -579,6 +566,15 @@ export default function ActiveJobScreen() {
       fetchActiveJob();
     }
   }, [liveJobStatus]);
+
+  // ── Polling fallback — refetch every 30 s in case WebSocket drops ──
+  useEffect(() => {
+    if (!job?.id || job.status === 'DELIVERED') return;
+    const interval = setInterval(() => {
+      fetchActiveJob();
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [job?.id, job?.status, fetchActiveJob]);
 
   // ── Foreground GPS watcher — live map dot only ────────────────
   useEffect(() => {
@@ -902,6 +898,7 @@ export default function ActiveJobScreen() {
 
   return (
     <ScreenContainer bg="transparent" topInset={0} style={{ flex: 1 }} noAnimation>
+      <OfflineBanner />
       {/* ── Absolutely Positioned Map Layer ── */}
       <ActiveJobMap
         job={job}
