@@ -193,6 +193,38 @@ function getPhaseMeta(
   };
 }
 
+function getStatusSheetMeta(status: JobStatus, nextStatus: JobStatus) {
+  if (status === 'EN_ROUTE_PICKUP') {
+    return {
+      title: 'Ieradies iekraušanas vietā?',
+      subtitle: 'Apstipriniet tikai tad, kad patiešām esat objektā un varat sākt iekraušanu.',
+      confirmLabel: 'Jā, esmu klāt',
+    };
+  }
+
+  if (status === 'LOADED') {
+    return {
+      title: 'Doties uz piegādi?',
+      subtitle: 'Krava jau ir apstiprināta. Nākamais solis pārslēgs darbu uz piegādes režīmu.',
+      confirmLabel: 'Sākt piegādi',
+    };
+  }
+
+  if (status === 'EN_ROUTE_DELIVERY') {
+    return {
+      title: 'Ieradies piegādes vietā?',
+      subtitle: 'Apstipriniet tikai tad, kad esat objektā un varat sākt nodošanu vai izkraušanu.',
+      confirmLabel: 'Jā, esmu piegādē',
+    };
+  }
+
+  return {
+    title: 'Atjaunināt darba statusu?',
+    subtitle: `Tālāk: ${STEP_PROGRESS_LABELS[nextStatus]}. Statuss tiks atjaunināts uzreiz vai saglabāts rindā, ja esat bezsaistē.`,
+    confirmLabel: 'Turpināt',
+  };
+}
+
 export default function ActiveJobScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -242,6 +274,8 @@ export default function ActiveJobScreen() {
   const [delayMinutes, setDelayMinutes] = React.useState('30');
   const [delayReason, setDelayReason] = React.useState('');
   const [delaySubmitting, setDelaySubmitting] = React.useState(false);
+  const [statusConfirmVisible, setStatusConfirmVisible] = React.useState(false);
+  const [statusSubmitting, setStatusSubmitting] = React.useState(false);
 
   // ── Offline queue ────────────────────────────────────────────────
   const [isOffline, setIsOffline] = React.useState(false);
@@ -743,6 +777,7 @@ export default function ActiveJobScreen() {
     openExceptionCount: openExceptions.length,
     returnTripCount: returnTrips.length,
   });
+  const statusSheetMeta = nextStatus ? getStatusSheetMeta(currentStatus, nextStatus) : null;
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
   //   Shows Waze / Google Maps / Apple Maps action sheet.
@@ -821,6 +856,38 @@ export default function ActiveJobScreen() {
     }
   };
 
+  const submitStatusUpdate = async (targetStatus: JobStatus) => {
+    if (!token) return;
+    setStatusSubmitting(true);
+    try {
+      const updated = await api.transportJobs.updateStatus(job.id, targetStatus, token);
+      setJob(updated);
+      setStatusConfirmVisible(false);
+      haptics.success();
+    } catch (err: unknown) {
+      const netState = await NetInfo.fetch();
+      const online = netState.isConnected === true && netState.isInternetReachable !== false;
+      if (!online) {
+        try {
+          const raw = await AsyncStorage.getItem('b3hub_offline_queue');
+          const queue = raw ? JSON.parse(raw) : [];
+          queue.push({ jobId: job.id, nextStatus: targetStatus, timestamp: Date.now() });
+          await AsyncStorage.setItem('b3hub_offline_queue', JSON.stringify(queue));
+          setStatusConfirmVisible(false);
+          haptics.warning();
+          toast.info('Offline — statuss tiks atjaunināts, kad atjaunosies savienojums');
+        } catch {
+          toast.error('Neizdevās saglabāt statusu rindā — lūdzu mēģiniet vēlreiz');
+        }
+      } else {
+        haptics.error();
+        Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu');
+      }
+    } finally {
+      setStatusSubmitting(false);
+    }
+  };
+
   const handleUpdateStatus = () => {
     if (!nextStatus || !token) return;
     haptics.medium();
@@ -855,41 +922,7 @@ export default function ActiveJobScreen() {
       return;
     }
 
-    Alert.alert(t.activeJob.updateStatus, `→ ${t.activeJob.status[nextStatus]}`, [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Apstiprināt',
-        onPress: async () => {
-          try {
-            const updated = await api.transportJobs.updateStatus(job.id, nextStatus, token);
-            setJob(updated);
-            haptics.success();
-          } catch (err: unknown) {
-            // If offline, queue the status update for later
-            const netState = await NetInfo.fetch();
-            const online = netState.isConnected === true && netState.isInternetReachable !== false;
-            if (!online) {
-              try {
-                const raw = await AsyncStorage.getItem('b3hub_offline_queue');
-                const queue = raw ? JSON.parse(raw) : [];
-                queue.push({ jobId: job.id, nextStatus, timestamp: Date.now() });
-                await AsyncStorage.setItem('b3hub_offline_queue', JSON.stringify(queue));
-                haptics.warning();
-                toast.info('Offline — statuss tiks atjaunināts, kad atjaunosies savienojums');
-              } catch {
-                toast.error('Neizdevās saglabāt statusu rindā — lūdzu mēģiniet vēlreiz');
-              }
-            } else {
-              haptics.error();
-              Alert.alert(
-                'Kļūda',
-                err instanceof Error ? err.message : 'Neizdevās atjaunināt statusu',
-              );
-            }
-          }
-        },
-      },
-    ]);
+    setStatusConfirmVisible(true);
   };
 
   const handleWeightConfirm = async () => {
@@ -1615,6 +1648,88 @@ export default function ActiveJobScreen() {
           )}
         </View>
       </View>
+
+      <BottomSheet
+        visible={statusConfirmVisible}
+        onClose={() => {
+          if (!statusSubmitting) setStatusConfirmVisible(false);
+        }}
+        title={statusSheetMeta?.title}
+        subtitle={statusSheetMeta?.subtitle}
+      >
+        <View style={{ gap: 14, paddingBottom: 12 }}>
+          <View
+            style={{
+              backgroundColor: phaseColor.bg,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: phaseColor.border,
+              padding: 14,
+            }}
+          >
+            <RNText
+              style={{
+                fontSize: 12,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: phaseColor.text,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}
+            >
+              Nākamais solis
+            </RNText>
+            <RNText
+              style={{
+                fontSize: 18,
+                lineHeight: 24,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: colors.textPrimary,
+                marginTop: 4,
+              }}
+            >
+              {nextStatus ? STEP_PROGRESS_LABELS[nextStatus] : ''}
+            </RNText>
+            <RNText
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                fontFamily: 'Inter_500Medium',
+                fontWeight: '500',
+                color: colors.textMuted,
+                marginTop: 6,
+              }}
+            >
+              {isOffline
+                ? 'Ja savienojums nav pieejams, izmaiņa tiks saglabāta rindā un nosūtīta vēlāk.'
+                : 'Statuss tiks atjaunināts uzreiz, un ekrāns paliks tajā pašā plūsmā.'}
+            </RNText>
+          </View>
+
+          <Button
+            size="lg"
+            onPress={() => {
+              if (nextStatus) {
+                void submitStatusUpdate(nextStatus);
+              }
+            }}
+            isLoading={statusSubmitting}
+            disabled={statusSubmitting || !nextStatus}
+          >
+            {statusSheetMeta?.confirmLabel ?? 'Turpināt'}
+          </Button>
+
+          <Button
+            size="lg"
+            variant="outline"
+            onPress={() => setStatusConfirmVisible(false)}
+            disabled={statusSubmitting}
+          >
+            Atcelt
+          </Button>
+        </View>
+      </BottomSheet>
 
       <BottomSheet
         visible={activeTab === 'details'}
