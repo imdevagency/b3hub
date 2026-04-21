@@ -48,6 +48,9 @@ import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { colors } from '@/lib/theme';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
+
+// Module-level constant — statuses eligible to link a skip hire to
+const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 
@@ -154,9 +157,6 @@ export default function OrderWizard() {
     [setSkipSize],
   );
 
-  // Active statuses that make sense to link to a skip hire
-  const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
-
   // Load unlinked, active material orders when user reaches step 4
   useEffect(() => {
     if (step !== 4 || !token || matOrders.length > 0) return;
@@ -168,7 +168,7 @@ export default function OrderWizard() {
           data.filter((o) => !o.linkedSkipOrder && ACTIVE_ORDER_STATUSES.includes(o.status)),
         ),
       )
-      .catch((err) => console.warn('Failed to load orders:', err))
+      .catch(() => {})
       .finally(() => setMatOrdersLoading(false));
   }, [step, token, matOrders.length]);
 
@@ -186,14 +186,19 @@ export default function OrderWizard() {
       ? quotes[0].price
       : (marketPrices[activeSize] ?? SKIP_PRICES[activeSize] ?? 129);
 
+  const totalWithVat = (price * 1.21).toFixed(2);
   const ctaLabel =
-    step === 4 ? (quotesLoading ? 'Ielādē cenas...' : `Pasūtīt — €${price}`) : 'Turpināt';
+    step === 4
+      ? quotesLoading
+        ? 'Ielādē cenas...'
+        : `Pasūtīt — €${totalWithVat} (ar PVN)`
+      : 'Turpināt';
 
   const ctaDisabled =
     (step === 1 && !selectedWaste) ||
     (step === 2 && !selectedSize) ||
     (step === 3 && !picked) ||
-    (step === 4 && quotesLoading) ||
+    (step === 4 && (!selectedDay || quotesLoading)) ||
     submitting;
 
   const onCTA = useCallback(async () => {
@@ -279,52 +284,65 @@ export default function OrderWizard() {
     router,
   ]);
 
-  const pickUnloadingPhoto = useCallback(async (fromCamera: boolean) => {
-    setPhotoBusy(true);
-    try {
-      let result: ImagePicker.ImagePickerResult;
-      if (fromCamera) {
-        const { granted } = await ImagePicker.requestCameraPermissionsAsync();
-        if (!granted) {
-          toast.error('Lai pievienotu foto, atļauj piekļuvi kamerai.');
-          return;
+  const pickUnloadingPhoto = useCallback(
+    async (fromCamera: boolean) => {
+      setPhotoBusy(true);
+      try {
+        let result: ImagePicker.ImagePickerResult;
+        if (fromCamera) {
+          const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+          if (!granted) {
+            toast.error('Lai pievienotu foto, atļauj piekļuvi kamerai.');
+            return;
+          }
+          result = await ImagePicker.launchCameraAsync({
+            mediaTypes: 'images',
+            quality: 0.45,
+            base64: true,
+            allowsEditing: true,
+            aspect: [4, 3],
+          });
+        } else {
+          result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            quality: 0.45,
+            base64: true,
+            allowsEditing: true,
+            aspect: [4, 3],
+          });
         }
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: 'images',
-          quality: 0.45,
-          base64: true,
-          allowsEditing: true,
-          aspect: [4, 3],
-        });
-      } else {
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: 'images',
-          quality: 0.45,
-          base64: true,
-          allowsEditing: true,
-          aspect: [4, 3],
-        });
-      }
 
-      if (!result.canceled && result.assets?.[0]) {
-        const asset = result.assets[0];
-        // Guard against oversized base64 payloads (approx: base64 len × 0.75 = bytes)
-        const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
-        const approxBytes = (asset.base64?.length ?? 0) * 0.75;
-        if (approxBytes > MAX_BYTES) {
-          Alert.alert(
-            'Foto ir pārāk liels',
-            'Lūdzu izvēlieties mazāku attēlu vai fotografējiet no tuvāka attāluma (maks. 2 MB).',
-          );
-          return;
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          // Guard against oversized base64 payloads (approx: base64 len × 0.75 = bytes)
+          const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+          const approxBytes = (asset.base64?.length ?? 0) * 0.75;
+          if (approxBytes > MAX_BYTES) {
+            Alert.alert(
+              'Foto ir pārāk liels',
+              'Lūdzu izvēlieties mazāku attēlu vai fotografējiet no tuvāka attāluma (maks. 2 MB).',
+            );
+            return;
+          }
+          // Upload to storage immediately; store the returned URL (not a raw data URI)
+          if (asset.base64 && token) {
+            try {
+              const mimeType = asset.mimeType ?? 'image/jpeg';
+              const { url } = await api.skipHire.uploadPhoto(asset.base64, mimeType, token);
+              setUnloadingPointPhotoUrl(url);
+            } catch {
+              toast.error('Neizdevās augšupielādēt foto. Mēģiniet vēlreiz.');
+            }
+          } else {
+            setUnloadingPointPhotoUrl(asset.uri);
+          }
         }
-        const dataUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-        setUnloadingPointPhotoUrl(dataUri);
+      } finally {
+        setPhotoBusy(false);
       }
-    } finally {
-      setPhotoBusy(false);
-    }
-  }, []);
+    },
+    [token],
+  );
 
   const openPhotoOptions = useCallback(() => {
     Alert.alert('Izkraušanas punkta foto', '', [
@@ -427,14 +445,14 @@ export default function OrderWizard() {
                   selectedDotColor: '#ffffff',
                   arrowColor: '#111827',
                   monthTextColor: '#111827',
-                  textDayFontFamily: 'Geist-Medium',
-                  textMonthFontFamily: 'Geist-SemiBold',
-                  textDayHeaderFontFamily: 'Geist-Medium',
+                  textDayFontFamily: 'Inter_500Medium',
+                  textMonthFontFamily: 'Inter_600SemiBold',
+                  textDayHeaderFontFamily: 'Inter_500Medium',
                   textDayFontSize: 15,
                   textMonthFontSize: 16,
                   textDayHeaderFontSize: 13,
                 }}
-                minDate={new Date().toISOString().split('T')[0]}
+                minDate={toISO(addDays(today, 1))}
                 firstDay={1}
                 enableSwipeMonths={true}
               />

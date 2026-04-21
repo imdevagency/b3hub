@@ -123,5 +123,16 @@ export const skipHireApi = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       }),
+
+    /**
+     * Upload an unloading-point photo before order creation.
+     * Returns a public Supabase Storage URL to include in the create payload.
+     */
+    uploadPhoto: (base64: string, mimeType: string, token: string) =>
+      apiFetch<{ url: string }>('/skip-hire/upload-photo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ base64, mimeType }),
+      }),
   },
 };

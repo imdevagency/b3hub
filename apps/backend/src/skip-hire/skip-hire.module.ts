@@ -4,9 +4,10 @@ import { SkipHireController } from './skip-hire.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, PaymentsModule],
+  imports: [PrismaModule, NotificationsModule, PaymentsModule, SupabaseModule],
   controllers: [SkipHireController],
   providers: [SkipHireService],
   exports: [SkipHireService],

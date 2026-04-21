@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +18,7 @@ import { withCronLock } from '../common/utils/cron-lock.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
 import { PaymentsService } from '../payments/payments.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { CompanyType, SkipHireStatus, SkipSize, Prisma } from '@prisma/client';
@@ -57,7 +59,29 @@ export class SkipHireService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly payments: PaymentsService,
+    @Optional() private readonly supabase: SupabaseService,
   ) {}
+
+  /**
+   * Upload an unloading-point photo to Supabase Storage and return the public URL.
+   * Called before order creation so the create DTO receives a URL, not raw base64.
+   */
+  async uploadPhoto(
+    base64: string,
+    mimeType: string,
+  ): Promise<{ url: string }> {
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `photos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const buffer = Buffer.from(raw, 'base64');
+    await this.supabase.uploadFile('skip-hire-photos', path, buffer);
+    const url = this.supabase.getPublicUrl('skip-hire-photos', path);
+    this.logger.log(`Skip hire photo uploaded: ${url}`);
+    return { url };
+  }
 
   // ── Create (public — no auth needed) ──────────────────────────
   async create(dto: CreateSkipHireDto, userId?: string) {

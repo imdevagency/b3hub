@@ -123,6 +123,19 @@ export class SkipHireController {
   }
 
   /**
+   * POST /api/v1/skip-hire/upload-photo
+   * Authenticated — uploads a base64 photo to Supabase and returns a public URL.
+   * Must be called BEFORE creating the skip hire order so the create DTO receives
+   * a real URL rather than a raw base64 data URI in the DB.
+   */
+  @Post('upload-photo')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  uploadPhoto(@Body() body: { base64: string; mimeType: string }) {
+    return this.skipHireService.uploadPhoto(body.base64, body.mimeType);
+  }
+
+  /**
    * GET /api/v1/skip-hire/:id
    * Protected — must be owner or admin.
    */

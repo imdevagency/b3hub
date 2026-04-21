@@ -125,7 +125,7 @@ export default function SkipOrderDetailScreen() {
       api.reviews
         .status({ skipOrderId: order.id }, token)
         .then(({ reviewed }) => setAlreadyRated(reviewed))
-        .catch((err) => console.warn('Failed to load review status:', err));
+        .catch(() => {});
     }
   }, [order?.id, order?.status, token]);
 
@@ -477,7 +477,7 @@ export default function SkipOrderDetailScreen() {
               api.skipHire
                 .getById(id, token)
                 .then(setOrder)
-                .catch((err) => console.warn('Failed to refresh skip order:', err));
+                .catch(() => {});
             }
           }}
           token={token}
