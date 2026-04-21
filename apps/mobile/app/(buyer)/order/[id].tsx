@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Alert, Linking, Image, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -90,10 +91,13 @@ export default function OrderDetailScreen() {
     lat: number;
     lng: number;
   } | null>(null);
+  const insets = useSafeAreaInsets();
 
   // ── Bottom sheet ──
+  // Snap points are PIXEL values (not percentages) sized to match the content
+  // at each state, so the peek always fully contains hero + driver row + CTA.
   const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['22%', '55%', '92%'], []);
+  const snapPoints = useMemo(() => [280 + insets.bottom, 520, '92%'], [insets.bottom]);
   const [sheetIndex, setSheetIndex] = useState(0);
   const handleSheetChange = useCallback((index: number) => {
     setSheetIndex(index);
@@ -304,7 +308,7 @@ export default function OrderDetailScreen() {
               const updated = await api.orders.confirmReceipt(order.id, token);
               setOrder(updated);
               haptics.success();
-              Alert.alert('✅ Apstiprināts', 'Pasūtījums veiksmīgi pabeigts. Paldies!');
+              Alert.alert('Apstiprināts', 'Pasūtījums veiksmīgi pabeigts. Paldies!');
             } catch (err: unknown) {
               haptics.error();
               toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt');
@@ -462,7 +466,7 @@ export default function OrderDetailScreen() {
       </View>
 
       {/* ── Floating back button ──────────────────────────────── */}
-      <View style={styles.floatingHeader} pointerEvents="box-none">
+      <View style={[styles.floatingHeader, { top: insets.top + 8 }]} pointerEvents="box-none">
         <TouchableOpacity style={styles.floatingBackBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color="#111827" />
         </TouchableOpacity>
@@ -473,12 +477,14 @@ export default function OrderDetailScreen() {
         ref={sheetRef}
         index={0}
         snapPoints={snapPoints}
+        topInset={insets.top}
+        enableDynamicSizing={false}
         onChange={handleSheetChange}
         handleIndicatorStyle={styles.sheetHandle}
         backgroundStyle={styles.sheetBackground}
       >
         <BottomSheetScrollView
-          contentContainerStyle={styles.sheetContent}
+          contentContainerStyle={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
           {/* HERO — big ETA, supporting status line */}
@@ -573,7 +579,10 @@ export default function OrderDetailScreen() {
                 primaryCta.variant === 'success' && styles.primaryCtaSuccess,
                 primaryCta.disabled && { opacity: 0.6 },
               ]}
-              onPress={primaryCta.onPress}
+              onPress={() => {
+                haptics.medium();
+                primaryCta.onPress();
+              }}
               disabled={primaryCta.disabled}
             >
               {primaryCta.icon}
@@ -759,7 +768,6 @@ const styles = StyleSheet.create({
   // ── Floating back button ──
   floatingHeader: {
     position: 'absolute',
-    top: 60,
     left: 16,
     right: 16,
     flexDirection: 'row',

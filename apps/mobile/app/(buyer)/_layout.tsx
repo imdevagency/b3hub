@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,8 +22,15 @@ function BuyerLayoutContent() {
   const insets = useSafeAreaInsets();
   const unreadCount = useUnreadCount();
   const { config } = useHeaderConfig();
+  const pathname = usePathname();
+  // Routes that run edge-to-edge and should hide the tab bar + top bar (tracking, live maps, etc.)
+  const isFullScreenRoute =
+    /^\/\(buyer\)\/order\/[^/]+$/.test(pathname) || pathname.startsWith('/(buyer)/order/');
   // eslint-disable-next-line react/display-name
-  const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
+  const renderTabBar = useCallback(
+    (props: BottomTabBarProps) => (isFullScreenRoute ? null : <AnimatedTabBar {...props} />),
+    [isFullScreenRoute],
+  );
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -59,8 +66,16 @@ function BuyerLayoutContent() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgCard, paddingTop: insets.top }}>
-      {config !== null && <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />}
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.bgCard,
+        paddingTop: isFullScreenRoute ? 0 : insets.top,
+      }}
+    >
+      {config !== null && !isFullScreenRoute && (
+        <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />
+      )}
       <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
           name="home"
