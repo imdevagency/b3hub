@@ -1,25 +1,17 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, Image } from 'react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, ScrollView, Alert, Linking, Image, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import {
-  MapPin,
-  Phone,
-  Package,
-  Trash2,
-  ArrowLeft,
-  Star,
-  XCircle,
-  RotateCcw,
-  Truck,
-} from 'lucide-react-native';
+import { MapPin, Phone, Package, Trash2, Star, Truck, Clock3, Hash } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { RatingModal } from '@/components/ui/RatingModal';
+import { InfoSection } from '@/components/ui/InfoSection';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/Toast';
 import { BaseMap } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
@@ -39,8 +31,6 @@ try {
 } catch {
   /* Expo Go */
 }
-
-// ── Constants ──────────────────────────────────────────────────
 
 const SKIP_STEPS = [
   { key: 'PENDING', label: 'Saņemts' },
@@ -66,6 +56,15 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: 'Pasūtījums atcelts',
 };
 
+const STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING: { label: 'Saņemts', bg: '#EFF6FF', color: '#1D4ED8' },
+  CONFIRMED: { label: 'Apstiprināts', bg: '#ECFDF5', color: '#047857' },
+  DELIVERED: { label: 'Piegādāts', bg: '#FEF3C7', color: '#B45309' },
+  COLLECTED: { label: 'Savākts', bg: '#DCFCE7', color: '#15803D' },
+  COMPLETED: { label: 'Pabeigts', bg: '#DCFCE7', color: '#15803D' },
+  CANCELLED: { label: 'Atcelts', bg: '#FEF2F2', color: '#DC2626' },
+};
+
 const WASTE_LABEL: Record<string, string> = {
   MIXED: 'Jaukti atkritumi',
   GREEN_GARDEN: 'Zaļie atkritumi',
@@ -75,9 +74,13 @@ const WASTE_LABEL: Record<string, string> = {
   ELECTRONICS_WEEE: 'Elektronika',
 };
 
-const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
+const DELIVERY_WINDOW_LABEL: Record<string, string> = {
+  AM: 'Rīts (8-12)',
+  PM: 'Diena (12-17)',
+  ANY: 'Jebkurā laikā',
+};
 
-// ── Main Screen ────────────────────────────────────────────────
+const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
 
 export default function SkipOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -86,32 +89,19 @@ export default function SkipOrderDetailScreen() {
   const router = useRouter();
   const { order, setOrder, loading, error, reload } = useSkipOrder(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
-  const [, setMapReady] = useState(false);
-  const insets = useSafeAreaInsets();
-
-  // Bottom sheet
-  const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => [320 + insets.bottom, 520, '92%'], [insets.bottom]);
-  const [sheetIndex, setSheetIndex] = useState(0);
-  const handleSheetChange = useCallback((index: number) => {
-    setSheetIndex(index);
-    haptics.selection();
-  }, []);
 
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  // Auto-refresh while active
   useEffect(() => {
     if (!order || !ACTIVE_STATUSES.has(order.status)) return;
     const interval = setInterval(reload, 15_000);
     return () => clearInterval(interval);
   }, [order?.status, reload]);
 
-  // Fit map to delivery pin once ready
   useEffect(() => {
-    if (!cameraRef.current || !order?.lat || !order?.lng) return;
+    if (!cameraRef.current || order?.lat == null || order?.lng == null) return;
     cameraRef.current.setCamera({
       centerCoordinate: [order.lng, order.lat],
       zoomLevel: 14,
@@ -119,13 +109,12 @@ export default function SkipOrderDetailScreen() {
     });
   }, [order?.lat, order?.lng]);
 
-  // Load review status
   useEffect(() => {
     if (order && token && (order.status === 'COLLECTED' || order.status === 'COMPLETED')) {
       api.reviews
         .status({ skipOrderId: order.id }, token)
         .then(({ reviewed }) => setAlreadyRated(reviewed))
-        .catch(() => {});
+        .catch(() => null);
     }
   }, [order?.id, order?.status, token]);
 
@@ -137,7 +126,7 @@ export default function SkipOrderDetailScreen() {
     }
   }, [error, router, toast]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (!order || !token) return;
     haptics.heavy();
     const cancelMsg =
@@ -164,11 +153,11 @@ export default function SkipOrderDetailScreen() {
         },
       },
     ]);
-  };
+  }, [order, setOrder, toast, token]);
 
   if (loading) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Skip noma" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -177,9 +166,9 @@ export default function SkipOrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Skip noma" />
-        <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
+        <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
   }
@@ -188,10 +177,9 @@ export default function SkipOrderDetailScreen() {
   const carrier = order.carrier;
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
   const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
-
   const currentStepIdx = STATUS_TO_STEP[order.status] ?? -1;
+  const statusPill = STATUS_PILL[order.status] ?? STATUS_PILL.PENDING;
 
-  // Hero line
   const heroPrimary = (() => {
     if (order.status === 'COLLECTED' || order.status === 'COMPLETED') return 'Pabeigts';
     if (order.status === 'CANCELLED') return 'Atcelts';
@@ -199,123 +187,103 @@ export default function SkipOrderDetailScreen() {
     if (order.status === 'CONFIRMED') return formatDate(order.deliveryDate);
     return 'Gaida apstiprinājumu';
   })();
+
   const heroSubtitle = STATUS_LABEL[order.status] ?? '';
 
-  // Contextual CTA
-  type Cta = {
-    label: string;
-    onPress: () => void;
-    icon: React.ReactNode;
-    disabled?: boolean;
-    variant: 'primary' | 'success' | 'danger';
-  };
-  const primaryCta: Cta | null = (() => {
-    if (canRate) {
-      return {
-        label: 'Novērtēt pakalpojumu',
-        onPress: () => setShowRating(true),
-        icon: <Star size={18} color="#fff" fill="#fff" style={{ marginRight: 8 }} />,
-        variant: 'success',
-      };
-    }
-    if (
-      order.status === 'COLLECTED' ||
-      order.status === 'COMPLETED' ||
-      order.status === 'CANCELLED'
-    ) {
-      return {
-        label: 'Pasūtīt vēlreiz',
-        onPress: () => router.push('/skip-hire' as any),
-        icon: <RotateCcw size={18} color="#fff" style={{ marginRight: 8 }} />,
-        variant: 'primary',
-      };
-    }
-    if (carrier?.phone) {
-      return {
-        label: 'Zvanīt pārvadātājam',
-        onPress: () => Linking.openURL(`tel:${carrier.phone}`).catch(() => null),
-        icon: <Phone size={18} color="#fff" style={{ marginRight: 8 }} />,
-        variant: 'primary',
-      };
-    }
-    if (canCancel) {
-      return {
-        label: cancelling ? 'Atceļ…' : 'Atcelt pasūtījumu',
-        onPress: handleCancel,
-        icon: <XCircle size={18} color="#fff" style={{ marginRight: 8 }} />,
-        disabled: cancelling,
-        variant: 'danger',
-      };
-    }
-    return null;
-  })();
+  const orderRows = [
+    { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
+    { label: 'Piegādes vieta', value: order.location },
+    { label: 'Piegādes datums', value: formatDate(order.deliveryDate) },
+    {
+      label: 'Piegādes laiks',
+      value:
+        order.deliveryWindow && order.deliveryWindow !== 'ANY'
+          ? (DELIVERY_WINDOW_LABEL[order.deliveryWindow] ?? order.deliveryWindow)
+          : null,
+    },
+    { label: 'Konteinera izmērs', value: SIZE_LABEL[order.skipSize] ?? order.skipSize },
+    { label: 'Atkritumu veids', value: WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory },
+    { label: 'Izveidots', value: formatDate(order.createdAt) },
+    { label: 'Atjaunināts', value: formatDate(order.updatedAt) },
+  ].filter((row) => row.value);
+
+  const contactRows = [
+    { label: 'Kontaktpersona', value: order.contactName ?? null },
+    { label: 'Telefons', value: order.contactPhone ?? null },
+    { label: 'E-pasts', value: order.contactEmail ?? null },
+    { label: 'Pārvadātājs', value: carrier?.name ?? null },
+    { label: 'Pārvadātāja tālrunis', value: carrier?.phone ?? null },
+  ].filter((row) => row.value);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f4f5f7' }}>
-      {/* ── Background Map ────────────────────────────────────── */}
-      <View style={StyleSheet.absoluteFillObject}>
-        <BaseMap
-          cameraRef={cameraRef}
-          center={hasCoords ? [order.lng!, order.lat!] : [24.1052, 56.9496]}
-          zoom={14}
-          style={{ flex: 1 }}
-          rotateEnabled={false}
-          pitchEnabled={false}
-          mapPadding={{ top: 80, right: 40, bottom: 260, left: 40 }}
-          onMapReady={() => setMapReady(true)}
-        >
-          {hasCoords && Marker && (
-            <Marker
-              coordinate={{ latitude: order.lat!, longitude: order.lng! }}
-              anchor={{ x: 0.5, y: 1 }}
-            >
-              <View style={styles.pinDelivery}>
-                <Trash2 size={14} color="#fff" strokeWidth={2.5} />
-              </View>
-            </Marker>
-          )}
-        </BaseMap>
-      </View>
+    <ScreenContainer bg="#F4F5F7" standalone>
+      <ScreenHeader title="Skip noma" />
 
-      {/* ── Floating back button ──────────────────────────────── */}
-      <View style={[styles.floatingHeader, { top: insets.top + 8 }]} pointerEvents="box-none">
-        <TouchableOpacity style={styles.floatingBackBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color="#111827" />
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Bottom Sheet (peek / half / full) ─────────────────── */}
-      <BottomSheet
-        ref={sheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        topInset={insets.top}
-        enableDynamicSizing={false}
-        onChange={handleSheetChange}
-        handleIndicatorStyle={styles.sheetHandle}
-        backgroundStyle={styles.sheetBackground}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={false}
       >
-        <BottomSheetScrollView
-          contentContainerStyle={[styles.sheetContent, { paddingBottom: 48 + insets.bottom }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* HERO */}
-          <Text style={styles.heroEta}>{heroPrimary}</Text>
-          <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+        <View style={styles.mapCard}>
+          <BaseMap
+            cameraRef={cameraRef}
+            center={hasCoords ? [order.lng!, order.lat!] : [24.1052, 56.9496]}
+            zoom={14}
+            style={styles.map}
+            rotateEnabled={false}
+            pitchEnabled={false}
+          >
+            {hasCoords && Marker && (
+              <Marker
+                coordinate={{ latitude: order.lat!, longitude: order.lng! }}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={styles.pinDelivery}>
+                  <Trash2 size={14} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+              </Marker>
+            )}
+          </BaseMap>
 
-          {/* Progress dots */}
+          <View style={styles.mapOverlay}>
+            <Text style={styles.heroEta}>{heroPrimary}</Text>
+            <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+            <View style={styles.mapMetaRow}>
+              <View style={styles.mapMetaItem}>
+                <MapPin size={13} color="#E5E7EB" />
+                <Text style={styles.mapMetaText} numberOfLines={1}>
+                  {order.location}
+                </Text>
+              </View>
+              <View style={styles.mapMetaItem}>
+                <Hash size={13} color="#E5E7EB" />
+                <Text style={styles.mapMetaText} numberOfLines={1}>
+                  #{order.orderNumber}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <InfoSection
+          icon={<Truck size={16} color={colors.textMuted} />}
+          title="Statuss"
+          right={
+            <StatusPill label={statusPill.label} bg={statusPill.bg} color={statusPill.color} />
+          }
+        >
           {order.status !== 'CANCELLED' && (
             <View style={styles.stepsRow}>
-              {SKIP_STEPS.map((s, i) => {
-                const done = i <= currentStepIdx;
+              {SKIP_STEPS.map((step, index) => {
+                const done = index <= currentStepIdx;
                 return (
-                  <View key={s.key} style={styles.stepItem}>
+                  <View key={step.key} style={styles.stepItem}>
                     <View style={[styles.stepDot, done && styles.stepDotActive]} />
                     <Text
                       style={[styles.stepLabel, done && styles.stepLabelActive]}
                       numberOfLines={1}
                     >
-                      {s.label}
+                      {step.label}
                     </Text>
                   </View>
                 );
@@ -323,149 +291,135 @@ export default function SkipOrderDetailScreen() {
             </View>
           )}
 
-          {/* Carrier row OR order summary */}
           {carrier ? (
-            <View style={styles.driverRowCompact}>
-              <View style={styles.driverAvatarFallbackCompact}>
-                <Truck size={20} color="#fff" />
+            <View style={styles.carrierCard}>
+              <View style={styles.carrierAvatarFallback}>
+                <Truck size={20} color="#FFFFFF" />
               </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.driverNameCompact} numberOfLines={1}>
+              <View style={styles.carrierMeta}>
+                <Text style={styles.carrierName} numberOfLines={1}>
                   {carrier.name}
                 </Text>
                 {carrier.rating != null && (
-                  <View style={styles.driverPlatePill}>
-                    <Text style={styles.driverPlatePillText}>★ {carrier.rating.toFixed(1)}</Text>
+                  <View style={styles.ratingPill}>
+                    <Star size={12} color="#B45309" fill="#B45309" />
+                    <Text style={styles.ratingPillText}>{carrier.rating.toFixed(1)}</Text>
                   </View>
                 )}
               </View>
-              {carrier.phone && (
-                <TouchableOpacity
-                  style={[styles.iconBtn, styles.iconBtnPrimary]}
-                  onPress={() => Linking.openURL(`tel:${carrier.phone}`).catch(() => null)}
-                >
-                  <Phone size={18} color="#fff" />
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
-            <View style={styles.waitingRow}>
-              <View style={styles.waitingItem}>
-                <Package size={14} color="#6b7280" />
-                <Text style={styles.waitingItemText}>
-                  {SIZE_LABEL[order.skipSize] ?? order.skipSize} ·{' '}
-                  {WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory}
-                </Text>
-              </View>
-              <View style={styles.waitingItem}>
-                <MapPin size={14} color="#6b7280" />
-                <Text style={styles.waitingItemText} numberOfLines={1}>
-                  {order.location}
-                </Text>
-              </View>
+            <View style={styles.waitingCard}>
+              <Text style={styles.waitingTitle}>Gaida pārvadātāja apstiprinājumu</Text>
+              <Text style={styles.waitingText}>
+                Kad pārvadātājs apstiprinās pasūtījumu, šeit redzēsiet kontaktinformāciju un statusa
+                progresu.
+              </Text>
             </View>
           )}
+        </InfoSection>
 
-          {/* Primary contextual CTA */}
-          {primaryCta && (
-            <TouchableOpacity
-              style={[
-                styles.primaryCta,
-                primaryCta.variant === 'success' && styles.primaryCtaSuccess,
-                primaryCta.variant === 'danger' && styles.primaryCtaDanger,
-                primaryCta.disabled && { opacity: 0.6 },
-              ]}
+        <View style={styles.actionsBlock}>
+          {carrier?.phone && (
+            <Button
+              size="lg"
               onPress={() => {
                 haptics.medium();
-                primaryCta.onPress();
+                Linking.openURL(`tel:${carrier.phone}`).catch(() => null);
               }}
-              disabled={primaryCta.disabled}
             >
-              {primaryCta.icon}
-              <Text style={styles.primaryCtaText}>{primaryCta.label}</Text>
-            </TouchableOpacity>
+              Zvanīt pārvadātājam
+            </Button>
           )}
 
-          {/* Drag hint while collapsed */}
-          {sheetIndex === 0 && (
-            <Text style={styles.dragHint}>Velciet augšup, lai redzētu detaļas</Text>
+          {canRate && (
+            <Button
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                setShowRating(true);
+              }}
+            >
+              Novērtēt pakalpojumu
+            </Button>
           )}
 
-          {/* ─── Expanded-only content ────────────────────────── */}
-          <View style={styles.expandedDivider} />
+          {(order.status === 'COLLECTED' ||
+            order.status === 'COMPLETED' ||
+            order.status === 'CANCELLED') && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push('/skip-hire' as any);
+              }}
+            >
+              Pasūtīt vēlreiz
+            </Button>
+          )}
 
-          {/* Details list */}
-          <View style={styles.detailsCard}>
-            <DetailRow label="Piegādes vieta" value={order.location} />
-            <DetailRow label="Piegādes datums" value={formatDate(order.deliveryDate)} />
-            {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
+          {canCancel && (
+            <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
+              Atcelt pasūtījumu
+            </Button>
+          )}
+        </View>
+
+        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pasūtījums">
+          {orderRows.map((row, index) => (
+            <DetailRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              last={index === orderRows.length - 1}
+            />
+          ))}
+        </InfoSection>
+
+        <InfoSection
+          icon={<Clock3 size={16} color={colors.textMuted} />}
+          title="Cena"
+          right={<Text style={styles.priceText}>€{order.price.toFixed(2)}</Text>}
+        >
+          <Text style={styles.priceNote}>Galīgā cena par konteineru piegādi un izvešanu.</Text>
+        </InfoSection>
+
+        <InfoSection icon={<Phone size={16} color={colors.textMuted} />} title="Kontakti">
+          {contactRows.length > 0 ? (
+            contactRows.map((row, index) => (
               <DetailRow
-                label="Piegādes laiks"
-                value={order.deliveryWindow === 'AM' ? 'Rīts (8–12)' : 'Diena (12–17)'}
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                last={index === contactRows.length - 1}
               />
-            )}
-            <DetailRow
-              label="Konteinera izmērs"
-              value={SIZE_LABEL[order.skipSize] ?? order.skipSize}
-            />
-            <DetailRow
-              label="Atkritumu veids"
-              value={WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory}
-            />
-            {order.notes && <DetailRow label="Piezīmes" value={order.notes} />}
-            {(order.contactName || order.contactPhone || order.contactEmail) && (
-              <>
-                <DetailRow label="Kontaktpersona" value={order.contactName} />
-                <DetailRow label="Telefons" value={order.contactPhone} />
-                <DetailRow label="E-pasts" value={order.contactEmail} />
-              </>
-            )}
-            <View style={styles.detailsTotalRow}>
-              <Text style={styles.detailsTotalLabel}>Kopā</Text>
-              <Text style={styles.detailsTotalValue}>€{order.price.toFixed(2)}</Text>
-            </View>
-          </View>
-
-          {/* Order number card */}
-          <View style={styles.trackingBlackCard}>
-            <View>
-              <Text style={styles.trackingBlackLabel}>Pasūtījuma numurs</Text>
-              <Text style={styles.trackingBlackNumber}>#{order.orderNumber}</Text>
-            </View>
-          </View>
-
-          {/* Unloading-point photo */}
-          {order.unloadingPointPhotoUrl && (
-            <View style={styles.slipCard}>
-              <Text style={styles.slipTitle}>Izkraušanas vietas foto</Text>
-              <Image
-                source={{ uri: order.unloadingPointPhotoUrl }}
-                style={styles.slipThumb}
-                resizeMode="cover"
-              />
-            </View>
+            ))
+          ) : (
+            <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pievienota.</Text>
           )}
+        </InfoSection>
 
-          {/* Secondary cancel action (if not already the primary) */}
-          {canCancel && primaryCta?.variant !== 'danger' && (
-            <TouchableOpacity
-              style={[
-                styles.secondaryActionBtn,
-                styles.secondaryActionBtnDanger,
-                { marginTop: 12 },
-              ]}
-              onPress={handleCancel}
-              disabled={cancelling}
-            >
-              <Text style={styles.secondaryActionBtnDangerText}>
-                {cancelling ? 'Atceļ…' : 'Atcelt pasūtījumu'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </BottomSheetScrollView>
-      </BottomSheet>
+        {order.notes && (
+          <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Piezīmes">
+            <Text style={styles.notesText}>{order.notes}</Text>
+          </InfoSection>
+        )}
 
-      {/* Rating modal */}
+        {order.unloadingPointPhotoUrl && (
+          <InfoSection
+            icon={<Trash2 size={16} color={colors.textMuted} />}
+            title="Izkraušanas vietas foto"
+          >
+            <Image
+              source={{ uri: order.unloadingPointPhotoUrl }}
+              style={styles.photoThumb}
+              resizeMode="cover"
+            />
+          </InfoSection>
+        )}
+      </ScrollView>
+
       {showRating && token && (
         <RatingModal
           visible={showRating}
@@ -477,32 +431,73 @@ export default function SkipOrderDetailScreen() {
               api.skipHire
                 .getById(id, token)
                 .then(setOrder)
-                .catch(() => {});
+                .catch(() => null);
             }
           }}
           token={token}
           skipOrderId={order.id}
         />
       )}
-    </View>
-  );
-}
-
-// ── Local detail row ──
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailRowLabel}>{label}</Text>
-      <Text style={styles.detailRowValue} numberOfLines={3}>
-        {value}
-      </Text>
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  // ── Map pins ──
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  mapCard: {
+    height: 280,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#DDE3EA',
+    marginBottom: 12,
+  },
+  map: {
+    flex: 1,
+  },
+  mapOverlay: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: 'rgba(17, 24, 39, 0.88)',
+  },
+  heroEta: {
+    fontSize: 30,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#E5E7EB',
+    marginTop: 4,
+  },
+  mapMetaRow: {
+    marginTop: 12,
+    gap: 8,
+  },
+  mapMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapMetaText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#F9FAFB',
+  },
   pinDelivery: {
     width: 40,
     height: 40,
@@ -511,248 +506,135 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
+    borderColor: '#FFFFFF',
+    shadowColor: '#000000',
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-
-  // ── Floating back button ──
-  floatingHeader: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 20,
-  },
-  floatingBackBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-
-  // ── Bottom sheet chrome ──
-  sheetBackground: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
-  sheetHandle: {
-    backgroundColor: '#d1d5db',
-    width: 44,
-    height: 5,
-  },
-  sheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-
-  // ── Hero ──
-  heroEta: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#111827',
-    fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 15,
-    color: '#6b7280',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-
-  // ── Progress dots ──
   stepsRow: {
     flexDirection: 'row',
-    marginTop: 20,
-    marginBottom: 8,
     gap: 6,
+    marginBottom: 16,
   },
-  stepItem: { flex: 1, alignItems: 'flex-start' },
+  stepItem: {
+    flex: 1,
+  },
   stepDot: {
     width: '100%',
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#E5E7EB',
     marginBottom: 8,
   },
-  stepDotActive: { backgroundColor: colors.primary },
-  stepLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
-  stepLabelActive: { color: '#111827', fontWeight: '600' },
-
-  // ── Carrier row (compact) ──
-  driverRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+  stepDotActive: {
+    backgroundColor: colors.primary,
   },
-  driverAvatarFallbackCompact: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverNameCompact: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  driverPlatePill: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  driverPlatePillText: {
+  stepLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#374151',
-    letterSpacing: 0.3,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#f3f4f6',
+  stepLabelActive: {
+    color: '#111827',
+  },
+  carrierCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  iconBtnPrimary: { backgroundColor: '#111827' },
-
-  // ── Waiting (no carrier yet) ──
-  waitingRow: { marginTop: 16, gap: 8 },
-  waitingItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  waitingItemText: { fontSize: 15, color: '#374151', fontWeight: '500' },
-
-  // ── Primary CTA ──
-  primaryCta: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9FAFB',
     borderRadius: 18,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    marginHorizontal: 4,
+    padding: 14,
   },
-  primaryCtaSuccess: { backgroundColor: '#16a34a' },
-  primaryCtaDanger: { backgroundColor: '#ef4444' },
-  primaryCtaText: { fontSize: 16, color: '#fff', fontWeight: '600' },
-
-  // ── Drag hint ──
-  dragHint: {
-    textAlign: 'center',
-    marginTop: 12,
-    fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
-  },
-
-  // ── Expanded content ──
-  expandedDivider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginTop: 20,
-    marginBottom: 4,
-  },
-  detailsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  detailRowLabel: { fontSize: 14, color: '#6b7280' },
-  detailRowValue: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-    textAlign: 'right',
-    flexShrink: 1,
-    marginLeft: 16,
-  },
-  detailsTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  detailsTotalLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-  detailsTotalValue: {
-    fontSize: 18,
-    color: '#111827',
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-  },
-
-  // ── Black tracking card (order number) ──
-  trackingBlackCard: {
+  carrierAvatarFallback: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 18,
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  trackingBlackLabel: { color: '#9ca3af', fontSize: 11, marginBottom: 2, fontWeight: '500' },
-  trackingBlackNumber: { color: '#fff', fontSize: 20, fontWeight: '800' },
-
-  // ── Photo slip ──
-  slipCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  slipTitle: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 10 },
-  slipThumb: {
-    width: '100%',
-    height: 180,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
-  },
-
-  // ── Secondary actions ──
-  secondaryActionBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 14,
-    paddingVertical: 14,
   },
-  secondaryActionBtnDanger: { backgroundColor: '#fef2f2' },
-  secondaryActionBtnDangerText: { fontSize: 15, fontWeight: '600', color: '#ef4444' },
+  carrierMeta: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  carrierName: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  ratingPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  ratingPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#B45309',
+  },
+  waitingCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 18,
+    padding: 14,
+  },
+  waitingTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  waitingText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 6,
+  },
+  actionsBlock: {
+    gap: 10,
+    marginBottom: 12,
+  },
+  priceText: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  priceNote: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  emptySectionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  notesText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#374151',
+  },
+  photoThumb: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+  },
 });

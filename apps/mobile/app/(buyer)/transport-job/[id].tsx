@@ -1,34 +1,46 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   TouchableOpacity,
   Alert,
   Linking,
   Image,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
 } from 'react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
   Phone,
   Package,
   Truck,
-  ArrowLeft,
   MessageCircle,
   Recycle,
-  RotateCcw,
-  XCircle,
   Star,
+  Clock3,
+  Hash,
 } from 'lucide-react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { InfoSection } from '@/components/ui/InfoSection';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { Button } from '@/components/ui/button';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
+import { useToast } from '@/components/ui/Toast';
+import { useTransportJob } from '@/lib/use-transport-job';
+import { useLiveUpdates } from '@/lib/use-live-updates';
+import { CATEGORY_LABELS } from '@/lib/materials';
+import { formatDate } from '@/lib/format';
+import { colors } from '@/lib/theme';
 
 let Marker: any = null;
 try {
@@ -38,19 +50,6 @@ try {
   /* Expo Go */
 }
 
-import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import { haptics } from '@/lib/haptics';
-import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { useToast } from '@/components/ui/Toast';
-import { useTransportJob } from '@/lib/use-transport-job';
-import { useLiveUpdates } from '@/lib/use-live-updates';
-import { CATEGORY_LABELS } from '@/lib/materials';
-import { formatDate } from '@/lib/format';
-import { colors } from '@/lib/theme';
-
-// ── Job step model (4 simplified stages driving the progress dots) ──
 const JOB_STEPS = [
   { key: 'pickup', label: 'Uz kraušanu' },
   { key: 'loading', label: 'Krauj' },
@@ -69,12 +68,27 @@ const JOB_STATUS_TO_STEP: Record<string, number> = {
 };
 
 const JOB_STATUS_LABEL: Record<string, string> = {
+  AVAILABLE: 'Meklē pārvadātāju',
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
   EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
   AT_PICKUP: 'Šoferis ir pie kraušanas vietas',
-  LOADED: 'Kravu iekrauj',
+  LOADED: 'Krava ir iekrauta',
   EN_ROUTE_DELIVERY: 'Šoferis dodas uz jums',
   AT_DELIVERY: 'Šoferis ir uz vietas',
+  DELIVERED: 'Piegāde pabeigta',
+  CANCELLED: 'Pasūtījums atcelts',
+};
+
+const JOB_STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
+  AVAILABLE: { label: 'Gaida', bg: '#EFF6FF', color: '#1D4ED8' },
+  ACCEPTED: { label: 'Pieņemts', bg: '#ECFDF5', color: '#047857' },
+  EN_ROUTE_PICKUP: { label: 'Uz kraušanu', bg: '#ECFDF5', color: '#047857' },
+  AT_PICKUP: { label: 'Kraušana', bg: '#FEF3C7', color: '#B45309' },
+  LOADED: { label: 'Iekrauts', bg: '#FEF3C7', color: '#B45309' },
+  EN_ROUTE_DELIVERY: { label: 'Ceļā', bg: '#ECFDF5', color: '#047857' },
+  AT_DELIVERY: { label: 'Uz vietas', bg: '#FEF3C7', color: '#B45309' },
+  DELIVERED: { label: 'Piegādāts', bg: '#DCFCE7', color: '#15803D' },
+  CANCELLED: { label: 'Atcelts', bg: '#FEF2F2', color: '#DC2626' },
 };
 
 const VEHICLE_LABEL: Record<string, string> = {
@@ -96,7 +110,10 @@ const CARGO_LABEL: Record<string, string> = {
   MIXED: 'Jaukts',
 };
 
-// ── Main Screen ────────────────────────────────────────────────
+function formatOptionalDate(date: string, window?: string | null) {
+  const base = formatDate(date);
+  return window ? `${base} · ${window}` : base;
+}
 
 export default function TransportJobDetailScreen() {
   const { token } = useAuth();
@@ -105,32 +122,17 @@ export default function TransportJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { job, loading, reload: loadJob } = useTransportJob(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
-  const [, setMapReady] = useState(false);
   const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const insets = useSafeAreaInsets();
-
-  // ── Bottom sheet ──
-  const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => [320 + insets.bottom, 520, '92%'], [insets.bottom]);
-  const [sheetIndex, setSheetIndex] = useState(0);
-  const handleSheetChange = useCallback((index: number) => {
-    setSheetIndex(index);
-    haptics.selection();
-  }, []);
-
   const [cancelling, setCancelling] = useState(false);
   const [etaMin, setEtaMin] = useState<number | null>(null);
-
-  // Driver rating state
   const [driverRating, setDriverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [ratingLoading, setRatingLoading] = useState(false);
 
-  // Live updates via WebSocket
   const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
     jobId: typeof id === 'string' ? id : null,
     token,
@@ -140,7 +142,9 @@ export default function TransportJobDetailScreen() {
     if (!liveLocation) return;
     const { lat, lng } = liveLocation;
     setDriverLocationOnMap({ lat, lng });
-    if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+    if (liveLocation.estimatedArrivalMin != null) {
+      setEtaMin(liveLocation.estimatedArrivalMin);
+    }
     cameraRef.current?.setCamera({
       centerCoordinate: [lng, lat],
       zoomLevel: 13,
@@ -152,7 +156,6 @@ export default function TransportJobDetailScreen() {
     if (liveJobStatus) loadJob();
   }, [liveJobStatus, loadJob]);
 
-  // Check whether this job was already rated
   useEffect(() => {
     if (job && token && job.status === 'DELIVERED' && !ratingSubmitted) {
       api.reviews
@@ -160,21 +163,17 @@ export default function TransportJobDetailScreen() {
         .then(({ reviewed }) => {
           if (reviewed) setRatingSubmitted(true);
         })
-        .catch((err) => console.warn('Failed to load review status:', err));
+        .catch(() => null);
     }
   }, [job?.id, job?.status, token, ratingSubmitted]);
 
-  // ── Stable initial map center — keyed on job.id only so it never
-  //    re-animates when driverLocationOnMap updates (cameraRef handles movement) ──
   const initialCenter = useMemo<[number, number]>(() => {
     if (job?.deliveryLng != null && job?.deliveryLat != null) {
       return [job.deliveryLng, job.deliveryLat];
     }
     return [24.1052, 56.9496];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id]);
+  }, [job?.deliveryLat, job?.deliveryLng]);
 
-  // ── Route hooks — must be before early returns (Rules of Hooks) ──────────
   const routeOrigin = useMemo(() => {
     if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
     if (job?.pickupLat != null && job?.pickupLng != null) {
@@ -202,10 +201,10 @@ export default function TransportJobDetailScreen() {
       Math.min(routeOrigin.lng, routeDestination.lng),
       Math.min(routeOrigin.lat, routeDestination.lat),
     ];
-    cameraRef.current.fitBounds(ne, sw, [80, 60, 260, 60], 600);
+    cameraRef.current.fitBounds(ne, sw, [48, 48, 48, 48], 600);
   }, [routeOrigin?.lat, routeOrigin?.lng, routeDestination?.lat, routeDestination?.lng]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (!job || !token) return;
     haptics.heavy();
     Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt. Pasūtījums tiks atcelts.', [
@@ -228,9 +227,9 @@ export default function TransportJobDetailScreen() {
         },
       },
     ]);
-  };
+  }, [job, loadJob, toast, token]);
 
-  const handleRateDriver = async () => {
+  const handleRateDriver = useCallback(async () => {
     if (!job || !token || driverRating === 0) return;
     haptics.medium();
     setRatingLoading(true);
@@ -248,11 +247,11 @@ export default function TransportJobDetailScreen() {
     } finally {
       setRatingLoading(false);
     }
-  };
+  }, [driverRating, job, ratingComment, toast, token]);
 
   if (loading) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Pasūtījums" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -261,9 +260,9 @@ export default function TransportJobDetailScreen() {
 
   if (!job) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Pasūtījums" />
-        <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
+        <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
   }
@@ -273,161 +272,174 @@ export default function TransportJobDetailScreen() {
   const driver = job.driver;
   const vehicle = job.vehicle;
   const canCancel = job.status === 'AVAILABLE';
-
   const currentStepIdx = JOB_STATUS_TO_STEP[job.status] ?? -1;
-  const jobStatusLabel = JOB_STATUS_LABEL[job.status] ?? null;
+  const jobStatusLabel = JOB_STATUS_LABEL[job.status] ?? typeLabel;
+  const statusPill = JOB_STATUS_PILL[job.status] ?? JOB_STATUS_PILL.AVAILABLE;
 
-  // Hero line shown at the top of the sheet
   const heroPrimary = (() => {
     if (job.status === 'DELIVERED') return 'Piegādāts';
     if (job.status === 'CANCELLED') return 'Atcelts';
     if (etaMin != null) return `${etaMin} min`;
     if (driver) return 'Ceļā';
-    if (job.status === 'AVAILABLE') return 'Meklē pārvadātāju…';
+    if (job.status === 'AVAILABLE') return 'Meklē pārvadātāju';
     return typeLabel;
   })();
 
   const heroSubtitle =
-    jobStatusLabel ??
-    (job.status === 'DELIVERED'
+    job.status === 'DELIVERED'
       ? ratingSubmitted
-        ? 'Paldies par vērtējumu!'
+        ? 'Paldies par vērtējumu'
         : 'Lūdzu novērtējiet šoferi'
       : job.status === 'CANCELLED'
         ? 'Pasūtījums atcelts'
-        : typeLabel);
+        : jobStatusLabel;
 
-  // Single contextual CTA surfaced in the peek view
-  type Cta = {
-    label: string;
-    onPress: () => void;
-    icon: React.ReactNode;
-    disabled?: boolean;
-    variant: 'primary' | 'success' | 'danger';
-  };
+  const routeRows = [
+    { label: 'Iekraušanas pilsēta', value: job.pickupCity },
+    { label: 'Iekraušanas adrese', value: job.pickupAddress },
+    { label: 'Piegādes pilsēta', value: job.deliveryCity },
+    { label: 'Piegādes adrese', value: job.deliveryAddress },
+  ].filter((row) => row.value);
 
-  const primaryCta: Cta | null = (() => {
-    if (job.status === 'DELIVERED' || job.status === 'CANCELLED') {
-      return {
-        label: 'Pasūtīt vēlreiz',
-        onPress: () => router.push({ pathname: isDisposal ? '/disposal' : '/transport' }),
-        icon: <RotateCcw size={18} color="#fff" style={{ marginRight: 8 }} />,
-        variant: 'primary',
-      };
-    }
-    if (driver?.phone) {
-      return {
-        label: 'Zvanīt šoferim',
-        onPress: () => Linking.openURL(`tel:${driver.phone}`).catch(() => null),
-        icon: <Phone size={18} color="#fff" style={{ marginRight: 8 }} />,
-        variant: 'primary',
-      };
-    }
-    if (canCancel) {
-      return {
-        label: cancelling ? 'Atceļ…' : 'Atcelt pasūtījumu',
-        onPress: handleCancel,
-        icon: <XCircle size={18} color="#fff" style={{ marginRight: 8 }} />,
-        disabled: cancelling,
-        variant: 'danger',
-      };
-    }
-    return null;
-  })();
+  const cargoRows = [
+    { label: 'Darba tips', value: typeLabel },
+    { label: 'Krava', value: CARGO_LABEL[job.cargoType] ?? job.cargoType },
+    {
+      label: 'Svars',
+      value: job.cargoWeight != null ? `${(job.cargoWeight / 1000).toFixed(1)} t` : null,
+    },
+    {
+      label: 'Transportlīdzeklis',
+      value: job.requiredVehicleType
+        ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
+        : null,
+    },
+    { label: 'Attālums', value: job.distanceKm != null ? `${job.distanceKm.toFixed(0)} km` : null },
+    { label: 'Tarifs', value: `€${job.rate.toFixed(2)}` },
+  ].filter((row) => row.value);
+
+  const timingRows = [
+    { label: 'Izbraukšana', value: formatOptionalDate(job.pickupDate, job.pickupWindow) },
+    { label: 'Piegāde', value: formatOptionalDate(job.deliveryDate, job.deliveryWindow) },
+    { label: 'Pieņemts', value: job.acceptedAt ? formatDate(job.acceptedAt) : null },
+    { label: 'Atjaunināts', value: job.statusUpdatedAt ? formatDate(job.statusUpdatedAt) : null },
+  ].filter((row) => row.value);
+
+  const contactRows = [
+    {
+      label: 'Šoferis',
+      value: driver ? `${driver.firstName} ${driver.lastName}`.trim() : null,
+    },
+    { label: 'Šofera tālrunis', value: driver?.phone },
+    { label: 'Numurzīme', value: vehicle?.licensePlate ?? null },
+    { label: 'Objekta kontakts', value: job.order?.siteContactName ?? null },
+    { label: 'Objekta tālrunis', value: job.order?.siteContactPhone ?? null },
+    { label: 'Piegādātājs', value: job.order?.supplierName ?? null },
+    { label: 'Piegādātāja tālrunis', value: job.order?.supplierPhone ?? null },
+  ].filter((row) => row.value);
+
+  const notes = job.order?.notes?.trim() ?? '';
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f4f5f7' }}>
-      {/* ── Background Map ────────────────────────────────────── */}
-      <View style={StyleSheet.absoluteFillObject}>
-        <BaseMap
-          cameraRef={cameraRef}
-          center={initialCenter}
-          zoom={13}
-          style={{ flex: 1 }}
-          rotateEnabled={false}
-          pitchEnabled={false}
-          onMapReady={() => setMapReady(true)}
-        >
-          {route?.coords && route.coords.length > 1 && (
-            <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
-          )}
-          {job.pickupLat != null && job.pickupLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: job.pickupLat, longitude: job.pickupLng }}
-              anchor={{ x: 0.5, y: 1 }}
-            >
-              <View style={styles.pinPickup}>
-                <MapPin size={14} color="#fff" strokeWidth={2.5} />
-              </View>
-            </Marker>
-          )}
-          {job.deliveryLat != null && job.deliveryLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: job.deliveryLat, longitude: job.deliveryLng }}
-              anchor={{ x: 0.5, y: 1 }}
-            >
-              <View style={styles.pinDelivery}>
-                {isDisposal ? (
-                  <Recycle size={14} color="#fff" strokeWidth={2.5} />
-                ) : (
-                  <MapPin size={14} color="#fff" strokeWidth={2.5} />
-                )}
-              </View>
-            </Marker>
-          )}
-          {driverLocationOnMap && Marker && (
-            <Marker
-              coordinate={{ latitude: driverLocationOnMap.lat, longitude: driverLocationOnMap.lng }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinDriver}>
-                <Truck size={13} color="#fff" strokeWidth={2.5} />
-              </View>
-            </Marker>
-          )}
-        </BaseMap>
-      </View>
+    <ScreenContainer bg="#F4F5F7" standalone>
+      <ScreenHeader title="Pasūtījums" />
 
-      {/* ── Floating back button ──────────────────────────────── */}
-      <View style={[styles.floatingHeader, { top: insets.top + 8 }]} pointerEvents="box-none">
-        <TouchableOpacity style={styles.floatingBackBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color="#111827" />
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Bottom Sheet (peek / half / full) ─────────────────── */}
-      <BottomSheet
-        ref={sheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        topInset={insets.top}
-        enableDynamicSizing={false}
-        onChange={handleSheetChange}
-        handleIndicatorStyle={styles.sheetHandle}
-        backgroundStyle={styles.sheetBackground}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical={false}
       >
-        <BottomSheetScrollView
-          contentContainerStyle={[styles.sheetContent, { paddingBottom: 48 + insets.bottom }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* HERO */}
-          <Text style={styles.heroEta}>{heroPrimary}</Text>
-          <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+        <View style={styles.mapCard}>
+          <BaseMap
+            cameraRef={cameraRef}
+            center={initialCenter}
+            zoom={13}
+            style={styles.map}
+            rotateEnabled={false}
+            pitchEnabled={false}
+          >
+            {route?.coords && route.coords.length > 1 && (
+              <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
+            )}
+            {job.pickupLat != null && job.pickupLng != null && Marker && (
+              <Marker
+                coordinate={{ latitude: job.pickupLat, longitude: job.pickupLng }}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={styles.pinPickup}>
+                  <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+              </Marker>
+            )}
+            {job.deliveryLat != null && job.deliveryLng != null && Marker && (
+              <Marker
+                coordinate={{ latitude: job.deliveryLat, longitude: job.deliveryLng }}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={styles.pinDelivery}>
+                  {isDisposal ? (
+                    <Recycle size={14} color="#FFFFFF" strokeWidth={2.5} />
+                  ) : (
+                    <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
+                  )}
+                </View>
+              </Marker>
+            )}
+            {driverLocationOnMap && Marker && (
+              <Marker
+                coordinate={{
+                  latitude: driverLocationOnMap.lat,
+                  longitude: driverLocationOnMap.lng,
+                }}
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={false}
+              >
+                <View style={styles.pinDriver}>
+                  <Truck size={13} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+              </Marker>
+            )}
+          </BaseMap>
 
-          {/* Progress dots */}
+          <View style={styles.mapOverlay}>
+            <Text style={styles.heroEta}>{heroPrimary}</Text>
+            <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+            <View style={styles.mapMetaRow}>
+              <View style={styles.mapMetaItem}>
+                <MapPin size={13} color="#E5E7EB" />
+                <Text style={styles.mapMetaText} numberOfLines={1}>
+                  {job.pickupCity} → {job.deliveryCity}
+                </Text>
+              </View>
+              <View style={styles.mapMetaItem}>
+                <Hash size={13} color="#E5E7EB" />
+                <Text style={styles.mapMetaText} numberOfLines={1}>
+                  {job.jobNumber}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <InfoSection
+          icon={<Truck size={16} color={colors.textMuted} />}
+          title="Statuss"
+          right={
+            <StatusPill label={statusPill.label} bg={statusPill.bg} color={statusPill.color} />
+          }
+        >
           {driver && job.status !== 'CANCELLED' && (
             <View style={styles.stepsRow}>
-              {JOB_STEPS.map((s, i) => {
-                const done = i <= currentStepIdx;
+              {JOB_STEPS.map((step, index) => {
+                const done = index <= currentStepIdx;
                 return (
-                  <View key={s.key} style={styles.stepItem}>
+                  <View key={step.key} style={styles.stepItem}>
                     <View style={[styles.stepDot, done && styles.stepDotActive]} />
                     <Text
                       style={[styles.stepLabel, done && styles.stepLabelActive]}
                       numberOfLines={1}
                     >
-                      {s.label}
+                      {step.label}
                     </Text>
                   </View>
                 );
@@ -435,244 +447,281 @@ export default function TransportJobDetailScreen() {
             </View>
           )}
 
-          {/* Driver row OR waiting list */}
           {driver ? (
-            <View style={styles.driverRowCompact}>
+            <View style={styles.driverCard}>
               {driver.avatar ? (
-                <Image source={{ uri: driver.avatar }} style={styles.driverAvatarCompact} />
+                <Image source={{ uri: driver.avatar }} style={styles.driverAvatar} />
               ) : (
-                <View style={styles.driverAvatarFallbackCompact}>
-                  <Text style={styles.driverInitialCompact}>
+                <View style={styles.driverAvatarFallback}>
+                  <Text style={styles.driverAvatarText}>
                     {driver.firstName?.[0] ?? '?'}
                     {driver.lastName?.[0] ?? ''}
                   </Text>
                 </View>
               )}
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.driverNameCompact} numberOfLines={1}>
+              <View style={styles.driverMeta}>
+                <Text style={styles.driverName} numberOfLines={1}>
                   {driver.firstName} {driver.lastName}
                 </Text>
-                {vehicle && (
-                  <View style={styles.driverPlatePill}>
-                    <Text style={styles.driverPlatePillText}>{vehicle.licensePlate}</Text>
+                <Text style={styles.driverSubline} numberOfLines={1}>
+                  {vehicle?.licensePlate ?? 'Transportlīdzeklis nav norādīts'}
+                </Text>
+                {etaMin != null && (
+                  <View style={styles.etaPill}>
+                    <Clock3 size={13} color={colors.primary} />
+                    <Text style={styles.etaPillText}>{etaMin} min</Text>
                   </View>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() =>
-                  router.push({
-                    pathname: '/chat/[jobId]',
-                    params: {
-                      jobId: job.id,
-                      title: `${driver.firstName} ${driver.lastName}`,
-                    },
-                  })
-                }
-              >
-                <MessageCircle size={18} color="#111827" />
-              </TouchableOpacity>
-              {driver.phone && (
-                <TouchableOpacity
-                  style={[styles.iconBtn, styles.iconBtnPrimary]}
-                  onPress={() => Linking.openURL(`tel:${driver.phone}`).catch(() => null)}
-                >
-                  <Phone size={18} color="#fff" />
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
-            <View style={styles.waitingRow}>
-              <View style={styles.waitingItem}>
-                <Package size={14} color="#6b7280" />
-                <Text style={styles.waitingItemText}>
-                  {CARGO_LABEL[job.cargoType] ?? job.cargoType}
-                  {job.cargoWeight != null ? ` · ${(job.cargoWeight / 1000).toFixed(1)} t` : ''}
-                </Text>
-              </View>
-              <View style={styles.waitingItem}>
-                <MapPin size={14} color="#6b7280" />
-                <Text style={styles.waitingItemText} numberOfLines={1}>
-                  {job.pickupCity} → {job.deliveryCity}
-                </Text>
-              </View>
+            <View style={styles.waitingCard}>
+              <Text style={styles.waitingTitle}>Notiek pārvadātāja meklēšana</Text>
+              <Text style={styles.waitingText}>
+                Kad šoferis pieņems darbu, šeit redzēsiet ETA, kontaktus un transportlīdzekli.
+              </Text>
             </View>
           )}
+        </InfoSection>
 
-          {/* Primary contextual CTA */}
-          {primaryCta && (
-            <TouchableOpacity
-              style={[
-                styles.primaryCta,
-                primaryCta.variant === 'success' && styles.primaryCtaSuccess,
-                primaryCta.variant === 'danger' && styles.primaryCtaDanger,
-                primaryCta.disabled && { opacity: 0.6 },
-              ]}
+        <View style={styles.actionsBlock}>
+          {driver?.phone && (
+            <Button
+              size="lg"
               onPress={() => {
                 haptics.medium();
-                primaryCta.onPress();
+                Linking.openURL(`tel:${driver.phone}`).catch(() => null);
               }}
-              disabled={primaryCta.disabled}
             >
-              {primaryCta.icon}
-              <Text style={styles.primaryCtaText}>{primaryCta.label}</Text>
-            </TouchableOpacity>
+              Zvanīt šoferim
+            </Button>
           )}
 
-          {/* Drag hint while collapsed */}
-          {sheetIndex === 0 && (
-            <Text style={styles.dragHint}>Velciet augšup, lai redzētu detaļas</Text>
+          {driver && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push({
+                  pathname: '/chat/[jobId]',
+                  params: {
+                    jobId: job.id,
+                    title: `${driver.firstName} ${driver.lastName}`,
+                  },
+                });
+              }}
+            >
+              Rakstīt šoferim
+            </Button>
           )}
 
-          {/* ─── Expanded-only content ────────────────────────── */}
-          <View style={styles.expandedDivider} />
+          {(job.status === 'DELIVERED' || job.status === 'CANCELLED') && (
+            <Button
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push({ pathname: isDisposal ? '/disposal' : '/transport' });
+              }}
+            >
+              Pasūtīt vēlreiz
+            </Button>
+          )}
 
-          {/* Details list */}
-          <View style={styles.detailsCard}>
-            <DetailRow label="Iekraušanas pilsēta" value={job.pickupCity} />
-            <DetailRow label="Iekraušanas adrese" value={job.pickupAddress} />
-            <DetailRow label="Piegādes pilsēta" value={job.deliveryCity} />
-            <DetailRow label="Piegādes adrese" value={job.deliveryAddress} />
-            <DetailRow label="Krava" value={CARGO_LABEL[job.cargoType] ?? job.cargoType} />
-            {job.cargoWeight != null && (
-              <DetailRow label="Svars" value={`${(job.cargoWeight / 1000).toFixed(1)} t`} />
-            )}
-            {job.requiredVehicleType && (
+          {canCancel && (
+            <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
+              Atcelt pasūtījumu
+            </Button>
+          )}
+        </View>
+
+        <InfoSection icon={<MapPin size={16} color={colors.textMuted} />} title="Maršruts">
+          {routeRows.map((row, index) => (
+            <DetailRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              last={index === routeRows.length - 1}
+            />
+          ))}
+        </InfoSection>
+
+        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Krava un tarifs">
+          {cargoRows.map((row, index) => (
+            <DetailRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              last={index === cargoRows.length - 1}
+            />
+          ))}
+        </InfoSection>
+
+        <InfoSection icon={<Clock3 size={16} color={colors.textMuted} />} title="Laiki">
+          {timingRows.map((row, index) => (
+            <DetailRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              last={index === timingRows.length - 1}
+            />
+          ))}
+        </InfoSection>
+
+        <InfoSection icon={<Phone size={16} color={colors.textMuted} />} title="Kontakti">
+          {contactRows.length > 0 ? (
+            contactRows.map((row, index) => (
               <DetailRow
-                label="Transportlīdzeklis"
-                value={VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType}
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                last={index === contactRows.length - 1}
               />
-            )}
-            <DetailRow label="Izbraukšana" value={formatDate(job.pickupDate)} />
-            <DetailRow label="Piegāde" value={formatDate(job.deliveryDate)} />
-            {job.distanceKm != null && (
-              <DetailRow label="Attālums" value={`${job.distanceKm.toFixed(0)} km`} />
-            )}
-            <View style={styles.detailsTotalRow}>
-              <Text style={styles.detailsTotalLabel}>Tarifs</Text>
-              <Text style={styles.detailsTotalValue}>€{job.rate.toFixed(2)}</Text>
-            </View>
-          </View>
-
-          {/* Job number card */}
-          <View style={styles.trackingBlackCard}>
-            <View>
-              <Text style={styles.trackingBlackLabel}>Pasūtījuma numurs</Text>
-              <Text style={styles.trackingBlackNumber}>{job.jobNumber}</Text>
-            </View>
-          </View>
-
-          {/* Driver rating (after delivery) */}
-          {job.status === 'DELIVERED' && driver && !ratingSubmitted && (
-            <View style={styles.ratingCard}>
-              <Text style={styles.ratingTitle}>Novērtēt šoferi</Text>
-              <Text style={styles.ratingDriverName}>
-                {driver.firstName} {driver.lastName}
-              </Text>
-              <View style={styles.starsRow}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <TouchableOpacity
-                    key={n}
-                    onPress={() => {
-                      haptics.light();
-                      setDriverRating(n);
-                    }}
-                    hitSlop={8}
-                    activeOpacity={0.7}
-                  >
-                    <Star
-                      size={32}
-                      color="#f59e0b"
-                      fill={n <= driverRating ? '#f59e0b' : 'transparent'}
-                      strokeWidth={1.5}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
-                style={styles.ratingInput}
-                placeholder="Komentārs (nav obligāts)"
-                placeholderTextColor="#9ca3af"
-                value={ratingComment}
-                onChangeText={setRatingComment}
-                multiline
-                maxLength={300}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.ratingSubmitBtn,
-                  (driverRating === 0 || ratingLoading) && { opacity: 0.4 },
-                ]}
-                onPress={handleRateDriver}
-                disabled={driverRating === 0 || ratingLoading}
-                activeOpacity={0.85}
-              >
-                {ratingLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.ratingSubmitText}>Iesniegt vērtējumu</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            ))
+          ) : (
+            <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pieejama.</Text>
           )}
+        </InfoSection>
 
-          {/* Weighing slip */}
-          {job.pickupPhotoUrl && (
-            <View style={styles.slipCard}>
-              <Text style={styles.slipTitle}>Svēršanas zīme</Text>
+        {(notes.length > 0 || job.order?.sitePhotoUrl) && (
+          <InfoSection icon={<MessageCircle size={16} color={colors.textMuted} />} title="Piezīmes">
+            {notes.length > 0 && <Text style={styles.notesText}>{notes}</Text>}
+            {job.order?.sitePhotoUrl && (
               <Image
-                source={{ uri: job.pickupPhotoUrl }}
-                style={styles.slipThumb}
+                source={{ uri: job.order.sitePhotoUrl }}
+                style={styles.sitePhoto}
                 resizeMode="cover"
               />
-              {job.actualWeightKg != null && (
-                <View style={styles.detailsTotalRow}>
-                  <Text style={styles.detailsTotalLabel}>Izmērītais svars</Text>
-                  <Text style={[styles.detailsTotalValue, { color: colors.success }]}>
-                    {(job.actualWeightKg / 1000).toFixed(3)} t
-                  </Text>
-                </View>
-              )}
+            )}
+          </InfoSection>
+        )}
+
+        {job.status === 'DELIVERED' && driver && !ratingSubmitted && (
+          <InfoSection icon={<Star size={16} color={colors.textMuted} />} title="Novērtējums">
+            <Text style={styles.ratingTitle}>Novērtējiet šoferi</Text>
+            <Text style={styles.ratingDriverName}>
+              {driver.firstName} {driver.lastName}
+            </Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <TouchableOpacity
+                  key={value}
+                  onPress={() => {
+                    haptics.light();
+                    setDriverRating(value);
+                  }}
+                  hitSlop={8}
+                  activeOpacity={0.7}
+                >
+                  <Star
+                    size={32}
+                    color="#F59E0B"
+                    fill={value <= driverRating ? '#F59E0B' : 'transparent'}
+                    strokeWidth={1.5}
+                  />
+                </TouchableOpacity>
+              ))}
             </View>
-          )}
-
-          {/* Secondary actions — cancel still accessible when available */}
-          {canCancel && primaryCta?.variant !== 'danger' && (
-            <TouchableOpacity
-              style={[
-                styles.secondaryActionBtn,
-                styles.secondaryActionBtnDanger,
-                { marginTop: 12 },
-              ]}
-              onPress={handleCancel}
-              disabled={cancelling}
+            <TextInput
+              style={styles.ratingInput}
+              placeholder="Komentārs (nav obligāts)"
+              placeholderTextColor="#9CA3AF"
+              value={ratingComment}
+              onChangeText={setRatingComment}
+              multiline
+              maxLength={300}
+            />
+            <Button
+              size="lg"
+              onPress={() => {
+                void handleRateDriver();
+              }}
+              disabled={driverRating === 0 || ratingLoading}
+              isLoading={ratingLoading}
             >
-              <Text style={styles.secondaryActionBtnDangerText}>
-                {cancelling ? 'Atceļ…' : 'Atcelt pasūtījumu'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </BottomSheetScrollView>
-      </BottomSheet>
-    </View>
-  );
-}
+              Iesniegt vērtējumu
+            </Button>
+          </InfoSection>
+        )}
 
-// ── Local detail row ──
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailRowLabel}>{label}</Text>
-      <Text style={styles.detailRowValue} numberOfLines={3}>
-        {value}
-      </Text>
-    </View>
+        {job.pickupPhotoUrl && (
+          <InfoSection
+            icon={<Recycle size={16} color={colors.textMuted} />}
+            title="Svēršanas zīme"
+            right={
+              job.actualWeightKg != null ? (
+                <Text style={styles.weightText}>{(job.actualWeightKg / 1000).toFixed(3)} t</Text>
+              ) : undefined
+            }
+          >
+            <Image
+              source={{ uri: job.pickupPhotoUrl }}
+              style={styles.slipThumb}
+              resizeMode="cover"
+            />
+          </InfoSection>
+        )}
+      </ScrollView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  // ── Map pins ──
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  mapCard: {
+    height: 280,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#DDE3EA',
+    marginBottom: 12,
+  },
+  map: {
+    flex: 1,
+  },
+  mapOverlay: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: 'rgba(17, 24, 39, 0.88)',
+  },
+  heroEta: {
+    fontSize: 30,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#E5E7EB',
+    marginTop: 4,
+  },
+  mapMetaRow: {
+    marginTop: 12,
+    gap: 8,
+  },
+  mapMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapMetaText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#F9FAFB',
+  },
   pinPickup: {
     width: 36,
     height: 36,
@@ -681,7 +730,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2.5,
-    borderColor: '#fff',
+    borderColor: '#FFFFFF',
   },
   pinDelivery: {
     width: 36,
@@ -691,7 +740,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2.5,
-    borderColor: '#fff',
+    borderColor: '#FFFFFF',
   },
   pinDriver: {
     width: 40,
@@ -701,289 +750,190 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
+    borderColor: '#FFFFFF',
+    shadowColor: '#000000',
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-
-  // ── Floating back button ──
-  floatingHeader: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 20,
-  },
-  floatingBackBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-
-  // ── Bottom sheet chrome ──
-  sheetBackground: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
-  sheetHandle: {
-    backgroundColor: '#d1d5db',
-    width: 44,
-    height: 5,
-  },
-  sheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-
-  // ── Hero ──
-  heroEta: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#111827',
-    fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 15,
-    color: '#6b7280',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-
-  // ── Progress dots ──
   stepsRow: {
     flexDirection: 'row',
-    marginTop: 20,
-    marginBottom: 8,
     gap: 6,
+    marginBottom: 16,
   },
-  stepItem: { flex: 1, alignItems: 'flex-start' },
+  stepItem: {
+    flex: 1,
+  },
   stepDot: {
     width: '100%',
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#E5E7EB',
     marginBottom: 8,
   },
-  stepDotActive: { backgroundColor: colors.primary },
-  stepLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
-  stepLabelActive: { color: '#111827', fontWeight: '600' },
-
-  // ── Driver row (compact) ──
-  driverRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+  stepDotActive: {
+    backgroundColor: colors.primary,
   },
-  driverAvatarCompact: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#f3f4f6',
-  },
-  driverAvatarFallbackCompact: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverInitialCompact: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  driverNameCompact: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  driverPlatePill: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  driverPlatePillText: {
+  stepLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#374151',
-    letterSpacing: 0.6,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#f3f4f6',
+  stepLabelActive: {
+    color: '#111827',
+  },
+  driverCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  iconBtnPrimary: { backgroundColor: '#111827' },
-
-  // ── Waiting (no driver yet) ──
-  waitingRow: { marginTop: 16, gap: 8 },
-  waitingItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  waitingItemText: { fontSize: 15, color: '#374151', fontWeight: '500' },
-
-  // ── Primary CTA ──
-  primaryCta: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9FAFB',
     borderRadius: 18,
-    paddingVertical: 16,
-    flexDirection: 'row',
+    padding: 14,
+  },
+  driverAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E5E7EB',
+  },
+  driverAvatarFallback: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
-    marginHorizontal: 4,
-  },
-  primaryCtaSuccess: { backgroundColor: '#16a34a' },
-  primaryCtaDanger: { backgroundColor: '#ef4444' },
-  primaryCtaText: { fontSize: 16, color: '#fff', fontWeight: '600' },
-
-  // ── Drag hint ──
-  dragHint: {
-    textAlign: 'center',
-    marginTop: 12,
-    fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
-  },
-
-  // ── Expanded content ──
-  expandedDivider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginTop: 20,
-    marginBottom: 4,
-  },
-  detailsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  detailRowLabel: { fontSize: 14, color: '#6b7280' },
-  detailRowValue: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-    textAlign: 'right',
-    flexShrink: 1,
-    marginLeft: 16,
-  },
-  detailsTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  detailsTotalLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-  detailsTotalValue: {
-    fontSize: 18,
-    color: '#111827',
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-  },
-
-  // ── Black tracking card (job number) ──
-  trackingBlackCard: {
     backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 18,
-    marginTop: 12,
+  },
+  driverAvatarText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  driverMeta: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  driverName: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  driverSubline: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  etaPill: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
   },
-  trackingBlackLabel: { color: '#9ca3af', fontSize: 11, marginBottom: 2, fontWeight: '500' },
-  trackingBlackNumber: { color: '#fff', fontSize: 20, fontWeight: '800' },
-
-  // ── Rating card ──
-  ratingCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
+  etaPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  waitingCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 18,
+    padding: 14,
+  },
+  waitingTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  waitingText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 6,
+  },
+  actionsBlock: {
+    gap: 10,
+    marginBottom: 12,
+  },
+  emptySectionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  notesText: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#374151',
+  },
+  sitePhoto: {
+    width: '100%',
+    height: 180,
+    borderRadius: 16,
     marginTop: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
+    backgroundColor: '#E5E7EB',
   },
-  ratingTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  ratingDriverName: { fontSize: 14, color: '#6b7280', marginBottom: 12 },
-  starsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  ratingTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  ratingDriverName: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
   ratingInput: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
     color: '#111827',
-    minHeight: 70,
+    minHeight: 88,
     textAlignVertical: 'top',
     marginBottom: 14,
   },
-  ratingSubmitBtn: {
-    backgroundColor: '#111827',
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
+  weightText: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.success,
   },
-  ratingSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-
-  // ── Weighing slip ──
-  slipCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  slipTitle: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 10 },
   slipThumb: {
     width: '100%',
-    height: 180,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
   },
-
-  // ── Secondary actions ──
-  secondaryActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  secondaryActionBtnDanger: { backgroundColor: '#fef2f2' },
-  secondaryActionBtnText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  secondaryActionBtnDangerText: { fontSize: 15, fontWeight: '600', color: '#ef4444' },
 });
