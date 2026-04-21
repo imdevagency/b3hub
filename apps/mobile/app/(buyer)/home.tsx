@@ -78,7 +78,7 @@ const SERVICES = [
     sub: 'Tehnika, transports',
     route: '/transport',
   },
-  { id: 'container', icon: Package, label: 'Konteineri', sub: 'Piegāde', route: '/order' },
+  { id: 'container', icon: Package, label: 'Konteineri', sub: 'Piegāde', route: '/skip-hire' },
   { id: 'disposal', icon: Trash2, label: 'Utilizācija', sub: 'Būvgruži, zeme', route: '/disposal' },
 ];
 

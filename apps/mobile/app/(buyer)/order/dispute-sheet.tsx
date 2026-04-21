@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+} from 'react-native';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/api';
 import type { ApiOrder } from '@/lib/api/orders';
-import { s } from './order-detail-styles';
 
 const DISPUTE_REASONS = [
   { key: 'SHORT_DELIVERY', label: 'Nepietiekams daudzums' },
@@ -68,24 +75,26 @@ export function DisputeSheet({ visible, onClose, order, token, onFiled }: Props)
         {DISPUTE_REASONS.map((r) => (
           <TouchableOpacity
             key={r.key}
-            style={[s.disputeReasonRow, reason === r.key && s.disputeReasonRowActive]}
+            style={[styles.disputeReasonRow, reason === r.key && styles.disputeReasonRowActive]}
             onPress={() => {
               haptics.light();
               setReason(r.key);
             }}
             activeOpacity={0.8}
           >
-            <View style={[s.disputeRadio, reason === r.key && s.disputeRadioActive]}>
-              {reason === r.key && <View style={s.disputeRadioDot} />}
+            <View style={[styles.disputeRadio, reason === r.key && styles.disputeRadioActive]}>
+              {reason === r.key && <View style={styles.disputeRadioDot} />}
             </View>
-            <Text style={[s.disputeReasonText, reason === r.key && s.disputeReasonTextActive]}>
+            <Text
+              style={[styles.disputeReasonText, reason === r.key && styles.disputeReasonTextActive]}
+            >
               {r.label}
             </Text>
           </TouchableOpacity>
         ))}
 
         <TextInput
-          style={s.disputeDetailsInput}
+          style={styles.disputeDetailsInput}
           placeholder="Papildu informācija (neobligāts)..."
           placeholderTextColor="#9ca3af"
           multiline
@@ -95,7 +104,7 @@ export function DisputeSheet({ visible, onClose, order, token, onFiled }: Props)
         />
 
         <TouchableOpacity
-          style={[s.disputeSubmitBtn, (!reason || loading) && { opacity: 0.5 }]}
+          style={[styles.disputeSubmitBtn, (!reason || loading) && { opacity: 0.5 }]}
           onPress={handleSubmit}
           disabled={!reason || loading}
           activeOpacity={0.85}
@@ -103,10 +112,59 @@ export function DisputeSheet({ visible, onClose, order, token, onFiled }: Props)
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={s.disputeSubmitBtnText}>Nosūtīt sūdzību</Text>
+            <Text style={styles.disputeSubmitBtnText}>Nosūtīt sūdzību</Text>
           )}
         </TouchableOpacity>
       </View>
     </BottomSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  disputeReasonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  disputeReasonRowActive: { borderColor: '#111827', backgroundColor: '#f3f4f6' },
+  disputeRadio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disputeRadioActive: { borderColor: '#111827' },
+  disputeRadioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#111827' },
+  disputeReasonText: { flex: 1, fontSize: 15, color: '#4b5563' },
+  disputeReasonTextActive: { color: '#111827', fontWeight: '700' },
+  disputeDetailsInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: '#f9fafb',
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  disputeSubmitBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  disputeSubmitBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+});

@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { api } from '@/lib/api';
 import type { ApiOrder } from '@/lib/api/orders';
-import { s } from './order-detail-styles';
 
 interface Props {
   visible: boolean;
@@ -68,10 +74,10 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
     >
       <View style={{ gap: 14, paddingBottom: 8 }}>
         {/* Delivery date */}
-        <View style={s.amendField}>
-          <Text style={s.amendLabel}>Piegādes datums (GGGG-MM-DD)</Text>
+        <View style={styles.amendField}>
+          <Text style={styles.amendLabel}>Piegādes datums (GGGG-MM-DD)</Text>
           <TextInput
-            style={s.amendInput}
+            style={styles.amendInput}
             placeholder="2025-06-15"
             placeholderTextColor="#9ca3af"
             value={deliveryDate}
@@ -82,13 +88,13 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
         </View>
 
         {/* Delivery window */}
-        <View style={s.amendField}>
-          <Text style={s.amendLabel}>Piegādes laiks</Text>
-          <View style={s.amendWindowRow}>
+        <View style={styles.amendField}>
+          <Text style={styles.amendLabel}>Piegādes laiks</Text>
+          <View style={styles.amendWindowRow}>
             {(['AM', 'PM', 'ANY'] as const).map((w) => (
               <TouchableOpacity
                 key={w}
-                style={[s.amendWindowBtn, deliveryWindow === w && s.amendWindowBtnActive]}
+                style={[styles.amendWindowBtn, deliveryWindow === w && styles.amendWindowBtnActive]}
                 onPress={() => {
                   haptics.light();
                   setDeliveryWindow(w);
@@ -96,7 +102,10 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
                 activeOpacity={0.8}
               >
                 <Text
-                  style={[s.amendWindowBtnText, deliveryWindow === w && s.amendWindowBtnTextActive]}
+                  style={[
+                    styles.amendWindowBtnText,
+                    deliveryWindow === w && styles.amendWindowBtnTextActive,
+                  ]}
                 >
                   {w === 'AM' ? 'Rīts (8–12)' : w === 'PM' ? 'Diena (12–17)' : 'Jebkurā laikā'}
                 </Text>
@@ -106,20 +115,20 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
         </View>
 
         {/* Site contact */}
-        <View style={s.amendField}>
-          <Text style={s.amendLabel}>Kontaktpersona</Text>
+        <View style={styles.amendField}>
+          <Text style={styles.amendLabel}>Kontaktpersona</Text>
           <TextInput
-            style={s.amendInput}
+            style={styles.amendInput}
             placeholder="Vārds Uzvārds"
             placeholderTextColor="#9ca3af"
             value={contact}
             onChangeText={setContact}
           />
         </View>
-        <View style={s.amendField}>
-          <Text style={s.amendLabel}>Kontaktpersonas tālrunis</Text>
+        <View style={styles.amendField}>
+          <Text style={styles.amendLabel}>Kontaktpersonas tālrunis</Text>
           <TextInput
-            style={s.amendInput}
+            style={styles.amendInput}
             placeholder="+371 XXXXXXXX"
             placeholderTextColor="#9ca3af"
             value={phone}
@@ -129,10 +138,10 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
         </View>
 
         {/* Notes */}
-        <View style={s.amendField}>
-          <Text style={s.amendLabel}>Piezīmes šoferim</Text>
+        <View style={styles.amendField}>
+          <Text style={styles.amendLabel}>Piezīmes šoferim</Text>
           <TextInput
-            style={[s.amendInput, { minHeight: 80, textAlignVertical: 'top' }]}
+            style={[styles.amendInput, { minHeight: 80, textAlignVertical: 'top' }]}
             placeholder="Piegādes instrukcijas, ieeja objektā..."
             placeholderTextColor="#9ca3af"
             multiline
@@ -142,7 +151,7 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
         </View>
 
         <TouchableOpacity
-          style={[s.amendSubmitBtn, loading && { opacity: 0.5 }]}
+          style={[styles.amendSubmitBtn, loading && { opacity: 0.5 }]}
           onPress={handleSubmit}
           disabled={loading}
           activeOpacity={0.85}
@@ -150,10 +159,42 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
           {loading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={s.amendSubmitBtnText}>Saglabāt izmaiņas</Text>
+            <Text style={styles.amendSubmitBtnText}>Saglabāt izmaiņas</Text>
           )}
         </TouchableOpacity>
       </View>
     </BottomSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  amendField: { gap: 8 },
+  amendLabel: { fontSize: 13, fontWeight: '700', color: '#374151' },
+  amendInput: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#111827',
+  },
+  amendWindowRow: { flexDirection: 'row', gap: 10 },
+  amendWindowBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+  },
+  amendWindowBtnActive: { backgroundColor: '#111827' },
+  amendWindowBtnText: { fontSize: 15, fontWeight: '700', color: '#4b5563' },
+  amendWindowBtnTextActive: { color: '#fff' },
+  amendSubmitBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  amendSubmitBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+});
