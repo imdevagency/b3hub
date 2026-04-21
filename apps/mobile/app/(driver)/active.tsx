@@ -12,6 +12,8 @@ import {
   Image,
   AppState,
   AppStateStatus,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -112,8 +114,83 @@ const DOC_LABELS: Record<string, string> = {
   WEIGHING_SLIP: 'Svēršanas biļete',
 };
 
+const STEP_PROGRESS_LABELS: Record<JobStatus, string> = {
+  ACCEPTED: 'Darbs pieņemts',
+  EN_ROUTE_PICKUP: 'Brauciens uz iekraušanu',
+  AT_PICKUP: 'Iekraušana objektā',
+  LOADED: 'Krava apstiprināta',
+  EN_ROUTE_DELIVERY: 'Brauciens uz piegādi',
+  AT_DELIVERY: 'Izkraušana un nodošana',
+  DELIVERED: 'Darbs pabeigts',
+};
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 function formatDocCode(code: string): string {
   return DOC_LABELS[code] ?? code.replaceAll('_', ' ').toLowerCase();
+}
+
+function getPhaseMeta(
+  status: JobStatus,
+  nextStatus: JobStatus | null,
+  options: { isOffline: boolean; openExceptionCount: number; returnTripCount: number },
+) {
+  const { isOffline, openExceptionCount, returnTripCount } = options;
+
+  if (status === 'DELIVERED') {
+    return {
+      eyebrow: 'Darbs pabeigts',
+      title: 'Piegāde noslēgta',
+      subtitle: 'Varat atrast nākamo darbu vai aizvērt šo maiņas posmu.',
+      nextLabel: 'Gatavs nākamajam darbam',
+    };
+  }
+
+  if (status === 'AT_PICKUP') {
+    return {
+      eyebrow: 'Iekraušanas brīdis',
+      title: 'Apstipriniet kravu bez steigas',
+      subtitle:
+        'Ievadiet faktisko svaru un, ja vajag, pievienojiet foto, lai pāreja uz piegādi būtu vienā solī.',
+      nextLabel: nextStatus ? `Tālāk: ${STEP_PROGRESS_LABELS[nextStatus]}` : 'Gatavs pabeigt posmu',
+    };
+  }
+
+  if (status === 'AT_DELIVERY') {
+    return {
+      eyebrow: 'Nodošanas brīdis',
+      title: 'Pabeidziet piegādi ar pierādījumu',
+      subtitle:
+        'Kad viss ir gatavs, ievadiet piegādes apliecinājumu un noslēdziet darbu bez papildu soļiem.',
+      nextLabel: nextStatus ? `Tālāk: ${STEP_PROGRESS_LABELS[nextStatus]}` : 'Gatavs pabeigt posmu',
+    };
+  }
+
+  if (status === 'LOADED' || status === 'EN_ROUTE_DELIVERY') {
+    return {
+      eyebrow: 'Piegādes fāze',
+      title: 'Svarīgākais ir skaidrs un tuvumā',
+      subtitle: isOffline
+        ? 'Jūs esat bezsaistē. Darbības tiks saglabātas un nosūtītas, tiklīdz atgriezīsies savienojums.'
+        : openExceptionCount > 0
+          ? `Ir ${openExceptionCount} aktīva${openExceptionCount > 1 ? 's' : ''} problēma${openExceptionCount > 1 ? 's' : ''}.`
+          : returnTripCount > 0
+            ? `${returnTripCount} atpakaļceļa krava${returnTripCount > 1 ? 's' : ''} pieejama tuvumā.`
+            : 'Navigācija, kontakts un problēmu ziņošana ir pieejama bez pārslēgšanās starp ekrāniem.',
+      nextLabel: nextStatus ? `Tālāk: ${STEP_PROGRESS_LABELS[nextStatus]}` : 'Gatavs pabeigt posmu',
+    };
+  }
+
+  return {
+    eyebrow: 'Ceļā uz iekraušanu',
+    title: 'Vispirms nokļūstiet pareizajā vietā',
+    subtitle: isOffline
+      ? 'Jūs esat bezsaistē. Navigācija darbosies, bet statusa maiņa tiks saglabāta rindā.'
+      : 'Piegādātāja kontakts, čats un navigācija ir redzami uzreiz, lai nav jāmeklē nākamais solis.',
+    nextLabel: nextStatus ? `Tālāk: ${STEP_PROGRESS_LABELS[nextStatus]}` : 'Gatavs pabeigt posmu',
+  };
 }
 
 export default function ActiveJobScreen() {
@@ -567,6 +644,10 @@ export default function ActiveJobScreen() {
     }
   }, [liveJobStatus]);
 
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, [job?.status, activeTab, returnTrips.length, exceptions.length]);
+
   // ── Polling fallback — refetch every 30 s in case WebSocket drops ──
   useEffect(() => {
     if (!job?.id || job.status === 'DELIVERED') return;
@@ -657,6 +738,11 @@ export default function ActiveJobScreen() {
       : currentIndex >= 3
         ? { bg: '#d1fae5', border: '#6ee7b7', text: '#059669', phase: 'Piegādes fāze' }
         : { bg: '#fef3c7', border: '#fde68a', text: '#d97706', phase: 'Iekraušanas fāze' };
+  const phaseMeta = getPhaseMeta(currentStatus, nextStatus, {
+    isOffline,
+    openExceptionCount: openExceptions.length,
+    returnTripCount: returnTrips.length,
+  });
 
   // ── Navigate — Schüttflix-style app picker ────────────────────────────────
   //   Shows Waze / Google Maps / Apple Maps action sheet.
@@ -930,35 +1016,53 @@ export default function ActiveJobScreen() {
         {/* Phase Pill at the top */}
         <View
           style={{
-            backgroundColor: colors.primary,
+            backgroundColor: '#ffffff',
             paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 20,
+            paddingVertical: 10,
+            borderRadius: 18,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.15,
+            shadowOpacity: 0.12,
             shadowRadius: 8,
             elevation: 4,
+            borderWidth: 1,
+            borderColor: phaseColor.border,
+            minWidth: 172,
           }}
         >
           <RNText
             style={{
-              fontSize: 13,
+              fontSize: 11,
+              fontFamily: 'Inter_700Bold',
               fontWeight: '700',
-              color: '#fff',
+              color: phaseColor.text,
               letterSpacing: 0.5,
               textTransform: 'uppercase',
             }}
           >
-            {currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP'
-              ? 'Uz iekraušanu'
-              : currentStatus === 'AT_PICKUP'
-                ? 'Iekraušana'
-                : currentStatus === 'LOADED' || currentStatus === 'EN_ROUTE_DELIVERY'
-                  ? 'Uz izkraušanu'
-                  : currentStatus === 'AT_DELIVERY'
-                    ? 'Piegāde'
-                    : 'Pabeigts'}
+            {phaseMeta.eyebrow}
+          </RNText>
+          <RNText
+            style={{
+              fontSize: 15,
+              fontFamily: 'Inter_700Bold',
+              fontWeight: '700',
+              color: colors.textPrimary,
+              marginTop: 2,
+            }}
+          >
+            {phaseColor.phase}
+          </RNText>
+          <RNText
+            style={{
+              fontSize: 12,
+              fontFamily: 'Inter_500Medium',
+              fontWeight: '500',
+              color: colors.textMuted,
+              marginTop: 2,
+            }}
+          >
+            {phaseMeta.nextLabel}
           </RNText>
         </View>
       </View>
@@ -1012,6 +1116,185 @@ export default function ActiveJobScreen() {
         {/* Pull Handle */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <View style={styles.detailsPullHandle} />
+        </View>
+
+        <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 10,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: phaseColor.bg,
+                borderColor: phaseColor.border,
+                borderWidth: 1,
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+                borderRadius: 999,
+              }}
+            >
+              <RNText
+                style={{
+                  fontSize: 12,
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  color: phaseColor.text,
+                }}
+              >
+                {phaseColor.phase}
+              </RNText>
+            </View>
+            <RNText
+              style={{
+                fontSize: 12,
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
+                color: colors.textMuted,
+              }}
+            >
+              {currentIndex + 1}/{STATUS_STEPS.length}
+            </RNText>
+          </View>
+
+          <RNText
+            style={{
+              fontSize: 22,
+              lineHeight: 28,
+              fontFamily: 'Inter_700Bold',
+              fontWeight: '700',
+              color: colors.textPrimary,
+              letterSpacing: -0.4,
+            }}
+          >
+            {phaseMeta.title}
+          </RNText>
+          <RNText
+            style={{
+              fontSize: 14,
+              lineHeight: 20,
+              fontFamily: 'Inter_500Medium',
+              fontWeight: '500',
+              color: colors.textMuted,
+              marginTop: 6,
+            }}
+          >
+            {phaseMeta.subtitle}
+          </RNText>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
+            {STATUS_STEPS.map((step, index) => {
+              const isComplete = index <= currentIndex;
+              const isCurrent = index === currentIndex;
+
+              return (
+                <React.Fragment key={step}>
+                  <View
+                    style={{
+                      width: isCurrent ? 12 : 10,
+                      height: isCurrent ? 12 : 10,
+                      borderRadius: 999,
+                      backgroundColor: isComplete ? colors.primary : '#d1d5db',
+                      borderWidth: isCurrent ? 3 : 0,
+                      borderColor: isCurrent ? '#d9f99d' : 'transparent',
+                    }}
+                  />
+                  {index < STATUS_STEPS.length - 1 ? (
+                    <View
+                      style={{
+                        flex: 1,
+                        height: 3,
+                        borderRadius: 999,
+                        marginHorizontal: 4,
+                        backgroundColor: index < currentIndex ? colors.primary : '#e5e7eb',
+                      }}
+                    />
+                  ) : null}
+                </React.Fragment>
+              );
+            })}
+          </View>
+
+          <RNText
+            style={{
+              fontSize: 12,
+              fontFamily: 'Inter_600SemiBold',
+              fontWeight: '600',
+              color: colors.textSecondary,
+              marginTop: 8,
+            }}
+          >
+            {STEP_PROGRESS_LABELS[currentStatus]}
+          </RNText>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            {isOffline ? (
+              <View
+                style={{
+                  backgroundColor: '#fef3c7',
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                }}
+              >
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    color: '#b45309',
+                  }}
+                >
+                  Bezsaistē: darbības tiks rindotas
+                </RNText>
+              </View>
+            ) : null}
+            {openExceptions.length > 0 ? (
+              <View
+                style={{
+                  backgroundColor: '#fef2f2',
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                }}
+              >
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    color: '#b91c1c',
+                  }}
+                >
+                  {openExceptions.length} atvērta{openExceptions.length > 1 ? 's' : ''} problēma
+                </RNText>
+              </View>
+            ) : null}
+            {returnTrips.length > 0 && RETURN_TRIP_STATUSES.includes(currentStatus) ? (
+              <View
+                style={{
+                  backgroundColor: '#ecfdf5',
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                }}
+              >
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    color: '#047857',
+                  }}
+                >
+                  {returnTrips.length} atpakaļceļa iespēja
+                </RNText>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         {/* Address wrapped in a touchable that opens Details */}
@@ -1227,6 +1510,75 @@ export default function ActiveJobScreen() {
                   </RNText>
                 )}
               </TouchableOpacity>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                  marginTop: 2,
+                }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => setActiveTab('issues')}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    backgroundColor: '#f9fafb',
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                  }}
+                >
+                  <AlertCircle
+                    size={15}
+                    color={openExceptions.length > 0 ? '#b91c1c' : '#4b5563'}
+                  />
+                  <RNText
+                    style={{
+                      fontSize: 13,
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                      color: openExceptions.length > 0 ? '#991b1b' : colors.textSecondary,
+                    }}
+                  >
+                    {openExceptions.length > 0
+                      ? `Problēmas (${openExceptions.length})`
+                      : 'Ziņot problēmu'}
+                  </RNText>
+                </TouchableOpacity>
+
+                {currentStatus !== 'DELIVERED' ? (
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() => setDelaySheetVisible(true)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      backgroundColor: '#f9fafb',
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                    }}
+                  >
+                    <ClockIcon size={15} color="#4b5563" />
+                    <RNText
+                      style={{
+                        fontSize: 13,
+                        fontFamily: 'Inter_600SemiBold',
+                        fontWeight: '600',
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      Ziņot kavēšanos
+                    </RNText>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </>
           ) : (
             <View style={{ flex: 1, gap: 10 }}>
