@@ -24,8 +24,7 @@ function BuyerLayoutContent() {
   const { config } = useHeaderConfig();
   const pathname = usePathname();
   // Routes that run edge-to-edge and should hide the tab bar + top bar (tracking, live maps, etc.)
-  const isFullScreenRoute =
-    /^\/\(buyer\)\/order\/[^/]+$/.test(pathname) || pathname.startsWith('/(buyer)/order/');
+  const isFullScreenRoute = /(\/(order|skip-order|transport-job)\/[^/]+$)/.test(pathname);
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback(
     (props: BottomTabBarProps) => (isFullScreenRoute ? null : <AnimatedTabBar {...props} />),
@@ -114,10 +113,11 @@ function BuyerLayoutContent() {
             tabBarIcon: ({ color }) => <User size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
-        <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
+        {/* (orders) group — live order tracking screens */}
+        <Tabs.Screen name="(orders)/order/[id]" options={{ href: null }} />
+        <Tabs.Screen name="(orders)/skip-order/[id]" options={{ href: null }} />
+        <Tabs.Screen name="(orders)/transport-job/[id]" options={{ href: null }} />
+        <Tabs.Screen name="(orders)/rfq/[id]" options={{ href: null }} />
         {/* (work) group — projects & contracts */}
         <Tabs.Screen name="(work)/framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="(work)/framework-contract/[id]" options={{ href: null }} />

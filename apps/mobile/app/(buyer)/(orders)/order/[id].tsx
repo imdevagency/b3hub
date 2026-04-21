@@ -97,7 +97,7 @@ export default function OrderDetailScreen() {
   // Snap points are PIXEL values (not percentages) sized to match the content
   // at each state, so the peek always fully contains hero + driver row + CTA.
   const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => [280 + insets.bottom, 520, '92%'], [insets.bottom]);
+  const snapPoints = useMemo(() => [320 + insets.bottom, 520, '92%'], [insets.bottom]);
   const [sheetIndex, setSheetIndex] = useState(0);
   const handleSheetChange = useCallback((index: number) => {
     setSheetIndex(index);
@@ -484,7 +484,7 @@ export default function OrderDetailScreen() {
         backgroundStyle={styles.sheetBackground}
       >
         <BottomSheetScrollView
-          contentContainerStyle={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}
+          contentContainerStyle={[styles.sheetContent, { paddingBottom: 48 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
           {/* HERO — big ETA, supporting status line */}
@@ -902,12 +902,13 @@ const styles = StyleSheet.create({
   // ── Primary CTA ──
   primaryCta: {
     backgroundColor: '#111827',
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
+    marginHorizontal: 4,
   },
   primaryCtaSuccess: { backgroundColor: '#16a34a' },
   primaryCtaText: { fontSize: 16, color: '#fff', fontWeight: '600' },
