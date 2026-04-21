@@ -1,15 +1,5 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  Linking,
-  Image,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Alert, Linking, Image, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -20,12 +10,11 @@ import {
   Phone,
   Package,
   Truck,
+  FileText,
+  CheckCircle,
   ArrowLeft,
   MessageCircle,
-  Recycle,
-  RotateCcw,
-  XCircle,
-  Star,
+  CreditCard,
 } from 'lucide-react-native';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
@@ -42,13 +31,25 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { useToast } from '@/components/ui/Toast';
-import { useTransportJob } from '@/lib/use-transport-job';
+import { useOrderDetail } from '@/lib/use-order-detail';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { CATEGORY_LABELS } from '@/lib/materials';
-import { formatDate } from '@/lib/format';
+import { RatingModal } from '@/components/ui/RatingModal';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
+import { DisputeSheet } from './dispute-sheet';
+import { AmendSheet } from './amend-sheet';
+import { useToast } from '@/components/ui/Toast';
+import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { colors } from '@/lib/theme';
+
+// Guard: Stripe React Native — requires native build (not available in Expo Go)
+let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  useStripe = require('@stripe/stripe-react-native').useStripe;
+} catch {
+  /* Expo Go fallback */
+}
 
 // ── Job step model (4 simplified stages driving the progress dots) ──
 const JOB_STEPS = [
@@ -65,7 +66,6 @@ const JOB_STATUS_TO_STEP: Record<string, number> = {
   LOADED: 1,
   EN_ROUTE_DELIVERY: 2,
   AT_DELIVERY: 3,
-  DELIVERED: 3,
 };
 
 const JOB_STATUS_LABEL: Record<string, string> = {
@@ -77,33 +77,14 @@ const JOB_STATUS_LABEL: Record<string, string> = {
   AT_DELIVERY: 'Šoferis ir uz vietas',
 };
 
-const VEHICLE_LABEL: Record<string, string> = {
-  TIPPER_SMALL: 'Pašizgāzējs (10 t)',
-  TIPPER_LARGE: 'Pašizgāzējs lielais (18 t)',
-  ARTICULATED_TIPPER: 'Sattelkipper (26 t)',
-};
-
-const CARGO_LABEL: Record<string, string> = {
-  WASTE_COLLECTION: 'Atkritumu izvešana',
-  MATERIAL_DELIVERY: 'Materiālu piegāde',
-  GENERAL_FREIGHT: 'Vispārīgā krava',
-  SAND: CATEGORY_LABELS.SAND,
-  GRAVEL: CATEGORY_LABELS.GRAVEL,
-  CONCRETE: CATEGORY_LABELS.CONCRETE,
-  SOIL: CATEGORY_LABELS.SOIL,
-  WOOD: 'Koks',
-  METAL: 'Metāls',
-  MIXED: 'Jaukts',
-};
-
 // ── Main Screen ────────────────────────────────────────────────
 
-export default function TransportJobDetailScreen() {
-  const { token } = useAuth();
+export default function OrderDetailScreen() {
+  const { token, user } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { job, loading, reload: loadJob } = useTransportJob(id);
+  const { order, setOrder, loading, alreadyRated, reload: load } = useOrderDetail(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
   const [, setMapReady] = useState(false);
   const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
@@ -113,34 +94,102 @@ export default function TransportJobDetailScreen() {
   const insets = useSafeAreaInsets();
 
   // ── Bottom sheet ──
+  // Snap points are PIXEL values (not percentages) sized to match the content
+  // at each state, so the peek always fully contains hero + driver row + CTA.
   const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => [320 + insets.bottom, 520, '92%'], [insets.bottom]);
+  const snapPoints = useMemo(() => [280 + insets.bottom, 520, '92%'], [insets.bottom]);
   const [sheetIndex, setSheetIndex] = useState(0);
   const handleSheetChange = useCallback((index: number) => {
     setSheetIndex(index);
     haptics.selection();
   }, []);
 
-  const [cancelling, setCancelling] = useState(false);
-  const [etaMin, setEtaMin] = useState<number | null>(null);
+  const onRefresh = () => {
+    load();
+  };
 
-  // Driver rating state
-  const [driverRating, setDriverRating] = useState(0);
-  const [ratingComment, setRatingComment] = useState('');
-  const [ratingSubmitted, setRatingSubmitted] = useState(false);
-  const [ratingLoading, setRatingLoading] = useState(false);
-
-  // Live updates via WebSocket
-  const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
-    jobId: typeof id === 'string' ? id : null,
+  // Live status updates via WebSocket — no pull-to-refresh needed for status changes
+  const { orderStatus: liveStatus, jobLocation: liveLocation } = useLiveUpdates({
+    orderId: id ?? null,
+    jobId: order?.transportJobs?.[0]?.id ?? null,
     token,
   });
 
-  useEffect(() => {
+  // When the server pushes a new status, update the local order copy immediately
+  React.useEffect(() => {
+    if (liveStatus && order && liveStatus !== order.status) {
+      setOrder((prev) => (prev ? { ...prev, status: liveStatus } : prev));
+    }
+  }, [liveStatus, order?.status]);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [showDispute, setShowDispute] = useState(false);
+  const [cancelResultVisible, setCancelResultVisible] = useState(false);
+  const [disputeResultVisible, setDisputeResultVisible] = useState(false);
+  const [disputeFiled, setDisputeFiled] = useState(false);
+
+  // Surcharge approval state
+  const [surchargeActionLoading, setSurchargeActionLoading] = useState<string | null>(null);
+
+  const handleApproveSurcharge = async (surchargeId: string) => {
+    const jobId = order?.transportJobs?.[0]?.id;
+    if (!token || !jobId) return;
+    setSurchargeActionLoading(surchargeId);
+    haptics.light();
+    try {
+      await api.transportJobs.approveSurcharge(jobId, surchargeId, token);
+      haptics.success();
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt piemaksu');
+    } finally {
+      setSurchargeActionLoading(null);
+    }
+  };
+
+  const handleRejectSurcharge = async (surchargeId: string) => {
+    const jobId = order?.transportJobs?.[0]?.id;
+    if (!token || !jobId) return;
+    setSurchargeActionLoading(surchargeId);
+    haptics.light();
+    try {
+      await api.transportJobs.rejectSurcharge(jobId, surchargeId, token);
+      haptics.success();
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      toast.error(err instanceof Error ? err.message : 'Neizdevās noraidīt piemaksu');
+    } finally {
+      setSurchargeActionLoading(null);
+    }
+  };
+
+  // Load existing dispute from server so confirm-receipt is always properly blocked
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  React.useEffect(() => {
+    if (!token || !id || !UUID_RE.test(id) || !order) return;
+    api
+      .listDisputes(token, id)
+      .then((disputes) => {
+        if (disputes.length > 0) setDisputeFiled(true);
+      })
+      .catch((err) => console.warn('Failed to load disputes:', err));
+  }, [token, id, order?.id]);
+
+  // Amendment sheet state
+  const [showAmend, setShowAmend] = useState(false);
+  // Local flag so the UI updates immediately after rating without a reload
+  const [ratedLocally, setRatedLocally] = useState(false);
+  const hasRated = alreadyRated || ratedLocally;
+  const [etaMin, setEtaMin] = useState<number | null>(null);
+
+  // Update ETA from live driver location broadcasts
+  React.useEffect(() => {
     if (!liveLocation) return;
+    if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
     const { lat, lng } = liveLocation;
     setDriverLocationOnMap({ lat, lng });
-    if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
     cameraRef.current?.setCamera({
       centerCoordinate: [lng, lat],
       zoomLevel: 13,
@@ -148,51 +197,37 @@ export default function TransportJobDetailScreen() {
     });
   }, [liveLocation]);
 
-  useEffect(() => {
-    if (liveJobStatus) loadJob();
-  }, [liveJobStatus, loadJob]);
+  // Stripe payment sheet — guarded for Expo Go
+  const stripe = useStripe ? useStripe() : null;
+  const [payLoading, setPayLoading] = useState(false);
+  // Optimistic flag: hide Pay button immediately after success while webhook fires
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
-  // Check whether this job was already rated
-  useEffect(() => {
-    if (job && token && job.status === 'DELIVERED' && !ratingSubmitted) {
-      api.reviews
-        .status({ transportJobId: job.id }, token)
-        .then(({ reviewed }) => {
-          if (reviewed) setRatingSubmitted(true);
-        })
-        .catch((err) => console.warn('Failed to load review status:', err));
-    }
-  }, [job?.id, job?.status, token, ratingSubmitted]);
-
-  // ── Stable initial map center — keyed on job.id only so it never
+  // ── Stable initial map center — keyed on order.id only so it never
   //    re-animates when driverLocationOnMap updates (cameraRef handles movement) ──
   const initialCenter = useMemo<[number, number]>(() => {
-    if (job?.deliveryLng != null && job?.deliveryLat != null) {
-      return [job.deliveryLng, job.deliveryLat];
+    if (order?.deliveryLng != null && order?.deliveryLat != null) {
+      return [order.deliveryLng as number, order.deliveryLat as number];
     }
     return [24.1052, 56.9496];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id]);
+  }, [order?.id]);
 
   // ── Route hooks — must be before early returns (Rules of Hooks) ──────────
   const routeOrigin = useMemo(() => {
     if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
-    if (job?.pickupLat != null && job?.pickupLng != null) {
-      return { lat: job.pickupLat, lng: job.pickupLng };
-    }
     return null;
-  }, [driverLocationOnMap, job?.pickupLat, job?.pickupLng]);
-
+  }, [driverLocationOnMap]);
   const routeDestination = useMemo(() => {
-    if (job?.deliveryLat != null && job?.deliveryLng != null) {
-      return { lat: job.deliveryLat, lng: job.deliveryLng };
+    if (order?.deliveryLat != null && order?.deliveryLng != null) {
+      return { lat: order.deliveryLat as number, lng: order.deliveryLng as number };
     }
     return null;
-  }, [job?.deliveryLat, job?.deliveryLng]);
-
+  }, [order?.deliveryLat, order?.deliveryLng]);
   const { route } = useRoute(routeOrigin, routeDestination);
 
-  useEffect(() => {
+  // Fit the map camera to include driver + delivery whenever either updates
+  React.useEffect(() => {
     if (!cameraRef.current || !routeOrigin || !routeDestination) return;
     const ne: [number, number] = [
       Math.max(routeOrigin.lng, routeDestination.lng),
@@ -205,49 +240,95 @@ export default function TransportJobDetailScreen() {
     cameraRef.current.fitBounds(ne, sw, [80, 60, 260, 60], 600);
   }, [routeOrigin?.lat, routeOrigin?.lng, routeDestination?.lat, routeDestination?.lng]);
 
+  const handlePay = async () => {
+    if (!token || !order || !stripe) return;
+    setPayLoading(true);
+    haptics.light();
+    try {
+      const { clientSecret } = await api.createIntent(order.id, token);
+      const { error: initError } = await stripe.initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'B3Hub',
+        returnURL: 'b3hub://order/return',
+        defaultBillingDetails: {},
+      });
+      if (initError) {
+        toast.error(initError.message);
+        return;
+      }
+      const { error: presentError } = await stripe.presentPaymentSheet();
+      if (presentError) {
+        if (presentError.code !== 'Canceled') {
+          haptics.error();
+          Alert.alert('Maksājums neizdevās', presentError.message);
+        }
+        return;
+      }
+      haptics.success();
+      Alert.alert('Maksājums veiksmīgs', 'Jūsu pasūtījums tiek apstrādāts.');
+      setPaymentProcessing(true);
+      load();
+    } catch (err: unknown) {
+      haptics.error();
+      toast.error(err instanceof Error ? err.message : 'Neizdevās apstrādāt maksājumu');
+    } finally {
+      setPayLoading(false);
+    }
+  };
+
   const handleCancel = () => {
-    if (!job || !token) return;
     haptics.heavy();
-    Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt. Pasūtījums tiks atcelts.', [
+    Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
       { text: 'Nē', style: 'cancel' },
       {
-        text: 'Atcelt',
+        text: 'Atcelt pasūtījumu',
         style: 'destructive',
         onPress: async () => {
-          setCancelling(true);
+          if (!token || !order) return;
+          setActionLoading(true);
           try {
-            await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
+            const updated = await api.orders.cancel(order.id, token);
+            setOrder(updated);
             haptics.success();
-            loadJob();
-          } catch (err) {
+            setCancelResultVisible(true);
+          } catch (err: unknown) {
             haptics.error();
-            toast.error(err instanceof Error ? err.message : 'Neizdevās atcelt pasūtījumu');
+            toast.error(err instanceof Error ? err.message : 'Neizdevās atcelt');
           } finally {
-            setCancelling(false);
+            setActionLoading(false);
           }
         },
       },
     ]);
   };
 
-  const handleRateDriver = async () => {
-    if (!job || !token || driverRating === 0) return;
+  const handleConfirmReceipt = () => {
     haptics.medium();
-    setRatingLoading(true);
-    try {
-      await api.transportJobs.rateDriver(
-        job.id,
-        { rating: driverRating, comment: ratingComment.trim() || undefined },
-        token,
-      );
-      setRatingSubmitted(true);
-      haptics.success();
-    } catch (err) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt vērtējumu');
-    } finally {
-      setRatingLoading(false);
-    }
+    Alert.alert(
+      'Apstiprināt saņemšanu?',
+      'Apstiprinot saņemšanu, pasūtījums tiks slēgts un maksājums tiks izmaksāts piegādātājam.',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Apstiprināt',
+          onPress: async () => {
+            if (!token || !order) return;
+            setActionLoading(true);
+            try {
+              const updated = await api.orders.confirmReceipt(order.id, token);
+              setOrder(updated);
+              haptics.success();
+              Alert.alert('Apstiprināts', 'Pasūtījums veiksmīgi pabeigts. Paldies!');
+            } catch (err: unknown) {
+              haptics.error();
+              toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (loading) {
@@ -259,7 +340,7 @@ export default function TransportJobDetailScreen() {
     );
   }
 
-  if (!job) {
+  if (!order) {
     return (
       <ScreenContainer bg="#ffffff">
         <ScreenHeader title="Pasūtījums" />
@@ -268,34 +349,43 @@ export default function TransportJobDetailScreen() {
     );
   }
 
-  const isDisposal = job.jobType === 'WASTE_COLLECTION';
-  const typeLabel = isDisposal ? 'Atkritumu izvešana' : 'Kravas pārvadāšana';
-  const driver = job.driver;
-  const vehicle = job.vehicle;
-  const canCancel = job.status === 'AVAILABLE';
+  const st = MAT_STATUS[order.status] ?? MAT_STATUS.PENDING;
+  const activeJob = order.transportJobs?.find(
+    (j) =>
+      j.status === 'ACCEPTED' ||
+      j.status === 'EN_ROUTE_PICKUP' ||
+      j.status === 'AT_PICKUP' ||
+      j.status === 'LOADED' ||
+      j.status === 'EN_ROUTE_DELIVERY' ||
+      j.status === 'AT_DELIVERY',
+  );
+  const driver = activeJob?.driver;
+  const vehicle = activeJob?.vehicle;
+  // Company members without permManageOrders cannot cancel or amend orders.
+  const canManageOrders = !user?.companyRole || (user?.permManageOrders ?? false);
+  const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status) && canManageOrders;
+  const canPay =
+    !paymentProcessing &&
+    order.status === 'PENDING' &&
+    (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
+    order.paymentMethod !== 'INVOICE' &&
+    !!stripe;
 
-  const currentStepIdx = JOB_STATUS_TO_STEP[job.status] ?? -1;
-  const jobStatusLabel = JOB_STATUS_LABEL[job.status] ?? null;
+  const currentStepIdx = activeJob ? (JOB_STATUS_TO_STEP[activeJob.status] ?? 0) : -1;
+  const jobStatusLabel = activeJob ? (JOB_STATUS_LABEL[activeJob.status] ?? 'Piegādē') : null;
 
   // Hero line shown at the top of the sheet
   const heroPrimary = (() => {
-    if (job.status === 'DELIVERED') return 'Piegādāts';
-    if (job.status === 'CANCELLED') return 'Atcelts';
+    if (order.status === 'DELIVERED') return 'Piegādāts';
+    if (order.status === 'COMPLETED') return 'Pabeigts';
+    if (order.status === 'CANCELLED') return 'Atcelts';
     if (etaMin != null) return `${etaMin} min`;
     if (driver) return 'Ceļā';
-    if (job.status === 'AVAILABLE') return 'Meklē pārvadātāju…';
-    return typeLabel;
+    if (order.status === 'PENDING') return 'Gaida apstiprināšanu';
+    return 'Meklē šoferi…';
   })();
-
   const heroSubtitle =
-    jobStatusLabel ??
-    (job.status === 'DELIVERED'
-      ? ratingSubmitted
-        ? 'Paldies par vērtējumu!'
-        : 'Lūdzu novērtējiet šoferi'
-      : job.status === 'CANCELLED'
-        ? 'Pasūtījums atcelts'
-        : typeLabel);
+    jobStatusLabel ?? (order.status === 'DELIVERED' ? 'Apstipriniet saņemšanu' : 'Gaidām šoferi');
 
   // Single contextual CTA surfaced in the peek view
   type Cta = {
@@ -303,33 +393,33 @@ export default function TransportJobDetailScreen() {
     onPress: () => void;
     icon: React.ReactNode;
     disabled?: boolean;
-    variant: 'primary' | 'success' | 'danger';
+    variant: 'primary' | 'success';
   };
-
   const primaryCta: Cta | null = (() => {
-    if (job.status === 'DELIVERED' || job.status === 'CANCELLED') {
+    if (order.status === 'DELIVERED') {
       return {
-        label: 'Pasūtīt vēlreiz',
-        onPress: () => router.push({ pathname: isDisposal ? '/disposal' : '/transport' }),
-        icon: <RotateCcw size={18} color="#fff" style={{ marginRight: 8 }} />,
+        label: 'Apstiprināt saņemšanu',
+        onPress: handleConfirmReceipt,
+        icon: <CheckCircle size={18} color="#fff" style={{ marginRight: 8 }} />,
+        disabled: actionLoading || disputeFiled,
+        variant: 'success',
+      };
+    }
+    if (canPay) {
+      return {
+        label: `Maksāt €${order.total.toFixed(2)}`,
+        onPress: handlePay,
+        icon: <CreditCard size={18} color="#fff" style={{ marginRight: 8 }} />,
+        disabled: payLoading,
         variant: 'primary',
       };
     }
-    if (driver?.phone) {
+    if (driver && driver.phone) {
       return {
         label: 'Zvanīt šoferim',
         onPress: () => Linking.openURL(`tel:${driver.phone}`).catch(() => null),
         icon: <Phone size={18} color="#fff" style={{ marginRight: 8 }} />,
         variant: 'primary',
-      };
-    }
-    if (canCancel) {
-      return {
-        label: cancelling ? 'Atceļ…' : 'Atcelt pasūtījumu',
-        onPress: handleCancel,
-        icon: <XCircle size={18} color="#fff" style={{ marginRight: 8 }} />,
-        disabled: cancelling,
-        variant: 'danger',
       };
     }
     return null;
@@ -348,33 +438,22 @@ export default function TransportJobDetailScreen() {
           pitchEnabled={false}
           onMapReady={() => setMapReady(true)}
         >
+          {/* Route polyline */}
           {route?.coords && route.coords.length > 1 && (
-            <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
+            <RouteLayer id="order-route" coordinates={route.coords} color="#111827" width={4} />
           )}
-          {job.pickupLat != null && job.pickupLng != null && Marker && (
+          {/* Delivery pin */}
+          {order.deliveryLat != null && order.deliveryLng != null && Marker && (
             <Marker
-              coordinate={{ latitude: job.pickupLat, longitude: job.pickupLng }}
+              coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
               anchor={{ x: 0.5, y: 1 }}
             >
-              <View style={styles.pinPickup}>
+              <View style={styles.pinDelivery}>
                 <MapPin size={14} color="#fff" strokeWidth={2.5} />
               </View>
             </Marker>
           )}
-          {job.deliveryLat != null && job.deliveryLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: job.deliveryLat, longitude: job.deliveryLng }}
-              anchor={{ x: 0.5, y: 1 }}
-            >
-              <View style={styles.pinDelivery}>
-                {isDisposal ? (
-                  <Recycle size={14} color="#fff" strokeWidth={2.5} />
-                ) : (
-                  <MapPin size={14} color="#fff" strokeWidth={2.5} />
-                )}
-              </View>
-            </Marker>
-          )}
+          {/* Live driver marker */}
           {driverLocationOnMap && Marker && (
             <Marker
               coordinate={{ latitude: driverLocationOnMap.lat, longitude: driverLocationOnMap.lng }}
@@ -408,15 +487,15 @@ export default function TransportJobDetailScreen() {
         backgroundStyle={styles.sheetBackground}
       >
         <BottomSheetScrollView
-          contentContainerStyle={[styles.sheetContent, { paddingBottom: 48 + insets.bottom }]}
+          contentContainerStyle={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* HERO */}
+          {/* HERO — big ETA, supporting status line */}
           <Text style={styles.heroEta}>{heroPrimary}</Text>
           <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
 
-          {/* Progress dots */}
-          {driver && job.status !== 'CANCELLED' && (
+          {/* Progress dots (only when a driver is active) */}
+          {driver && (
             <View style={styles.stepsRow}>
               {JOB_STEPS.map((s, i) => {
                 const done = i <= currentStepIdx;
@@ -464,7 +543,7 @@ export default function TransportJobDetailScreen() {
                   router.push({
                     pathname: '/chat/[jobId]',
                     params: {
-                      jobId: job.id,
+                      jobId: activeJob!.id,
                       title: `${driver.firstName} ${driver.lastName}`,
                     },
                   })
@@ -483,19 +562,15 @@ export default function TransportJobDetailScreen() {
             </View>
           ) : (
             <View style={styles.waitingRow}>
-              <View style={styles.waitingItem}>
-                <Package size={14} color="#6b7280" />
-                <Text style={styles.waitingItemText}>
-                  {CARGO_LABEL[job.cargoType] ?? job.cargoType}
-                  {job.cargoWeight != null ? ` · ${(job.cargoWeight / 1000).toFixed(1)} t` : ''}
-                </Text>
-              </View>
-              <View style={styles.waitingItem}>
-                <MapPin size={14} color="#6b7280" />
-                <Text style={styles.waitingItemText} numberOfLines={1}>
-                  {job.pickupCity} → {job.deliveryCity}
-                </Text>
-              </View>
+              {order.items.map((item, idx) => (
+                <View key={idx} style={styles.waitingItem}>
+                  <Package size={14} color="#6b7280" />
+                  <Text style={styles.waitingItemText}>
+                    {item.quantity} {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}{' '}
+                    · {item.material.name}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -505,7 +580,6 @@ export default function TransportJobDetailScreen() {
               style={[
                 styles.primaryCta,
                 primaryCta.variant === 'success' && styles.primaryCtaSuccess,
-                primaryCta.variant === 'danger' && styles.primaryCtaDanger,
                 primaryCta.disabled && { opacity: 0.6 },
               ]}
               onPress={() => {
@@ -529,138 +603,134 @@ export default function TransportJobDetailScreen() {
 
           {/* Details list */}
           <View style={styles.detailsCard}>
-            <DetailRow label="Iekraušanas pilsēta" value={job.pickupCity} />
-            <DetailRow label="Iekraušanas adrese" value={job.pickupAddress} />
-            <DetailRow label="Piegādes pilsēta" value={job.deliveryCity} />
-            <DetailRow label="Piegādes adrese" value={job.deliveryAddress} />
-            <DetailRow label="Krava" value={CARGO_LABEL[job.cargoType] ?? job.cargoType} />
-            {job.cargoWeight != null && (
-              <DetailRow label="Svars" value={`${(job.cargoWeight / 1000).toFixed(1)} t`} />
-            )}
-            {job.requiredVehicleType && (
-              <DetailRow
-                label="Transportlīdzeklis"
-                value={VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType}
-              />
-            )}
-            <DetailRow label="Izbraukšana" value={formatDate(job.pickupDate)} />
-            <DetailRow label="Piegāde" value={formatDate(job.deliveryDate)} />
-            {job.distanceKm != null && (
-              <DetailRow label="Attālums" value={`${job.distanceKm.toFixed(0)} km`} />
-            )}
+            <DetailRow
+              label="Piegādes adrese"
+              value={`${order.deliveryAddress}\n${order.deliveryCity}`}
+            />
+            <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
+            <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
+            <DetailRow
+              label="Piegādes laiks"
+              value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
+            />
+            <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
+            <DetailRow
+              label="Maksājuma veids"
+              value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
+            />
             <View style={styles.detailsTotalRow}>
-              <Text style={styles.detailsTotalLabel}>Tarifs</Text>
-              <Text style={styles.detailsTotalValue}>€{job.rate.toFixed(2)}</Text>
+              <Text style={styles.detailsTotalLabel}>Pasūtījuma summa</Text>
+              <Text style={styles.detailsTotalValue}>€{order.total.toFixed(2)}</Text>
             </View>
           </View>
 
-          {/* Job number card */}
+          {/* Order number card */}
           <View style={styles.trackingBlackCard}>
             <View>
               <Text style={styles.trackingBlackLabel}>Pasūtījuma numurs</Text>
-              <Text style={styles.trackingBlackNumber}>{job.jobNumber}</Text>
+              <Text style={styles.trackingBlackNumber}>#{order.orderNumber}</Text>
             </View>
+            <TouchableOpacity style={styles.trackingBlackDocBtn}>
+              <FileText size={18} color="#fff" />
+            </TouchableOpacity>
           </View>
 
-          {/* Driver rating (after delivery) */}
-          {job.status === 'DELIVERED' && driver && !ratingSubmitted && (
-            <View style={styles.ratingCard}>
-              <Text style={styles.ratingTitle}>Novērtēt šoferi</Text>
-              <Text style={styles.ratingDriverName}>
-                {driver.firstName} {driver.lastName}
-              </Text>
-              <View style={styles.starsRow}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <TouchableOpacity
-                    key={n}
-                    onPress={() => {
-                      haptics.light();
-                      setDriverRating(n);
-                    }}
-                    hitSlop={8}
-                    activeOpacity={0.7}
-                  >
-                    <Star
-                      size={32}
-                      color="#f59e0b"
-                      fill={n <= driverRating ? '#f59e0b' : 'transparent'}
-                      strokeWidth={1.5}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
-                style={styles.ratingInput}
-                placeholder="Komentārs (nav obligāts)"
-                placeholderTextColor="#9ca3af"
-                value={ratingComment}
-                onChangeText={setRatingComment}
-                multiline
-                maxLength={300}
-              />
+          {/* Secondary actions */}
+          {canCancel && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
               <TouchableOpacity
-                style={[
-                  styles.ratingSubmitBtn,
-                  (driverRating === 0 || ratingLoading) && { opacity: 0.4 },
-                ]}
-                onPress={handleRateDriver}
-                disabled={driverRating === 0 || ratingLoading}
-                activeOpacity={0.85}
+                style={[{ flex: 1 }, styles.secondaryActionBtn, styles.secondaryActionBtnDanger]}
+                onPress={handleCancel}
+                disabled={actionLoading}
               >
-                {ratingLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.ratingSubmitText}>Iesniegt vērtējumu</Text>
-                )}
+                <Text style={styles.secondaryActionBtnDangerText}>Atcelt</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[{ flex: 1 }, styles.secondaryActionBtn]}
+                onPress={() => setShowAmend(true)}
+              >
+                <Text style={styles.secondaryActionBtnText}>Labot</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* Weighing slip */}
-          {job.pickupPhotoUrl && (
-            <View style={styles.slipCard}>
-              <Text style={styles.slipTitle}>Svēršanas zīme</Text>
-              <Image
-                source={{ uri: job.pickupPhotoUrl }}
-                style={styles.slipThumb}
-                resizeMode="cover"
-              />
-              {job.actualWeightKg != null && (
-                <View style={styles.detailsTotalRow}>
-                  <Text style={styles.detailsTotalLabel}>Izmērītais svars</Text>
-                  <Text style={[styles.detailsTotalValue, { color: colors.success }]}>
-                    {(job.actualWeightKg / 1000).toFixed(3)} t
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Secondary actions — cancel still accessible when available */}
-          {canCancel && primaryCta?.variant !== 'danger' && (
+          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
             <TouchableOpacity
-              style={[
-                styles.secondaryActionBtn,
-                styles.secondaryActionBtnDanger,
-                { marginTop: 12 },
-              ]}
-              onPress={handleCancel}
-              disabled={cancelling}
+              style={[styles.secondaryActionBtn, { marginTop: 12 }]}
+              onPress={() => setShowDispute(true)}
             >
-              <Text style={styles.secondaryActionBtnDangerText}>
-                {cancelling ? 'Atceļ…' : 'Atcelt pasūtījumu'}
-              </Text>
+              <Text style={styles.secondaryActionBtnText}>Ziņot par problēmu</Text>
             </TouchableOpacity>
           )}
         </BottomSheetScrollView>
       </BottomSheet>
+
+      {/* Sheets & Modals */}
+      {id && token && (
+        <RatingModal
+          visible={showRating}
+          onClose={() => setShowRating(false)}
+          onSuccess={() => {
+            setShowRating(false);
+            setRatedLocally(true);
+          }}
+          token={token}
+          orderId={id}
+        />
+      )}
+      {order && token && (
+        <DisputeSheet
+          visible={showDispute}
+          onClose={() => setShowDispute(false)}
+          order={order}
+          token={token}
+          onFiled={() => {
+            setDisputeFiled(true);
+            setDisputeResultVisible(true);
+          }}
+        />
+      )}
+      {order && token && (
+        <AmendSheet
+          visible={showAmend}
+          onClose={() => setShowAmend(false)}
+          order={order}
+          token={token}
+          onSuccess={load}
+        />
+      )}
+      <ActionResultSheet
+        visible={cancelResultVisible}
+        onClose={() => setCancelResultVisible(false)}
+        variant="cancelled"
+        title="Pasūtījums atcelts"
+        subtitle="Jūsu pasūtījums ir atcelts."
+        primaryLabel="Pasūtīt no jauna"
+        onPrimary={() => {
+          setCancelResultVisible(false);
+          router.replace({ pathname: '/material-order' });
+        }}
+        secondaryLabel="Mani pasūtījumi"
+        onSecondary={() => {
+          setCancelResultVisible(false);
+          router.replace('/(buyer)/orders');
+        }}
+      />
+      <ActionResultSheet
+        visible={disputeResultVisible}
+        onClose={() => setDisputeResultVisible(false)}
+        variant="info"
+        title="Sūdzība iesniegta"
+        subtitle="Mēs izskatīsim jūsu paziņojumu."
+        primaryLabel="Labi"
+        onPrimary={() => setDisputeResultVisible(false)}
+      />
     </View>
   );
 }
 
-// ── Local detail row ──
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
+// ── Local detail row (kept inline to avoid pulling the heavy InfoSection UI) ──
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailRowLabel}>{label}</Text>
@@ -673,21 +743,11 @@ function DetailRow({ label, value }: { label: string; value: string | null | und
 
 const styles = StyleSheet.create({
   // ── Map pins ──
-  pinPickup: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: '#fff',
-  },
   pinDelivery: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.danger,
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2.5,
@@ -745,6 +805,7 @@ const styles = StyleSheet.create({
   sheetContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
+    paddingBottom: 48,
   },
 
   // ── Hero ──
@@ -762,7 +823,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ── Progress dots ──
+  // ── Progress dots (4 steps) ──
   stepsRow: {
     flexDirection: 'row',
     marginTop: 20,
@@ -844,16 +905,14 @@ const styles = StyleSheet.create({
   // ── Primary CTA ──
   primaryCta: {
     backgroundColor: '#111827',
-    borderRadius: 18,
+    borderRadius: 16,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
-    marginHorizontal: 4,
   },
   primaryCtaSuccess: { backgroundColor: '#16a34a' },
-  primaryCtaDanger: { backgroundColor: '#ef4444' },
   primaryCtaText: { fontSize: 16, color: '#fff', fontWeight: '600' },
 
   // ── Drag hint ──
@@ -910,7 +969,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_800ExtraBold',
   },
 
-  // ── Black tracking card (job number) ──
+  // ── Black tracking card (order number) ──
   trackingBlackCard: {
     backgroundColor: '#111827',
     borderRadius: 20,
@@ -922,55 +981,13 @@ const styles = StyleSheet.create({
   },
   trackingBlackLabel: { color: '#9ca3af', fontSize: 11, marginBottom: 2, fontWeight: '500' },
   trackingBlackNumber: { color: '#fff', fontSize: 20, fontWeight: '800' },
-
-  // ── Rating card ──
-  ratingCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  ratingTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  ratingDriverName: { fontSize: 14, color: '#6b7280', marginBottom: 12 },
-  starsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  ratingInput: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
-    minHeight: 70,
-    textAlignVertical: 'top',
-    marginBottom: 14,
-  },
-  ratingSubmitBtn: {
-    backgroundColor: '#111827',
+  trackingBlackDocBtn: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    paddingVertical: 13,
+    backgroundColor: '#1f2937',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  ratingSubmitText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-
-  // ── Weighing slip ──
-  slipCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  slipTitle: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 10 },
-  slipThumb: {
-    width: '100%',
-    height: 180,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
   },
 
   // ── Secondary actions ──
