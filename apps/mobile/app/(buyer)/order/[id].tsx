@@ -97,7 +97,7 @@ export default function OrderDetailScreen() {
   // Snap points are PIXEL values (not percentages) sized to match the content
   // at each state, so the peek always fully contains hero + driver row + CTA.
   const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => [280 + insets.bottom, 520, '92%'], [insets.bottom]);
+  const snapPoints = useMemo(() => [320 + insets.bottom, 520, '92%'], [insets.bottom]);
   const [sheetIndex, setSheetIndex] = useState(0);
   const handleSheetChange = useCallback((index: number) => {
     setSheetIndex(index);
@@ -202,16 +202,6 @@ export default function OrderDetailScreen() {
   const [payLoading, setPayLoading] = useState(false);
   // Optimistic flag: hide Pay button immediately after success while webhook fires
   const [paymentProcessing, setPaymentProcessing] = useState(false);
-
-  // ── Stable initial map center — keyed on order.id only so it never
-  //    re-animates when driverLocationOnMap updates (cameraRef handles movement) ──
-  const initialCenter = useMemo<[number, number]>(() => {
-    if (order?.deliveryLng != null && order?.deliveryLat != null) {
-      return [order.deliveryLng as number, order.deliveryLat as number];
-    }
-    return [24.1052, 56.9496];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order?.id]);
 
   // ── Route hooks — must be before early returns (Rules of Hooks) ──────────
   const routeOrigin = useMemo(() => {
@@ -431,11 +421,18 @@ export default function OrderDetailScreen() {
       <View style={StyleSheet.absoluteFillObject}>
         <BaseMap
           cameraRef={cameraRef}
-          center={initialCenter}
+          center={
+            driverLocationOnMap
+              ? [driverLocationOnMap.lng, driverLocationOnMap.lat]
+              : order.deliveryLng && order.deliveryLat
+                ? [order.deliveryLng, order.deliveryLat]
+                : [24.1052, 56.9496]
+          }
           zoom={13}
           style={{ flex: 1 }}
           rotateEnabled={false}
           pitchEnabled={false}
+          mapPadding={{ top: 80, right: 40, bottom: 260, left: 40 }}
           onMapReady={() => setMapReady(true)}
         >
           {/* Route polyline */}
@@ -487,7 +484,7 @@ export default function OrderDetailScreen() {
         backgroundStyle={styles.sheetBackground}
       >
         <BottomSheetScrollView
-          contentContainerStyle={[styles.sheetContent, { paddingBottom: 24 + insets.bottom }]}
+          contentContainerStyle={[styles.sheetContent, { paddingBottom: 48 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
           {/* HERO — big ETA, supporting status line */}
@@ -905,12 +902,13 @@ const styles = StyleSheet.create({
   // ── Primary CTA ──
   primaryCta: {
     backgroundColor: '#111827',
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
+    marginHorizontal: 4,
   },
   primaryCtaSuccess: { backgroundColor: '#16a34a' },
   primaryCtaText: { fontSize: 16, color: '#fff', fontWeight: '600' },

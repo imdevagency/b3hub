@@ -113,11 +113,11 @@ function BuyerLayoutContent() {
             tabBarIcon: ({ color }) => <User size={22} color={color} />,
           }}
         />
-        {/* (orders) group — live order tracking screens */}
-        <Tabs.Screen name="(orders)/order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="(orders)/skip-order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="(orders)/transport-job/[id]" options={{ href: null }} />
-        <Tabs.Screen name="(orders)/rfq/[id]" options={{ href: null }} />
+        {/* Detail screens — hidden from tab bar */}
+        <Tabs.Screen name="order/[id]" options={{ href: null }} />
+        <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
+        <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
+        <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
         {/* (work) group — projects & contracts */}
         <Tabs.Screen name="(work)/framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="(work)/framework-contract/[id]" options={{ href: null }} />
