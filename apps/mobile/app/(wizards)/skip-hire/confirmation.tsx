@@ -177,7 +177,7 @@ export default function OrderConfirmation() {
                     returnURL: 'b3hub://order/confirmation',
                   });
                   if (initError) {
-                    toast.error(initError.message)
+                    toast.error(initError.message);
                     return;
                   }
                   const { error: presentError } = await stripe.presentPaymentSheet();
@@ -225,7 +225,7 @@ export default function OrderConfirmation() {
             onPress={() => {
               haptics.light();
               reset();
-              router.replace('/order');
+              router.replace('/skip-hire');
             }}
             activeOpacity={0.8}
           >

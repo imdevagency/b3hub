@@ -405,7 +405,7 @@ export default function CatalogScreen() {
 
   const handleCategoryPress = (cat: MaterialCategory) => {
     router.push({
-      pathname: '/order-request-new',
+      pathname: '/material-order',
       params: {
         initialCategory: cat,
         projectId: projectId || undefined,

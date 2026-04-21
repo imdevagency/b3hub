@@ -102,21 +102,23 @@ function BuyerLayoutContent() {
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
         <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
         <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
-        <Tabs.Screen name="invoices" options={{ href: null }} />
-        <Tabs.Screen name="certificates" options={{ href: null }} />
-        <Tabs.Screen name="documents" options={{ href: null }} />
-        <Tabs.Screen name="team" options={{ href: null }} />
         <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
-        <Tabs.Screen name="framework-contracts" options={{ href: null }} />
-        <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />
-        <Tabs.Screen name="projects" options={{ href: null }} />
-        <Tabs.Screen name="project/[id]" options={{ href: null }} />
-        <Tabs.Screen name="project/new" options={{ href: null }} />
-        <Tabs.Screen name="saved-addresses" options={{ href: null }} />
-        <Tabs.Screen name="disputes" options={{ href: null }} />
-        <Tabs.Screen name="schedules" options={{ href: null }} />
-        <Tabs.Screen name="field-passes" options={{ href: null }} />
-        <Tabs.Screen name="analytics" options={{ href: null }} />
+        {/* (work) group — projects & contracts */}
+        <Tabs.Screen name="(work)/framework-contracts" options={{ href: null }} />
+        <Tabs.Screen name="(work)/framework-contract/[id]" options={{ href: null }} />
+        <Tabs.Screen name="(work)/projects" options={{ href: null }} />
+        <Tabs.Screen name="(work)/project/[id]" options={{ href: null }} />
+        <Tabs.Screen name="(work)/project/new" options={{ href: null }} />
+        {/* (account) group — company management */}
+        <Tabs.Screen name="(account)/invoices" options={{ href: null }} />
+        <Tabs.Screen name="(account)/certificates" options={{ href: null }} />
+        <Tabs.Screen name="(account)/documents" options={{ href: null }} />
+        <Tabs.Screen name="(account)/team" options={{ href: null }} />
+        <Tabs.Screen name="(account)/saved-addresses" options={{ href: null }} />
+        <Tabs.Screen name="(account)/disputes" options={{ href: null }} />
+        <Tabs.Screen name="(account)/schedules" options={{ href: null }} />
+        <Tabs.Screen name="(account)/field-passes" options={{ href: null }} />
+        <Tabs.Screen name="(account)/analytics" options={{ href: null }} />
       </Tabs>
       {/* Loading overlay — rendered OVER Tabs so navigation context is always mounted */}
       {isLoading && (

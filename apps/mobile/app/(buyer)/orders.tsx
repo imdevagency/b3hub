@@ -228,7 +228,7 @@ export default function OrdersScreen() {
               subtitle="Noma un izvešana"
               onPress={() => {
                 setShowTypePicker(false);
-                router.push('/order');
+                router.push('/skip-hire');
               }}
             />
             <SheetRow
@@ -255,7 +255,7 @@ export default function OrdersScreen() {
               subtitle="Saņemiet piedāvājumus"
               onPress={() => {
                 setShowTypePicker(false);
-                router.push('/order-request-new');
+                router.push('/material-order');
               }}
             />
           </View>

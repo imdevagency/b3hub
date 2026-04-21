@@ -384,7 +384,7 @@ export default function RfqDetailScreen() {
         primaryLabel="Jauns pieprasījums"
         onPrimary={() => {
           setCancelResultVisible(false);
-          router.replace('/order-request-new');
+          router.replace('/material-order');
         }}
         secondaryLabel="Uz maniem pieprasījumiem"
         onSecondary={() => {

@@ -17,7 +17,7 @@ const SERVICES = [
     icon: HardHat,
     label: 'Materiāli',
     sub: 'Smiltis, grants, šķembas, betona izstrādājumi',
-    route: '/order-request-new',
+    route: '/material-order',
   },
   {
     id: 'container',

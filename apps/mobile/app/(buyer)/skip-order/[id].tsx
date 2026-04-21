@@ -312,8 +312,6 @@ export default function SkipOrderDetailScreen() {
             style={{ flex: 1 }}
             rotateEnabled={false}
             pitchEnabled={false}
-            scrollEnabled={false}
-            zoomEnabled={false}
             onMapReady={() => setMapReady(true)}
           >
             {Marker && (

@@ -4,7 +4,7 @@ import { Check } from 'lucide-react-native';
 import type { SkipWasteCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
-import { WASTE_TYPES, WASTE_ICONS } from './skip-hire-types';
+import { WASTE_TYPES, WASTE_ICONS } from './_types';
 import { colors } from '@/lib/theme';
 
 export function SkipWasteStep({
@@ -94,7 +94,13 @@ const s2 = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, marginTop: 12, marginBottom: 2 },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginTop: 12,
+    marginBottom: 2,
+  },
   labelSelected: { color: '#000' },
   desc: { fontSize: 13, color: colors.textMuted },
   descSelected: { color: '#4b5563' },

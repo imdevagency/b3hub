@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   Alert,
   Linking,
   Image,
-  TextInput,
   RefreshControl,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -22,6 +23,7 @@ import {
   Truck,
   FileText,
   CheckCircle,
+  ArrowLeft,
   XCircle,
   Star,
   FileDown,
@@ -30,10 +32,22 @@ import {
   Camera,
   CreditCard,
   AlertTriangle,
-  Navigation2,
   RotateCcw,
   Scale,
 } from 'lucide-react-native';
+import { BaseMap, RouteLayer } from '@/components/map';
+import type { CameraRefHandle } from '@/components/map';
+
+let Marker: any = null;
+try {
+  const maps = require('react-native-maps');
+  Marker = maps.Marker;
+} catch {
+  /* Expo Go */
+}
+
+const { height: SCREEN_H } = Dimensions.get('window');
+const MAP_H = Math.round(SCREEN_H * 0.28);
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -45,9 +59,11 @@ import { RatingModal } from '@/components/ui/RatingModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { StatusPill } from '@/components/ui/StatusPill';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { DetailRow } from '@/components/ui/DetailRow';
-import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
+import { DisputeSheet } from './dispute-sheet';
+import { AmendSheet } from './amend-sheet';
 import { useToast } from '@/components/ui/Toast';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -82,6 +98,12 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
   const [refreshing, setRefreshing] = useState(false);
+  const cameraRef = useRef<CameraRefHandle | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -107,9 +129,6 @@ export default function OrderDetailScreen() {
   const [showDispute, setShowDispute] = useState(false);
   const [cancelResultVisible, setCancelResultVisible] = useState(false);
   const [disputeResultVisible, setDisputeResultVisible] = useState(false);
-  const [disputeReason, setDisputeReason] = useState('');
-  const [disputeDetails, setDisputeDetails] = useState('');
-  const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeFiled, setDisputeFiled] = useState(false);
 
   // Surcharge approval state
@@ -163,50 +182,24 @@ export default function OrderDetailScreen() {
 
   // Amendment sheet state
   const [showAmend, setShowAmend] = useState(false);
-  const [amendLoading, setAmendLoading] = useState(false);
-  const [amendDate, setAmendDate] = useState('');
-  const [amendWindow, setAmendWindow] = useState<'AM' | 'PM' | 'ANY'>('ANY');
-  const [amendNotes, setAmendNotes] = useState('');
-  const [amendContact, setAmendContact] = useState('');
-  const [amendPhone, setAmendPhone] = useState('');
-  const openAmend = () => {
-    setAmendDate(order?.deliveryDate ? order.deliveryDate.split('T')[0] : '');
-    setAmendWindow((order?.deliveryWindow as 'AM' | 'PM' | 'ANY') ?? 'ANY');
-    setAmendNotes(order?.notes ?? '');
-    setAmendContact(order?.siteContactName ?? '');
-    setAmendPhone(order?.siteContactPhone ?? '');
-    setShowAmend(true);
-  };
-  const handleAmendSubmit = async () => {
-    if (!token || !order) return;
-    setAmendLoading(true);
-    haptics.light();
-    try {
-      const body: Record<string, string> = {};
-      if (amendDate) body.deliveryDate = amendDate;
-      if (amendWindow) body.deliveryWindow = amendWindow;
-      if (amendNotes !== (order.notes ?? '')) body.notes = amendNotes;
-      if (amendContact !== (order.siteContactName ?? '')) body.siteContactName = amendContact;
-      if (amendPhone !== (order.siteContactPhone ?? '')) body.siteContactPhone = amendPhone;
-      await api.orders.update(order.id, body, token);
-      haptics.success();
-      setShowAmend(false);
-      load();
-    } catch (err: unknown) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt izmaiņas');
-    } finally {
-      setAmendLoading(false);
-    }
-  };
   // Local flag so the UI updates immediately after rating without a reload
   const [ratedLocally, setRatedLocally] = useState(false);
   const hasRated = alreadyRated || ratedLocally;
   const [etaMin, setEtaMin] = useState<number | null>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = React.useMemo(() => ['25%', '50%', '90%'], []);
 
   // Update ETA from live driver location broadcasts
   React.useEffect(() => {
-    if (liveLocation?.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+    if (!liveLocation) return;
+    if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+    const { lat, lng } = liveLocation;
+    setDriverLocationOnMap({ lat, lng });
+    cameraRef.current?.setCamera({
+      centerCoordinate: [lng, lat],
+      zoomLevel: 13,
+      animationDuration: 800,
+    });
   }, [liveLocation]);
 
   // Stripe payment sheet — guarded for Expo Go
@@ -248,45 +241,6 @@ export default function OrderDetailScreen() {
       toast.error(err instanceof Error ? err.message : 'Neizdevās apstrādāt maksājumu');
     } finally {
       setPayLoading(false);
-    }
-  };
-
-  const DISPUTE_REASONS: { key: string; label: string }[] = [
-    { key: 'SHORT_DELIVERY', label: 'Nepietiekams daudzums' },
-    { key: 'WRONG_MATERIAL', label: 'Nepareizs materiāls' },
-    { key: 'DAMAGE', label: 'Bojājumi piegādes laikā' },
-    { key: 'QUALITY_ISSUE', label: 'Kvālitātes problēma' },
-    { key: 'NO_DELIVERY', label: 'Nav saņemta piegāde' },
-    { key: 'LATE_DELIVERY', label: 'Piegāde ievērojami kavējas' },
-    { key: 'OTHER', label: 'Cits jautājums' },
-  ];
-
-  const handleDisputeSubmit = async () => {
-    if (!disputeReason) {
-      haptics.warning();
-      Alert.alert('Izvēlieties iemeslu', 'Lūdzu izvēlieties problēmas iemeslu.');
-      return;
-    }
-    if (!token || !order) return;
-    setDisputeLoading(true);
-    haptics.light();
-    try {
-      const selectedReason = DISPUTE_REASONS.find((r) => r.key === disputeReason);
-      await api.reportDispute(
-        order.id,
-        disputeReason,
-        disputeDetails || selectedReason?.label,
-        token,
-      );
-      haptics.success();
-      setDisputeFiled(true);
-      setShowDispute(false);
-      setDisputeResultVisible(true);
-    } catch (err: unknown) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt sūdzību');
-    } finally {
-      setDisputeLoading(false);
     }
   };
 
@@ -405,136 +359,85 @@ export default function OrderDetailScreen() {
   };
 
   return (
-    <ScreenContainer bg="#ffffff">
-      <ScreenHeader title="Pasūtījums" />
-      {/* Uber-style hero header */}
-      <View style={s.heroHeader}>
-        <View style={s.heroLeft}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 6,
-            }}
-          >
-            <Text style={s.heroOrderNumber} numberOfLines={1}>
-              {order.orderNumber}
-            </Text>
-            <StatusPill label={st.label} bg="#f3f4f6" color="#111827" size="md" />
-          </View>
-          {order.items[0]?.material?.name ? (
-            <Text style={s.heroMaterial} numberOfLines={1}>
-              {order.items[0].material.name}
-            </Text>
-          ) : null}
+    <View style={{ flex: 1, backgroundColor: '#f4f5f7' }}>
+      {/* ── Background Map ────────────────────────────────────── */}
+      <View style={[StyleSheet.absoluteFillObject]}>
+        <BaseMap
+          cameraRef={cameraRef}
+          center={
+            driverLocationOnMap
+              ? [driverLocationOnMap.lng, driverLocationOnMap.lat]
+              : order.deliveryLng && order.deliveryLat
+                ? [order.deliveryLng, order.deliveryLat]
+                : [24.1052, 56.9496]
+          }
+          zoom={13}
+          style={{ flex: 1 }}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          onMapReady={() => setMapReady(true)}
+        >
+          {/* Delivery pin */}
+          {order.deliveryLat != null && order.deliveryLng != null && Marker && (
+            <Marker
+              coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
+              anchor={{ x: 0.5, y: 1 }}
+            >
+              <View style={s.pinDelivery}>
+                <MapPin size={14} color="#fff" strokeWidth={2.5} />
+              </View>
+            </Marker>
+          )}
+          {/* Live driver marker */}
+          {driverLocationOnMap && Marker && (
+            <Marker
+              coordinate={{ latitude: driverLocationOnMap.lat, longitude: driverLocationOnMap.lng }}
+              anchor={{ x: 0.5, y: 0.5 }}
+              tracksViewChanges={false}
+            >
+              <View style={s.pinDriver}>
+                <Truck size={13} color="#fff" strokeWidth={2.5} />
+              </View>
+            </Marker>
+          )}
+        </BaseMap>
+      </View>
+
+      {/* ── Floating Header ────────────────────────────────────── */}
+      <View style={s.floatingHeader}>
+        <TouchableOpacity style={s.floatingBackBtn} onPress={() => router.back()}>
+          <ArrowLeft size={20} color="#111827" />
+        </TouchableOpacity>
+        <View style={s.floatingTitlePill}>
+          <Text style={s.floatingOrderNumber}>#{order.orderNumber}</Text>
+          <StatusPill label={st.label} bg="#f3f4f6" color="#111827" size="sm" />
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={s.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      {/* ── ETA Floating Chip (if active job) ──────────────────── */}
+      {activeJob && (
+        <View style={s.floatingEta}>
+          <View style={s.mapEtaDot} />
+          <Text style={s.mapEtaText}>
+            {etaMin != null ? `Pienāks ~${etaMin} min` : 'Šoferis ir ceļā'}
+          </Text>
+        </View>
+      )}
+
+      {/* ── Bottom Sheet ───────────────────────────────────────── */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={1}
+        snapPoints={snapPoints}
+        enablePanDownToClose={false}
+        backgroundStyle={{ borderRadius: 24 }}
       >
-        {/* ── Horizontal status stepper ─────────────────────────── */}
-        {order.status !== 'CANCELLED' && (
-          <View style={s.stepperCard}>
-            <View style={s.stepperWrap}>
-              {/* Grey background track */}
-              <View style={s.stepperTrack} />
-              {/* Green filled progress */}
-              {stepperIdx > 0 && (
-                <View
-                  style={[
-                    s.stepperFill,
-                    { width: `${(stepperIdx / (ORDER_STEPS.length - 1)) * 100}%` },
-                  ]}
-                />
-              )}
-              {/* Step columns */}
-              <View style={s.stepperDotsRow}>
-                {ORDER_STEPS.map((step, i) => {
-                  const done = i < stepperIdx;
-                  const active = i === stepperIdx;
-                  const tsRaw = order.statusTimestamps?.[step.key];
-                  const tsLabel = tsRaw ? formatDateTime(tsRaw) : null;
-                  return (
-                    <View key={step.key} style={s.stepCol}>
-                      <View style={[s.stepDot, done && s.stepDotDone, active && s.stepDotActive]}>
-                        {done && <CheckCircle size={9} color="#fff" />}
-                        {active && <View style={s.stepDotPulse} />}
-                      </View>
-                      <Text
-                        style={[s.stepLabel, done && s.stepLabelDone, active && s.stepLabelActive]}
-                        numberOfLines={1}
-                      >
-                        {step.short}
-                      </Text>
-                      {tsLabel ? (
-                        <Text style={s.stepTs} numberOfLines={1}>
-                          {tsLabel}
-                        </Text>
-                      ) : null}
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-            <Text style={s.stepHint}>{ORDER_STEPS[stepperIdx]?.hint ?? ''}</Text>
-          </View>
-        )}
-
-        {/* ── Open exception banners ────────────────────────────── */}
-        {openExceptions.map((ex) => {
-          const isPartial = ex.type === 'PARTIAL_DELIVERY';
-          const actualQtyMatch = ex.notes?.match(/\[actualQuantity=([0-9.]+)\]/);
-          const actualQty = actualQtyMatch ? parseFloat(actualQtyMatch[1]) : null;
-          const cleanNotes = ex.notes?.replace(/\s*\[actualQuantity=[0-9.]+\]/, '').trim();
-          return (
-            <View key={ex.id} style={s.exceptionBannerFlat}>
-              <AlertTriangle size={14} color="#6b7280" />
-              <View style={{ flex: 1 }}>
-                <Text style={s.exceptionBannerFlatTitle}>
-                  {EXCEPTION_LABELS[ex.type] ?? ex.type}
-                </Text>
-                {isPartial && actualQty != null && (
-                  <Text style={s.exceptionBannerFlatSub}>Piegādāts: {actualQty} t</Text>
-                )}
-                {cleanNotes ? <Text style={s.exceptionBannerFlatSub}>{cleanNotes}</Text> : null}
-              </View>
-            </View>
-          );
-        })}
-
-        {/* Live tracking card — shown whenever a transport job is active */}
-        {activeJob && (
-          <TouchableOpacity
-            style={s.liveTrackCard}
-            activeOpacity={0.82}
-            onPress={() => {
-              haptics.light();
-              router.push(`/(buyer)/transport-job/${activeJob.id}`);
-            }}
-          >
-            <View style={s.liveTrackLeft}>
-              <View style={s.liveIndicator}>
-                <View style={s.liveDot} />
-              </View>
-              <View>
-                <Text style={s.liveTrackTitle}>
-                  {etaMin != null ? `Pienāks pēc ~${etaMin} min` : 'Šoferis ir ceļā'}
-                </Text>
-                <Text style={s.liveTrackSub}>Izseko piegādi kartē</Text>
-              </View>
-            </View>
-            <Navigation2 size={24} color="#111827" />
-          </TouchableOpacity>
-        )}
-
-        {/* Driver card — if order is in transit */}
-        {driver && (
-          <View style={s.driverCard}>
-            <View style={s.driverInfo}>
+        <BottomSheetScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        >
+          {/* Driver Card */}
+          {driver && (
+            <View style={s.minimalDriverCard}>
               {driver.avatar ? (
                 <Image source={{ uri: driver.avatar }} style={s.driverAvatar} />
               ) : (
@@ -545,537 +448,139 @@ export default function OrderDetailScreen() {
                   </Text>
                 </View>
               )}
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.driverName}>
                   {driver.firstName} {driver.lastName}
                 </Text>
-                {/* Driver rating & completed jobs */}
-                {driver.driverProfile?.rating != null ? (
-                  <View style={s.driverRatingRow}>
-                    <Star size={12} color="#111827" fill="#111827" />
-                    <Text style={s.driverRatingText}>{driver.driverProfile.rating.toFixed(1)}</Text>
-                  </View>
+                {vehicle ? (
+                  <Text
+                    style={[
+                      s.driverPlate,
+                      {
+                        backgroundColor: '#E5E7EB',
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                        alignSelf: 'flex-start',
+                        marginTop: 4,
+                        fontSize: 12,
+                        fontWeight: '700',
+                        letterSpacing: 0.5,
+                        color: '#111827',
+                      },
+                    ]}
+                  >
+                    {vehicle.licensePlate}
+                  </Text>
                 ) : null}
-                {vehicle ? <Text style={s.driverPlate}>{vehicle.licensePlate}</Text> : null}
               </View>
-              {driver.phone ? (
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {driver.phone && (
+                  <TouchableOpacity
+                    style={s.callBtnMinimal}
+                    onPress={() => Linking.openURL(`tel:${driver.phone}`).catch(() => null)}
+                  >
+                    <Phone size={18} color="#111827" />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  style={s.callBtn}
+                  style={s.callBtnMinimal}
                   onPress={() =>
-                    Linking.openURL(`tel:${driver.phone}`).catch(() =>
-                      Alert.alert('Kļūda', 'Neizdevās iniciēt zvanu'),
-                    )
+                    router.push({
+                      pathname: '/chat/[jobId]',
+                      params: {
+                        jobId: activeJob.id,
+                        title: `${driver.firstName} ${driver.lastName}`,
+                      },
+                    })
                   }
                 >
-                  <Phone size={20} color="#111827" />
+                  <MessageCircle size={18} color="#111827" />
                 </TouchableOpacity>
-              ) : null}
-            </View>
-          </View>
-        )}
-
-        {/* Weighing slip photo — shown as soon as driver marks job LOADED */}
-        {(() => {
-          const jobWithPhoto = order.transportJobs?.find((j) => j.pickupPhotoUrl);
-          if (!jobWithPhoto?.pickupPhotoUrl) return null;
-          return (
-            <InfoSection
-              icon={<Camera size={14} color="#6b7280" />}
-              title="Svēršanas biļete"
-              right={
-                jobWithPhoto.actualWeightKg != null ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Scale size={11} color="#374151" />
-                    <Text style={s.weighingWeight}>
-                      {jobWithPhoto.actualWeightKg.toFixed(0)} kg
-                    </Text>
-                  </View>
-                ) : undefined
-              }
-            >
-              <Image
-                source={{ uri: jobWithPhoto.pickupPhotoUrl }}
-                style={s.weighingSlipPhoto}
-                resizeMode="contain"
-              />
-            </InfoSection>
-          );
-        })()}
-
-        {/* Weight discrepancy alert — when actual ≠ ordered by > 5% */}
-        {(() => {
-          const jobWithWeight = order.transportJobs?.find((j) => j.actualWeightKg != null);
-          if (!jobWithWeight) return null;
-          const actualKg = jobWithWeight.actualWeightKg!;
-          const orderedKg = order.items.reduce(
-            (sum: number, item) => (item.unit === 'TONNE' ? sum + item.quantity * 1000 : sum),
-            0,
-          );
-          if (!orderedKg) return null;
-          const diffPct = Math.abs(actualKg - orderedKg) / orderedKg;
-          if (diffPct < 0.05) return null;
-          const isUnder = actualKg < orderedKg;
-          return (
-            <View style={s.exceptionBannerFlat}>
-              <AlertTriangle size={14} color={isUnder ? '#92400e' : '#1e40af'} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.exceptionBannerFlatTitle}>
-                  {isUnder ? 'Piegādāts mazāk nekā pasūtīts' : 'Piegādāts vairāk nekā pasūtīts'}
-                </Text>
-                <Text style={s.exceptionBannerFlatSub}>
-                  Pasūtīts: {(orderedKg / 1000).toFixed(2)} t · Faktiski:{' '}
-                  {(actualKg / 1000).toFixed(2)} t ({isUnder ? '' : '+'}
-                  {((actualKg - orderedKg) / (orderedKg / 100)).toFixed(0)}%)
-                </Text>
               </View>
             </View>
-          );
-        })()}
+          )}
 
-        {/* Per-truck dispatch status — shown when there are transport jobs */}
-        {order.transportJobs &&
-          order.transportJobs.length > 0 &&
-          (() => {
-            const JOB_STATUS_LABELS: Record<string, string> = {
-              PENDING: 'Gaida',
-              ACCEPTED: 'Pieņemts',
-              EN_ROUTE_PICKUP: 'Dodas uz iekraušanu',
-              AT_PICKUP: 'Pie iekraušanas',
-              LOADED: 'Iekrauts',
-              EN_ROUTE_DELIVERY: 'Dodas pie jums',
-              AT_DELIVERY: 'Pie jums',
-              DELIVERED: 'Piegādāts',
-              CANCELLED: 'Atcelts',
-              FAILED: 'Neizdevās',
-            };
-            const JOB_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-              PENDING: { bg: '#f3f4f6', color: colors.textMuted },
-              ACCEPTED: { bg: '#eff6ff', color: '#1d4ed8' },
-              EN_ROUTE_PICKUP: { bg: '#fffbeb', color: '#92400e' },
-              AT_PICKUP: { bg: '#fffbeb', color: '#92400e' },
-              LOADED: { bg: '#f0fdf4', color: '#166534' },
-              EN_ROUTE_DELIVERY: { bg: '#dcfce7', color: colors.successText },
-              AT_DELIVERY: { bg: '#dcfce7', color: colors.successText },
-              DELIVERED: { bg: '#f0fdf4', color: '#166534' },
-              CANCELLED: { bg: '#fef2f2', color: colors.dangerText },
-              FAILED: { bg: '#fef2f2', color: colors.dangerText },
-            };
-            return (
-              <InfoSection
-                icon={<Truck size={14} color="#111827" />}
-                title={
-                  order.transportJobs.length > 1
-                    ? `Kravas auto (${order.transportJobs.length})`
-                    : 'Kravas auto'
-                }
+          {/* Surcharges & Actions (Swipe up to see more) */}
+          <View style={{ marginTop: 24 }}>
+            {canPay && (
+              <TouchableOpacity
+                style={[s.primaryActionBtn, payLoading && { opacity: 0.6 }, { marginBottom: 16 }]}
+                onPress={handlePay}
+                disabled={payLoading}
               >
-                {order.transportJobs.map((job, i) => {
-                  const sc = JOB_STATUS_COLORS[job.status] ?? {
-                    bg: '#f3f4f6',
-                    color: colors.textMuted,
-                  };
-                  const label = JOB_STATUS_LABELS[job.status] ?? job.status;
-                  const driverName = job.driver
-                    ? `${job.driver.firstName} ${job.driver.lastName}`
-                    : null;
-                  const plate = job.vehicle?.licensePlate ?? null;
-                  return (
-                    <TouchableOpacity
-                      key={job.id}
-                      onPress={() => {
-                        haptics.light();
-                        router.push(`/(buyer)/transport-job/${job.id}`);
-                      }}
-                      activeOpacity={0.75}
-                    >
-                      <DetailRow
-                        label={`Auto ${i + 1}${driverName ? ` · ${driverName}` : ''}${plate ? ` · ${plate}` : ''}`}
-                        value={<StatusPill label={label} bg={sc.bg} color={sc.color} />}
-                        last={i === (order.transportJobs?.length ?? 0) - 1}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </InfoSection>
-            );
-          })()}
-
-        {/* Order items */}
-        <InfoSection icon={<Package size={14} color="#111827" />} title="Preces">
-          {order.items.map((item, idx) => (
-            <View key={idx} style={[s.itemRow, idx < order.items.length - 1 && s.itemBorder]}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.itemName}>{item.material.name}</Text>
-                <Text style={s.itemMeta}>
-                  {item.quantity} {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} ×
-                  €{item.unitPrice.toFixed(2)}
-                </Text>
-              </View>
-              <Text style={s.itemTotal}>€{item.total.toFixed(2)}</Text>
-            </View>
-          ))}
-          {order.deliveryFee > 0 && (
-            <>
-              <View style={s.priceRowSimple}>
-                <Text style={s.priceLabel}>Materiāli</Text>
-                <Text style={s.priceValue}>€{order.subtotal.toFixed(2)}</Text>
-              </View>
-              <View style={s.priceRowSimple}>
-                <Text style={s.priceLabel}>Piegāde</Text>
-                <Text style={s.priceValue}>€{order.deliveryFee.toFixed(2)}</Text>
-              </View>
-              {(order.surcharges ?? [])
-                .filter(
-                  (sc) =>
-                    sc.billable &&
-                    sc.approvalStatus !== 'PENDING' &&
-                    sc.approvalStatus !== 'REJECTED',
-                )
-                .map((sc) => (
-                  <View key={sc.id} style={s.priceRowSimple}>
-                    <Text style={s.priceLabel}>{sc.label}</Text>
-                    <Text style={s.priceValue}>+€{sc.amount.toFixed(2)}</Text>
-                  </View>
-                ))}
-              {(order.surcharges ?? [])
-                .filter((sc) => sc.billable && sc.approvalStatus === 'PENDING')
-                .map((sc) => (
-                  <View key={sc.id} style={s.pendingSurchargeRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.pendingSurchargeLabel}>{sc.label}</Text>
-                      <Text style={s.pendingSurchargeMeta}>Gaida jūsu apstiprinājumu</Text>
-                    </View>
-                    <Text style={s.pendingSurchargeAmount}>+€{sc.amount.toFixed(2)}</Text>
-                    <View style={s.pendingSurchargeActions}>
-                      <TouchableOpacity
-                        style={s.rejectBtn}
-                        onPress={() => handleRejectSurcharge(sc.id)}
-                        disabled={surchargeActionLoading === sc.id}
-                        activeOpacity={0.7}
-                      >
-                        {surchargeActionLoading === sc.id ? (
-                          <ActivityIndicator size="small" color="#ef4444" />
-                        ) : (
-                          <Text style={s.rejectBtnText}>Noraidīt</Text>
-                        )}
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={s.approveBtn}
-                        onPress={() => handleApproveSurcharge(sc.id)}
-                        disabled={surchargeActionLoading === sc.id}
-                        activeOpacity={0.7}
-                      >
-                        {surchargeActionLoading === sc.id ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                          <Text style={s.approveBtnText}>Apstiprināt</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-              {order.tax > 0 && (
-                <View style={s.priceRowSimple}>
-                  <Text style={s.priceLabel}>PVN</Text>
-                  <Text style={s.priceValue}>€{order.tax.toFixed(2)}</Text>
-                </View>
-              )}
-              <View style={s.priceDivider} />
-            </>
-          )}
-          <View style={s.totalRowFinal}>
-            <Text style={s.totalLabelFinal}>Kopā</Text>
-            <Text style={s.totalValueFinal}>
-              €{order.total.toFixed(2)} {order.currency}
-            </Text>
-          </View>
-        </InfoSection>
-
-        {/* Delivery details */}
-        <InfoSection icon={<MapPin size={14} color="#111827" />} title="Piegādes informācija">
-          <DetailRow label="Adrese" value={`${order.deliveryAddress}\n${order.deliveryCity}`} />
-          <DetailRow
-            label="Piegādes datums"
-            value={order.deliveryDate ? formatDate(order.deliveryDate) : null}
-          />
-          {order.deliveryWindow && order.deliveryWindow !== 'ANY' && (
-            <DetailRow
-              label="Piegādes laiks"
-              value={order.deliveryWindow === 'AM' ? 'Rīts (8–12)' : 'Diena (12–17)'}
-            />
-          )}
-          <DetailRow label="Kontaktpersona" value={order.siteContactName} />
-          <DetailRow label="Tālrunis" value={order.siteContactPhone} />
-          {order.siteContactPhone && (
-            <TouchableOpacity
-              style={s.callSiteBtn}
-              onPress={() => Linking.openURL(`tel:${order.siteContactPhone}`).catch(() => null)}
-              activeOpacity={0.8}
-            >
-              <Phone size={13} color="#374151" />
-              <Text style={s.callSiteBtnText}>Zvanīt kontaktpersonai</Text>
-            </TouchableOpacity>
-          )}
-        </InfoSection>
-
-        {/* Documents — CMR, weighing slip (shown after delivery) */}
-        {order.status === 'DELIVERED' && documents.length > 0 && (
-          <InfoSection icon={<FileDown size={14} color="#111827" />} title="Dokumenti">
-            {documents.map((doc) => {
-              const docLabel =
-                doc.type === 'WEIGHING_SLIP'
-                  ? 'Svēršanas kvīts'
-                  : doc.type === 'DELIVERY_NOTE'
-                    ? 'Pavadzīme (CMR)'
-                    : doc.type === 'INVOICE'
-                      ? 'Rēķins'
-                      : doc.title;
-              return (
-                <View key={doc.id} style={s.docRow}>
-                  <View style={s.docInfo}>
-                    <Text style={s.docTitle}>{docLabel}</Text>
-                    <Text style={s.docStatus}>
-                      {doc.fileUrl ? 'Pieejams' : 'Tiek sagatavots...'}
-                    </Text>
-                  </View>
-                  {doc.fileUrl ? (
-                    <TouchableOpacity
-                      style={s.docDownloadBtn}
-                      onPress={() => Linking.openURL(doc.fileUrl!).catch(() => null)}
-                      activeOpacity={0.8}
-                    >
-                      <FileDown size={14} color="#fff" />
-                      <Text style={s.docDownloadText}>Lejupielādēt</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={s.docPendingBadge}>
-                      <Text style={s.docPendingText}>Gaida</Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </InfoSection>
-        )}
-
-        {/* Delivery proof — photos + notes submitted by driver */}
-        {order.status === 'DELIVERED' &&
-          (() => {
-            const proof = order.transportJobs?.find((j) => j.deliveryProof)?.deliveryProof;
-            if (!proof) return null;
-            return (
-              <InfoSection
-                icon={<Camera size={14} color="#111827" />}
-                title="Piegādes pierādījums"
-                right={
-                  <Text style={s.proofTime}>
-                    {new Date(proof.createdAt).toLocaleDateString('lv-LV', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                }
-              >
-                {proof.recipientName ? (
-                  <DetailRow label="Pieņēma" value={proof.recipientName} />
-                ) : null}
-                {proof.notes ? <DetailRow label="Piezīmes" value={proof.notes} /> : null}
-                {proof.photos.length > 0 && (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={s.proofPhotoRow}
-                  >
-                    {proof.photos.map((uri, i) => (
-                      <Image key={i} source={{ uri }} style={s.proofPhoto} resizeMode="cover" />
-                    ))}
-                  </ScrollView>
-                )}
-                {proof.photos.length === 0 && (
-                  <View style={s.proofNoPhoto}>
-                    <CheckCircle size={14} color="#111827" />
-                    <Text style={s.proofNoPhotoText}>Piegāde apstiprināta bez fotogrāfijas</Text>
-                  </View>
-                )}
-              </InfoSection>
-            );
-          })()}
-
-        {/* Buyer info */}
-        {order.buyer && (
-          <InfoSection icon={<User size={14} color="#111827" />} title="Pasūtītājs">
-            <DetailRow label="Vārds" value={order.buyer?.name ?? ''} />
-            <DetailRow label="Tālrunis" value={order.buyer?.phone} last />
-          </InfoSection>
-        )}
-
-        {/* bottom spacer so sticky footer doesn't cover last section */}
-        <View style={{ height: 8 }} />
-      </ScrollView>
-
-      {/* Sticky action footer */}
-      <View style={s.actions}>
-        {/* Primary action only */}
-        {canPay && (
-          <TouchableOpacity
-            style={[s.primaryActionBtn, payLoading && { opacity: 0.6 }]}
-            onPress={handlePay}
-            disabled={payLoading}
-            activeOpacity={0.85}
-          >
-            {payLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
                 <CreditCard size={18} color="#fff" />
                 <Text style={s.primaryActionBtnText}>Maksāt €{order.total.toFixed(2)}</Text>
-              </>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
-        )}
 
-        {/* Fallback message shown in Expo Go where native Stripe SDK is unavailable */}
-        {!stripe &&
-          order.status === 'PENDING' &&
-          (!order.paymentStatus || order.paymentStatus === 'PENDING') && (
-            <View style={s.statusMessage}>
-              <AlertTriangle size={14} color="#d97706" />
-              <Text style={[s.statusMessageText, { color: '#92400e' }]}>
-                Apmaksa jāveic caur lapu vai jaunāko versiju
-              </Text>
-            </View>
-          )}
+            {order.status === 'DELIVERED' && (
+              <TouchableOpacity
+                style={[
+                  s.primaryActionBtn,
+                  { backgroundColor: disputeFiled ? '#9ca3af' : '#16a34a', marginBottom: 16 },
+                ]}
+                onPress={handleConfirmReceipt}
+                disabled={actionLoading || disputeFiled}
+              >
+                <CheckCircle size={18} color="#fff" />
+                <Text style={s.primaryActionBtnText}>Apstiprināt saņemšanu</Text>
+              </TouchableOpacity>
+            )}
 
-        {order.status === 'PENDING' && (
-          <>
-            {!canPay && !isInvoiceOrder && (
-              <View style={s.statusMessage}>
-                <FileText size={14} color="#6b7280" />
-                <Text style={s.statusMessageText}>Pasūtījums gaida apstiprinājumu</Text>
+            <InfoSection icon={<Package size={14} color="#111827" />} title="Preces">
+              {order.items.map((item, idx) => (
+                <DetailRow
+                  key={idx}
+                  label={item.material.name}
+                  value={`${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}`}
+                />
+              ))}
+              <View
+                style={[
+                  s.totalRowFinal,
+                  { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+                ]}
+              >
+                <Text style={s.totalLabelFinal}>Kopā</Text>
+                <Text style={s.totalValueFinal}>€{order.total.toFixed(2)}</Text>
               </View>
-            )}
-            {isInvoiceOrder && (
-              <View style={[s.statusMessage, { backgroundColor: '#eff6ff' }]}>
-                <FileText size={14} color="#2563eb" />
-                <Text style={[s.statusMessageText, { color: '#1e40af' }]}>Apmaksa ar rēķinu</Text>
-              </View>
-            )}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {canManageOrders && (
-                <TouchableOpacity
-                  style={[{ flex: 1 }, s.secondaryActionBtn]}
-                  onPress={() => openAmend()}
-                  activeOpacity={0.8}
-                >
-                  <Text style={s.secondaryActionBtnText}>Labot</Text>
-                </TouchableOpacity>
-              )}
+            </InfoSection>
+
+            <InfoSection icon={<MapPin size={14} color="#111827" />} title="Piegāde">
+              <DetailRow
+                label="Adrese"
+                value={`${order.deliveryAddress}\n${order.deliveryCity}`}
+                last
+              />
+            </InfoSection>
+
+            {/* Quick Actions */}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
               {canCancel && (
                 <TouchableOpacity
                   style={[{ flex: 1 }, s.secondaryActionBtn, s.secondaryActionBtnDanger]}
                   onPress={handleCancel}
                   disabled={actionLoading}
-                  activeOpacity={0.8}
                 >
-                  {actionLoading ? (
-                    <ActivityIndicator size="small" color="#991b1b" />
-                  ) : (
-                    <Text style={s.secondaryActionBtnDangerText}>Atcelt</Text>
-                  )}
+                  <Text style={s.secondaryActionBtnDangerText}>Atcelt</Text>
+                </TouchableOpacity>
+              )}
+              {canManageOrders && canCancel && (
+                <TouchableOpacity
+                  style={[{ flex: 1 }, s.secondaryActionBtn]}
+                  onPress={() => setShowAmend(true)}
+                >
+                  <Text style={s.secondaryActionBtnText}>Labot</Text>
                 </TouchableOpacity>
               )}
             </View>
-          </>
-        )}
+          </View>
+        </BottomSheetScrollView>
+      </BottomSheet>
 
-        {order.status === 'DELIVERED' && (
-          <>
-            <TouchableOpacity
-              style={[
-                s.primaryActionBtn,
-                { backgroundColor: disputeFiled ? '#9ca3af' : '#16a34a' },
-              ]}
-              onPress={handleConfirmReceipt}
-              disabled={actionLoading || disputeFiled}
-              activeOpacity={0.85}
-            >
-              {actionLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <CheckCircle size={18} color="#fff" />
-                  <Text style={s.primaryActionBtnText}>Apstiprināt saņemšanu</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {!hasRated && (
-                <TouchableOpacity
-                  style={[{ flex: 1 }, s.secondaryActionBtn]}
-                  onPress={() => setShowRating(true)}
-                >
-                  <Star size={16} color="#111827" />
-                  <Text style={s.secondaryActionBtnText}>Novērtēt</Text>
-                </TouchableOpacity>
-              )}
-              {!disputeFiled && (
-                <TouchableOpacity
-                  style={[{ flex: 1 }, s.secondaryActionBtn]}
-                  onPress={() => setShowDispute(true)}
-                >
-                  <AlertTriangle size={16} color="#111827" />
-                  <Text style={s.secondaryActionBtnText}>Problēma</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </>
-        )}
-
-        {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
-          <TouchableOpacity
-            style={s.primaryActionBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/order-request-new',
-                params: {
-                  prefillMaterial: order.items[0]?.material?.name ?? '',
-                  prefillAddress: order.deliveryAddress ?? '',
-                  prefillCity: order.deliveryCity ?? '',
-                },
-              })
-            }
-          >
-            <RotateCcw size={18} color="#fff" />
-            <Text style={s.primaryActionBtnText}>Pasūtīt vēlreiz</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Chat with driver — shown whenever there's an active transport job */}
-        {activeJob && (
-          <TouchableOpacity
-            style={s.chatBtn}
-            onPress={() =>
-              router.push({
-                pathname: '/chat/[jobId]',
-                params: {
-                  jobId: activeJob.id,
-                  title: driver ? `${driver.firstName} ${driver.lastName}` : 'Šoferis',
-                },
-              })
-            }
-          >
-            <MessageCircle size={16} color="#111827" />
-            <Text style={s.chatBtnText}>
-              {driver ? `Rakstīt ${driver.firstName}` : 'Rakstīt šoferim'}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Rating modal */}
+      {/* Sheets & Modals */}
       {id && token && (
         <RatingModal
           visible={showRating}
@@ -1088,171 +593,37 @@ export default function OrderDetailScreen() {
           orderId={id}
         />
       )}
-
-      {/* Dispute / report issue bottom sheet */}
-      <BottomSheet
-        visible={showDispute}
-        onClose={() => setShowDispute(false)}
-        title="Ziņot par problēmu"
-        subtitle="Aprakstiet problēmu ar pasūtījumu"
-        scrollable
-      >
-        <View style={{ gap: 12, paddingBottom: 8 }}>
-          {DISPUTE_REASONS.map((r) => (
-            <TouchableOpacity
-              key={r.key}
-              style={[s.disputeReasonRow, disputeReason === r.key && s.disputeReasonRowActive]}
-              onPress={() => {
-                haptics.light();
-                setDisputeReason(r.key);
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={[s.disputeRadio, disputeReason === r.key && s.disputeRadioActive]}>
-                {disputeReason === r.key && <View style={s.disputeRadioDot} />}
-              </View>
-              <Text
-                style={[s.disputeReasonText, disputeReason === r.key && s.disputeReasonTextActive]}
-              >
-                {r.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-
-          <TextInput
-            style={s.disputeDetailsInput}
-            placeholder="Papildu informācija (neobligāts)..."
-            placeholderTextColor="#9ca3af"
-            multiline
-            numberOfLines={3}
-            value={disputeDetails}
-            onChangeText={setDisputeDetails}
-          />
-
-          <TouchableOpacity
-            style={[s.disputeSubmitBtn, (!disputeReason || disputeLoading) && { opacity: 0.5 }]}
-            onPress={handleDisputeSubmit}
-            disabled={!disputeReason || disputeLoading}
-            activeOpacity={0.85}
-          >
-            {disputeLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={s.disputeSubmitBtnText}>Nosūtīt sūdzību</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
-
-      {/* Amendment bottom sheet — edit PENDING order */}
-      <BottomSheet
-        visible={showAmend}
-        onClose={() => setShowAmend(false)}
-        title="Labot pasūtījumu"
-        subtitle="Izmaiņas iespējamas, kamēr pasūtījums nav apstiprināts"
-        scrollable
-      >
-        <View style={{ gap: 14, paddingBottom: 8 }}>
-          {/* Delivery date */}
-          <View style={s.amendField}>
-            <Text style={s.amendLabel}>Piegādes datums (GGGG-MM-DD)</Text>
-            <TextInput
-              style={s.amendInput}
-              placeholder="2025-06-15"
-              placeholderTextColor="#9ca3af"
-              value={amendDate}
-              onChangeText={setAmendDate}
-              keyboardType="numbers-and-punctuation"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Delivery window */}
-          <View style={s.amendField}>
-            <Text style={s.amendLabel}>Piegādes laiks</Text>
-            <View style={s.amendWindowRow}>
-              {(['AM', 'PM', 'ANY'] as const).map((w) => (
-                <TouchableOpacity
-                  key={w}
-                  style={[s.amendWindowBtn, amendWindow === w && s.amendWindowBtnActive]}
-                  onPress={() => {
-                    haptics.light();
-                    setAmendWindow(w);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[s.amendWindowBtnText, amendWindow === w && s.amendWindowBtnTextActive]}
-                  >
-                    {w === 'AM' ? 'Rīts (8–12)' : w === 'PM' ? 'Diena (12–17)' : 'Jebkurā laikā'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Site contact */}
-          <View style={s.amendField}>
-            <Text style={s.amendLabel}>Kontaktpersona</Text>
-            <TextInput
-              style={s.amendInput}
-              placeholder="Vārds Uzvārds"
-              placeholderTextColor="#9ca3af"
-              value={amendContact}
-              onChangeText={setAmendContact}
-            />
-          </View>
-          <View style={s.amendField}>
-            <Text style={s.amendLabel}>Kontaktpersonas tālrunis</Text>
-            <TextInput
-              style={s.amendInput}
-              placeholder="+371 XXXXXXXX"
-              placeholderTextColor="#9ca3af"
-              value={amendPhone}
-              onChangeText={setAmendPhone}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          {/* Notes */}
-          <View style={s.amendField}>
-            <Text style={s.amendLabel}>Piezīmes šoferim</Text>
-            <TextInput
-              style={[s.amendInput, { minHeight: 80, textAlignVertical: 'top' }]}
-              placeholder="Piegādes instrukcijas, ieeja objektā..."
-              placeholderTextColor="#9ca3af"
-              multiline
-              value={amendNotes}
-              onChangeText={setAmendNotes}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[s.amendSubmitBtn, amendLoading && { opacity: 0.5 }]}
-            onPress={handleAmendSubmit}
-            disabled={amendLoading}
-            activeOpacity={0.85}
-          >
-            {amendLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={s.amendSubmitBtnText}>Saglabāt izmaiņas</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
-
-      {/* Cancel confirmation result */}
+      {order && token && (
+        <DisputeSheet
+          visible={showDispute}
+          onClose={() => setShowDispute(false)}
+          order={order}
+          token={token}
+          onFiled={() => {
+            setDisputeFiled(true);
+            setDisputeResultVisible(true);
+          }}
+        />
+      )}
+      {order && token && (
+        <AmendSheet
+          visible={showAmend}
+          onClose={() => setShowAmend(false)}
+          order={order}
+          token={token}
+          onSuccess={load}
+        />
+      )}
       <ActionResultSheet
         visible={cancelResultVisible}
         onClose={() => setCancelResultVisible(false)}
         variant="cancelled"
         title="Pasūtījums atcelts"
-        subtitle="Jūsu pasūtījums ir atcelts. Ja vēlaties, varat pasūtīt no jauna."
+        subtitle="Jūsu pasūtījums ir atcelts."
         primaryLabel="Pasūtīt no jauna"
         onPrimary={() => {
           setCancelResultVisible(false);
-          router.replace({ pathname: '/order-request-new' });
+          router.replace({ pathname: '/material-order' });
         }}
         secondaryLabel="Mani pasūtījumi"
         onSecondary={() => {
@@ -1260,17 +631,15 @@ export default function OrderDetailScreen() {
           router.replace('/(buyer)/orders');
         }}
       />
-
-      {/* Dispute submitted result */}
       <ActionResultSheet
         visible={disputeResultVisible}
         onClose={() => setDisputeResultVisible(false)}
         variant="info"
         title="Sūdzība iesniegta"
-        subtitle="Mēs izskatīsim jūsu paziņojumu un sazināsimies 1–2 darba dienu laikā."
-        primaryLabel="Labi, sapratu"
+        subtitle="Mēs izskatīsim jūsu paziņojumu."
+        primaryLabel="Labi"
         onPrimary={() => setDisputeResultVisible(false)}
       />
-    </ScreenContainer>
+    </View>
   );
 }

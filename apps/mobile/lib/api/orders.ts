@@ -163,6 +163,8 @@ export interface ApiOrder {
   }[];
   deliveryAddress: string;
   deliveryCity: string;
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
   deliveryDate: string | null;
   deliveryWindow?: string | null;
   subtotal: number;

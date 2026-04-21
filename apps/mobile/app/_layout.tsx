@@ -189,11 +189,22 @@ export default Sentry.wrap(function RootLayout() {
         <ErrorBoundary>
           <MaybeStripe>
             <Stack screenOptions={STACK_SCREEN_OPTIONS}>
-              {/* Wizard flows — full-screen swipe-back, same as push (Uber-style) */}
-              <Stack.Screen name="order-request-new" options={SCREEN.modal} />
-              <Stack.Screen name="order" options={SCREEN.modal} />
-              <Stack.Screen name="disposal" options={SCREEN.modal} />
-              <Stack.Screen name="transport" options={SCREEN.modal} />
+              {/* Wizard flows — full-screen modal, housed in (wizards)/ route group */}
+              <Stack.Screen name="(wizards)/material-order" options={SCREEN.modal} />
+              <Stack.Screen name="(wizards)/skip-hire" options={SCREEN.modal} />
+              <Stack.Screen name="(wizards)/disposal" options={SCREEN.modal} />
+              <Stack.Screen name="(wizards)/transport" options={SCREEN.modal} />
+              {/* Shared cross-role screens — housed in (shared)/ route group */}
+              <Stack.Screen name="(shared)/notifications" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/messages" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/settings" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/change-password" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/help" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/support-chat" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/delivery-proof" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/chat/[jobId]" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/notification/[id]" options={SCREEN.modal} />
+              <Stack.Screen name="(shared)/review/[orderId]" options={SCREEN.modal} />
               {/* Auth — instant fade, no back gesture */}
               <Stack.Screen name="(auth)" options={SCREEN.fade} />
             </Stack>

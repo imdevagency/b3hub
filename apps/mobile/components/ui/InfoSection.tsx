@@ -51,23 +51,23 @@ export function InfoSection({ icon, title, right, children }: InfoSectionProps) 
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: 28,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 4,
+    gap: 10,
+    marginBottom: 16,
   },
   title: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '800',
-    color: colors.textPrimary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: 'Inter_800ExtraBold',
+    color: '#111827',
   },
   right: { marginLeft: 'auto' as any },
 });

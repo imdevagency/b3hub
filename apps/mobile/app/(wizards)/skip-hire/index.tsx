@@ -254,7 +254,7 @@ export default function OrderWizard() {
       haptics.success();
       setSkipPaymentClientSecret(order.clientSecret ?? null);
       setConfirmedOrder(order);
-      router.push('/order/confirmation');
+      router.push('/skip-hire/confirmation');
     } catch (err) {
       Alert.alert(t.skipHire.errorTitle, err instanceof Error ? err.message : t.skipHire.error);
     } finally {

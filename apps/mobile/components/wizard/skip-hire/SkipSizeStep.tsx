@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import type { SkipSize } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
-import { SIZES } from './skip-hire-types';
+import { SIZES } from './_types';
 import { colors } from '@/lib/theme';
 
 export function SkipSizeStep({
@@ -16,8 +16,6 @@ export function SkipSizeStep({
   /** Live market prices per size — overrides hardcoded SIZES prices when provided */
   prices?: Partial<Record<SkipSize, number>>;
 }) {
-
-
   const handleSelect = (id: SkipSize) => {
     haptics.selection();
     onSelect(id);
@@ -97,8 +95,8 @@ const s3 = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 6,
   },
-  cardSel: { 
-    borderColor: '#000', 
+  cardSel: {
+    borderColor: '#000',
     backgroundColor: '#f8fafc',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
