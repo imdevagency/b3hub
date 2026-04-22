@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useMode } from '@/lib/mode-context';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 
@@ -89,6 +90,7 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { token, user } = useAuth();
+  const { activeMode } = useMode();
 
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [job, setJob] = useState<ApiTransportJob | null>(null);
@@ -274,7 +276,14 @@ export default function OrderDetailPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {order.items.map((item, i) => (
+            {(order.items ?? []).length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-4 text-center text-xs text-slate-400">
+                  Nav preču datu
+                </td>
+              </tr>
+            )}
+            {(order.items ?? []).map((item, i) => (
               <tr key={i}>
                 <td className="py-2.5">
                   <p className="font-medium text-slate-900">{item.material.name}</p>
@@ -316,13 +325,15 @@ export default function OrderDetailPage() {
           </div>
         )}
         {/* Sellers and admins can add adjustment surcharges (e.g. partial delivery deductions) */}
-        {token && (user?.canSell || user?.userType === 'ADMIN') && order.status !== 'CANCELLED' && (
-          <SurchargePanel
-            orderId={order.id}
-            token={token}
-            initialSurcharges={order.surcharges ?? []}
-          />
-        )}
+        {token &&
+          (activeMode === 'SUPPLIER' || user?.userType === 'ADMIN') &&
+          order.status !== 'CANCELLED' && (
+            <SurchargePanel
+              orderId={order.id}
+              token={token}
+              initialSurcharges={order.surcharges ?? []}
+            />
+          )}
       </div>
 
       {/* ── Delivery info ── */}

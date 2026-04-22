@@ -834,6 +834,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
 function BuyerView({ token }: { token: string }) {
   const [tab, setTab] = useState<'skip' | 'material' | 'transport'>('skip');
   const { skipOrders, matOrders, transportRequests, loading, reload } = useBuyerOrders(token);
+  const router = useRouter();
 
   const totalSpent =
     skipOrders.reduce((s, o) => s + o.price, 0) + matOrders.reduce((s, o) => s + o.total, 0);
@@ -1091,14 +1092,18 @@ function BuyerView({ token }: { token: string }) {
                                 {driver.firstName} {driver.lastName}
                               </span>
                               {driver.phone && (
-                                <a
-                                  href={`tel:${driver.phone}`}
+                                <button
+                                  type="button"
                                   className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors"
-                                  onClick={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    window.location.href = `tel:${driver.phone}`;
+                                  }}
                                 >
                                   <Phone className="size-3" />
                                   Zvanīt
-                                </a>
+                                </button>
                               )}
                             </div>
                           );
@@ -1119,15 +1124,21 @@ function BuyerView({ token }: { token: string }) {
                 {/* Linked skip order badge */}
                 {o.linkedSkipOrder && (
                   <div className="mt-3 pt-3 border-t border-border/40">
-                    <Link
-                      href={`/dashboard/order/skip-hire?linkedOrderId=${o.linkedSkipOrder.id}`}
+                    <button
+                      type="button"
                       className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        router.push(
+                          `/dashboard/order/skip-hire?linkedOrderId=${o.linkedSkipOrder!.id}`,
+                        );
+                      }}
                     >
                       <Link2 className="size-3" />
                       Konteiners #{o.linkedSkipOrder.orderNumber} ·{' '}
                       {SKIP_SIZE_LABEL[o.linkedSkipOrder.skipSize] ?? o.linkedSkipOrder.skipSize}
-                    </Link>
+                    </button>
                   </div>
                 )}
 
@@ -1135,14 +1146,18 @@ function BuyerView({ token }: { token: string }) {
                 {o.status === 'DELIVERED' && (
                   <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-3">
                     <p className="text-xs text-muted-foreground">Kā pagāja piegāde?</p>
-                    <Link
-                      href="/dashboard/reviews"
+                    <button
+                      type="button"
                       className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        router.push('/dashboard/reviews');
+                      }}
                     >
                       <Star className="size-3 fill-amber-500 text-amber-500" />
                       Atstāt atsauksmi
-                    </Link>
+                    </button>
                   </div>
                 )}
               </Link>
