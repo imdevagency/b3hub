@@ -277,6 +277,22 @@ export default function OrderDetailsScreen() {
           </View>
         )}
 
+        {order.surcharges?.some((s) => s.approvalStatus === 'PENDING') && (
+          <View style={styles.surchargeAlertCard}>
+            <AlertTriangle size={16} color="#B45309" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.alertText, { fontWeight: '700' }]}>
+                {order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length === 1
+                  ? 'Šoferis pieprasa piemaksu'
+                  : `${order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length} piemaksas gaida apstiprināšanu`}
+              </Text>
+              <Text style={[styles.alertText, { fontWeight: '400', marginTop: 2 }]}>
+                Skatiet "Piemaksas" sadaļu zemāk, lai apstiprinātu vai noraidītu.
+              </Text>
+            </View>
+          </View>
+        )}
+
         <View style={styles.actionsBlock}>
           {order.status === 'DELIVERED' && (
             <Button
@@ -602,6 +618,17 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FEF3C7',
     borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+  },
+  surchargeAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
     padding: 12,
     marginBottom: 14,
   },

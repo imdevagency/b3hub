@@ -132,6 +132,15 @@ function formatDocCode(code: string): string {
   return DOC_LABELS[code] ?? code.replaceAll('_', ' ').toLowerCase();
 }
 
+function formatElapsed(isoString: string): string {
+  const mins = Math.floor((Date.now() - new Date(isoString).getTime()) / 60_000);
+  if (mins < 1) return 'Tikko';
+  if (mins < 60) return `${mins} min atpakaļ`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h} st ${m} min atpakaļ` : `${h} st atpakaļ`;
+}
+
 function getPhaseMeta(
   status: JobStatus,
   nextStatus: JobStatus | null,
@@ -259,6 +268,7 @@ export default function ActiveJobScreen() {
   // ── Weight ticket modal ──────────────────────────────────────
   const [weightModalVisible, setWeightModalVisible] = React.useState(false);
   const [weightInput, setWeightInput] = React.useState('');
+  const [weightError, setWeightError] = React.useState<string | null>(null);
   const [weightSubmitting, setWeightSubmitting] = React.useState(false);
   const [pickupPhotoUri, setPickupPhotoUri] = React.useState<string | null>(null);
 
@@ -917,6 +927,7 @@ export default function ActiveJobScreen() {
     // AT_PICKUP → LOADED requires weight ticket reading
     if (currentStatus === 'AT_PICKUP') {
       setWeightInput('');
+      setWeightError(null);
       setPickupPhotoUri(null);
       setWeightModalVisible(true);
       return;
@@ -928,10 +939,11 @@ export default function ActiveJobScreen() {
   const handleWeightConfirm = async () => {
     if (!token || !job) return;
     const kg = parseFloat(weightInput.replace(',', '.'));
-    if (!kg || kg <= 0 || isNaN(kg)) {
-      toast.error('Ievadiet derīgu svaru kilogramos.');
+    if (!weightInput.trim() || isNaN(kg) || kg <= 0) {
+      setWeightError('Ievadiet derīgu svaru kilogramos (piemēram: 18500)');
       return;
     }
+    setWeightError(null);
     setWeightSubmitting(true);
     try {
       const updated = await api.transportJobs.updateStatus(
@@ -1391,6 +1403,42 @@ export default function ActiveJobScreen() {
               >
                 <TouchableOpacity
                   onPress={handleNavigate}
+                  onLongPress={() => {
+                    haptics.medium();
+                    const options: { text: string; onPress: () => void }[] = [
+                      {
+                        text: 'Waze',
+                        onPress: () =>
+                          AsyncStorage.setItem(NAV_PREF_KEY, 'waze').then(() =>
+                            toast.info('Navigācija: Waze'),
+                          ),
+                      },
+                      {
+                        text: 'Google Maps',
+                        onPress: () =>
+                          AsyncStorage.setItem(NAV_PREF_KEY, 'google').then(() =>
+                            toast.info('Navigācija: Google Maps'),
+                          ),
+                      },
+                    ];
+                    if (Platform.OS === 'ios') {
+                      options.push({
+                        text: 'Apple Maps',
+                        onPress: () =>
+                          AsyncStorage.setItem(NAV_PREF_KEY, 'apple').then(() =>
+                            toast.info('Navigācija: Apple Maps'),
+                          ),
+                      });
+                    }
+                    Alert.alert(
+                      'Mainīt navigācijas app',
+                      'Izvēlieties savu noklusējuma navigācijas lietotni.',
+                      [
+                        ...options.map((o) => ({ text: o.text, onPress: o.onPress })),
+                        { text: 'Atcelt', style: 'cancel' as const },
+                      ],
+                    );
+                  }}
                   style={{ alignItems: 'center', justifyContent: 'center', gap: 6, width: 64 }}
                 >
                   <View
@@ -1658,6 +1706,35 @@ export default function ActiveJobScreen() {
         subtitle={statusSheetMeta?.subtitle}
       >
         <View style={{ gap: 14, paddingBottom: 12 }}>
+          {/* Current status elapsed time context */}
+          {job.statusUpdatedAt && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: '#f9fafb',
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+              }}
+            >
+              <ClockIcon size={13} color={colors.textMuted} />
+              <RNText
+                style={{
+                  fontSize: 13,
+                  fontFamily: 'Inter_500Medium',
+                  fontWeight: '500',
+                  color: colors.textMuted,
+                  flex: 1,
+                }}
+              >
+                {STEP_PROGRESS_LABELS[currentStatus]}
+                {'  ·  '}
+                {formatElapsed(job.statusUpdatedAt)}
+              </RNText>
+            </View>
+          )}
           <View
             style={{
               backgroundColor: phaseColor.bg,
@@ -2745,16 +2822,27 @@ export default function ActiveJobScreen() {
 
           <View style={styles.weightInputRow}>
             <TextInput
-              style={styles.weightInput}
+              style={[
+                styles.weightInput,
+                weightError ? { borderColor: '#DC2626', borderWidth: 2 } : null,
+              ]}
               keyboardType="decimal-pad"
               placeholder="piem. 18500"
               placeholderTextColor="#9ca3af"
               value={weightInput}
-              onChangeText={setWeightInput}
+              onChangeText={(v) => {
+                setWeightInput(v);
+                if (weightError) setWeightError(null);
+              }}
               autoFocus
             />
             <Text style={styles.weightUnit}>kg</Text>
           </View>
+          {weightError ? (
+            <Text style={{ fontSize: 13, color: '#DC2626', marginTop: 2, fontWeight: '500' }}>
+              {weightError}
+            </Text>
+          ) : null}
           {job?.cargoWeight != null && (
             <Text style={styles.weightHint}>
               Paredzētais svars: {(job.cargoWeight * 1000).toFixed(0)} kg ({job.cargoWeight} t)

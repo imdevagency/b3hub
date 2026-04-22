@@ -1,7 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Linking, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { MapPin, Package, Truck, Star, Phone, ChevronRight } from 'lucide-react-native';
+import {
+  MapPin,
+  Package,
+  Truck,
+  Star,
+  Phone,
+  ChevronRight,
+  MessageCircle,
+} from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Button } from '@/components/ui/button';
@@ -273,19 +281,41 @@ export default function OrderTrackingScreen() {
                   <Text style={styles.driverName} numberOfLines={1}>
                     {driver.firstName} {driver.lastName}
                   </Text>
-                  <View style={styles.driverRating}>
-                    <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                    <Text style={styles.driverRatingText}>4.8</Text>
-                  </View>
+                  {driver.driverProfile?.rating != null && (
+                    <View style={styles.driverRating}>
+                      <Star size={12} color="#F59E0B" fill="#F59E0B" />
+                      <Text style={styles.driverRatingText}>
+                        {driver.driverProfile.rating.toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-                {driver.phone && (
-                  <TouchableOpacity
-                    style={styles.callButton}
-                    onPress={() => Linking.openURL(`tel:${driver.phone}`).catch(() => null)}
-                  >
-                    <Phone size={18} color={colors.primary} />
-                  </TouchableOpacity>
-                )}
+                <View style={styles.driverActions}>
+                  {activeJob && (
+                    <TouchableOpacity
+                      style={styles.chatButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/chat/[jobId]',
+                          params: {
+                            jobId: activeJob.id,
+                            title: `${driver.firstName} ${driver.lastName}`,
+                          },
+                        })
+                      }
+                    >
+                      <MessageCircle size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                  {driver.phone && (
+                    <TouchableOpacity
+                      style={styles.callButton}
+                      onPress={() => Linking.openURL(`tel:${driver.phone}`).catch(() => null)}
+                    >
+                      <Phone size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             )}
 
@@ -457,6 +487,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontSize: 13,
     color: '#6B7280',
+  },
+  driverActions: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  chatButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   callButton: {
     width: 36,
