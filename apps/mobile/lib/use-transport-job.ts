@@ -19,13 +19,13 @@ export function useTransportJob(id: string | undefined) {
   const [job, setJob] = useState<ApiTransportJob | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(() => {
+  const reload = useCallback((background = false) => {
     if (!token || !id) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!background) setLoading(true);
     api.transportJobs
       .getOne(id, token)
       .then((found) => {
@@ -44,7 +44,7 @@ export function useTransportJob(id: string | undefined) {
   // Poll every 10 s while job is actively in-progress
   useEffect(() => {
     if (!job || !ACTIVE_STATUSES.has(job.status)) return;
-    const interval = setInterval(reload, 10_000);
+    const interval = setInterval(() => reload(true), 10_000);
     return () => clearInterval(interval);
   }, [job?.status, reload]);
 

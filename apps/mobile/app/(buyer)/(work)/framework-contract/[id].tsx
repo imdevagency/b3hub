@@ -667,7 +667,7 @@ export default function FrameworkContractDetailScreen() {
                       {inv.invoiceNumber}
                     </Text>
                     <Text variant="muted" size="sm">
-                      Termiņš: {formatDateShort(inv.dueDate)}
+                      Termiņš: {formatDateShort(inv.dueDate ?? '')}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>

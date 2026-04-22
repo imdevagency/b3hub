@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
+  Star,
   Phone,
   Package,
   Truck,
@@ -20,9 +21,9 @@ import {
   MessageCircle,
   CreditCard,
   Clock3,
-  Hash,
   AlertTriangle,
 } from 'lucide-react-native';
+
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { InfoSection } from '@/components/ui/InfoSection';
@@ -33,26 +34,16 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
-import { BaseMap, RouteLayer, useRoute } from '@/components/map';
-import type { CameraRefHandle } from '@/components/map';
+import { useToast } from '@/components/ui/Toast';
+
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useOrderDetail } from '@/lib/use-order-detail';
-import { useLiveUpdates } from '@/lib/use-live-updates';
-import { useToast } from '@/components/ui/Toast';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { colors } from '@/lib/theme';
 import { DisputeSheet } from '@/components/order/DisputeSheet';
 import { AmendSheet } from '@/components/order/AmendSheet';
-
-let Marker: any = null;
-try {
-  const maps = require('react-native-maps');
-  Marker = maps.Marker;
-} catch {
-  /* Expo Go */
-}
 
 let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
 try {
@@ -79,32 +70,17 @@ const JOB_STATUS_TO_STEP: Record<string, number> = {
   DELIVERED: 3,
 };
 
-const JOB_STATUS_LABEL: Record<string, string> = {
-  ACCEPTED: 'Šoferis pieņēma pasūtījumu',
-  EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
-  AT_PICKUP: 'Šoferis ir pie kraušanas vietas',
-  LOADED: 'Krava ir iekrauta',
-  EN_ROUTE_DELIVERY: 'Šoferis dodas uz jums',
-  AT_DELIVERY: 'Šoferis ir uz vietas',
-  DELIVERED: 'Piegādāts',
-};
-
 const ORDER_STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
   ...MAT_STATUS,
   COMPLETED: { label: 'Pabeigts', bg: '#DCFCE7', color: '#15803D' },
 };
 
-export default function OrderDetailScreen() {
+export default function OrderDetailsScreen() {
   const { token, user } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
-  const cameraRef = useRef<CameraRefHandle | null>(null);
-  const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
@@ -113,54 +89,12 @@ export default function OrderDetailScreen() {
   const [disputeFiled, setDisputeFiled] = useState(false);
   const [showAmend, setShowAmend] = useState(false);
   const [ratedLocally, setRatedLocally] = useState(false);
-  const [etaMin, setEtaMin] = useState<number | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [surchargeActionLoading, setSurchargeActionLoading] = useState<string | null>(null);
+  const [etaMin, setEtaMin] = useState<number | null>(null);
 
   const stripe = useStripe ? useStripe() : null;
-
-  const {
-    orderStatus: liveStatus,
-    jobStatus: liveJobStatus,
-    jobLocation: liveLocation,
-  } = useLiveUpdates({
-    orderId: id ?? null,
-    jobId: order?.transportJobs?.[0]?.id ?? null,
-    token,
-  });
-
-  useEffect(() => {
-    if (liveStatus && order && liveStatus !== order.status) {
-      setOrder((prev) => (prev ? { ...prev, status: liveStatus } : prev));
-    }
-  }, [liveStatus, order?.status, setOrder]);
-
-  // Reload full order when the transport job status changes so the progress
-  // stepper stays live without waiting for the next polling interval.
-  useEffect(() => {
-    if (liveJobStatus) load();
-  }, [liveJobStatus, load]);
-
-  useEffect(() => {
-    if (!liveLocation) return;
-    if (liveLocation.estimatedArrivalMin != null) {
-      setEtaMin(liveLocation.estimatedArrivalMin);
-    }
-    const { lat, lng } = liveLocation;
-    // Only re-centre the map if the driver moved more than ~30 m to avoid
-    // constant jitter and to preserve the user's manual zoom/pan.
-    const prev = driverLocationOnMap;
-    const movedEnough =
-      !prev || Math.abs(prev.lat - lat) > 0.0003 || Math.abs(prev.lng - lng) > 0.0003;
-    setDriverLocationOnMap({ lat, lng });
-    if (movedEnough) {
-      cameraRef.current?.setCamera({
-        centerCoordinate: [lng, lat],
-        animationDuration: 600,
-      });
-    }
-  }, [liveLocation]);
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   useEffect(() => {
@@ -172,33 +106,6 @@ export default function OrderDetailScreen() {
       })
       .catch(() => null);
   }, [token, id, order?.id]);
-
-  const routeOrigin = useMemo(() => {
-    if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
-    return null;
-  }, [driverLocationOnMap]);
-
-  const routeDestination = useMemo(() => {
-    if (order?.deliveryLat != null && order?.deliveryLng != null) {
-      return { lat: order.deliveryLat as number, lng: order.deliveryLng as number };
-    }
-    return null;
-  }, [order?.deliveryLat, order?.deliveryLng]);
-
-  const { route } = useRoute(routeOrigin, routeDestination);
-
-  useEffect(() => {
-    if (!cameraRef.current || !routeOrigin || !routeDestination) return;
-    const ne: [number, number] = [
-      Math.max(routeOrigin.lng, routeDestination.lng),
-      Math.max(routeOrigin.lat, routeDestination.lat),
-    ];
-    const sw: [number, number] = [
-      Math.min(routeOrigin.lng, routeDestination.lng),
-      Math.min(routeOrigin.lat, routeDestination.lat),
-    ];
-    cameraRef.current.fitBounds(ne, sw, [48, 48, 48, 48], 600);
-  }, [routeOrigin?.lat, routeOrigin?.lng, routeDestination?.lat, routeDestination?.lng]);
 
   const handleApproveSurcharge = useCallback(
     async (surchargeId: string) => {
@@ -334,7 +241,7 @@ export default function OrderDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Pasūtījums" />
+        <ScreenHeader title="Detaļas" />
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -343,7 +250,7 @@ export default function OrderDetailScreen() {
   if (!order) {
     return (
       <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Pasūtījums" />
+        <ScreenHeader title="Detaļas" />
         <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
@@ -372,25 +279,10 @@ export default function OrderDetailScreen() {
   const hasRated = alreadyRated || ratedLocally;
   const canRate = order.status === 'COMPLETED' && !hasRated;
   const currentStepIdx = activeJob ? (JOB_STATUS_TO_STEP[activeJob.status] ?? 0) : -1;
-  const jobStatusLabel = activeJob ? (JOB_STATUS_LABEL[activeJob.status] ?? 'Piegādē') : null;
-  const heroPrimary = (() => {
-    if (order.status === 'DELIVERED') return 'Piegādāts';
-    if (order.status === 'COMPLETED') return 'Pabeigts';
-    if (order.status === 'CANCELLED') return 'Atcelts';
-    if (etaMin != null) return `${etaMin} min`;
-    if (driver) return 'Ceļā';
-    if (order.status === 'PENDING') return 'Gaida apstiprināšanu';
-    return 'Meklē šoferi';
-  })();
-  const heroSubtitle =
-    jobStatusLabel ??
-    (order.status === 'DELIVERED'
-      ? disputeFiled
-        ? 'Saņemšana bloķēta līdz strīda izskatīšanai'
-        : 'Apstipriniet saņemšanu'
-      : statusMeta.label);
 
   const orderRows = [
+    { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
+    { label: 'Sistēmas ID', value: order.id },
     { label: 'Piegādes adrese', value: `${order.deliveryAddress}, ${order.deliveryCity}` },
     {
       label: 'Piegādes laiks',
@@ -405,74 +297,9 @@ export default function OrderDetailScreen() {
 
   return (
     <ScreenContainer bg="#F4F5F7" standalone>
-      <ScreenHeader title="Pasūtījums" />
+      <ScreenHeader title="Detaļas" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.mapCard}>
-          <BaseMap
-            cameraRef={cameraRef}
-            center={
-              driverLocationOnMap
-                ? [driverLocationOnMap.lng, driverLocationOnMap.lat]
-                : order.deliveryLng && order.deliveryLat
-                  ? [order.deliveryLng, order.deliveryLat]
-                  : [24.1052, 56.9496]
-            }
-            zoom={13}
-            style={styles.map}
-            rotateEnabled={false}
-            pitchEnabled={false}
-          >
-            {route?.coords && route.coords.length > 1 && (
-              <RouteLayer id="order-route" coordinates={route.coords} color="#111827" width={4} />
-            )}
-            {order.deliveryLat != null && order.deliveryLng != null && Marker && (
-              <Marker
-                coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
-                anchor={{ x: 0.5, y: 1 }}
-                tracksViewChanges={false}
-              >
-                <View style={styles.pinDelivery}>
-                  <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
-                </View>
-              </Marker>
-            )}
-            {driverLocationOnMap && Marker && (
-              <Marker
-                coordinate={{
-                  latitude: driverLocationOnMap.lat,
-                  longitude: driverLocationOnMap.lng,
-                }}
-                anchor={{ x: 0.5, y: 0.5 }}
-                tracksViewChanges={false}
-              >
-                <View style={styles.pinDriver}>
-                  <Truck size={13} color="#FFFFFF" strokeWidth={2.5} />
-                </View>
-              </Marker>
-            )}
-          </BaseMap>
-
-          <View style={styles.mapOverlay}>
-            <Text style={styles.heroEta}>{heroPrimary}</Text>
-            <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
-            <View style={styles.mapMetaRow}>
-              <View style={styles.mapMetaItem}>
-                <MapPin size={13} color="#E5E7EB" />
-                <Text style={styles.mapMetaText} numberOfLines={1}>
-                  {order.deliveryAddress}, {order.deliveryCity}
-                </Text>
-              </View>
-              <View style={styles.mapMetaItem}>
-                <Hash size={13} color="#E5E7EB" />
-                <Text style={styles.mapMetaText} numberOfLines={1}>
-                  #{order.orderNumber}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
         <InfoSection
           icon={<Truck size={16} color={colors.textMuted} />}
           title="Statuss"
@@ -800,6 +627,7 @@ export default function OrderDetailScreen() {
             title="Saistītais skip pasūtījums"
           >
             <DetailRow label="Numurs" value={`#${order.linkedSkipOrder.orderNumber}`} />
+            <DetailRow label="Konteinera ID" value={order.linkedSkipOrder.id} />
             <DetailRow label="Statuss" value={order.linkedSkipOrder.status} />
             <DetailRow label="Izmērs" value={order.linkedSkipOrder.skipSize} />
             <DetailRow label="Atkritumi" value={order.linkedSkipOrder.wasteCategory} last />
@@ -878,81 +706,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-  },
-  mapCard: {
-    height: 280,
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: '#DDE3EA',
-    marginBottom: 12,
-  },
-  map: {
-    flex: 1,
-  },
-  mapOverlay: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 12,
-    borderRadius: 20,
-    padding: 16,
-    backgroundColor: 'rgba(17, 24, 39, 0.88)',
-  },
-  heroEta: {
-    fontSize: 30,
-    fontFamily: 'Inter_800ExtraBold',
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#E5E7EB',
-    marginTop: 4,
-  },
-  mapMetaRow: {
-    marginTop: 12,
-    gap: 8,
-  },
-  mapMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  mapMetaText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#F9FAFB',
-  },
-  pinDelivery: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: '#FFFFFF',
-  },
-  pinDriver: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
   },
   stepsRow: {
     flexDirection: 'row',

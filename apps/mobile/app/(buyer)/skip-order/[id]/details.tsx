@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Alert, Linking, Image, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { MapPin, Phone, Package, Trash2, Star, Truck, Clock3, Hash } from 'lucide-react-native';
+import { MapPin, Phone, Package, Trash2, Star, Truck, Clock3 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -13,8 +13,6 @@ import { DetailRow } from '@/components/ui/DetailRow';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/Toast';
-import { BaseMap } from '@/components/map';
-import type { CameraRefHandle } from '@/components/map';
 
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -23,14 +21,6 @@ import { useSkipOrder } from '@/lib/use-skip-order';
 import { SIZE_LABEL } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
-
-let Marker: any = null;
-try {
-  const maps = require('react-native-maps');
-  Marker = maps.Marker;
-} catch {
-  /* Expo Go */
-}
 
 const SKIP_STEPS = [
   { key: 'PENDING', label: 'Saņemts' },
@@ -45,15 +35,6 @@ const STATUS_TO_STEP: Record<string, number> = {
   DELIVERED: 2,
   COLLECTED: 3,
   COMPLETED: 3,
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Gaida apstiprinājumu',
-  CONFIRMED: 'Pārvadātājs piešķirts',
-  DELIVERED: 'Konteiners piegādāts',
-  COLLECTED: 'Konteiners savākts',
-  COMPLETED: 'Pasūtījums pabeigts',
-  CANCELLED: 'Pasūtījums atcelts',
 };
 
 const STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
@@ -80,34 +61,16 @@ const DELIVERY_WINDOW_LABEL: Record<string, string> = {
   ANY: 'Jebkurā laikā',
 };
 
-const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
-
-export default function SkipOrderDetailScreen() {
+export default function SkipOrderDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { order, setOrder, loading, error, reload } = useSkipOrder(id);
-  const cameraRef = useRef<CameraRefHandle | null>(null);
 
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-
-  useEffect(() => {
-    if (!order || !ACTIVE_STATUSES.has(order.status)) return;
-    const interval = setInterval(reload, 15_000);
-    return () => clearInterval(interval);
-  }, [order?.status, reload]);
-
-  useEffect(() => {
-    if (!cameraRef.current || order?.lat == null || order?.lng == null) return;
-    cameraRef.current.setCamera({
-      centerCoordinate: [order.lng, order.lat],
-      zoomLevel: 14,
-      animationDuration: 600,
-    });
-  }, [order?.lat, order?.lng]);
 
   useEffect(() => {
     if (order && token && (order.status === 'COLLECTED' || order.status === 'COMPLETED')) {
@@ -158,7 +121,7 @@ export default function SkipOrderDetailScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Skip noma" />
+        <ScreenHeader title="Detaļas" />
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -167,31 +130,21 @@ export default function SkipOrderDetailScreen() {
   if (!order) {
     return (
       <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Skip noma" />
+        <ScreenHeader title="Detaļas" />
         <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
   }
 
-  const hasCoords = order.lat != null && order.lng != null;
   const carrier = order.carrier;
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
   const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
   const currentStepIdx = STATUS_TO_STEP[order.status] ?? -1;
   const statusPill = STATUS_PILL[order.status] ?? STATUS_PILL.PENDING;
 
-  const heroPrimary = (() => {
-    if (order.status === 'COLLECTED' || order.status === 'COMPLETED') return 'Pabeigts';
-    if (order.status === 'CANCELLED') return 'Atcelts';
-    if (order.status === 'DELIVERED') return 'Piegādāts';
-    if (order.status === 'CONFIRMED') return formatDate(order.deliveryDate);
-    return 'Gaida apstiprinājumu';
-  })();
-
-  const heroSubtitle = STATUS_LABEL[order.status] ?? '';
-
   const orderRows = [
     { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
+    { label: 'Sistēmas ID', value: order.id },
     { label: 'Piegādes vieta', value: order.location },
     { label: 'Piegādes datums', value: formatDate(order.deliveryDate) },
     {
@@ -217,54 +170,13 @@ export default function SkipOrderDetailScreen() {
 
   return (
     <ScreenContainer bg="#F4F5F7" standalone>
-      <ScreenHeader title="Skip noma" />
+      <ScreenHeader title="Detaļas" />
 
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
-        <View style={styles.mapCard}>
-          <BaseMap
-            cameraRef={cameraRef}
-            center={hasCoords ? [order.lng!, order.lat!] : [24.1052, 56.9496]}
-            zoom={14}
-            style={styles.map}
-            rotateEnabled={false}
-            pitchEnabled={false}
-          >
-            {hasCoords && Marker && (
-              <Marker
-                coordinate={{ latitude: order.lat!, longitude: order.lng! }}
-                anchor={{ x: 0.5, y: 1 }}
-              >
-                <View style={styles.pinDelivery}>
-                  <Trash2 size={14} color="#FFFFFF" strokeWidth={2.5} />
-                </View>
-              </Marker>
-            )}
-          </BaseMap>
-
-          <View style={styles.mapOverlay}>
-            <Text style={styles.heroEta}>{heroPrimary}</Text>
-            <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
-            <View style={styles.mapMetaRow}>
-              <View style={styles.mapMetaItem}>
-                <MapPin size={13} color="#E5E7EB" />
-                <Text style={styles.mapMetaText} numberOfLines={1}>
-                  {order.location}
-                </Text>
-              </View>
-              <View style={styles.mapMetaItem}>
-                <Hash size={13} color="#E5E7EB" />
-                <Text style={styles.mapMetaText} numberOfLines={1}>
-                  #{order.orderNumber}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
         <InfoSection
           icon={<Truck size={16} color={colors.textMuted} />}
           title="Statuss"
@@ -446,71 +358,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-  },
-  mapCard: {
-    height: 280,
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: '#DDE3EA',
-    marginBottom: 12,
-  },
-  map: {
-    flex: 1,
-  },
-  mapOverlay: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 12,
-    borderRadius: 20,
-    padding: 16,
-    backgroundColor: 'rgba(17, 24, 39, 0.88)',
-  },
-  heroEta: {
-    fontSize: 30,
-    fontFamily: 'Inter_800ExtraBold',
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#E5E7EB',
-    marginTop: 4,
-  },
-  mapMetaRow: {
-    marginTop: 12,
-    gap: 8,
-  },
-  mapMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  mapMetaText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#F9FAFB',
-  },
-  pinDelivery: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
   },
   stepsRow: {
     flexDirection: 'row',

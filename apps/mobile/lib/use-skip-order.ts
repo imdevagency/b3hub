@@ -11,9 +11,9 @@ export function useSkipOrder(id: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const reload = useCallback(() => {
+  const reload = useCallback((background = false) => {
     if (!id || !token) return;
-    setLoading(true);
+    if (!background) setLoading(true);
     setError(false);
     api.skipHire
       .getById(id, token)

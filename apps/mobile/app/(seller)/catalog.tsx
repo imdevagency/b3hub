@@ -555,13 +555,13 @@ function ListingModal({
   // Load tiers + availability when edit modal opens
   useEffect(() => {
     if (visible && initial?.id && token) {
-      api.materials.materials
+      api.materials
         .getTiers(initial.id, token)
         .then((data: ApiMaterialTier[]) =>
           setTiers(data.map((t) => ({ minQty: String(t.minQty), unitPrice: String(t.unitPrice) }))),
         )
         .catch(() => {});
-      api.materials.materials
+      api.materials
         .getAvailability(initial.id, token)
         .then(setAvailBlocks)
         .catch(() => {});
@@ -587,7 +587,7 @@ function ListingModal({
       .filter((t) => !isNaN(t.minQty) && t.minQty > 0 && !isNaN(t.unitPrice) && t.unitPrice > 0);
     setSavingTiers(true);
     try {
-      const saved = await api.materials.materials.setTiers(initial.id, parsed, token);
+      const saved = await api.materials.setTiers(initial.id, parsed, token);
       setTiers(
         saved.map((t: ApiMaterialTier) => ({
           minQty: String(t.minQty),
@@ -607,7 +607,7 @@ function ListingModal({
     if (!initial?.id || !newBlockStart || !newBlockEnd) return;
     setSavingBlock(true);
     try {
-      const newBlock = await api.materials.materials.addAvailabilityBlock(
+      const newBlock = await api.materials.addAvailabilityBlock(
         initial.id,
         { startDate: newBlockStart, endDate: newBlockEnd, note: newBlockNote.trim() || undefined },
         token,
@@ -627,7 +627,7 @@ function ListingModal({
   const handleDeleteBlock = async (blockId: string) => {
     if (!initial?.id) return;
     try {
-      await api.materials.materials.removeAvailabilityBlock(initial.id, blockId, token);
+      await api.materials.removeAvailabilityBlock(initial.id, blockId, token);
       setAvailBlocks((prev) => prev.filter((b) => b.id !== blockId));
       haptics.light();
     } catch {

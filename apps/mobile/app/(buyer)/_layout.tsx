@@ -24,7 +24,7 @@ function BuyerLayoutContent() {
   const { config } = useHeaderConfig();
   const pathname = usePathname();
   // Routes that run edge-to-edge and should hide the tab bar + top bar (tracking, live maps, etc.)
-  const isFullScreenRoute = /(\/(order|skip-order|transport-job)\/[^/]+$)/.test(pathname);
+  const isFullScreenRoute = /\/(order|skip-order|transport-job)\/[^/]/.test(pathname);
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback(
     (props: BottomTabBarProps) => (isFullScreenRoute ? null : <AnimatedTabBar {...props} />),

@@ -12,12 +12,12 @@ export function useOrderDetail(id: string | undefined) {
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [documents, setDocuments] = useState<ApiDocument[]>([]);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (background = false) => {
     if (!token || !id) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!background) setLoading(true);
     try {
       const found = await api.orders.getOne(String(id), token);
       setOrder(found ?? null);
