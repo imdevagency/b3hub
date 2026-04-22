@@ -17,13 +17,15 @@ import {
   type CarrierBlockedDate,
   type SkipSize,
 } from '@/lib/api';
-import { Trash2, Plus, Calendar, MapPin } from 'lucide-react-native';
+import { Trash2, Plus, Calendar, MapPin, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
+import { format } from 'date-fns';
+import { lv } from 'date-fns/locale';
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -35,6 +37,44 @@ const SKIP_SIZES: { value: SkipSize; label: string; volume: string }[] = [
   { value: 'BUILDERS', label: 'Builders', volume: 'Līdz 6 m³' },
   { value: 'LARGE', label: 'Liels', volume: 'Līdz 8 m³' },
 ];
+
+// ─── Calendar helpers ─────────────────────────────────────────────────────
+
+const MONTHS_LV = [
+  'Janvāris',
+  'Februāris',
+  'Marts',
+  'Aprīlis',
+  'Maijs',
+  'Jūnijs',
+  'Jūlijs',
+  'Augusts',
+  'Septembris',
+  'Oktobris',
+  'Novembris',
+  'Decembris',
+];
+const DOW_LV = ['P', 'O', 'T', 'C', 'Pk', 'S', 'Sv'];
+
+function buildCalendarRows(year: number, month: number): (number | null)[][] {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = (firstDay.getDay() + 6) % 7; // Mon = 0
+  const rows: (number | null)[][] = [];
+  let row: (number | null)[] = Array(startDow).fill(null);
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    row.push(d);
+    if (row.length === 7) {
+      rows.push(row);
+      row = [];
+    }
+  }
+  if (row.length > 0) {
+    while (row.length < 7) row.push(null);
+    rows.push(row);
+  }
+  return rows;
+}
 
 export default function CarrierSettingsScreen() {
   const { token } = useAuth();
@@ -61,6 +101,8 @@ export default function CarrierSettingsScreen() {
   const [newDate, setNewDate] = useState('');
   const [blockingDate, setBlockingDate] = useState(false);
   const [showAddDate, setShowAddDate] = useState(false);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonthIdx, setViewMonthIdx] = useState(() => new Date().getMonth());
 
   const load = useCallback(
     async (silent = false) => {
@@ -160,14 +202,10 @@ export default function CarrierSettingsScreen() {
   };
 
   const handleBlockDate = async () => {
-    if (!token || !newDate.trim()) return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate.trim())) {
-      Alert.alert('Nepareizs formāts', 'Lūdzu izmantojiet GGGG-MM-DD');
-      return;
-    }
+    if (!token || !newDate) return;
     setBlockingDate(true);
     try {
-      await api.carrierSettings.availability.block(token, newDate.trim());
+      await api.carrierSettings.availability.block(token, newDate);
       setNewDate('');
       setShowAddDate(false);
       load(true);
@@ -346,7 +384,7 @@ export default function CarrierSettingsScreen() {
               })}
             </View>
             <Text className="text-xs text-gray-400 text-center mt-4">
-              Cenas automātiski saglabājas, kad noņemat kursoru no lauka.
+              Dienas nomas cena (€). Automātiski saglabājas, kad noņemat kursoru no lauka.
             </Text>
           </View>
         )}
@@ -438,40 +476,140 @@ export default function CarrierSettingsScreen() {
             {showAddDate ? (
               <View className="bg-orange-50 border border-orange-100 rounded-3xl p-4 mb-4">
                 <Text className="text-sm text-orange-800 font-medium mb-3">
-                  Atzīmējiet dienu kā nepieejamu (brīvdienu).
+                  Atzīmējiet dienu kā nepieejamu.
                 </Text>
-                <TextInput
-                  className="bg-white border border-orange-200 rounded-2xl px-4 text-orange-900 font-bold mb-3"
-                  style={{ height: 50, fontSize: 17, letterSpacing: 1 }}
-                  placeholder="GGGG-MM-DD"
-                  placeholderTextColor="#fdba74"
-                  value={newDate}
-                  onChangeText={setNewDate}
-                  autoFocus
-                  maxLength={10}
-                  keyboardType="numbers-and-punctuation"
-                  returnKeyType="done"
-                  onSubmitEditing={handleBlockDate}
-                />
-                <View className="flex-row gap-2">
+
+                {/* Month navigation */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 10,
+                  }}
+                >
                   <TouchableOpacity
-                    className="flex-1 bg-white border border-orange-200 rounded-xl py-3 items-center"
-                    onPress={() => setShowAddDate(false)}
+                    style={{ padding: 8 }}
+                    onPress={() => {
+                      if (viewMonthIdx === 0) {
+                        setViewMonthIdx(11);
+                        setViewYear((y) => y - 1);
+                      } else setViewMonthIdx((m) => m - 1);
+                    }}
                   >
-                    <Text className="text-orange-900 font-semibold">Atcelt</Text>
+                    <ChevronLeft size={20} color="#9a3412" />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#9a3412' }}>
+                    {MONTHS_LV[viewMonthIdx]} {viewYear}
+                  </Text>
+                  <TouchableOpacity
+                    style={{ padding: 8 }}
+                    onPress={() => {
+                      if (viewMonthIdx === 11) {
+                        setViewMonthIdx(0);
+                        setViewYear((y) => y + 1);
+                      } else setViewMonthIdx((m) => m + 1);
+                    }}
+                  >
+                    <ChevronRight size={20} color="#9a3412" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Day-of-week headers */}
+                <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                  {DOW_LV.map((d) => (
+                    <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#f97316' }}>{d}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Day grid */}
+                {buildCalendarRows(viewYear, viewMonthIdx).map((week, wi) => (
+                  <View key={wi} style={{ flexDirection: 'row', marginBottom: 2 }}>
+                    {week.map((day, di) => {
+                      if (!day) return <View key={di} style={{ flex: 1, height: 36 }} />;
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      const dateStr = `${viewYear}-${pad(viewMonthIdx + 1)}-${pad(day)}`;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const dayDate = new Date(viewYear, viewMonthIdx, day);
+                      const isPast = dayDate < today;
+                      const isBlocked = blockedDates.some((b) => b.date === dateStr);
+                      const isSelected = newDate === dateStr;
+                      return (
+                        <TouchableOpacity
+                          key={di}
+                          style={{
+                            flex: 1,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: 36,
+                            margin: 2,
+                            borderRadius: 8,
+                            backgroundColor: isSelected
+                              ? '#f97316'
+                              : isBlocked
+                                ? '#fee2e2'
+                                : 'transparent',
+                            opacity: isPast ? 0.3 : 1,
+                          }}
+                          disabled={isPast || isBlocked}
+                          onPress={() => setNewDate(dateStr)}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: isSelected ? '700' : '500',
+                              color: isSelected ? '#ffffff' : isBlocked ? '#dc2626' : '#9a3412',
+                            }}
+                          >
+                            {day}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+
+                {/* Actions */}
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#ffffff',
+                      borderWidth: 1,
+                      borderColor: '#fed7aa',
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: 'center',
+                    }}
+                    onPress={() => {
+                      setShowAddDate(false);
+                      setNewDate('');
+                    }}
+                  >
+                    <Text style={{ color: '#9a3412', fontWeight: '600' }}>Atcelt</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    className={`flex-1 rounded-xl py-3 items-center ${!newDate.trim() ? 'bg-orange-200' : 'bg-orange-500'}`}
+                    style={{
+                      flex: 1,
+                      backgroundColor: newDate ? '#f97316' : '#fed7aa',
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: 'center',
+                    }}
                     onPress={handleBlockDate}
-                    disabled={!newDate.trim() || blockingDate}
+                    disabled={!newDate || blockingDate}
                   >
                     {blockingDate ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text
-                        className={`font-semibold ${!newDate.trim() ? 'text-orange-100' : 'text-white'}`}
-                      >
-                        Apstiprināt
+                      <Text style={{ color: newDate ? '#ffffff' : '#fdba74', fontWeight: '600' }}>
+                        {newDate
+                          ? `Bloķēt ${format(new Date(newDate), 'd. MMM', { locale: lv })}`
+                          : 'Izvēlieties datumu'}
                       </Text>
                     )}
                   </TouchableOpacity>

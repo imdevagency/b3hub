@@ -10,48 +10,55 @@ import { colors } from '@/lib/theme';
 export function SkipWasteStep({
   selected,
   onSelect,
+  flat,
 }: {
   selected: SkipWasteCategory | null;
   onSelect: (v: SkipWasteCategory) => void;
+  flat?: boolean;
 }) {
   const handleSelect = (id: SkipWasteCategory) => {
     haptics.selection();
     onSelect(id);
   };
 
+  const content = WASTE_TYPES.map((id) => {
+    const info = t.skipHire.step2.types[id];
+    const isSelected = selected === id;
+    const Icon = WASTE_ICONS[id];
+    return (
+      <View key={id} style={{ width: '48%' }}>
+        <TouchableOpacity
+          style={[s2.card, isSelected && s2.cardSelected]}
+          onPress={() => handleSelect(id)}
+          activeOpacity={0.75}
+        >
+          {isSelected && (
+            <View style={s2.check}>
+              <Check size={10} color="#fff" />
+            </View>
+          )}
+          <Icon
+            size={28}
+            color={isSelected ? '#000' : '#4b5563'}
+            strokeWidth={selected === id ? 2.5 : 1.5}
+          />
+          <Text style={[s2.label, isSelected && s2.labelSelected]}>{info.label}</Text>
+          <Text style={[s2.desc, isSelected && s2.descSelected]}>{info.desc}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
+
+  if (flat) {
+    return <View style={[s2.grid, { paddingHorizontal: 20 }]}>{content}</View>;
+  }
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={s2.grid}
       style={{ paddingHorizontal: 20 }}
     >
-      {WASTE_TYPES.map((id, idx) => {
-        const info = t.skipHire.step2.types[id];
-        const isSelected = selected === id;
-        const Icon = WASTE_ICONS[id];
-        return (
-          <View key={id} style={{ width: '48%' }}>
-            <TouchableOpacity
-              style={[s2.card, isSelected && s2.cardSelected]}
-              onPress={() => handleSelect(id)}
-              activeOpacity={0.75}
-            >
-              {isSelected && (
-                <View style={s2.check}>
-                  <Check size={10} color="#fff" />
-                </View>
-              )}
-              <Icon
-                size={28}
-                color={isSelected ? '#000' : '#4b5563'}
-                strokeWidth={selected === id ? 2.5 : 1.5}
-              />
-              <Text style={[s2.label, isSelected && s2.labelSelected]}>{info.label}</Text>
-              <Text style={[s2.desc, isSelected && s2.descSelected]}>{info.desc}</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      })}
+      {content}
     </ScrollView>
   );
 }

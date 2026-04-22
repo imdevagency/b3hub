@@ -179,7 +179,12 @@ export default function OrderTrackingScreen() {
     if (order.status === 'DELIVERED') return 'Piegādāts';
     if (order.status === 'COMPLETED') return 'Pabeigts';
     if (order.status === 'CANCELLED') return 'Atcelts';
-    if (etaMin != null) return `${etaMin} min`;
+    if (etaMin != null) {
+      const etaDate = new Date(Date.now() + etaMin * 60 * 1000);
+      const hh = String(etaDate.getHours()).padStart(2, '0');
+      const mm = String(etaDate.getMinutes()).padStart(2, '0');
+      return `${etaMin} min  ·  ${hh}:${mm}`;
+    }
     if (driver) return 'Ceļā';
     if (order.status === 'PENDING') return 'Gaida apstiprināšanu';
     return 'Meklē šoferi';

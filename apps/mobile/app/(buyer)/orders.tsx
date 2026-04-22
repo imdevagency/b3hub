@@ -372,6 +372,15 @@ const DRIVER_TRANSIT_STATUSES = new Set([
   'AT_DELIVERY',
 ]);
 
+const DRIVER_STATUS_LABELS: Record<string, string> = {
+  ACCEPTED: 'Šoferis apstiprināja',
+  EN_ROUTE_PICKUP: 'Uz iekraušanu',
+  AT_PICKUP: 'Iekraujas',
+  LOADED: 'Krava iekrauta',
+  EN_ROUTE_DELIVERY: 'Piegādē',
+  AT_DELIVERY: 'Šoferis uz vietas',
+};
+
 // ── Specialized Rows ──────────────────────────────────────────
 
 function MaterialRow({ item }: { item: ApiOrder }) {
@@ -388,16 +397,20 @@ function MaterialRow({ item }: { item: ApiOrder }) {
     : '';
   const price = item.total != null ? `€${item.total}` : '';
 
-  // Highlight if driver is en route
+  // Aggregate total quantity across all line items
+  const totalQty = item.items?.reduce((sum: number, it: any) => sum + (it.quantity ?? 0), 0) ?? 0;
+  const qtyAddr = totalQty > 0 ? `${totalQty} t · ${address}` : address;
+
+  // Show specific driver progress label instead of generic "Ceļā"
   const activeJob = item.transportJobs?.find((j) => DRIVER_TRANSIT_STATUSES.has(j.status));
-  const statusText = activeJob ? 'Ceļā' : st.label;
+  const statusText = activeJob ? (DRIVER_STATUS_LABELS[activeJob.status] ?? 'Ceļā') : st.label;
   const statusColor = activeJob ? '#059669' : st.color;
 
   return (
     <UniversalRow
       icon={<Package size={20} color="#374151" />}
       title={title}
-      subtitleLines={[address, dateStr].filter(Boolean)}
+      subtitleLines={[qtyAddr, dateStr].filter(Boolean)}
       price={price}
       statusColor={statusColor}
       statusText={statusText}

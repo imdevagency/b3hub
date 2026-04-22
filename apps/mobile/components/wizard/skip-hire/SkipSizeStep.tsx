@@ -10,75 +10,82 @@ export function SkipSizeStep({
   selected,
   onSelect,
   prices,
+  flat,
 }: {
   selected: SkipSize | null;
   onSelect: (v: SkipSize) => void;
   /** Live market prices per size — overrides hardcoded SIZES prices when provided */
   prices?: Partial<Record<SkipSize, number>>;
+  flat?: boolean;
 }) {
   const handleSelect = (id: SkipSize) => {
     haptics.selection();
     onSelect(id);
   };
 
+  const content = SIZES.map((size) => {
+    const info = t.skipHire.step3.sizes[size.id];
+    const isSel = selected === size.id;
+    const boxH = Math.round(16 + size.heightPct * 26);
+    const boxW = Math.round(32 + size.heightPct * 16);
+    return (
+      <TouchableOpacity
+        key={size.id}
+        style={[s3.card, isSel && s3.cardSel]}
+        onPress={() => handleSelect(size.id)}
+        activeOpacity={0.75}
+      >
+        <View style={s3.row}>
+          {/* Visual skip container */}
+          <View style={s3.skipWrap}>
+            <View
+              style={[
+                s3.skipBox,
+                {
+                  height: boxH,
+                  width: boxW,
+                  backgroundColor: isSel ? '#000' : '#e5e7eb',
+                },
+              ]}
+            />
+            <View style={s3.wheels}>
+              <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
+              <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
+            </View>
+          </View>
+
+          <View style={{ flex: 1, paddingLeft: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Text style={[s3.label, isSel && { color: '#000' }]}>{info.label}</Text>
+              {size.id === 'MIDI' && (
+                <View style={s3.popular}>
+                  <Text style={s3.popularTxt}>{t.skipHire.step3.popular}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[s3.vol, isSel && { color: '#4b5563' }]}>{info.volume}</Text>
+            <Text style={s3.desc}>{info.desc}</Text>
+          </View>
+
+          <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+            <Text style={[s3.price, isSel && { color: '#000' }]}>
+              {prices?.[size.id] != null ? `€${prices[size.id]}` : `€${size.price}`}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  });
+
+  if (flat) {
+    return <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>{content}</View>;
+  }
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
     >
-      {SIZES.map((size, idx) => {
-        const info = t.skipHire.step3.sizes[size.id];
-        const isSel = selected === size.id;
-        const boxH = Math.round(16 + size.heightPct * 26);
-        const boxW = Math.round(32 + size.heightPct * 16);
-        return (
-          <TouchableOpacity
-            key={size.id}
-            style={[s3.card, isSel && s3.cardSel]}
-            onPress={() => handleSelect(size.id)}
-            activeOpacity={0.75}
-          >
-            <View style={s3.row}>
-              {/* Visual skip container */}
-              <View style={s3.skipWrap}>
-                <View
-                  style={[
-                    s3.skipBox,
-                    {
-                      height: boxH,
-                      width: boxW,
-                      backgroundColor: isSel ? '#000' : '#e5e7eb',
-                    },
-                  ]}
-                />
-                <View style={s3.wheels}>
-                  <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
-                  <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
-                </View>
-              </View>
-
-              <View style={{ flex: 1, paddingLeft: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                  <Text style={[s3.label, isSel && { color: '#000' }]}>{info.label}</Text>
-                  {size.id === 'MIDI' && (
-                    <View style={s3.popular}>
-                      <Text style={s3.popularTxt}>{t.skipHire.step3.popular}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[s3.vol, isSel && { color: '#4b5563' }]}>{info.volume}</Text>
-                <Text style={s3.desc}>{info.desc}</Text>
-              </View>
-
-              <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                <Text style={[s3.price, isSel && { color: '#000' }]}>
-                  {prices?.[size.id] != null ? `€${prices[size.id]}` : `€${size.price}`}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        );
-      })}
+      {content}
     </ScrollView>
   );
 }

@@ -38,10 +38,12 @@ import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import type { SkipSize, SkipWasteCategory, ApiOrder, SkipHireQuote } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { formatDate } from '@/lib/format';
 import { SKIP_PRICES, toISO, addDays } from '@/components/wizard/skip-hire/_types';
 import { SkipWasteStep } from '@/components/wizard/skip-hire/SkipWasteStep';
 import { SkipSizeStep } from '@/components/wizard/skip-hire/SkipSizeStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
+import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
@@ -195,10 +197,10 @@ export default function OrderWizard() {
       : 'Turpināt';
 
   const ctaDisabled =
-    (step === 1 && !selectedWaste) ||
-    (step === 2 && !selectedSize) ||
-    (step === 3 && !picked) ||
-    (step === 4 && (!selectedDay || quotesLoading)) ||
+    (step === 1 && (!selectedWaste || !selectedSize)) ||
+    (step === 2 && !picked) ||
+    (step === 3 && !selectedDay) ||
+    (step === 4 && quotesLoading) ||
     submitting;
 
   const onCTA = useCallback(async () => {
@@ -353,18 +355,19 @@ export default function OrderWizard() {
   }, [pickUnloadingPhoto]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: t.skipHire.step2.title, // "Atkritumu veids" — waste first (matches web step 1)
-    2: t.skipHire.step3.title, // "Konteinera izmērs" — size second (matches web step 1 reveal)
-    3: 'Piegādes adrese',
-    4: 'Apstiprini pasūtījumu',
+    1: 'Ko?',
+    2: 'Kur?',
+    3: 'Kad?',
+    4: 'Pārskatīt un pasūtīt',
   };
 
-  if (step === 3) {
+  if (step === 2 && false) {
+    // InlineAddressStep kept as import for PickedAddress type; step 2 now uses FlatAddressPicker
     return (
       <InlineAddressStep
         picked={picked}
         onPick={handlePickConfirm}
-        onConfirm={onCTA}
+        onConfirm={() => {}}
         onCancel={goBack}
         contextLabel="Piegādes adrese"
       />
@@ -387,26 +390,105 @@ export default function OrderWizard() {
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
-        {/* ── Step 1: Waste type — always shown first (matches web) ── */}
+        {/* ── Step 1 (Ko?): Waste type + Container size ── */}
         {step === 1 && (
-          <View style={{ flex: 1 }}>
-            <SkipWasteStep selected={selectedWaste} onSelect={handleWasteSelect} />
-          </View>
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+            <SkipWasteStep selected={selectedWaste} onSelect={handleWasteSelect} flat />
+            {selectedWaste && (
+              <>
+                <SectionLabel
+                  label="Konteinera izmērs"
+                  style={{ paddingHorizontal: 20, marginTop: 8, marginBottom: 4 }}
+                />
+                <SkipSizeStep
+                  selected={selectedSize}
+                  onSelect={handleSizeSelect}
+                  prices={marketPrices}
+                  flat
+                />
+              </>
+            )}
+            <View style={{ height: 32 }} />
+          </ScrollView>
         )}
 
-        {/* ── Step 2: Container size — chosen after waste type (matches web) ── */}
+        {/* ── Step 2 (Kur?): Flat address picker + save address + photo ── */}
         {step === 2 && (
-          <View style={{ flex: 1 }}>
-            <SkipSizeStep
-              selected={selectedSize}
-              onSelect={handleSizeSelect}
-              prices={marketPrices}
-            />
-          </View>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
+          >
+            <FlatAddressPicker picked={picked} onPick={handlePickConfirm} />
+
+            {picked && (
+              <View style={{ paddingHorizontal: 20, marginTop: 20, gap: 0 }}>
+                {/* Save address toggle */}
+                <TouchableOpacity
+                  style={s.saveAddrRow}
+                  onPress={() => setSaveAddress((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[s.saveAddrCheck, saveAddress && s.saveAddrCheckActive]}>
+                    {saveAddress && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
+                    <Text style={s.saveAddrSub} numberOfLines={1}>
+                      {picked.address.split(',')[0]}
+                    </Text>
+                  </View>
+                  <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
+                </TouchableOpacity>
+
+                {/* Unloading point photo */}
+                <SectionLabel
+                  label="Izkraušanas punkta foto (neobligāti)"
+                  style={{ marginTop: 20 }}
+                />
+                <View style={s.photoCard}>
+                  {unloadingPointPhotoUrl ? (
+                    <View style={s.photoPreviewWrap}>
+                      <Image
+                        source={{ uri: unloadingPointPhotoUrl }}
+                        style={s.photoPreview}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        style={s.photoRemoveBtn}
+                        onPress={() => setUnloadingPointPhotoUrl(null)}
+                        activeOpacity={0.85}
+                        accessibilityLabel="Noņemt izkraušanas foto"
+                      >
+                        <Trash2 size={12} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={s.photoAddBtn}
+                      onPress={openPhotoOptions}
+                      activeOpacity={0.8}
+                      accessibilityLabel="Pievienot izkraušanas foto"
+                    >
+                      {photoBusy ? (
+                        <ActivityIndicator size="small" color="#374151" />
+                      ) : (
+                        <>
+                          <Camera size={18} color="#4b5563" />
+                          <Text style={s.photoAddBtnText}>Pievienot foto</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
+          </ScrollView>
         )}
 
-        {/* ── Step 4: Date + Contact + Confirm (matches web step 4 "Apstiprināt") ── */}
-        {step === 4 && (
+        {/* ── Step 3 (Kad?): Delivery date + time window ── */}
+        {step === 3 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.contentPad}
@@ -482,9 +564,18 @@ export default function OrderWizard() {
                 </TouchableOpacity>
               ))}
             </View>
+          </ScrollView>
+        )}
 
+        {/* ── Step 4 (Pārskatīt un pasūtīt): Summary + contact + photo + mat link ── */}
+        {step === 4 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.contentPad}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Summary */}
-            <SectionLabel label="Kopsavilkums" style={{ marginTop: 20 }} />
+            <SectionLabel label="Kopsavilkums" />
             <View style={s.summaryCard}>
               <View style={s.addressRow}>
                 <MapPin size={14} color="#374151" />
@@ -504,6 +595,17 @@ export default function OrderWizard() {
                 label="Konteinera izmērs"
                 value={
                   selectedSize ? (t.skipHire.step3.sizes[selectedSize]?.label ?? selectedSize) : '—'
+                }
+              />
+              <DetailRow label="Piegādes datums" value={formatDate(selectedDay)} />
+              <DetailRow
+                label="Piegādes laiks"
+                value={
+                  deliveryWindow === 'AM'
+                    ? 'Rīts (8–12)'
+                    : deliveryWindow === 'PM'
+                      ? 'Diena (12–17)'
+                      : 'Jebkurā laikā'
                 }
               />
               <DetailRow label="Cena (bez PVN)" value={`€${price}`} />
@@ -533,62 +635,6 @@ export default function OrderWizard() {
               />
             </View>
 
-            {/* Save address toggle */}
-            {picked && (
-              <TouchableOpacity
-                style={s.saveAddrRow}
-                onPress={() => setSaveAddress((v) => !v)}
-                activeOpacity={0.7}
-              >
-                <View style={[s.saveAddrCheck, saveAddress && s.saveAddrCheckActive]}>
-                  {saveAddress && <Check size={12} color="#fff" strokeWidth={2.5} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
-                  <Text style={s.saveAddrSub} numberOfLines={1}>
-                    {picked.address.split(',')[0]}
-                  </Text>
-                </View>
-                <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
-              </TouchableOpacity>
-            )}
-
-            <SectionLabel label="Izkraušanas punkta foto (neobligāti)" style={{ marginTop: 20 }} />
-            <View style={s.photoCard}>
-              {unloadingPointPhotoUrl ? (
-                <View style={s.photoPreviewWrap}>
-                  <Image
-                    source={{ uri: unloadingPointPhotoUrl }}
-                    style={s.photoPreview}
-                    resizeMode="cover"
-                  />
-                  <TouchableOpacity
-                    style={s.photoRemoveBtn}
-                    onPress={() => setUnloadingPointPhotoUrl(null)}
-                    activeOpacity={0.85}
-                    accessibilityLabel="Noņemt izkraušanas foto"
-                  >
-                    <Trash2 size={12} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={s.photoAddBtn}
-                  onPress={openPhotoOptions}
-                  activeOpacity={0.8}
-                  accessibilityLabel="Pievienot izkraušanas foto"
-                >
-                  {photoBusy ? (
-                    <ActivityIndicator size="small" color="#374151" />
-                  ) : (
-                    <>
-                      <Camera size={18} color="#4b5563" />
-                      <Text style={s.photoAddBtnText}>Pievienot foto</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
             {/* ── Link to material order (optional) ── */}
             <SectionLabel label="Saistīt ar materiālu pasūtījumu" style={{ marginTop: 20 }} />
             <TouchableOpacity

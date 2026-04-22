@@ -34,15 +34,10 @@ function SellerLayoutContent() {
     }
   }, [user, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <View
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}
-      >
-        <ActivityIndicator size="large" color="#111827" />
-      </View>
-    );
-  }
+  // NOTE: Do NOT return early here — the <Tabs> navigator MUST always render so
+  // expo-router can provide navigation context to all tab screens (including those
+  // accessed via router.push that render before auth resolves). Show a full-screen
+  // loading overlay instead.
 
   const avatarBtn = (
     <TouchableOpacity
@@ -61,6 +56,19 @@ function SellerLayoutContent() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgCard, paddingTop: insets.top }}>
+      {isLoading && (
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            zIndex: 999,
+          }}
+        >
+          <ActivityIndicator size="large" color="#111827" />
+        </View>
+      )}
       {config !== null && <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />}
       <Tabs initialRouteName="home" screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen

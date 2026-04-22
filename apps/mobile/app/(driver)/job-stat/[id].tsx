@@ -252,12 +252,18 @@ export default function JobStatScreen() {
               <Scale size={16} color="#6b7280" />
               <View style={s.rowTexts}>
                 <Text style={s.rowLabel}>
-                  {job.actualWeightKg != null ? 'Faktiskais svars (svari)' : 'Plānotais svars'}
+                  {job.actualWeightKg != null && job.cargoWeight != null
+                    ? 'Svars'
+                    : job.actualWeightKg != null
+                      ? 'Faktiskais svars'
+                      : 'Plānotais svars'}
                 </Text>
                 <Text style={s.rowValue}>
-                  {job.actualWeightKg != null
-                    ? `${(job.actualWeightKg / 1000).toFixed(3)} t`
-                    : `${job.cargoWeight} t`}
+                  {job.actualWeightKg != null && job.cargoWeight != null
+                    ? `${(job.actualWeightKg / 1000).toFixed(3)} t  ·  plānotais ${job.cargoWeight} t`
+                    : job.actualWeightKg != null
+                      ? `${(job.actualWeightKg / 1000).toFixed(3)} t`
+                      : `${job.cargoWeight} t`}
                 </Text>
               </View>
             </View>
@@ -356,6 +362,9 @@ export default function JobStatScreen() {
                   >
                     {weightVariancePct >= 0 ? '+' : ''}
                     {weightVariancePct.toFixed(1)}%
+                    {job.actualWeightKg != null && job.cargoWeight != null
+                      ? `  (${(job.actualWeightKg / 1000).toFixed(2)} t / ${job.cargoWeight} t)`
+                      : ''}
                   </Text>
                 </View>
               </View>
