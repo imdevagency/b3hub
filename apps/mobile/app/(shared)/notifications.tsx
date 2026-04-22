@@ -202,7 +202,7 @@ function NotifCard({
 
   return (
     <TouchableOpacity
-      className={`flex-row items-start px-5 py-4 ${!notif.isRead ? 'bg-blue-50/40' : 'bg-white'}`}
+      className="flex-row items-center px-4 py-5 bg-white border-b border-gray-50"
       onPress={handlePress}
       activeOpacity={0.7}
     >
@@ -210,24 +210,20 @@ function NotifCard({
         style={{ backgroundColor: bg }}
         className="w-12 h-12 rounded-full items-center justify-center mr-4"
       >
-        <Icon size={22} color={iconColor} strokeWidth={2} />
+        <Icon size={20} color={iconColor} strokeWidth={2.5} />
       </View>
-      <View className="flex-1 pt-1">
-        <View className="flex-row justify-between items-start mb-1">
-          <Text className="flex-1 text-base font-bold text-gray-900 mr-2" numberOfLines={1}>
-            {stripEmojis(notif.title)}
-          </Text>
-          <View className="flex-row items-center mt-0.5">
-            <Text className="text-xs font-medium text-gray-400 mr-1.5">
-              {timeAgo(notif.createdAt)}
-            </Text>
-            {!notif.isRead && <View className="w-2 h-2 rounded-full bg-blue-600" />}
-          </View>
-        </View>
-        <Text className="text-sm text-gray-500 leading-5" numberOfLines={2}>
-          {stripEmojis(notif.message)}
+      <View className="flex-1 justify-center">
+        <Text
+          style={{ fontSize: 15, fontWeight: '600', color: '#111827', marginBottom: 4 }}
+          numberOfLines={1}
+        >
+          {stripEmojis(notif.title)}
+        </Text>
+        <Text style={{ fontSize: 13, fontWeight: '500', color: '#6b7280' }} numberOfLines={1}>
+          {timeAgo(notif.createdAt)} | {stripEmojis(notif.message)}
         </Text>
       </View>
+      {!notif.isRead && <View className="w-2 h-2 rounded-full bg-blue-500 ml-3" />}
     </TouchableOpacity>
   );
 }
