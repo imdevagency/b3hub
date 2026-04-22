@@ -1,21 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Linking,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, Linking, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import {
-  MapPin,
-  Package,
-  Truck,
-  Star,
-  Phone,
-  ChevronRight,
-} from 'lucide-react-native';
+import { MapPin, Package, Truck, Star, Phone, ChevronRight } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Button } from '@/components/ui/button';
@@ -53,6 +39,23 @@ const JOB_STATUS_LABEL: Record<string, string> = {
 const ORDER_STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
   ...MAT_STATUS,
   COMPLETED: { label: 'Pabeigts', bg: '#DCFCE7', color: '#15803D' },
+};
+
+const JOB_STEPS = [
+  { key: 'pickup', label: 'Uz kraušanu' },
+  { key: 'loading', label: 'Krauj' },
+  { key: 'enroute', label: 'Ceļā' },
+  { key: 'delivered', label: 'Piegādāts' },
+] as const;
+
+const JOB_STATUS_TO_STEP: Record<string, number> = {
+  ACCEPTED: 0,
+  EN_ROUTE_PICKUP: 0,
+  AT_PICKUP: 1,
+  LOADED: 1,
+  EN_ROUTE_DELIVERY: 2,
+  AT_DELIVERY: 3,
+  DELIVERED: 3,
 };
 
 export default function OrderTrackingScreen() {
@@ -161,6 +164,8 @@ export default function OrderTrackingScreen() {
       job.status === 'AT_DELIVERY',
   );
   const driver = activeJob?.driver;
+  const currentStepIdx = activeJob ? (JOB_STATUS_TO_STEP[activeJob.status] ?? 0) : -1;
+  const isTerminal = ['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(order.status);
 
   const heroPrimary = (() => {
     if (order.status === 'DELIVERED') return 'Piegādāts';
@@ -174,8 +179,7 @@ export default function OrderTrackingScreen() {
 
   const jobStatusLabel = activeJob ? (JOB_STATUS_LABEL[activeJob.status] ?? 'Piegādē') : null;
   const heroSubtitle =
-    jobStatusLabel ??
-    (order.status === 'DELIVERED' ? 'Apstipriniet saņemšanu' : statusMeta.label);
+    jobStatusLabel ?? (order.status === 'DELIVERED' ? 'Apstipriniet saņemšanu' : statusMeta.label);
 
   return (
     <ScreenContainer bg="#FFFFFF" standalone>
@@ -228,9 +232,30 @@ export default function OrderTrackingScreen() {
         <View style={styles.overlayContainer}>
           <View style={styles.overlayCard}>
             <Text style={styles.heroPrimary}>{heroPrimary}</Text>
-            {heroSubtitle ? (heroSubtitle.toLowerCase() !== heroPrimary.toLowerCase() && (
-                <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
-              )) : null}
+            {heroSubtitle
+              ? heroSubtitle.toLowerCase() !== heroPrimary.toLowerCase() && (
+                  <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+                )
+              : null}
+
+            {currentStepIdx >= 0 && (
+              <View style={styles.stepsRow}>
+                {JOB_STEPS.map((step, index) => {
+                  const done = index <= currentStepIdx;
+                  return (
+                    <View key={step.key} style={styles.stepItem}>
+                      <View style={[styles.stepDot, done && styles.stepDotActive]} />
+                      <Text
+                        style={[styles.stepLabel, done && styles.stepLabelActive]}
+                        numberOfLines={1}
+                      >
+                        {step.label}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
 
             {driver && (
               <View style={styles.driverRow}>
@@ -288,10 +313,30 @@ export default function OrderTrackingScreen() {
               </View>
             </View>
 
-            <Button variant="secondary" size="lg" className="w-full" onPress={() => {
+            {isTerminal && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onPress={() => {
+                  haptics.medium();
+                  router.replace('/(buyer)/new-order' as never);
+                }}
+              >
+                Pasūtīt vēlreiz
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full"
+              onPress={() => {
                 haptics.light();
                 router.push(`/(buyer)/order/${id}/details` as never);
-              }}>Detaļas</Button>
+              }}
+            >
+              Detaļas
+            </Button>
           </View>
         </View>
       </View>
@@ -476,6 +521,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
+    color: '#111827',
+  },
+  stepsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 16,
+  },
+  stepItem: {
+    flex: 1,
+  },
+  stepDot: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E7EB',
+    marginBottom: 8,
+  },
+  stepDotActive: {
+    backgroundColor: colors.primary,
+  },
+  stepLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#9CA3AF',
+  },
+  stepLabelActive: {
     color: '#111827',
   },
 });

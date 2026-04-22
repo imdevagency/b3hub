@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Alert, Linking, Image, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { MapPin, Phone, Package, Trash2, Star, Truck, Clock3 } from 'lucide-react-native';
+import { Phone, Package, Trash2, Clock3 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -10,7 +10,6 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
-import { StatusPill } from '@/components/ui/StatusPill';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/Toast';
 
@@ -21,30 +20,6 @@ import { useSkipOrder } from '@/lib/use-skip-order';
 import { SIZE_LABEL } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
-
-const SKIP_STEPS = [
-  { key: 'PENDING', label: 'Saņemts' },
-  { key: 'CONFIRMED', label: 'Apstiprināts' },
-  { key: 'DELIVERED', label: 'Piegādāts' },
-  { key: 'COLLECTED', label: 'Savākts' },
-] as const;
-
-const STATUS_TO_STEP: Record<string, number> = {
-  PENDING: 0,
-  CONFIRMED: 1,
-  DELIVERED: 2,
-  COLLECTED: 3,
-  COMPLETED: 3,
-};
-
-const STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Saņemts', bg: '#EFF6FF', color: '#1D4ED8' },
-  CONFIRMED: { label: 'Apstiprināts', bg: '#ECFDF5', color: '#047857' },
-  DELIVERED: { label: 'Piegādāts', bg: '#FEF3C7', color: '#B45309' },
-  COLLECTED: { label: 'Savākts', bg: '#DCFCE7', color: '#15803D' },
-  COMPLETED: { label: 'Pabeigts', bg: '#DCFCE7', color: '#15803D' },
-  CANCELLED: { label: 'Atcelts', bg: '#FEF2F2', color: '#DC2626' },
-};
 
 const WASTE_LABEL: Record<string, string> = {
   MIXED: 'Jaukti atkritumi',
@@ -66,7 +41,7 @@ export default function SkipOrderDetailsScreen() {
   const { token } = useAuth();
   const toast = useToast();
   const router = useRouter();
-  const { order, setOrder, loading, error, reload } = useSkipOrder(id);
+  const { order, setOrder, loading, error } = useSkipOrder(id);
 
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
@@ -136,15 +111,13 @@ export default function SkipOrderDetailsScreen() {
     );
   }
 
-  const carrier = order.carrier;
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
   const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
-  const currentStepIdx = STATUS_TO_STEP[order.status] ?? -1;
-  const statusPill = STATUS_PILL[order.status] ?? STATUS_PILL.PENDING;
+  const isTerminal =
+    order.status === 'COLLECTED' || order.status === 'COMPLETED' || order.status === 'CANCELLED';
 
   const orderRows = [
     { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
-    { label: 'Sistēmas ID', value: order.id },
     { label: 'Piegādes vieta', value: order.location },
     { label: 'Piegādes datums', value: formatDate(order.deliveryDate) },
     {
@@ -157,15 +130,12 @@ export default function SkipOrderDetailsScreen() {
     { label: 'Konteinera izmērs', value: SIZE_LABEL[order.skipSize] ?? order.skipSize },
     { label: 'Atkritumu veids', value: WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory },
     { label: 'Izveidots', value: formatDate(order.createdAt) },
-    { label: 'Atjaunināts', value: formatDate(order.updatedAt) },
   ].filter((row) => row.value);
 
   const contactRows = [
     { label: 'Kontaktpersona', value: order.contactName ?? null },
     { label: 'Telefons', value: order.contactPhone ?? null },
     { label: 'E-pasts', value: order.contactEmail ?? null },
-    { label: 'Pārvadātājs', value: carrier?.name ?? null },
-    { label: 'Pārvadātāja tālrunis', value: carrier?.phone ?? null },
   ].filter((row) => row.value);
 
   return (
@@ -177,106 +147,40 @@ export default function SkipOrderDetailsScreen() {
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
-        <InfoSection
-          icon={<Truck size={16} color={colors.textMuted} />}
-          title="Statuss"
-          right={
-            <StatusPill label={statusPill.label} bg={statusPill.bg} color={statusPill.color} />
-          }
-        >
-          {order.status !== 'CANCELLED' && (
-            <View style={styles.stepsRow}>
-              {SKIP_STEPS.map((step, index) => {
-                const done = index <= currentStepIdx;
-                return (
-                  <View key={step.key} style={styles.stepItem}>
-                    <View style={[styles.stepDot, done && styles.stepDotActive]} />
-                    <Text
-                      style={[styles.stepLabel, done && styles.stepLabelActive]}
-                      numberOfLines={1}
-                    >
-                      {step.label}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+        {(canRate || canCancel || isTerminal) && (
+          <View style={styles.actionsBlock}>
+            {canRate && (
+              <Button
+                size="lg"
+                onPress={() => {
+                  haptics.medium();
+                  setShowRating(true);
+                }}
+              >
+                Novērtēt pakalpojumu
+              </Button>
+            )}
 
-          {carrier ? (
-            <View style={styles.carrierCard}>
-              <View style={styles.carrierAvatarFallback}>
-                <Truck size={20} color="#FFFFFF" />
-              </View>
-              <View style={styles.carrierMeta}>
-                <Text style={styles.carrierName} numberOfLines={1}>
-                  {carrier.name}
-                </Text>
-                {carrier.rating != null && (
-                  <View style={styles.ratingPill}>
-                    <Star size={12} color="#B45309" fill="#B45309" />
-                    <Text style={styles.ratingPillText}>{carrier.rating.toFixed(1)}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          ) : (
-            <View style={styles.waitingCard}>
-              <Text style={styles.waitingTitle}>Gaida pārvadātāja apstiprinājumu</Text>
-              <Text style={styles.waitingText}>
-                Kad pārvadātājs apstiprinās pasūtījumu, šeit redzēsiet kontaktinformāciju un statusa
-                progresu.
-              </Text>
-            </View>
-          )}
-        </InfoSection>
+            {canCancel && (
+              <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
+                Atcelt pasūtījumu
+              </Button>
+            )}
 
-        <View style={styles.actionsBlock}>
-          {carrier?.phone && (
-            <Button
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                Linking.openURL(`tel:${carrier.phone}`).catch(() => null);
-              }}
-            >
-              Zvanīt pārvadātājam
-            </Button>
-          )}
-
-          {canRate && (
-            <Button
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                setShowRating(true);
-              }}
-            >
-              Novērtēt pakalpojumu
-            </Button>
-          )}
-
-          {(order.status === 'COLLECTED' ||
-            order.status === 'COMPLETED' ||
-            order.status === 'CANCELLED') && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                router.push('/skip-hire' as any);
-              }}
-            >
-              Pasūtīt vēlreiz
-            </Button>
-          )}
-
-          {canCancel && (
-            <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
-              Atcelt pasūtījumu
-            </Button>
-          )}
-        </View>
+            {isTerminal && (
+              <Button
+                variant="outline"
+                size="lg"
+                onPress={() => {
+                  haptics.medium();
+                  router.push('/skip-hire' as any);
+                }}
+              >
+                Pasūtīt vēlreiz
+              </Button>
+            )}
+          </View>
+        )}
 
         <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pasūtījums">
           {orderRows.map((row, index) => (
@@ -358,94 +262,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-  },
-  stepsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-  },
-  stepItem: {
-    flex: 1,
-  },
-  stepDot: {
-    width: '100%',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 8,
-  },
-  stepDotActive: {
-    backgroundColor: colors.primary,
-  },
-  stepLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#9CA3AF',
-  },
-  stepLabelActive: {
-    color: '#111827',
-  },
-  carrierCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 18,
-    padding: 14,
-  },
-  carrierAvatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  carrierMeta: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  carrierName: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-  },
-  ratingPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FEF3C7',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 8,
-  },
-  ratingPillText: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#B45309',
-  },
-  waitingCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 18,
-    padding: 14,
-  },
-  waitingTitle: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-  },
-  waitingText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 6,
   },
   actionsBlock: {
     gap: 10,

@@ -12,15 +12,11 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
-  Star,
-  Phone,
   Package,
   Truck,
   FileText,
   CheckCircle,
-  MessageCircle,
   CreditCard,
-  Clock3,
   AlertTriangle,
 } from 'lucide-react-native';
 
@@ -28,7 +24,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
-import { StatusPill } from '@/components/ui/StatusPill';
 import { Button } from '@/components/ui/button';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -40,7 +35,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useOrderDetail } from '@/lib/use-order-detail';
-import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
+import { UNIT_SHORT } from '@/lib/materials';
 import { colors } from '@/lib/theme';
 import { DisputeSheet } from '@/components/order/DisputeSheet';
 import { AmendSheet } from '@/components/order/AmendSheet';
@@ -52,28 +47,6 @@ try {
 } catch {
   /* Expo Go fallback */
 }
-
-const JOB_STEPS = [
-  { key: 'pickup', label: 'Uz kraušanu' },
-  { key: 'loading', label: 'Krauj' },
-  { key: 'enroute', label: 'Ceļā' },
-  { key: 'delivered', label: 'Piegādāts' },
-] as const;
-
-const JOB_STATUS_TO_STEP: Record<string, number> = {
-  ACCEPTED: 0,
-  EN_ROUTE_PICKUP: 0,
-  AT_PICKUP: 1,
-  LOADED: 1,
-  EN_ROUTE_DELIVERY: 2,
-  AT_DELIVERY: 3,
-  DELIVERED: 3,
-};
-
-const ORDER_STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
-  ...MAT_STATUS,
-  COMPLETED: { label: 'Pabeigts', bg: '#DCFCE7', color: '#15803D' },
-};
 
 export default function OrderDetailsScreen() {
   const { token, user } = useAuth();
@@ -92,7 +65,6 @@ export default function OrderDetailsScreen() {
   const [payLoading, setPayLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [surchargeActionLoading, setSurchargeActionLoading] = useState<string | null>(null);
-  const [etaMin, setEtaMin] = useState<number | null>(null);
 
   const stripe = useStripe ? useStripe() : null;
 
@@ -256,7 +228,6 @@ export default function OrderDetailsScreen() {
     );
   }
 
-  const statusMeta = ORDER_STATUS_PILL[order.status] ?? ORDER_STATUS_PILL.PENDING;
   const activeJob = order.transportJobs?.find(
     (job) =>
       job.status === 'ACCEPTED' ||
@@ -267,7 +238,6 @@ export default function OrderDetailsScreen() {
       job.status === 'AT_DELIVERY',
   );
   const driver = activeJob?.driver;
-  const vehicle = activeJob?.vehicle;
   const canManageOrders = !user?.companyRole || (user?.permManageOrders ?? false);
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status) && canManageOrders;
   const canPay =
@@ -278,11 +248,9 @@ export default function OrderDetailsScreen() {
     !!stripe;
   const hasRated = alreadyRated || ratedLocally;
   const canRate = order.status === 'COMPLETED' && !hasRated;
-  const currentStepIdx = activeJob ? (JOB_STATUS_TO_STEP[activeJob.status] ?? 0) : -1;
 
   const orderRows = [
     { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
-    { label: 'Sistēmas ID', value: order.id },
     { label: 'Piegādes adrese', value: `${order.deliveryAddress}, ${order.deliveryCity}` },
     {
       label: 'Piegādes laiks',
@@ -300,80 +268,14 @@ export default function OrderDetailsScreen() {
       <ScreenHeader title="Detaļas" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <InfoSection
-          icon={<Truck size={16} color={colors.textMuted} />}
-          title="Statuss"
-          right={
-            <StatusPill label={statusMeta.label} bg={statusMeta.bg} color={statusMeta.color} />
-          }
-        >
-          {driver && (
-            <View style={styles.stepsRow}>
-              {JOB_STEPS.map((step, index) => {
-                const done = index <= currentStepIdx;
-                return (
-                  <View key={step.key} style={styles.stepItem}>
-                    <View style={[styles.stepDot, done && styles.stepDotActive]} />
-                    <Text
-                      style={[styles.stepLabel, done && styles.stepLabelActive]}
-                      numberOfLines={1}
-                    >
-                      {step.label}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-
-          {disputeFiled && order.status === 'DELIVERED' && (
-            <View style={styles.alertCard}>
-              <AlertTriangle size={16} color="#B45309" />
-              <Text style={styles.alertText}>
-                Saņemšanas apstiprinājums ir apturēts, kamēr tiek izskatīts strīds.
-              </Text>
-            </View>
-          )}
-
-          {driver ? (
-            <View style={styles.driverCard}>
-              {driver.avatar ? (
-                <Image source={{ uri: driver.avatar }} style={styles.driverAvatar} />
-              ) : (
-                <View style={styles.driverAvatarFallback}>
-                  <Text style={styles.driverAvatarText}>
-                    {driver.firstName?.[0] ?? '?'}
-                    {driver.lastName?.[0] ?? ''}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.driverMeta}>
-                <Text style={styles.driverName} numberOfLines={1}>
-                  {driver.firstName} {driver.lastName}
-                </Text>
-                <Text style={styles.driverSubline} numberOfLines={1}>
-                  {vehicle?.licensePlate ?? 'Transportlīdzeklis nav norādīts'}
-                </Text>
-                {etaMin != null && (
-                  <View style={styles.etaPill}>
-                    <Clock3 size={13} color={colors.primary} />
-                    <Text style={styles.etaPillText}>{etaMin} min</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          ) : (
-            <View style={styles.waitingCard}>
-              <Text style={styles.waitingTitle}>Gaidām transportu</Text>
-              {order.items.map((item, index) => (
-                <Text key={`${item.material.name}-${index}`} style={styles.waitingText}>
-                  {item.quantity} {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} ·{' '}
-                  {item.material.name}
-                </Text>
-              ))}
-            </View>
-          )}
-        </InfoSection>
+        {disputeFiled && order.status === 'DELIVERED' && (
+          <View style={styles.alertCard}>
+            <AlertTriangle size={16} color="#B45309" />
+            <Text style={styles.alertText}>
+              Saņemšanas apstiprinājums ir apturēts, kamēr tiek izskatīts strīds.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.actionsBlock}>
           {order.status === 'DELIVERED' && (
@@ -390,19 +292,6 @@ export default function OrderDetailsScreen() {
           {canPay && (
             <Button size="lg" onPress={handlePay} disabled={payLoading} isLoading={payLoading}>
               {`Maksāt €${order.total.toFixed(2)}`}
-            </Button>
-          )}
-
-          {driver?.phone && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                Linking.openURL(`tel:${driver.phone}`).catch(() => null);
-              }}
-            >
-              Zvanīt šoferim
             </Button>
           )}
 
@@ -438,6 +327,12 @@ export default function OrderDetailsScreen() {
             </Button>
           )}
 
+          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+            <Button variant="secondary" size="lg" onPress={() => setShowDispute(true)}>
+              Ziņot par problēmu
+            </Button>
+          )}
+
           {canCancel && (
             <View style={styles.rowActions}>
               <View style={styles.rowActionItem}>
@@ -456,12 +351,6 @@ export default function OrderDetailsScreen() {
                 </Button>
               </View>
             </View>
-          )}
-
-          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-            <Button variant="secondary" size="lg" onPress={() => setShowDispute(true)}>
-              Ziņot par problēmu
-            </Button>
           )}
         </View>
 
@@ -707,33 +596,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  stepsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-  },
-  stepItem: {
-    flex: 1,
-  },
-  stepDot: {
-    width: '100%',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 8,
-  },
-  stepDotActive: {
-    backgroundColor: colors.primary,
-  },
-  stepLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#9CA3AF',
-  },
-  stepLabelActive: {
-    color: '#111827',
-  },
   alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -750,87 +612,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontWeight: '500',
     color: '#92400E',
-  },
-  driverCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 18,
-    padding: 14,
-  },
-  driverAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E5E7EB',
-  },
-  driverAvatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverAvatarText: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  driverMeta: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  driverName: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-  },
-  driverSubline: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  etaPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#ECFDF5',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 8,
-  },
-  etaPillText: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  waitingCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 18,
-    padding: 14,
-  },
-  waitingTitle: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 6,
-  },
-  waitingText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
   },
   actionsBlock: {
     gap: 10,

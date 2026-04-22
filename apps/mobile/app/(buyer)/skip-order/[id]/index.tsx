@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Linking, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { MapPin, Package, Trash2, ChevronRight, Phone } from 'lucide-react-native';
+import { Package, Trash2, Phone, Star, Truck } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,21 @@ try {
 } catch {
   /* Expo Go */
 }
+
+const SKIP_STEPS = [
+  { key: 'PENDING', label: 'Saņemts' },
+  { key: 'CONFIRMED', label: 'Apstiprināts' },
+  { key: 'DELIVERED', label: 'Piegādāts' },
+  { key: 'COLLECTED', label: 'Savākts' },
+] as const;
+
+const STATUS_TO_STEP: Record<string, number> = {
+  PENDING: 0,
+  CONFIRMED: 1,
+  DELIVERED: 2,
+  COLLECTED: 3,
+  COMPLETED: 3,
+};
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'Gaida apstiprinājumu',
@@ -76,6 +91,9 @@ export default function SkipOrderTrackingScreen() {
 
   const hasCoords = order.lat != null && order.lng != null;
   const carrier = order.carrier;
+  const currentStepIdx = STATUS_TO_STEP[order.status] ?? -1;
+  const isTerminal =
+    order.status === 'COLLECTED' || order.status === 'COMPLETED' || order.status === 'CANCELLED';
 
   const heroPrimary = (() => {
     if (order.status === 'COLLECTED' || order.status === 'COMPLETED') return 'Pabeigts';
@@ -86,6 +104,7 @@ export default function SkipOrderTrackingScreen() {
   })();
 
   const heroSubtitle = STATUS_LABEL[order.status] ?? '';
+  const showSubtitle = heroSubtitle && heroSubtitle.toLowerCase() !== heroPrimary.toLowerCase();
 
   return (
     <ScreenContainer bg="#FFFFFF" standalone>
@@ -113,54 +132,83 @@ export default function SkipOrderTrackingScreen() {
 
         <View style={styles.overlayContainer}>
           <View style={styles.overlayCard}>
+            {/* Status hero */}
             <Text style={styles.heroPrimary}>{heroPrimary}</Text>
-            {heroSubtitle
-              ? heroSubtitle.toLowerCase() !== heroPrimary.toLowerCase() && (
-                  <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
-                )
-              : null}
+            {showSubtitle && <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>}
 
-            <View style={styles.timelineRow}>
-              <View style={styles.timelineIcons}>
-                <View style={styles.timelineIconWrap}>
-                  <Package size={14} color="#111827" />
-                </View>
-                <View style={styles.timelineLine} />
-                <View style={styles.timelineIconWrap}>
-                  <MapPin size={14} color="#6B7280" />
-                </View>
+            {/* Progress stepper */}
+            {order.status !== 'CANCELLED' && (
+              <View style={styles.stepsRow}>
+                {SKIP_STEPS.map((step, index) => {
+                  const done = index <= currentStepIdx;
+                  return (
+                    <View key={step.key} style={styles.stepItem}>
+                      <View style={[styles.stepDot, done && styles.stepDotActive]} />
+                      <Text
+                        style={[styles.stepLabel, done && styles.stepLabelActive]}
+                        numberOfLines={1}
+                      >
+                        {step.label}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
-              <View style={styles.timelineDetails}>
-                <View style={styles.timelineItem}>
-                  <Text style={styles.timelineText} numberOfLines={1}>
-                    {order.location || 'Iznomātājs'}
-                  </Text>
-                </View>
-                <View style={styles.timelineItem}>
-                  <Text style={styles.timelineText} numberOfLines={2}>
-                    {order.location}
-                  </Text>
-                </View>
-              </View>
-            </View>
+            )}
 
+            {/* Carrier card */}
+            {carrier ? (
+              <View style={styles.carrierRow}>
+                <View style={styles.carrierAvatar}>
+                  <Truck size={18} color="#FFFFFF" />
+                </View>
+                <View style={styles.carrierMeta}>
+                  <Text style={styles.carrierName} numberOfLines={1}>
+                    {carrier.name}
+                  </Text>
+                  {carrier.rating != null && (
+                    <View style={styles.ratingPill}>
+                      <Star size={11} color="#B45309" fill="#B45309" />
+                      <Text style={styles.ratingPillText}>{carrier.rating.toFixed(1)}</Text>
+                    </View>
+                  )}
+                </View>
+                {carrier.phone && (
+                  <TouchableOpacity
+                    style={styles.callButton}
+                    onPress={() => {
+                      haptics.medium();
+                      Linking.openURL(`tel:${carrier.phone}`).catch(() => null);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Phone size={16} color="#111827" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : !isTerminal ? (
+              <Text style={styles.waitingText}>Gaida pārvadātāja apstiprinājumu…</Text>
+            ) : null}
+
+            {/* Bottom actions */}
             <View style={styles.cardActions}>
-              {carrier?.phone && (
-                <TouchableOpacity
-                  style={styles.callButton}
+              {isTerminal && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
                   onPress={() => {
                     haptics.medium();
-                    Linking.openURL(`tel:${carrier.phone}`).catch(() => null);
+                    router.push('/skip-hire' as any);
                   }}
-                  activeOpacity={0.8}
                 >
-                  <Phone size={16} color="#111827" />
-                </TouchableOpacity>
+                  Pasūtīt vēlreiz
+                </Button>
               )}
               <Button
                 variant="secondary"
                 size="lg"
-                className="w-full"
+                className={isTerminal ? 'flex-1' : 'w-full'}
                 onPress={() => {
                   haptics.light();
                   router.push(`/(buyer)/skip-order/${id}/details` as never);
@@ -225,55 +273,76 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     color: '#6B7280',
-    marginBottom: 20,
+    marginBottom: 12,
   },
-  timelineRow: {
+  stepsRow: {
     flexDirection: 'row',
-    marginBottom: 24,
+    gap: 6,
+    marginTop: 12,
+    marginBottom: 14,
   },
-  timelineIcons: {
-    alignItems: 'center',
-    width: 24,
-    marginRight: 12,
-    justifyContent: 'space-between',
+  stepItem: {
+    flex: 1,
   },
-  timelineIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  timelineLine: {
-    position: 'absolute',
-    top: 24,
-    bottom: 24,
-    width: 2,
+  stepDot: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
     backgroundColor: '#E5E7EB',
-    zIndex: -1,
+    marginBottom: 6,
   },
-  timelineDetails: {
-    flex: 1,
-    gap: 16,
+  stepDotActive: {
+    backgroundColor: colors.primary,
   },
-  timelineItem: {
-    minHeight: 24,
-    justifyContent: 'center',
-  },
-  timelineItemSpacer: {
-    flex: 1,
-  },
-  timelineText: {
+  stepLabel: {
+    fontSize: 10,
     fontFamily: 'Inter_500Medium',
-    fontSize: 14,
-    color: '#4B5563',
+    color: '#9CA3AF',
   },
-  cardActions: {
+  stepLabelActive: {
+    color: '#111827',
+  },
+  carrierRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+    gap: 10,
+  },
+  carrierAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  carrierMeta: {
+    flex: 1,
+  },
+  carrierName: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#111827',
+  },
+  ratingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  ratingPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#B45309',
+  },
+  waitingText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#9CA3AF',
+    marginBottom: 12,
   },
   callButton: {
     width: 40,
@@ -283,21 +352,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  detailsButton: {
-    flex: 1,
+  cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    gap: 6,
-  },
-  detailsButtonText: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#111827',
+    gap: 8,
+    marginTop: 4,
   },
 });

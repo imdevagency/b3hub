@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   Alert,
-  Linking,
   Image,
   StyleSheet,
   TextInput,
@@ -14,7 +13,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
   Package,
-  Truck,
   Phone,
   Star,
   Clock3,
@@ -28,7 +26,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
-import { StatusPill } from '@/components/ui/StatusPill';
 import { Button } from '@/components/ui/button';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -42,35 +39,6 @@ import { useLiveUpdates } from '@/lib/use-live-updates';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
-
-const JOB_STEPS = [
-  { key: 'pickup', label: 'Uz kraušanu' },
-  { key: 'loading', label: 'Krauj' },
-  { key: 'enroute', label: 'Ceļā' },
-  { key: 'delivered', label: 'Piegādāts' },
-] as const;
-
-const JOB_STATUS_TO_STEP: Record<string, number> = {
-  ACCEPTED: 0,
-  EN_ROUTE_PICKUP: 0,
-  AT_PICKUP: 1,
-  LOADED: 1,
-  EN_ROUTE_DELIVERY: 2,
-  AT_DELIVERY: 3,
-  DELIVERED: 3,
-};
-
-const JOB_STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
-  AVAILABLE: { label: 'Gaida', bg: '#EFF6FF', color: '#1D4ED8' },
-  ACCEPTED: { label: 'Pieņemts', bg: '#ECFDF5', color: '#047857' },
-  EN_ROUTE_PICKUP: { label: 'Uz kraušanu', bg: '#ECFDF5', color: '#047857' },
-  AT_PICKUP: { label: 'Kraušana', bg: '#FEF3C7', color: '#B45309' },
-  LOADED: { label: 'Iekrauts', bg: '#FEF3C7', color: '#B45309' },
-  EN_ROUTE_DELIVERY: { label: 'Ceļā', bg: '#ECFDF5', color: '#047857' },
-  AT_DELIVERY: { label: 'Uz vietas', bg: '#FEF3C7', color: '#B45309' },
-  DELIVERED: { label: 'Piegādāts', bg: '#DCFCE7', color: '#15803D' },
-  CANCELLED: { label: 'Atcelts', bg: '#FEF2F2', color: '#DC2626' },
-};
 
 const VEHICLE_LABEL: Record<string, string> = {
   TIPPER_SMALL: 'Pašizgāzējs (10 t)',
@@ -103,13 +71,12 @@ export default function TransportJobDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { job, loading, reload: loadJob } = useTransportJob(id);
   const [cancelling, setCancelling] = useState(false);
-  const [etaMin, setEtaMin] = useState<number | null>(null);
   const [driverRating, setDriverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [ratingLoading, setRatingLoading] = useState(false);
 
-  const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
+  const { jobStatus: liveJobStatus } = useLiveUpdates({
     jobId: typeof id === 'string' ? id : null,
     token,
   });
@@ -117,12 +84,6 @@ export default function TransportJobDetailsScreen() {
   useEffect(() => {
     if (liveJobStatus) loadJob();
   }, [liveJobStatus, loadJob]);
-
-  useEffect(() => {
-    if (liveLocation?.estimatedArrivalMin != null) {
-      setEtaMin(liveLocation.estimatedArrivalMin);
-    }
-  }, [liveLocation]);
 
   useEffect(() => {
     if (job && token && job.status === 'DELIVERED' && !ratingSubmitted) {
@@ -203,8 +164,6 @@ export default function TransportJobDetailsScreen() {
   const driver = job.driver;
   const vehicle = job.vehicle;
   const canCancel = job.status === 'AVAILABLE';
-  const currentStepIdx = JOB_STATUS_TO_STEP[job.status] ?? -1;
-  const statusPill = JOB_STATUS_PILL[job.status] ?? JOB_STATUS_PILL.AVAILABLE;
 
   const routeRows = [
     { label: 'Iekraušanas pilsēta', value: job.pickupCity },
@@ -228,8 +187,6 @@ export default function TransportJobDetailsScreen() {
     },
     { label: 'Attālums', value: job.distanceKm != null ? `${job.distanceKm.toFixed(0)} km` : null },
     { label: 'Tarifs', value: `€${job.rate.toFixed(2)}` },
-    { label: 'Pasūtījuma ID', value: job.order?.id ?? null },
-    { label: 'Sistēmas ID', value: job.id },
   ].filter((row) => row.value);
 
   const timingRows = [
@@ -262,83 +219,7 @@ export default function TransportJobDetailsScreen() {
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
-        <InfoSection
-          icon={<Truck size={16} color={colors.textMuted} />}
-          title="Statuss"
-          right={
-            <StatusPill label={statusPill.label} bg={statusPill.bg} color={statusPill.color} />
-          }
-        >
-          {driver && (
-            <View style={styles.stepsRow}>
-              {JOB_STEPS.map((step, index) => {
-                const done = index <= currentStepIdx;
-                return (
-                  <View key={step.key} style={styles.stepItem}>
-                    <View style={[styles.stepDot, done && styles.stepDotActive]} />
-                    <Text
-                      style={[styles.stepLabel, done && styles.stepLabelActive]}
-                      numberOfLines={1}
-                    >
-                      {step.label}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-
-          {driver ? (
-            <View style={styles.driverCard}>
-              {driver.avatar ? (
-                <Image source={{ uri: driver.avatar }} style={styles.driverAvatar} />
-              ) : (
-                <View style={styles.driverAvatarFallback}>
-                  <Text style={styles.driverAvatarText}>
-                    {driver.firstName?.[0] ?? '?'}
-                    {driver.lastName?.[0] ?? ''}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.driverMeta}>
-                <Text style={styles.driverName} numberOfLines={1}>
-                  {driver.firstName} {driver.lastName}
-                </Text>
-                {vehicle?.licensePlate && (
-                  <Text style={styles.driverSubline}>{vehicle.licensePlate}</Text>
-                )}
-                {etaMin != null && (
-                  <View style={styles.etaPill}>
-                    <Clock3 size={13} color={colors.primary} />
-                    <Text style={styles.etaPillText}>{etaMin} min</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          ) : (
-            <View style={styles.waitingCard}>
-              <Text style={styles.waitingTitle}>Meklē šoferi</Text>
-              <Text style={styles.waitingText}>
-                Pasūtījums ir publicēts. Kad šoferis pieņems braucienu, šeit parādīsies informācija.
-              </Text>
-            </View>
-          )}
-        </InfoSection>
-
         <View style={styles.actionsBlock}>
-          {driver?.phone && (
-            <Button
-              size="lg"
-              variant="outline"
-              onPress={() => {
-                haptics.medium();
-                Linking.openURL(`tel:${driver.phone}`).catch(() => null);
-              }}
-            >
-              Zvanīt šoferim
-            </Button>
-          )}
-
           {driver && (
             <Button
               size="lg"
@@ -531,114 +412,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-  },
-  stepsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-  },
-  stepItem: {
-    flex: 1,
-  },
-  stepDot: {
-    width: '100%',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 8,
-  },
-  stepDotActive: {
-    backgroundColor: colors.primary,
-  },
-  stepLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#9CA3AF',
-  },
-  stepLabelActive: {
-    color: '#111827',
-  },
-  driverCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 18,
-    padding: 14,
-  },
-  driverAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E5E7EB',
-  },
-  driverAvatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverAvatarText: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  driverMeta: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  driverName: {
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-  },
-  driverSubline: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  etaPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#ECFDF5',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 8,
-  },
-  etaPillText: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  waitingCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 18,
-    padding: 14,
-  },
-  waitingTitle: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 6,
-  },
-  waitingText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
   },
   actionsBlock: {
     gap: 10,
