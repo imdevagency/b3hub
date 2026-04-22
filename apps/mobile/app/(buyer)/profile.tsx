@@ -49,7 +49,6 @@ import { getRoleName } from '@/lib/utils';
 // If this file runs in Seller mode, it can import quotes hook
 import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 
-
 function SectionHeader({ label }: { label: string }) {
   return <Text style={styles.sectionHeader}>{label}</Text>;
 }
@@ -174,10 +173,7 @@ export default function ProfileScreen() {
   return (
     <ScreenContainer topInset={0} bg="#f6f8fb" noAnimation>
       <ScreenHeader title="Profils" />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Profile Identity Block */}
         <TouchableOpacity
           style={[styles.profileCard, { marginTop: 16 }]}
@@ -242,19 +238,21 @@ export default function ProfileScreen() {
 
         {/* Role Switcher */}
         {isMultiRole && (
-          <><SectionHeader label="LOMA" />
-          <View style={styles.cardGroup}>
-            <MenuItem
-              icon={ArrowUpDown}
-              label="Mainīt lomu"
-              value={t.mode[mode]}
-              hideBorder
-              onPress={() => {
-                haptics.light();
-                setRoleSheetOpen(true);
-              }}
-            />
-          </View></>
+          <>
+            <SectionHeader label="LOMA" />
+            <View style={styles.cardGroup}>
+              <MenuItem
+                icon={ArrowUpDown}
+                label="Mainīt lomu"
+                value={t.mode[mode]}
+                hideBorder
+                onPress={() => {
+                  haptics.light();
+                  setRoleSheetOpen(true);
+                }}
+              />
+            </View>
+          </>
         )}
 
         {/* Dynamic Mode-Specific Links */}
@@ -330,76 +328,78 @@ export default function ProfileScreen() {
 
         {/* Application Section (Only show if missing rights and in BUYER mode commonly or generally) */}
         {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && (
-          <><SectionHeader label="PIETEIKUMI" />
-          <View style={styles.cardGroup}>
-            {!user?.canSell &&
-              (() => {
-                const app = applications.find((a) => a.appliesForSell);
-                if (app?.status === 'PENDING') {
+          <>
+            <SectionHeader label="PIETEIKUMI" />
+            <View style={styles.cardGroup}>
+              {!user?.canSell &&
+                (() => {
+                  const app = applications.find((a) => a.appliesForSell);
+                  if (app?.status === 'PENDING') {
+                    return (
+                      <ApplicationRow
+                        icon={Package}
+                        label="Piegādātāja pieteikums"
+                        status="PENDING"
+                        hideBorder={!!user?.canTransport}
+                      />
+                    );
+                  }
+                  if (app?.status === 'REJECTED') {
+                    return (
+                      <ApplicationRow
+                        icon={Package}
+                        label="Piegādātāja pieteikums"
+                        status="REJECTED"
+                        onReapply={() => router.push('/(auth)/apply-role?type=supplier')}
+                        hideBorder={!!user?.canTransport}
+                      />
+                    );
+                  }
                   return (
-                    <ApplicationRow
+                    <MenuItem
                       icon={Package}
-                      label="Piegādātāja pieteikums"
-                      status="PENDING"
+                      label="Kļūt par piegādātāju"
                       hideBorder={!!user?.canTransport}
+                      onPress={() => router.push('/(auth)/apply-role?type=supplier')}
                     />
                   );
-                }
-                if (app?.status === 'REJECTED') {
-                  return (
-                    <ApplicationRow
-                      icon={Package}
-                      label="Piegādātāja pieteikums"
-                      status="REJECTED"
-                      onReapply={() => router.push('/(auth)/apply-role?type=supplier')}
-                      hideBorder={!!user?.canTransport}
-                    />
-                  );
-                }
-                return (
-                  <MenuItem
-                    icon={Package}
-                    label="Kļūt par piegādātāju"
-                    hideBorder={!!user?.canTransport}
-                    onPress={() => router.push('/(auth)/apply-role?type=supplier')}
-                  />
-                );
-              })()}
+                })()}
 
-            {!user?.canTransport &&
-              (() => {
-                const app = applications.find((a) => a.appliesForTransport);
-                if (app?.status === 'PENDING') {
+              {!user?.canTransport &&
+                (() => {
+                  const app = applications.find((a) => a.appliesForTransport);
+                  if (app?.status === 'PENDING') {
+                    return (
+                      <ApplicationRow
+                        icon={Truck}
+                        label="Pārvadātāja pieteikums"
+                        status="PENDING"
+                        hideBorder
+                      />
+                    );
+                  }
+                  if (app?.status === 'REJECTED') {
+                    return (
+                      <ApplicationRow
+                        icon={Truck}
+                        label="Pārvadātāja pieteikums"
+                        status="REJECTED"
+                        onReapply={() => router.push('/(auth)/apply-role?type=carrier')}
+                        hideBorder
+                      />
+                    );
+                  }
                   return (
-                    <ApplicationRow
+                    <MenuItem
                       icon={Truck}
-                      label="Pārvadātāja pieteikums"
-                      status="PENDING"
+                      label="Kļūt par pārvadātāju"
                       hideBorder
+                      onPress={() => router.push('/(auth)/apply-role?type=carrier')}
                     />
                   );
-                }
-                if (app?.status === 'REJECTED') {
-                  return (
-                    <ApplicationRow
-                      icon={Truck}
-                      label="Pārvadātāja pieteikums"
-                      status="REJECTED"
-                      onReapply={() => router.push('/(auth)/apply-role?type=carrier')}
-                      hideBorder
-                    />
-                  );
-                }
-                return (
-                  <MenuItem
-                    icon={Truck}
-                    label="Kļūt par pārvadātāju"
-                    hideBorder
-                    onPress={() => router.push('/(auth)/apply-role?type=carrier')}
-                  />
-                );
-              })()}
-          </View></>
+                })()}
+            </View>
+          </>
         )}
 
         {/* General Settings */}
@@ -643,7 +643,7 @@ function ApplicationRow({
         <View style={styles.rowBody}>
           <Text style={styles.rowLabel}>{label}</Text>
         </View>
-        
+
         {status === 'PENDING' ? (
           <View style={styles.badgeAmber}>
             <Text style={styles.badgeAmberText}>Izskatīšanā</Text>
@@ -698,16 +698,15 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   sectionHeader: {
-    fontSize: 13,
+    fontSize: 22,
     fontWeight: '700',
-    letterSpacing: 1.2,
-    color: '#6b7280',
-    paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 8,
+    color: '#111827',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   cardGroup: {
-    gap: 8,
+    gap: 12,
     paddingHorizontal: 16,
   },
   cardItem: {
@@ -723,7 +722,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     gap: 14,
   },
   rowIcon: {
@@ -739,12 +738,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#111827',
   },
   rowDescValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: '#6b7280',
     marginRight: 8,
