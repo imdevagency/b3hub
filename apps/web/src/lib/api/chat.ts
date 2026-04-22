@@ -17,7 +17,34 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/** Mirrors the backend getMyRooms response — same shape as ApiChatRoom on mobile. */
+export interface ChatRoom {
+  type: 'job' | 'order';
+  // job rooms
+  jobId?: string;
+  jobNumber?: string;
+  jobType?: string;
+  cargoType?: string | null;
+  pickupCity?: string | null;
+  deliveryCity?: string | null;
+  status?: string;
+  otherParticipantId?: string | null;
+  otherParticipantName?: string | null;
+  // order rooms
+  orderId?: string;
+  orderNumber?: string;
+  // shared
+  lastMessage?: { body: string; senderName: string; createdAt: string; imageUrl?: string | null } | null;
+}
+
 // ─── Functions ─────────────────────────────────────────────────────────────
+
+/** GET /chat/my-rooms — all chat rooms the current user participates in. */
+export async function getMyChatRooms(token: string): Promise<ChatRoom[]> {
+  return apiFetch<ChatRoom[]>('/chat/my-rooms', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
 
 export async function getChatMessages(jobId: string, token: string): Promise<ChatMessage[]> {
   return apiFetch<ChatMessage[]>(`/chat/${jobId}`, {

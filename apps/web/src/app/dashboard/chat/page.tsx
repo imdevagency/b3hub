@@ -1,20 +1,55 @@
 /**
  * Chat page — /dashboard/chat
  * Conversation list sidebar + message thread view for in-app messaging.
- * Supports both transport-job chat and material-order chat.
+ *
+ * Uses GET /chat/my-rooms (same endpoint as mobile) so drivers, buyers and
+ * sellers all see the same rooms regardless of platform.
  */
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useChat } from '@/lib/use-chat';
-import { getMyTransportJobs, type ApiTransportJob } from '@/lib/api';
-import { getMyOrders, type ApiOrder } from '@/lib/api/orders';
-import { getOrderChatMessages, sendOrderChatMessage, type ChatMessage } from '@/lib/api/chat';
+import {
+  getMyChatRooms,
+  getOrderChatMessages,
+  sendOrderChatMessage,
+  type ChatRoom,
+  type ChatMessage,
+} from '@/lib/api/chat';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Send, Wifi, WifiOff, Truck, Package } from 'lucide-react';
+import { MessageSquare, Send, Wifi, WifiOff, Truck, Package, Trash2 } from 'lucide-react';
 
-type ConversationType = 'job' | 'order';
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatRelative(iso: string): string {
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return 'Tikko';
+  if (diffMin < 60) return `${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH} st`;
+  const diffD = Math.floor(diffH / 24);
+  return `${diffD} d`;
+}
+
+function roomLabel(room: ChatRoom): string {
+  if (room.type === 'order') return `Pasūtījums #${room.orderNumber ?? ''}`;
+  return (
+    room.otherParticipantName ??
+    (room.pickupCity && room.deliveryCity
+      ? `${room.pickupCity} → ${room.deliveryCity}`
+      : room.jobNumber ?? '')
+  );
+}
+
+function RoomIcon({ room }: { room: ChatRoom }) {
+  if (room.type === 'order') return <Package className="h-4 w-4" />;
+  if (room.jobType === 'WASTE_COLLECTION') return <Trash2 className="h-4 w-4" />;
+  return <Truck className="h-4 w-4" />;
+}
 
 // ── Order chat thread (HTTP polling — no WS room for orders yet) ──────────────
 
@@ -28,7 +63,7 @@ function OrderChatThread({
   userId: string;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -37,22 +72,15 @@ function OrderChatThread({
     getOrderChatMessages(orderId, token)
       .then(setMessages)
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingMsgs(false));
   }, [orderId, token]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  // Poll every 8 s for new messages
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     const id = setInterval(load, 8000);
     return () => clearInterval(id);
   }, [load]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -72,13 +100,13 @@ function OrderChatThread({
   return (
     <>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {loading ? (
+        {loadingMsgs ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             Ielādē ziņojumus...
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            Nav ziņojumu. Uzsāciet sarunu ar piegādātāju.
+            Nav ziņojumu
           </div>
         ) : (
           messages.map((msg) => {
@@ -108,7 +136,7 @@ function OrderChatThread({
       <div className="flex items-center gap-2 p-3 border-t border-border">
         <input
           className="flex-1 bg-muted rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
-          placeholder="Rakstiet ziņojumu piegādātājam..."
+          placeholder="Rakstiet ziņojumu..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -131,54 +159,40 @@ function OrderChatThread({
 
 export default function ChatPage() {
   const { user, token } = useAuth();
-  const [jobs, setJobs] = useState<ApiTransportJob[]>([]);
-  const [orders, setOrders] = useState<ApiOrder[]>([]);
-  const [convType, setConvType] = useState<ConversationType>('job');
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const [selected, setSelected] = useState<ChatRoom | null>(null);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Load rooms using the same /chat/my-rooms endpoint as mobile
+  const loadRooms = useCallback(() => {
     if (!token) return;
-    getMyTransportJobs(token)
+    getMyChatRooms(token)
       .then((data) => {
-        const active = data.filter((j) =>
-          [
-            'PENDING',
-            'ACCEPTED',
-            'EN_ROUTE_PICKUP',
-            'AT_PICKUP',
-            'LOADED',
-            'EN_ROUTE_DELIVERY',
-            'AT_DELIVERY',
-            'DELIVERED',
-          ].includes(j.status),
-        );
-        setJobs(active);
-        if (active.length > 0) setSelectedJobId(active[0].id);
+        setRooms(data);
+        setSelected((prev) => prev ?? data[0] ?? null);
       })
-      .catch(() => {});
-
-    getMyOrders(token)
-      .then((data) => {
-        const active = data.filter((o) =>
-          ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'DELIVERED'].includes(o.status),
-        );
-        setOrders(active);
-      })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoadingRooms(false));
   }, [token]);
 
-  const { messages, loading, connected, sending, sendMessage } = useChat({
-    jobId: convType === 'job' ? (selectedJobId ?? '') : '',
+  useEffect(() => { loadRooms(); }, [loadRooms]);
+  // Poll room list every 30 s (same cadence as mobile)
+  useEffect(() => {
+    const id = setInterval(loadRooms, 30_000);
+    return () => clearInterval(id);
+  }, [loadRooms]);
+
+  const selectedJobId = selected?.type === 'job' ? (selected.jobId ?? '') : '';
+
+  const { messages, loading: loadingMsgs, connected, sending, sendMessage } = useChat({
+    jobId: selectedJobId,
     token,
     currentUser: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null,
   });
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -191,75 +205,76 @@ export default function ChatPage() {
     }
   };
 
-  const selectedJob = jobs.find((j) => j.id === selectedJobId);
-  const selectedOrder = orders.find((o) => o.id === selectedOrderId);
-
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4 p-6 overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 shrink-0 flex flex-col gap-2">
-        {/* Type toggle */}
-        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 mb-2">
-          {(
-            [
-              ['job', 'Transports', Truck],
-              ['order', 'Pasūtījumi', Package],
-            ] as const
-          ).map(([type, label, Icon]) => (
-            <button
-              key={type}
-              onClick={() => setConvType(type)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${convType === type ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
+      {/* Sidebar — room list */}
+      <div className="w-72 shrink-0 flex flex-col gap-1 overflow-y-auto">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
+          Sarunas
+        </h2>
 
-        {convType === 'job' ? (
-          <>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Transporta Darbi
-            </h2>
-            {jobs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nav aktīvu darbu</p>
-            ) : (
-              jobs.map((job) => (
-                <button
-                  key={job.id}
-                  onClick={() => setSelectedJobId(job.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${selectedJobId === job.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-muted'}`}
-                >
-                  <p className="font-medium truncate">
-                    {job.pickupAddress?.split(',')[0] ?? 'Pickup'} →{' '}
-                    {job.deliveryAddress?.split(',')[0] ?? 'Delivery'}
-                  </p>
-                  <p className="text-xs opacity-70 mt-0.5">{job.status}</p>
-                </button>
-              ))
-            )}
-          </>
+        {loadingRooms ? (
+          <div className="space-y-2 px-1">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-16 bg-muted rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : rooms.length === 0 ? (
+          <p className="text-sm text-muted-foreground px-1">Nav sarunu</p>
         ) : (
-          <>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Materiālu Pasūtījumi
-            </h2>
-            {orders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nav aktīvu pasūtījumu</p>
-            ) : (
-              orders.map((order) => (
-                <button
-                  key={order.id}
-                  onClick={() => setSelectedOrderId(order.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors ${selectedOrderId === order.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-muted'}`}
+          rooms.map((room) => {
+            const id = room.type === 'job' ? room.jobId : room.orderId;
+            const selId = selected?.type === 'job' ? selected.jobId : selected?.orderId;
+            const isActive = id === selId;
+            return (
+              <button
+                key={id}
+                onClick={() => setSelected(room)}
+                className={`w-full text-left px-3 py-3 rounded-xl border transition-colors flex items-start gap-3 ${isActive ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border hover:bg-muted'}`}
+              >
+                <div
+                  className={`mt-0.5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`}
                 >
-                  <p className="font-medium truncate">#{order.orderNumber}</p>
-                  <p className="text-xs opacity-70 mt-0.5">{order.status}</p>
-                </button>
-              ))
-            )}
-          </>
+                  <RoomIcon room={room} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-sm font-semibold truncate">{roomLabel(room)}</p>
+                    {room.lastMessage && (
+                      <span
+                        className={`text-xs shrink-0 ${isActive ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                      >
+                        {formatRelative(room.lastMessage.createdAt)}
+                      </span>
+                    )}
+                  </div>
+                  {room.type === 'job' &&
+                    room.pickupCity &&
+                    room.deliveryCity &&
+                    room.otherParticipantName && (
+                      <p
+                        className={`text-xs truncate mt-0.5 ${isActive ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                      >
+                        {room.pickupCity} → {room.deliveryCity}
+                      </p>
+                    )}
+                  {room.lastMessage ? (
+                    <p
+                      className={`text-xs truncate mt-0.5 ${isActive ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}
+                    >
+                      {room.lastMessage.senderName}: {room.lastMessage.body}
+                    </p>
+                  ) : (
+                    <p
+                      className={`text-xs mt-0.5 ${isActive ? 'text-primary-foreground/60' : 'text-muted-foreground/60'}`}
+                    >
+                      Nav ziņojumu
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
 
@@ -269,15 +284,9 @@ export default function ChatPage() {
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">
-            {convType === 'job'
-              ? selectedJob
-                ? `${selectedJob.pickupAddress?.split(',')[0] ?? ''} → ${selectedJob.deliveryAddress?.split(',')[0] ?? ''}`
-                : 'Izvēlieties darbu'
-              : selectedOrder
-                ? `Pasūtījums #${selectedOrder.orderNumber}`
-                : 'Izvēlieties pasūtījumu'}
+            {selected ? roomLabel(selected) : 'Izvēlieties sarunu'}
           </span>
-          {convType === 'job' && (
+          {selected?.type === 'job' && (
             <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
               {connected ? (
                 <>
@@ -292,27 +301,23 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Messages */}
-        {convType === 'order' && selectedOrderId && token && user ? (
-          <OrderChatThread orderId={selectedOrderId} token={token} userId={user.id} />
-        ) : convType === 'order' ? (
+        {/* Thread body */}
+        {!selected ? (
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Izvēlieties pasūtījumu, lai sāktu čatu
+            Izvēlieties sarunu no saraksta
           </div>
-        ) : (
+        ) : selected.type === 'order' && selected.orderId && token && user ? (
+          <OrderChatThread orderId={selected.orderId} token={token} userId={user.id} />
+        ) : selected.type === 'job' ? (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {!selectedJobId ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  Izvēlieties transporta darbu, lai sāktu čatu
-                </div>
-              ) : loading ? (
+              {loadingMsgs ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                   Ielādē ziņojumus...
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                  Šajā darbā vēl nav ziņojumu
+                  Nav ziņojumu
                 </div>
               ) : (
                 messages.map((msg) => {
@@ -339,32 +344,30 @@ export default function ChatPage() {
               )}
               <div ref={bottomRef} />
             </div>
-            {selectedJobId && (
-              <div className="flex items-center gap-2 p-3 border-t border-border">
-                <input
-                  className="flex-1 bg-muted rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
-                  placeholder="Rakstiet ziņojumu..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  disabled={!connected}
-                />
-                <Button
-                  size="icon"
-                  onClick={handleSend}
-                  disabled={!input.trim() || !connected || sending}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-2 p-3 border-t border-border">
+              <input
+                className="flex-1 bg-muted rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground"
+                placeholder="Rakstiet ziņojumu..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                disabled={!connected}
+              />
+              <Button
+                size="icon"
+                onClick={handleSend}
+                disabled={!input.trim() || !connected || sending}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );
