@@ -173,7 +173,7 @@ export default function DeliveriesPage() {
   const groups = groupByDate(entries);
 
   return (
-    <div className="max-w-3xl mx-auto py-8 w-full animate-in fade-in duration-500">
+    <div className="py-8 w-full animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center gap-3 mb-10">
         <div>
