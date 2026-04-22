@@ -63,21 +63,23 @@ function ToggleRow({
   onToggle: (v: boolean) => void;
 }) {
   return (
-    <View style={styles.row}>
-      <View style={styles.rowIcon}>{icon}</View>
-      <View style={styles.rowBody}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        {description ? <Text style={styles.rowDesc}>{description}</Text> : null}
+    <View style={styles.cardItem}>
+      <View style={styles.row}>
+        <View style={styles.rowIcon}>{icon}</View>
+        <View style={styles.rowBody}>
+          <Text style={styles.rowLabel}>{label}</Text>
+          {description ? <Text style={styles.rowDesc}>{description}</Text> : null}
+        </View>
+        <Switch
+          value={value}
+          onValueChange={(v) => {
+            haptics.light();
+            onToggle(v);
+          }}
+          trackColor={{ false: '#e5e7eb', true: '#374151' }}
+          thumbColor="#ffffff"
+        />
       </View>
-      <Switch
-        value={value}
-        onValueChange={(v) => {
-          haptics.light();
-          onToggle(v);
-        }}
-        trackColor={{ false: '#e5e7eb', true: '#374151' }}
-        thumbColor="#ffffff"
-      />
     </View>
   );
 }
@@ -87,17 +89,21 @@ function LinkRow({
   label,
   onPress,
   danger,
+  rightSlot,
 }: {
   icon: React.ReactNode;
   label: string;
   onPress: () => void;
   danger?: boolean;
+  rightSlot?: React.ReactNode;
 }) {
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.rowIcon}>{icon}</View>
-      <Text style={[styles.rowLabel, { flex: 1 }, danger && styles.dangerLabel]}>{label}</Text>
-      <ChevronRight size={16} color="#d1d5db" />
+    <TouchableOpacity style={styles.cardItem} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.row}>
+        <View style={styles.rowIcon}>{icon}</View>
+        <Text style={[styles.rowLabel, { flex: 1 }, danger && styles.dangerLabel]}>{label}</Text>
+        {rightSlot ? rightSlot : <ChevronRight size={20} color="#6b7280" />}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -165,12 +171,35 @@ export default function SettingsScreen() {
         onBack={() => (router.canGoBack() ? router.back() : router.replace(fallbackHome))}
       />
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ── Profile Header ─────────────────────────────── */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarInitial}>{user?.email?.charAt(0).toUpperCase() || 'U'}</Text>
+          </View>
+          <Text style={styles.profileName}>{user?.email?.split('@')[0] || 'Lietotājs'}</Text>
+
+          <View style={styles.profileBadges}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{user?.email || 'Nav adroles'}</Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {user?.userType === 'BUYER' ? 'Pircējs' : 'Administrators'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* ── Notifications ─────────────────────────────── */}
         <SectionHeader label="PAZIŅOJUMI" />
-        <View style={styles.card}>
+        <View style={styles.cardGroup}>
           <ToggleRow
-            icon={<Bell size={18} color="#6b7280" />}
+            icon={<Bell size={20} color="#6b7280" />}
             label="Push paziņojumi"
             description="Saņemt paziņojumus uz ierīci"
             value={pushEnabled}
@@ -179,9 +208,8 @@ export default function SettingsScreen() {
               savePrefs({ notifPush: v });
             }}
           />
-          <View style={styles.divider} />
           <ToggleRow
-            icon={<Bell size={18} color="#6b7280" />}
+            icon={<Bell size={20} color="#6b7280" />}
             label="Pasūtījumu atjauninājumi"
             description="Statusa izmaiņas jūsu pasūtījumiem"
             value={orderUpdates}
@@ -190,9 +218,8 @@ export default function SettingsScreen() {
               savePrefs({ notifOrderUpdates: v });
             }}
           />
-          <View style={styles.divider} />
           <ToggleRow
-            icon={<Bell size={18} color="#6b7280" />}
+            icon={<Bell size={20} color="#6b7280" />}
             label="Jaunumi un paziņojumi"
             description="Informācija par jaunumiem un piedāvājumiem"
             value={jobAlerts}
@@ -201,9 +228,8 @@ export default function SettingsScreen() {
               savePrefs({ notifJobAlerts: v });
             }}
           />
-          <View style={styles.divider} />
           <ToggleRow
-            icon={<Bell size={18} color="#6b7280" />}
+            icon={<Bell size={20} color="#6b7280" />}
             label="Mārketinga e-pasti"
             description="Jaunumi, piedāvājumi un atjauninājumi"
             value={marketingEmails}
@@ -216,46 +242,44 @@ export default function SettingsScreen() {
 
         {/* ── Language ──────────────────────────────────── */}
         <SectionHeader label="VALODA" />
-        <View style={styles.card}>
+        <View style={styles.cardGroup}>
           <TouchableOpacity
-            style={styles.row}
+            style={styles.cardItem}
             onPress={() => {
               haptics.light();
               language === 'lv' ? setLanguage('ru') : setLanguage('lv');
             }}
             activeOpacity={0.7}
           >
-            <View style={styles.rowIcon}>
-              <Globe size={18} color="#6b7280" />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.rowLabel}>Lietotnes valoda / Язык</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginRight: 4 }}>
-              <Text style={[styles.langOpt, language === 'lv' && styles.langOptActive]}>LV</Text>
-              <Text style={{ color: '#d1d5db', marginHorizontal: 2 }}>|</Text>
-              <Text style={[styles.langOpt, language === 'ru' && styles.langOptActive]}>RU</Text>
+            <View style={styles.row}>
+              <View style={styles.rowIcon}>
+                <Globe size={20} color="#6b7280" />
+              </View>
+              <Text style={[styles.rowLabel, { flex: 1 }]}>Valoda / Язык</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.langOpt, language === 'lv' && styles.langOptActive]}>LV</Text>
+                <Text style={{ color: '#d1d5db' }}>|</Text>
+                <Text style={[styles.langOpt, language === 'ru' && styles.langOptActive]}>RU</Text>
+              </View>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* ── Legal & Support ───────────────────────────── */}
         <SectionHeader label="JURIDISKĀ INFORMĀCIJA" />
-        <View style={styles.card}>
+        <View style={styles.cardGroup}>
           <LinkRow
-            icon={<Shield size={18} color="#6b7280" />}
+            icon={<Shield size={20} color="#6b7280" />}
             label="Privātuma politika"
             onPress={() => Linking.openURL('https://b3hub.lv/privacy')}
           />
-          <View style={styles.divider} />
           <LinkRow
-            icon={<Lock size={18} color="#6b7280" />}
+            icon={<Lock size={20} color="#6b7280" />}
             label="Lietošanas noteikumi"
             onPress={() => Linking.openURL('https://b3hub.lv/terms')}
           />
-          <View style={styles.divider} />
           <LinkRow
-            icon={<HelpCircle size={18} color="#6b7280" />}
+            icon={<HelpCircle size={20} color="#6b7280" />}
             label="Palīdzība un atbalsts"
             onPress={() => Linking.openURL('mailto:support@b3hub.lv')}
           />
@@ -263,32 +287,36 @@ export default function SettingsScreen() {
 
         {/* ── App info ──────────────────────────────────── */}
         <SectionHeader label="PAR LIETOTNI" />
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.rowIcon}>
-              <Info size={18} color="#6b7280" />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.rowLabel}>Versija</Text>
-              <Text style={styles.rowDesc}>{APP_VERSION}</Text>
+        <View style={styles.cardGroup}>
+          <View style={styles.cardItem}>
+            <View style={styles.row}>
+              <View style={styles.rowIcon}>
+                <Info size={20} color="#6b7280" />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowLabel}>Versija</Text>
+                <Text style={styles.rowDesc}>{APP_VERSION}</Text>
+              </View>
             </View>
           </View>
         </View>
 
         {/* ── Account ───────────────────────────────────── */}
         <SectionHeader label="KONTS" />
-        <View style={styles.card}>
+        <View style={styles.cardGroup}>
           <LinkRow
-            icon={<KeyRound size={18} color="#6b7280" />}
+            icon={<KeyRound size={20} color="#6b7280" />}
             label="Nomainīt paroli"
             onPress={() => {
               haptics.light();
               router.push('/change-password');
             }}
+            rightSlot={
+              <Text style={{ color: '#3b82f6', fontWeight: '700', fontSize: 16 }}>{'>>>'}</Text>
+            }
           />
-          <View style={styles.divider} />
           <LinkRow
-            icon={<LogOut size={18} color="#ef4444" />}
+            icon={<LogOut size={20} color="#ef4444" />}
             label="Izrakstīties"
             onPress={handleLogout}
             danger
@@ -304,37 +332,95 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: colors.bgSubtle,
+    backgroundColor: '#f6f8fb', // Soft light blue-grey match the image
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  avatarInitial: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#3b82f6',
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  profileBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  badge: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#4b5563',
   },
   sectionHeader: {
-    fontSize: 11,
+    fontSize: 22,
     fontWeight: '700',
-    color: colors.textDisabled,
-    letterSpacing: 0.8,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 8,
+    color: '#111827',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
-  card: {
-    marginHorizontal: 16,
-    backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
+  cardGroup: {
+    gap: 12,
+    paddingHorizontal: 16,
+  },
+  cardItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingVertical: 16,
+    gap: 14,
   },
   rowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.bgMuted,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },

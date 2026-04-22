@@ -43,8 +43,8 @@ import { useLiveUpdates } from '@/lib/use-live-updates';
 import { useToast } from '@/components/ui/Toast';
 import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
 import { colors } from '@/lib/theme';
-import { DisputeSheet } from './dispute-sheet';
-import { AmendSheet } from './amend-sheet';
+import { DisputeSheet } from '@/components/order/DisputeSheet';
+import { AmendSheet } from '@/components/order/AmendSheet';
 
 let Marker: any = null;
 try {

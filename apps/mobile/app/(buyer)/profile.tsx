@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
+  StyleSheet,
   Text,
   TouchableOpacity,
   ScrollView,
@@ -47,6 +48,11 @@ import { t } from '@/lib/translations';
 import { getRoleName } from '@/lib/utils';
 // If this file runs in Seller mode, it can import quotes hook
 import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
+
+
+function SectionHeader({ label }: { label: string }) {
+  return <Text style={styles.sectionHeader}>{label}</Text>;
+}
 
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
@@ -166,15 +172,15 @@ export default function ProfileScreen() {
   const isComplete = missing.length === 0;
 
   return (
-    <ScreenContainer topInset={0} bg="#f9fafb" noAnimation>
+    <ScreenContainer topInset={0} bg="#f6f8fb" noAnimation>
       <ScreenHeader title="Profils" />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Profile Identity Block */}
         <TouchableOpacity
-          className="flex-row items-center px-5 py-5 bg-white mb-2"
+          style={[styles.profileCard, { marginTop: 16 }]}
           activeOpacity={0.8}
           onPress={openEdit}
         >
@@ -217,7 +223,7 @@ export default function ProfileScreen() {
         {/* Completeness Nudge */}
         {!isComplete && (
           <TouchableOpacity
-            className="mx-5 my-3 bg-amber-50 border border-amber-100 rounded-2xl p-4 flex-row items-center shadow-sm"
+            style={[styles.nudgeCard, { marginTop: 12 }]}
             activeOpacity={0.8}
             onPress={openEdit}
           >
@@ -236,7 +242,8 @@ export default function ProfileScreen() {
 
         {/* Role Switcher */}
         {isMultiRole && (
-          <View className="mb-3 border-y border-gray-100 bg-white">
+          <><SectionHeader label="LOMA" />
+          <View style={styles.cardGroup}>
             <MenuItem
               icon={ArrowUpDown}
               label="Mainīt lomu"
@@ -247,11 +254,12 @@ export default function ProfileScreen() {
                 setRoleSheetOpen(true);
               }}
             />
-          </View>
+          </View></>
         )}
 
         {/* Dynamic Mode-Specific Links */}
-        <View className="mb-3 border-y border-gray-100 bg-white">
+        <SectionHeader label="DARBĪBAS" />
+        <View style={styles.cardGroup}>
           {mode === 'BUYER' && (
             <MenuItem
               icon={BarChart2}
@@ -322,7 +330,8 @@ export default function ProfileScreen() {
 
         {/* Application Section (Only show if missing rights and in BUYER mode commonly or generally) */}
         {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && (
-          <View className="mb-3 border-y border-gray-100 bg-white">
+          <><SectionHeader label="PIETEIKUMI" />
+          <View style={styles.cardGroup}>
             {!user?.canSell &&
               (() => {
                 const app = applications.find((a) => a.appliesForSell);
@@ -390,11 +399,12 @@ export default function ProfileScreen() {
                   />
                 );
               })()}
-          </View>
+          </View></>
         )}
 
         {/* General Settings */}
-        <View className="mb-3 border-y border-gray-100 bg-white">
+        <SectionHeader label="VISPĀRĪGI" />
+        <View style={styles.cardGroup}>
           <MenuItem
             icon={Bell}
             label="Paziņojumi"
@@ -422,37 +432,32 @@ export default function ProfileScreen() {
 
           {/* Language Toggle inline item */}
           <TouchableOpacity
-            className="flex-row items-center px-5 py-4 bg-white"
+            style={styles.cardItem}
             onPress={() => {
               haptics.light();
               setLanguage(language === 'lv' ? 'ru' : 'lv');
             }}
             activeOpacity={0.7}
           >
-            <View className="w-9 h-9 rounded-full items-center justify-center mr-4 bg-gray-100">
-              <Globe size={18} color="#4b5563" strokeWidth={2} />
-            </View>
-            <View className="flex-1 flex-row items-center justify-between">
-              <Text className="text-base font-semibold text-gray-900">Valoda / Язык</Text>
-              <View className="flex-row items-center">
-                <Text
-                  className={`text-sm font-bold ${language === 'lv' ? 'text-gray-900' : 'text-gray-400'}`}
-                >
-                  LV
-                </Text>
-                <Text className="text-sm font-bold text-gray-300 mx-1.5">|</Text>
-                <Text
-                  className={`text-sm font-bold ${language === 'ru' ? 'text-gray-900' : 'text-gray-400'}`}
-                >
-                  RU
-                </Text>
+            <View style={styles.row}>
+              <View style={styles.rowIcon}>
+                <Globe size={20} color="#6b7280" />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowLabel}>Valoda / Язык</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.langOpt, language === 'lv' && styles.langOptActive]}>LV</Text>
+                <Text style={{ color: '#d1d5db' }}>|</Text>
+                <Text style={[styles.langOpt, language === 'ru' && styles.langOptActive]}>RU</Text>
               </View>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* Destructive Actions */}
-        <View className="mb-3 border-y border-gray-100 bg-white">
+        <SectionHeader label="KONTA DARBĪBAS" />
+        <View style={styles.cardGroup}>
           <MenuItem icon={LogOut} label="Iziet" onPress={handleLogout} />
           <MenuItem
             icon={Trash2}
@@ -594,32 +599,25 @@ function MenuItem({
   hideBorder?: boolean;
 }) {
   return (
-    <>
-      <TouchableOpacity
-        className="flex-row items-center px-5 py-3.5 bg-white"
-        onPress={onPress}
-        disabled={!onPress}
-        activeOpacity={0.7}
-      >
-        <View
-          className={`w-9 h-9 rounded-full items-center justify-center mr-4 ${isDestructive ? 'bg-red-50' : 'bg-gray-100'}`}
-        >
-          <Icon size={18} color={isDestructive ? '#ef4444' : '#4b5563'} strokeWidth={2} />
+    <TouchableOpacity
+      style={styles.cardItem}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.row}>
+        <View style={styles.rowIcon}>
+          <Icon size={20} color={isDestructive ? '#ef4444' : '#6b7280'} strokeWidth={2} />
         </View>
-        <View className="flex-1 flex-row items-center justify-between">
-          <Text
-            className={`text-base font-semibold ${isDestructive ? 'text-red-600' : 'text-gray-900'}`}
-          >
-            {label}
-          </Text>
-          <View className="flex-row items-center">
-            {!!value && <Text className="text-sm font-medium text-gray-500 mr-2">{value}</Text>}
-            {!isDestructive && onPress && <ChevronRight size={18} color="#d1d5db" />}
-          </View>
+        <View style={styles.rowBody}>
+          <Text style={[styles.rowLabel, isDestructive && styles.dangerLabel]}>{label}</Text>
         </View>
-      </TouchableOpacity>
-      {!hideBorder && <View className="h-px bg-gray-50 ml-[68px]" />}
-    </>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {!!value && <Text style={styles.rowDescValue}>{value}</Text>}
+          {!isDestructive && onPress && <ChevronRight size={20} color="#6b7280" />}
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -637,36 +635,153 @@ function ApplicationRow({
   hideBorder?: boolean;
 }) {
   return (
-    <>
-      <View className="flex-row items-center px-5 py-3.5 bg-white">
-        <View className="w-9 h-9 rounded-full items-center justify-center mr-4 bg-gray-100">
-          <Icon size={18} color="#4b5563" strokeWidth={2} />
+    <View style={styles.cardItem}>
+      <View style={styles.row}>
+        <View style={styles.rowIcon}>
+          <Icon size={20} color="#6b7280" strokeWidth={2} />
         </View>
-        <View className="flex-1 flex-row items-center justify-between">
-          <Text className="text-base font-semibold text-gray-900">{label}</Text>
-          {status === 'PENDING' ? (
-            <View className="bg-amber-100 px-2 py-1 rounded">
-              <Text className="text-xs font-bold text-amber-800 tracking-wide uppercase">
-                Izskatīšanā
-              </Text>
-            </View>
-          ) : (
-            <View className="flex-row items-center gap-2.5">
-              <View className="bg-red-100 px-2 py-1 rounded">
-                <Text className="text-xs font-bold text-red-800 tracking-wide uppercase">
-                  Noraidīts
-                </Text>
-              </View>
-              {onReapply && (
-                <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
-                  <Text className="text-sm font-bold text-blue-600">Atkārtot</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+        <View style={styles.rowBody}>
+          <Text style={styles.rowLabel}>{label}</Text>
         </View>
+        
+        {status === 'PENDING' ? (
+          <View style={styles.badgeAmber}>
+            <Text style={styles.badgeAmberText}>Izskatīšanā</Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.badgeRed}>
+              <Text style={styles.badgeRedText}>Noraidīts</Text>
+            </View>
+            {onReapply && (
+              <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#3b82f6' }}>Atkārtot</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
-      {!hideBorder && <View className="h-px bg-gray-50 ml-[68px]" />}
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 60,
+  },
+  profileCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  nudgeCard: {
+    backgroundColor: '#fffbeb', // amber-50
+    marginHorizontal: 16,
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#fef3c7', // amber-100
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: '#6b7280',
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  cardGroup: {
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  cardItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 14,
+  },
+  rowIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowBody: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  rowLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  rowDescValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+    marginRight: 8,
+  },
+  dangerLabel: {
+    color: '#ef4444',
+  },
+  langOpt: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9ca3af',
+  },
+  langOptActive: {
+    color: '#111827',
+  },
+  badgeAmber: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  badgeAmberText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
+    textTransform: 'uppercase',
+  },
+  badgeRed: {
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  badgeRedText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#991b1b',
+    textTransform: 'uppercase',
+  },
+});

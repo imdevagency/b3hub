@@ -35,7 +35,7 @@ import {
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { ActiveJobMap } from '@/components/driver/ActiveJobMap';
-import { styles } from './_active-styles';
+import { styles } from '@/lib/active-styles';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
