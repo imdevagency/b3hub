@@ -6,20 +6,25 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  Text as RNText,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type ApiProject, type ProjectStatus } from '@/lib/api';
-import { formatDateShort } from '@/lib/format';
-import { Building2, Package, MapPin, Calendar, Plus } from 'lucide-react-native';
+import { Building2, Plus } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { Text } from '@/components/ui/text';
-import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
+import { colors } from '@/lib/tokens';
 import { haptics } from '@/lib/haptics';
 
 // ─── Status config ────────────────────────────────────────────────────────
@@ -41,67 +46,52 @@ function ProjectCard({ project, onPress }: { project: ApiProject; onPress: () =>
       maximumFractionDigits: 0,
     }).format(v);
 
+  const statusConf = STATUS_CONFIG[project.status] || {
+    label: project.status,
+    bg: '#F3F4F6',
+    color: '#6B7280',
+  };
+
   return (
     <TouchableOpacity
-      className="bg-white px-5 py-6 border-b border-gray-100"
+      className="bg-card mx-4 mb-4 p-5 rounded-2xl"
+      style={styles.cardShadow}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View className="flex-row justify-between items-start mb-1">
+      <View className="flex-row justify-between items-start mb-5">
         <View className="flex-1 pr-4">
-          <Text
-            className=" font-extrabold tracking-tight text-gray-900 mb-1"
-            style={{ fontSize: 22 }}
-            numberOfLines={1}
-          >
+          <RNText style={styles.cardTitle} numberOfLines={1}>
             {project.name}
-          </Text>
+          </RNText>
           {(project.clientName || project.siteAddress) && (
-            <Text
-              className=" font-medium text-gray-500 mb-6"
-              style={{ fontSize: 15 }}
-              numberOfLines={1}
-            >
+            <RNText style={styles.cardSubtitle} numberOfLines={1}>
               {[project.clientName, project.siteAddress].filter(Boolean).join(' • ')}
-            </Text>
+            </RNText>
           )}
         </View>
-        <View className="bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 mt-1">
-          <Text
-            className=" font-bold text-gray-600 uppercase tracking-widest"
-            style={{ fontSize: 11 }}
-          >
-            {STATUS_CONFIG[project.status]?.label ?? project.status}
-          </Text>
-        </View>
+        <StatusPill
+          label={statusConf.label}
+          bg={statusConf.bg}
+          color={statusConf.color}
+          size="sm"
+        />
       </View>
 
       <View className="flex-row items-center justify-between">
         <View>
-          <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-            Līgums
-          </Text>
-          <Text className="text-lg font-bold text-gray-900 tracking-tight">
-            {formatEur(project.contractValue)}
-          </Text>
+          <RNText style={styles.statLabel}>Līgums</RNText>
+          <RNText style={styles.statValue}>{formatEur(project.contractValue)}</RNText>
         </View>
         <View>
-          <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-            Izmaksas
-          </Text>
-          <Text className="text-lg font-bold text-gray-900 tracking-tight">
-            {formatEur(project.materialCosts)}
-          </Text>
+          <RNText style={styles.statLabel}>Izmaksas</RNText>
+          <RNText style={styles.statValue}>{formatEur(project.materialCosts)}</RNText>
         </View>
         <View className="items-end">
-          <Text className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
-            Peļņa
-          </Text>
-          <Text
-            className={`text-lg font-black tracking-tight ${project.grossMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}
-          >
+          <RNText style={styles.statLabel}>Peļņa</RNText>
+          <RNText style={project.grossMargin >= 0 ? styles.statValueProfit : styles.statValueLoss}>
             {project.marginPct !== null ? `${Math.round(project.marginPct)}%` : '—'}
-          </Text>
+          </RNText>
         </View>
       </View>
     </TouchableOpacity>
@@ -126,7 +116,7 @@ export default function ProjectsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7">
         <ScreenHeader title="Projekti" />
         <SkeletonCard count={4} />
       </ScreenContainer>
@@ -134,7 +124,7 @@ export default function ProjectsScreen() {
   }
 
   return (
-    <ScreenContainer bg="#ffffff">
+    <ScreenContainer bg="#F4F5F7">
       <ScreenHeader
         title="Projekti"
         rightAction={
@@ -185,9 +175,7 @@ export default function ProjectsScreen() {
                 onPress={() => router.push('/(buyer)/project/new')}
                 activeOpacity={0.8}
               >
-                <Text className="text-white font-bold text-base bg-gray-900 px-6 py-3 rounded-full overflow-hidden text-center mt-6">
-                  Jauns projekts
-                </Text>
+                <RNText style={styles.emptyActionText}>Jauns projekts</RNText>
               </TouchableOpacity>
             }
           />
@@ -201,5 +189,69 @@ export default function ProjectsScreen() {
 
 const styles = StyleSheet.create({
   emptyContainer: { flexGrow: 1, padding: 24, justifyContent: 'center' },
-  list: { paddingBottom: 100 },
+  list: { paddingBottom: 100, paddingTop: 16 },
+  emptyActionText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    fontSize: 15,
+    backgroundColor: '#111827',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 999,
+    textAlign: 'center',
+    marginTop: 24,
+    overflow: 'hidden',
+  },
+  cardShadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  statValueProfit: {
+    fontSize: 16,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#059669',
+    letterSpacing: -0.3,
+  },
+  statValueLoss: {
+    fontSize: 16,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#EF4444',
+    letterSpacing: -0.3,
+  },
 });
