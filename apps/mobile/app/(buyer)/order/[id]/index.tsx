@@ -313,30 +313,32 @@ export default function OrderTrackingScreen() {
               </View>
             </View>
 
-            {isTerminal && (
+            <View style={styles.cardActions}>
+              {isTerminal && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                  onPress={() => {
+                    haptics.medium();
+                    router.replace('/(buyer)/new-order' as never);
+                  }}
+                >
+                  Pasūtīt vēlreiz
+                </Button>
+              )}
               <Button
-                variant="outline"
+                variant="secondary"
                 size="lg"
-                className="w-full"
+                className={isTerminal ? 'flex-1' : 'w-full'}
                 onPress={() => {
-                  haptics.medium();
-                  router.replace('/(buyer)/new-order' as never);
+                  haptics.light();
+                  router.push(`/(buyer)/order/${id}/details` as never);
                 }}
               >
-                Pasūtīt vēlreiz
+                Detaļas
               </Button>
-            )}
-            <Button
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              onPress={() => {
-                haptics.light();
-                router.push(`/(buyer)/order/${id}/details` as never);
-              }}
-            >
-              Detaļas
-            </Button>
+            </View>
           </View>
         </View>
       </View>
@@ -549,5 +551,11 @@ const styles = StyleSheet.create({
   },
   stepLabelActive: {
     color: '#111827',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
   },
 });

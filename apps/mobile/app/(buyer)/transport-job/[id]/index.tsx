@@ -26,7 +26,7 @@ try {
 }
 
 const JOB_STATUS_LABEL: Record<string, string> = {
-  AVAILABLE: 'Meklē pārvadātāju',
+  AVAILABLE: 'Pasūtījums publicēts platformā',
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
   EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
   AT_PICKUP: 'Šoferis ir pie kraušanas vietas',
@@ -44,6 +44,7 @@ const JOB_STEPS = [
 ] as const;
 
 const JOB_STATUS_TO_STEP: Record<string, number> = {
+  AVAILABLE: 0,
   ACCEPTED: 0,
   EN_ROUTE_PICKUP: 0,
   AT_PICKUP: 1,
@@ -139,6 +140,7 @@ export default function TransportJobTrackingScreen() {
   const driver = job.driver;
   const currentStepIdx = JOB_STATUS_TO_STEP[job.status] ?? -1;
   const isTerminal = job.status === 'DELIVERED' || job.status === 'CANCELLED';
+  const isSearching = job.status === 'AVAILABLE';
 
   const heroPrimary = (() => {
     if (job.status === 'DELIVERED') return 'Piegādāts';
@@ -224,7 +226,7 @@ export default function TransportJobTrackingScreen() {
             {currentStepIdx >= 0 && (
               <View style={styles.stepsRow}>
                 {JOB_STEPS.map((step, index) => {
-                  const done = index <= currentStepIdx;
+                  const done = !isSearching && index <= currentStepIdx;
                   return (
                     <View key={step.key} style={styles.stepItem}>
                       <View style={[styles.stepDot, done && styles.stepDotActive]} />
@@ -238,6 +240,10 @@ export default function TransportJobTrackingScreen() {
                   );
                 })}
               </View>
+            )}
+
+            {!driver && !isTerminal && (
+              <Text style={styles.waitingText}>Meklējam pieejamo šoferi platformā…</Text>
             )}
 
             {driver && (
@@ -300,30 +306,32 @@ export default function TransportJobTrackingScreen() {
               </View>
             </View>
 
-            {isTerminal && (
+            <View style={styles.cardActions}>
+              {isTerminal && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                  onPress={() => {
+                    haptics.medium();
+                    router.replace('/transport' as never);
+                  }}
+                >
+                  Pasūtīt vēlreiz
+                </Button>
+              )}
               <Button
-                variant="outline"
+                variant="secondary"
                 size="lg"
-                className="w-full"
+                className={isTerminal ? 'flex-1' : 'w-full'}
                 onPress={() => {
-                  haptics.medium();
-                  router.replace('/transport' as never);
+                  haptics.light();
+                  router.push(`/(buyer)/transport-job/${id}/details` as never);
                 }}
               >
-                Pasūtīt vēlreiz
+                Detaļas
               </Button>
-            )}
-            <Button
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              onPress={() => {
-                haptics.light();
-                router.push(`/(buyer)/transport-job/${id}/details` as never);
-              }}
-            >
-              Detaļas
-            </Button>
+            </View>
           </View>
         </View>
       </View>
@@ -550,5 +558,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: '#111827',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  waitingText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#9CA3AF',
+    marginBottom: 12,
   },
 });
