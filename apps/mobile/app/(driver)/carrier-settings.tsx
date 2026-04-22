@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Text,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import {
   api,
@@ -18,7 +17,7 @@ import {
   type CarrierBlockedDate,
   type SkipSize,
 } from '@/lib/api';
-import { Trash2, Plus, Check, X } from 'lucide-react-native';
+import { Trash2, Plus, Calendar, MapPin } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -46,22 +45,22 @@ export default function CarrierSettingsScreen() {
 
   // Pricing
   const [pricing, setPricing] = useState<CarrierPricing[]>([]);
-  const [priceInputs, setPriceInputs] = useState<Partial<Record<SkipSize, string>>>({});
+  const [localPrices, setLocalPrices] = useState<Record<SkipSize, string>>(
+    {} as Record<SkipSize, string>,
+  );
   const [savingSize, setSavingSize] = useState<SkipSize | null>(null);
 
   // Zones
   const [zones, setZones] = useState<CarrierServiceZone[]>([]);
   const [newCity, setNewCity] = useState('');
-  const [newPostcode, setNewPostcode] = useState('');
-  const [newSurcharge, setNewSurcharge] = useState('');
   const [addingZone, setAddingZone] = useState(false);
   const [showAddZone, setShowAddZone] = useState(false);
 
   // Availability
   const [blockedDates, setBlockedDates] = useState<CarrierBlockedDate[]>([]);
   const [newDate, setNewDate] = useState('');
-  const [newReason, setNewReason] = useState('');
   const [blockingDate, setBlockingDate] = useState(false);
+  const [showAddDate, setShowAddDate] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -76,6 +75,11 @@ export default function CarrierSettingsScreen() {
         setPricing(p);
         setZones(z);
         setBlockedDates(d);
+
+        // Sync local prices
+        const priceDict: Record<string, string> = {};
+        p.forEach((item) => (priceDict[item.skipSize] = String(item.price)));
+        setLocalPrices(priceDict as Record<SkipSize, string>);
       } catch {
         // Non-fatal
       } finally {
@@ -86,78 +90,50 @@ export default function CarrierSettingsScreen() {
     [token],
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
-
-  const priceMap = Object.fromEntries(pricing.map((r) => [r.skipSize, r]));
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleSavePrice = async (size: SkipSize) => {
-    const raw = priceInputs[size];
-    const price = parseFloat(raw ?? '');
+    const raw = localPrices[size];
+    if (!raw) return; // If empty, we could delete it, but let's ignore for now.
+    const price = parseFloat(raw);
     if (isNaN(price) || price < 0) return;
+
+    // Skip if unchanged
+    const existing = pricing.find((p) => p.skipSize === size);
+    if (existing && existing.price === price) return;
+
     if (!token) return;
-    haptics.light();
     setSavingSize(size);
     try {
       await api.carrierSettings.pricing.set(token, size, price);
-      setPriceInputs((prev) => {
-        const n = { ...prev };
-        delete n[size];
-        return n;
-      });
       await load(true);
       haptics.success();
+      toast.success('Cena saglabāta');
     } catch {
       haptics.error();
-      toast.error('Neizdevās saglabāt cenu')
+      toast.error('Neizdevās saglabāt cenu');
     } finally {
       setSavingSize(null);
     }
-  };
-
-  const handleDeletePrice = async (size: SkipSize) => {
-    if (!token) return;
-    haptics.light();
-    Alert.alert('Dzēst cenu', `Dzēst cenu izmēram ${size}?`, [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Dzēst',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.carrierSettings.pricing.delete(token, size);
-            load(true);
-            haptics.success();
-          } catch {
-            toast.error('Neizdevās dzēst cenu')
-          }
-        },
-      },
-    ]);
   };
 
   const handleAddZone = async () => {
     if (!token || !newCity.trim()) return;
     setAddingZone(true);
     try {
-      const surcharge = newSurcharge ? parseFloat(newSurcharge) : undefined;
+      // Very simplified: just ask for city/region in one line
       await api.carrierSettings.zones.add(token, {
         city: newCity.trim(),
-        postcode: newPostcode.trim() || undefined,
-        surcharge: surcharge !== undefined && !isNaN(surcharge) ? surcharge : undefined,
       });
       setNewCity('');
-      setNewPostcode('');
-      setNewSurcharge('');
       setShowAddZone(false);
       load(true);
       haptics.success();
     } catch {
       haptics.error();
-      toast.error('Neizdevās pievienot zonu')
+      toast.error('Neizdevās pievienot zonu');
     } finally {
       setAddingZone(false);
     }
@@ -165,8 +141,7 @@ export default function CarrierSettingsScreen() {
 
   const handleDeleteZone = (id: string, city: string) => {
     if (!token) return;
-    haptics.light();
-    Alert.alert('Dzēst zonu', `Dzēst "${city}"?`, [
+    Alert.alert('Dzēst zonu', `Vai tiešām vēlaties dzēst "${city}"?`, [
       { text: 'Atcelt', style: 'cancel' },
       {
         text: 'Dzēst',
@@ -175,9 +150,9 @@ export default function CarrierSettingsScreen() {
           try {
             await api.carrierSettings.zones.delete(token, id);
             load(true);
-            haptics.success();
+            haptics.light();
           } catch {
-            toast.error('Neizdevās dzēst zonu')
+            toast.error('Neizdevās dzēst zonu');
           }
         },
       },
@@ -186,25 +161,20 @@ export default function CarrierSettingsScreen() {
 
   const handleBlockDate = async () => {
     if (!token || !newDate.trim()) return;
-    // Validate YYYY-MM-DD
     if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate.trim())) {
-      Alert.alert('Nepareizs formāts', 'Ievadiet datumu formātā GGGG-MM-DD');
+      Alert.alert('Nepareizs formāts', 'Lūdzu izmantojiet GGGG-MM-DD');
       return;
     }
     setBlockingDate(true);
     try {
-      await api.carrierSettings.availability.block(
-        token,
-        newDate.trim(),
-        newReason.trim() || undefined,
-      );
+      await api.carrierSettings.availability.block(token, newDate.trim());
       setNewDate('');
-      setNewReason('');
+      setShowAddDate(false);
       load(true);
       haptics.success();
     } catch {
       haptics.error();
-      toast.error('Neizdevās bloķēt datumu')
+      toast.error('Neizdevās bloķēt datumu');
     } finally {
       setBlockingDate(false);
     }
@@ -212,18 +182,18 @@ export default function CarrierSettingsScreen() {
 
   const handleUnblockDate = (id: string, date: string) => {
     if (!token) return;
-    haptics.light();
     Alert.alert('Atbloķēt datumu', `Atjaunot pieejamību ${date}?`, [
       { text: 'Atcelt', style: 'cancel' },
       {
         text: 'Atbloķēt',
+        style: 'default',
         onPress: async () => {
           try {
             await api.carrierSettings.availability.unblock(token, id);
             load(true);
-            haptics.success();
+            haptics.light();
           } catch {
-            toast.error('Neizdevās atbloķēt datumu')
+            toast.error('Neizdevās atbloķēt datumu');
           }
         },
       },
@@ -235,9 +205,20 @@ export default function CarrierSettingsScreen() {
       <ScreenContainer bg="#ffffff">
         <ScreenHeader title="" />
         <View className="px-5 pt-2 pb-4">
-          <Text style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}>Pārvadātājs</Text>
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: '800',
+              color: colors.textPrimary,
+              letterSpacing: -0.8,
+            }}
+          >
+            Pārvadātājs
+          </Text>
         </View>
-        <View className="px-5"><SkeletonCard count={3} /></View>
+        <View className="px-5">
+          <SkeletonCard count={3} />
+        </View>
       </ScreenContainer>
     );
   }
@@ -245,32 +226,51 @@ export default function CarrierSettingsScreen() {
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
       <ScreenHeader title="" />
-      
+
       <View className="px-5 pt-1 pb-4">
-        <Text style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}>
-          Pārvadātājs
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: '800',
+            color: colors.textPrimary,
+            letterSpacing: -0.8,
+          }}
+        >
+          Iestatījumi
         </Text>
- <Text className="text-gray-500 font-medium mt-1 mb-2" style={{ fontSize: 15 }}>Reģioni un izcenojumi</Text>
+        <Text className="text-gray-500 font-medium mt-1 mb-2" style={{ fontSize: 15 }}>
+          Pārvaldi savas cenas, zonas un pieejamību.
+        </Text>
       </View>
 
-      {/* Segmented Control */}
-      <View className="px-5 mb-4">
-        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-          {([
-            { key: 'pricing', label: 'Cenas' },
-            { key: 'zones', label: 'Zonas' },
-            { key: 'availability', label: 'Pieejamība' },
-          ] as const).map((s) => {
+      {/* Minimalist Segmented Control */}
+      <View className="px-5 mb-6">
+        <View className="flex-row bg-gray-100/80 p-1 rounded-2xl">
+          {(
+            [
+              { key: 'pricing', label: 'Cenas' },
+              { key: 'zones', label: 'Zonas' },
+              { key: 'availability', label: 'Brīvdienas' },
+            ] as const
+          ).map((s) => {
             const active = tab === s.key;
             return (
               <TouchableOpacity
                 key={s.key}
-                className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white' : ''}`}
-                style={active ? { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 1, shadowOffset: { width: 0, height: 1 } } : {}}
-                onPress={() => { haptics.light(); setTab(s.key as Tab); }}
+                className={`flex-1 items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white shadow-sm' : ''}`}
+                onPress={() => {
+                  haptics.light();
+                  setTab(s.key as Tab);
+                }}
                 activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#111827' : '#6b7280' }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: active ? '600' : '500',
+                    color: active ? colors.textPrimary : colors.textMuted,
+                  }}
+                >
                   {s.label}
                 </Text>
               </TouchableOpacity>
@@ -281,7 +281,7 @@ export default function CarrierSettingsScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -295,160 +295,136 @@ export default function CarrierSettingsScreen() {
       >
         {/* ── PRICING TAB ── */}
         {tab === 'pricing' && (
-          <View>
-            <View className="px-5 pb-3">
-              <Text className="text-sm text-gray-500 font-medium tracking-tight">Iestatiet cenu (€/dienā) katram konteinera izmēram.</Text>
-            </View>
-            
-            {SKIP_SIZES.map(({ value, label, volume }, i) => {
-              const existing = priceMap[value];
-              const editVal = priceInputs[value];
-              const displayVal = editVal !== undefined ? editVal : (existing ? String(existing.price) : '');
-              const isDirty = editVal !== undefined;
-              const isSaving = savingSize === value;
-
-              return (
-                <View key={value} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${i !== SKIP_SIZES.length - 1 ? 'border-b' : ''}`}>
-                  <View className="flex-1 pr-4">
-                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3 }}>{label}</Text>
-                    <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>{volume}</Text>
-                  </View>
-                  <View className="flex-row items-center" style={{ gap: 8 }}>
-                    <View className="relative flex-row items-center">
-                      <TextInput
-                        className="bg-gray-100 rounded-2xl pl-4 pr-8 text-gray-900 font-bold"
-                        style={{ paddingTop: 14, paddingBottom: 14, fontSize: 18, minWidth: 90, textAlign: 'right' }}
-                        value={displayVal}
-                        onChangeText={(v) => setPriceInputs((prev) => ({ ...prev, [value]: v }))}
-                        keyboardType="decimal-pad"
-                        placeholder="0.00"
-                        placeholderTextColor="#9ca3af"
-                      />
-                      {displayVal.length > 0 && <Text className="absolute right-4 text-gray-400 font-bold" style={{ fontSize: 18 }}>€</Text>}
+          <View className="px-5">
+            <View className="bg-gray-50/50 border border-gray-100 rounded-3xl p-2">
+              {SKIP_SIZES.map(({ value, label, volume }, i) => {
+                const isSaving = savingSize === value;
+                return (
+                  <View
+                    key={value}
+                    className={`flex-row items-center justify-between p-4 ${i !== SKIP_SIZES.length - 1 ? 'border-b border-gray-100' : ''}`}
+                  >
+                    <View>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
+                        {label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: colors.textMuted,
+                          fontWeight: '500',
+                          marginTop: 2,
+                        }}
+                      >
+                        {volume}
+                      </Text>
                     </View>
-                    
-                    {isDirty ? (
-                      <TouchableOpacity
-                        className="w-12 h-12 rounded-full bg-gray-900 items-center justify-center"
-                        onPress={() => handleSavePrice(value)}
-                        disabled={isSaving}
-                        activeOpacity={0.7}
-                      >
-                        {isSaving ? <ActivityIndicator size="small" color="#fff" /> : <Check size={18} color="#fff" strokeWidth={3} />}
-                      </TouchableOpacity>
-                    ) : existing ? (
-                      <TouchableOpacity
-                        className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center"
-                        onPress={() => handleDeletePrice(value)}
-                        activeOpacity={0.7}
-                      >
-                        <Trash2 size={18} color="#9ca3af" />
-                      </TouchableOpacity>
-                    ) : (
-                      <View className="w-12 h-12" /> // spacer to keep alignment
-                    )}
+                    <View className="flex-row items-center bg-white border border-gray-200 rounded-2xl pl-4 pr-3 h-12 min-w-[110px]">
+                      <TextInput
+                        className="flex-1 text-right text-gray-900 font-bold"
+                        style={{ fontSize: 17 }}
+                        value={localPrices[value] || ''}
+                        onChangeText={(txt) =>
+                          setLocalPrices((prev) => ({ ...prev, [value]: txt }))
+                        }
+                        onBlur={() => handleSavePrice(value)}
+                        keyboardType="decimal-pad"
+                        placeholder="0"
+                        placeholderTextColor="#cbd5e1"
+                      />
+                      <Text className="text-gray-400 font-semibold ml-1.5" style={{ fontSize: 16 }}>
+                        €
+                      </Text>
+                      {isSaving && (
+                        <View className="absolute right-3 bg-white pl-2">
+                          <ActivityIndicator size="small" color="#111827" />
+                        </View>
+                      )}
+                    </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })}
+            </View>
+            <Text className="text-xs text-gray-400 text-center mt-4">
+              Cenas automātiski saglabājas, kad noņemat kursoru no lauka.
+            </Text>
           </View>
         )}
 
         {/* ── ZONES TAB ── */}
         {tab === 'zones' && (
-          <View>
-            <View className="px-5 pb-3">
-              <Text className="text-sm text-gray-500 font-medium tracking-tight mb-4">Norādiet pilsētas un reģionus, kuros sniedzat pakalpojumus.</Text>
-              
-              {showAddZone ? (
-                <View className="bg-gray-50 rounded-3xl p-5 mb-2" style={{ gap: 12 }}>
-                  <TextInput
-                    className="bg-white rounded-2xl px-5 text-gray-900 font-medium"
-                    style={{ paddingVertical: 14, fontSize: 16 }}
-                    placeholder="Pilsēta / Reģions (piem. Rīga)"
-                    placeholderTextColor="#9ca3af"
-                    value={newCity}
-                    onChangeText={setNewCity}
-                    autoFocus
-                  />
-                  <View className="flex-row" style={{ gap: 12 }}>
-                    <TextInput
-                      className="flex-1 bg-white rounded-2xl px-5 text-gray-900 font-medium"
-                      style={{ paddingVertical: 14, fontSize: 16 }}
-                      placeholder="Indekss (nav obligāti)"
-                      placeholderTextColor="#9ca3af"
-                      value={newPostcode}
-                      onChangeText={setNewPostcode}
-                    />
-                    <TextInput
-                      className="flex-1 bg-white rounded-2xl px-5 text-gray-900 font-medium"
-                      style={{ paddingVertical: 14, fontSize: 16 }}
-                      placeholder="Piemaksa €"
-                      placeholderTextColor="#9ca3af"
-                      value={newSurcharge}
-                      onChangeText={setNewSurcharge}
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-                  
-                  <View className="flex-row mt-2" style={{ gap: 12 }}>
-                    <TouchableOpacity
-                      className="flex-1 items-center justify-center rounded-full py-3.5 bg-white border border-gray-200"
-                      onPress={() => { setShowAddZone(false); setNewCity(''); setNewPostcode(''); setNewSurcharge(''); }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textMuted }}>Atcelt</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      className={`flex-1 items-center justify-center rounded-full py-3.5 ${!newCity.trim() || addingZone ? 'bg-gray-200' : 'bg-gray-900'}`}
-                      onPress={handleAddZone}
-                      disabled={!newCity.trim() || addingZone}
-                      activeOpacity={0.7}
-                    >
-                      {addingZone ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 15, fontWeight: '700', color: !newCity.trim() ? '#9ca3af' : '#fff' }}>Pievienot</Text>}
-                    </TouchableOpacity>
-                  </View>
+          <View className="px-5">
+            {showAddZone ? (
+              <View className="bg-gray-50/80 border border-gray-100 rounded-3xl p-4 mb-4">
+                <TextInput
+                  className="bg-white border border-gray-200 rounded-2xl px-4 text-gray-900 font-medium mb-3"
+                  style={{ height: 50, fontSize: 16 }}
+                  placeholder="Pilsēta vai Reģions"
+                  placeholderTextColor="#9ca3af"
+                  value={newCity}
+                  onChangeText={setNewCity}
+                  autoFocus
+                  onSubmitEditing={handleAddZone}
+                  returnKeyType="done"
+                />
+                <View className="flex-row gap-2">
+                  <TouchableOpacity
+                    className="flex-1 bg-white border border-gray-200 rounded-xl py-3 items-center"
+                    onPress={() => setShowAddZone(false)}
+                  >
+                    <Text className="text-gray-600 font-semibold">Atcelt</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className={`flex-1 rounded-xl py-3 items-center ${!newCity.trim() ? 'bg-gray-200' : 'bg-gray-900'}`}
+                    onPress={handleAddZone}
+                    disabled={!newCity.trim() || addingZone}
+                  >
+                    {addingZone ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text
+                        className={`font-semibold ${!newCity.trim() ? 'text-gray-400' : 'text-white'}`}
+                      >
+                        Pievienot
+                      </Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
-              ) : (
-                <TouchableOpacity
-                  className="flex-row items-center justify-center rounded-full bg-gray-100 py-3.5 mb-2"
-                  style={{ gap: 8 }}
-                  onPress={() => { haptics.light(); setShowAddZone(true); }}
-                  activeOpacity={0.7}
-                >
-                  <Plus size={18} color="#111827" />
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>Pievienot zonu</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-4"
+                onPress={() => setShowAddZone(true)}
+              >
+                <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3 shadow-sm shadow-gray-100">
+                  <Plus size={20} color="#111827" />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
+                  Pievienot reģionu
+                </Text>
+              </TouchableOpacity>
+            )}
 
-            <View className="mt-2">
+            <View className="bg-white border border-gray-100 rounded-3xl overflow-hidden">
               {zones.length === 0 && !showAddZone && (
-                <View className="items-center py-10">
- <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>Nav pievienotu zonu</Text>
+                <View className="py-8 items-center">
+                  <MapPin size={32} color="#e5e7eb" className="mb-2" />
+                  <Text className="text-gray-400 font-medium">Nav pievienotu reģionu</Text>
                 </View>
               )}
               {zones.map((zone, idx) => (
-                <View key={zone.id} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${idx !== zones.length - 1 ? 'border-b' : ''}`}>
-                  <View className="flex-1 pr-4">
-                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3 }}>{zone.city}</Text>
-                    <View className="flex-row items-center mt-1.5" style={{ gap: 12 }}>
-                      {zone.postcode ? (
-                        <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }}>Indekss: {zone.postcode}</Text>
-                      ) : null}
-                      {zone.surcharge ? (
-                        <View className="bg-red-50 px-2 py-0.5 rounded-md">
-                          <Text style={{ fontSize: 12, color: colors.dangerText, fontWeight: '600' }}>+€{zone.surcharge}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
+                <View
+                  key={zone.id}
+                  className={`flex-row items-center justify-between p-4 ${idx !== zones.length - 1 ? 'border-b border-gray-50' : ''}`}
+                >
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
+                    {zone.city}
+                  </Text>
                   <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+                    className="p-2"
                     onPress={() => handleDeleteZone(zone.id, zone.city)}
-                    activeOpacity={0.7}
                   >
-                    <Trash2 size={16} color="#ef4444" />
+                    <Text className="text-red-500 font-medium">Dzēst</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -458,59 +434,100 @@ export default function CarrierSettingsScreen() {
 
         {/* ── AVAILABILITY TAB ── */}
         {tab === 'availability' && (
-          <View>
-            <View className="px-5 pb-3">
-              <Text className="text-sm text-gray-500 font-medium tracking-tight mb-4">Bloķējiet datumus, kad neesat pieejams piegādēm.</Text>
-              
-              <View className="bg-gray-50 rounded-3xl p-5 mb-2" style={{ gap: 12 }}>
+          <View className="px-5">
+            {showAddDate ? (
+              <View className="bg-orange-50 border border-orange-100 rounded-3xl p-4 mb-4">
+                <Text className="text-sm text-orange-800 font-medium mb-3">
+                  Atzīmējiet dienu kā nepieejamu (brīvdienu).
+                </Text>
                 <TextInput
-                  className="bg-white rounded-2xl px-5 text-gray-900 font-medium"
-                  style={{ paddingVertical: 14, fontSize: 16 }}
-                  placeholder="Datums GGGG-MM-DD"
-                  placeholderTextColor="#9ca3af"
+                  className="bg-white border border-orange-200 rounded-2xl px-4 text-orange-900 font-bold mb-3"
+                  style={{ height: 50, fontSize: 17, letterSpacing: 1 }}
+                  placeholder="GGGG-MM-DD"
+                  placeholderTextColor="#fdba74"
                   value={newDate}
                   onChangeText={setNewDate}
+                  autoFocus
+                  maxLength={10}
+                  keyboardType="numbers-and-punctuation"
+                  returnKeyType="done"
+                  onSubmitEditing={handleBlockDate}
                 />
-                <TextInput
-                  className="bg-white rounded-2xl px-5 text-gray-900 font-medium"
-                  style={{ paddingVertical: 14, fontSize: 16 }}
-                  placeholder="Iemesls (neobligāti, piem. Brīvdiena)"
-                  placeholderTextColor="#9ca3af"
-                  value={newReason}
-                  onChangeText={setNewReason}
-                />
-                <TouchableOpacity
-                  className={`items-center justify-center rounded-full py-4 mt-2 ${!newDate.trim() || blockingDate ? 'bg-gray-200' : 'bg-gray-900'}`}
-                  onPress={handleBlockDate}
-                  disabled={!newDate.trim() || blockingDate}
-                  activeOpacity={0.7}
-                >
-                  {blockingDate ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 15, fontWeight: '700', color: !newDate.trim() ? '#9ca3af' : '#fff' }}>Bloķēt datumu</Text>}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View className="mt-2">
-              {blockedDates.length === 0 && (
-                <View className="items-center py-10">
- <Text className="text-gray-400 font-medium " style={{ fontSize: 15 }}>Nav bloķētu datumu</Text>
-                </View>
-              )}
-              {blockedDates.sort((a, b) => a.date.localeCompare(b.date)).map((d, idx) => (
-                <View key={d.id} className={`flex-row items-center justify-between px-5 py-4 bg-white border-gray-100 ${idx !== blockedDates.length - 1 ? 'border-b' : ''}`}>
-                  <View className="flex-1 pr-4">
-                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3, fontVariant: ['tabular-nums'] }}>{d.date}</Text>
-                    {d.reason ? <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>{d.reason}</Text> : null}
-                  </View>
+                <View className="flex-row gap-2">
                   <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
-                    onPress={() => handleUnblockDate(d.id, d.date)}
-                    activeOpacity={0.7}
+                    className="flex-1 bg-white border border-orange-200 rounded-xl py-3 items-center"
+                    onPress={() => setShowAddDate(false)}
                   >
-                    <Trash2 size={16} color="#9ca3af" />
+                    <Text className="text-orange-900 font-semibold">Atcelt</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className={`flex-1 rounded-xl py-3 items-center ${!newDate.trim() ? 'bg-orange-200' : 'bg-orange-500'}`}
+                    onPress={handleBlockDate}
+                    disabled={!newDate.trim() || blockingDate}
+                  >
+                    {blockingDate ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text
+                        className={`font-semibold ${!newDate.trim() ? 'text-orange-100' : 'text-white'}`}
+                      >
+                        Apstiprināt
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </View>
-              ))}
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-4"
+                onPress={() => setShowAddDate(true)}
+              >
+                <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3 shadow-sm shadow-orange-100">
+                  <Calendar size={20} color="#f97316" />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#9a3412' }}>
+                    Atzīmēt brīvdienu
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: '#f97316', marginTop: 1 }}>
+                    Izvēlieties datumu
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            <View className="bg-white border border-gray-100 rounded-3xl overflow-hidden">
+              {blockedDates.length === 0 && !showAddDate && (
+                <View className="py-8 items-center">
+                  <Calendar size={32} color="#e5e7eb" className="mb-2" />
+                  <Text className="text-gray-400 font-medium">Nav ieplānotu brīvdienu</Text>
+                </View>
+              )}
+              {blockedDates
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((d, idx) => (
+                  <View
+                    key={d.id}
+                    className={`flex-row items-center justify-between p-4 ${idx !== blockedDates.length - 1 ? 'border-b border-gray-50' : ''}`}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '700',
+                        color: colors.textPrimary,
+                        fontVariant: ['tabular-nums'],
+                      }}
+                    >
+                      {d.date}
+                    </Text>
+                    <TouchableOpacity
+                      className="p-2"
+                      onPress={() => handleUnblockDate(d.id, d.date)}
+                    >
+                      <Text className="text-gray-400 font-medium">Atbloķēt</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
             </View>
           </View>
         )}

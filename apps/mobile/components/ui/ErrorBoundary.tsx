@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   devErrorText: {
     fontSize: 11,
     color: colors.textSecondary,
-    fontFamily: 'monospace',
+    fontFamily: 'Courier New',
   },
   button: {
     backgroundColor: colors.danger,
