@@ -141,15 +141,21 @@ export default function TransportJobDetailScreen() {
   useEffect(() => {
     if (!liveLocation) return;
     const { lat, lng } = liveLocation;
-    setDriverLocationOnMap({ lat, lng });
     if (liveLocation.estimatedArrivalMin != null) {
       setEtaMin(liveLocation.estimatedArrivalMin);
     }
-    cameraRef.current?.setCamera({
-      centerCoordinate: [lng, lat],
-      zoomLevel: 13,
-      animationDuration: 800,
-    });
+    // Only re-centre the map if the driver moved more than ~30 m to avoid
+    // constant jitter and to preserve the user's manual zoom/pan.
+    const prev = driverLocationOnMap;
+    const movedEnough =
+      !prev || Math.abs(prev.lat - lat) > 0.0003 || Math.abs(prev.lng - lng) > 0.0003;
+    setDriverLocationOnMap({ lat, lng });
+    if (movedEnough) {
+      cameraRef.current?.setCamera({
+        centerCoordinate: [lng, lat],
+        animationDuration: 600,
+      });
+    }
   }, [liveLocation]);
 
   useEffect(() => {

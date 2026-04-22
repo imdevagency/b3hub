@@ -120,7 +120,11 @@ export default function OrderDetailScreen() {
 
   const stripe = useStripe ? useStripe() : null;
 
-  const { orderStatus: liveStatus, jobLocation: liveLocation } = useLiveUpdates({
+  const {
+    orderStatus: liveStatus,
+    jobStatus: liveJobStatus,
+    jobLocation: liveLocation,
+  } = useLiveUpdates({
     orderId: id ?? null,
     jobId: order?.transportJobs?.[0]?.id ?? null,
     token,
@@ -132,18 +136,30 @@ export default function OrderDetailScreen() {
     }
   }, [liveStatus, order?.status, setOrder]);
 
+  // Reload full order when the transport job status changes so the progress
+  // stepper stays live without waiting for the next polling interval.
+  useEffect(() => {
+    if (liveJobStatus) load();
+  }, [liveJobStatus, load]);
+
   useEffect(() => {
     if (!liveLocation) return;
     if (liveLocation.estimatedArrivalMin != null) {
       setEtaMin(liveLocation.estimatedArrivalMin);
     }
     const { lat, lng } = liveLocation;
+    // Only re-centre the map if the driver moved more than ~30 m to avoid
+    // constant jitter and to preserve the user's manual zoom/pan.
+    const prev = driverLocationOnMap;
+    const movedEnough =
+      !prev || Math.abs(prev.lat - lat) > 0.0003 || Math.abs(prev.lng - lng) > 0.0003;
     setDriverLocationOnMap({ lat, lng });
-    cameraRef.current?.setCamera({
-      centerCoordinate: [lng, lat],
-      zoomLevel: 13,
-      animationDuration: 800,
-    });
+    if (movedEnough) {
+      cameraRef.current?.setCamera({
+        centerCoordinate: [lng, lat],
+        animationDuration: 600,
+      });
+    }
   }, [liveLocation]);
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

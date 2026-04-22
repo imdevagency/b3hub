@@ -29,7 +29,8 @@ export const RIGA_CENTER: [number, number] = [24.1052, 56.9496];
 export interface CameraRefHandle {
   setCamera(opts: {
     centerCoordinate: [number, number];
-    zoomLevel: number;
+    /** Omit to keep the current zoom level. */
+    zoomLevel?: number;
     animationDuration?: number;
   }): void;
   fitBounds(
@@ -98,6 +99,8 @@ export function BaseMap({
   const mapReady = useRef(false);
   // Queue of camera actions that arrived before the map was ready.
   const pendingCamera = useRef<(() => void) | null>(null);
+  // Last zoom delta so setCamera can preserve zoom when zoomLevel is omitted.
+  const lastDelta = useRef<number>(zoomToDelta(zoom));
 
   const onMapReady = useCallback(() => {
     mapReady.current = true;
@@ -119,10 +122,11 @@ export function BaseMap({
         animationDuration,
       }: {
         centerCoordinate: [number, number];
-        zoomLevel: number;
+        zoomLevel?: number;
         animationDuration?: number;
       }) {
-        const delta = zoomToDelta(zoomLevel);
+        const delta = zoomLevel != null ? zoomToDelta(zoomLevel) : lastDelta.current;
+        if (zoomLevel != null) lastDelta.current = delta;
         const action = () =>
           mapRef.current?.animateToRegion(
             {
@@ -188,7 +192,9 @@ export function BaseMap({
           { backgroundColor: colors.bgMuted, alignItems: 'center', justifyContent: 'center' },
         ]}
       >
-        <Text style={{ color: colors.textDisabled, fontSize: 13 }}>Map not available in Expo Go</Text>
+        <Text style={{ color: colors.textDisabled, fontSize: 13 }}>
+          Map not available in Expo Go
+        </Text>
       </View>
     );
   }

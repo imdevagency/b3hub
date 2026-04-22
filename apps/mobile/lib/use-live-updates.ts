@@ -116,7 +116,7 @@ export function useLiveUpdates({
       }
       // Also update order status when the job linked to this order changes
       if (orderId && payload.orderId === orderId) {
-        setJobStatus(payload.status);
+        setOrderStatus(payload.status);
       }
     });
 
