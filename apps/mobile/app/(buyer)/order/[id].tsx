@@ -430,6 +430,7 @@ export default function OrderDetailScreen() {
               <Marker
                 coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
                 anchor={{ x: 0.5, y: 1 }}
+                tracksViewChanges={false}
               >
                 <View style={styles.pinDelivery}>
                   <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />

@@ -371,6 +371,7 @@ export default function TransportJobDetailScreen() {
               <Marker
                 coordinate={{ latitude: job.pickupLat, longitude: job.pickupLng }}
                 anchor={{ x: 0.5, y: 1 }}
+                tracksViewChanges={false}
               >
                 <View style={styles.pinPickup}>
                   <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
@@ -381,6 +382,7 @@ export default function TransportJobDetailScreen() {
               <Marker
                 coordinate={{ latitude: job.deliveryLat, longitude: job.deliveryLng }}
                 anchor={{ x: 0.5, y: 1 }}
+                tracksViewChanges={false}
               >
                 <View style={styles.pinDelivery}>
                   {isDisposal ? (
