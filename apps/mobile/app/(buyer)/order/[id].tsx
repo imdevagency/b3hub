@@ -1,9 +1,14 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Alert, Linking, Image, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Alert,
+  Linking,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
@@ -12,12 +17,34 @@ import {
   Truck,
   FileText,
   CheckCircle,
-  ArrowLeft,
   MessageCircle,
   CreditCard,
+  Clock3,
+  Hash,
+  AlertTriangle,
 } from 'lucide-react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { InfoSection } from '@/components/ui/InfoSection';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { Button } from '@/components/ui/button';
+import { SkeletonDetail } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { RatingModal } from '@/components/ui/RatingModal';
+import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
 import { BaseMap, RouteLayer, useRoute } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import { haptics } from '@/lib/haptics';
+import { useOrderDetail } from '@/lib/use-order-detail';
+import { useLiveUpdates } from '@/lib/use-live-updates';
+import { useToast } from '@/components/ui/Toast';
+import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
+import { colors } from '@/lib/theme';
+import { DisputeSheet } from './dispute-sheet';
+import { AmendSheet } from './amend-sheet';
 
 let Marker: any = null;
 try {
@@ -27,22 +54,6 @@ try {
   /* Expo Go */
 }
 
-import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import { haptics } from '@/lib/haptics';
-import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { useOrderDetail } from '@/lib/use-order-detail';
-import { useLiveUpdates } from '@/lib/use-live-updates';
-import { RatingModal } from '@/components/ui/RatingModal';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { ActionResultSheet } from '@/components/ui/ActionResultSheet';
-import { DisputeSheet } from './dispute-sheet';
-import { AmendSheet } from './amend-sheet';
-import { useToast } from '@/components/ui/Toast';
-import { UNIT_SHORT, MAT_STATUS } from '@/lib/materials';
-import { colors } from '@/lib/theme';
-
-// Guard: Stripe React Native — requires native build (not available in Expo Go)
 let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
@@ -51,7 +62,6 @@ try {
   /* Expo Go fallback */
 }
 
-// ── Job step model (4 simplified stages driving the progress dots) ──
 const JOB_STEPS = [
   { key: 'pickup', label: 'Uz kraušanu' },
   { key: 'loading', label: 'Krauj' },
@@ -66,128 +76,67 @@ const JOB_STATUS_TO_STEP: Record<string, number> = {
   LOADED: 1,
   EN_ROUTE_DELIVERY: 2,
   AT_DELIVERY: 3,
+  DELIVERED: 3,
 };
 
 const JOB_STATUS_LABEL: Record<string, string> = {
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
   EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
   AT_PICKUP: 'Šoferis ir pie kraušanas vietas',
-  LOADED: 'Kravu iekrauj',
+  LOADED: 'Krava ir iekrauta',
   EN_ROUTE_DELIVERY: 'Šoferis dodas uz jums',
   AT_DELIVERY: 'Šoferis ir uz vietas',
+  DELIVERED: 'Piegādāts',
 };
 
-// ── Main Screen ────────────────────────────────────────────────
+const ORDER_STATUS_PILL: Record<string, { label: string; bg: string; color: string }> = {
+  ...MAT_STATUS,
+  COMPLETED: { label: 'Pabeigts', bg: '#DCFCE7', color: '#15803D' },
+};
 
 export default function OrderDetailScreen() {
   const { token, user } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { order, setOrder, loading, alreadyRated, reload: load } = useOrderDetail(id);
+  const { order, setOrder, loading, alreadyRated, documents, reload: load } = useOrderDetail(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
-  const [, setMapReady] = useState(false);
   const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
-  const insets = useSafeAreaInsets();
-
-  // ── Bottom sheet ──
-  // Snap points are PIXEL values (not percentages) sized to match the content
-  // at each state, so the peek always fully contains hero + driver row + CTA.
-  const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => [320 + insets.bottom, 520, '92%'], [insets.bottom]);
-  const [sheetIndex, setSheetIndex] = useState(0);
-  const handleSheetChange = useCallback((index: number) => {
-    setSheetIndex(index);
-    haptics.selection();
-  }, []);
-
-  const onRefresh = () => {
-    load();
-  };
-
-  // Live status updates via WebSocket — no pull-to-refresh needed for status changes
-  const { orderStatus: liveStatus, jobLocation: liveLocation } = useLiveUpdates({
-    orderId: id ?? null,
-    jobId: order?.transportJobs?.[0]?.id ?? null,
-    token,
-  });
-
-  // When the server pushes a new status, update the local order copy immediately
-  React.useEffect(() => {
-    if (liveStatus && order && liveStatus !== order.status) {
-      setOrder((prev) => (prev ? { ...prev, status: liveStatus } : prev));
-    }
-  }, [liveStatus, order?.status]);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [showDispute, setShowDispute] = useState(false);
   const [cancelResultVisible, setCancelResultVisible] = useState(false);
   const [disputeResultVisible, setDisputeResultVisible] = useState(false);
   const [disputeFiled, setDisputeFiled] = useState(false);
-
-  // Surcharge approval state
+  const [showAmend, setShowAmend] = useState(false);
+  const [ratedLocally, setRatedLocally] = useState(false);
+  const [etaMin, setEtaMin] = useState<number | null>(null);
+  const [payLoading, setPayLoading] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [surchargeActionLoading, setSurchargeActionLoading] = useState<string | null>(null);
 
-  const handleApproveSurcharge = async (surchargeId: string) => {
-    const jobId = order?.transportJobs?.[0]?.id;
-    if (!token || !jobId) return;
-    setSurchargeActionLoading(surchargeId);
-    haptics.light();
-    try {
-      await api.transportJobs.approveSurcharge(jobId, surchargeId, token);
-      haptics.success();
-      load();
-    } catch (err: unknown) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt piemaksu');
-    } finally {
-      setSurchargeActionLoading(null);
+  const stripe = useStripe ? useStripe() : null;
+
+  const { orderStatus: liveStatus, jobLocation: liveLocation } = useLiveUpdates({
+    orderId: id ?? null,
+    jobId: order?.transportJobs?.[0]?.id ?? null,
+    token,
+  });
+
+  useEffect(() => {
+    if (liveStatus && order && liveStatus !== order.status) {
+      setOrder((prev) => (prev ? { ...prev, status: liveStatus } : prev));
     }
-  };
+  }, [liveStatus, order?.status, setOrder]);
 
-  const handleRejectSurcharge = async (surchargeId: string) => {
-    const jobId = order?.transportJobs?.[0]?.id;
-    if (!token || !jobId) return;
-    setSurchargeActionLoading(surchargeId);
-    haptics.light();
-    try {
-      await api.transportJobs.rejectSurcharge(jobId, surchargeId, token);
-      haptics.success();
-      load();
-    } catch (err: unknown) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās noraidīt piemaksu');
-    } finally {
-      setSurchargeActionLoading(null);
-    }
-  };
-
-  // Load existing dispute from server so confirm-receipt is always properly blocked
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  React.useEffect(() => {
-    if (!token || !id || !UUID_RE.test(id) || !order) return;
-    api
-      .listDisputes(token, id)
-      .then((disputes) => {
-        if (disputes.length > 0) setDisputeFiled(true);
-      })
-      .catch((err) => console.warn('Failed to load disputes:', err));
-  }, [token, id, order?.id]);
-
-  // Amendment sheet state
-  const [showAmend, setShowAmend] = useState(false);
-  // Local flag so the UI updates immediately after rating without a reload
-  const [ratedLocally, setRatedLocally] = useState(false);
-  const hasRated = alreadyRated || ratedLocally;
-  const [etaMin, setEtaMin] = useState<number | null>(null);
-
-  // Update ETA from live driver location broadcasts
-  React.useEffect(() => {
+  useEffect(() => {
     if (!liveLocation) return;
-    if (liveLocation.estimatedArrivalMin != null) setEtaMin(liveLocation.estimatedArrivalMin);
+    if (liveLocation.estimatedArrivalMin != null) {
+      setEtaMin(liveLocation.estimatedArrivalMin);
+    }
     const { lat, lng } = liveLocation;
     setDriverLocationOnMap({ lat, lng });
     cameraRef.current?.setCamera({
@@ -197,27 +146,32 @@ export default function OrderDetailScreen() {
     });
   }, [liveLocation]);
 
-  // Stripe payment sheet — guarded for Expo Go
-  const stripe = useStripe ? useStripe() : null;
-  const [payLoading, setPayLoading] = useState(false);
-  // Optimistic flag: hide Pay button immediately after success while webhook fires
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  useEffect(() => {
+    if (!token || !id || !UUID_RE.test(id) || !order) return;
+    api
+      .listDisputes(token, id)
+      .then((disputes) => {
+        if (disputes.length > 0) setDisputeFiled(true);
+      })
+      .catch(() => null);
+  }, [token, id, order?.id]);
 
-  // ── Route hooks — must be before early returns (Rules of Hooks) ──────────
   const routeOrigin = useMemo(() => {
     if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
     return null;
   }, [driverLocationOnMap]);
+
   const routeDestination = useMemo(() => {
     if (order?.deliveryLat != null && order?.deliveryLng != null) {
       return { lat: order.deliveryLat as number, lng: order.deliveryLng as number };
     }
     return null;
   }, [order?.deliveryLat, order?.deliveryLng]);
+
   const { route } = useRoute(routeOrigin, routeDestination);
 
-  // Fit the map camera to include driver + delivery whenever either updates
-  React.useEffect(() => {
+  useEffect(() => {
     if (!cameraRef.current || !routeOrigin || !routeDestination) return;
     const ne: [number, number] = [
       Math.max(routeOrigin.lng, routeDestination.lng),
@@ -227,10 +181,50 @@ export default function OrderDetailScreen() {
       Math.min(routeOrigin.lng, routeDestination.lng),
       Math.min(routeOrigin.lat, routeDestination.lat),
     ];
-    cameraRef.current.fitBounds(ne, sw, [80, 60, 260, 60], 600);
+    cameraRef.current.fitBounds(ne, sw, [48, 48, 48, 48], 600);
   }, [routeOrigin?.lat, routeOrigin?.lng, routeDestination?.lat, routeDestination?.lng]);
 
-  const handlePay = async () => {
+  const handleApproveSurcharge = useCallback(
+    async (surchargeId: string) => {
+      const jobId = order?.transportJobs?.[0]?.id;
+      if (!token || !jobId) return;
+      setSurchargeActionLoading(surchargeId);
+      haptics.light();
+      try {
+        await api.transportJobs.approveSurcharge(jobId, surchargeId, token);
+        haptics.success();
+        load();
+      } catch (err: unknown) {
+        haptics.error();
+        toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt piemaksu');
+      } finally {
+        setSurchargeActionLoading(null);
+      }
+    },
+    [load, order?.transportJobs, toast, token],
+  );
+
+  const handleRejectSurcharge = useCallback(
+    async (surchargeId: string) => {
+      const jobId = order?.transportJobs?.[0]?.id;
+      if (!token || !jobId) return;
+      setSurchargeActionLoading(surchargeId);
+      haptics.light();
+      try {
+        await api.transportJobs.rejectSurcharge(jobId, surchargeId, token);
+        haptics.success();
+        load();
+      } catch (err: unknown) {
+        haptics.error();
+        toast.error(err instanceof Error ? err.message : 'Neizdevās noraidīt piemaksu');
+      } finally {
+        setSurchargeActionLoading(null);
+      }
+    },
+    [load, order?.transportJobs, toast, token],
+  );
+
+  const handlePay = useCallback(async () => {
     if (!token || !order || !stripe) return;
     setPayLoading(true);
     haptics.light();
@@ -264,9 +258,9 @@ export default function OrderDetailScreen() {
     } finally {
       setPayLoading(false);
     }
-  };
+  }, [load, order, stripe, toast, token]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     haptics.heavy();
     Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt.', [
       { text: 'Nē', style: 'cancel' },
@@ -290,9 +284,9 @@ export default function OrderDetailScreen() {
         },
       },
     ]);
-  };
+  }, [order, setOrder, toast, token]);
 
-  const handleConfirmReceipt = () => {
+  const handleConfirmReceipt = useCallback(() => {
     haptics.medium();
     Alert.alert(
       'Apstiprināt saņemšanu?',
@@ -319,11 +313,11 @@ export default function OrderDetailScreen() {
         },
       ],
     );
-  };
+  }, [order, setOrder, toast, token]);
 
   if (loading) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Pasūtījums" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -332,26 +326,25 @@ export default function OrderDetailScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer bg="#ffffff">
+      <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Pasūtījums" />
-        <EmptyState icon={<Package size={32} color="#9ca3af" />} title="Pasūtījums nav atrasts" />
+        <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
   }
 
-  const st = MAT_STATUS[order.status] ?? MAT_STATUS.PENDING;
+  const statusMeta = ORDER_STATUS_PILL[order.status] ?? ORDER_STATUS_PILL.PENDING;
   const activeJob = order.transportJobs?.find(
-    (j) =>
-      j.status === 'ACCEPTED' ||
-      j.status === 'EN_ROUTE_PICKUP' ||
-      j.status === 'AT_PICKUP' ||
-      j.status === 'LOADED' ||
-      j.status === 'EN_ROUTE_DELIVERY' ||
-      j.status === 'AT_DELIVERY',
+    (job) =>
+      job.status === 'ACCEPTED' ||
+      job.status === 'EN_ROUTE_PICKUP' ||
+      job.status === 'AT_PICKUP' ||
+      job.status === 'LOADED' ||
+      job.status === 'EN_ROUTE_DELIVERY' ||
+      job.status === 'AT_DELIVERY',
   );
   const driver = activeJob?.driver;
   const vehicle = activeJob?.vehicle;
-  // Company members without permManageOrders cannot cancel or amend orders.
   const canManageOrders = !user?.companyRole || (user?.permManageOrders ?? false);
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status) && canManageOrders;
   const canPay =
@@ -360,11 +353,10 @@ export default function OrderDetailScreen() {
     (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
     order.paymentMethod !== 'INVOICE' &&
     !!stripe;
-
+  const hasRated = alreadyRated || ratedLocally;
+  const canRate = order.status === 'COMPLETED' && !hasRated;
   const currentStepIdx = activeJob ? (JOB_STATUS_TO_STEP[activeJob.status] ?? 0) : -1;
   const jobStatusLabel = activeJob ? (JOB_STATUS_LABEL[activeJob.status] ?? 'Piegādē') : null;
-
-  // Hero line shown at the top of the sheet
   const heroPrimary = (() => {
     if (order.status === 'DELIVERED') return 'Piegādāts';
     if (order.status === 'COMPLETED') return 'Pabeigts';
@@ -372,138 +364,117 @@ export default function OrderDetailScreen() {
     if (etaMin != null) return `${etaMin} min`;
     if (driver) return 'Ceļā';
     if (order.status === 'PENDING') return 'Gaida apstiprināšanu';
-    return 'Meklē šoferi…';
+    return 'Meklē šoferi';
   })();
   const heroSubtitle =
-    jobStatusLabel ?? (order.status === 'DELIVERED' ? 'Apstipriniet saņemšanu' : 'Gaidām šoferi');
+    jobStatusLabel ??
+    (order.status === 'DELIVERED'
+      ? disputeFiled
+        ? 'Saņemšana bloķēta līdz strīda izskatīšanai'
+        : 'Apstipriniet saņemšanu'
+      : statusMeta.label);
 
-  // Single contextual CTA surfaced in the peek view
-  type Cta = {
-    label: string;
-    onPress: () => void;
-    icon: React.ReactNode;
-    disabled?: boolean;
-    variant: 'primary' | 'success';
-  };
-  const primaryCta: Cta | null = (() => {
-    if (order.status === 'DELIVERED') {
-      return {
-        label: 'Apstiprināt saņemšanu',
-        onPress: handleConfirmReceipt,
-        icon: <CheckCircle size={18} color="#fff" style={{ marginRight: 8 }} />,
-        disabled: actionLoading || disputeFiled,
-        variant: 'success',
-      };
-    }
-    if (canPay) {
-      return {
-        label: `Maksāt €${order.total.toFixed(2)}`,
-        onPress: handlePay,
-        icon: <CreditCard size={18} color="#fff" style={{ marginRight: 8 }} />,
-        disabled: payLoading,
-        variant: 'primary',
-      };
-    }
-    if (driver && driver.phone) {
-      return {
-        label: 'Zvanīt šoferim',
-        onPress: () => Linking.openURL(`tel:${driver.phone}`).catch(() => null),
-        icon: <Phone size={18} color="#fff" style={{ marginRight: 8 }} />,
-        variant: 'primary',
-      };
-    }
-    return null;
-  })();
+  const orderRows = [
+    { label: 'Piegādes adrese', value: `${order.deliveryAddress}, ${order.deliveryCity}` },
+    {
+      label: 'Piegādes laiks',
+      value: `${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`,
+    },
+    { label: 'Saņēmējs', value: order.siteContactName || user?.firstName || '—' },
+    { label: 'Sazināties', value: order.siteContactPhone || user?.phone || '—' },
+    { label: 'Piezīmes šoferim', value: order.notes || '—' },
+    { label: 'Maksājuma veids', value: order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte' },
+    { label: 'Izveidots', value: new Date(order.createdAt).toLocaleDateString('lv-LV') },
+  ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f4f5f7' }}>
-      {/* ── Background Map ────────────────────────────────────── */}
-      <View style={StyleSheet.absoluteFillObject}>
-        <BaseMap
-          cameraRef={cameraRef}
-          center={
-            driverLocationOnMap
-              ? [driverLocationOnMap.lng, driverLocationOnMap.lat]
-              : order.deliveryLng && order.deliveryLat
-                ? [order.deliveryLng, order.deliveryLat]
-                : [24.1052, 56.9496]
+    <ScreenContainer bg="#F4F5F7" standalone>
+      <ScreenHeader title="Pasūtījums" />
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.mapCard}>
+          <BaseMap
+            cameraRef={cameraRef}
+            center={
+              driverLocationOnMap
+                ? [driverLocationOnMap.lng, driverLocationOnMap.lat]
+                : order.deliveryLng && order.deliveryLat
+                  ? [order.deliveryLng, order.deliveryLat]
+                  : [24.1052, 56.9496]
+            }
+            zoom={13}
+            style={styles.map}
+            rotateEnabled={false}
+            pitchEnabled={false}
+          >
+            {route?.coords && route.coords.length > 1 && (
+              <RouteLayer id="order-route" coordinates={route.coords} color="#111827" width={4} />
+            )}
+            {order.deliveryLat != null && order.deliveryLng != null && Marker && (
+              <Marker
+                coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={styles.pinDelivery}>
+                  <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+              </Marker>
+            )}
+            {driverLocationOnMap && Marker && (
+              <Marker
+                coordinate={{
+                  latitude: driverLocationOnMap.lat,
+                  longitude: driverLocationOnMap.lng,
+                }}
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={false}
+              >
+                <View style={styles.pinDriver}>
+                  <Truck size={13} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+              </Marker>
+            )}
+          </BaseMap>
+
+          <View style={styles.mapOverlay}>
+            <Text style={styles.heroEta}>{heroPrimary}</Text>
+            <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+            <View style={styles.mapMetaRow}>
+              <View style={styles.mapMetaItem}>
+                <MapPin size={13} color="#E5E7EB" />
+                <Text style={styles.mapMetaText} numberOfLines={1}>
+                  {order.deliveryAddress}, {order.deliveryCity}
+                </Text>
+              </View>
+              <View style={styles.mapMetaItem}>
+                <Hash size={13} color="#E5E7EB" />
+                <Text style={styles.mapMetaText} numberOfLines={1}>
+                  #{order.orderNumber}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <InfoSection
+          icon={<Truck size={16} color={colors.textMuted} />}
+          title="Statuss"
+          right={
+            <StatusPill label={statusMeta.label} bg={statusMeta.bg} color={statusMeta.color} />
           }
-          zoom={13}
-          style={{ flex: 1 }}
-          rotateEnabled={false}
-          pitchEnabled={false}
-          mapPadding={{ top: 80, right: 40, bottom: 260, left: 40 }}
-          onMapReady={() => setMapReady(true)}
         >
-          {/* Route polyline */}
-          {route?.coords && route.coords.length > 1 && (
-            <RouteLayer id="order-route" coordinates={route.coords} color="#111827" width={4} />
-          )}
-          {/* Delivery pin */}
-          {order.deliveryLat != null && order.deliveryLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
-              anchor={{ x: 0.5, y: 1 }}
-            >
-              <View style={styles.pinDelivery}>
-                <MapPin size={14} color="#fff" strokeWidth={2.5} />
-              </View>
-            </Marker>
-          )}
-          {/* Live driver marker */}
-          {driverLocationOnMap && Marker && (
-            <Marker
-              coordinate={{ latitude: driverLocationOnMap.lat, longitude: driverLocationOnMap.lng }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinDriver}>
-                <Truck size={13} color="#fff" strokeWidth={2.5} />
-              </View>
-            </Marker>
-          )}
-        </BaseMap>
-      </View>
-
-      {/* ── Floating back button ──────────────────────────────── */}
-      <View style={[styles.floatingHeader, { top: insets.top + 8 }]} pointerEvents="box-none">
-        <TouchableOpacity style={styles.floatingBackBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color="#111827" />
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Bottom Sheet (peek / half / full) ─────────────────── */}
-      <BottomSheet
-        ref={sheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        topInset={insets.top}
-        enableDynamicSizing={false}
-        onChange={handleSheetChange}
-        handleIndicatorStyle={styles.sheetHandle}
-        backgroundStyle={styles.sheetBackground}
-      >
-        <BottomSheetScrollView
-          contentContainerStyle={[styles.sheetContent, { paddingBottom: 48 + insets.bottom }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* HERO — big ETA, supporting status line */}
-          <Text style={styles.heroEta}>{heroPrimary}</Text>
-          <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
-
-          {/* Progress dots (only when a driver is active) */}
           {driver && (
             <View style={styles.stepsRow}>
-              {JOB_STEPS.map((s, i) => {
-                const done = i <= currentStepIdx;
+              {JOB_STEPS.map((step, index) => {
+                const done = index <= currentStepIdx;
                 return (
-                  <View key={s.key} style={styles.stepItem}>
+                  <View key={step.key} style={styles.stepItem}>
                     <View style={[styles.stepDot, done && styles.stepDotActive]} />
                     <Text
                       style={[styles.stepLabel, done && styles.stepLabelActive]}
                       numberOfLines={1}
                     >
-                      {s.label}
+                      {step.label}
                     </Text>
                   </View>
                 );
@@ -511,158 +482,314 @@ export default function OrderDetailScreen() {
             </View>
           )}
 
-          {/* Driver row OR waiting list */}
+          {disputeFiled && order.status === 'DELIVERED' && (
+            <View style={styles.alertCard}>
+              <AlertTriangle size={16} color="#B45309" />
+              <Text style={styles.alertText}>
+                Saņemšanas apstiprinājums ir apturēts, kamēr tiek izskatīts strīds.
+              </Text>
+            </View>
+          )}
+
           {driver ? (
-            <View style={styles.driverRowCompact}>
+            <View style={styles.driverCard}>
               {driver.avatar ? (
-                <Image source={{ uri: driver.avatar }} style={styles.driverAvatarCompact} />
+                <Image source={{ uri: driver.avatar }} style={styles.driverAvatar} />
               ) : (
-                <View style={styles.driverAvatarFallbackCompact}>
-                  <Text style={styles.driverInitialCompact}>
+                <View style={styles.driverAvatarFallback}>
+                  <Text style={styles.driverAvatarText}>
                     {driver.firstName?.[0] ?? '?'}
                     {driver.lastName?.[0] ?? ''}
                   </Text>
                 </View>
               )}
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.driverNameCompact} numberOfLines={1}>
+              <View style={styles.driverMeta}>
+                <Text style={styles.driverName} numberOfLines={1}>
                   {driver.firstName} {driver.lastName}
                 </Text>
-                {vehicle && (
-                  <View style={styles.driverPlatePill}>
-                    <Text style={styles.driverPlatePillText}>{vehicle.licensePlate}</Text>
+                <Text style={styles.driverSubline} numberOfLines={1}>
+                  {vehicle?.licensePlate ?? 'Transportlīdzeklis nav norādīts'}
+                </Text>
+                {etaMin != null && (
+                  <View style={styles.etaPill}>
+                    <Clock3 size={13} color={colors.primary} />
+                    <Text style={styles.etaPillText}>{etaMin} min</Text>
                   </View>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() =>
-                  router.push({
-                    pathname: '/chat/[jobId]',
-                    params: {
-                      jobId: activeJob!.id,
-                      title: `${driver.firstName} ${driver.lastName}`,
-                    },
-                  })
-                }
-              >
-                <MessageCircle size={18} color="#111827" />
-              </TouchableOpacity>
-              {driver.phone && (
-                <TouchableOpacity
-                  style={[styles.iconBtn, styles.iconBtnPrimary]}
-                  onPress={() => Linking.openURL(`tel:${driver.phone}`).catch(() => null)}
-                >
-                  <Phone size={18} color="#fff" />
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
-            <View style={styles.waitingRow}>
-              {order.items.map((item, idx) => (
-                <View key={idx} style={styles.waitingItem}>
-                  <Package size={14} color="#6b7280" />
-                  <Text style={styles.waitingItemText}>
-                    {item.quantity} {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}{' '}
-                    · {item.material.name}
-                  </Text>
-                </View>
+            <View style={styles.waitingCard}>
+              <Text style={styles.waitingTitle}>Gaidām transportu</Text>
+              {order.items.map((item, index) => (
+                <Text key={`${item.material.name}-${index}`} style={styles.waitingText}>
+                  {item.quantity} {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} ·{' '}
+                  {item.material.name}
+                </Text>
               ))}
             </View>
           )}
+        </InfoSection>
 
-          {/* Primary contextual CTA */}
-          {primaryCta && (
-            <TouchableOpacity
-              style={[
-                styles.primaryCta,
-                primaryCta.variant === 'success' && styles.primaryCtaSuccess,
-                primaryCta.disabled && { opacity: 0.6 },
-              ]}
+        <View style={styles.actionsBlock}>
+          {order.status === 'DELIVERED' && (
+            <Button
+              size="lg"
+              onPress={handleConfirmReceipt}
+              disabled={actionLoading || disputeFiled}
+              isLoading={actionLoading}
+            >
+              Apstiprināt saņemšanu
+            </Button>
+          )}
+
+          {canPay && (
+            <Button size="lg" onPress={handlePay} disabled={payLoading} isLoading={payLoading}>
+              {`Maksāt €${order.total.toFixed(2)}`}
+            </Button>
+          )}
+
+          {driver?.phone && (
+            <Button
+              variant="outline"
+              size="lg"
               onPress={() => {
                 haptics.medium();
-                primaryCta.onPress();
+                Linking.openURL(`tel:${driver.phone}`).catch(() => null);
               }}
-              disabled={primaryCta.disabled}
             >
-              {primaryCta.icon}
-              <Text style={styles.primaryCtaText}>{primaryCta.label}</Text>
-            </TouchableOpacity>
+              Zvanīt šoferim
+            </Button>
           )}
 
-          {/* Drag hint while collapsed */}
-          {sheetIndex === 0 && (
-            <Text style={styles.dragHint}>Velciet augšup, lai redzētu detaļas</Text>
+          {driver && activeJob && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push({
+                  pathname: '/chat/[jobId]',
+                  params: {
+                    jobId: activeJob.id,
+                    title: `${driver.firstName} ${driver.lastName}`,
+                  },
+                });
+              }}
+            >
+              Rakstīt šoferim
+            </Button>
           )}
 
-          {/* ─── Expanded-only content ────────────────────────── */}
-          <View style={styles.expandedDivider} />
+          {canRate && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                setShowRating(true);
+              }}
+            >
+              Novērtēt pasūtījumu
+            </Button>
+          )}
 
-          {/* Details list */}
-          <View style={styles.detailsCard}>
-            <DetailRow
-              label="Piegādes adrese"
-              value={`${order.deliveryAddress}\n${order.deliveryCity}`}
-            />
-            <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
-            <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
-            <DetailRow
-              label="Piegādes laiks"
-              value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
-            />
-            <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
-            <DetailRow
-              label="Maksājuma veids"
-              value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
-            />
-            <View style={styles.detailsTotalRow}>
-              <Text style={styles.detailsTotalLabel}>Pasūtījuma summa</Text>
-              <Text style={styles.detailsTotalValue}>€{order.total.toFixed(2)}</Text>
-            </View>
-          </View>
-
-          {/* Order number card */}
-          <View style={styles.trackingBlackCard}>
-            <View>
-              <Text style={styles.trackingBlackLabel}>Pasūtījuma numurs</Text>
-              <Text style={styles.trackingBlackNumber}>#{order.orderNumber}</Text>
-            </View>
-            <TouchableOpacity style={styles.trackingBlackDocBtn}>
-              <FileText size={18} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Secondary actions */}
           {canCancel && (
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <TouchableOpacity
-                style={[{ flex: 1 }, styles.secondaryActionBtn, styles.secondaryActionBtnDanger]}
-                onPress={handleCancel}
-                disabled={actionLoading}
-              >
-                <Text style={styles.secondaryActionBtnDangerText}>Atcelt</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[{ flex: 1 }, styles.secondaryActionBtn]}
-                onPress={() => setShowAmend(true)}
-              >
-                <Text style={styles.secondaryActionBtnText}>Labot</Text>
-              </TouchableOpacity>
+            <View style={styles.rowActions}>
+              <View style={styles.rowActionItem}>
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  onPress={handleCancel}
+                  isLoading={actionLoading}
+                >
+                  Atcelt
+                </Button>
+              </View>
+              <View style={styles.rowActionItem}>
+                <Button variant="secondary" size="lg" onPress={() => setShowAmend(true)}>
+                  Labot
+                </Button>
+              </View>
             </View>
           )}
 
           {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-            <TouchableOpacity
-              style={[styles.secondaryActionBtn, { marginTop: 12 }]}
-              onPress={() => setShowDispute(true)}
-            >
-              <Text style={styles.secondaryActionBtnText}>Ziņot par problēmu</Text>
-            </TouchableOpacity>
+            <Button variant="secondary" size="lg" onPress={() => setShowDispute(true)}>
+              Ziņot par problēmu
+            </Button>
           )}
-        </BottomSheetScrollView>
-      </BottomSheet>
+        </View>
 
-      {/* Sheets & Modals */}
+        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pasūtījums">
+          {orderRows.map((row, index) => (
+            <DetailRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              last={index === orderRows.length - 1}
+            />
+          ))}
+        </InfoSection>
+
+        <InfoSection
+          icon={<CreditCard size={16} color={colors.textMuted} />}
+          title="Summa"
+          right={<Text style={styles.totalText}>€{order.total.toFixed(2)}</Text>}
+        >
+          <DetailRow label="Materiāli" value={`€${order.subtotal.toFixed(2)}`} />
+          <DetailRow label="PVN" value={`€${order.tax.toFixed(2)}`} />
+          <DetailRow label="Piegāde" value={`€${order.deliveryFee.toFixed(2)}`} last />
+        </InfoSection>
+
+        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pozīcijas">
+          {order.items.map((item, index) => (
+            <DetailRow
+              key={`${item.material.name}-${index}`}
+              label={item.material.name}
+              value={`${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} · €${item.total.toFixed(2)}`}
+              last={index === order.items.length - 1}
+            />
+          ))}
+        </InfoSection>
+
+        {order.surcharges && order.surcharges.length > 0 && (
+          <InfoSection
+            icon={<AlertTriangle size={16} color={colors.textMuted} />}
+            title="Piemaksas"
+          >
+            <View style={styles.surchargeList}>
+              {order.surcharges.map((surcharge) => (
+                <View key={surcharge.id} style={styles.surchargeCard}>
+                  <View style={styles.surchargeHeader}>
+                    <Text style={styles.surchargeLabel}>{surcharge.label}</Text>
+                    <Text style={styles.surchargeAmount}>€{surcharge.amount.toFixed(2)}</Text>
+                  </View>
+                  <Text style={styles.surchargeStatus}>
+                    Statuss:{' '}
+                    {surcharge.approvalStatus === 'APPROVED'
+                      ? 'Apstiprināta'
+                      : surcharge.approvalStatus === 'REJECTED'
+                        ? 'Noraidīta'
+                        : 'Gaida apstiprinājumu'}
+                  </Text>
+                  {surcharge.approvalStatus === 'PENDING' && (
+                    <View style={styles.rowActions}>
+                      <View style={styles.rowActionItem}>
+                        <Button
+                          size="sm"
+                          onPress={() => {
+                            void handleApproveSurcharge(surcharge.id);
+                          }}
+                          disabled={surchargeActionLoading === surcharge.id}
+                          isLoading={surchargeActionLoading === surcharge.id}
+                        >
+                          Apstiprināt
+                        </Button>
+                      </View>
+                      <View style={styles.rowActionItem}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onPress={() => {
+                            void handleRejectSurcharge(surcharge.id);
+                          }}
+                          disabled={surchargeActionLoading === surcharge.id}
+                        >
+                          Noraidīt
+                        </Button>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          </InfoSection>
+        )}
+
+        {documents.length > 0 && (
+          <InfoSection icon={<FileText size={16} color={colors.textMuted} />} title="Dokumenti">
+            <View style={styles.documentList}>
+              {documents.map((document) => (
+                <TouchableOpacity
+                  key={document.id}
+                  style={styles.documentCard}
+                  onPress={() => {
+                    if (document.fileUrl) {
+                      haptics.light();
+                      Linking.openURL(document.fileUrl).catch(() => null);
+                    }
+                  }}
+                  disabled={!document.fileUrl}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.documentMeta}>
+                    <Text style={styles.documentTitle}>{document.title}</Text>
+                    <Text style={styles.documentStatus}>{document.status}</Text>
+                  </View>
+                  <Text
+                    style={[styles.documentLink, !document.fileUrl && styles.documentLinkDisabled]}
+                  >
+                    {document.fileUrl ? 'Atvērt' : 'Drīzumā'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </InfoSection>
+        )}
+
+        {activeJob?.deliveryProof && (
+          <InfoSection
+            icon={<CheckCircle size={16} color={colors.textMuted} />}
+            title="Piegādes apliecinājums"
+          >
+            <DetailRow label="Saņēmējs" value={activeJob.deliveryProof.recipientName || '—'} />
+            <DetailRow
+              label="Piezīmes"
+              value={activeJob.deliveryProof.notes || '—'}
+              last={activeJob.deliveryProof.photos.length === 0}
+            />
+            {activeJob.deliveryProof.photos.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photoRow}
+              >
+                {activeJob.deliveryProof.photos.map((photo, index) => (
+                  <Image
+                    key={`${photo}-${index}`}
+                    source={{ uri: photo }}
+                    style={styles.proofImage}
+                  />
+                ))}
+              </ScrollView>
+            )}
+          </InfoSection>
+        )}
+
+        {order.sitePhotoUrl && (
+          <InfoSection icon={<MapPin size={16} color={colors.textMuted} />} title="Objekta foto">
+            <Image
+              source={{ uri: order.sitePhotoUrl }}
+              style={styles.siteImage}
+              resizeMode="cover"
+            />
+          </InfoSection>
+        )}
+
+        {order.linkedSkipOrder && (
+          <InfoSection
+            icon={<Truck size={16} color={colors.textMuted} />}
+            title="Saistītais skip pasūtījums"
+          >
+            <DetailRow label="Numurs" value={`#${order.linkedSkipOrder.orderNumber}`} />
+            <DetailRow label="Statuss" value={order.linkedSkipOrder.status} />
+            <DetailRow label="Izmērs" value={order.linkedSkipOrder.skipSize} />
+            <DetailRow label="Atkritumi" value={order.linkedSkipOrder.wasteCategory} last />
+          </InfoSection>
+        )}
+      </ScrollView>
+
       {id && token && (
         <RatingModal
           visible={showRating}
@@ -675,6 +802,7 @@ export default function OrderDetailScreen() {
           orderId={id}
         />
       )}
+
       {order && token && (
         <DisputeSheet
           visible={showDispute}
@@ -687,6 +815,7 @@ export default function OrderDetailScreen() {
           }}
         />
       )}
+
       {order && token && (
         <AmendSheet
           visible={showAmend}
@@ -696,6 +825,7 @@ export default function OrderDetailScreen() {
           onSuccess={load}
         />
       )}
+
       <ActionResultSheet
         visible={cancelResultVisible}
         onClose={() => setCancelResultVisible(false)}
@@ -713,6 +843,7 @@ export default function OrderDetailScreen() {
           router.replace('/(buyer)/orders');
         }}
       />
+
       <ActionResultSheet
         visible={disputeResultVisible}
         onClose={() => setDisputeResultVisible(false)}
@@ -722,24 +853,66 @@ export default function OrderDetailScreen() {
         primaryLabel="Labi"
         onPrimary={() => setDisputeResultVisible(false)}
       />
-    </View>
-  );
-}
-
-// ── Local detail row (kept inline to avoid pulling the heavy InfoSection UI) ──
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailRowLabel}>{label}</Text>
-      <Text style={styles.detailRowValue} numberOfLines={3}>
-        {value}
-      </Text>
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  // ── Map pins ──
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  mapCard: {
+    height: 280,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#DDE3EA',
+    marginBottom: 12,
+  },
+  map: {
+    flex: 1,
+  },
+  mapOverlay: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: 'rgba(17, 24, 39, 0.88)',
+  },
+  heroEta: {
+    fontSize: 30,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#E5E7EB',
+    marginTop: 4,
+  },
+  mapMetaRow: {
+    marginTop: 12,
+    gap: 8,
+  },
+  mapMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapMetaText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#F9FAFB',
+  },
   pinDelivery: {
     width: 36,
     height: 36,
@@ -748,7 +921,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2.5,
-    borderColor: '#fff',
+    borderColor: '#FFFFFF',
   },
   pinDriver: {
     width: 40,
@@ -758,247 +931,242 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#000',
+    borderColor: '#FFFFFF',
+    shadowColor: '#000000',
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-
-  // ── Floating back button ──
-  floatingHeader: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 20,
-  },
-  floatingBackBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-
-  // ── Bottom sheet chrome ──
-  sheetBackground: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
-  sheetHandle: {
-    backgroundColor: '#d1d5db',
-    width: 44,
-    height: 5,
-  },
-  sheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 48,
-  },
-
-  // ── Hero ──
-  heroEta: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#111827',
-    fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 15,
-    color: '#6b7280',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-
-  // ── Progress dots (4 steps) ──
   stepsRow: {
     flexDirection: 'row',
-    marginTop: 20,
-    marginBottom: 8,
     gap: 6,
+    marginBottom: 16,
   },
-  stepItem: { flex: 1, alignItems: 'flex-start' },
+  stepItem: {
+    flex: 1,
+  },
   stepDot: {
     width: '100%',
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#E5E7EB',
     marginBottom: 8,
   },
-  stepDotActive: { backgroundColor: colors.primary },
-  stepLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
-  stepLabelActive: { color: '#111827', fontWeight: '600' },
-
-  // ── Driver row (compact) ──
-  driverRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+  stepDotActive: {
+    backgroundColor: colors.primary,
   },
-  driverAvatarCompact: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#f3f4f6',
-  },
-  driverAvatarFallbackCompact: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverInitialCompact: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  driverNameCompact: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  driverPlatePill: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  driverPlatePillText: {
+  stepLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#374151',
-    letterSpacing: 0.6,
-  },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  iconBtnPrimary: { backgroundColor: '#111827' },
-
-  // ── Waiting (no driver yet) ──
-  waitingRow: { marginTop: 16, gap: 8 },
-  waitingItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  waitingItemText: { fontSize: 15, color: '#374151', fontWeight: '500' },
-
-  // ── Primary CTA ──
-  primaryCta: {
-    backgroundColor: '#111827',
-    borderRadius: 18,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    marginHorizontal: 4,
-  },
-  primaryCtaSuccess: { backgroundColor: '#16a34a' },
-  primaryCtaText: { fontSize: 16, color: '#fff', fontWeight: '600' },
-
-  // ── Drag hint ──
-  dragHint: {
-    textAlign: 'center',
-    marginTop: 12,
-    fontSize: 12,
-    color: '#9ca3af',
+    fontFamily: 'Inter_500Medium',
     fontWeight: '500',
+    color: '#9CA3AF',
   },
-
-  // ── Expanded content ──
-  expandedDivider: {
-    height: 1,
-    backgroundColor: '#f3f4f6',
-    marginTop: 20,
-    marginBottom: 4,
-  },
-  detailsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  detailRowLabel: { fontSize: 14, color: '#6b7280' },
-  detailRowValue: {
-    fontSize: 14,
+  stepLabelActive: {
     color: '#111827',
-    fontWeight: '500',
-    textAlign: 'right',
-    flexShrink: 1,
-    marginLeft: 16,
   },
-  detailsTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  detailsTotalLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-  detailsTotalValue: {
-    fontSize: 18,
-    color: '#111827',
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
-  },
-
-  // ── Black tracking card (order number) ──
-  trackingBlackCard: {
-    backgroundColor: '#111827',
-    borderRadius: 20,
-    padding: 18,
-    marginTop: 12,
+  alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  trackingBlackLabel: { color: '#9ca3af', fontSize: 11, marginBottom: 2, fontWeight: '500' },
-  trackingBlackNumber: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  trackingBlackDocBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#1f2937',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // ── Secondary actions ──
-  secondaryActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#FEF3C7',
     borderRadius: 14,
-    paddingVertical: 14,
+    padding: 12,
+    marginBottom: 14,
   },
-  secondaryActionBtnDanger: { backgroundColor: '#fef2f2' },
-  secondaryActionBtnText: { fontSize: 15, fontWeight: '600', color: '#111827' },
-  secondaryActionBtnDangerText: { fontSize: 15, fontWeight: '600', color: '#ef4444' },
+  alertText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#92400E',
+  },
+  driverCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 18,
+    padding: 14,
+  },
+  driverAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E5E7EB',
+  },
+  driverAvatarFallback: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverAvatarText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  driverMeta: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  driverName: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  driverSubline: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  etaPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  etaPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  waitingCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 18,
+    padding: 14,
+  },
+  waitingTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 6,
+  },
+  waitingText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  actionsBlock: {
+    gap: 10,
+    marginBottom: 12,
+  },
+  rowActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  rowActionItem: {
+    flex: 1,
+  },
+  totalText: {
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  surchargeList: {
+    gap: 10,
+  },
+  surchargeCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 14,
+  },
+  surchargeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  surchargeLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  surchargeAmount: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  surchargeStatus: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  documentList: {
+    gap: 10,
+  },
+  documentCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 14,
+  },
+  documentMeta: {
+    flex: 1,
+    marginRight: 12,
+  },
+  documentTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  documentStatus: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  documentLink: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  documentLinkDisabled: {
+    color: '#9CA3AF',
+  },
+  photoRow: {
+    gap: 10,
+    paddingTop: 12,
+  },
+  proofImage: {
+    width: 160,
+    height: 120,
+    borderRadius: 14,
+    backgroundColor: '#E5E7EB',
+  },
+  siteImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+  },
 });
