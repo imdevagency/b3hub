@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { type ApiOrderSchedule } from '@/lib/api/orders';
 import { haptics } from '@/lib/haptics';
-import { Calendar, Plus } from 'lucide-react-native';
+import { Calendar } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { colors } from '@/lib/theme';
@@ -29,12 +29,10 @@ function ScheduleRow({
   schedule,
   onPause,
   onResume,
-  onDelete,
 }: {
   schedule: ApiOrderSchedule;
   onPause: () => void;
   onResume: () => void;
-  onDelete: () => void;
 }) {
   const intervalLabel =
     INTERVAL_LABELS[schedule.intervalDays] ?? `Ik ${schedule.intervalDays} dienas`;
@@ -72,13 +70,6 @@ function ScheduleRow({
           style={s.actionBtn}
         >
           <Text style={s.actionBtnText}>{schedule.enabled ? 'Pauzēt' : 'Atsākt'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onDelete}
-          style={[s.actionBtn, s.actionBtnDanger]}
-        >
-          <Text style={[s.actionBtnText, s.actionBtnTextDanger]}>Dzēst</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -127,31 +118,9 @@ export default function SchedulesScreen() {
     await load(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!token) return;
-    haptics.medium();
-    await api.schedules.delete(id, token);
-    await load(true);
-  };
-
   return (
     <ScreenContainer bg="#f9fafb">
-      <ScreenHeader
-        title="Atkārtoti pasūtījumi"
-        rightAction={
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              haptics.light();
-              router.push('/(buyer)/catalog?schedule=1');
-            }}
-            style={s.addBtn}
-          >
-            <Plus size={18} color="#fff" />
-            <Text style={s.addBtnText}>Jauns</Text>
-          </TouchableOpacity>
-        }
-      />
+      <ScreenHeader title="Atkārtoti pasūtījumi" />
 
       {loading ? (
         <View style={{ padding: 16, gap: 12 }}>
@@ -163,16 +132,7 @@ export default function SchedulesScreen() {
         <EmptyState
           icon={<Calendar size={36} color="#d1d5db" />}
           title="Nav atkārtotu pasūtījumu"
-          subtitle="Izveidojiet pasūtījumu un izvēlieties atkārtošanas biežumu"
-          action={
-            <TouchableOpacity
-              style={s.emptyBtn}
-              onPress={() => router.push('/(buyer)/catalog?schedule=1')}
-              activeOpacity={0.8}
-            >
-              <Text style={s.emptyBtnText}>Izveidot tagad</Text>
-            </TouchableOpacity>
-          }
+          subtitle="Atkārtoti pasūtījumi tiek iestatīti pasūtījuma izveidē"
         />
       ) : (
         <ScrollView
@@ -195,7 +155,6 @@ export default function SchedulesScreen() {
               schedule={sched}
               onPause={() => handlePause(sched.id)}
               onResume={() => handleResume(sched.id)}
-              onDelete={() => handleDelete(sched.id)}
             />
           ))}
         </ScrollView>
@@ -216,7 +175,13 @@ const s = StyleSheet.create({
     gap: 10,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, flex: 1, marginRight: 8 },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+    marginRight: 8,
+  },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 12, color: colors.textMuted },
@@ -231,27 +196,5 @@ const s = StyleSheet.create({
     borderColor: '#d1d5db',
     alignItems: 'center',
   },
-  actionBtnDanger: { borderColor: '#fca5a5', flex: 0, paddingHorizontal: 16 },
   actionBtnText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  actionBtnTextDanger: { color: colors.danger },
-
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-  },
-  addBtnText: { fontSize: 13, fontWeight: '600', color: '#fff' },
-
-  emptyBtn: {
-    marginTop: 8,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  emptyBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
 });

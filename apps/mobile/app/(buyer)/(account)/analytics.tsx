@@ -1,7 +1,9 @@
 /**
  * (buyer)/analytics.tsx
  *
- * Buyer analytics overview — monthly spend, order breakdown, material breakdown, CO2 footprint.
+ * Mobile analytics: at-a-glance stats only.
+ * Full BI (charts, AR aging, supplier leaderboard, CSV export) lives at
+ * https://b3hub.lv/dashboard/analytics — a back-office task done at a desk.
  */
 
 import React, { useCallback, useState } from 'react';
@@ -11,49 +13,19 @@ import {
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
-  Platform,
+  Linking,
 } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
-import {
-  api,
-  type AnalyticsOverview,
-  type BuyerAnalytics,
-  type DeliveryCalendarEvent,
-  type SupplierScore,
-} from '@/lib/api';
-import {
-  BarChart2,
-  Leaf,
-  Package,
-  TrendingUp,
-  AlertTriangle,
-  Download,
-  Calendar,
-  Star,
-  MapPin,
-} from 'lucide-react-native';
-import type { ArAging } from '@/lib/api';
+import { api, type AnalyticsOverview } from '@/lib/api';
+import { BarChart2, Leaf, Package, TrendingUp, ExternalLink } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
-import { colors, spacing, radius, fontSizes } from '@/lib/tokens';
-import { API_URL } from '@/lib/api/common';
+import { colors, spacing, radius } from '@/lib/tokens';
 
-// Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
-let FileSystem: typeof import('expo-file-system') | null = null;
-let Sharing: typeof import('expo-sharing') | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  FileSystem = require('expo-file-system');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  Sharing = require('expo-sharing');
-} catch {
-  /* fallback — download unavailable */
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────
+const WEB_ANALYTICS_URL = 'https://b3hub.lv/dashboard/analytics';
 
 function fmtEur(v: number) {
   return new Intl.NumberFormat('lv-LV', {
@@ -63,403 +35,128 @@ function fmtEur(v: number) {
   }).format(v);
 }
 
-function fmtPct(n: number) {
-  return `${Math.round(n * 100)}%`;
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  GRAVEL: 'Grants',
-  SAND: 'Smiltis',
-  STONE: 'Akmens',
-  CONCRETE: 'Betons',
-  SOIL: 'Grunts',
-  RECYCLED_CONCRETE: 'Rec. betons',
-  RECYCLED_SOIL: 'Rec. grunts',
-  ASPHALT: 'Asfalts',
-  OTHER: 'Citi',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Gaida',
-  CONFIRMED: 'Apstiprin.',
-  IN_PROGRESS: 'Izpildē',
-  DELIVERED: 'Piegādāts',
-  COMPLETED: 'Pabeigts',
-  CANCELLED: 'Atcelts',
-};
-
-// ─── Subcomponents ────────────────────────────────────────────────────────
-
 function StatTile({
   icon: Icon,
   label,
   value,
   accent,
+  sub,
 }: {
   icon: React.ComponentType<{ size: number; color: string }>;
   label: string;
   value: string;
   accent?: string;
+  sub?: string;
 }) {
   return (
-    <View style={styles.statTile}>
-      <Icon size={20} color={accent ?? colors.primary} />
-      <Text style={[styles.statValue, { color: accent ?? colors.textPrimary }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={s.tile}>
+      <Icon size={22} color={accent ?? colors.primary} />
+      <Text style={[s.tileValue, { color: accent ?? colors.textPrimary }]}>{value}</Text>
+      <Text style={s.tileLabel}>{label}</Text>
+      {sub ? <Text style={s.tileSub}>{sub}</Text> : null}
     </View>
   );
 }
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.card}>{children}</View>
-    </View>
-  );
-}
-
-// ─── Screen ──────────────────────────────────────────────────────────────
 
 export default function AnalyticsScreen() {
   const { token } = useAuth();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-  const [calendarEvents, setCalendarEvents] = useState<DeliveryCalendarEvent[]>([]);
-  const [supplierScores, setSupplierScores] = useState<SupplierScore[]>([]);
-  const [downloading, setDownloading] = useState(false);
 
   const fetcher = useCallback(async () => {
     if (!token) return;
-    const [data, events, scores] = await Promise.all([
-      api.analytics.overview(token),
-      api.analytics.deliveryCalendar(token).catch(() => [] as DeliveryCalendarEvent[]),
-      api.analytics.supplierScores(token).catch(() => [] as SupplierScore[]),
-    ]);
+    const data = await api.analytics.overview(token);
     setOverview(data);
-    setCalendarEvents(events);
-    setSupplierScores(scores);
   }, [token]);
 
-  const { loading, refreshing, error, onRefresh } = useScreenLoad(fetcher);
+  const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
-  const handleDownloadPdf = async () => {
-    if (!token || !FileSystem || !Sharing) {
-      return;
-    }
-    setDownloading(true);
-    try {
-      const url = `${API_URL}/analytics/export-pdf`;
-      const fileUri = `${(FileSystem as any).documentDirectory ?? ''}analytics-report.pdf`;
-      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (downloadRes.status !== 200) throw new Error('Neizdevās lejupielādēt atskaiti');
-      if (Platform.OS === 'ios') {
-        await Sharing.shareAsync(downloadRes.uri, {
-          UTI: 'com.adobe.pdf',
-          mimeType: 'application/pdf',
-        });
-      } else {
-        await Sharing.shareAsync(downloadRes.uri);
-      }
-    } catch {
-      // silent — sharing dialog handles user feedback
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const buyer: BuyerAnalytics | null = overview?.buyer ?? null;
+  const buyer = overview?.buyer ?? null;
 
   const totalSpend = buyer?.monthlySpend?.reduce((s, m) => s + m.value, 0) ?? 0;
-  const completedOrders = buyer?.orderBreakdown?.find((b) => b.status === 'COMPLETED')?.count ?? 0;
+  const thisMonth =
+    buyer?.monthlySpend?.slice(-1)[0]?.value ?? 0;
+  const completedOrders =
+    buyer?.orderBreakdown?.find((b) => b.status === 'COMPLETED')?.count ?? 0;
   const activeOrders =
     (buyer?.orderBreakdown?.find((b) => b.status === 'IN_PROGRESS')?.count ?? 0) +
     (buyer?.orderBreakdown?.find((b) => b.status === 'CONFIRMED')?.count ?? 0);
+  const co2 = buyer?.co2Kg != null ? Math.round(buyer.co2Kg) : null;
 
-  if (loading || !overview) {
+  if (loading) {
     return (
       <ScreenContainer bg="#f4f5f7">
-        <ScreenHeader title="Analītika" />
-        <SkeletonCard count={4} />
+        <ScreenHeader title="Statistika" />
+        <SkeletonCard count={3} />
       </ScreenContainer>
     );
   }
 
   return (
     <ScreenContainer bg="#f4f5f7">
-      <ScreenHeader
-        title="Analītika"
-        rightAction={
-          <TouchableOpacity
-            onPress={handleDownloadPdf}
-            style={{ padding: 4 }}
-            activeOpacity={0.7}
-            disabled={downloading}
-          >
-            <Download size={22} color="#ffffff" />
-          </TouchableOpacity>
-        }
-      />
+      <ScreenHeader title="Statistika" />
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={s.scroll}
       >
-        {error ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-
         {/* Key stats */}
-        <View style={styles.statsRow}>
-          <StatTile icon={TrendingUp} label="Kopā iztērēts" value={fmtEur(totalSpend)} />
-          <StatTile icon={Package} label="Pabeigti" value={String(completedOrders)} />
-          <StatTile icon={BarChart2} label="Aktīvi" value={String(activeOrders)} />
+        <View style={s.grid}>
           <StatTile
-            icon={Leaf}
-            label="CO₂ (kg)"
-            value={buyer?.co2Kg != null ? String(Math.round(buyer.co2Kg)) : '—'}
-            accent="#16a34a"
+            icon={TrendingUp}
+            label="Šomēnes"
+            value={fmtEur(thisMonth)}
           />
+          <StatTile
+            icon={Package}
+            label="Aktīvi"
+            value={String(activeOrders)}
+          />
+          <StatTile
+            icon={BarChart2}
+            label="Pabeigti"
+            value={String(completedOrders)}
+            sub={`Kopā: ${fmtEur(totalSpend)}`}
+          />
+          {co2 != null && (
+            <StatTile
+              icon={Leaf}
+              label="CO₂ (kg)"
+              value={String(co2)}
+              accent="#16a34a"
+            />
+          )}
         </View>
 
-        {/* Order breakdown */}
-        {buyer && buyer.orderBreakdown.length > 0 && (
-          <SectionCard title="Pasūtījumu statusi">
-            {buyer.orderBreakdown.map((row) => {
-              const maxCount = Math.max(...buyer.orderBreakdown.map((r) => r.count), 1);
-              const pct = row.count / maxCount;
-              return (
-                <View key={row.status} style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {STATUS_LABELS[row.status] ?? row.status}
-                  </Text>
-                  <View style={styles.barTrack}>
-                    <View
-                      style={[styles.barFill, { width: `${Math.max(pct * 100, 2)}%` as any }]}
-                    />
-                  </View>
-                  <Text style={styles.breakdownValue}>{row.count}</Text>
-                </View>
-              );
-            })}
-          </SectionCard>
-        )}
-
-        {/* Material breakdown */}
-        {buyer && buyer.materialBreakdown.length > 0 && (
-          <SectionCard title="Izdevumi pēc kategorijas">
-            {buyer.materialBreakdown.slice(0, 6).map((m) => (
-              <View key={m.category} style={styles.materialRow}>
-                <Text style={styles.materialLabel}>
-                  {CATEGORY_LABELS[m.category] ?? m.category}
-                </Text>
-                <View style={styles.materialRight}>
-                  <Text style={styles.materialAmount}>{fmtEur(m.totalSpent)}</Text>
-                  <Text style={styles.materialMeta}>{m.orderCount} pas.</Text>
-                </View>
-              </View>
-            ))}
-          </SectionCard>
-        )}
-
-        {/* Monthly spend sparkline (text-only) */}
-        {buyer && buyer.monthlySpend.length > 0 && (
-          <SectionCard title="Ikmēneša izdevumi">
-            {buyer.monthlySpend.slice(-6).map((m) => {
-              const maxVal = Math.max(...buyer.monthlySpend.map((x) => x.value), 1);
-              const pct = m.value / maxVal;
-              const [y, mo] = m.month.split('-');
-              return (
-                <View key={m.month} style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {mo}/{y?.slice(2)}
-                  </Text>
-                  <View style={styles.barTrack}>
-                    <View
-                      style={[
-                        styles.barFill,
-                        { width: `${Math.max(pct * 100, 2)}%` as any, backgroundColor: '#3b82f6' },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.breakdownValue}>{fmtEur(m.value)}</Text>
-                </View>
-              );
-            })}
-          </SectionCard>
-        )}
-
-        {/* AR Aging — outstanding invoices */}
-        {buyer?.arAging &&
-          (() => {
-            const ag = buyer.arAging as ArAging;
-            const overdueTotal =
-              ag.days30.total + ag.days60.total + ag.days90.total + ag.over90.total;
-            const overdueCount =
-              ag.days30.count + ag.days60.count + ag.days90.count + ag.over90.count;
-            if (overdueTotal <= 0) return null;
-            const rows: {
-              label: string;
-              bucket: { count: number; total: number };
-              accent: string;
-            }[] = [
-              { label: '1–30 dienas', bucket: ag.days30, accent: '#d97706' },
-              { label: '31–60 dienas', bucket: ag.days60, accent: '#ea580c' },
-              { label: '61–90 dienas', bucket: ag.days90, accent: '#dc2626' },
-              { label: '90+ dienas', bucket: ag.over90, accent: '#991b1b' },
-            ].filter((r) => r.bucket.count > 0);
-            return (
-              <SectionCard title="Kavētie rēķini">
-                <View style={styles.agingHeader}>
-                  <AlertTriangle size={18} color="#dc2626" />
-                  <Text style={styles.agingTotal}>
-                    {overdueCount} rēķins · {fmtEur(overdueTotal)} kavēts
-                  </Text>
-                </View>
-                {rows.map((r) => (
-                  <View key={r.label} style={styles.breakdownRow}>
-                    <Text style={[styles.breakdownLabel, { color: r.accent }]}>{r.label}</Text>
-                    <View style={styles.barTrack}>
-                      <View
-                        style={[
-                          styles.barFill,
-                          {
-                            width: `${Math.max((r.bucket.total / overdueTotal) * 100, 2)}%` as any,
-                            backgroundColor: r.accent,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={[styles.breakdownValue, { color: r.accent }]}>
-                      {fmtEur(r.bucket.total)}
-                    </Text>
-                  </View>
-                ))}
-              </SectionCard>
-            );
-          })()}
-
-        {/* Seller analytics (if user is also a seller) */}
-        {overview.seller && (
-          <SectionCard title="Pārdevēja rādītāji">
-            <View style={styles.sellerStats}>
-              <View style={styles.sellerStat}>
-                <Text style={styles.sellerStatValue}>
-                  {fmtPct(overview.seller.performanceStats.completionRate)}
-                </Text>
-                <Text style={styles.sellerStatLabel}>Izpildes rādītājs</Text>
-              </View>
-              <View style={styles.sellerStat}>
-                <Text style={styles.sellerStatValue}>
-                  {overview.seller.performanceStats.avgRating.toFixed(1)}
-                </Text>
-                <Text style={styles.sellerStatLabel}>Vidējais vērtējums</Text>
-              </View>
-              <View style={styles.sellerStat}>
-                <Text style={styles.sellerStatValue}>
-                  {overview.seller.performanceStats.totalOrders}
-                </Text>
-                <Text style={styles.sellerStatLabel}>Kopā pasūtījumi</Text>
-              </View>
+        {/* Web CTA */}
+        <TouchableOpacity
+          style={s.banner}
+          activeOpacity={0.8}
+          onPress={() => Linking.openURL(WEB_ANALYTICS_URL)}
+        >
+          <View style={s.bannerLeft}>
+            <ExternalLink size={18} color="#2563eb" />
+            <View style={s.bannerText}>
+              <Text style={s.bannerTitle}>Pilna analītika</Text>
+              <Text style={s.bannerSub}>
+                Diagrammas, rēķinu novecošana, piegādātāju reitings un CSV eksports — b3hub.lv
+              </Text>
             </View>
-          </SectionCard>
-        )}
-
-        {/* Delivery calendar — upcoming confirmed deliveries */}
-        {calendarEvents.length > 0 && (
-          <SectionCard title="Gaidāmās piegādes">
-            {calendarEvents.slice(0, 8).map((ev, index) => {
-              const date = new Date(ev.deliveryDate);
-              const dayStr = date.toLocaleDateString('lv-LV', { day: '2-digit', month: 'short' });
-              const roleColor =
-                ev.role === 'BUYER' ? '#3b82f6' : ev.role === 'SELLER' ? '#8b5cf6' : '#f59e0b';
-              const roleLabel =
-                ev.role === 'BUYER'
-                  ? 'Pircējs'
-                  : ev.role === 'SELLER'
-                    ? 'Pārdevējs'
-                    : 'Transportēšana';
-              return (
-                <View
-                  key={ev.id + ev.role}
-                  style={[styles.calRow, index > 0 && styles.calRowBorder]}
-                >
-                  <View style={styles.calDateBox}>
-                    <Calendar size={12} color="#9ca3af" />
-                    <Text style={styles.calDate}>{dayStr}</Text>
-                  </View>
-                  <View style={styles.calBody}>
-                    <Text style={styles.calRef} numberOfLines={1}>
-                      {ev.ref ? `#${ev.ref}` : ev.type === 'ORDER' ? 'Pasūtījums' : 'Darbs'}{' '}
-                      {ev.materialName ? `· ${ev.materialName}` : ''}
-                    </Text>
-                    {ev.city ? (
-                      <View style={styles.calCityRow}>
-                        <MapPin size={10} color="#9ca3af" />
-                        <Text style={styles.calCity}>{ev.city}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={[styles.calRoleBadge, { backgroundColor: `${roleColor}18` }]}>
-                    <Text style={[styles.calRoleText, { color: roleColor }]}>{roleLabel}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </SectionCard>
-        )}
-
-        {/* Top supplier leaderboard — public data */}
-        {supplierScores.length > 0 && (
-          <SectionCard title="Labākie piegādātāji">
-            {supplierScores.slice(0, 5).map((s, i) => (
-              <View
-                key={s.companyId}
-                style={[styles.supplierRow, i > 0 && styles.supplierRowBorder]}
-              >
-                <Text style={styles.supplierRank}>#{i + 1}</Text>
-                <View style={styles.supplierBody}>
-                  <Text style={styles.supplierName} numberOfLines={1}>
-                    {s.name}
-                  </Text>
-                  {s.city ? <Text style={styles.supplierCity}>{s.city}</Text> : null}
-                </View>
-                <View style={styles.supplierStats}>
-                  <View style={styles.supplierStat}>
-                    <Star size={11} color="#f59e0b" />
-                    <Text style={styles.supplierStatText}>{s.avgRating.toFixed(1)}</Text>
-                  </View>
-                  <Text style={styles.supplierStatSep}>·</Text>
-                  <Text style={styles.supplierStatText}>{Math.round(s.completionRate)}%</Text>
-                </View>
-              </View>
-            ))}
-          </SectionCard>
-        )}
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  scroll: {
-    paddingBottom: spacing.xl,
-  },
-  statsRow: {
+const s = StyleSheet.create({
+  scroll: { padding: spacing.base, gap: spacing.base, paddingBottom: 40 },
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: spacing.base,
     gap: 12,
-    paddingTop: spacing.base,
-    marginBottom: spacing.lg,
   },
-  statTile: {
+  tile: {
     flex: 1,
-    minWidth: '40%',
+    minWidth: '44%',
     backgroundColor: '#fff',
     borderRadius: radius.lg,
     padding: spacing.base,
@@ -473,13 +170,14 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  statValue: {
+  tileValue: {
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.5,
     color: colors.textPrimary,
+    marginTop: 4,
   },
-  statLabel: {
+  tileLabel: {
     fontSize: 11,
     color: colors.textMuted,
     fontWeight: '600',
@@ -487,239 +185,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textAlign: 'center',
   },
-  section: {
-    marginBottom: spacing.xl,
+  tileSub: {
+    fontSize: 11,
+    color: colors.textDisabled,
+    textAlign: 'center',
+    marginTop: 1,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-    paddingHorizontal: spacing.base,
-  },
-  card: {
-    backgroundColor: '#fff',
+  banner: {
+    backgroundColor: '#eff6ff',
     borderRadius: radius.lg,
-    marginHorizontal: spacing.base,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
     padding: spacing.base,
-    gap: 10,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  breakdownLabel: {
-    width: 74,
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  barTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: colors.bgMuted,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 3,
-  },
-  breakdownValue: {
-    width: 36,
-    fontSize: 13,
-    color: colors.textPrimary,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
-  materialRow: {
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f9fafb',
   },
-  materialLabel: {
-    fontSize: 14,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    flex: 1,
-  },
-  materialRight: {
-    alignItems: 'flex-end',
-  },
-  materialAmount: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  materialMeta: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  sellerStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: spacing.sm,
-  },
-  sellerStat: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  sellerStatValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  sellerStatLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    textAlign: 'center',
-  },
-  errorBox: {
-    margin: spacing.base,
-    backgroundColor: '#fef2f2',
-    borderRadius: radius.md,
-    padding: spacing.base,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.dangerText,
-  },
-  agingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  agingTotal: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.danger,
-  },
-  breakdownValueWide: {
-    width: 70,
-    fontSize: 13,
-    color: colors.textPrimary,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
-  // Delivery calendar
-  calRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    gap: 10,
-  },
-  calRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#f9fafb',
-  },
-  calDateBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    width: 60,
-  },
-  calDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  calBody: {
-    flex: 1,
-    gap: 2,
-  },
-  calRef: {
-    fontSize: 13,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  calCityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  calCity: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  calRoleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  calRoleText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  // Supplier leaderboard
-  supplierRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    gap: 10,
-  },
-  supplierRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#f9fafb',
-  },
-  supplierRank: {
-    width: 28,
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.textDisabled,
-    textAlign: 'center',
-  },
-  supplierBody: {
-    flex: 1,
-    gap: 1,
-  },
-  supplierName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  supplierCity: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  supplierStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  supplierStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  supplierStatText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  supplierStatSep: {
-    fontSize: 13,
-    color: colors.textDisabled,
-  },
+  bannerLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1 },
+  bannerText: { flex: 1, gap: 3 },
+  bannerTitle: { fontSize: 14, fontWeight: '700', color: '#1d4ed8' },
+  bannerSub: { fontSize: 12, color: '#3b82f6', lineHeight: 17 },
 });

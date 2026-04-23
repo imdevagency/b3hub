@@ -34,6 +34,8 @@ import {
   Handshake,
   Euro,
   FileCheck,
+  Receipt,
+  MapPin,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -261,6 +263,11 @@ export default function ProfileScreen() {
               {mode === 'SUPPLIER' && (
                 <>
                   <MenuItem
+                    icon={Package}
+                    label="Materiālu katalogs"
+                    onPress={() => router.push('/(seller)/catalog')}
+                  />
+                  <MenuItem
                     icon={Euro}
                     label="Izpeļņa"
                     onPress={() => router.push('/(seller)/earnings')}
@@ -391,6 +398,35 @@ export default function ProfileScreen() {
         )}
 
         {/* General Settings */}
+        {mode === 'BUYER' && (
+          <>
+            <SectionHeader label="PĀRVALDĪBA" />
+            <View style={styles.cardGroup}>
+              <MenuItem
+                icon={Receipt}
+                label="Rēķini"
+                onPress={() => router.push('/(buyer)/(account)/invoices')}
+              />
+              <MenuItem
+                icon={FileText}
+                label="Dokumenti"
+                onPress={() => router.push('/(buyer)/(account)/documents')}
+              />
+              <MenuItem
+                icon={AlertCircle}
+                label="Strīdi"
+                onPress={() => router.push('/(buyer)/(account)/disputes')}
+              />
+              <MenuItem
+                icon={MapPin}
+                label="Saglabātās adreses"
+                onPress={() => router.push('/(buyer)/(account)/saved-addresses')}
+                hideBorder
+              />
+            </View>
+          </>
+        )}
+
         <SectionHeader label="VISPĀRĪGI" />
         <View style={styles.cardGroup}>
           <MenuItem

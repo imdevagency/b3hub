@@ -1,4 +1,3 @@
-export { CarrierPricing, CarrierServiceZone, CarrierBlockedDate, CarrierRadiusSettings } from './carrier-settings';
 /**
 
  * lib/api/index.ts
@@ -95,8 +94,6 @@ import { savedAddressesApi } from './saved-addresses';
 import { fieldPassesApi } from './field-passes';
 
 import { analyticsApi } from './analytics';
-
-import { carrierSettingsApi } from './carrier-settings';
 
 
 
@@ -203,11 +200,5 @@ export const api = {
   // ── Analytics ────────────────────────────────────────────────────────
 
   analytics: analyticsApi,
-
-
-
-  // ── Carrier settings ──────────────────────────────────────────────
-
-  carrierSettings: carrierSettingsApi,
 
 };

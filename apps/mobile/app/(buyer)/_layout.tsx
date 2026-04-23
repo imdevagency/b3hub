@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
-import { Home, ClipboardList, User, Briefcase, MessageCircle } from 'lucide-react-native';
+import { Home, ClipboardList, User, MessageCircle } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -93,13 +93,6 @@ function BuyerLayoutContent() {
           }}
         />
         <Tabs.Screen
-          name="business"
-          options={{
-            title: t.tabs.business,
-            tabBarIcon: ({ color }) => <Briefcase size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
           name="messages"
           options={{
             title: 'Čati',
@@ -118,17 +111,10 @@ function BuyerLayoutContent() {
         <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
         <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
         <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
-        {/* (work) group — projects & contracts */}
-        <Tabs.Screen name="(work)/framework-contracts" options={{ href: null }} />
-        <Tabs.Screen name="(work)/framework-contract/[id]" options={{ href: null }} />
-        <Tabs.Screen name="(work)/projects" options={{ href: null }} />
-        <Tabs.Screen name="(work)/project/[id]" options={{ href: null }} />
-        <Tabs.Screen name="(work)/project/new" options={{ href: null }} />
         {/* (account) group — company management */}
         <Tabs.Screen name="(account)/invoices" options={{ href: null }} />
         <Tabs.Screen name="(account)/certificates" options={{ href: null }} />
         <Tabs.Screen name="(account)/documents" options={{ href: null }} />
-        <Tabs.Screen name="(account)/team" options={{ href: null }} />
         <Tabs.Screen name="(account)/saved-addresses" options={{ href: null }} />
         <Tabs.Screen name="(account)/disputes" options={{ href: null }} />
         <Tabs.Screen name="(account)/schedules" options={{ href: null }} />

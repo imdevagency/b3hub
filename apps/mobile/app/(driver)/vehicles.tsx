@@ -1,34 +1,39 @@
-import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * (driver)/vehicles.tsx
+ *
+ * Read-only fleet view for mobile drivers.
+ *
+ * Rationale: adding vehicles (insurance expiry dates, inspection expiry dates,
+ * make/model/year/capacity) is a fleet-manager back-office task. Drivers on
+ * mobile only need to see which trucks are registered and whether they're active.
+ * Full CRUD is on the web portal at /dashboard/fleet-management.
+ */
+
+import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
+  StyleSheet,
   RefreshControl,
-  TextInput,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
+  Linking,
   Alert,
-  Switch,
-  FlatList,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { useRouter } from 'expo-router';
-import { Plus, X, Trash2, Truck, ChevronRight } from 'lucide-react-native';
-import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { Text } from '@/components/ui/text';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useToast } from '@/components/ui/Toast';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
-import type { ApiVehicle, VehicleType } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { api, type ApiVehicle, type VehicleType } from '@/lib/api';
+import { Truck, ExternalLink } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
 
-// ── Constants ──────────────────────────────────────────────────
+const WEB_FLEET_URL = 'https://b3hub.lv/dashboard/fleet-management';
 
 const VEHICLE_LABELS: Record<VehicleType, string> = {
   DUMP_TRUCK: 'Pašizgāzējs',
@@ -40,548 +45,242 @@ const VEHICLE_LABELS: Record<VehicleType, string> = {
   VAN: 'Furgons',
 };
 
-const TYPES = Object.keys(VEHICLE_LABELS) as VehicleType[];
-
-interface VehicleForm {
-  licensePlate: string;
-  vehicleType: VehicleType;
-  make: string;
-  model: string;
-  year: string;
-  capacity: string;
-  isActive: boolean;
-  insuranceExpiry: string;
-  inspectionExpiry: string;
+function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const diff = new Date(iso).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-const BLANK: VehicleForm = {
-  licensePlate: '',
-  vehicleType: 'DUMP_TRUCK',
-  make: '',
-  model: '',
-  year: '',
-  capacity: '',
-  isActive: true,
-  insuranceExpiry: '',
-  inspectionExpiry: '',
-};
-
-// ── Vehicle Card ───────────────────────────────────────────────
-
-function VehicleCard({
-  vehicle,
-  onPress,
-  isReadOnly = false,
-}: {
-  vehicle: ApiVehicle;
-  onPress: (v: ApiVehicle) => void;
-  isReadOnly?: boolean;
-}) {
+function ExpiryLine({ label, iso }: { label: string; iso: string | null | undefined }) {
+  const d = daysUntil(iso);
+  if (d === null) return null;
+  const warn = d <= 30;
+  const expired = d < 0;
   return (
-    <TouchableOpacity
-      className="flex-row items-center py-4 px-5 bg-white border-b border-gray-100"
-      onPress={() => onPress(vehicle)}
-      disabled={isReadOnly}
-      activeOpacity={0.7}
+    <Text
+      style={[
+        s.expiry,
+        warn && { color: '#b45309' },
+        expired && { color: '#b91c1c', fontWeight: '600' },
+      ]}
     >
-      <View className="w-12 h-12 rounded-full bg-gray-50 items-center justify-center mr-4">
-        <Truck size={24} color="#6b7280" />
+      {label}:{' '}
+      {expired
+        ? `beidzies pirms ${Math.abs(d)} d.`
+        : d === 0
+          ? 'beidzas šodien'
+          : `beidzas pēc ${d} d.`}
+    </Text>
+  );
+}
+
+function VehicleRow({ vehicle }: { vehicle: ApiVehicle }) {
+  const typeLabel = VEHICLE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType;
+
+  return (
+    <View style={s.row}>
+      <View style={s.iconWrap}>
+        <Truck size={22} color="#1d4ed8" strokeWidth={1.8} />
       </View>
 
-      <View className="flex-1 pr-4 gap-1">
-        <View className="flex-row items-center gap-2">
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary, letterSpacing: 0.5 }}>
-            {vehicle.licensePlate}
-          </Text>
-          {vehicle.isActive && <StatusPill label="Akтīvs" bg="#dcfce7" color="#166534" size="sm" />}
+      <View style={s.body}>
+        <View style={s.titleRow}>
+          <Text style={s.plate}>{vehicle.licensePlate}</Text>
+          <StatusPill
+            label={vehicle.isActive ? 'Aktīvs' : 'Neaktīvs'}
+            bg={vehicle.isActive ? '#dcfce7' : '#f3f4f6'}
+            color={vehicle.isActive ? '#166534' : '#6b7280'}
+            size="sm"
+          />
         </View>
-        <Text style={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }}>
-          {VEHICLE_LABELS[vehicle.vehicleType]}
-          {vehicle.capacity ? ` • ${vehicle.capacity}t` : ''}
+        <Text style={s.meta} numberOfLines={1}>
+          {typeLabel}
+          {vehicle.make || vehicle.model
+            ? ` · ${[vehicle.make, vehicle.model].filter(Boolean).join(' ')}`
+            : ''}
+          {vehicle.year ? ` · ${vehicle.year}` : ''}
+          {typeof vehicle.capacity === 'number' ? ` · ${vehicle.capacity}t` : ''}
         </Text>
+        <ExpiryLine label="OCTA" iso={vehicle.insuranceExpiry} />
+        <ExpiryLine label="TA" iso={vehicle.inspectionExpiry} />
       </View>
-
-      {!isReadOnly && (
-        <View>
-          <ChevronRight size={20} color="#d1d5db" />
-        </View>
-      )}
-    </TouchableOpacity>
+    </View>
   );
 }
 
-// ── Form Modal ─────────────────────────────────────────────────
-
-function VehicleModal({
-  visible,
-  initial,
-  onClose,
-  onSave,
-  onDelete,
-  saving,
-}: {
-  visible: boolean;
-  initial: ApiVehicle | null;
-  onClose: () => void;
-  onSave: (form: VehicleForm) => void;
-  onDelete?: (id: string) => void;
-  saving: boolean;
-}) {
-  const [form, setForm] = useState<VehicleForm>(BLANK);
-
-  useEffect(() => {
-    if (visible) {
-      if (initial) {
-        setForm({
-          licensePlate: initial.licensePlate,
-          vehicleType: initial.vehicleType,
-          make: initial.make ?? '',
-          model: initial.model ?? '',
-          year: initial.year != null ? String(initial.year) : '',
-          capacity: initial.capacity != null ? String(initial.capacity) : '',
-          isActive: initial.isActive,
-          insuranceExpiry: initial.insuranceExpiry ? initial.insuranceExpiry.slice(0, 10) : '',
-          inspectionExpiry: initial.inspectionExpiry ? initial.inspectionExpiry.slice(0, 10) : '',
-        });
-      } else {
-        setForm(BLANK);
-      }
-    }
-  }, [visible, initial]);
-
-  const set = (k: keyof VehicleForm) => (v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
-
-  const canSave = form.licensePlate.trim().length > 0 && !saving;
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: colors.bgCard }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {/* Header */}
-        <View className="flex-row items-center justify-between pt-6 pb-4 px-5">
-          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}>
-            {initial?.id ? 'Rediģēt transportu' : 'Jauns transports'}
-          </Text>
-          <TouchableOpacity
-            onPress={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center"
-            activeOpacity={0.8}
-          >
-            <X size={18} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, gap: 24 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* License Plate - Hero Input */}
-          <View className="bg-gray-100 rounded-3xl p-6 items-center mt-2">
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '600',
-                color: colors.textMuted,
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-                marginBottom: 8,
-              }}
-            >
-              Valsts numurzīme
-            </Text>
-            <TextInput
-              style={{
-                fontSize: 36,
-                fontWeight: '800',
-                color: colors.textPrimary,
-                letterSpacing: 2,
-                textAlign: 'center',
-                minWidth: '100%',
-              }}
-              placeholder="AA-1234"
-              placeholderTextColor="#9ca3af"
-              value={form.licensePlate}
-              onChangeText={set('licensePlate')}
-              autoCapitalize="characters"
-            />
-          </View>
-
-          {/* Type Selector */}
-          <View>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 }}>
-              Transporta veids
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
-            >
-              {TYPES.map((t) => {
-                const isActive = form.vehicleType === t;
-                return (
-                  <TouchableOpacity
-                    key={t}
-                    className={`px-5 py-3 rounded-full flex-row items-center justify-center border ${isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200'}`}
-                    onPress={() => {
-                      haptics.light();
-                      set('vehicleType')(t);
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: isActive ? '700' : '600',
-                        color: isActive ? '#ffffff' : '#374151',
-                      }}
-                    >
-                      {VEHICLE_LABELS[t]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Make / Model */}
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
-                Marka
-              </Text>
-              <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
-                placeholder="Scania"
-                placeholderTextColor="#9ca3af"
-                value={form.make}
-                onChangeText={set('make')}
-              />
-            </View>
-            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
-                Modelis
-              </Text>
-              <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
-                placeholder="R450"
-                placeholderTextColor="#9ca3af"
-                value={form.model}
-                onChangeText={set('model')}
-              />
-            </View>
-          </View>
-
-          {/* Year / Capacity */}
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
-                Gads
-              </Text>
-              <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
-                placeholder="2020"
-                placeholderTextColor="#9ca3af"
-                value={form.year}
-                onChangeText={set('year')}
-                keyboardType="number-pad"
-              />
-            </View>
-            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
-                Krava (t)
-              </Text>
-              <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
-                placeholder="20.5"
-                placeholderTextColor="#9ca3af"
-                value={form.capacity}
-                onChangeText={set('capacity')}
-                keyboardType="decimal-pad"
-              />
-            </View>
-          </View>
-
-          {/* Dates */}
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
-                OCTA līdz
-              </Text>
-              <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
-                placeholder="GGGG-MM-DD"
-                placeholderTextColor="#9ca3af"
-                value={form.insuranceExpiry}
-                onChangeText={set('insuranceExpiry')}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
-            </View>
-            <View className="flex-1 bg-gray-50 rounded-2xl px-4 py-3">
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>
-                Skate līdz
-              </Text>
-              <TextInput
-                style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}
-                placeholder="GGGG-MM-DD"
-                placeholderTextColor="#9ca3af"
-                value={form.inspectionExpiry}
-                onChangeText={set('inspectionExpiry')}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
-            </View>
-          </View>
-
-          {/* Status Toggle */}
-          <View className="flex-row items-center justify-between py-2">
-            <View>
-              <Text style={{ fontSize: 16, color: colors.textPrimary, fontWeight: '700' }}>
-                Aktīvs statuss
-              </Text>
-              <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-                Transportlīdzeklis tiks izmantots plānošanā
-              </Text>
-            </View>
-            <Switch
-              value={form.isActive}
-              onValueChange={(v) => {
-                haptics.light();
-                set('isActive')(v);
-              }}
-              trackColor={{ true: '#111827', false: '#e5e7eb' }}
-              thumbColor="#fff"
-            />
-          </View>
-
-          {/* Delete Option */}
-          {initial && onDelete && (
-            <TouchableOpacity
-              className="py-4"
-              onPress={() => onDelete(initial.id)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={{ color: '#ef4444', fontSize: 15, fontWeight: '600', textAlign: 'center' }}
-              >
-                Dzēst transportlīdzekli
-              </Text>
-            </TouchableOpacity>
-          )}
-        </ScrollView>
-
-        {/* Sticky Bottom Actions */}
-        <View className="absolute bottom-0 w-full px-5 py-6 bg-white border-t border-gray-100 pb-10">
-          <TouchableOpacity
-            onPress={() => {
-              haptics.medium();
-              onSave(form);
-            }}
-            disabled={!canSave}
-            className={`py-4 rounded-full flex-row items-center justify-center ${canSave ? 'bg-gray-900' : 'bg-gray-200'}`}
-            activeOpacity={0.8}
-          >
-            {saving ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text
-                style={{ fontSize: 17, fontWeight: '700', color: canSave ? '#ffffff' : '#9ca3af' }}
-              >
-                Saglabāt
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-}
-
-// ── Main Screen ────────────────────────────────────────────────
-
-export default function VehiclesScreen() {
-  const { token, user } = useAuth();
-  const router = useRouter();
+export default function DriverVehiclesScreen() {
+  const { token } = useAuth();
   const toast = useToast();
+
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editing, setEditing] = useState<ApiVehicle | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  // Company DRIVERs and MEMBERs can view vehicles but cannot create/edit/delete them —
-  // fleet management is a dispatcher/owner task done in the web portal.
-  // Owner-operators (no company) and OWNER/MANAGER roles retain full CRUD.
-  const isReadOnly =
-    !!user?.company && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
-
-  const load = useCallback(
-    async (refresh = false) => {
+  const fetchVehicles = useCallback(
+    async (mode: 'initial' | 'refresh' = 'initial') => {
       if (!token) return;
+      if (mode === 'refresh') setRefreshing(true);
+      else setLoading(true);
       try {
-        refresh ? setRefreshing(true) : setLoading(true);
         const data = await api.vehicles.getAll(token);
         setVehicles(data);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Neizdevās ielādēt transportlīdzeļlus');
+      } catch {
+        toast.error('Neizdevās ielādēt transportlīdzekļus');
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [token],
+    [token, toast],
   );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchVehicles('initial');
+    }, [fetchVehicles]),
+  );
 
-  const handleSave = async (form: VehicleForm) => {
-    if (!token) return;
-    setSaving(true);
-    const payload = {
-      licensePlate: form.licensePlate.trim().toUpperCase(),
-      vehicleType: form.vehicleType,
-      make: form.make.trim(),
-      model: form.model.trim(),
-      year: form.year ? Number(form.year) : undefined,
-      capacity: form.capacity ? Number(form.capacity) : undefined,
-      isActive: form.isActive,
-      insuranceExpiry: form.insuranceExpiry.trim() || undefined,
-      inspectionExpiry: form.inspectionExpiry.trim() || undefined,
-    };
-    try {
-      if (editing?.id) {
-        await api.vehicles.update(editing.id, payload, token);
-      } else {
-        await api.vehicles.create(payload as any, token);
-      }
-      setModalVisible(false);
-      toast.success(editing?.id ? 'Transports atjaunināts!' : 'Transports pievienots!');
-      load();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt')
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    const v = vehicles.find((x) => x.id === id);
-    if (!v) return;
-
-    Alert.alert('Dzēst transportlīdzekli?', `${v.licensePlate} tiks neatgriezeniski dzēsts.`, [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Dzēst',
-        style: 'destructive',
-        onPress: async () => {
-          if (!token) return;
-          try {
-            await api.vehicles.remove(id, token);
-            setVehicles((prev) => prev.filter((x) => x.id !== id));
-            setModalVisible(false);
-            haptics.success();
-          } catch (err: unknown) {
-            toast.error(err instanceof Error ? err.message : 'Neizdevās dzēst')
-          }
-        },
-      },
-    ]);
-  };
-
-  const openModal = (v?: ApiVehicle) => {
+  const openWeb = useCallback(async () => {
     haptics.light();
-    setEditing(v || null);
-    setModalVisible(true);
-  };
+    const supported = await Linking.canOpenURL(WEB_FLEET_URL);
+    if (supported) {
+      Linking.openURL(WEB_FLEET_URL);
+    } else {
+      Alert.alert('Atveriet b3hub.lv pārlūkā', WEB_FLEET_URL);
+    }
+  }, []);
 
   return (
-    <ScreenContainer bg="#ffffff" topBg="#ffffff">
-      <ScreenHeader
-        title="Transporti"
-        rightAction={
-          !isReadOnly ? (
-            <TouchableOpacity
-              className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
-              onPress={() => openModal()}
-              activeOpacity={0.8}
-              hitSlop={8}
-            >
-              <Plus size={20} color="#111827" strokeWidth={3} />
-            </TouchableOpacity>
-          ) : undefined
-        }
-      />
-
-      <FlatList
-        data={vehicles}
-        keyExtractor={(item) => item.id}
-        removeClippedSubviews={true}
-        initialNumToRender={10}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
+    <ScreenContainer bg="white">
+      <ScreenHeader title="Transportlīdzekļi" />
+      <ScrollView
+        contentContainerStyle={s.scroll}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => load(true)}
-            tintColor="#111827"
+            onRefresh={() => fetchVehicles('refresh')}
+            tintColor={colors.textMuted}
           />
         }
-        ListEmptyComponent={
-          !loading ? (
-            <View className="mt-8">
-              <EmptyState
-                icon={<Truck size={40} color="#d1d5db" />}
-                title="Nav transportlīdzekļu"
-                subtitle={
-                  isReadOnly
-                    ? 'Transportlīdzekļu pārvaldība pieejama uzņēmuma portālā'
-                    : 'Pievienojiet savu pirmo transportlīdzekli!'
-                }
-                action={
-                  !isReadOnly ? (
-                    <TouchableOpacity
-                      className="px-8 py-3.5 bg-gray-900 rounded-full mt-4"
-                      onPress={() => openModal()}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
-                        Pievienot transportu
-                      </Text>
-                    </TouchableOpacity>
-                  ) : undefined
-                }
-              />
-            </View>
-          ) : (
-            <View className="px-5 border-t border-gray-100 pt-4">
-              <SkeletonCard count={3} />
-            </View>
-          )
-        }
-        renderItem={({ item }) => (
-          <VehicleCard vehicle={item} isReadOnly={isReadOnly} onPress={openModal} />
-        )}
-      />
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Info banner */}
+        <View style={s.banner}>
+          <Text style={s.bannerTitle}>Flotes pārvaldība notiek tīmeklī</Text>
+          <Text style={s.bannerSub}>
+            Lai pievienotu vai rediģētu transportlīdzekļus, OCTA un TA termiņus, izmantojiet portālu
+            b3hub.lv.
+          </Text>
+          <TouchableOpacity style={s.bannerBtn} onPress={openWeb} activeOpacity={0.85}>
+            <Text style={s.bannerBtnText}>Atvērt portālu</Text>
+            <ExternalLink size={14} color={colors.white} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
 
-      <VehicleModal
-        visible={modalVisible}
-        initial={editing}
-        onClose={() => setModalVisible(false)}
-        onSave={handleSave}
-        onDelete={!isReadOnly ? handleDelete : undefined}
-        saving={saving}
-      />
+        {loading ? (
+          <View style={s.list}>
+            {[0, 1, 2].map((i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </View>
+        ) : vehicles.length === 0 ? (
+          <EmptyState
+            icon={<Truck size={32} color={colors.textMuted} strokeWidth={1.5} />}
+            title="Nav transportlīdzekļu"
+            description="Jūsu flotei vēl nav pievienotu transportlīdzekļu. Pievienojiet tos tīmekļa portālā."
+          />
+        ) : (
+          <View style={s.list}>
+            {vehicles.map((v) => (
+              <VehicleRow key={v.id} vehicle={v} />
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </ScreenContainer>
   );
 }
+
+const s = StyleSheet.create({
+  scroll: { paddingBottom: 48 },
+  banner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  bannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  bannerSub: {
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  bannerBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.textPrimary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  bannerBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  list: {
+    paddingHorizontal: 20,
+    gap: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: { flex: 1 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  plate: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  meta: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  expiry: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 3,
+  },
+});

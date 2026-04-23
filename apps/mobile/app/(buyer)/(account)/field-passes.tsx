@@ -1,37 +1,30 @@
 /**
  * (buyer)/field-passes.tsx — Buyer: B3 Fields site access passes
  *
- * Lists all field passes for the buyer's company.
- * Allows creating a new pass via a BottomSheet form.
+ * Read-only list. Passes (QR codes) are shown so drivers can present them at
+ * the gate. Creating/revoking a pass is a back-office task — use b3hub.lv.
  */
 import React, { useCallback, useState } from 'react';
 import {
   View,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
-  TextInput,
-  Alert,
   Linking,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiFieldPass } from '@/lib/api';
-import type { ApiFrameworkContract } from '@/lib/api/company';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { BottomSheet } from '@/components/ui/BottomSheet';
-import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import {
   Ticket,
-  Plus,
   ExternalLink,
   Calendar,
   Truck,
@@ -39,9 +32,10 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
-  Clock,
 } from 'lucide-react-native';
 import { colors, spacing, radius } from '@/lib/theme';
+
+const WEB_PASSES_URL = 'https://b3hub.lv/dashboard/field-passes';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,420 +57,6 @@ const STATUS_CFG = {
   EXPIRED: { label: 'Beigusies', bg: '#f3f4f6', color: colors.textDisabled },
   REVOKED: { label: 'Atsaukta', bg: '#fef2f2', color: '#ef4444' },
 } as const;
-
-// ── Main screen ───────────────────────────────────────────────────────────────
-
-export default function FieldPassesScreen() {
-  const { token, user } = useAuth();
-  const toast = useToast();
-  const { showToast } = useToast();
-
-  const [passes, setPasses] = useState<ApiFieldPass[]>([]);
-  const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [creating, setCreating] = useState(false);
-
-  // Create form state
-  const [showCreate, setShowCreate] = useState(false);
-  const [selectedContractId, setSelectedContractId] = useState('');
-  const [vehiclePlate, setVehiclePlate] = useState('');
-  const [driverName, setDriverName] = useState('');
-  const [validFrom, setValidFrom] = useState(new Date().toISOString().slice(0, 10));
-  const [validTo, setValidTo] = useState(
-    new Date(Date.now() + 7 * 86400_000).toISOString().slice(0, 10),
-  );
-  const [wasteClassCode, setWasteClassCode] = useState('');
-  const [estimatedTonnes, setEstimatedTonnes] = useState('');
-
-  const load = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const [ps, cs] = await Promise.all([
-          api.fieldPasses.getAll(token),
-          api.frameworkContracts.list(token),
-        ]);
-        setPasses(ps);
-        // Only field contracts with active status and available balance
-        setContracts(
-          cs.filter(
-            (c) =>
-              (c as ApiFrameworkContract & { isFieldContract?: boolean }).isFieldContract &&
-              c.status === 'ACTIVE',
-          ),
-        );
-      } catch {
-        if (!silent) showToast('Neizdevās ielādēt caurlaides', 'error');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [token, showToast],
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
-
-  const handleRefresh = () => {
-    haptics.light();
-    setRefreshing(true);
-    load(true);
-  };
-
-  const handleCreate = async () => {
-    if (!token) return;
-    if (!selectedContractId) {
-      toast.error('Izvēlieties līgumu')
-      return;
-    }
-    if (!vehiclePlate.trim()) {
-      toast.error('Ievadiet transportlīdzekļa numuru')
-      return;
-    }
-    setCreating(true);
-    try {
-      await api.fieldPasses.create(
-        {
-          contractId: selectedContractId,
-          vehiclePlate: vehiclePlate.trim(),
-          driverName: driverName.trim() || undefined,
-          validFrom: new Date(validFrom).toISOString(),
-          validTo: new Date(validTo).toISOString(),
-          wasteClassCode: wasteClassCode.trim() || undefined,
-          estimatedTonnes: estimatedTonnes ? parseFloat(estimatedTonnes) : undefined,
-        },
-        token,
-      );
-      haptics.success();
-      showToast('Caurlaide izveidota', 'success');
-      setShowCreate(false);
-      resetForm();
-      load(true);
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'Neizdevās izveidot caurlaidi', 'error');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const resetForm = () => {
-    setSelectedContractId('');
-    setVehiclePlate('');
-    setDriverName('');
-    setValidFrom(new Date().toISOString().slice(0, 10));
-    setValidTo(new Date(Date.now() + 7 * 86400_000).toISOString().slice(0, 10));
-    setWasteClassCode('');
-    setEstimatedTonnes('');
-  };
-
-  const todayPasses = passes.filter(
-    (p) => p.status === 'ACTIVE' && isToday(p.validFrom, p.validTo),
-  );
-
-  return (
-    <ScreenContainer>
-      <ScreenHeader
-        title="Lauka caurlaides"
-        rightAction={
-          <TouchableOpacity
-            onPress={() => {
-              haptics.light();
-              setShowCreate(true);
-            }}
-            style={{
-              backgroundColor: colors.primary,
-              borderRadius: radius.md,
-              padding: spacing.sm,
-            }}
-          >
-            <Plus size={18} color="#fff" />
-          </TouchableOpacity>
-        }
-      />
-
-      <ScrollView
-        contentContainerStyle={{ padding: spacing.base, gap: spacing.base, flexGrow: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Today strip */}
-        {todayPasses.length > 0 && (
-          <View
-            style={{
-              backgroundColor: '#ecfdf5',
-              borderRadius: radius.lg,
-              padding: spacing.md,
-              gap: spacing.sm,
-              borderWidth: 1,
-              borderColor: '#a7f3d0',
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <CheckCircle2 size={16} color="#10b981" />
-              <Text style={{ fontFamily: 'Inter_600SemiBold', color: '#065f46', fontSize: 13 }}>
-                Šodien klātesošs — {todayPasses.length} auto
-              </Text>
-            </View>
-            {todayPasses.map((p) => (
-              <View
-                key={p.id}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
-              >
-                <Truck size={13} color="#10b981" />
-                <Text style={{ fontSize: 13, color: '#047857', fontFamily: 'Inter_500Medium' }}>
-                  {p.vehiclePlate}
-                </Text>
-                {p.driverName ? (
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}> · {p.driverName}</Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* List */}
-        {loading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : passes.length === 0 ? (
-          <EmptyState
-            icon={<Ticket size={40} color={colors.textMuted} />}
-            title="Nav caurlaiž"
-            subtitle="Izveidojiet pirmo lauka caurlaidi, nospiežot +"
-          />
-        ) : (
-          passes.map((pass) => <PassCard key={pass.id} pass={pass} />)
-        )}
-      </ScrollView>
-
-      {/* Create pass sheet */}
-      <BottomSheet
-        visible={showCreate}
-        onClose={() => {
-          setShowCreate(false);
-          resetForm();
-        }}
-        title="Jauna caurlaide"
-      >
-        <ScrollView
-          style={{ padding: spacing.base }}
-          contentContainerStyle={{ gap: spacing.md }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Contract picker */}
-          <View style={{ gap: spacing.xs }}>
-            <Text variant="muted" size="sm">
-              Līgums *
-            </Text>
-            {contracts.length === 0 ? (
-              <View
-                style={{
-                  backgroundColor: '#fef9c3',
-                  borderRadius: radius.md,
-                  padding: spacing.md,
-                }}
-              >
-                <Text style={{ fontSize: 13, color: '#92400e' }}>
-                  Nav aktīvu lauka līgumu. Vispirms aktivizējiet lauka līgumu.
-                </Text>
-              </View>
-            ) : (
-              contracts.map((c) => (
-                <TouchableOpacity
-                  key={c.id}
-                  onPress={() => {
-                    haptics.light();
-                    setSelectedContractId(c.id);
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderRadius: radius.md,
-                    borderWidth: 1.5,
-                    borderColor: selectedContractId === c.id ? colors.primary : colors.border,
-                    backgroundColor: selectedContractId === c.id ? '#f0fdf4' : colors.bgCard,
-                    padding: spacing.md,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_600SemiBold',
-                        fontSize: 14,
-                        color: colors.textPrimary,
-                      }}
-                    >
-                      {c.contractNumber}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                      {c.title}
-                    </Text>
-                  </View>
-                  {selectedContractId === c.id && <CheckCircle2 size={18} color={colors.primary} />}
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-
-          {/* Vehicle plate */}
-          <View style={{ gap: spacing.xs }}>
-            <Text variant="muted" size="sm">
-              Auto numurs *
-            </Text>
-            <TextInput
-              value={vehiclePlate}
-              onChangeText={(v) => setVehiclePlate(v.toUpperCase())}
-              placeholder="AB-1234"
-              autoCapitalize="characters"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                padding: spacing.md,
-                fontSize: 15,
-                fontFamily: 'Inter_400Regular',
-                color: colors.textPrimary,
-                backgroundColor: colors.bgCard,
-                letterSpacing: 1,
-              }}
-            />
-          </View>
-
-          {/* Driver name */}
-          <View style={{ gap: spacing.xs }}>
-            <Text variant="muted" size="sm">
-              Šofera vārds (nav obligāts)
-            </Text>
-            <TextInput
-              value={driverName}
-              onChangeText={setDriverName}
-              placeholder="Jānis Bērziņš"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                padding: spacing.md,
-                fontSize: 14,
-                fontFamily: 'Inter_400Regular',
-                color: colors.textPrimary,
-                backgroundColor: colors.bgCard,
-              }}
-            />
-          </View>
-
-          {/* Date range */}
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <Text variant="muted" size="sm">
-                Derīgs no *
-              </Text>
-              <TextInput
-                value={validFrom}
-                onChangeText={setValidFrom}
-                placeholder="YYYY-MM-DD"
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: radius.md,
-                  padding: spacing.md,
-                  fontSize: 14,
-                  fontFamily: 'Inter_400Regular',
-                  color: colors.textPrimary,
-                  backgroundColor: colors.bgCard,
-                }}
-              />
-            </View>
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <Text variant="muted" size="sm">
-                Derīgs līdz *
-              </Text>
-              <TextInput
-                value={validTo}
-                onChangeText={setValidTo}
-                placeholder="YYYY-MM-DD"
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: radius.md,
-                  padding: spacing.md,
-                  fontSize: 14,
-                  fontFamily: 'Inter_400Regular',
-                  color: colors.textPrimary,
-                  backgroundColor: colors.bgCard,
-                }}
-              />
-            </View>
-          </View>
-
-          {/* Waste code */}
-          <View style={{ gap: spacing.xs }}>
-            <Text variant="muted" size="sm">
-              EWC atkritumu kods (nav obligāts)
-            </Text>
-            <TextInput
-              value={wasteClassCode}
-              onChangeText={setWasteClassCode}
-              placeholder="17 05 04"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                padding: spacing.md,
-                fontSize: 14,
-                fontFamily: 'Inter_400Regular',
-                color: colors.textPrimary,
-                backgroundColor: colors.bgCard,
-              }}
-            />
-          </View>
-
-          {/* Estimated tonnes */}
-          <View style={{ gap: spacing.xs }}>
-            <Text variant="muted" size="sm">
-              Paredzamais svars (t)
-            </Text>
-            <TextInput
-              value={estimatedTonnes}
-              onChangeText={setEstimatedTonnes}
-              placeholder="12.5"
-              keyboardType="decimal-pad"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                padding: spacing.md,
-                fontSize: 14,
-                fontFamily: 'Inter_400Regular',
-                color: colors.textPrimary,
-                backgroundColor: colors.bgCard,
-              }}
-            />
-          </View>
-
-          <Button
-            onPress={handleCreate}
-            isLoading={creating}
-            disabled={creating || !selectedContractId || !vehiclePlate.trim()}
-          >
-            Izveidot caurlaidi
-          </Button>
-
-          <View style={{ height: spacing.xl }} />
-        </ScrollView>
-      </BottomSheet>
-    </ScreenContainer>
-  );
-}
 
 // ── Pass card ─────────────────────────────────────────────────────────────────
 
@@ -554,6 +134,7 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
           gap: spacing.xs,
           alignSelf: 'flex-start',
         }}
+        activeOpacity={0.7}
       >
         <FileText size={13} color={colors.primary} />
         <Text style={{ fontSize: 13, color: colors.primary, fontFamily: 'Inter_500Medium' }}>
@@ -575,9 +156,144 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
           }}
         >
           <XCircle size={12} color="#ef4444" />
-          <Text style={{ fontSize: 12, color: colors.dangerText, flex: 1 }}>{pass.revokedReason}</Text>
+          <Text style={{ fontSize: 12, color: colors.dangerText, flex: 1 }}>
+            {pass.revokedReason}
+          </Text>
         </View>
       )}
     </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
+export default function FieldPassesScreen() {
+  const { token } = useAuth();
+  const { showToast } = useToast();
+
+  const [passes, setPasses] = useState<ApiFieldPass[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(
+    async (silent = false) => {
+      if (!token) return;
+      if (!silent) setLoading(true);
+      try {
+        const ps = await api.fieldPasses.getAll(token);
+        setPasses(ps);
+      } catch {
+        if (!silent) showToast('Neizdevās ielādēt caurlaides', 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token, showToast],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const handleRefresh = () => {
+    haptics.light();
+    setRefreshing(true);
+    load(true);
+  };
+
+  const todayPasses = passes.filter(
+    (p) => p.status === 'ACTIVE' && isToday(p.validFrom, p.validTo),
+  );
+
+  return (
+    <ScreenContainer>
+      <ScreenHeader title="Lauka caurlaides" />
+
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.base, gap: spacing.base, flexGrow: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Web CTA */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#eff6ff',
+            borderRadius: radius.lg,
+            padding: spacing.md,
+            borderWidth: 1,
+            borderColor: '#bfdbfe',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+          activeOpacity={0.8}
+          onPress={() => Linking.openURL(WEB_PASSES_URL)}
+        >
+          <ExternalLink size={16} color="#2563eb" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#1d4ed8' }}>
+              Pārvaldīt caurlaides — b3hub.lv
+            </Text>
+            <Text style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>
+              Izveidot, atsaukt un apskatīt visas caurlaides
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Today strip */}
+        {todayPasses.length > 0 && (
+          <View
+            style={{
+              backgroundColor: '#ecfdf5',
+              borderRadius: radius.lg,
+              padding: spacing.md,
+              gap: spacing.sm,
+              borderWidth: 1,
+              borderColor: '#a7f3d0',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <CheckCircle2 size={16} color="#10b981" />
+              <Text style={{ fontFamily: 'Inter_600SemiBold', color: '#065f46', fontSize: 13 }}>
+                Šodien klātesošs — {todayPasses.length} auto
+              </Text>
+            </View>
+            {todayPasses.map((p) => (
+              <View
+                key={p.id}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+              >
+                <Truck size={13} color="#10b981" />
+                <Text style={{ fontSize: 13, color: '#047857', fontFamily: 'Inter_500Medium' }}>
+                  {p.vehiclePlate}
+                </Text>
+                {p.driverName ? (
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}> · {p.driverName}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* List */}
+        {loading ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : passes.length === 0 ? (
+          <EmptyState
+            icon={<Ticket size={40} color={colors.textMuted} />}
+            title="Nav caurlaiž"
+            subtitle="Izveidojiet caurlaides b3hub.lv portālā"
+          />
+        ) : (
+          passes.map((pass) => <PassCard key={pass.id} pass={pass} />)
+        )}
+      </ScrollView>
+    </ScreenContainer>
   );
 }
