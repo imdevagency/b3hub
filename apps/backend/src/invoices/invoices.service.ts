@@ -159,6 +159,7 @@ export class InvoicesService {
     limit = 20,
     updatedSince?: string,
     status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+    projectId?: string,
   ) {
     const skip = (page - 1) * limit;
     const sinceFilter = updatedSince
@@ -198,20 +199,25 @@ export class InvoicesService {
 
     // Order-based invoices (existing)
     const orderWhere = {
-      order: this.buyerAccess(userId, companyId),
+      order: {
+        ...this.buyerAccess(userId, companyId),
+        ...(projectId ? { projectId } : {}),
+      },
       ...sinceFilter,
       ...statusFilter,
     };
 
     // Advance invoices for B3 Fields (new — buyer company scoped)
-    const advanceWhere: Prisma.InvoiceWhereInput | null = companyId
-      ? {
-          buyerCompanyId: companyId,
-          advanceForContractId: { not: null },
-          ...sinceFilter,
-          ...statusFilter,
-        }
-      : null;
+    // Not project-scoped, so excluded when projectId filter is active
+    const advanceWhere: Prisma.InvoiceWhereInput | null =
+      !projectId && companyId
+        ? {
+            buyerCompanyId: companyId,
+            advanceForContractId: { not: null },
+            ...sinceFilter,
+            ...statusFilter,
+          }
+        : null;
 
     const combinedWhere: Prisma.InvoiceWhereInput = advanceWhere
       ? { OR: [orderWhere, advanceWhere] }

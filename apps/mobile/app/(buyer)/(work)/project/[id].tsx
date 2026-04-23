@@ -28,6 +28,7 @@ import {
   type ApiProjectOrder,
   type ApiOrder,
 } from '@/lib/api';
+import type { ApiInvoice } from '@/lib/api/invoices';
 import { formatDate, formatDateShort } from '@/lib/format';
 import {
   Building2,
@@ -44,6 +45,7 @@ import {
   Circle,
   Link2,
   Download,
+  Receipt,
 } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -177,6 +179,7 @@ export default function ProjectDetailScreen() {
   const [project, setProject] = useState<ApiProjectDetail | null>(null);
   const [sites, setSites] = useState<ApiProjectSite[]>([]);
   const [documents, setDocuments] = useState<ApiProjectDocument[]>([]);
+  const [projectInvoices, setProjectInvoices] = useState<ApiInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddSite, setShowAddSite] = useState(false);
@@ -195,14 +198,18 @@ export default function ProjectDetailScreen() {
       if (!token || !id) return;
       if (!silent) setLoading(true);
       try {
-        const [data, sitesData, docsData] = await Promise.all([
+        const [data, sitesData, docsData, invoicesRes] = await Promise.all([
           api.projects.getOne(id, token),
           api.projects.getSites(id, token).catch(() => [] as ApiProjectSite[]),
           api.projects.getDocuments(id, token).catch(() => [] as ApiProjectDocument[]),
+          api.invoices
+            .getByProject(id, token)
+            .catch(() => ({ data: [] as ApiInvoice[], meta: { total: 0 } })),
         ]);
         setProject(data);
         setSites(sitesData);
         setDocuments(docsData);
+        setProjectInvoices((invoicesRes as { data: ApiInvoice[] }).data ?? []);
       } catch {
         toast.error('Neizdevās ielādēt projektu');
       } finally {
@@ -719,6 +726,50 @@ export default function ProjectDetailScreen() {
                   </View>
                 </React.Fragment>
               ))}
+            </View>
+          </View>
+        )}
+
+        {/* Invoices */}
+        {projectInvoices.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Rēķini ({projectInvoices.length})</Text>
+            <View style={styles.sectionCard}>
+              {projectInvoices.map((inv, idx) => {
+                const status = inv.paymentStatus ?? inv.status;
+                const isPaid = status === 'PAID';
+                const isOverdue = status === 'OVERDUE';
+                const pillBg = isPaid ? '#dcfce7' : isOverdue ? '#fef2f2' : '#f3f4f6';
+                const pillColor = isPaid
+                  ? colors.successText
+                  : isOverdue
+                    ? colors.dangerText
+                    : colors.textMuted;
+                const pillLabel = isPaid ? 'Apmaksāts' : isOverdue ? 'Kavēts' : 'Neapmaksāts';
+                return (
+                  <React.Fragment key={inv.id}>
+                    {idx > 0 ? <View style={styles.divider} /> : null}
+                    <View style={styles.orderRow}>
+                      <Receipt size={14} color={colors.textMuted} />
+                      <View style={styles.orderLeft}>
+                        <Text style={styles.orderNumber}>{inv.invoiceNumber}</Text>
+                        {inv.order && (
+                          <Text style={styles.orderMeta}>Pasūtījums {inv.order.orderNumber}</Text>
+                        )}
+                        {inv.dueDate && (
+                          <Text style={styles.orderMeta}>Termiņš: {formatDate(inv.dueDate)}</Text>
+                        )}
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                        <View style={[styles.pill, { backgroundColor: pillBg }]}>
+                          <Text style={[styles.pillText, { color: pillColor }]}>{pillLabel}</Text>
+                        </View>
+                        <Text style={styles.orderTotal}>{formatEur(inv.total)}</Text>
+                      </View>
+                    </View>
+                  </React.Fragment>
+                );
+              })}
             </View>
           </View>
         )}

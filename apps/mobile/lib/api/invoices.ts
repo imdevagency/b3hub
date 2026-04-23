@@ -8,6 +8,8 @@ export interface ApiInvoice {
   id: string;
   invoiceNumber: string;
   status: InvoiceStatus;
+  /** Computed field returned by the backend alongside status */
+  paymentStatus?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
   subtotal: number;
   vatAmount: number;
   total: number;
@@ -23,7 +25,12 @@ export interface ApiInvoice {
 export const invoicesApi = {
   invoices: {
     getAll: (token: string) =>
-      apiFetch<ApiInvoice[]>('/invoices', {
+      apiFetch<{ data: ApiInvoice[]; meta: { total: number } } | ApiInvoice[]>('/invoices', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    getByProject: (projectId: string, token: string) =>
+      apiFetch<{ data: ApiInvoice[]; meta: { total: number } }>(`/invoices?projectId=${encodeURIComponent(projectId)}&limit=50`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
 

@@ -24,6 +24,7 @@ import {
   HardHat,
   Truck,
   Handshake,
+  Receipt,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -54,6 +55,8 @@ import {
   getProjectSites,
   addProjectSite,
   removeProjectSite,
+  getMyInvoices,
+  markInvoicePaid,
   type ApiProjectDetail,
   type ApiProjectOrder,
   type ApiProjectDocument,
@@ -61,6 +64,7 @@ import {
   type CreateProjectSiteInput,
   type ProjectStatus,
   type ApiOrder,
+  type ApiInvoice,
 } from '@/lib/api';
 
 // ─── Status config ─────────────────────────────────────────────────────────
@@ -629,6 +633,8 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<ApiProjectDetail | null>(null);
   const [documents, setDocuments] = useState<ApiProjectDocument[]>([]);
   const [sites, setSites] = useState<ApiProjectSite[]>([]);
+  const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -644,14 +650,16 @@ export default function ProjectDetailPage() {
     if (!token || !id) return;
     setLoading(true);
     try {
-      const [data, docs, sitesData] = await Promise.all([
+      const [data, docs, sitesData, invoicesData] = await Promise.all([
         getProject(id, token),
         getProjectDocuments(id, token).catch(() => []),
         getProjectSites(id, token).catch(() => []),
+        getMyInvoices(token, 1, undefined, id).catch(() => ({ data: [], meta: {} })),
       ]);
       setProject(data);
       setDocuments(docs);
       setSites(sitesData);
+      setInvoices((invoicesData as { data: ApiInvoice[] }).data ?? []);
     } catch {
       router.push('/dashboard/projects');
     } finally {
@@ -1025,6 +1033,90 @@ export default function ProjectDetailPage() {
                     {fc.status}
                   </Badge>
                 </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Invoices */}
+      <Card className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-muted-foreground" />
+              Rēķini
+            </span>
+            <Button size="sm" variant="ghost" asChild>
+              <Link href={`/dashboard/invoices?projectId=${id}`}>Skatīt visus</Link>
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-3">
+          {invoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nav rēķinu šajā projektā
+            </p>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {invoices.map((inv) => (
+                <div key={inv.id} className="flex items-center gap-3 py-3">
+                  <Receipt className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{inv.invoiceNumber}</p>
+                    {inv.order && (
+                      <p className="text-xs text-muted-foreground">
+                        Pasūtījums {inv.order.orderNumber}
+                      </p>
+                    )}
+                    {inv.dueDate && (
+                      <p className="text-xs text-muted-foreground">
+                        Termiņš: {fmtDate(inv.dueDate)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant={
+                        inv.paymentStatus === 'PAID'
+                          ? 'secondary'
+                          : inv.paymentStatus === 'OVERDUE'
+                            ? 'destructive'
+                            : 'outline'
+                      }
+                    >
+                      {inv.paymentStatus === 'PAID'
+                        ? 'Apmaksāts'
+                        : inv.paymentStatus === 'OVERDUE'
+                          ? 'Kavēts'
+                          : 'Neapmaksāts'}
+                    </Badge>
+                    <span className="text-sm font-semibold">{fmtMoney(inv.total)}</span>
+                    {(inv.paymentStatus === 'PENDING' || inv.paymentStatus === 'OVERDUE') &&
+                      token && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={payingInvoiceId === inv.id}
+                          onClick={async () => {
+                            setPayingInvoiceId(inv.id);
+                            try {
+                              await markInvoicePaid(inv.id, token);
+                              setInvoices((prev) =>
+                                prev.map((i) =>
+                                  i.id === inv.id ? { ...i, paymentStatus: 'PAID' } : i,
+                                ),
+                              );
+                            } finally {
+                              setPayingInvoiceId(null);
+                            }
+                          }}
+                        >
+                          {payingInvoiceId === inv.id ? 'Saglabā...' : 'Atzīmēt apmaksātu'}
+                        </Button>
+                      )}
+                  </div>
+                </div>
               ))}
             </div>
           )}

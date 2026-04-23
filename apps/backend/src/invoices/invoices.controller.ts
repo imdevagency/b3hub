@@ -43,7 +43,7 @@ import { ApiTags } from '@nestjs/swagger';
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
-  /** GET /invoices?page=1&limit=20&status=PENDING — my invoices */
+  /** GET /invoices?page=1&limit=20&status=PENDING&projectId=xxx — my invoices */
   @Get()
   @UseGuards(RequireScopeGuard)
   @RequireScope('invoices:read')
@@ -52,6 +52,7 @@ export class InvoicesController {
     @Query() pagination: PagePaginationDto,
     @Query('updatedSince') updatedSince?: string,
     @Query('status') status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+    @Query('projectId') projectId?: string,
   ) {
     if (!canViewFinancials(user)) {
       throw new ForbiddenException(
@@ -66,6 +67,7 @@ export class InvoicesController {
       pagination.limit ?? 20,
       updatedSince,
       status,
+      projectId,
     );
   }
 

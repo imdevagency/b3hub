@@ -5,9 +5,16 @@
  */
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getMyInvoices, markInvoicePaid, type ApiInvoice } from '@/lib/api';
+import {
+  getMyInvoices,
+  markInvoicePaid,
+  getProjects,
+  type ApiInvoice,
+  type ApiProject,
+} from '@/lib/api';
 import {
   ChevronLeft,
   ChevronRight,
@@ -26,11 +33,28 @@ import { PageSpinner } from '@/components/ui/page-spinner';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // ── Invoices page ─────────────────────────────────────────────────────────────
 
 export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<PageSpinner />}>
+      <InvoicesPageInner />
+    </Suspense>
+  );
+}
+
+function InvoicesPageInner() {
   const { token } = useRequireAuth();
+  const searchParams = useSearchParams();
+  const initialProjectId = searchParams.get('projectId') ?? '';
 
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [page, setPage] = useState(1);
@@ -41,6 +65,8 @@ export default function InvoicesPage() {
   const [error, setError] = useState('');
   const [csvLoading, setCsvLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'OVERDUE'>('ALL');
+  const [projectFilter, setProjectFilter] = useState<string>(initialProjectId);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
 
   async function handleExportCsv() {
     if (!token) return;
@@ -74,6 +100,7 @@ export default function InvoicesPage() {
         token,
         page,
         statusFilter === 'ALL' ? undefined : statusFilter,
+        projectFilter || undefined,
       );
       setInvoices(res.data);
       setTotal(res.meta.total);
@@ -82,16 +109,24 @@ export default function InvoicesPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, page, statusFilter]);
+  }, [token, page, statusFilter, projectFilter]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Load projects for filter dropdown
+  useEffect(() => {
+    if (!token) return;
+    getProjects(token)
+      .then(setProjects)
+      .catch(() => {});
+  }, [token]);
+
   // Reset to page 1 whenever the filter changes
   useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+  }, [statusFilter, projectFilter]);
 
   async function handlePay(invoiceId: string) {
     if (!token) return;
@@ -160,6 +195,38 @@ export default function InvoicesPage() {
           </button>
         ))}
       </div>
+
+      {/* Project filter */}
+      {projects.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select
+            value={projectFilter || 'ALL'}
+            onValueChange={(v) => setProjectFilter(v === 'ALL' ? '' : v)}
+          >
+            <SelectTrigger className="w-60 h-9 rounded-xl border-0 bg-muted/50 text-sm shadow-none">
+              <SelectValue placeholder="Visi projekti" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Visi projekti</SelectItem>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {projectFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setProjectFilter('')}
+              className="text-muted-foreground"
+            >
+              Notīrīt
+            </Button>
+          )}
+        </div>
+      )}
 
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">

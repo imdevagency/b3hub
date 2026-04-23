@@ -47,9 +47,11 @@ export async function getMyInvoices(
   token: string,
   page = 1,
   status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+  projectId?: string,
 ): Promise<InvoiceListResponse> {
   const qs = new URLSearchParams({ page: String(page), limit: '20' });
   if (status) qs.set('status', status);
+  if (projectId) qs.set('projectId', projectId);
   return apiFetch<InvoiceListResponse>(`/invoices?${qs}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
