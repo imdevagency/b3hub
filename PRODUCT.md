@@ -41,7 +41,9 @@ The platform handles the **complete transaction lifecycle**: buyer places order 
 
 Every euro spent on materials and transport through B3Hub is trackable, documented, and tied to a real delivery. That's the core product promise.
 
-Think **Schüttflix** but built for the Latvian/Baltic B2B market.
+B3Hub serves **two customer segments on the same marketplace**:
+- **B2B** — construction companies, contractors, and project managers running complex multi-site procurement. Account required. Framework contracts, project cost tracking, invoicing, team management.
+- **B2C** — homeowners, small trades, and micro-contractors with simple one-off needs: order a skip, get gravel delivered, book waste collection. Guest checkout with phone/email capture. Account creation offered post-order as a convenience, not a gate.
 
 ---
 
@@ -85,6 +87,43 @@ These are out of scope by design. Adding them would dilute focus and pull B3Hub 
 | **General ERP**                                                 | We are the procurement + logistics layer, not the full operating system |
 
 **The rule:** if a feature requires data that doesn't originate from a B3Hub transaction, it's out of scope.
+
+---
+
+## B2C vs B2B — Platform Strategy
+
+Both segments run on the same marketplace, the same supply network, and the same backend. The split is in the **buyer experience** and **checkout rules** only.
+
+### Segment comparison
+
+| Dimension               | B2C (homeowners, micro-contractors)                         | B2B (construction companies, contractors)                  |
+|-------------------------|-------------------------------------------------------------|------------------------------------------------------------|
+| Order complexity        | Low — 1 address, simple qty, no project                     | High — site contacts, tonnage, timed windows, multi-drop   |
+| Typical order value     | €50–500                                                     | €500–50 000+                                               |
+| Account required?       | No — guest checkout (phone/email at step 1)                 | Yes — verified company account                             |
+| Pricing                 | Fixed displayed price                                       | RFQ, framework contracts, negotiated rates                 |
+| Invoicing               | Email receipt + basic invoice                               | VAT invoice with company details, project codes            |
+| Repeat orders           | Low                                                         | High — framework contracts, call-offs, recurring schedules |
+| Document requirements   | Waste transfer note auto-generated (legally required)       | Full document suite: delivery notes, weighing slips, certs |
+| Support path            | Self-serve, phone confirmation for skip delivery slot       | Dedicated account management at scale                      |
+
+### Entry points
+
+**Landing page** (`apps/landing`) is the B2C entry point:
+- Skip hire wizard — size, waste type, postcode, dates → guest checkout
+- Materials quick order — material type, quantity, delivery postcode → guest checkout
+- Price estimator widget — no order created; shows indicative price + "Sign up to book" CTA
+
+**Web app** (`apps/web`) and **mobile app** (`apps/mobile`) are the authenticated B2B entry points.
+
+### Design rules that follow from this
+
+1. **Fixed price must exist before B2C checkout** — suppliers listing materials must set a public retail price. RFQ-only listings are invisible in the B2C flow.
+2. **Phone or email captured at wizard step 1** — not at the end. Carrier needs to confirm delivery slot; without contact detail the order cannot be executed.
+3. **Waste transfer note triggers on every disposal/skip order** — even guest orders. Legal requirement regardless of company status.
+4. **Carriers can opt out of guest orders** — B2C orders are flagged so carriers can filter by order type if they prefer verified accounts.
+5. **Post-checkout account prompt** — after guest order confirmation, show "Save your details for faster ordering next time" → account creation with order auto-linked.
+6. **B2B features invisible to guests** — framework contracts, RFQ, projects, team management, analytics never shown in guest flow.
 
 ---
 
@@ -251,11 +290,15 @@ These all sit inside the transport layer. The spread between what B3Hub charges 
 
 Anyone who needs construction materials delivered or waste removed.
 
-**Who they are:**
+**B2B buyers (account required):**
+- Construction companies — ordering materials per project site, managing procurement across multiple sites
+- General contractors — bulk deliveries, framework contracts, recurring schedules
+- Project managers — cost tracking, team access control, RFQ management
 
-- Construction companies (primary audience) — ordering materials per project site
-- General contractors — ordering bulk deliveries and skips
-- Private homeowners — ordering a single skip bin for garden waste
+**B2C buyers (guest checkout available):**
+- Private homeowners — skip for a bathroom reno, gravel for a garden path, soil for landscaping
+- Small trades (plumbers, electricians, tilers) — one-off material drops, occasional skip hire
+- Micro-contractors — no company account, low frequency, simple single-site jobs
 
 **What they do on the platform:**
 
@@ -402,7 +445,20 @@ Permission flags (independently toggleable):
 
 ## Registration Flows
 
-### Buyer — self-serve
+### B2C buyer — guest checkout (landing page)
+
+```
+Landing page wizard (skip hire or materials)
+  → Phone or email at step 1
+  → Complete order details (service-specific fields)
+  → Review + pay (Stripe card or bank transfer)
+  → Order confirmed
+  → Post-checkout prompt: "Create account to track order & reorder faster"
+      → If accepted: account created, order linked
+      → If skipped: order tracked via confirmation link in email/SMS
+```
+
+### B2B buyer — self-serve (web or mobile)
 
 ```
 Mobile app or web
@@ -455,6 +511,18 @@ Switching mode changes the entire navigation and all visible features.
 ---
 
 ## Features by Role
+
+### Guest (B2C, unauthenticated)
+
+| Feature                              | Landing | Notes                                              |
+| ------------------------------------ | ------- | -------------------------------------------------- |
+| Price estimator widget               | ✅      | No order created; CTA to sign up                   |
+| Skip hire guest wizard               | ❌      | Planned — 5-step: size, waste type, postcode, dates, contact |
+| Materials quick-order guest wizard   | ❌      | Planned — material type, qty, postcode, contact    |
+| Guest checkout (Stripe)              | ❌      | Planned — card payment, no account required        |
+| Order confirmation via email/SMS     | ❌      | Planned — confirmation link for tracking           |
+| Post-checkout account creation prompt| ❌      | Planned — link existing guest order to new account |
+| Waste transfer note auto-generation  | ❌      | Planned — same doc gen as authenticated orders     |
 
 ### Buyer features
 
@@ -705,6 +773,19 @@ Features that are uniquely possible because B3Hub owns the transaction layer —
 | **5**    | Cost per tonne analytics                     | "You paid €12.40/t avg for gravel this year" — cross-buyer benchmark |
 | **6**    | Recurring / standing orders                  | "200t gravel every Monday for 8 weeks to project X"                  |
 | **7**    | Delivery material acceptance                 | Buyer site contact confirms material quality at point of delivery    |
+
+### B2C Roadmap
+
+| Priority | Feature                                          | Why                                                                     |
+| -------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| **B2C-1**| Landing price estimator widget                   | Conversion funnel; no backend needed; pure marketing                    |
+| **B2C-2**| Skip hire guest wizard on landing                | Highest-value B2C product; commodity transaction; 5 fields max          |
+| **B2C-3**| Guest checkout via Stripe (card only)            | Revenue from B2C without forcing account creation                       |
+| **B2C-4**| Order confirmation email/SMS with tracking link  | Operational necessity; carrier needs to confirm delivery slot           |
+| **B2C-5**| Post-checkout account creation prompt            | Convert one-off buyers to repeat users; link existing order to account  |
+| **B2C-6**| Materials quick-order guest wizard on landing    | Second B2C product; slightly more complex (qty, specs) than skip hire   |
+| **B2C-7**| Carrier order-type filter (B2C opt-in/out)       | Let carriers choose which order types they accept                       |
+| **B2C-8**| Shareable draft order link                       | PM creates draft, shares with site foreman to fill in delivery details  |
 
 ---
 
