@@ -29,8 +29,6 @@ import { useLiveUpdates } from '@/lib/use-live-updates';
 import { MAT_STATUS } from '@/lib/materials';
 import { colors } from '@/lib/theme';
 
-
-
 const JOB_STATUS_LABEL: Record<string, string> = {
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
   EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
@@ -210,7 +208,7 @@ export default function OrderTrackingScreen() {
           pitchEnabled={false}
         >
           {route?.coords && route.coords.length > 1 && (
-             <RouteLayer id="order-route" coordinates={route.coords} color="#4f46e5" width={4} />
+            <RouteLayer id="order-route" coordinates={route.coords} color="#4f46e5" width={4} />
           )}
           {order.deliveryLat != null && order.deliveryLng != null && (
             <PinLayer
@@ -229,14 +227,14 @@ export default function OrderTrackingScreen() {
 
         {/* Floating Header */}
         <View style={[styles.floatingHeader, { paddingTop: insets.top || 44 }]}>
-           <TouchableOpacity 
-             style={styles.headerBtn} 
-             onPress={() => router.back()}
-           >
-             <ChevronLeft size={24} color="#111827" />
-           </TouchableOpacity>
-           <Text style={styles.headerTitle}>Pasūtījums</Text>
-           <View style={styles.headerSpacer} />
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
+          >
+            <ChevronLeft size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Pasūtījums</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Uber-like Top Floating Card */}
@@ -249,9 +247,7 @@ export default function OrderTrackingScreen() {
               <Text style={styles.topCardTitle} numberOfLines={1}>
                 {order.materials?.[0]?.material?.name || 'Materiāli'}
               </Text>
-              <Text style={styles.topCardSubtitle}>
-                ID: {order.id.slice(-8).toUpperCase()}
-              </Text>
+              <Text style={styles.topCardSubtitle}>ID: {order.id.slice(-8).toUpperCase()}</Text>
             </View>
           </View>
         </View>
@@ -259,117 +255,145 @@ export default function OrderTrackingScreen() {
         {/* Uber-like Bottom Sheet / Overlay */}
         <View style={[styles.overlayContainer, { bottom: insets.bottom || 24 }]}>
           <View style={styles.overlayCard}>
-            
             {/* Courier Header Row */}
             <View style={styles.courierHeader}>
               {driver?.avatar ? (
                 <Image source={{ uri: driver.avatar }} style={styles.courierAvatar} />
               ) : (
                 <View style={styles.courierAvatarFallback}>
-                   <Truck size={20} color="#6B7280" strokeWidth={2} />
+                  <Truck size={20} color="#6B7280" strokeWidth={2} />
                 </View>
               )}
               <View style={styles.courierInfo}>
-                 <Text style={styles.courierName} numberOfLines={1}>
-                   {driver ? `${driver.firstName} ${driver.lastName}` : 'Meklējam šoferi...'}
-                 </Text>
-                 <Text style={styles.courierRole}>
-                   {driver ? 'Šoferis' : 'Pieprasījums nosūtīts'}
-                 </Text>
+                <Text style={styles.courierName} numberOfLines={1}>
+                  {driver ? `${driver.firstName} ${driver.lastName}` : 'Meklējam šoferi...'}
+                </Text>
+                <Text style={styles.courierRole}>
+                  {driver ? 'Šoferis' : 'Pieprasījums nosūtīts'}
+                </Text>
               </View>
-              
+
               <View style={styles.driverActions}>
-                 {activeJob && (
-                    <TouchableOpacity
-                      style={styles.courierActionBtn}
-                      onPress={() => {
-                        haptics.medium();
-                        router.push({
-                          pathname: '/chat/[jobId]',
-                          params: {
-                            jobId: activeJob.id,
-                            title: `${driver?.firstName} ${driver?.lastName}`,
-                          },
-                        });
-                      }}
-                    >
-                      <MessageCircle size={18} color="#FFFFFF" />
-                    </TouchableOpacity>
-                 )}
-                 {driver?.phone && (
-                    <TouchableOpacity 
-                      style={[styles.courierActionBtn, { marginLeft: 8 }]}
-                      onPress={() => {
-                        haptics.medium();
-                        Linking.openURL(`tel:${driver.phone}`).catch(() => null);
-                      }}
-                    >
-                       <Phone size={18} color="#FFFFFF" fill="#FFFFFF" />
-                    </TouchableOpacity>
-                 )}
+                {activeJob && (
+                  <TouchableOpacity
+                    style={styles.courierActionBtn}
+                    onPress={() => {
+                      haptics.medium();
+                      router.push({
+                        pathname: '/chat/[jobId]',
+                        params: {
+                          jobId: activeJob.id,
+                          title: `${driver?.firstName} ${driver?.lastName}`,
+                        },
+                      });
+                    }}
+                  >
+                    <MessageCircle size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
+                {driver?.phone && (
+                  <TouchableOpacity
+                    style={[styles.courierActionBtn, { marginLeft: 8 }]}
+                    onPress={() => {
+                      haptics.medium();
+                      Linking.openURL(`tel:${driver.phone}`).catch(() => null);
+                    }}
+                  >
+                    <Phone size={18} color="#FFFFFF" fill="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
             {/* Vertical Timeline replacing the horizontal stepper */}
             <View style={styles.statusSection}>
               <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
-              
+
               <View style={styles.timelineContainer}>
                 {JOB_STEPS.map((step, index) => {
                   const isSearching = order.status === 'PENDING' || order.status === 'SEARCHING';
                   const isDone = !isSearching && index <= currentStepIdx;
                   const isCurrent = !isSearching && index === currentStepIdx;
                   const isLast = index === JOB_STEPS.length - 1;
-                  
+
                   let dateStr: string | null = null;
                   if (etaMin != null && step.key === 'enroute' && isCurrent) {
-                     dateStr = `~${etaMin} min`;
+                    dateStr = `~${etaMin} min`;
                   } else if (step.key === 'pickup') {
-                     dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('lv-LV', {day:'numeric', month:'short'}) : null;
+                    dateStr = order.createdAt
+                      ? new Date(order.createdAt).toLocaleDateString('lv-LV', {
+                          day: 'numeric',
+                          month: 'short',
+                        })
+                      : null;
                   } else if (step.key === 'delivered') {
-                     dateStr = order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV', {day:'numeric', month:'short'}) : null;
+                    dateStr = order.deliveryDate
+                      ? new Date(order.deliveryDate).toLocaleDateString('lv-LV', {
+                          day: 'numeric',
+                          month: 'short',
+                        })
+                      : null;
                   }
 
-                  let addressStr = step.key === 'pickup' || step.key === 'loading' ? (order.siteContactName || order.supplierBranch?.name || 'Iekraušana') : (order.deliveryAddress || order.deliveryCity);
+                  let addressStr =
+                    step.key === 'pickup' || step.key === 'loading'
+                      ? order.siteContactName || order.supplierBranch?.name || 'Iekraušana'
+                      : order.deliveryAddress || order.deliveryCity;
 
                   return (
                     <View key={step.key} style={styles.timelineRow}>
-                       <View style={styles.timelineMarkerCol}>
-                          {!isLast && (
-                            <View style={[
-                              styles.timelineLine, 
-                              (isDone && !isCurrent) ? styles.timelineLineActive : styles.timelineLineInactive,
-                            ]} />
-                          )}
-                          
-                          {isCurrent ? (
-                             <View style={styles.markerCurrent}>
-                               <View style={styles.markerCurrentInner} />
-                             </View>
-                          ) : isDone ? (
-                             <View style={styles.markerCompleted}>
-                                <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
-                             </View>
-                          ) : (
-                             <View style={styles.markerFuture} />
-                          )}
-                       </View>
+                      <View style={styles.timelineMarkerCol}>
+                        {!isLast && (
+                          <View
+                            style={[
+                              styles.timelineLine,
+                              isDone && !isCurrent
+                                ? styles.timelineLineActive
+                                : styles.timelineLineInactive,
+                            ]}
+                          />
+                        )}
 
-                       <View style={styles.timelineContent}>
-                         <View style={styles.timelineTextWrap}>
-                           <Text style={[styles.timelineTitle, isCurrent && styles.timelineTitleCurrent, (!isDone && !isCurrent) && styles.timelineTitleFuture]}>
-                             {step.label}
-                           </Text>
-                           <Text style={styles.timelineSubtitle} numberOfLines={2}>
-                             {addressStr}
-                           </Text>
-                         </View>
-                         {dateStr && (
-                           <Text style={[styles.timelineDateText, isCurrent && step.key === 'enroute' && { color: ORANGE, fontWeight: '700' }]}>
-                              {dateStr}
-                           </Text>
-                         )}
-                       </View>
+                        {isCurrent ? (
+                          <View style={styles.markerCurrent}>
+                            <View style={styles.markerCurrentInner} />
+                          </View>
+                        ) : isDone ? (
+                          <View style={styles.markerCompleted}>
+                            <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                          </View>
+                        ) : (
+                          <View style={styles.markerFuture} />
+                        )}
+                      </View>
+
+                      <View style={styles.timelineContent}>
+                        <View style={styles.timelineTextWrap}>
+                          <Text
+                            style={[
+                              styles.timelineTitle,
+                              isCurrent && styles.timelineTitleCurrent,
+                              !isDone && !isCurrent && styles.timelineTitleFuture,
+                            ]}
+                          >
+                            {step.label}
+                          </Text>
+                          <Text style={styles.timelineSubtitle} numberOfLines={2}>
+                            {addressStr}
+                          </Text>
+                        </View>
+                        {dateStr && (
+                          <Text
+                            style={[
+                              styles.timelineDateText,
+                              isCurrent &&
+                                step.key === 'enroute' && { color: ORANGE, fontWeight: '700' },
+                            ]}
+                          >
+                            {dateStr}
+                          </Text>
+                        )}
+                      </View>
                     </View>
                   );
                 })}
@@ -378,7 +402,7 @@ export default function OrderTrackingScreen() {
 
             {/* Bottom actions */}
             <View style={styles.cardActions}>
-               <Button
+              <Button
                 variant="secondary"
                 size="lg"
                 className="flex-1"

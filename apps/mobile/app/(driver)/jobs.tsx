@@ -725,68 +725,8 @@ export default function JobsScreen() {
       setAllJobs((prev) => prev.filter((j) => j.id !== job.id));
       haptics.success();
       setAcceptSheetJob(null);
-
-      // Post-accept: offer immediate navigation to pickup
-      const lat = job.fromLat || null;
-      const lng = job.fromLng || null;
-      const label = `${job.fromCity ?? job.fromAddress ?? ''}`.trim();
-      const openUrl = (url: string, fallback: string) =>
-        Linking.canOpenURL(url)
-          .then((ok) => Linking.openURL(ok ? url : fallback))
-          .catch(() => {});
-      const googleFallback =
-        lat != null && lng != null
-          ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
-          : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(label)}&travelmode=driving`;
-      const navOptions =
-        lat != null && lng != null
-          ? [
-              {
-                text: 'Waze',
-                onPress: () => openUrl(`waze://?ll=${lat},${lng}&navigate=yes`, googleFallback),
-              },
-              {
-                text: 'Google Maps',
-                onPress: () =>
-                  openUrl(
-                    Platform.OS === 'ios'
-                      ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`
-                      : `google.navigation:q=${lat},${lng}&mode=d`,
-                    googleFallback,
-                  ),
-              },
-              ...(Platform.OS === 'ios'
-                ? [
-                    {
-                      text: 'Apple Maps',
-                      onPress: () =>
-                        openUrl(`maps://?daddr=${lat},${lng}&dirflg=d`, googleFallback),
-                    },
-                  ]
-                : []),
-            ]
-          : [
-              {
-                text: 'Google Maps',
-                onPress: () => Linking.openURL(googleFallback).catch(() => {}),
-              },
-            ];
-
-      Alert.alert(
-        'Darbs pieņemts!',
-        label ? `Doties uz iekraušanu — ${label}?` : 'Vai atvērt navigāciju uz iekraušanas vietu?',
-        [
-          ...navOptions,
-          {
-            text: 'Vēlāk',
-            style: 'cancel',
-            onPress: () => router.replace('/(driver)/active'),
-          },
-        ],
-        {
-          onDismiss: () => router.replace('/(driver)/active'),
-        },
-      );
+      toast.success('Darbs pieņemts!');
+      router.replace('/(driver)/active');
     } catch (err: unknown) {
       haptics.error();
       toast.error(err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');

@@ -122,7 +122,10 @@ export default function SkipOrderTrackingScreen() {
 
         {/* Floating Header */}
         <View style={[styles.floatingHeader, { paddingTop: insets.top || 44 }]}>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
+          >
             <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Konteinera noma</Text>
