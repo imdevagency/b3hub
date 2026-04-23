@@ -2,16 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TopBar } from '@/components/ui/TopBar';
 import { useRouter } from 'expo-router';
-import {
-  FolderKanban,
-  Handshake,
-  FileText,
-  Calendar,
-  Users,
-  AlertCircle,
-  MapPin,
-  ChevronRight,
-} from 'lucide-react-native';
+import { FileText, AlertCircle, MapPin, ChevronRight } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 
@@ -24,33 +15,6 @@ interface BizTool {
   route: string;
 }
 
-const ORGANISATION: BizTool[] = [
-  {
-    icon: FolderKanban,
-    iconBg: '#eff6ff',
-    iconColor: '#2563eb',
-    label: 'Projekti',
-    description: 'Būvdarbu projektu pārvaldība',
-    route: '/(buyer)/projects',
-  },
-  {
-    icon: Handshake,
-    iconBg: '#f0fdf4',
-    iconColor: '#16a34a',
-    label: 'Ietvarlīgumi',
-    description: 'Rāmja līgumi ar piegādātājiem',
-    route: '/(buyer)/framework-contracts',
-  },
-  {
-    icon: Users,
-    iconBg: '#faf5ff',
-    iconColor: '#9333ea',
-    label: 'Komanda',
-    description: 'Dalībnieki un atļaujas',
-    route: '/(buyer)/team',
-  },
-];
-
 const FINANCES: BizTool[] = [
   {
     icon: FileText,
@@ -61,19 +25,11 @@ const FINANCES: BizTool[] = [
     route: '/(buyer)/documents',
   },
   {
-    icon: Calendar,
-    iconBg: '#f0f9ff',
-    iconColor: '#0891b2',
-    label: 'Ieplānotie pasūtījumi',
-    description: 'Atkārtoti un plānotie pasūtījumi',
-    route: '/(buyer)/schedules',
-  },
-  {
     icon: AlertCircle,
     iconBg: '#fef2f2',
     iconColor: '#dc2626',
     label: 'Strīdi',
-    description: 'Atklātās pretenzijas',
+    description: 'Atklâtās pretenzijas',
     route: '/(buyer)/disputes',
   },
   {
@@ -115,12 +71,7 @@ export default function BusinessScreen() {
     <ScreenContainer bg="white">
       <TopBar title="Darbu centrs" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.container}>
-        <Text style={s.sectionHeader}>Organizācija</Text>
-        {ORGANISATION.map((tool) => (
-          <BizRow key={tool.route} tool={tool} />
-        ))}
-
-        <Text style={[s.sectionHeader, { marginTop: 28 }]}>Finanses & Dokumenti</Text>
+        <Text style={s.sectionHeader}>Dokumenti & PārvaldĪba</Text>
         {FINANCES.map((tool) => (
           <BizRow key={tool.route} tool={tool} />
         ))}

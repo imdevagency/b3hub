@@ -30,13 +30,10 @@ import {
   Globe,
   Package,
   Truck,
-  BarChart2,
   FileText,
   Handshake,
   Euro,
-  Briefcase,
   FileCheck,
-  Target,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -50,7 +47,12 @@ import { getRoleName } from '@/lib/utils';
 import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 
 function SectionHeader({ label }: { label: string }) {
-  return <Text style={styles.sectionHeader}>{label}</Text>;
+  return (
+    <>
+      <View style={styles.sectionDivider} />
+      <Text style={styles.sectionHeader}>{label}</Text>
+    </>
+  );
 }
 
 export default function ProfileScreen() {
@@ -171,17 +173,13 @@ export default function ProfileScreen() {
   const isComplete = missing.length === 0;
 
   return (
-    <ScreenContainer topInset={0} bg="#f6f8fb" noAnimation>
+    <ScreenContainer topInset={0} bg="#ffffff" noAnimation>
       <ScreenHeader title="Profils" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Profile Identity Block */}
-        <TouchableOpacity
-          style={[styles.profileCard, { marginTop: 16 }]}
-          activeOpacity={0.8}
-          onPress={openEdit}
-        >
+        <TouchableOpacity style={styles.profileBlock} activeOpacity={0.85} onPress={openEdit}>
           <View
-            className={`w-[72px] h-[72px] rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}
+            className={`w-16 h-16 rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}
           >
             <Text
               className={`text-2xl font-bold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}
@@ -192,7 +190,7 @@ export default function ProfileScreen() {
           <View className="flex-1">
             <Text
               className=" font-bold text-gray-900 mb-1"
-              style={{ fontSize: 22 }}
+              style={{ fontSize: 28 }}
               numberOfLines={1}
             >
               {user?.firstName} {user?.lastName}
@@ -255,79 +253,69 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* Dynamic Mode-Specific Links */}
-        <SectionHeader label="DARBĪBAS" />
-        <View style={styles.cardGroup}>
-          {mode === 'BUYER' && (
-            <MenuItem
-              icon={BarChart2}
-              label="Analītika"
-              onPress={() => router.push('/(buyer)/analytics')}
-              hideBorder
-            />
-          )}
+        {/* Dynamic Mode-Specific Links — only for non-buyer roles */}
+        {mode !== 'BUYER' && (
+          <>
+            <SectionHeader label="DARBĪBAS" />
+            <View style={styles.cardGroup}>
+              {mode === 'SUPPLIER' && (
+                <>
+                  <MenuItem
+                    icon={Euro}
+                    label="Izpeļņa"
+                    onPress={() => router.push('/(seller)/earnings')}
+                  />
+                  <MenuItem
+                    icon={FileText}
+                    label="Cenu pieprasījumi"
+                    value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined}
+                    onPress={() => router.push('/(seller)/quotes')}
+                  />
+                  <MenuItem
+                    icon={FileCheck}
+                    label="Pavadzīmes"
+                    onPress={() => router.push('/(seller)/documents')}
+                  />
+                  <MenuItem
+                    icon={Handshake}
+                    label="Ilgtermiņa līgumi"
+                    onPress={() => router.push('/(seller)/framework-contracts')}
+                    hideBorder
+                  />
+                </>
+              )}
 
-          {mode === 'SUPPLIER' && (
-            <>
-              <MenuItem
-                icon={Euro}
-                label="Izpeļņa"
-                onPress={() => router.push('/(seller)/earnings')}
-              />
-              <MenuItem
-                icon={FileText}
-                label="Cenu pieprasījumi"
-                value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined}
-                onPress={() => router.push('/(seller)/quotes')}
-              />
-              <MenuItem
-                icon={FileCheck}
-                label="Pavadzīmes"
-                onPress={() => router.push('/(seller)/documents')}
-              />
-              <MenuItem
-                icon={Handshake}
-                label="Ilgtermiņa līgumi"
-                onPress={() => router.push('/(seller)/framework-contracts')}
-                hideBorder
-              />
-            </>
-          )}
-
-          {mode === 'CARRIER' && (
-            <>
-              <MenuItem
-                icon={Euro}
-                label="Izpeļņa"
-                onPress={() => router.push('/(driver)/earnings')}
-              />
-              <MenuItem
-                icon={Truck}
-                label="Transporti"
-                onPress={() => router.push('/(driver)/vehicles')}
-              />
-              <MenuItem
-                icon={Package}
-                label="Konteineri (Skips)"
-                onPress={() => router.push('/(driver)/skips')}
-              />
-              <MenuItem
-                icon={FileCheck}
-                label="Pavadzīmes"
-                onPress={() => router.push('/(driver)/documents')}
-              />
-              <MenuItem
-                icon={Target}
-                label="Pārvadātāja iestatījumi"
-                onPress={() => router.push('/(driver)/carrier-settings')}
-                hideBorder
-              />
-            </>
-          )}
-        </View>
+              {mode === 'CARRIER' && (
+                <>
+                  <MenuItem
+                    icon={Euro}
+                    label="Izpeļņa"
+                    onPress={() => router.push('/(driver)/earnings')}
+                  />
+                  <MenuItem
+                    icon={Truck}
+                    label="Transporti"
+                    onPress={() => router.push('/(driver)/vehicles')}
+                  />
+                  <MenuItem
+                    icon={Package}
+                    label="Konteineri (Skips)"
+                    onPress={() => router.push('/(driver)/skips')}
+                  />
+                  <MenuItem
+                    icon={FileCheck}
+                    label="Pavadzīmes"
+                    onPress={() => router.push('/(driver)/documents')}
+                    hideBorder
+                  />
+                </>
+              )}
+            </View>
+          </>
+        )}
 
         {/* Application Section (Only show if missing rights and in BUYER mode commonly or generally) */}
-        {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && (
+        {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && !!user?.company?.id && (
           <>
             <SectionHeader label="PIETEIKUMI" />
             <View style={styles.cardGroup}>
@@ -605,9 +593,9 @@ function MenuItem({
       disabled={!onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.row}>
+      <View style={[styles.row, !hideBorder && styles.rowBorder]}>
         <View style={styles.rowIcon}>
-          <Icon size={20} color={isDestructive ? '#ef4444' : '#6b7280'} strokeWidth={2} />
+          <Icon size={24} color={isDestructive ? '#ef4444' : '#6b7280'} strokeWidth={1.5} />
         </View>
         <View style={styles.rowBody}>
           <Text style={[styles.rowLabel, isDestructive && styles.dangerLabel]}>{label}</Text>
@@ -636,9 +624,9 @@ function ApplicationRow({
 }) {
   return (
     <View style={styles.cardItem}>
-      <View style={styles.row}>
+      <View style={[styles.row, !hideBorder && styles.rowBorder]}>
         <View style={styles.rowIcon}>
-          <Icon size={20} color="#6b7280" strokeWidth={2} />
+          <Icon size={24} color="#6b7280" strokeWidth={1.5} />
         </View>
         <View style={styles.rowBody}>
           <Text style={styles.rowLabel}>{label}</Text>
@@ -667,69 +655,62 @@ function ApplicationRow({
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 60,
+    paddingBottom: 80,
   },
-  profileCard: {
+  profileBlock: {
     backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    borderRadius: 20,
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   nudgeCard: {
-    backgroundColor: '#fffbeb', // amber-50
-    marginHorizontal: 16,
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: '#fffbeb',
+    marginHorizontal: 20,
+    marginTop: 4,
+    borderRadius: 12,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#fef3c7', // amber-100
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 5,
-    elevation: 1,
+    borderColor: '#fef3c7',
+  },
+  sectionDivider: {
+    height: 8,
+    backgroundColor: '#F4F5F7',
   },
   sectionHeader: {
-    fontSize: 22,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#111827',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
+    color: '#9ca3af',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 8,
+    backgroundColor: '#ffffff',
   },
   cardGroup: {
-    gap: 12,
-    paddingHorizontal: 16,
+    backgroundColor: '#ffffff',
   },
   cardItem: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 17,
+    gap: 16,
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -743,10 +724,10 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   rowDescValue: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#6b7280',
-    marginRight: 8,
+    color: '#9ca3af',
+    marginRight: 6,
   },
   dangerLabel: {
     color: '#ef4444',

@@ -52,7 +52,15 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      router.replace('/dashboard/order');
+      // Route to the appropriate dashboard based on capabilities.
+      // Pure suppliers shouldn't land in the buyer order wizard.
+      if (user.canSell && !user.canTransport) {
+        router.replace('/dashboard/supplier');
+      } else if (user.canTransport && !user.canSell && !user.isCompany) {
+        router.replace('/dashboard/transporter');
+      } else {
+        router.replace('/dashboard/order');
+      }
     }
   }, [user, isLoading, router]);
 
