@@ -32,6 +32,8 @@ export interface CameraRefHandle {
     /** Omit to keep the current zoom level. */
     zoomLevel?: number;
     animationDuration?: number;
+    pitch?: number;
+    heading?: number;
   }): void;
   fitBounds(
     ne: [number, number],
@@ -120,23 +122,40 @@ export function BaseMap({
         centerCoordinate,
         zoomLevel,
         animationDuration,
+        pitch,
+        heading,
       }: {
         centerCoordinate: [number, number];
         zoomLevel?: number;
         animationDuration?: number;
+        pitch?: number;
+        heading?: number;
       }) {
         const delta = zoomLevel != null ? zoomToDelta(zoomLevel) : lastDelta.current;
         if (zoomLevel != null) lastDelta.current = delta;
-        const action = () =>
-          mapRef.current?.animateToRegion(
-            {
-              latitude: centerCoordinate[1],
-              longitude: centerCoordinate[0],
-              latitudeDelta: delta,
-              longitudeDelta: delta,
-            },
-            animationDuration ?? 500,
-          );
+        const action = () => {
+          if (pitch != null || heading != null) {
+            mapRef.current?.animateCamera(
+              {
+                center: { latitude: centerCoordinate[1], longitude: centerCoordinate[0] },
+                zoom: zoomLevel,
+                pitch,
+                heading,
+              },
+              { duration: animationDuration ?? 500 },
+            );
+          } else {
+            mapRef.current?.animateToRegion(
+              {
+                latitude: centerCoordinate[1],
+                longitude: centerCoordinate[0],
+                latitudeDelta: delta,
+                longitudeDelta: delta,
+              },
+              animationDuration ?? 500,
+            );
+          }
+        };
         if (mapReady.current) {
           action();
         } else {

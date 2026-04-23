@@ -35,6 +35,7 @@ import {
 import { startLocationTracking, stopLocationTracking } from '@/lib/location-task';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { ActiveJobMap } from '@/components/driver/ActiveJobMap';
+import { useRoute } from '@/components/map';
 import { styles } from '@/lib/active-styles';
 import { haptics } from '@/lib/haptics';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
@@ -243,6 +244,7 @@ export default function ActiveJobScreen() {
   const [loading, setLoading] = React.useState(true);
   const [currentLat, setCurrentLat] = React.useState<number | null>(null);
   const [currentLng, setCurrentLng] = React.useState<number | null>(null);
+  const [currentHeading, setCurrentHeading] = React.useState<number | null>(null);
   const locationSub = useRef<Location.LocationSubscription | null>(null);
   // Keep a stable ref to the current job so the GPS callback can access its id
   const jobRef = useRef<ApiTransportJob | null>(null);
@@ -719,6 +721,7 @@ export default function ActiveJobScreen() {
           if (!active) return;
           setCurrentLat(loc.coords.latitude);
           setCurrentLng(loc.coords.longitude);
+          setCurrentHeading(loc.coords.heading);
         },
       );
     })();
@@ -728,6 +731,27 @@ export default function ActiveJobScreen() {
       locationSub.current?.remove();
     };
   }, []);
+
+  // ── ETA to current target (pickup or delivery) ────────────────────────────
+  const validCurrentEta =
+    currentLat != null && currentLng != null ? { lat: currentLat, lng: currentLng } : null;
+  const etaTarget = React.useMemo(() => {
+    if (!job) return null;
+    const s = job.status as JobStatus;
+    if (s === 'ACCEPTED' || s === 'EN_ROUTE_PICKUP') {
+      return job.pickupLat != null && job.pickupLng != null
+        ? { lat: job.pickupLat, lng: job.pickupLng }
+        : null;
+    }
+    if (s === 'LOADED' || s === 'EN_ROUTE_DELIVERY') {
+      return job.deliveryLat != null && job.deliveryLng != null
+        ? { lat: job.deliveryLat, lng: job.deliveryLng }
+        : null;
+    }
+    return null;
+  }, [job, job?.status, job?.pickupLat, job?.pickupLng, job?.deliveryLat, job?.deliveryLng]);
+  const { route: etaRoute } = useRoute(validCurrentEta, etaTarget);
+  const etaMin = etaRoute ? Math.max(1, Math.round(etaRoute.durationSec / 60)) : null;
 
   // ── Background tracking — starts once job id is known ─────────
   useEffect(() => {
@@ -1036,6 +1060,7 @@ export default function ActiveJobScreen() {
         currentStatus={currentStatus}
         currentLat={currentLat}
         currentLng={currentLng}
+        currentHeading={currentHeading}
       />
 
       {/* ── Top Floating Pill ── */}
@@ -1163,225 +1188,92 @@ export default function ActiveJobScreen() {
           <View style={styles.detailsPullHandle} />
         </View>
 
-        <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 10,
-            }}
+        {/* Address & Quick Actions Side-by-Side (Uber Style) */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
+          {/* Destination */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setActiveTab('details')}
           >
-            <View
-              style={{
-                backgroundColor: phaseColor.bg,
-                borderColor: phaseColor.border,
-                borderWidth: 1,
-                paddingHorizontal: 12,
-                paddingVertical: 7,
-                borderRadius: 999,
-              }}
-            >
-              <RNText
-                style={{
-                  fontSize: 12,
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  color: phaseColor.text,
-                }}
-              >
-                {phaseColor.phase}
-              </RNText>
-            </View>
             <RNText
               style={{
-                fontSize: 12,
-                fontFamily: 'Inter_600SemiBold',
+                fontSize: 28,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+                lineHeight: 32,
+                marginBottom: 4,
+              }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {currentStatus === 'ACCEPTED' ||
+              currentStatus === 'EN_ROUTE_PICKUP' ||
+              currentStatus === 'AT_PICKUP'
+                ? job.pickupAddress.split(',')[0]
+                : job.deliveryAddress.split(',')[0]}
+            </RNText>
+            <RNText
+              style={{
+                fontSize: 16,
                 fontWeight: '600',
                 color: colors.textMuted,
               }}
+              numberOfLines={1}
             >
-              {currentIndex + 1}/{STATUS_STEPS.length}
+              {currentStatus === 'ACCEPTED' ||
+              currentStatus === 'EN_ROUTE_PICKUP' ||
+              currentStatus === 'AT_PICKUP'
+                ? job.pickupCity
+                : job.deliveryCity}
             </RNText>
-          </View>
 
-          <RNText
-            style={{
-              fontSize: 22,
-              lineHeight: 28,
-              fontFamily: 'Inter_700Bold',
-              fontWeight: '700',
-              color: colors.textPrimary,
-              letterSpacing: -0.4,
-            }}
-          >
-            {phaseMeta.title}
-          </RNText>
-          <RNText
-            style={{
-              fontSize: 14,
-              lineHeight: 20,
-              fontFamily: 'Inter_500Medium',
-              fontWeight: '500',
-              color: colors.textMuted,
-              marginTop: 6,
-            }}
-          >
-            {phaseMeta.subtitle}
-          </RNText>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
-            {STATUS_STEPS.map((step, index) => {
-              const isComplete = index <= currentIndex;
-              const isCurrent = index === currentIndex;
-
-              return (
-                <React.Fragment key={step}>
-                  <View
-                    style={{
-                      width: isCurrent ? 12 : 10,
-                      height: isCurrent ? 12 : 10,
-                      borderRadius: 999,
-                      backgroundColor: isComplete ? colors.primary : '#d1d5db',
-                      borderWidth: isCurrent ? 3 : 0,
-                      borderColor: isCurrent ? '#d9f99d' : 'transparent',
-                    }}
-                  />
-                  {index < STATUS_STEPS.length - 1 ? (
-                    <View
-                      style={{
-                        flex: 1,
-                        height: 3,
-                        borderRadius: 999,
-                        marginHorizontal: 4,
-                        backgroundColor: index < currentIndex ? colors.primary : '#e5e7eb',
-                      }}
-                    />
-                  ) : null}
-                </React.Fragment>
-              );
-            })}
-          </View>
-
-          <RNText
-            style={{
-              fontSize: 12,
-              fontFamily: 'Inter_600SemiBold',
-              fontWeight: '600',
-              color: colors.textSecondary,
-              marginTop: 8,
-            }}
-          >
-            {STEP_PROGRESS_LABELS[currentStatus]}
-          </RNText>
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {isOffline ? (
+            {/* ETA badge — only shown when actively en-route */}
+            {etaMin != null && (
               <View
                 style={{
-                  backgroundColor: '#fef3c7',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: 10,
+                  alignSelf: 'flex-start',
+                  backgroundColor: '#4f46e5',
+                  paddingHorizontal: 14,
+                  paddingVertical: 7,
                   borderRadius: 999,
                 }}
               >
+                <ClockIcon size={13} color="#fff" />
                 <RNText
                   style={{
-                    fontSize: 12,
-                    fontFamily: 'Inter_600SemiBold',
-                    fontWeight: '600',
-                    color: '#b45309',
+                    fontSize: 14,
+                    fontWeight: '800',
+                    color: '#fff',
+                    letterSpacing: -0.2,
                   }}
                 >
-                  Bezsaistē: darbības tiks rindotas
+                  {etaMin} min
                 </RNText>
               </View>
-            ) : null}
-            {openExceptions.length > 0 ? (
-              <View
-                style={{
-                  backgroundColor: '#fef2f2',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                }}
-              >
-                <RNText
-                  style={{
-                    fontSize: 12,
-                    fontFamily: 'Inter_600SemiBold',
-                    fontWeight: '600',
-                    color: '#b91c1c',
-                  }}
-                >
-                  {openExceptions.length} atvērta{openExceptions.length > 1 ? 's' : ''} problēma
-                </RNText>
-              </View>
-            ) : null}
-            {returnTrips.length > 0 && RETURN_TRIP_STATUSES.includes(currentStatus) ? (
-              <View
-                style={{
-                  backgroundColor: '#ecfdf5',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                }}
-              >
-                <RNText
-                  style={{
-                    fontSize: 12,
-                    fontFamily: 'Inter_600SemiBold',
-                    fontWeight: '600',
-                    color: '#047857',
-                  }}
-                >
-                  {returnTrips.length} atpakaļceļa iespēja
-                </RNText>
-              </View>
-            ) : null}
-          </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Inline offline/exceptions alerts directly below address */}
+          {(isOffline || openExceptions.length > 0 || (returnTrips.length > 0 && RETURN_TRIP_STATUSES.includes(currentStatus))) && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+              {isOffline ? (
+                <View style={{ backgroundColor: '#fef3c7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
+                  <RNText style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#b45309' }}>Bezsaistē: darbības tiks rindotas</RNText>
+                </View>
+              ) : null}
+              {openExceptions.length > 0 ? (
+                <View style={{ backgroundColor: '#fef2f2', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
+                  <RNText style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#b91c1c' }}>{openExceptions.length} atvērta problēma</RNText>
+                </View>
+              ) : null}
+            </View>
+          )}
         </View>
-
-        {/* Address wrapped in a touchable that opens Details */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setActiveTab('details')}
-          style={{ marginBottom: 24, paddingHorizontal: 20 }}
-        >
-          {/* Destination address completely minimal */}
-          <RNText
-            style={{
-              fontSize: 28,
-              fontWeight: '800',
-              color: colors.textPrimary,
-              letterSpacing: -0.5,
-              lineHeight: 32,
-              marginBottom: 4,
-            }}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-          >
-            {currentStatus === 'ACCEPTED' ||
-            currentStatus === 'EN_ROUTE_PICKUP' ||
-            currentStatus === 'AT_PICKUP'
-              ? job.pickupAddress.split(',')[0]
-              : job.deliveryAddress.split(',')[0]}
-          </RNText>
-          <RNText
-            style={{
-              fontSize: 16,
-              fontWeight: '600',
-              color: colors.textMuted,
-            }}
-            numberOfLines={1}
-          >
-            {currentStatus === 'ACCEPTED' ||
-            currentStatus === 'EN_ROUTE_PICKUP' ||
-            currentStatus === 'AT_PICKUP'
-              ? job.pickupCity
-              : job.deliveryCity}
-          </RNText>
-        </TouchableOpacity>
 
         {/* Primary Actions */}
         <View
@@ -1591,75 +1483,6 @@ export default function ActiveJobScreen() {
                   </RNText>
                 )}
               </TouchableOpacity>
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  flexWrap: 'wrap',
-                  gap: 12,
-                  marginTop: 2,
-                }}
-              >
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  onPress={() => setActiveTab('issues')}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: '#f9fafb',
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    borderRadius: 999,
-                  }}
-                >
-                  <AlertCircle
-                    size={15}
-                    color={openExceptions.length > 0 ? '#b91c1c' : '#4b5563'}
-                  />
-                  <RNText
-                    style={{
-                      fontSize: 13,
-                      fontFamily: 'Inter_600SemiBold',
-                      fontWeight: '600',
-                      color: openExceptions.length > 0 ? '#991b1b' : colors.textSecondary,
-                    }}
-                  >
-                    {openExceptions.length > 0
-                      ? `Problēmas (${openExceptions.length})`
-                      : 'Ziņot problēmu'}
-                  </RNText>
-                </TouchableOpacity>
-
-                {currentStatus !== 'DELIVERED' ? (
-                  <TouchableOpacity
-                    activeOpacity={0.75}
-                    onPress={() => setDelaySheetVisible(true)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      backgroundColor: '#f9fafb',
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
-                      borderRadius: 999,
-                    }}
-                  >
-                    <ClockIcon size={15} color="#4b5563" />
-                    <RNText
-                      style={{
-                        fontSize: 13,
-                        fontFamily: 'Inter_600SemiBold',
-                        fontWeight: '600',
-                        color: colors.textSecondary,
-                      }}
-                    >
-                      Ziņot kavēšanos
-                    </RNText>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
             </>
           ) : (
             <View style={{ flex: 1, gap: 10 }}>
@@ -2211,6 +2034,32 @@ export default function ActiveJobScreen() {
                   <PlusCircle size={20} color="#111827" />
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                     Pievienot papildu izmaksas
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#d1d5db" />
+              </TouchableOpacity>
+            )}
+
+            {currentStatus !== 'DELIVERED' && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 18,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#f3f4f6',
+                }}
+                onPress={() => {
+                  setActiveTab('navigate');
+                  setTimeout(() => setDelaySheetVisible(true), 260);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <ClockIcon size={20} color="#111827" />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
+                    Ziņot par kavēšanos
                   </Text>
                 </View>
                 <ChevronRight size={20} color="#d1d5db" />

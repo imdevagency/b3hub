@@ -18,9 +18,16 @@ export interface ActiveJobMapProps {
   currentStatus: ActiveJobStatus;
   currentLat: number | null;
   currentLng: number | null;
+  currentHeading?: number | null;
 }
 
-export function ActiveJobMap({ job, currentStatus, currentLat, currentLng }: ActiveJobMapProps) {
+export function ActiveJobMap({
+  job,
+  currentStatus,
+  currentLat,
+  currentLng,
+  currentHeading,
+}: ActiveJobMapProps) {
   const cameraRef = React.useRef<CameraRefHandle | null>(null);
   const hasCoords =
     job.pickupLat != null &&
@@ -69,12 +76,17 @@ export function ActiveJobMap({ job, currentStatus, currentLat, currentLng }: Act
   // Follow driver position
   React.useEffect(() => {
     if (!validCurrent || !cameraRef.current) return;
+
+    const isDriving = currentStatus === 'EN_ROUTE_PICKUP' || currentStatus === 'EN_ROUTE_DELIVERY';
+
     cameraRef.current.setCamera({
       centerCoordinate: [validCurrent.lng, validCurrent.lat],
-      zoomLevel: 13,
+      zoomLevel: isDriving ? 16 : 13,
+      pitch: isDriving ? 60 : 0,
+      heading: isDriving && currentHeading != null ? currentHeading : 0,
       animationDuration: 700,
     });
-  }, [validCurrent?.lat, validCurrent?.lng]);
+  }, [validCurrent?.lat, validCurrent?.lng, currentStatus, currentHeading]);
 
   const center: [number, number] = validCurrent
     ? [validCurrent.lng, validCurrent.lat]
@@ -105,19 +117,31 @@ export function ActiveJobMap({ job, currentStatus, currentLat, currentLng }: Act
       <BaseMap cameraRef={cameraRef} center={center} zoom={12} style={StyleSheet.absoluteFill}>
         {validCurrent && <PinLayer id="current" coordinate={validCurrent} type="current" />}
         {pickup && (
-          <PinLayer id="pickup" coordinate={pickup} type="pickup" label={job.pickupCity} />
+          <PinLayer
+            id="pickup"
+            coordinate={pickup}
+            type="elegant-pickup"
+            label="Iekraušana"
+            subtitle={job.pickupCity}
+          />
         )}
         {delivery && (
-          <PinLayer id="delivery" coordinate={delivery} type="delivery" label={job.deliveryCity} />
+          <PinLayer
+            id="delivery"
+            coordinate={delivery}
+            type="elegant-delivery"
+            label="Piegāde"
+            subtitle={job.deliveryCity}
+          />
         )}
         {mainCoords.length > 1 && (
-          <RouteLayer id="main-route" coordinates={mainCoords} color="#111827" width={4} />
+          <RouteLayer id="main-route" coordinates={mainCoords} color="#4f46e5" width={4} />
         )}
         {toPickupCoords.length > 1 && (
           <RouteLayer
             id="to-pickup"
             coordinates={toPickupCoords}
-            color="#9ca3af"
+            color="#a5b4fc"
             width={3}
             dashed
           />

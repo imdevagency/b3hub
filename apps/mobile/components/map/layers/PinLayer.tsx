@@ -22,28 +22,55 @@ try {
   /* Expo Go */
 }
 
-export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom' | 'home';
+export type PinType =
+  | 'pickup'
+  | 'delivery'
+  | 'return'
+  | 'current'
+  | 'custom'
+  | 'home'
+  | 'elegant-pickup'
+  | 'elegant-delivery';
 
 interface Props {
   id: string;
   coordinate: { lat: number; lng: number };
   type?: PinType;
   label?: string;
+  subtitle?: string;
   color?: string;
   iconColor?: string;
 }
 
-export function PinLayer({ id, coordinate, type = 'custom', label, color, iconColor }: Props) {
+export function PinLayer({
+  id,
+  coordinate,
+  type = 'custom',
+  label,
+  subtitle,
+  color,
+  iconColor,
+}: Props) {
   if (!Marker) return null;
+
+  // Calculate vertical anchor offset based on what is rendering
+  const anchor = type.startsWith('elegant') ? { x: 0.5, y: 0.9 } : { x: 0.5, y: 1 };
+
   return (
     <Marker
       key={id}
       identifier={id}
       coordinate={{ latitude: coordinate.lat, longitude: coordinate.lng }}
       tracksViewChanges={false}
-      anchor={{ x: 0.5, y: 1 }}
+      anchor={anchor}
     >
-      <MarkerForType type={type} label={label} color={color} iconColor={iconColor} />
+      <MarkerForType
+        type={type}
+        label={label}
+        subtitle={subtitle}
+        color={color}
+        iconColor={iconColor}
+      />
     </Marker>
   );
 }
@@ -53,15 +80,21 @@ export function PinLayer({ id, coordinate, type = 'custom', label, color, iconCo
 function MarkerForType({
   type,
   label,
+  subtitle,
   color,
   iconColor,
 }: {
   type: PinType;
   label?: string;
+  subtitle?: string;
   color?: string;
   iconColor?: string;
 }) {
   switch (type) {
+    case 'elegant-pickup':
+      return <ElegantPill type="pickup" label={label} subtitle={subtitle} />;
+    case 'elegant-delivery':
+      return <ElegantPill type="delivery" label={label} subtitle={subtitle} />;
     case 'pickup':
       return (
         <PinBubble icon={ArrowUp} color={color || '#111827'} label={label} iconColor={iconColor} />
@@ -223,3 +256,111 @@ const pin = StyleSheet.create({
     borderColor: colors.white,
   },
 });
+
+function ElegantPill({
+  type,
+  label,
+  subtitle,
+}: {
+  type: 'pickup' | 'delivery';
+  label?: string;
+  subtitle?: string;
+}) {
+  const isPickup = type === 'pickup';
+  const mainColor = isPickup ? '#4f46e5' : '#14b8a6'; // Indigo for pickup, teal for delivery
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 }}>
+      {/* Floating Pill */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#fff',
+          borderRadius: 24,
+          padding: 6,
+          paddingRight: 18,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          elevation: 8,
+          marginBottom: -16, // overlap the dot below
+          zIndex: 2,
+        }}
+      >
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: mainColor,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 10,
+          }}
+        >
+          <Text
+            style={{
+              color: '#fff',
+              fontWeight: '800',
+              fontSize: 13,
+              transform: [{ translateY: -1 }],
+            }}
+          >
+            {isPickup ? 'P' : 'D'}
+          </Text>
+        </View>
+        <View style={{ justifyContent: 'center' }}>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
+            {label || (isPickup ? 'Iekraušana' : 'Piegāde')}
+          </Text>
+          {subtitle ? (
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '500',
+                color: '#6b7280',
+                maxWidth: 140,
+                marginTop: 1,
+              }}
+              numberOfLines={1}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Target Dot on ground */}
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: `${mainColor}20`,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <View
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 7,
+            backgroundColor: '#fff',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 4,
+            elevation: 3,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: mainColor }} />
+        </View>
+      </View>
+    </View>
+  );
+}

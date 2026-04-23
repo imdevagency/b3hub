@@ -30,6 +30,7 @@ export { RouteLayer } from './layers/RouteLayer';
 export { PinLayer } from './layers/PinLayer';
 export type { PinType } from './layers/PinLayer';
 export { UserLayer } from './layers/UserLayer';
+export { AnimatedDriverMarker } from './layers/AnimatedDriverMarker';
 
 // Hooks
 export { useRoute } from './hooks/useRoute';

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Linking, TouchableOpacity, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   MapPin,
   Package,
@@ -9,6 +10,8 @@ import {
   Phone,
   ChevronRight,
   MessageCircle,
+  ChevronLeft,
+  CheckCircle2,
 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -16,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { BaseMap, RouteLayer, useRoute, PinLayer } from '@/components/map';
+import { BaseMap, RouteLayer, useRoute, PinLayer, AnimatedDriverMarker } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 
 import { useAuth } from '@/lib/auth-context';
@@ -66,6 +69,7 @@ export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { order, setOrder, loading, reload: load } = useOrderDetail(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
+  const insets = useSafeAreaInsets();
   const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
     lat: number;
     lng: number;
@@ -189,8 +193,7 @@ export default function OrderTrackingScreen() {
     jobStatusLabel ?? (order.status === 'DELIVERED' ? 'Apstipriniet saņemšanu' : statusMeta.label);
 
   return (
-    <ScreenContainer bg="#FFFFFF" standalone>
-      <ScreenHeader title="Pasūtījums" />
+    <ScreenContainer bg="#F4F5F7" standalone topInset={0}>
       <View style={styles.mapWrapper}>
         <BaseMap
           cameraRef={cameraRef}
@@ -201,154 +204,184 @@ export default function OrderTrackingScreen() {
                 ? [order.deliveryLng, order.deliveryLat]
                 : [24.1052, 56.9496]
           }
-          zoom={13}
+          zoom={12.5}
           style={styles.map}
           rotateEnabled={false}
           pitchEnabled={false}
         >
           {route?.coords && route.coords.length > 1 && (
-            <RouteLayer id="order-route" coordinates={route.coords} color="#111827" width={4} />
+             <RouteLayer id="order-route" coordinates={route.coords} color="#4f46e5" width={4} />
           )}
           {order.deliveryLat != null && order.deliveryLng != null && (
             <PinLayer
               id="delivery"
-              type="delivery"
+              type="elegant-delivery"
               coordinate={{ lat: order.deliveryLat, lng: order.deliveryLng }}
             />
           )}
           {driverLocationOnMap && (
-            <PinLayer
+            <AnimatedDriverMarker
               id="driver"
-              type="current"
               coordinate={{ lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng }}
             />
           )}
         </BaseMap>
 
-        <View style={styles.overlayContainer}>
+        {/* Floating Header */}
+        <View style={[styles.floatingHeader, { paddingTop: insets.top || 44 }]}>
+           <TouchableOpacity 
+             style={styles.headerBtn} 
+             onPress={() => router.back()}
+           >
+             <ChevronLeft size={24} color="#111827" />
+           </TouchableOpacity>
+           <Text style={styles.headerTitle}>Pasūtījums</Text>
+           <View style={styles.headerSpacer} />
+        </View>
+
+        {/* Uber-like Top Floating Card */}
+        <View style={[styles.topCardContainer, { top: (insets.top || 44) + 64 }]}>
+          <View style={styles.topCard}>
+            <View style={styles.topCardIcon}>
+              <Package size={24} color="#374151" strokeWidth={1.5} />
+            </View>
+            <View style={styles.topCardMeta}>
+              <Text style={styles.topCardTitle} numberOfLines={1}>
+                {order.materials?.[0]?.material?.name || 'Materiāli'}
+              </Text>
+              <Text style={styles.topCardSubtitle}>
+                ID: {order.id.slice(-8).toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Uber-like Bottom Sheet / Overlay */}
+        <View style={[styles.overlayContainer, { bottom: insets.bottom || 24 }]}>
           <View style={styles.overlayCard}>
-            <Text style={styles.heroPrimary}>{heroPrimary}</Text>
-            {heroSubtitle
-              ? heroSubtitle.toLowerCase() !== heroPrimary.toLowerCase() && (
-                  <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
-                )
-              : null}
-
-            {currentStepIdx >= 0 && (
-              <View style={styles.stepsRow}>
-                {JOB_STEPS.map((step, index) => {
-                  const done = index <= currentStepIdx;
-                  return (
-                    <View key={step.key} style={styles.stepItem}>
-                      <View style={[styles.stepDot, done && styles.stepDotActive]} />
-                      <Text
-                        style={[styles.stepLabel, done && styles.stepLabelActive]}
-                        numberOfLines={1}
-                      >
-                        {step.label}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {driver && (
-              <View style={styles.driverRow}>
-                {driver.avatar ? (
-                  <Image source={{ uri: driver.avatar }} style={styles.driverAvatar} />
-                ) : (
-                  <View style={styles.driverAvatarFallback}>
-                    <Text style={styles.driverAvatarText}>
-                      {driver.firstName?.[0] ?? '?'}
-                      {driver.lastName?.[0] ?? ''}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.driverMeta}>
-                  <Text style={styles.driverName} numberOfLines={1}>
-                    {driver.firstName} {driver.lastName}
-                  </Text>
-                  {driver.driverProfile?.rating != null && (
-                    <View style={styles.driverRating}>
-                      <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                      <Text style={styles.driverRatingText}>
-                        {driver.driverProfile.rating.toFixed(1)}
-                      </Text>
-                    </View>
-                  )}
+            
+            {/* Courier Header Row */}
+            <View style={styles.courierHeader}>
+              {driver?.avatar ? (
+                <Image source={{ uri: driver.avatar }} style={styles.courierAvatar} />
+              ) : (
+                <View style={styles.courierAvatarFallback}>
+                   <Truck size={20} color="#6B7280" strokeWidth={2} />
                 </View>
-                <View style={styles.driverActions}>
-                  {activeJob && (
+              )}
+              <View style={styles.courierInfo}>
+                 <Text style={styles.courierName} numberOfLines={1}>
+                   {driver ? `${driver.firstName} ${driver.lastName}` : 'Meklējam šoferi...'}
+                 </Text>
+                 <Text style={styles.courierRole}>
+                   {driver ? 'Šoferis' : 'Pieprasījums nosūtīts'}
+                 </Text>
+              </View>
+              
+              <View style={styles.driverActions}>
+                 {activeJob && (
                     <TouchableOpacity
-                      style={styles.chatButton}
-                      onPress={() =>
+                      style={styles.courierActionBtn}
+                      onPress={() => {
+                        haptics.medium();
                         router.push({
                           pathname: '/chat/[jobId]',
                           params: {
                             jobId: activeJob.id,
-                            title: `${driver.firstName} ${driver.lastName}`,
+                            title: `${driver?.firstName} ${driver?.lastName}`,
                           },
-                        })
-                      }
+                        });
+                      }}
                     >
-                      <MessageCircle size={18} color={colors.primary} />
+                      <MessageCircle size={18} color="#FFFFFF" />
                     </TouchableOpacity>
-                  )}
-                  {driver.phone && (
-                    <TouchableOpacity
-                      style={styles.callButton}
-                      onPress={() => Linking.openURL(`tel:${driver.phone}`).catch(() => null)}
+                 )}
+                 {driver?.phone && (
+                    <TouchableOpacity 
+                      style={[styles.courierActionBtn, { marginLeft: 8 }]}
+                      onPress={() => {
+                        haptics.medium();
+                        Linking.openURL(`tel:${driver.phone}`).catch(() => null);
+                      }}
                     >
-                      <Phone size={18} color={colors.primary} />
+                       <Phone size={18} color="#FFFFFF" fill="#FFFFFF" />
                     </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            )}
-
-            <View style={styles.timelineRow}>
-              <View style={styles.timelineIcons}>
-                <View style={styles.timelineIconWrap}>
-                  <Package size={14} color="#111827" />
-                </View>
-                <View style={styles.timelineLine} />
-                <View style={styles.timelineIconWrap}>
-                  <MapPin size={14} color="#6B7280" />
-                </View>
-              </View>
-              <View style={styles.timelineDetails}>
-                <View style={styles.timelineItem}>
-                  <Text style={styles.timelineText} numberOfLines={1}>
-                    {order.siteContactName || 'Iekraušana'}
-                  </Text>
-                </View>
-                <View style={styles.timelineItem}>
-                  <Text style={styles.timelineText} numberOfLines={2}>
-                    {order.deliveryAddress}, {order.deliveryCity}
-                  </Text>
-                </View>
+                 )}
               </View>
             </View>
 
+            {/* Vertical Timeline replacing the horizontal stepper */}
+            <View style={styles.statusSection}>
+              <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
+              
+              <View style={styles.timelineContainer}>
+                {JOB_STEPS.map((step, index) => {
+                  const isSearching = order.status === 'PENDING' || order.status === 'SEARCHING';
+                  const isDone = !isSearching && index <= currentStepIdx;
+                  const isCurrent = !isSearching && index === currentStepIdx;
+                  const isLast = index === JOB_STEPS.length - 1;
+                  
+                  let dateStr: string | null = null;
+                  if (etaMin != null && step.key === 'enroute' && isCurrent) {
+                     dateStr = `~${etaMin} min`;
+                  } else if (step.key === 'pickup') {
+                     dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('lv-LV', {day:'numeric', month:'short'}) : null;
+                  } else if (step.key === 'delivered') {
+                     dateStr = order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV', {day:'numeric', month:'short'}) : null;
+                  }
+
+                  let addressStr = step.key === 'pickup' || step.key === 'loading' ? (order.siteContactName || order.supplierBranch?.name || 'Iekraušana') : (order.deliveryAddress || order.deliveryCity);
+
+                  return (
+                    <View key={step.key} style={styles.timelineRow}>
+                       <View style={styles.timelineMarkerCol}>
+                          {!isLast && (
+                            <View style={[
+                              styles.timelineLine, 
+                              (isDone && !isCurrent) ? styles.timelineLineActive : styles.timelineLineInactive,
+                            ]} />
+                          )}
+                          
+                          {isCurrent ? (
+                             <View style={styles.markerCurrent}>
+                               <View style={styles.markerCurrentInner} />
+                             </View>
+                          ) : isDone ? (
+                             <View style={styles.markerCompleted}>
+                                <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                             </View>
+                          ) : (
+                             <View style={styles.markerFuture} />
+                          )}
+                       </View>
+
+                       <View style={styles.timelineContent}>
+                         <View style={styles.timelineTextWrap}>
+                           <Text style={[styles.timelineTitle, isCurrent && styles.timelineTitleCurrent, (!isDone && !isCurrent) && styles.timelineTitleFuture]}>
+                             {step.label}
+                           </Text>
+                           <Text style={styles.timelineSubtitle} numberOfLines={2}>
+                             {addressStr}
+                           </Text>
+                         </View>
+                         {dateStr && (
+                           <Text style={[styles.timelineDateText, isCurrent && step.key === 'enroute' && { color: ORANGE, fontWeight: '700' }]}>
+                              {dateStr}
+                           </Text>
+                         )}
+                       </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Bottom actions */}
             <View style={styles.cardActions}>
-              {isTerminal && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex-1"
-                  onPress={() => {
-                    haptics.medium();
-                    router.replace('/(buyer)/new-order' as never);
-                  }}
-                >
-                  Pasūtīt vēlreiz
-                </Button>
-              )}
-              <Button
+               <Button
                 variant="secondary"
                 size="lg"
-                className={isTerminal ? 'flex-1' : 'w-full'}
+                className="flex-1"
                 onPress={() => {
                   haptics.light();
                   router.push(`/(buyer)/order/${id}/details` as never);
@@ -356,6 +389,19 @@ export default function OrderTrackingScreen() {
               >
                 Detaļas
               </Button>
+              {isTerminal && (
+                <Button
+                  variant="default"
+                  size="lg"
+                  className="flex-1 ml-2"
+                  onPress={() => {
+                    haptics.medium();
+                    router.replace('/(buyer)/new-order' as never);
+                  }}
+                >
+                  Atkārtot
+                </Button>
+              )}
             </View>
           </View>
         </View>
@@ -363,6 +409,8 @@ export default function OrderTrackingScreen() {
     </ScreenContainer>
   );
 }
+
+const ORANGE = '#4f46e5';
 
 const styles = StyleSheet.create({
   mapWrapper: {
@@ -372,108 +420,134 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  pinDelivery: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  pinDriver: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#111827',
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000000',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  headerSpacer: {
+    width: 44,
+  },
+  topCardContainer: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+  },
+  topCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  topCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  topCardMeta: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  topCardTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#111827',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  topCardSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
   },
   overlayContainer: {
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 24,
   },
   overlayCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    padding: 16,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 8,
   },
-  heroPrimary: {
-    fontSize: 22,
+  courierHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  courierAvatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  courierAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 16,
+    backgroundColor: '#E5E7EB',
+  },
+  courierInfo: {
+    flex: 1,
+  },
+  courierName: {
+    fontSize: 18,
     fontFamily: 'Inter_700Bold',
     color: '#111827',
     marginBottom: 2,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
-  heroSubtitle: {
+  courierRole: {
     fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    color: '#6B7280',
-    marginBottom: 20,
-  },
-  driverRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  driverAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E5E7EB',
-  },
-  driverAvatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverAvatarText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 16,
-    color: '#4B5563',
-  },
-  driverMeta: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  driverName: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
-    color: '#111827',
-    marginBottom: 2,
-  },
-  driverRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  driverRatingText: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 13,
     color: '#6B7280',
   },
   driverActions: {
@@ -481,112 +555,124 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
   },
-  chatButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#D1FAE5',
+  courierActionBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  callButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3E8FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  statusSection: {
+    marginBottom: 8,
+  },
+  statusSectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    marginBottom: 20,
+    letterSpacing: -0.3,
+  },
+  timelineContainer: {
+    paddingLeft: 4,
   },
   timelineRow: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 2,
   },
-  timelineIcons: {
+  timelineMarkerCol: {
+    width: 24,
     alignItems: 'center',
-    width: 24,
-    marginRight: 12,
-    justifyContent: 'space-between',
+    marginRight: 16,
   },
-  timelineIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+  markerFuture: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    marginTop: 4,
+    zIndex: 2,
+  },
+  markerCompleted: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: ORANGE,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 3,
     zIndex: 2,
+  },
+  markerCurrent: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 2,
+    borderColor: ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    zIndex: 2,
+  },
+  markerCurrentInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: ORANGE,
   },
   timelineLine: {
     position: 'absolute',
-    top: 24,
-    bottom: 24,
+    left: 11,
+    top: 20,
+    bottom: -6,
     width: 2,
+    zIndex: 1,
+  },
+  timelineLineActive: {
+    backgroundColor: ORANGE,
+  },
+  timelineLineInactive: {
     backgroundColor: '#E5E7EB',
-    zIndex: -1,
   },
-  timelineDetails: {
+  timelineContent: {
     flex: 1,
-    gap: 16,
-  },
-  timelineItem: {
-    minHeight: 24,
-    justifyContent: 'center',
-  },
-  timelineItemSpacer: {
-    flex: 1,
-  },
-  timelineText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 14,
-    color: '#4B5563',
-  },
-  detailsButton: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    gap: 6,
+    justifyContent: 'space-between',
+    paddingBottom: 24,
   },
-  detailsButtonText: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
+  timelineTextWrap: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  timelineTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
     color: '#111827',
+    marginBottom: 4,
   },
-  stepsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
+  timelineTitleCurrent: {
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
-  stepItem: {
-    flex: 1,
-  },
-  stepDot: {
-    width: '100%',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 8,
-  },
-  stepDotActive: {
-    backgroundColor: colors.primary,
-  },
-  stepLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
+  timelineTitleFuture: {
     color: '#9CA3AF',
   },
-  stepLabelActive: {
-    color: '#111827',
+  timelineSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+  },
+  timelineDateText: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: '#6B7280',
+    paddingTop: 1,
   },
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
   },
 });
