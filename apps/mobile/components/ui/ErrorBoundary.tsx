@@ -37,6 +37,18 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Navigation-context errors are a transient race during hot-reload / initial
+    // Expo Router boot. getDerivedStateFromError already suppresses the fallback
+    // UI for them; don't console.error here either, so Expo LogBox doesn't show
+    // a red overlay for something that self-heals within one render cycle.
+    if (error.message.includes('navigation context')) {
+      if (__DEV__)
+        console.warn(
+          '[ErrorBoundary] transient navigation context error (auto-recovering)',
+          error.message,
+        );
+      return;
+    }
     console.error('[ErrorBoundary]', error.message, info.componentStack);
   }
 
@@ -81,7 +93,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.dangerBg,
+    // Guard against hot-reload partial module evaluation where colors may be
+    // temporarily undefined. The fallback matches the design token value.
+    backgroundColor: colors?.dangerBg ?? '#fee2e2',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -96,13 +110,13 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors?.textMuted ?? '#6b7280',
     textAlign: 'center',
     marginBottom: 24,
   },
   devError: {
     maxHeight: 160,
-    backgroundColor: colors.bgMuted,
+    backgroundColor: colors?.bgMuted ?? '#f3f4f6',
     borderRadius: 8,
     padding: 12,
     marginBottom: 24,
