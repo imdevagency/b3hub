@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { BaseMap } from '@/components/map';
+import { BaseMap, PinLayer } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 
 import { haptics } from '@/lib/haptics';
@@ -16,13 +16,7 @@ import { useSkipOrder } from '@/lib/use-skip-order';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
 
-let Marker: any = null;
-try {
-  const maps = require('react-native-maps');
-  Marker = maps.Marker;
-} catch {
-  /* Expo Go */
-}
+
 
 const SKIP_STEPS = [
   { key: 'PENDING', label: 'Saņemts' },
@@ -118,15 +112,12 @@ export default function SkipOrderTrackingScreen() {
           rotateEnabled={false}
           pitchEnabled={false}
         >
-          {hasCoords && Marker && (
-            <Marker
-              coordinate={{ latitude: order.lat!, longitude: order.lng! }}
-              anchor={{ x: 0.5, y: 1 }}
-            >
-              <View style={styles.pinDelivery}>
-                <Trash2 size={14} color="#FFFFFF" strokeWidth={2.5} />
-              </View>
-            </Marker>
+          {hasCoords && (
+            <PinLayer
+              id="delivery"
+              type="delivery"
+              coordinate={{ lat: order.lat!, lng: order.lng! }}
+            />
           )}
         </BaseMap>
 
@@ -248,8 +239,8 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: 16,
+    right: 16,
     bottom: 24,
   },
   overlayCard: {

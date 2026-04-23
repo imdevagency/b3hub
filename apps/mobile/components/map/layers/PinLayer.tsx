@@ -2,17 +2,18 @@
  * PinLayer — renders a single Marker on a Google Maps (react-native-maps) map.
  *
  * Provides pre-styled marker types matching the B3Hub design language:
- *   pickup   — dark "P" bubble
- *   delivery — dark "D" bubble
- *   return   — green "R" bubble
+ *   pickup   — dark bubble with ArrowUp icon
+ *   delivery — dark bubble with ArrowDown icon
+ *   return   — green bubble with Refresh icon
  *   current  — blue GPS dot
- *   custom   — any colour + optional label
+ *   custom   — dark default bubble with Dot icon
  *
  * Must be placed inside a <BaseMap>.
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '@/lib/theme';
+import { ArrowUp, ArrowDown, RefreshCcw, Circle, MapPin, Home } from 'lucide-react-native';
 
 let Marker: any = null;
 try {
@@ -21,7 +22,7 @@ try {
   /* Expo Go */
 }
 
-export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom';
+export type PinType = 'pickup' | 'delivery' | 'return' | 'current' | 'custom' | 'home';
 
 interface Props {
   id: string;
@@ -29,9 +30,10 @@ interface Props {
   type?: PinType;
   label?: string;
   color?: string;
+  iconColor?: string;
 }
 
-export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7280' }: Props) {
+export function PinLayer({ id, coordinate, type = 'custom', label, color, iconColor }: Props) {
   if (!Marker) return null;
   return (
     <Marker
@@ -39,45 +41,88 @@ export function PinLayer({ id, coordinate, type = 'custom', label, color = '#6b7
       identifier={id}
       coordinate={{ latitude: coordinate.lat, longitude: coordinate.lng }}
       tracksViewChanges={false}
+      anchor={{ x: 0.5, y: 1 }}
     >
-      <MarkerForType type={type} label={label} color={color} />
+      <MarkerForType type={type} label={label} color={color} iconColor={iconColor} />
     </Marker>
   );
 }
 
 // ── Marker visuals ────────────────────────────────────────────────────────────
 
-function MarkerForType({ type, label, color }: { type: PinType; label?: string; color: string }) {
+function MarkerForType({
+  type,
+  label,
+  color,
+  iconColor,
+}: {
+  type: PinType;
+  label?: string;
+  color?: string;
+  iconColor?: string;
+}) {
   switch (type) {
     case 'pickup':
-      return <BubbleMarker letter="P" color="#111827" label={label} />;
+      return (
+        <PinBubble icon={ArrowUp} color={color || '#111827'} label={label} iconColor={iconColor} />
+      );
     case 'delivery':
-      return <BubbleMarker letter="D" color="#111827" label={label} />;
+      return (
+        <PinBubble
+          icon={ArrowDown}
+          color={color || '#111827'}
+          label={label}
+          iconColor={iconColor}
+        />
+      );
     case 'return':
-      return <BubbleMarker letter="R" color="#059669" label={label} small />;
+      return (
+        <PinBubble
+          icon={RefreshCcw}
+          color={color || '#059669'}
+          label={label}
+          iconColor={iconColor}
+          small
+        />
+      );
+    case 'home':
+      return (
+        <PinBubble icon={Home} color={color || '#111827'} label={label} iconColor={iconColor} />
+      );
     case 'current':
       return <CurrentDotMarker />;
+    case 'custom':
     default:
-      return <BubbleMarker letter="·" color={color} label={label} />;
+      return (
+        <PinBubble
+          icon={Circle}
+          fillIcon
+          color={color || '#111827'}
+          label={label}
+          iconColor={iconColor}
+        />
+      );
   }
 }
 
-function BubbleMarker({
-  letter,
+function PinBubble({
+  icon: IconComponent,
   color,
+  iconColor = colors.white,
   label,
   small = false,
+  fillIcon = false,
 }: {
-  letter: string;
+  icon: any;
   color: string;
+  iconColor?: string;
   label?: string;
   small?: boolean;
+  fillIcon?: boolean;
 }) {
-  const size = small ? 22 : 28;
+  const size = small ? 24 : 34;
   const radius = size / 2;
-  const fontSize = small ? 9 : 11;
-  const tailH = small ? 6 : 7;
-  const tailW = small ? 4 : 5;
+  const iconSize = small ? 14 : 18;
 
   return (
     <View style={pin.wrapper}>
@@ -87,20 +132,26 @@ function BubbleMarker({
           { width: size, height: size, borderRadius: radius, backgroundColor: color },
         ]}
       >
-        <Text style={[pin.letter, { fontSize }]}>{letter}</Text>
+        <IconComponent
+          size={iconSize}
+          color={iconColor}
+          fill={fillIcon ? iconColor : 'none'}
+          strokeWidth={fillIcon ? 0 : 2}
+        />
       </View>
       <View
         style={[
           pin.tail,
           {
             borderTopColor: color,
-            borderTopWidth: tailH,
-            borderLeftWidth: tailW,
-            borderRightWidth: tailW,
           },
         ]}
       />
-      {label ? <Text style={[pin.label, { color, fontSize: small ? 9 : 10 }]}>{label}</Text> : null}
+      {label ? (
+        <Text style={[pin.label, { fontSize: small ? 11 : 13 }]} numberOfLines={1}>
+          {label}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -118,40 +169,45 @@ function CurrentDotMarker() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const pin = StyleSheet.create({
-  wrapper: { alignItems: 'center' },
+  wrapper: { alignItems: 'center', minWidth: 120 },
   bubble: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: colors.white,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    elevation: 6,
   },
-  letter: { color: colors.white, fontWeight: '900' },
   tail: {
     width: 0,
     height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 7,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
+    marginTop: -1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
   label: {
-    fontWeight: '700',
-    marginTop: 2,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 4,
-    overflow: 'hidden',
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 4,
+    textAlign: 'center',
+    textShadowColor: 'rgba(255, 255, 255, 0.95)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
-  // current-location dot
   currentWrapper: { alignItems: 'center', justifyContent: 'center' },
   currentOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(29, 78, 216, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',

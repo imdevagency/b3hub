@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { BaseMap, RouteLayer, useRoute } from '@/components/map';
+import { BaseMap, RouteLayer, useRoute, PinLayer } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 
 import { useAuth } from '@/lib/auth-context';
@@ -17,13 +17,7 @@ import { useTransportJob } from '@/lib/use-transport-job';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { colors } from '@/lib/theme';
 
-let Marker: any = null;
-try {
-  const maps = require('react-native-maps');
-  Marker = maps.Marker;
-} catch {
-  /* Expo Go */
-}
+
 
 const JOB_STATUS_LABEL: Record<string, string> = {
   AVAILABLE: 'Pasūtījums publicēts platformā',
@@ -172,45 +166,26 @@ export default function TransportJobTrackingScreen() {
           {route?.coords && route.coords.length > 1 && (
             <RouteLayer id="job-route" coordinates={route.coords} color="#111827" width={4} />
           )}
-          {job.pickupLat != null && job.pickupLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: job.pickupLat, longitude: job.pickupLng }}
-              anchor={{ x: 0.5, y: 1 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinPickup}>
-                <Package size={14} color="#FFFFFF" strokeWidth={2.5} />
-              </View>
-            </Marker>
+          {job.pickupLat != null && job.pickupLng != null && (
+            <PinLayer
+              id="pickup"
+              type="pickup"
+              coordinate={{ lat: job.pickupLat, lng: job.pickupLng }}
+            />
           )}
-          {job.deliveryLat != null && job.deliveryLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: job.deliveryLat, longitude: job.deliveryLng }}
-              anchor={{ x: 0.5, y: 1 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinDelivery}>
-                {isDisposal ? (
-                  <Recycle size={14} color="#FFFFFF" strokeWidth={2.5} />
-                ) : (
-                  <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
-                )}
-              </View>
-            </Marker>
+          {job.deliveryLat != null && job.deliveryLng != null && (
+            <PinLayer
+              id="delivery"
+              type="delivery"
+              coordinate={{ lat: job.deliveryLat, lng: job.deliveryLng }}
+            />
           )}
-          {driverLocationOnMap && Marker && (
-            <Marker
-              coordinate={{
-                latitude: driverLocationOnMap.lat,
-                longitude: driverLocationOnMap.lng,
-              }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinDriver}>
-                <Truck size={13} color="#FFFFFF" strokeWidth={2.5} />
-              </View>
-            </Marker>
+          {driverLocationOnMap && (
+            <PinLayer
+              id="driver"
+              type="current"
+              coordinate={{ lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng }}
+            />
           )}
         </BaseMap>
 
@@ -391,8 +366,8 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: 16,
+    right: 16,
     bottom: 24,
   },
   overlayCard: {

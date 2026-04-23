@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
-import { BaseMap, RouteLayer, useRoute } from '@/components/map';
+import { BaseMap, RouteLayer, useRoute, PinLayer } from '@/components/map';
 import type { CameraRefHandle } from '@/components/map';
 
 import { useAuth } from '@/lib/auth-context';
@@ -26,13 +26,7 @@ import { useLiveUpdates } from '@/lib/use-live-updates';
 import { MAT_STATUS } from '@/lib/materials';
 import { colors } from '@/lib/theme';
 
-let Marker: any = null;
-try {
-  const maps = require('react-native-maps');
-  Marker = maps.Marker;
-} catch {
-  /* Expo Go */
-}
+
 
 const JOB_STATUS_LABEL: Record<string, string> = {
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
@@ -215,30 +209,19 @@ export default function OrderTrackingScreen() {
           {route?.coords && route.coords.length > 1 && (
             <RouteLayer id="order-route" coordinates={route.coords} color="#111827" width={4} />
           )}
-          {order.deliveryLat != null && order.deliveryLng != null && Marker && (
-            <Marker
-              coordinate={{ latitude: order.deliveryLat, longitude: order.deliveryLng }}
-              anchor={{ x: 0.5, y: 1 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinDelivery}>
-                <MapPin size={14} color="#FFFFFF" strokeWidth={2.5} />
-              </View>
-            </Marker>
+          {order.deliveryLat != null && order.deliveryLng != null && (
+            <PinLayer
+              id="delivery"
+              type="delivery"
+              coordinate={{ lat: order.deliveryLat, lng: order.deliveryLng }}
+            />
           )}
-          {driverLocationOnMap && Marker && (
-            <Marker
-              coordinate={{
-                latitude: driverLocationOnMap.lat,
-                longitude: driverLocationOnMap.lng,
-              }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.pinDriver}>
-                <Truck size={13} color="#FFFFFF" strokeWidth={2.5} />
-              </View>
-            </Marker>
+          {driverLocationOnMap && (
+            <PinLayer
+              id="driver"
+              type="current"
+              coordinate={{ lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng }}
+            />
           )}
         </BaseMap>
 
@@ -419,8 +402,8 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: 16,
+    right: 16,
     bottom: 24,
   },
   overlayCard: {
