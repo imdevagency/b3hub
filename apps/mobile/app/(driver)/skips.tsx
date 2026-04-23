@@ -7,28 +7,23 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Alert,
   Linking,
   Platform,
-  Dimensions,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import {
   Trash2,
-  MapPin,
   Phone,
   Calendar,
   Navigation2,
-  CheckCircle2,
   Package,
   RefreshCw,
   List,
-  Map as MapIcon,
   MapPinOff,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -266,7 +261,7 @@ export default function CarrierSkipsScreen() {
       );
       if (newStatus === 'COLLECTED') setSelectedOrder(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Neizdevās atjaunināt.')
+      toast.error(err instanceof Error ? err.message : 'Neizdevās atjaunināt.');
     } finally {
       setUpdatingId(null);
     }
@@ -306,7 +301,9 @@ export default function CarrierSkipsScreen() {
           >
             Nav aktīvu uzdevumu
           </Text>
-          <Text style={{ fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22 }}>
+          <Text
+            style={{ fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 22 }}
+          >
             Visi konteineri ir piegādāti vai savākti.
           </Text>
           <TouchableOpacity

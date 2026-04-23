@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -274,9 +274,6 @@ function OrderCard({
   onStartLoading,
   actioning,
   onPress,
-  batchMode = false,
-  isSelected = false,
-  onToggleSelect,
 }: {
   order: IncomingOrder;
   onConfirm: (id: string) => void;
@@ -284,23 +281,14 @@ function OrderCard({
   onStartLoading: (id: string) => void;
   actioning: string | null;
   onPress: () => void;
-  batchMode?: boolean;
-  isSelected?: boolean;
-  onToggleSelect?: () => void;
 }) {
   const isBusy = actioning === order.id;
   const statusMeta = getStatusMeta(order.status);
-  const isBatchSelectable = batchMode && order.status === 'PENDING';
 
   return (
-    <View
-      className={`px-5 pt-5 border-b border-gray-100 ${isBatchSelectable && isSelected ? 'bg-green-50' : 'bg-white'}`}
-    >
-      <TouchableOpacity
-        onPress={isBatchSelectable ? () => onToggleSelect?.() : onPress}
-        activeOpacity={0.8}
-      >
-        {/* Top row: material + price / checkbox */}
+    <View className="px-5 pt-5 border-b border-gray-100 bg-white">
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        {/* Top row: material + price */}
         <View className="flex-row justify-between items-start mb-1">
           <View className="flex-1 pr-4">
             <Text
@@ -318,25 +306,15 @@ function OrderCard({
             </Text>
           </View>
           <View className="items-end" style={{ gap: 4 }}>
-            {isBatchSelectable ? (
-              isSelected ? (
-                <CheckSquare2 size={24} color="#111827" />
-              ) : (
-                <Square size={24} color="#d1d5db" />
-              )
-            ) : (
-              <>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
-                  €{order.price.toFixed(0)}
-                </Text>
-                <StatusPill
-                  label={statusMeta.text}
-                  bg={statusMeta.bg}
-                  color={statusMeta.color}
-                  size="sm"
-                />
-              </>
-            )}
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
+              €{order.price.toFixed(0)}
+            </Text>
+            <StatusPill
+              label={statusMeta.text}
+              bg={statusMeta.bg}
+              color={statusMeta.color}
+              size="sm"
+            />
           </View>
         </View>
 
@@ -415,7 +393,7 @@ function OrderCard({
       </TouchableOpacity>
 
       {/* Actions */}
-      {!batchMode && order.status === 'PENDING' && (
+      {order.status === 'PENDING' && (
         <View className="flex-row mt-4 mb-4" style={{ gap: 10 }}>
           <TouchableOpacity
             className={`flex-1 items-center justify-center rounded-full py-3.5 bg-gray-100 ${isBusy ? 'opacity-50' : ''}`}
@@ -449,7 +427,7 @@ function OrderCard({
         </View>
       )}
 
-      {!batchMode && order.status === 'CONFIRMED' && (
+      {order.status === 'CONFIRMED' && (
         <View className="mt-4 mb-4">
           <TouchableOpacity
             className={`items-center justify-center rounded-full py-3.5 bg-gray-900 ${isBusy ? 'opacity-50' : ''}`}
@@ -469,9 +447,7 @@ function OrderCard({
       )}
 
       {/* No-action spacer for other statuses */}
-      {!batchMode && order.status !== 'PENDING' && order.status !== 'CONFIRMED' && (
-        <View className="mb-4" />
-      )}
+      {order.status !== 'PENDING' && order.status !== 'CONFIRMED' && <View className="mb-4" />}
     </View>
   );
 }
@@ -481,7 +457,6 @@ export default function IncomingScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const insets = useSafeAreaInsets();
   const [section, setSection] = useState<'orders' | 'quotes'>('orders');
   const [quoteRequests, setQuoteRequests] = useState<OpenQuoteRequest[]>([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
@@ -491,53 +466,7 @@ export default function IncomingScreen() {
   const [loadingOrder, setLoadingOrder] = useState<IncomingOrder | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [confirmingLoad, setConfirmingLoad] = useState(false);
-  const [batchMode, setBatchMode] = useState(false);
-  const [batchSelectedIds, setBatchSelectedIds] = useState<Set<string>>(new Set());
-  const [batchConfirming, setBatchConfirming] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
-
-  const toggleBatchSelect = useCallback(
-    (id: string) =>
-      setBatchSelectedIds((prev) => {
-        const next = new Set(prev);
-        next.has(id) ? next.delete(id) : next.add(id);
-        return next;
-      }),
-    [],
-  );
-
-  const toggleBatchMode = () => {
-    setBatchMode((b) => !b);
-    setBatchSelectedIds(new Set());
-  };
-
-  const handleBatchConfirm = () => {
-    const count = batchSelectedIds.size;
-    if (count === 0) return;
-    Alert.alert('Apstiprināt visus?', `Vai apstiprināt ${count} atlasītos pasūtījumus?`, [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: `Apstiprināt (${count})`,
-        onPress: async () => {
-          if (!token) return;
-          setBatchConfirming(true);
-          let succeeded = 0;
-          for (const id of batchSelectedIds) {
-            try {
-              const updated = await api.orders.confirm(id, token);
-              setOrders((prev) => prev.map((o) => (o.id === id ? mapApiOrder(updated) : o)));
-              succeeded++;
-            } catch {}
-          }
-          haptics.success();
-          toast.success(`${succeeded} pasūtījumi apstiprināti!`);
-          setBatchMode(false);
-          setBatchSelectedIds(new Set());
-          setBatchConfirming(false);
-        },
-      },
-    ]);
-  };
 
   const fetchOrders = useCallback(
     async (isRefresh = false) => {
@@ -673,21 +602,9 @@ export default function IncomingScreen() {
         onStartLoading={handleStartLoading}
         actioning={actioning}
         onPress={() => router.push(`/(seller)/order/${order.id}`)}
-        batchMode={batchMode}
-        isSelected={batchSelectedIds.has(order.id)}
-        onToggleSelect={() => toggleBatchSelect(order.id)}
       />
     ),
-    [
-      handleConfirm,
-      handleReject,
-      handleStartLoading,
-      actioning,
-      batchMode,
-      batchSelectedIds,
-      toggleBatchSelect,
-      router,
-    ],
+    [handleConfirm, handleReject, handleStartLoading, actioning, router],
   );
 
   if (fetching && !refreshing) {
@@ -703,7 +620,7 @@ export default function IncomingScreen() {
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
       {/* ── Header ── */}
-      <View className="px-5 pt-6 pb-2 flex-row items-center justify-between">
+      <View className="px-5 pt-6 pb-2">
         <Text
           style={{
             fontSize: 32,
@@ -715,24 +632,6 @@ export default function IncomingScreen() {
         >
           Ienākošie
         </Text>
-        {section === 'orders' && orders.some((o) => o.status === 'PENDING') && (
-          <TouchableOpacity
-            className={`flex-row items-center rounded-full px-3 py-2 ${batchMode ? 'bg-gray-800' : 'bg-gray-100'}`}
-            style={{ gap: 5 }}
-            onPress={toggleBatchMode}
-          >
-            {batchMode ? (
-              <X size={14} color="#9ca3af" />
-            ) : (
-              <CheckSquare2 size={14} color="#374151" />
-            )}
-            <Text
-              style={{ fontSize: 13, fontWeight: '600', color: batchMode ? '#e5e7eb' : '#374151' }}
-            >
-              {batchMode ? 'Atcelt' : 'Atlasīt'}
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* ── Segment control ── */}
@@ -912,7 +811,7 @@ export default function IncomingScreen() {
             maxToRenderPerBatch={5}
             renderItem={renderOrderItem}
             contentContainerStyle={
-              visibleOrders.length === 0 ? { flexGrow: 1 } : { paddingBottom: batchMode ? 120 : 60 }
+              visibleOrders.length === 0 ? { flexGrow: 1 } : { paddingBottom: 60 }
             }
             refreshControl={
               <RefreshControl
@@ -949,31 +848,6 @@ export default function IncomingScreen() {
             }
           />
         </>
-      )}
-
-      {/* ── Batch confirm bar ── */}
-      {batchMode && batchSelectedIds.size > 0 && (
-        <View
-          style={{ paddingBottom: Math.max(insets.bottom, 16) }}
-          className="absolute bottom-0 left-0 right-0 bg-gray-900 flex-row items-center justify-between px-5 pt-4"
-        >
-          <Text style={{ color: '#f9fafb', fontSize: 15, fontWeight: '600' }}>
-            {batchSelectedIds.size} atlasīti
-          </Text>
-          <TouchableOpacity
-            className={`bg-white rounded-full px-4 py-2 ${batchConfirming ? 'opacity-60' : ''}`}
-            onPress={handleBatchConfirm}
-            disabled={batchConfirming}
-          >
-            {batchConfirming ? (
-              <ActivityIndicator color="#111827" size="small" />
-            ) : (
-              <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 14 }}>
-                Apstiprināt visus
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
       )}
 
       {loadingOrder && (

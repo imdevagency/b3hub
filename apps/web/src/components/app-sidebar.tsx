@@ -16,7 +16,6 @@ import {
   Box,
   Briefcase,
   Building2,
-  Calendar,
   CalendarClock,
   CalendarDays,
   Car,
@@ -151,7 +150,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/transporter', icon: LayoutDashboard },
         { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
-        { label: 'Grafiks', href: '/dashboard/schedule', icon: Calendar },
         { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
         { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
       ],
@@ -287,11 +285,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       if (isCompanyDriver) {
         // Company drivers are field workers — hide dispatcher-only management screens
+        // and the job marketplace (they accept jobs on mobile, not desktop)
         sections = sections.map((section) => {
           if (section.id === 'carrier-jobs') {
             return {
               ...section,
-              items: section.items.filter((item) => item.href !== '/dashboard/transporter'),
+              items: section.items.filter(
+                (item) => item.href !== '/dashboard/transporter' && item.href !== '/dashboard/jobs',
+              ),
             };
           }
           return section;

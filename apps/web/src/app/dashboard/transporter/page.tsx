@@ -188,12 +188,6 @@ export default function TransporterDashboardPage() {
       href: '/dashboard/transport-history',
     },
     {
-      label: 'Darba Grafiks',
-      description: 'Norādi savu pieejamību',
-      icon: CalendarClock,
-      href: '/dashboard/schedule',
-    },
-    {
       label: 'Mans Autoparks',
       description: 'Pārvaldi savus transportlīdzekļus',
       icon: Car,

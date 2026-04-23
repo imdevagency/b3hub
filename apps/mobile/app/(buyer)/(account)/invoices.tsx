@@ -12,17 +12,18 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  Linking,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import {
   FileText,
   CheckCircle2,
-  Clock,
   AlertCircle,
   CreditCard,
   ChevronRight,
   Download,
+  ExternalLink,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiInvoice, type InvoiceStatus } from '@/lib/api';
@@ -34,6 +35,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { API_URL } from '@/lib/api/common';
 import { colors } from '@/lib/theme';
+
+const WEB_INVOICES_URL = 'https://b3hub.lv/dashboard/invoices';
 
 // Guard: expo-file-system / expo-sharing — available in dev builds and Expo Go
 let FileSystem: typeof import('expo-file-system') | null = null;
@@ -235,7 +238,6 @@ export default function InvoicesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
   const [downloading, setDownloading] = useState(false);
-  const [downloadingCsv, setDownloadingCsv] = useState(false);
   const [filter, setFilter] = useState<InvoiceStatus | 'ALL'>('ALL');
 
   // Company members without permViewFinancials cannot see invoice data.
@@ -305,34 +307,6 @@ export default function InvoicesScreen() {
     }
   };
 
-  const handleDownloadCsv = async () => {
-    if (!token || !FileSystem || !Sharing) {
-      toast.error('Lejupielāde nav pieejama šajā ierīcē.');
-      return;
-    }
-    setDownloadingCsv(true);
-    haptics.light();
-    try {
-      const fileUri = `${(FileSystem as any).documentDirectory ?? ''}invoices-${new Date().toISOString().slice(0, 10)}.csv`;
-      const downloadRes = await FileSystem.downloadAsync(
-        `${API_URL}/invoices/export/csv`,
-        fileUri,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      if (downloadRes.status !== 200) throw new Error('Neizdevās eksportēt CSV');
-      await Sharing.shareAsync(downloadRes.uri, {
-        mimeType: 'text/csv',
-        UTI: 'public.comma-separated-values-text',
-      });
-      haptics.success();
-    } catch (err) {
-      haptics.error();
-      toast.error(err instanceof Error ? err.message : 'Neizdevās eksportēt rēķinus.');
-    } finally {
-      setDownloadingCsv(false);
-    }
-  };
-
   const visible = filter === 'ALL' ? invoices : invoices.filter((i) => i.status === filter);
   const totalOwed = invoices
     .filter((i) => i.status === 'ISSUED' || i.status === 'OVERDUE')
@@ -366,23 +340,7 @@ export default function InvoicesScreen() {
 
   return (
     <ScreenContainer bg="#fff">
-      <ScreenHeader
-        title="Rēķini"
-        rightAction={
-          <TouchableOpacity
-            onPress={handleDownloadCsv}
-            style={{ padding: 4 }}
-            activeOpacity={0.7}
-            disabled={downloadingCsv}
-          >
-            {downloadingCsv ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Download size={22} color="#ffffff" />
-            )}
-          </TouchableOpacity>
-        }
-      />
+      <ScreenHeader title="Rēķini" />
       {/* ── Summary ── */}
       <View style={s.summary}>
         <View style={s.summaryMain}>
@@ -407,6 +365,22 @@ export default function InvoicesScreen() {
           {invoices.length === 0 && <Text style={s.summaryEmpty}>Nav rēķinu</Text>}
         </View>
       </View>
+
+      {/* ── Web banner ── */}
+      <TouchableOpacity
+        style={s.webBanner}
+        onPress={() => {
+          haptics.light();
+          Linking.openURL(WEB_INVOICES_URL);
+        }}
+        activeOpacity={0.85}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={s.webBannerTitle}>Finanšu pārskats un CSV eksports</Text>
+          <Text style={s.webBannerSub}>Pilna grāmatvedība — b3hub.lv</Text>
+        </View>
+        <ExternalLink size={16} color="#2563eb" />
+      </TouchableOpacity>
 
       {/* ── Segmented filter ── */}
       <View style={s.segmentWrap}>
@@ -558,6 +532,21 @@ const s = StyleSheet.create({
   rowOrder: { fontSize: 12, color: colors.textDisabled },
 
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.bgMuted, marginLeft: 20 },
+
+  // Web banner
+  webBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  webBannerTitle: { fontSize: 13, fontWeight: '600', color: '#1e3a8a' },
+  webBannerSub: { fontSize: 11, color: '#2563eb', marginTop: 1 },
 });
 
 // ── Modal styles ───────────────────────────────────────────────
