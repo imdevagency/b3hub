@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -32,53 +32,8 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { WasteType, DisposalTruckType } from '@/lib/api';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
+import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
-
-LocaleConfig.locales['lv'] = {
-  monthNames: [
-    'Janvāris',
-    'Februāris',
-    'Marts',
-    'Aprīlis',
-    'Maijs',
-    'Jūnijs',
-    'Jūlijs',
-    'Augusts',
-    'Septembris',
-    'Oktobris',
-    'Novembris',
-    'Decembris',
-  ],
-  monthNamesShort: [
-    'Jan.',
-    'Feb.',
-    'Mar.',
-    'Apr.',
-    'Mai',
-    'Jūn.',
-    'Jūl.',
-    'Aug.',
-    'Sep.',
-    'Okt.',
-    'Nov.',
-    'Dec.',
-  ],
-  dayNames: [
-    'Svētdiena',
-    'Pirmdiena',
-    'Otrdiena',
-    'Trešdiena',
-    'Ceturtdiena',
-    'Piektdiena',
-    'Sestdiena',
-  ],
-  dayNamesShort: ['Sv', 'P', 'O', 'T', 'C', 'Pk', 'S'],
-  today: 'Šodien',
-};
-LocaleConfig.defaultLocale = 'lv';
-
-import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
@@ -106,7 +61,7 @@ interface DisposalDraft {
 }
 
 // ── Types ─────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 interface WasteOption {
   id: WasteType;
@@ -471,14 +426,14 @@ export default function DisposalWizard() {
     (step === 1 && selectedWastes.length === 0) || (step === 2 && !picked) || loading;
 
   const ctaLabel =
-    step === 4
+    step === 5
       ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}`
       : step === 3
         ? `Turpināt • no €${activeTruck.fromPrice * numTrucks}`
         : 'Turpināt';
 
   const onCTA = useCallback(async () => {
-    if (step === 4) {
+    if (step === 5) {
       handleSubmit();
       return;
     }
@@ -527,6 +482,7 @@ export default function DisposalWizard() {
         setLoading(false);
       }
     }
+    haptics.medium();
     setStep((s) => (s + 1) as Step);
   }, [step, selectedWastes, handleSubmit, state.wasteType, token]);
 
@@ -534,27 +490,16 @@ export default function DisposalWizard() {
     1: 'Kas jāizved?',
     2: 'Kur paņemt atkritumus?',
     3: 'Kāds ir apjoms?',
-    4: 'Apstiprini izvešanu',
+    4: 'Kad?',
+    5: 'Apstiprini izvešanu',
   };
-
-  if (step === 2) {
-    return (
-      <InlineAddressStep
-        picked={picked}
-        onPick={setPicked}
-        onConfirm={onCTA}
-        onCancel={goBack}
-        contextLabel="Atkritumu adrese"
-      />
-    );
-  }
 
   return (
     <>
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
-        totalSteps={4}
+        totalSteps={5}
         onBack={goBack}
         onClose={() => {
           if (router.canGoBack()) router.back();
@@ -609,6 +554,38 @@ export default function DisposalWizard() {
                 );
               })}
             </View>
+          </ScrollView>
+        )}
+
+        {/* ── Step 2: Pickup address ── */}
+        {step === 2 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <FlatAddressPicker picked={picked} onPick={handlePickConfirm} />
+            {picked && (
+              <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+                <TouchableOpacity
+                  style={s.saveAddrRow}
+                  onPress={() => setSaveAddress((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[s.saveAddrCheck, saveAddress && s.saveAddrCheckActive]}>
+                    {saveAddress && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
+                    <Text style={s.saveAddrSub} numberOfLines={1}>
+                      {picked.address.split(',')[0]}
+                    </Text>
+                  </View>
+                  <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
+                </TouchableOpacity>
+              </View>
+            )}
           </ScrollView>
         )}
 
@@ -670,6 +647,7 @@ export default function DisposalWizard() {
                         <Text
                           style={{
                             fontSize: 16,
+                            fontFamily: isSel ? 'Inter_700Bold' : 'Inter_600SemiBold',
                             fontWeight: isSel ? '700' : '600',
                             color: colors.textPrimary,
                           }}
@@ -683,6 +661,7 @@ export default function DisposalWizard() {
                       <Text
                         style={{
                           fontSize: 16,
+                          fontFamily: isSel ? 'Inter_800ExtraBold' : 'Inter_600SemiBold',
                           fontWeight: isSel ? '800' : '600',
                           color: colors.textPrimary,
                         }}
@@ -705,7 +684,12 @@ export default function DisposalWizard() {
                       >
                         <View>
                           <Text
-                            style={{ color: colors.textMuted, fontSize: 13, fontWeight: '500' }}
+                            style={{
+                              color: colors.textMuted,
+                              fontSize: 13,
+                              fontFamily: 'Inter_500Medium',
+                              fontWeight: '500',
+                            }}
                           >
                             Kopējais apjoms
                           </Text>
@@ -713,6 +697,7 @@ export default function DisposalWizard() {
                             style={{
                               color: colors.textPrimary,
                               fontSize: 15,
+                              fontFamily: 'Inter_700Bold',
                               fontWeight: '700',
                               marginTop: 2,
                             }}
@@ -754,8 +739,9 @@ export default function DisposalWizard() {
                             <Text
                               style={{
                                 fontSize: 20,
-                                color: numTrucks <= 1 ? '#9CA3AF' : '#111827',
+                                fontFamily: 'Inter_500Medium',
                                 fontWeight: '500',
+                                color: numTrucks <= 1 ? '#9CA3AF' : '#111827',
                               }}
                             >
                               −
@@ -765,6 +751,7 @@ export default function DisposalWizard() {
                             style={{
                               color: '#111827',
                               fontSize: 16,
+                              fontFamily: 'Inter_700Bold',
                               fontWeight: '700',
                               minWidth: 32,
                               textAlign: 'center',
@@ -796,8 +783,9 @@ export default function DisposalWizard() {
                             <Text
                               style={{
                                 fontSize: 20,
-                                color: numTrucks >= 6 ? '#9CA3AF' : '#111827',
+                                fontFamily: 'Inter_500Medium',
                                 fontWeight: '500',
+                                color: numTrucks >= 6 ? '#9CA3AF' : '#111827',
                               }}
                             >
                               +
@@ -830,7 +818,7 @@ export default function DisposalWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 4: Date + confirm ── */}
+        {/* ── Step 4: Date + time window ── */}
         {step === 4 && (
           <ScrollView
             style={s.content}
@@ -838,56 +826,12 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
           >
             <SectionLabel label="Savākšanas datums" />
-            <View
-              style={{
-                marginBottom: 16,
-                borderRadius: 16,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              <Calendar
-                current={
-                  date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                }
-                onDayPress={(day: any) => {
-                  setDate(new Date(day.dateString));
-                }}
-                markedDates={{
-                  [date
-                    ? date.toISOString().split('T')[0]
-                    : new Date().toISOString().split('T')[0]]: {
-                    selected: true,
-                    selectedColor: '#111827',
-                  },
-                }}
-                theme={{
-                  calendarBackground: '#ffffff',
-                  textSectionTitleColor: '#6B7280',
-                  selectedDayBackgroundColor: '#111827',
-                  selectedDayTextColor: '#ffffff',
-                  todayTextColor: '#2563EB',
-                  dayTextColor: '#111827',
-                  textDisabledColor: '#D1D5DB',
-                  dotColor: '#2563EB',
-                  selectedDotColor: '#ffffff',
-                  arrowColor: '#111827',
-                  monthTextColor: '#111827',
-                  textDayFontFamily: 'Geist-Medium',
-                  textMonthFontFamily: 'Geist-SemiBold',
-                  textDayHeaderFontFamily: 'Geist-Medium',
-                  textDayFontSize: 15,
-                  textMonthFontSize: 16,
-                  textDayHeaderFontSize: 13,
-                }}
-                minDate={new Date().toISOString().split('T')[0]}
-                firstDay={1}
-                enableSwipeMonths={true}
-              />
-            </View>
+            <WizardCalendar
+              selectedDate={date ? date.toISOString().split('T')[0] : ''}
+              onDateChange={(d) => setDate(new Date(d))}
+              minDate={new Date().toISOString().split('T')[0]}
+            />
 
-            {/* Pickup window */}
             <SectionLabel label="Vēlamais savākšanas laiks" />
             <View style={s.windowRow}>
               {(
@@ -909,7 +853,16 @@ export default function DisposalWizard() {
                 </TouchableOpacity>
               ))}
             </View>
+          </ScrollView>
+        )}
 
+        {/* ── Step 5: Review + contact + confirm ── */}
+        {step === 5 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+          >
             <SectionLabel label="Kopsavilkums" />
             <View style={s.summaryCard}>
               <View style={s.addressRow}>
@@ -935,6 +888,24 @@ export default function DisposalWizard() {
                     !isNaN(parsed) && parsed > 0 ? parsed : activeTruck.capacity * numTrucks;
                   return `${w} t ≈ ${activeTruck.volume * numTrucks} m³`;
                 })()}
+              />
+              <DetailRow
+                label="Datums"
+                value={date.toLocaleDateString('lv-LV', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              />
+              <DetailRow
+                label="Laiks"
+                value={
+                  pickupWindow === 'AM'
+                    ? 'Rīts (8–12)'
+                    : pickupWindow === 'PM'
+                      ? 'Diena (12–17)'
+                      : 'Jebkurā laikā'
+                }
               />
               <DetailRow
                 label="Orientējošā cena"
@@ -964,25 +935,6 @@ export default function DisposalWizard() {
               />
             </View>
 
-            {/* Save address toggle */}
-            {picked && (
-              <TouchableOpacity
-                style={s.saveAddrRow}
-                onPress={() => setSaveAddress((v) => !v)}
-                activeOpacity={0.7}
-              >
-                <View style={[s.saveAddrCheck, saveAddress && s.saveAddrCheckActive]}>
-                  {saveAddress && <Check size={12} color="#fff" strokeWidth={2.5} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.saveAddrLabel}>Saglabāt šo adresi</Text>
-                  <Text style={s.saveAddrSub} numberOfLines={1}>
-                    {picked.address.split(',')[0]}
-                  </Text>
-                </View>
-                <Bookmark size={16} color={saveAddress ? '#111827' : '#9ca3af'} />
-              </TouchableOpacity>
-            )}
             <View style={{ height: 16 }} />
           </ScrollView>
         )}
@@ -1005,8 +957,14 @@ const s = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
-  addressText: { flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '500' },
-  placeholder: { color: colors.textDisabled, fontWeight: '400' },
+  addressText: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
+  placeholder: { color: colors.textDisabled, fontFamily: 'Inter_400Regular', fontWeight: '400' },
 
   // Waste grid
   // Waste list styles
@@ -1031,6 +989,7 @@ const s = StyleSheet.create({
   },
   wasteLabel: {
     fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
@@ -1086,6 +1045,7 @@ const s = StyleSheet.create({
   },
   volRowLabel: {
     fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: colors.textSecondary,
     lineHeight: 22,
@@ -1103,6 +1063,7 @@ const s = StyleSheet.create({
   },
   volRowPrice: {
     fontSize: 16,
+    fontFamily: 'Inter_700Bold',
     fontWeight: '700',
     color: colors.textSecondary,
   },
@@ -1120,7 +1081,13 @@ const s = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  hazardText: { flex: 1, fontSize: 12, color: colors.dangerText, fontWeight: '500' },
+  hazardText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.dangerText,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
 
   // Day chips
   dayChip: {
@@ -1135,9 +1102,25 @@ const s = StyleSheet.create({
   },
   dayChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
   dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
-  dayDow: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
-  dayNum: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginVertical: 4 },
-  dayMon: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+  dayDow: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
+  dayNum: {
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginVertical: 4,
+  },
+  dayMon: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
   windowRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
@@ -1154,6 +1137,7 @@ const s = StyleSheet.create({
   windowChipText: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -1182,7 +1166,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   saveAddrCheckActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
-  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  saveAddrLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
   saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
 
   // Summary card

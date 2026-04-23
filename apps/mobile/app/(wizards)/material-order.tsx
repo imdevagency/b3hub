@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text, Alert, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -24,8 +24,8 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
+import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SpecsStep } from '@/components/wizard/material/SpecsStep';
 import { WhenStep } from '@/components/wizard/material/WhenStep';
@@ -510,22 +510,6 @@ export default function OrderRequestWizard() {
   const unitLabel =
     orderType === 'BY_VOLUME' ? 'm³' : orderType === 'BY_LOAD' ? 'kravas' : 'tonnas';
 
-  // ── Address step (full-screen, no WizardLayout) ──
-  if (step === 'address') {
-    return (
-      <InlineAddressStep
-        picked={pickedAddress}
-        onPick={(p) => setPickedAddress(p)}
-        onConfirm={goNext}
-        onCancel={goBack}
-        initialText={params.prefillAddress}
-        contextLabel="Piegādes adrese"
-        pricePreviewCategory={selectedCategory}
-        pricePreviewQuantity={quantity}
-      />
-    );
-  }
-
   return (
     <WizardLayout
       title={
@@ -568,6 +552,16 @@ export default function OrderRequestWizard() {
         ) : undefined
       }
     >
+      {step === 'address' && (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <FlatAddressPicker picked={pickedAddress} onPick={(p) => setPickedAddress(p)} />
+        </ScrollView>
+      )}
       {step === 'specs' && (
         <SpecsStep
           category={selectedCategory}

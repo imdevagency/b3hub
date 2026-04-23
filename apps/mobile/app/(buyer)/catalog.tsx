@@ -416,17 +416,12 @@ export default function CatalogScreen() {
 
   return (
     <ScreenContainer bg="#ffffff" noAnimation>
-      <View className="px-5 pt-0 pb-2">
-        <Text
-          className=" font-bold tracking-tight text-gray-900 leading-tight"
-          style={{ fontSize: 32 }}
-        >
-          Katalogs
-        </Text>
+      <ScreenHeader title="Katalogs" noBorder />
 
+      <View className="px-5 pt-0 pb-2">
         {/* Flat Search */}
         <View
-          className={`flex-row items-center bg-gray-100 rounded-2xl px-4 py-3.5 mt-6 ${
+          className={`flex-row items-center bg-gray-100 rounded-2xl px-4 py-3.5 ${
             searchFocused ? 'bg-gray-200' : ''
           }`}
         >

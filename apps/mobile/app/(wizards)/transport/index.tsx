@@ -9,7 +9,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Bookmark, Check, Weight } from 'lucide-react-native';
@@ -20,17 +20,17 @@ import { api } from '@/lib/api';
 import type { TransportVehicleType } from '@/lib/api';
 import { useRoute } from '@/components/map';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
+import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
-import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
+import { haptics } from '@/lib/haptics';
 
 // ── Types ─────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 type Stop = { lat: number; lng: number };
 
 // ── Constants ─────────────────────────────────────────────────────
@@ -409,27 +409,30 @@ export default function TransportWizard() {
   ]);
 
   const step3Valid = selectedVehicle !== null;
-  const step4Valid = !!selectedDay && !!siteContactName.trim();
+  const step4Valid = !!selectedDay;
+  const step5Valid = !!siteContactName.trim();
 
   const ctaDisabled =
     (step === 1 && !pickupPicked) ||
     (step === 2 && !dropoffPicked) ||
     (step === 3 && !step3Valid) ||
     (step === 4 && !step4Valid) ||
+    (step === 5 && !step5Valid) ||
     submitting;
 
   const ctaLabel =
-    step === 4
+    step === 5
       ? currentVehiclePrice
         ? `Pasūtīt — no €${currentVehiclePrice}`
         : 'Pasūtīt'
       : 'Turpināt';
 
   const onCTA = useCallback(() => {
-    if (step === 4) {
+    if (step === 5) {
       handleSubmit();
       return;
     }
+    haptics.medium();
     setStep((s) => (s + 1) as Step);
   }, [step, handleSubmit]);
 
@@ -437,45 +440,16 @@ export default function TransportWizard() {
     1: 'Kur paņemt kravu?',
     2: 'Kur piegādāt?',
     3: 'Izvēlies transportu',
-    4: 'Apstiprini pasūtījumu',
+    4: 'Kad?',
+    5: 'Apstiprini pasūtījumu',
   };
-
-  if (step === 1) {
-    return (
-      <InlineAddressStep
-        key="pickup"
-        picked={pickupPicked}
-        onPick={setPickupPicked}
-        onConfirm={onCTA}
-        onCancel={goBack}
-        variant="transport"
-        contextLabel="Iekraušanas vieta"
-      />
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <InlineAddressStep
-        key="dropoff"
-        picked={dropoffPicked}
-        onPick={setDropoffPicked}
-        onConfirm={onCTA}
-        onCancel={goBack}
-        variant="transport"
-        contextLabel="Izkraušanas vieta"
-        contextAddress={pickupPicked ?? undefined}
-        contextIcon="from"
-      />
-    );
-  }
 
   return (
     <>
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
-        totalSteps={4}
+        totalSteps={5}
         onBack={goBack}
         onClose={() => {
           if (router.canGoBack()) router.back();
@@ -486,6 +460,82 @@ export default function TransportWizard() {
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
       >
+        {/* ── Step 1: Pickup address ── */}
+        {step === 1 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <FlatAddressPicker picked={pickupPicked} onPick={handlePickupConfirm} />
+            {pickupPicked && (
+              <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+                <TouchableOpacity
+                  style={s.saveAddrRow}
+                  onPress={() => setSavePickup((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[s.saveAddrCheck, savePickup && s.saveAddrCheckActive]}>
+                    {savePickup && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.saveAddrLabel}>Saglabāt ielādes adresi</Text>
+                    <Text style={s.saveAddrSub} numberOfLines={1}>
+                      {pickupPicked.address.split(',')[0]}
+                    </Text>
+                  </View>
+                  <Bookmark size={16} color={savePickup ? '#111827' : '#9ca3af'} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        )}
+
+        {/* ── Step 2: Dropoff address ── */}
+        {step === 2 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {pickupPicked && (
+              <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View
+                    style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' }}
+                  />
+                  <Text style={{ fontSize: 13, color: colors.textMuted }} numberOfLines={1}>
+                    {pickupPicked.address.split(',')[0]}
+                  </Text>
+                </View>
+              </View>
+            )}
+            <FlatAddressPicker picked={dropoffPicked} onPick={handleDropoffConfirm} />
+            {dropoffPicked && (
+              <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+                <TouchableOpacity
+                  style={s.saveAddrRow}
+                  onPress={() => setSaveDropoff((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[s.saveAddrCheck, saveDropoff && s.saveAddrCheckActive]}>
+                    {saveDropoff && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.saveAddrLabel}>Saglabāt izkraušanas adresi</Text>
+                    <Text style={s.saveAddrSub} numberOfLines={1}>
+                      {dropoffPicked.address.split(',')[0]}
+                    </Text>
+                  </View>
+                  <Bookmark size={16} color={saveDropoff ? '#111827' : '#9ca3af'} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        )}
+
         {/* ── Step 3: Vehicle + Cargo ── */}
         {step === 3 && (
           <ScrollView
@@ -596,7 +646,7 @@ export default function TransportWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 4: Date + summary ── */}
+        {/* ── Step 4: Date + time window ── */}
         {step === 4 && (
           <ScrollView
             style={s.content}
@@ -604,53 +654,15 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
           >
             <SectionLabel label="Pārvadāšanas datums" />
-            <View
-              style={{
-                marginBottom: 16,
-                borderRadius: 16,
-                overflow: 'hidden',
-                borderWidth: 1,
-                borderColor: colors.border,
+            <WizardCalendar
+              selectedDate={selectedDay || ''}
+              onDateChange={(d) => {
+                setSelectedDay(d);
+                setRequestedDate(d);
               }}
-            >
-              <Calendar
-                current={selectedDay || new Date().toISOString().split('T')[0]}
-                onDayPress={(day: any) => {
-                  setSelectedDay(day.dateString);
-                  setRequestedDate(day.dateString);
-                }}
-                markedDates={{
-                  [selectedDay || new Date().toISOString().split('T')[0]]: {
-                    selected: true,
-                    selectedColor: '#111827',
-                  },
-                }}
-                theme={{
-                  calendarBackground: '#ffffff',
-                  textSectionTitleColor: '#6B7280',
-                  selectedDayBackgroundColor: '#111827',
-                  selectedDayTextColor: '#ffffff',
-                  todayTextColor: '#2563EB',
-                  dayTextColor: '#111827',
-                  textDisabledColor: '#D1D5DB',
-                  dotColor: '#2563EB',
-                  selectedDotColor: '#ffffff',
-                  arrowColor: '#111827',
-                  monthTextColor: '#111827',
-                  textDayFontFamily: 'Geist-Medium',
-                  textMonthFontFamily: 'Geist-SemiBold',
-                  textDayHeaderFontFamily: 'Geist-Medium',
-                  textDayFontSize: 15,
-                  textMonthFontSize: 16,
-                  textDayHeaderFontSize: 13,
-                }}
-                minDate={new Date().toISOString().split('T')[0]}
-                firstDay={1}
-                enableSwipeMonths={true}
-              />
-            </View>
+              minDate={new Date().toISOString().split('T')[0]}
+            />
 
-            {/* Pickup window */}
             <SectionLabel label="Vēlamais iekraušanas laiks" />
             <View style={s.windowRow}>
               {(
@@ -672,7 +684,16 @@ export default function TransportWizard() {
                 </TouchableOpacity>
               ))}
             </View>
+          </ScrollView>
+        )}
 
+        {/* ── Step 5: Review + contact + confirm ── */}
+        {step === 5 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+          >
             <SectionLabel label="Cena un Kopsavilkums" />
             <View style={s.detailCard}>
               <DetailRow
@@ -684,6 +705,28 @@ export default function TransportWizard() {
                 value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
               />
               <DetailRow label="Krava" value={activeDesc || '—'} />
+              <DetailRow
+                label="Datums"
+                value={
+                  selectedDay
+                    ? new Date(selectedDay).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })
+                    : '—'
+                }
+              />
+              <DetailRow
+                label="Laiks"
+                value={
+                  pickupWindow === 'AM'
+                    ? 'Rīts (8–12)'
+                    : pickupWindow === 'PM'
+                      ? 'Diena (12–17)'
+                      : 'Jebkurā laikā'
+                }
+              />
               {currentVehiclePrice && (
                 <DetailRow
                   label="Aptuvenā cena"
@@ -705,44 +748,6 @@ export default function TransportWizard() {
                 dropoffAddress={dropoffPicked?.address ?? '—'}
               />
             </View>
-
-            {/* Save address toggles */}
-            {pickupPicked && (
-              <TouchableOpacity
-                style={s.saveAddrRow}
-                onPress={() => setSavePickup((v) => !v)}
-                activeOpacity={0.7}
-              >
-                <View style={[s.saveAddrCheck, savePickup && s.saveAddrCheckActive]}>
-                  {savePickup && <Check size={12} color="#fff" strokeWidth={2.5} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.saveAddrLabel}>Saglabāt ielādes adresi</Text>
-                  <Text style={s.saveAddrSub} numberOfLines={1}>
-                    {pickupPicked.address.split(',')[0]}
-                  </Text>
-                </View>
-                <Bookmark size={16} color={savePickup ? '#111827' : '#9ca3af'} />
-              </TouchableOpacity>
-            )}
-            {dropoffPicked && (
-              <TouchableOpacity
-                style={s.saveAddrRow}
-                onPress={() => setSaveDropoff((v) => !v)}
-                activeOpacity={0.7}
-              >
-                <View style={[s.saveAddrCheck, saveDropoff && s.saveAddrCheckActive]}>
-                  {saveDropoff && <Check size={12} color="#fff" strokeWidth={2.5} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.saveAddrLabel}>Saglabāt izkraušanas adresi</Text>
-                  <Text style={s.saveAddrSub} numberOfLines={1}>
-                    {dropoffPicked.address.split(',')[0]}
-                  </Text>
-                </View>
-                <Bookmark size={16} color={saveDropoff ? '#111827' : '#9ca3af'} />
-              </TouchableOpacity>
-            )}
 
             <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
             <View style={{ gap: 10, marginBottom: 8 }}>
@@ -817,6 +822,7 @@ const s = StyleSheet.create({
   hint: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
   sectionTitle: {
     fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 16,
@@ -831,6 +837,7 @@ const s = StyleSheet.create({
   routeMeta: {
     fontSize: 12,
     color: colors.textMuted,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     marginTop: 0,
     paddingTop: 0,
@@ -851,10 +858,11 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: colors.textPrimary,
+    fontFamily: 'Inter_500Medium',
     fontWeight: '500',
     lineHeight: 20,
   },
-  placeholder: { color: colors.textDisabled, fontWeight: '400' },
+  placeholder: { color: colors.textDisabled, fontFamily: 'Inter_400Regular', fontWeight: '400' },
 
   // Pickup reference row (step 2)
   refRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, paddingHorizontal: 4 },
@@ -891,11 +899,27 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
-  vehicleLabel: { fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
+  vehicleLabel: {
+    fontSize: 18,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
   vehicleLabelSel: { color: '#000' },
-  vehicleSub: { fontSize: 13, color: colors.textMuted, fontWeight: '400' },
+  vehicleSub: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+  },
   vehicleSubSel: { color: '#4b5563' },
-  vehiclePrice: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  vehiclePrice: {
+    fontSize: 18,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
   vehiclePriceSel: { color: '#000' },
 
   // Cargo chips
@@ -911,7 +935,12 @@ const s = StyleSheet.create({
     backgroundColor: '#000',
     borderColor: '#000',
   },
-  cargoText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  cargoText: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
   cargoTextSel: { color: '#fff' },
 
   // Weight input
@@ -941,9 +970,25 @@ const s = StyleSheet.create({
   },
   dayChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
   dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
-  dayDow: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
-  dayNum: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginVertical: 2 },
-  dayMon: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
+  dayDow: {
+    fontSize: 11,
+    color: colors.textDisabled,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
+  dayNum: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginVertical: 2,
+  },
+  dayMon: {
+    fontSize: 11,
+    color: colors.textDisabled,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: '#d1d5db' },
   windowRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
@@ -960,6 +1005,7 @@ const s = StyleSheet.create({
   windowChipText: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -980,6 +1026,7 @@ const s = StyleSheet.create({
   summaryMetaText: {
     fontSize: 12,
     color: colors.textMuted,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
   },
 
@@ -1002,7 +1049,12 @@ const s = StyleSheet.create({
   uberLineFill: { width: 2, flex: 1, backgroundColor: '#d1d5db', marginVertical: 4 },
   uberRouteTexts: { flex: 1 },
   uberRouteTextRow: { height: 36, justifyContent: 'center' },
-  uberRouteValue: { fontSize: 15, fontWeight: '500', color: colors.textPrimary },
+  uberRouteValue: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
   uberRouteDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 },
 
   detailCard: {
@@ -1027,6 +1079,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   saveAddrCheckActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
-  saveAddrLabel: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  saveAddrLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
   saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
 });

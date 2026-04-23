@@ -19,7 +19,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -205,6 +205,7 @@ export default function OrderWizard() {
 
   const onCTA = useCallback(async () => {
     if (step < 4) {
+      haptics.medium();
       setStep((s) => (s + 1) as Step);
       return;
     }
@@ -495,50 +496,11 @@ export default function OrderWizard() {
             showsVerticalScrollIndicator={false}
           >
             <SectionLabel label="Piegādes datums" />
-            <View
-              style={{
-                marginBottom: 16,
-                borderRadius: 16,
-                overflow: 'hidden',
-                backgroundColor: '#fff',
-                borderWidth: 0,
-              }}
-            >
-              <Calendar
-                current={selectedDay || new Date().toISOString().split('T')[0]}
-                onDayPress={(day: any) => {
-                  setSelectedDay(day.dateString);
-                }}
-                markedDates={{
-                  [selectedDay || new Date().toISOString().split('T')[0]]: {
-                    selected: true,
-                    selectedColor: '#111827',
-                  },
-                }}
-                theme={{
-                  calendarBackground: '#ffffff',
-                  textSectionTitleColor: '#6B7280',
-                  selectedDayBackgroundColor: '#111827',
-                  selectedDayTextColor: '#ffffff',
-                  todayTextColor: '#2563EB',
-                  dayTextColor: '#111827',
-                  textDisabledColor: '#D1D5DB',
-                  dotColor: '#2563EB',
-                  selectedDotColor: '#ffffff',
-                  arrowColor: '#111827',
-                  monthTextColor: '#111827',
-                  textDayFontFamily: 'Inter_500Medium',
-                  textMonthFontFamily: 'Inter_600SemiBold',
-                  textDayHeaderFontFamily: 'Inter_500Medium',
-                  textDayFontSize: 15,
-                  textMonthFontSize: 16,
-                  textDayHeaderFontSize: 13,
-                }}
-                minDate={toISO(addDays(today, 1))}
-                firstDay={1}
-                enableSwipeMonths={true}
-              />
-            </View>
+            <WizardCalendar
+              selectedDate={selectedDay || ''}
+              onDateChange={setSelectedDay}
+              minDate={toISO(addDays(today, 1))}
+            />
 
             {/* Delivery window */}
             <SectionLabel label="Vēlamais piegādes laiks" style={{ marginTop: 16 }} />
@@ -739,10 +701,15 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: colors.textPrimary,
+    fontFamily: 'Inter_500Medium',
     fontWeight: '500',
     lineHeight: 20,
   },
-  addressPlaceholder: { color: colors.textDisabled, fontWeight: '400' },
+  addressPlaceholder: {
+    color: colors.textDisabled,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+  },
   dayStrip: { flexGrow: 0 },
   dayChip: {
     alignItems: 'center',
@@ -757,9 +724,25 @@ const s = StyleSheet.create({
   },
   dayChipActive: { backgroundColor: colors.primary, borderColor: colors.textPrimary },
   dayChipAsap: { borderColor: '#fca5a5', backgroundColor: '#fff7f7', minWidth: 62 },
-  dayDow: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
-  dayNum: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginVertical: 2 },
-  dayMon: { fontSize: 11, color: colors.textDisabled, fontWeight: '500' },
+  dayDow: {
+    fontSize: 11,
+    color: colors.textDisabled,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
+  dayNum: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginVertical: 2,
+  },
+  dayMon: {
+    fontSize: 11,
+    color: colors.textDisabled,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: colors.textDisabled },
   windowRow: {
@@ -781,6 +764,7 @@ const s = StyleSheet.create({
   windowChipText: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -808,6 +792,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: colors.textPrimary,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     lineHeight: 22,
   },
@@ -833,7 +818,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   saveAddrCheckActive: { backgroundColor: '#000', borderColor: '#000' },
-  saveAddrLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  saveAddrLabel: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
   saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
   photoCard: {
     backgroundColor: 'transparent',
@@ -854,6 +844,7 @@ const s = StyleSheet.create({
   photoAddBtnText: {
     fontSize: 13,
     color: colors.textSecondary,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
   },
   photoPreviewWrap: {
@@ -892,6 +883,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: colors.success,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
   },
   matOrderList: {
@@ -915,6 +907,7 @@ const s = StyleSheet.create({
   },
   matOrderNum: {
     fontSize: 13,
+    fontFamily: 'Inter_700Bold',
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 2,
@@ -922,6 +915,7 @@ const s = StyleSheet.create({
   matOrderName: {
     fontSize: 12,
     color: colors.textMuted,
+    fontFamily: 'Inter_500Medium',
     fontWeight: '500',
   },
   matOrderEmpty: {
@@ -948,6 +942,7 @@ const s = StyleSheet.create({
   },
   successTitle: {
     fontSize: 24,
+    fontFamily: 'Inter_700Bold',
     fontWeight: '700',
     color: colors.textPrimary,
     marginTop: 20,
@@ -961,12 +956,17 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 32,
   },
-  jobBadgeText: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  jobBadgeText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
   successBtn: {
     backgroundColor: colors.primary,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 40,
   },
-  successBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  successBtnText: { fontSize: 16, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#fff' },
 });
