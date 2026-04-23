@@ -25,7 +25,6 @@ import {
   Bookmark,
   type LucideIcon,
 } from 'lucide-react-native';
-import { TruckIllustration } from '@/components/ui/TruckIllustration';
 import { haptics } from '@/lib/haptics';
 import { useDisposal } from '@/lib/disposal-context';
 import { useAuth } from '@/lib/auth-context';
@@ -47,8 +46,6 @@ const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 interface DisposalDraft {
   step: Step;
   selectedWastes: WasteType[];
-  selectedTruckType: DisposalTruckType;
-  numTrucks: number;
   desc: string;
   weightText: string;
   date: string; // ISO date string
@@ -61,7 +58,7 @@ interface DisposalDraft {
 }
 
 // ── Types ─────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4;
 
 interface WasteOption {
   id: WasteType;
@@ -141,6 +138,18 @@ function toISO(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
+// ── Auto-derive truck type from weight ──────────────────────────
+function deriveTruckType(weightT: number): {
+  truckType: DisposalTruckType;
+  truckCount: number;
+  fromPrice: number;
+} {
+  if (weightT <= 7) return { truckType: 'TIPPER_SMALL', truckCount: 1, fromPrice: 89 };
+  if (weightT <= 15) return { truckType: 'TIPPER_LARGE', truckCount: 1, fromPrice: 149 };
+  const truckCount = Math.ceil(weightT / 20);
+  return { truckType: 'ARTICULATED_TIPPER', truckCount, fromPrice: 219 * truckCount };
+}
+
 // ── Component ─────────────────────────────────────────────────────
 export default function DisposalWizard() {
   const router = useRouter();
@@ -187,8 +196,6 @@ export default function DisposalWizard() {
       return next;
     });
   };
-  const [selectedTruckType, setSelectedTruckType] = useState<DisposalTruckType>('TIPPER_SMALL');
-  const [numTrucks, setNumTrucks] = useState(1);
   const [desc, setDesc] = useState('');
   const [weightText, setWeightText] = useState('');
   const today = new Date();
@@ -202,7 +209,10 @@ export default function DisposalWizard() {
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
 
-  const activeTruck = TIPPER_TRUCKS.find((t) => t.type === selectedTruckType) ?? TIPPER_TRUCKS[0];
+  // Auto-derive truck from weight (weight is required in step 1)
+  const weightT = parseFloat(weightText);
+  const derived = deriveTruckType(!isNaN(weightT) && weightT > 0 ? weightT : 1);
+  const activeTruck = TIPPER_TRUCKS.find((t) => t.type === derived.truckType) ?? TIPPER_TRUCKS[0];
 
   // Redirect to welcome if not authenticated
   useEffect(() => {
@@ -232,8 +242,6 @@ export default function DisposalWizard() {
               d.selectedWastes.length > 1 ? ('MIXED' as WasteType) : d.selectedWastes[0];
             if (resolved) setWasteType(resolved);
           }
-          if (d.selectedTruckType) setSelectedTruckType(d.selectedTruckType);
-          if (d.numTrucks) setNumTrucks(d.numTrucks);
           if (d.desc) setDesc(d.desc);
           if (d.weightText) setWeightText(d.weightText);
           if (d.date) setDate(new Date(d.date));
@@ -262,8 +270,6 @@ export default function DisposalWizard() {
     const draft: DisposalDraft = {
       step,
       selectedWastes,
-      selectedTruckType,
-      numTrucks,
       desc,
       weightText,
       date: date.toISOString(),
@@ -278,8 +284,6 @@ export default function DisposalWizard() {
   }, [
     step,
     selectedWastes,
-    selectedTruckType,
-    numTrucks,
     desc,
     weightText,
     date,
@@ -315,15 +319,14 @@ export default function DisposalWizard() {
       toast.error('Lūdzu, izvēlieties atkritumu veidu.');
       return;
     }
-    setTruckType(selectedTruckType);
-    setTruckCount(numTrucks);
+    setTruckType(derived.truckType);
+    setTruckCount(derived.truckCount);
     setDescription(desc);
     setRequestedDate(toISO(date));
     setLoading(true);
-    // Derive estimated weight: user input takes priority, fall back to full-truck capacity
+    // Weight is required in step 1
     const parsedWeight = parseFloat(weightText);
-    const estimatedWeight =
-      !isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : activeTruck.capacity * numTrucks;
+    const estimatedWeight = !isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : 1;
     // Build waste breakdown description prefix for operators
     const wasteBreakdownNote =
       selectedWastes.length > 1
@@ -338,8 +341,8 @@ export default function DisposalWizard() {
           pickupLat: state.locationLat ?? undefined,
           pickupLng: state.locationLng ?? undefined,
           wasteType: state.wasteType,
-          truckType: selectedTruckType,
-          truckCount: numTrucks,
+          truckType: derived.truckType,
+          truckCount: derived.truckCount,
           estimatedWeight,
           description: fullDescription || undefined,
           requestedDate: toISO(date),
@@ -347,7 +350,7 @@ export default function DisposalWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
-          quotedRate: activeTruck.fromPrice * numTrucks,
+          quotedRate: derived.fromPrice,
           projectId: projectId || undefined,
         },
         token,
@@ -374,11 +377,11 @@ export default function DisposalWizard() {
         pickupAddress: state.location ?? '',
         wasteType: state.wasteType,
         wasteBreakdown: selectedWastes,
-        truckType: selectedTruckType,
-        truckCount: numTrucks,
+        truckType: derived.truckType,
+        truckCount: derived.truckCount,
         requestedDate: toISO(date),
         estimatedWeight,
-        fromPrice: activeTruck.fromPrice * numTrucks,
+        fromPrice: derived.fromPrice,
       });
       AsyncStorage.removeItem(DISPOSAL_DRAFT_KEY).catch(() => {});
       router.replace({
@@ -387,8 +390,8 @@ export default function DisposalWizard() {
           jobNumber: jn,
           pickupAddress: state.location ?? '',
           wasteType: state.wasteType ?? '',
-          truckType: selectedTruckType,
-          truckCount: String(numTrucks),
+          truckType: derived.truckType,
+          truckCount: String(derived.truckCount),
           requestedDate: toISO(date),
         },
       } as never);
@@ -401,9 +404,7 @@ export default function DisposalWizard() {
     }
   }, [
     state,
-    selectedTruckType,
-    numTrucks,
-    activeTruck,
+    derived,
     desc,
     date,
     pickupWindow,
@@ -423,17 +424,14 @@ export default function DisposalWizard() {
   ]);
 
   const ctaDisabled =
-    (step === 1 && selectedWastes.length === 0) || (step === 2 && !picked) || loading;
+    (step === 1 && (selectedWastes.length === 0 || !(parseFloat(weightText) > 0))) ||
+    (step === 2 && !picked) ||
+    loading;
 
-  const ctaLabel =
-    step === 5
-      ? `Pasūtīt — no €${activeTruck.fromPrice * numTrucks}`
-      : step === 3
-        ? `Turpināt • no €${activeTruck.fromPrice * numTrucks}`
-        : 'Turpināt';
+  const ctaLabel = step === 4 ? 'Nosūtīt pieprasījumu' : 'Turpināt';
 
   const onCTA = useCallback(async () => {
-    if (step === 5) {
+    if (step === 4) {
       handleSubmit();
       return;
     }
@@ -454,7 +452,7 @@ export default function DisposalWizard() {
         return;
       }
     }
-    if (step === 3 && state.wasteType && token) {
+    if (step === 2 && state.wasteType && token) {
       setLoading(true);
       try {
         const result = await api.recyclingCenters.checkAvailability(state.wasteType, token);
@@ -489,9 +487,8 @@ export default function DisposalWizard() {
   const STEP_TITLES: Record<Step, string> = {
     1: 'Kas jāizved?',
     2: 'Kur paņemt atkritumus?',
-    3: 'Kāds ir apjoms?',
-    4: 'Kad?',
-    5: 'Apstiprini izvešanu',
+    3: 'Kad?',
+    4: 'Apstiprini izvešanu',
   };
 
   return (
@@ -499,7 +496,7 @@ export default function DisposalWizard() {
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
-        totalSteps={5}
+        totalSteps={4}
         onBack={goBack}
         onClose={() => {
           if (router.canGoBack()) router.back();
@@ -554,6 +551,20 @@ export default function DisposalWizard() {
                 );
               })}
             </View>
+
+            <SectionLabel label="Aptuvenais svars *" style={{ marginTop: 20 }} />
+            <TextInputField
+              placeholder="Svars tonnās (piem. 5)"
+              value={weightText}
+              onChangeText={setWeightText}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+            />
+            {weightText.length > 0 && !(parseFloat(weightText) > 0) && (
+              <Text style={{ color: '#ef4444', fontSize: 13, marginTop: 4 }}>
+                Ievadiet derīgu svaru
+              </Text>
+            )}
           </ScrollView>
         )}
 
@@ -589,237 +600,8 @@ export default function DisposalWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 3: Truck type + count ── */}
+        {/* ── Step 3: Date + time window ── */}
         {step === 3 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={s.pad}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {selectedWastes.includes('HAZARDOUS') && (
-              <View style={s.hazardRow}>
-                <AlertTriangle size={14} color="#b91c1c" />
-                <Text style={s.hazardText}>Bīstamu atkritumu nodošana jāsaskaņo atsevišķi!</Text>
-              </View>
-            )}
-
-            {/* ── Uber-style Ride selector ── */}
-            <View style={{ gap: 12, marginBottom: 32, marginTop: 8 }}>
-              {TIPPER_TRUCKS.map((t) => {
-                const isSel = selectedTruckType === t.type;
-                const priceFrom = t.fromPrice * (isSel ? numTrucks : 1);
-
-                return (
-                  <TouchableOpacity
-                    key={t.type}
-                    style={{
-                      backgroundColor: colors.bgCard,
-                      padding: 16,
-                      borderRadius: 16,
-                      borderWidth: isSel ? 2 : 1,
-                      borderColor: isSel ? '#000000' : '#E5E7EB',
-                      shadowColor: isSel ? '#000' : 'transparent',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 10,
-                      elevation: isSel ? 2 : 0,
-                    }}
-                    onPress={() => {
-                      haptics.light();
-                      setSelectedTruckType(t.type);
-                      if (!isSel) setNumTrucks(1);
-                    }}
-                    activeOpacity={0.9}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View
-                        style={{
-                          width: 64,
-                          height: 44,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <TruckIllustration type={t.type} height={32} />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text
-                          style={{
-                            fontSize: 16,
-                            fontFamily: isSel ? 'Inter_700Bold' : 'Inter_600SemiBold',
-                            fontWeight: isSel ? '700' : '600',
-                            color: colors.textPrimary,
-                          }}
-                        >
-                          {t.label}
-                        </Text>
-                        <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-                          {t.capacity} t · {t.volume} m³
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontFamily: isSel ? 'Inter_800ExtraBold' : 'Inter_600SemiBold',
-                          fontWeight: isSel ? '800' : '600',
-                          color: colors.textPrimary,
-                        }}
-                      >
-                        €{priceFrom}
-                      </Text>
-                    </View>
-
-                    {isSel && (
-                      <View
-                        style={{
-                          marginTop: 16,
-                          paddingTop: 16,
-                          borderTopWidth: 1,
-                          borderColor: '#E5E7EB',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <View>
-                          <Text
-                            style={{
-                              color: colors.textMuted,
-                              fontSize: 13,
-                              fontFamily: 'Inter_500Medium',
-                              fontWeight: '500',
-                            }}
-                          >
-                            Kopējais apjoms
-                          </Text>
-                          <Text
-                            style={{
-                              color: colors.textPrimary,
-                              fontSize: 15,
-                              fontFamily: 'Inter_700Bold',
-                              fontWeight: '700',
-                              marginTop: 2,
-                            }}
-                          >
-                            ≈ {t.capacity * numTrucks} t · ≈ {t.volume * numTrucks} m³
-                          </Text>
-                        </View>
-
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: '#F3F4F6',
-                            borderRadius: 24,
-                            padding: 4,
-                          }}
-                        >
-                          <TouchableOpacity
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 18,
-                              backgroundColor: numTrucks <= 1 ? 'transparent' : '#ffffff',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              shadowColor: numTrucks > 1 ? '#000' : 'transparent',
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.1,
-                              shadowRadius: 3,
-                              elevation: numTrucks > 1 ? 2 : 0,
-                            }}
-                            disabled={numTrucks <= 1}
-                            onPress={() => {
-                              haptics.light();
-                              setNumTrucks((n) => n - 1);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 20,
-                                fontFamily: 'Inter_500Medium',
-                                fontWeight: '500',
-                                color: numTrucks <= 1 ? '#9CA3AF' : '#111827',
-                              }}
-                            >
-                              −
-                            </Text>
-                          </TouchableOpacity>
-                          <Text
-                            style={{
-                              color: '#111827',
-                              fontSize: 16,
-                              fontFamily: 'Inter_700Bold',
-                              fontWeight: '700',
-                              minWidth: 32,
-                              textAlign: 'center',
-                            }}
-                          >
-                            {numTrucks}
-                          </Text>
-                          <TouchableOpacity
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 18,
-                              backgroundColor: numTrucks >= 6 ? 'transparent' : '#ffffff',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              shadowColor: numTrucks < 6 ? '#000' : 'transparent',
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.1,
-                              shadowRadius: 3,
-                              elevation: numTrucks < 6 ? 2 : 0,
-                            }}
-                            disabled={numTrucks >= 6}
-                            onPress={() => {
-                              haptics.light();
-                              setNumTrucks((n) => n + 1);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 20,
-                                fontFamily: 'Inter_500Medium',
-                                fontWeight: '500',
-                                color: numTrucks >= 6 ? '#9CA3AF' : '#111827',
-                              }}
-                            >
-                              +
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* ── Optional details ── */}
-            <View style={{ gap: 12, paddingBottom: 16 }}>
-              <TextInputField
-                placeholder={`Neobligāti: Aptuvenais svars (piem. ${activeTruck.capacity * numTrucks} t)`}
-                value={weightText}
-                onChangeText={setWeightText}
-                keyboardType="decimal-pad"
-                returnKeyType="done"
-              />
-              <TextInputField
-                placeholder="Neobligāti: Papildu informācija autovadītājam..."
-                multiline
-                value={desc}
-                onChangeText={setDesc}
-              />
-            </View>
-          </ScrollView>
-        )}
-
-        {/* ── Step 4: Date + time window ── */}
-        {step === 4 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -856,8 +638,8 @@ export default function DisposalWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 5: Review + contact + confirm ── */}
-        {step === 5 && (
+        {/* ── Step 4: Review + contact + confirm ── */}
+        {step === 4 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -879,15 +661,13 @@ export default function DisposalWizard() {
                     : '—'
                 }
               />
-              <DetailRow label="Transports" value={`${numTrucks} × ${activeTruck.label}`} />
+              <DetailRow
+                label="Transports"
+                value={`${derived.truckCount} × ${activeTruck.label}`}
+              />
               <DetailRow
                 label="Apjoms"
-                value={(() => {
-                  const parsed = parseFloat(weightText);
-                  const w =
-                    !isNaN(parsed) && parsed > 0 ? parsed : activeTruck.capacity * numTrucks;
-                  return `${w} t ≈ ${activeTruck.volume * numTrucks} m³`;
-                })()}
+                value={`${weightT > 0 ? weightT : derived.truckCount * activeTruck.capacity} t ≈ ${derived.truckCount * activeTruck.volume} m³`}
               />
               <DetailRow
                 label="Datums"
@@ -909,7 +689,7 @@ export default function DisposalWizard() {
               />
               <DetailRow
                 label="Orientējošā cena"
-                value={`no €${activeTruck.fromPrice * numTrucks} + PVN 21%`}
+                value={`no €${derived.fromPrice} + PVN 21%`}
                 last
               />
             </View>
@@ -926,6 +706,12 @@ export default function DisposalWizard() {
                 keyboardType="phone-pad"
                 value={contactPhone}
                 onChangeText={setContactPhone}
+              />
+              <TextInputField
+                placeholder="Neobligāti: Papildu informācija autovadītājam..."
+                multiline
+                value={desc}
+                onChangeText={setDesc}
               />
               <TextInputField
                 placeholder="Piezīmes un norādījumi (piem., piekļuves kods, šaurā iebraukšana)"

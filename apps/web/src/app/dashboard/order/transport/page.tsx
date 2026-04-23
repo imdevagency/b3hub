@@ -86,6 +86,7 @@ export default function TransportOrderPage() {
   const [loadDescription, setLoadDescription] = useState('');
   const [estimatedWeight, setEstimatedWeight] = useState<number>(20);
   const [date, setDate] = useState('');
+  const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [notes, setNotes] = useState('');
   const [siteContactName, setSiteContactName] = useState('');
   const [siteContactPhone, setSiteContactPhone] = useState('');
@@ -108,6 +109,82 @@ export default function TransportOrderPage() {
       }
     }
   }, [user, contactPrefilled]);
+
+  // ── Draft persistence (localStorage) ──────────────────────────────────────
+  const DRAFT_KEY = 'b3hub_transport_wizard_draft';
+  const DRAFT_TTL = 7 * 24 * 60 * 60 * 1000;
+  const draftLoadedRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        draftLoadedRef.current = true;
+        return;
+      }
+      const d = JSON.parse(raw);
+      if (Date.now() - (d.savedAt ?? 0) > DRAFT_TTL) {
+        localStorage.removeItem(DRAFT_KEY);
+        draftLoadedRef.current = true;
+        return;
+      }
+      if (d.pickupAddress) setPickupAddress(d.pickupAddress);
+      if (d.pickupCity) setPickupCity(d.pickupCity);
+      if (d.dropoffAddress) setDropoffAddress(d.dropoffAddress);
+      if (d.dropoffCity) setDropoffCity(d.dropoffCity);
+      if (d.vehicleType) {
+        setVehicleType(d.vehicleType);
+        setVehicleManuallyChosen(true);
+      }
+      if (d.loadDescription) setLoadDescription(d.loadDescription);
+      if (d.estimatedWeight) setEstimatedWeight(d.estimatedWeight);
+      if (d.date) setDate(d.date);
+      if (d.pickupWindow) setPickupWindow(d.pickupWindow);
+      if (d.notes) setNotes(d.notes);
+      if (d.step) setStep(d.step);
+    } catch {
+      /* ignore corrupt draft */
+    } finally {
+      draftLoadedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    if (createdRef) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    const draft = {
+      pickupAddress,
+      pickupCity,
+      dropoffAddress,
+      dropoffCity,
+      vehicleType,
+      loadDescription,
+      estimatedWeight,
+      date,
+      pickupWindow,
+      notes,
+      step,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }, [
+    pickupAddress,
+    pickupCity,
+    dropoffAddress,
+    dropoffCity,
+    vehicleType,
+    loadDescription,
+    estimatedWeight,
+    date,
+    pickupWindow,
+    notes,
+    step,
+    createdRef,
+  ]);
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -304,6 +381,7 @@ export default function TransportOrderPage() {
           loadDescription,
           estimatedWeight: estimatedWeight,
           requestedDate: new Date(date).toISOString(),
+          pickupWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
           notes,
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
@@ -560,6 +638,35 @@ export default function TransportOrderPage() {
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                   />
+                </div>
+
+                {/* Time window */}
+                <div>
+                  <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Vēlamais laiks
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        ['ANY', 'Jebkurā'],
+                        ['AM', 'Rīts 8–13'],
+                        ['PM', 'Diena 13–18'],
+                      ] as const
+                    ).map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setPickupWindow(val)}
+                        className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                          pickupWindow === val
+                            ? 'border-black bg-black text-white'
+                            : 'border-border bg-muted/40 text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">

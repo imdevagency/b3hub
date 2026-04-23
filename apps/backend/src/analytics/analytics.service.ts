@@ -9,9 +9,10 @@
  *
  * All data comes from existing tables — no new schema changes required.
  */
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { withCronLock } from '../common/utils/cron-lock.util';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import PDFDocument from 'pdfkit';
@@ -29,6 +30,8 @@ const CO2_KG_PER_KM: Record<string, number> = {
 
 @Injectable()
 export class AnalyticsService {
+  private readonly logger = new Logger(AnalyticsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -791,6 +794,10 @@ export class AnalyticsService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async refreshSupplierStats(): Promise<void> {
+    await withCronLock(
+      this.prisma,
+      'refreshSupplierStats',
+      async () => {
     const suppliers = await this.prisma.company.findMany({
       where: { materials: { some: { active: true } } },
       select: { id: true },
@@ -823,5 +830,8 @@ export class AnalyticsService {
         },
       });
     }
+      },
+      this.logger,
+    );
   }
 }

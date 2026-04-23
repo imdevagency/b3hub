@@ -43,7 +43,7 @@ const DRAFT_KEY = '@b3hub_wizard_draft';
 type Step = 'specs' | 'address' | 'when' | 'offers';
 type SubmitResult = 'order' | 'rfq';
 
-const STEPS: Step[] = ['address', 'specs', 'when', 'offers'];
+const STEPS: Step[] = ['specs', 'address', 'when', 'offers'];
 
 const STEP_TITLES: Record<Step, string> = {
   address: 'Kur piegādāt?',
@@ -90,9 +90,7 @@ export default function OrderRequestWizard() {
   const category = selectedCategory;
 
   // ── Step ──
-  const [step, setStep] = useState<Step>(
-    params.prefillAddress || params.prefilledQty ? 'specs' : 'address',
-  );
+  const [step, setStep] = useState<Step>('specs');
   const stepIndex = STEPS.indexOf(step);
 
   // ── Specs ──
@@ -172,7 +170,7 @@ export default function OrderRequestWizard() {
           setUnit(d.unit || unit);
           setQuantity(d.quantity || quantity);
           setNotes(d.notes || '');
-          setStep(d.step || 'address');
+          setStep(d.step || 'specs');
           if (d.pickedAddress) setPickedAddress(d.pickedAddress);
           if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
           setDeliveryWindow(d.deliveryWindow || 'ANY');

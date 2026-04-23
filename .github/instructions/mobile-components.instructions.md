@@ -144,6 +144,30 @@ import { DetailRow } from '@/components/ui/DetailRow';
 // last=true removes bottom border (avoids double border with parent card)
 ```
 
+### `<PriceRow>` ⭐
+
+**Use for every price breakdown line.** Replaces the repeated
+`<View style={m.lineItem}><Text label/><Text value/></View>` pattern
+in invoice modals, order detail screens, and earnings pages.
+
+```tsx
+import { PriceRow } from '@/components/ui/PriceRow';
+
+<PriceRow label="Summa bez PVN" amount={order.subtotal} />
+<PriceRow label="PVN (21%)"     amount={order.tax} />
+<PriceRow label="Piegāde"       amount={order.deliveryFee} />
+<PriceRow label="Kopā"          amount={order.total} total />
+
+// Custom formatted value:
+<PriceRow label="Daudzums" value="12 t" />
+
+// Highlighted value (overdue, error):
+<PriceRow label="Termiņš" value="15. maijs" valueColor="#dc2626" />
+
+// Props: label, amount? (→ formats as €X.XX), value? (pre-formatted string),
+//        total? (bold both sides + top border), valueColor?
+```
+
 ---
 
 ## Buttons & interactivity
@@ -188,15 +212,40 @@ import { Text } from '@/components/ui/text';
 
 ## Status & labels
 
+### `<OrderStatusBadge>` / `<JobStatusBadge>` ⭐
+
+**Preferred for order and transport-job statuses.** Looks up the canonical Latvian label and
+brand colours automatically from `lib/status.ts` — no local status maps or raw hex needed.
+
+```tsx
+import { OrderStatusBadge, JobStatusBadge } from '@/components/ui/OrderStatusBadge';
+
+// Order status — resolves label + colours from ORDER_STATUS_MAP:
+<OrderStatusBadge status={order.status} />
+<OrderStatusBadge status={order.status} size="md" />
+
+// Transport job status — resolves from JOB_STATUS_MAP:
+<JobStatusBadge status={job.status} />
+
+// Custom label override (e.g. driver-side phrasing):
+<JobStatusBadge status={job.status} label="Dodas pie jums" size="sm" />
+
+// Props: status, label? (override), size? ('sm' | 'md')
+```
+
+> Use `<StatusPill>` directly only for non-order/job statuses (invoices, documents, disputes)
+> that do not map to the canonical order/job enums.
+
 ### `<StatusPill>`
 
-Coloured status badge. Use everywhere a status needs to be visualized.
+Low-level coloured status badge. Use for entity-specific statuses not covered by
+`OrderStatusBadge` / `JobStatusBadge`.
 
 ```tsx
 import { StatusPill } from '@/components/ui/StatusPill';
 
-<StatusPill label="Delivered" bg="#dcfce7" color="#15803d" />
-<StatusPill label="Pending"   bg="#f3f4f6" color="#6b7280" size="sm" />
+<StatusPill label="Apmaksāts" bg="#dcfce7" color="#15803d" />
+<StatusPill label="Kavēts"    bg="#fee2e2" color="#dc2626" size="sm" />
 
 // Props: label, bg, color, size? ('sm' | 'md')
 // size="sm" → compact inline pill (list rows)
@@ -256,16 +305,61 @@ import { FileText } from 'lucide-react-native';
 // Props: title, icon?, subtitle?, action?
 ```
 
-### `<Skeleton>`
+### `<Skeleton>` / `<SkeletonCard>` / `<SkeletonDetail>` / `<SkeletonJobRow>`
 
-Loading placeholder for content areas while data fetches.
+**⚠ REQUIRED: Every screen that fetches data MUST show a skeleton while `loading === true`.  
+No spinners. No blank screens. No conditional renders that return `null` during fetch.**
+
+All skeleton components are exported from `@/components/ui/Skeleton`.
 
 ```tsx
-import { Skeleton } from '@/components/ui/Skeleton';
+import {
+  Skeleton,
+  SkeletonCard,
+  SkeletonDetail,
+  SkeletonJobRow,
+} from '@/components/ui/Skeleton';
 
-<Skeleton className="h-4 w-48" />
-<Skeleton className="h-20 w-full rounded-xl" />
+// List screen — wrap in ScreenContainer + ScreenHeader then show SkeletonCard:
+if (loading) {
+  return (
+    <ScreenContainer standalone>
+      <ScreenHeader title="Pasūtījumi" />
+      <SkeletonCard count={4} />
+    </ScreenContainer>
+  );
+}
+
+// Detail screen — use SkeletonDetail:
+if (loading) {
+  return (
+    <ScreenContainer standalone>
+      <ScreenHeader title="Detaļas" />
+      <SkeletonDetail />
+    </ScreenContainer>
+  );
+}
+
+// Driver jobs — use SkeletonJobRow:
+if (loading) return <SkeletonJobRow count={5} />;
+
+// Home screen — use SkeletonHome:
+import { SkeletonHome } from '@/components/ui/Skeleton';
+if (loading) return <SkeletonHome />;
+
+// Inline single-line placeholder:
+<Skeleton width="60%" height={14} />
 ```
+
+Choose the preset that matches the content:
+
+| Component | Use for |
+|---|---|
+| `SkeletonCard` | Order/invoice/material list screens |
+| `SkeletonDetail` | Full-page detail screens (order, job, contract) |
+| `SkeletonJobRow` | Driver job board lists |
+| `SkeletonHome` | Home tab screens with stat strips |
+| `Skeleton` | Inline placeholders inside a card |
 
 ---
 
@@ -359,8 +453,11 @@ Multi-step form wizard primitives used by order creation and skip-hire flows.
 - **Every screen must be wrapped in `<ScreenContainer>`.**
 - **Detail screens must use `<ScreenHeader>` for back navigation.**
 - **Named content sections must use `<InfoSection>` + `<DetailRow>`.**
-- **Status values must use `<StatusPill>` — never inline View+Text for a status badge.**
+- **Order and job statuses must use `<OrderStatusBadge>` / `<JobStatusBadge>`. Never duplicate a local `getStatusMeta` function — the canonical maps are in `lib/status.ts`.**
+- **Other entity statuses (invoice, document, dispute) use `<StatusPill>` with values from a local map. Never pass raw hex literals for status colours inline — define a typed status-meta constant.**
+- **Price breakdowns must use `<PriceRow>`. Never repeat `<View style={lineItem}><Text label/><Text value/></View>` inline.**
 - **Empty lists must use `<EmptyState>` as `ListEmptyComponent`.**
+- **⚠ Every screen that fetches async data MUST show a skeleton while `loading === true`. Use `SkeletonCard` for lists, `SkeletonDetail` for detail screens, `SkeletonJobRow` for driver job lists, `SkeletonHome` for home tabs. Never show a spinner (`ActivityIndicator`) as the primary loading state. Never return `null` or a blank screen while data loads.**
 - **For within-screen entrance animations, use `<FadeInView>` from `@/components/ui/FadeInView` — never add raw `Animated.Value` setups for simple fade/slide-in effects.**
   - Page sections: `<FadeInView>` (default `fadeSlideUp`)
   - Staggered list cards: `<FadeInView variant="card" index={i}>`

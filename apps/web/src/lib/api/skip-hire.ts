@@ -49,6 +49,8 @@ export interface CreateSkipHireInput {
   skipSize: SkipSize;
   deliveryDate: string; // ISO date string
   carrierId?: string; // selected from quotes
+  /** Preferred delivery time window: 'AM' (8–13), 'PM' (13–18), or 'ANY'. */
+  deliveryWindow?: string;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;

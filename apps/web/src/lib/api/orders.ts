@@ -278,6 +278,8 @@ export interface CreateDisposalOrderInput {
   estimatedWeight: number;
   description?: string;
   requestedDate: string;
+  /** Preferred pickup time window: 'AM' (8–13), 'PM' (13–18), or 'ANY'. */
+  pickupWindow?: string;
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
@@ -296,6 +298,8 @@ export interface CreateTransportOrderInput {
   loadDescription: string;
   estimatedWeight?: number;
   requestedDate: string;
+  /** Preferred pickup/delivery time window: 'AM' (8–13), 'PM' (13–18), or 'ANY'. */
+  pickupWindow?: string;
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;

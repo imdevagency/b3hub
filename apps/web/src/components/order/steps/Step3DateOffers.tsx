@@ -99,6 +99,8 @@ interface Props {
   deliveryDate: string;
   hirePeriodDays: number;
   selectedOffer: string;
+  deliveryWindow?: 'ANY' | 'AM' | 'PM';
+  onDeliveryWindowChange?: (w: 'ANY' | 'AM' | 'PM') => void;
   onDeliveryDateChange: (d: string) => void;
   onHirePeriodChange: (days: number) => void;
   onOfferSelect: (id: string, offers: Offer[]) => void;
@@ -113,6 +115,8 @@ export function Step3DateOffers({
   deliveryDate,
   hirePeriodDays,
   selectedOffer,
+  deliveryWindow = 'ANY',
+  onDeliveryWindowChange,
   onDeliveryDateChange,
   onHirePeriodChange,
   onOfferSelect,
@@ -435,6 +439,37 @@ export function Step3DateOffers({
         </div>
       </div>
 
+      {/* Time window */}
+      {onDeliveryWindowChange && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            Vēlamais piegādes laiks
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                ['ANY', 'Jebkurā'],
+                ['AM', 'Rīts 8–13'],
+                ['PM', 'Diena 13–18'],
+              ] as const
+            ).map(([val, lbl]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => onDeliveryWindowChange(val)}
+                className={cn(
+                  'rounded-xl border-2 py-2.5 text-sm font-semibold transition-all',
+                  deliveryWindow === val
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400',
+                )}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {/* ── Nav ──────────────────────────────────────────────────────────────── */}
       <div className="flex gap-3 pt-2">
         <button

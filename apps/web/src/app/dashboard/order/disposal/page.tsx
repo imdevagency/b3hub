@@ -121,6 +121,7 @@ export default function DisposalOrderPage() {
 
   // Step 3 — date + contact
   const [date, setDate] = useState('');
+  const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [siteContactName, setSiteContactName] = useState('');
   const [siteContactPhone, setSiteContactPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -136,6 +137,82 @@ export default function DisposalOrderPage() {
       }
     }
   }, [user, contactPrefilled]);
+
+  // ── Draft persistence (localStorage) ───────────────────────────────────────
+  const DRAFT_KEY = 'b3hub_disposal_wizard_draft';
+  const DRAFT_TTL = 7 * 24 * 60 * 60 * 1000;
+  const draftLoadedRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        draftLoadedRef.current = true;
+        return;
+      }
+      const d = JSON.parse(raw);
+      if (Date.now() - (d.savedAt ?? 0) > DRAFT_TTL) {
+        localStorage.removeItem(DRAFT_KEY);
+        draftLoadedRef.current = true;
+        return;
+      }
+      if (d.wasteType) setWasteType(d.wasteType);
+      if (d.estimatedWeightT) setEstimatedWeightT(d.estimatedWeightT);
+      if (d.packagingType) setPackagingType(d.packagingType);
+      if (d.address) setAddress(d.address);
+      if (d.city) setCity(d.city);
+      if (typeof d.hasTruckAccess === 'boolean') setHasTruckAccess(d.hasTruckAccess);
+      if (d.hasForklift !== undefined) setHasForklift(d.hasForklift);
+      if (d.accessNotes) setAccessNotes(d.accessNotes);
+      if (d.date) setDate(d.date);
+      if (d.pickupWindow) setPickupWindow(d.pickupWindow);
+      if (d.notes) setNotes(d.notes);
+      if (d.step) setStep(d.step);
+    } catch {
+      /* ignore corrupt draft */
+    } finally {
+      draftLoadedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    if (createdRef) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    const draft = {
+      wasteType,
+      estimatedWeightT,
+      packagingType,
+      address,
+      city,
+      hasTruckAccess,
+      hasForklift,
+      accessNotes,
+      date,
+      pickupWindow,
+      notes,
+      step,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }, [
+    wasteType,
+    estimatedWeightT,
+    packagingType,
+    address,
+    city,
+    hasTruckAccess,
+    hasForklift,
+    accessNotes,
+    date,
+    pickupWindow,
+    notes,
+    step,
+    createdRef,
+  ]);
 
   // Load disposal history when history tab is activated
   useEffect(() => {
@@ -297,6 +374,7 @@ export default function DisposalOrderPage() {
           truckCount,
           estimatedWeight: weightT,
           requestedDate: new Date(date).toISOString(),
+          pickupWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
           notes: allNotes || undefined,
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
@@ -702,6 +780,33 @@ export default function DisposalOrderPage() {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
+            </div>
+
+            {/* Time window */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold">Vēlamais savākšanas laiks</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ['ANY', 'Jebkurā'],
+                    ['AM', 'Rīts 8–13'],
+                    ['PM', 'Diena 13–18'],
+                  ] as const
+                ).map(([val, lbl]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setPickupWindow(val)}
+                    className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                      pickupWindow === val
+                        ? 'border-foreground bg-foreground text-white'
+                        : 'border-border bg-muted/40 text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Contact */}

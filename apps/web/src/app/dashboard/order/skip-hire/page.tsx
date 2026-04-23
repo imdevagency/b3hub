@@ -92,9 +92,11 @@ function SkipHireOrderPageInner() {
     searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : undefined,
   );
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [hirePeriodDays, setHirePeriodDays] = useState(14);
   const [selectedOfferId, setSelectedOfferId] = useState('');
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [notes, setNotes] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -148,6 +150,70 @@ function SkipHireOrderPageInner() {
       .finally(() => setMatOrdersLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, token]);
+
+  // ── Draft persistence (localStorage) ──────────────────────────────────────
+  const DRAFT_KEY = 'b3hub_skiphire_wizard_draft';
+  const DRAFT_TTL = 7 * 24 * 60 * 60 * 1000;
+  const draftLoadedRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        draftLoadedRef.current = true;
+        return;
+      }
+      const d = JSON.parse(raw);
+      if (Date.now() - (d.savedAt ?? 0) > DRAFT_TTL) {
+        localStorage.removeItem(DRAFT_KEY);
+        draftLoadedRef.current = true;
+        return;
+      }
+      if (d.size) setSize(d.size);
+      if (d.wasteType) setWasteType(d.wasteType);
+      if (d.address) setAddress(d.address);
+      if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
+      if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow);
+      if (d.hirePeriodDays) setHirePeriodDays(d.hirePeriodDays);
+      if (d.notes) setNotes(d.notes);
+      if (d.step) setStep(d.step);
+    } catch {
+      /* ignore corrupt draft */
+    } finally {
+      draftLoadedRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    if (confirmedOrder) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    const draft = {
+      size,
+      wasteType,
+      address,
+      deliveryDate,
+      deliveryWindow,
+      hirePeriodDays,
+      notes,
+      step,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }, [
+    size,
+    wasteType,
+    address,
+    deliveryDate,
+    deliveryWindow,
+    hirePeriodDays,
+    notes,
+    step,
+    confirmedOrder,
+  ]);
 
   // Map refs
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -280,9 +346,11 @@ function SkipHireOrderPageInner() {
           skipSize: mapSkipSize(size),
           deliveryDate,
           carrierId: selectedOffer?.id ?? undefined,
+          deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           contactName,
           contactEmail,
           contactPhone,
+          notes: notes || undefined,
         },
         token,
       );
@@ -491,6 +559,8 @@ function SkipHireOrderPageInner() {
               deliveryDate={deliveryDate}
               hirePeriodDays={hirePeriodDays}
               selectedOffer={selectedOfferId}
+              deliveryWindow={deliveryWindow}
+              onDeliveryWindowChange={(w) => setDeliveryWindow(w)}
               compact={true}
               onDeliveryDateChange={(d) => {
                 setDeliveryDate(d);
@@ -586,7 +656,7 @@ function SkipHireOrderPageInner() {
               name={contactName}
               email={contactEmail}
               phone={contactPhone}
-              notes=""
+              notes={notes}
               summary={{
                 size,
                 wasteType,
@@ -600,6 +670,7 @@ function SkipHireOrderPageInner() {
                 if (k === 'name') setContactName(v);
                 else if (k === 'email') setContactEmail(v);
                 else if (k === 'phone') setContactPhone(v);
+                else if (k === 'notes') setNotes(v);
               }}
               onSubmit={handleSubmit}
               onBack={() => setStep(3)}
