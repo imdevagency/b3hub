@@ -1077,6 +1077,49 @@ export class TransportJobsService {
         );
     }
 
+    // Pre-generate the delivery note (Kravas pavadzīme / CMR) as DRAFT so the driver
+    // has the document to show at the quarry gate before loading begins.
+    // This replaces the old pattern of generating it only after delivery.
+    if (buyerUserId) {
+      const orderIsInternational = updatedJob.order
+        ? await this.prisma.order
+            .findUnique({
+              where: { id: updatedJob.order.id },
+              select: { isInternational: true },
+            })
+            .then((o) => o?.isInternational ?? false)
+        : false;
+
+      this.documents
+        .generateDeliveryNote({
+          orderId: updatedJob.order?.id,
+          transportJobId: updatedJob.id,
+          ownerId: buyerUserId,
+          driverOwnerId: driverId,
+          initialStatus: DocumentStatus.DRAFT,
+          isInternational: orderIsInternational,
+          jobNumber: updatedJob.jobNumber,
+          pickupAddress: updatedJob.pickupAddress ?? undefined,
+          pickupCity: updatedJob.pickupCity,
+          deliveryAddress: updatedJob.deliveryAddress ?? undefined,
+          deliveryCity: updatedJob.deliveryCity,
+          driverName: updatedJob.driver
+            ? `${updatedJob.driver.firstName} ${updatedJob.driver.lastName}`
+            : undefined,
+          driverPhone: updatedJob.driver?.phone ?? undefined,
+          vehiclePlate: updatedJob.vehicle?.licensePlate ?? undefined,
+          cargoType: updatedJob.cargoType ?? undefined,
+          cargoWeightKg: updatedJob.cargoWeight ?? undefined,
+          orderNumber: updatedJob.order?.orderNumber ?? undefined,
+          siteContactName: updatedJob.order?.siteContactName ?? undefined,
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Pre-generate delivery note failed for job ${updatedJob.id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
     return updatedJob;
   }
 
@@ -2023,24 +2066,33 @@ export class TransportJobsService {
       const sellerOwnerId2 = order2?.items[0]?.material?.supplier?.users[0]?.id;
       if (order2?.createdById) {
         const driver = updatedJob.driver;
+
+        // Try to sign the existing DRAFT delivery note (pre-generated at job accept).
+        // If none exists (legacy jobs, or pre-generation failed), create a SIGNED note now.
         this.documents
-          .generateDeliveryNote({
-            orderId,
-            transportJobId: updatedJob.id,
-            ownerId: order2.createdById,
-            driverOwnerId: updatedJob.driverId ?? undefined,
-            sellerOwnerId: sellerOwnerId2,
-            initialStatus: DocumentStatus.SIGNED,
-            jobNumber: updatedJob.jobNumber,
-            pickupCity: updatedJob.pickupCity,
-            deliveryCity: updatedJob.deliveryCity,
-            driverName: driver
-              ? `${driver.firstName} ${driver.lastName}`
-              : undefined,
+          .signDeliveryNote(updatedJob.id)
+          .then((signed) => {
+            if (!signed) {
+              // No draft found — fall back to full generation
+              return this.documents.generateDeliveryNote({
+                orderId,
+                transportJobId: updatedJob.id,
+                ownerId: order2.createdById,
+                driverOwnerId: updatedJob.driverId ?? undefined,
+                sellerOwnerId: sellerOwnerId2,
+                initialStatus: DocumentStatus.SIGNED,
+                jobNumber: updatedJob.jobNumber,
+                pickupCity: updatedJob.pickupCity,
+                deliveryCity: updatedJob.deliveryCity,
+                driverName: driver
+                  ? `${driver.firstName} ${driver.lastName}`
+                  : undefined,
+              });
+            }
           })
           .catch((err) =>
             this.logger.error(
-              `generateDeliveryNote failed for job ${updatedJob.id} / order ${orderId}: ${(err as Error).message}`,
+              `signDeliveryNote / generateDeliveryNote failed for job ${updatedJob.id} / order ${orderId}: ${(err as Error).message}`,
             ),
           );
       }

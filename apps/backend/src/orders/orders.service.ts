@@ -1017,6 +1017,28 @@ export class OrdersService {
       });
     }
 
+    // Pre-generate the atkritumu pārvadājuma pavadzīme for DISPOSAL orders on CONFIRMED.
+    // Required by LV Atkritumu apsaimniekošanas likums before transport can legally begin.
+    if (
+      status === OrderStatus.CONFIRMED &&
+      order.orderType === OrderType.DISPOSAL
+    ) {
+      this.documents
+        .generateWasteTransportNote({
+          orderId: id,
+          ownerId: order.createdById,
+          orderNumber: order.orderNumber,
+          producerAddress: [order.deliveryAddress, order.deliveryCity]
+            .filter(Boolean)
+            .join(', '),
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `generateWasteTransportNote failed for order ${id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
     // Capture payment when seller confirms the order (fire-and-forget, non-fatal).
     // INVOICE-method orders skip card capture — buyer pays via Payment Link / bank transfer.
     if (

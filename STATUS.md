@@ -166,7 +166,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - api-keys
@@ -207,7 +206,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (root)
@@ -244,6 +242,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/containers
 - dashboard/containers/fleet
 - dashboard/deliveries
+- dashboard/disputes
 - dashboard/documents
 - dashboard/driver/earnings
 - dashboard/earnings
@@ -272,7 +271,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/quote-requests/open
 - dashboard/recycling-centers
 - dashboard/reviews
-- dashboard/schedule
 - dashboard/settings
 - dashboard/settings/saved-addresses
 - dashboard/supplier
@@ -291,40 +289,34 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
 - (auth)/onboarding
 - (auth)/register
 - (auth)/welcome
-- (buyer)/analytics
-- (buyer)/business
+- (buyer)/(account)/analytics
+- (buyer)/(account)/certificates
+- (buyer)/(account)/disputes
+- (buyer)/(account)/documents
+- (buyer)/(account)/field-passes
+- (buyer)/(account)/invoices
+- (buyer)/(account)/saved-addresses
+- (buyer)/(account)/schedules
 - (buyer)/catalog
-- (buyer)/certificates
-- (buyer)/disputes
-- (buyer)/documents
-- (buyer)/field-passes
-- (buyer)/framework-contract/[id]
-- (buyer)/framework-contracts
 - (buyer)/home
-- (buyer)/invoices
 - (buyer)/messages
 - (buyer)/new-order
-- (buyer)/order/[id]
+- (buyer)/order/[id]/details
+- (buyer)/order/[id]/index
 - (buyer)/orders
 - (buyer)/profile
-- (buyer)/project/[id]
-- (buyer)/project/new
-- (buyer)/projects
 - (buyer)/rfq/[id]
-- (buyer)/saved-addresses
-- (buyer)/schedules
-- (buyer)/skip-order/[id]
-- (buyer)/team
-- (buyer)/transport-job/[id]
+- (buyer)/skip-order/[id]/details
+- (buyer)/skip-order/[id]/index
+- (buyer)/transport-job/[id]/details
+- (buyer)/transport-job/[id]/index
 - (driver)/active
-- (driver)/carrier-settings
 - (driver)/documents
 - (driver)/earnings
 - (driver)/home
@@ -335,7 +327,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/schedule
 - (driver)/skips
 - (driver)/vehicles
-- (seller)/business
 - (seller)/catalog
 - (seller)/documents
 - (seller)/earnings
@@ -346,24 +337,24 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (seller)/order/[id]
 - (seller)/profile
 - (seller)/quotes
-- change-password
-- chat/[jobId]
-- delivery-proof
-- disposal/confirmation
-- disposal/index
-- help
+- (shared)/change-password
+- (shared)/chat/[jobId]
+- (shared)/delivery-proof
+- (shared)/help
+- (shared)/messages
+- (shared)/notification/[id]
+- (shared)/notifications
+- (shared)/review/[orderId]
+- (shared)/settings
+- (shared)/support-chat
+- (wizards)/disposal/confirmation
+- (wizards)/disposal/index
+- (wizards)/material-order
+- (wizards)/skip-hire/confirmation
+- (wizards)/skip-hire/index
+- (wizards)/transport/confirmation
+- (wizards)/transport/index
 - index
-- messages
-- notification/[id]
-- notifications
-- order-request-new
-- order/confirmation
-- order/index
-- review/[orderId]
-- settings
-- support-chat
-- transport/confirmation
-- transport/index
 <!-- END GEN -->
 
 ---

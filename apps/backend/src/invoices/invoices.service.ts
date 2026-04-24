@@ -507,6 +507,19 @@ export class InvoicesService {
       const projectName: string | null =
         (inv.order as { project?: { name?: string } | null } | null | undefined)
           ?.project?.name ?? null;
+      // VAT compliance fields (LV Cabinet Regulation No. 585)
+      const extInv = inv as typeof inv & {
+        supplierVatNumber?: string | null;
+        buyerVatNumber?: string | null;
+        taxPeriod?: string | null;
+        supplierBankAccount?: string | null;
+        isCreditNote?: boolean;
+      };
+      const supplierVat = extInv.supplierVatNumber ?? null;
+      const buyerVat = extInv.buyerVatNumber ?? null;
+      const taxPeriod = extInv.taxPeriod ?? null;
+      const bankAccount = extInv.supplierBankAccount ?? null;
+      const isCreditNote = extInv.isCreditNote ?? false;
 
       // ── Header ────────────────────────────────────────────────────────────
       doc
@@ -522,7 +535,7 @@ export class InvoicesService {
         .fontSize(28)
         .font('Helvetica-Bold')
         .fillColor('#111827')
-        .text('RĒĶINS', 0, 50, { align: 'right' });
+        .text(isCreditNote ? 'KREDĪTRĒĶINS' : 'RĒĶINS', 0, 50, { align: 'right' });
 
       doc
         .fontSize(11)
@@ -533,29 +546,27 @@ export class InvoicesService {
       // ── Divider ───────────────────────────────────────────────────────────
       doc.moveTo(50, 110).lineTo(545, 110).strokeColor('#e5e7eb').stroke();
 
-      // ── Dates & order ref ─────────────────────────────────────────────────
+      // ── Dates & order ref (LV Cabinet Reg. No. 585 required fields) ────────
       doc.fillColor('#111827').fontSize(10).font('Helvetica');
       const metaY = 125;
-      doc.text('Izrakstīts:', 50, metaY).text(issuedAt, 180, metaY);
-      doc
-        .text('Apmaksas termiņš:', 50, metaY + 18)
-        .text(dueDate, 180, metaY + 18);
-      doc
-        .text('Pasūtījums:', 50, metaY + 36)
-        .text(`#${inv.order?.orderNumber ?? '—'}`, 180, metaY + 36);
-      if (address) {
+      let metaRow = 0;
+      const metaLine = (label: string, value: string) => {
         doc
-          .text('Piegādes adrese:', 50, metaY + 54)
-          .text(address, 180, metaY + 54);
-      }
-      if (projectName) {
-        const projectY = address ? metaY + 72 : metaY + 54;
-        doc.text('Projekts:', 50, projectY).text(projectName, 180, projectY);
-      }
+          .text(label, 50, metaY + metaRow * 18)
+          .text(value, 220, metaY + metaRow * 18);
+        metaRow++;
+      };
+      metaLine('Izrakstīts:', issuedAt);
+      metaLine('Apmaksas termiņš:', dueDate);
+      metaLine('Pasūtījums:', `#${inv.order?.orderNumber ?? '—'}`);
+      if (address) metaLine('Piegādes adrese:', address);
+      if (taxPeriod) metaLine('Nodokļa periods:', taxPeriod);
+      if (supplierVat) metaLine('Piegādātāja PVN Nr.:', supplierVat);
+      if (buyerVat) metaLine('Pircēja PVN Nr.:', buyerVat);
+      if (projectName) metaLine('Projekts:', projectName);
 
       // ── Totals table ──────────────────────────────────────────────────────
-      const tableY =
-        address && projectName ? 238 : address || projectName ? 220 : 200;
+      const tableY = metaY + metaRow * 18 + 16;
       doc
         .moveTo(50, tableY)
         .lineTo(545, tableY)
@@ -605,16 +616,13 @@ export class InvoicesService {
         });
 
       // ── Footer ────────────────────────────────────────────────────────────
+      const footerLines = ['B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv'];
+      if (bankAccount) footerLines.push(`Bankas rekvizīti: ${bankAccount}`);
       doc
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#9ca3af')
-        .text(
-          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
-          50,
-          750,
-          { align: 'center' },
-        );
+        .text(footerLines.join('   '), 50, 750, { align: 'center' });
 
       doc.end();
     });
@@ -902,6 +910,45 @@ export class InvoicesService {
       return new Date(now.getTime() + days * 86_400_000);
     }
     return new Date(now.getTime() + 30 * 86_400_000);
+  }
+
+  /**
+   * Create a credit note (kredītrēķins) for a previously issued invoice.
+   * The credit note records negative amounts and is linked back via `creditNoteForId`.
+   * Required by LV VAT law when cancelling or correcting a delivered invoice.
+   */
+  async createCreditNote(
+    originalInvoiceId: string,
+    reason?: string,
+  ): Promise<{ id: string; invoiceNumber: string }> {
+    const original = await this.prisma.invoice.findUnique({
+      where: { id: originalInvoiceId },
+    });
+    if (!original) throw new NotFoundException('Invoice not found');
+
+    const creditNumber = this.generateInvoiceNumber().replace('INV', 'KRD');
+    const creditNote = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber: creditNumber,
+        orderId: original.orderId,
+        transportJobId: original.transportJobId ?? undefined,
+        subtotal: -Number(original.subtotal ?? 0),
+        tax: -Number(original.tax ?? 0),
+        total: -Number(original.total ?? 0),
+        currency: original.currency ?? 'EUR',
+        dueDate: new Date(),
+        paymentStatus: PaymentStatus.PENDING,
+        isCreditNote: true,
+        creditNoteForId: original.id,
+        notes: reason ?? null,
+      },
+      select: { id: true, invoiceNumber: true },
+    });
+
+    this.logger.log(
+      `Credit note ${creditNote.invoiceNumber} created for invoice ${original.invoiceNumber}`,
+    );
+    return creditNote;
   }
 
   private generateInvoiceNumber(): string {

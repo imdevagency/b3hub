@@ -178,4 +178,19 @@ export class InvoicesController {
     );
     res.end('\uFEFF' + csv); // BOM for Excel UTF-8 auto-detection
   }
+
+  /** POST /invoices/:id/credit-note — issue a credit note for an existing invoice (ADMIN or invoice owner) */
+  @Post(':id/credit-note')
+  async createCreditNote(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Query('reason') reason?: string,
+  ) {
+    if (!canViewFinancials(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to issue credit notes',
+      );
+    }
+    return this.invoicesService.createCreditNote(id, reason);
+  }
 }

@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2011 lines, 48 models, 41 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2038 lines, 48 models, 42 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -110,13 +110,14 @@ npm run db:seed           # reseed demo data
 | `FrameworkPositionType` | MATERIAL_DELIVERY WASTE_DISPOSAL FREIGHT_TRANSPORT |
 | `QuoteResponseStatus` | PENDING ACCEPTED REJECTED EXPIRED |
 | `SurchargeType` | FUEL WAITING_TIME WEEKEND OVERWEIGHT NARROW_ACCESS REMOTE_AREA TOLL OTHER |
-| `DocumentType` | INVOICE WEIGHING_SLIP DELIVERY_PROOF WASTE_CERTIFICATE DELIVERY_NOTE CONTRACT OTHER |
+| `DocumentType` | INVOICE WEIGHING_SLIP DELIVERY_PROOF WASTE_CERTIFICATE DELIVERY_NOTE WASTE_TRANSPORT_NOTE CONTRACT OTHER |
 | `DocumentStatus` | DRAFT ISSUED SIGNED ARCHIVED |
 | `DocumentEntityType` | ORDER INVOICE TRANSPORT_JOB WASTE_RECORD SKIP_HIRE_ORDER FRAMEWORK_CONTRACT FRAMEWORK_POSITION COMPANY PROJECT |
 | `DocumentLinkRole` | PRIMARY RELATED SUPPORTING |
 | `ProjectSiteType` | LOADING UNLOADING BOTH |
 | `DisputeReason` | SHORT_DELIVERY WRONG_MATERIAL DAMAGE LATE_DELIVERY NO_DELIVERY QUALITY_ISSUE OTHER |
 | `DisputeStatus` | OPEN UNDER_REVIEW RESOLVED REJECTED |
+| `WeighingPoint` | LOADING UNLOADING |
 
 ---
 
@@ -164,7 +165,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Order — `@@map("orders")`  
-**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `isInternational`: Boolean @default(false), `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `orderType`: OrderType, `status`: OrderStatus, `paymentStatus`: PaymentStatus, `paymentMethod`: PaymentMethod (@default(CARD))  
 **Relations:** → Company, User, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass
 
@@ -245,9 +246,9 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Invoice — `@@map("invoices")`  
-**Fields:** `id`: String @id @default(cuid(), `invoiceNumber`: String @unique, `orderId`: String?, `transportJobId`: String?, `advanceForContractId`: String?, `buyerCompanyId`: String?, `subtotal`: Float, `tax`: Float, `total`: Float, `currency`: String @default("EUR"), `dueDate`: DateTime, `paidDate`: DateTime?, `pdfUrl`: String?, `stripePaymentLinkId`: String?, `stripePaymentLinkUrl`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `invoiceNumber`: String @unique, `orderId`: String?, `transportJobId`: String?, `advanceForContractId`: String?, `buyerCompanyId`: String?, `subtotal`: Float, `tax`: Float, `total`: Float, `currency`: String @default("EUR"), `dueDate`: DateTime, `paidDate`: DateTime?, `pdfUrl`: String?, `supplierVatNumber`: String?, `buyerVatNumber`: String?, `taxPeriod`: String?, `supplierBankAccount`: String?, `isCreditNote`: Boolean @default(false), `creditNoteForId`: String?, `stripePaymentLinkId`: String?, `stripePaymentLinkUrl`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `paymentStatus`: PaymentStatus  
-**Relations:** → Order?, TransportJob?, FrameworkContract?, Company?
+**Relations:** → Order?, TransportJob?, FrameworkContract?, Company?, Invoice?, Invoice
 
 ---
 
@@ -434,6 +435,7 @@ npm run db:seed           # reseed demo data
 
 ### WeighingSlip — `@@map("weighing_slips")`  
 **Fields:** `id`: String @id @default(cuid(), `slipNumber`: String @unique, `fieldPassId`: String, `grossTonnes`: Float, `tareTonnes`: Float, `netTonnes`: Float, `vehiclePlate`: String, `operatorName`: String?, `notes`: String?, `fileUrl`: String?, `voidedAt`: DateTime?, `voidedReason`: String?, `recordedAt`: DateTime @default(now(), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `weighingPoint`: WeighingPoint (@default(LOADING))  
 **Relations:** → FieldPass
 
 ---

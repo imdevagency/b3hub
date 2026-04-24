@@ -686,7 +686,10 @@ export class DocumentsService {
 
   /**
    * Generates a PDF, uploads it to Supabase Storage, and creates a Document record.
-   * Called internally by TransportJobsService on job DELIVERED transition.
+   * Called internally by TransportJobsService on job ACCEPTED (DRAFT) and DELIVERED (SIGNED).
+   *
+   * For domestic orders (isInternational = false, default): produces a "Kravas pavadziime"
+   * (Latvian cargo bill of lading). For cross-border orders: produces a "CMR Note".
    */
   async generateDeliveryNote(params: {
     orderId?: string;
@@ -696,8 +699,10 @@ export class DocumentsService {
     driverOwnerId?: string;
     /** Seller/supplier owner who should also receive a copy. */
     sellerOwnerId?: string;
-    /** Initial document status — defaults to ISSUED. Pass SIGNED when delivery proof is captured. */
+    /** Initial document status — defaults to ISSUED. Pass DRAFT when pre-generating at job accept. */
     initialStatus?: DocumentStatus;
+    /** true = cross-border shipment (CMR Convention); false = domestic (Kravas pavadziime) */
+    isInternational?: boolean;
     jobNumber: string;
     pickupAddress?: string;
     pickupCity: string;
@@ -727,8 +732,12 @@ export class DocumentsService {
       // Fall through — still create the document record without a file URL
     }
 
+    const docTitle = params.isInternational
+      ? `CMR Note — ${params.jobNumber}`
+      : `Kravas pavadzīme — ${params.jobNumber}`;
+
     const noteData = {
-      title: `Pavadzīme / CMR — ${params.jobNumber}`,
+      title: docTitle,
       type: DocumentType.DELIVERY_NOTE,
       status: params.initialStatus ?? DocumentStatus.ISSUED,
       fileUrl,
@@ -828,6 +837,7 @@ export class DocumentsService {
     orderNumber?: string;
     siteContactName?: string;
     deliveredAt?: Date;
+    isInternational?: boolean;
   }): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -859,7 +869,7 @@ export class DocumentsService {
         .fontSize(22)
         .font('Helvetica-Bold')
         .fillColor('#111827')
-        .text('PAVADZĪME / CMR', 0, 50, { align: 'right' });
+        .text(params.isInternational ? 'CMR NOTE' : 'KRAVAS PAVADZĪME', 0, 50, { align: 'right' });
 
       doc
         .fontSize(10)
@@ -983,6 +993,230 @@ export class DocumentsService {
         .text(`Apstiprināts B3Hub platformā · ${dateStr}`, 50, stampY + 32);
 
       // ── Footer ───────────────────────────────────────────────────────────
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#9ca3af')
+        .text(
+          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+          50,
+          750,
+          { align: 'center' },
+        );
+
+      doc.end();
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Waste transport note (Atkritumu pārvadājuma pavadzīme)
+  // Required by Latvian Atkritumu apsaimniekošanas likums + Cabinet Reg. No. 712
+  // before any waste disposal transport can legally take place.
+  // Generated at order CONFIRMED for DISPOSAL orders.
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Pre-generate an atkritumu pārvadājuma pavadzīme for a waste disposal order.
+   * Must exist before the transporter departs from the waste producer's site.
+   * Creates copies for buyer (waste producer) and driver.
+   */
+  async generateWasteTransportNote(params: {
+    orderId: string;
+    ownerId: string; // waste producer (buyer) userId
+    driverOwnerId?: string;
+    orderNumber?: string;
+    producerName?: string;    // waste producer company name
+    producerAddress?: string;
+    transporterName?: string; // carrier company name
+    transporterRegNo?: string;
+    receiverName?: string;    // recycling / waste management facility name
+    receiverAddress?: string;
+    receiverPermitNo?: string; // Atkritumu apsaimniekošanas atļaujas Nr.
+    ewcCode?: string;          // European Waste Catalogue code (e.g. 17 05 04)
+    wasteDescription?: string;
+    estimatedWeightKg?: number;
+    pickupDate?: Date;
+  }) {
+    const noteNumber = `ATP-${Date.now().toString(36).toUpperCase()}`;
+    const dateStr = (params.pickupDate ?? new Date()).toLocaleDateString('lv-LV');
+
+    let fileUrl: string | undefined;
+    try {
+      const pdfBuffer = await this.buildWasteTransportPdf({ ...params, noteNumber, dateStr });
+      const storagePath = `waste-transport/${params.orderId}.pdf`;
+      await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
+      fileUrl = this.supabase.getPublicUrl('documents', storagePath);
+    } catch (err) {
+      this.logger.warn(
+        `Waste transport note PDF failed for order ${params.orderId}: ${(err as Error).message}`,
+      );
+    }
+
+    const noteData = {
+      title: `Atkritumu pārvadājuma pavadzīme ${noteNumber}`,
+      type: DocumentType.WASTE_TRANSPORT_NOTE,
+      status: DocumentStatus.ISSUED,
+      fileUrl,
+      mimeType: 'application/pdf',
+      orderId: params.orderId,
+      isGenerated: true,
+      issuedBy: 'B3Hub',
+      notes: params.ewcCode
+        ? `EWC: ${params.ewcCode}${params.wasteDescription ? ` — ${params.wasteDescription}` : ''}`
+        : params.wasteDescription,
+      links: {
+        create: {
+          entityType: DocumentEntityType.ORDER,
+          entityId: params.orderId,
+          role: DocumentLinkRole.PRIMARY,
+        },
+      },
+    };
+
+    // Buyer copy
+    const buyerDoc = await this.prisma.document.create({
+      data: { ...noteData, ownerId: params.ownerId },
+    });
+
+    // Driver copy (fire-and-forget)
+    if (params.driverOwnerId && params.driverOwnerId !== params.ownerId) {
+      this.prisma.document
+        .create({ data: { ...noteData, ownerId: params.driverOwnerId } })
+        .catch((err) =>
+          this.logger.warn(
+            `Driver waste transport note copy failed for order ${params.orderId}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    return buyerDoc;
+  }
+
+  /**
+   * Update an existing DRAFT delivery note to SIGNED after driver delivers.
+   * Returns null if no draft found (caller should then create a new SIGNED note).
+   */
+  async signDeliveryNote(transportJobId: string): Promise<boolean> {
+    const existing = await this.prisma.document.findFirst({
+      where: {
+        transportJobId,
+        type: DocumentType.DELIVERY_NOTE,
+        status: DocumentStatus.DRAFT,
+      },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await this.prisma.document.updateMany({
+      where: {
+        transportJobId,
+        type: DocumentType.DELIVERY_NOTE,
+        status: DocumentStatus.DRAFT,
+      },
+      data: { status: DocumentStatus.SIGNED },
+    });
+    return true;
+  }
+
+  /** Build an atkritumu pārvadājuma pavadzīme PDF. */
+  private buildWasteTransportPdf(params: {
+    noteNumber: string;
+    dateStr: string;
+    orderNumber?: string;
+    producerName?: string;
+    producerAddress?: string;
+    transporterName?: string;
+    transporterRegNo?: string;
+    receiverName?: string;
+    receiverAddress?: string;
+    receiverPermitNo?: string;
+    ewcCode?: string;
+    wasteDescription?: string;
+    estimatedWeightKg?: number;
+  }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (c: Buffer) => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // ── Header ─────────────────────────────────────────────────────────────
+      doc
+        .fontSize(22)
+        .font('Helvetica-Bold')
+        .text('B3Hub', 50, 50)
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('b3hub.lv  |  support@b3hub.lv', 50, 76);
+
+      doc
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('ATKRITUMU PĀRVADĀJUMA PAVADZĪME', 0, 50, { align: 'right' });
+
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(`#${params.noteNumber}`, 0, 72, { align: 'right' });
+
+      doc.moveTo(50, 100).lineTo(545, 100).strokeColor('#e5e7eb').stroke();
+
+      // ── Details ────────────────────────────────────────────────────────────
+      doc.fillColor('#111827').fontSize(10).font('Helvetica');
+      const y = 116;
+      let row = 0;
+      const label = (text: string) =>
+        doc.text(text, 50, y + row * 20).font('Helvetica');
+      const value = (text: string) => {
+        doc.font('Helvetica').text(text, 220, y + row * 20);
+        row++;
+      };
+
+      label('Datums:'); value(params.dateStr);
+      if (params.orderNumber) { label('Pasūtījuma Nr.:'); value(`#${params.orderNumber}`); }
+
+      // EWC / waste type
+      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      row++;
+      doc.font('Helvetica-Bold').text('ATKRITUMI', 50, y + row * 20).font('Helvetica');
+      row++;
+      if (params.ewcCode) { label('EWC kods:'); value(params.ewcCode); }
+      if (params.wasteDescription) { label('Atkritumu veids:'); value(params.wasteDescription); }
+      if (params.estimatedWeightKg !== undefined) {
+        label('Paredzamais svars:');
+        value(`${(params.estimatedWeightKg / 1000).toFixed(3)} t`);
+      }
+
+      // Producer
+      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      row++;
+      doc.font('Helvetica-Bold').text('ATKRITUMU RAŽOTĀJS', 50, y + row * 20).font('Helvetica');
+      row++;
+      if (params.producerName) { label('Nosaukums:'); value(params.producerName); }
+      if (params.producerAddress) { label('Adrese:'); value(params.producerAddress); }
+
+      // Transporter
+      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      row++;
+      doc.font('Helvetica-Bold').text('PĀRVADĀTĀJS', 50, y + row * 20).font('Helvetica');
+      row++;
+      if (params.transporterName) { label('Nosaukums:'); value(params.transporterName); }
+      if (params.transporterRegNo) { label('Reģ. Nr.:'); value(params.transporterRegNo); }
+
+      // Receiver
+      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      row++;
+      doc.font('Helvetica-Bold').text('SAŅĒMĒJS', 50, y + row * 20).font('Helvetica');
+      row++;
+      if (params.receiverName) { label('Nosaukums:'); value(params.receiverName); }
+      if (params.receiverAddress) { label('Adrese:'); value(params.receiverAddress); }
+      if (params.receiverPermitNo) { label('Atļaujas Nr.:'); value(params.receiverPermitNo); }
+
+      // Footer
       doc
         .fontSize(9)
         .font('Helvetica')

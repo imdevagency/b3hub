@@ -638,6 +638,11 @@ model Order {
   // Public tracking — unauthenticated share link
   trackingToken String? @unique
 
+  // International shipment flag — determines legal document type:
+  // false (default) = domestic → Kravas pavadzīme (Latvian cargo bill of lading)
+  // true = cross-border → CMR Note (1956 CMR Convention)
+  isInternational Boolean @default(false)
+
   // Timestamps for each status transition — { STATUS: ISO8601 }
   statusTimestamps Json?
 
@@ -1128,6 +1133,18 @@ model Invoice {
   // Documents
   pdfUrl String?
 
+  // VAT compliance fields — required by LV Cabinet Regulation No. 585 (VAT Directive)
+  supplierVatNumber   String? // Piegādātāja PVN reģistrācijas numurs
+  buyerVatNumber      String? // Pircēja PVN reģistrācijas numurs
+  taxPeriod           String? // Nodokļa periods, e.g. "Aprīlis 2026"
+  supplierBankAccount String? // Piegādātāja bankas konts un BIC
+
+  // Credit notes — cancels or reduces an already-issued invoice (kredītrēķins)
+  isCreditNote    Boolean  @default(false)
+  creditNoteForId String?
+  creditNoteFor   Invoice? @relation("InvoiceCreditNotes", fields: [creditNoteForId], references: [id], onDelete: SetNull)
+  creditNotes     Invoice[] @relation("InvoiceCreditNotes")
+
   // Stripe Payment Link — populated for INVOICE-method orders so buyer can pay online
   stripePaymentLinkId  String?
   stripePaymentLinkUrl String?
@@ -1135,6 +1152,7 @@ model Invoice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([creditNoteForId])
   @@map("invoices")
 }
 
@@ -1145,7 +1163,8 @@ enum DocumentType {
   WEIGHING_SLIP // Weight certificate when materials are loaded / delivered
   DELIVERY_PROOF // Signed proof of delivery with photos
   WASTE_CERTIFICATE // Recycling / waste processing certificate
-  DELIVERY_NOTE // Transport CMR / delivery note
+  DELIVERY_NOTE // Kravas pavadzīme (domestic) or CMR Note (cross-border) — pre-generated at job accept
+  WASTE_TRANSPORT_NOTE // Atkritumu pārvadājuma pavadzīme — required pre-transport waste document (LV law)
   CONTRACT // Agreement / contract between parties
   OTHER
 }
@@ -1997,6 +2016,9 @@ model WeighingSlip {
   notes   String?
   fileUrl String? // optional weighing slip PDF
 
+  // Where the weighing was performed — supports dual-weighing (source vs destination)
+  weighingPoint WeighingPoint @default(LOADING)
+
   voidedAt     DateTime? // set when this slip is invalidated
   voidedReason String?
 
@@ -2007,4 +2029,9 @@ model WeighingSlip {
   @@index([fieldPassId])
   @@index([slipNumber])
   @@map("weighing_slips")
+}
+
+enum WeighingPoint {
+  LOADING   // Svēršana pie piegādātāja (karjers / avots)
+  UNLOADING // Svēršana pie saņēmēja (būvlaukums / galamērķis)
 }
