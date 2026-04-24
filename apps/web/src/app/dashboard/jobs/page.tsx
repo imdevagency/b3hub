@@ -297,8 +297,17 @@ export default function JobsPage() {
 
   // Load saved searches from localStorage
   useEffect(() => {
-    if (!isLoading && user && !user.canTransport) router.replace('/dashboard');
-    else if (!isLoading && !user) router.replace('/login');
+    if (isLoading) return;
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    // Company drivers are field workers — they browse and accept jobs on mobile
+    if (user.companyRole === 'DRIVER') {
+      router.replace('/dashboard/transport-jobs');
+      return;
+    }
+    if (!user.canTransport) router.replace('/dashboard');
   }, [user, isLoading, router]);
 
   useEffect(() => {

@@ -420,7 +420,7 @@ export default function OrderTrackingScreen() {
                   className="flex-1 ml-2"
                   onPress={() => {
                     haptics.medium();
-                    router.replace('/(buyer)/new-order' as never);
+                    router.replace('/(buyer)/catalog' as never);
                   }}
                 >
                   Atkārtot

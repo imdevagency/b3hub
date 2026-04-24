@@ -5,14 +5,8 @@
  * the gate. Creating/revoking a pass is a back-office task — use b3hub.lv.
  */
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Linking,
-} from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { View, ScrollView, TouchableOpacity, RefreshControl, Linking } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiFieldPass } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -168,7 +162,12 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function FieldPassesScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const _router = useRouter();
+  React.useEffect(() => {
+    if (user && !user.isCompany) _router.replace('/(buyer)/profile');
+  }, [user, _router]);
+  if (user && !user.isCompany) return null;
   const { showToast } = useToast();
 
   const [passes, setPasses] = useState<ApiFieldPass[]>([]);

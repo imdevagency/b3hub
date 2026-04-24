@@ -206,7 +206,7 @@ export const materialsApi = {
         lat?: number;
         lng?: number;
       },
-      token: string,
+      token?: string,
     ) => {
       const qs = new URLSearchParams({
         category: params.category,
@@ -214,7 +214,7 @@ export const materialsApi = {
         ...(params.lat != null ? { lat: String(params.lat), lng: String(params.lng) } : {}),
       }).toString();
       return apiFetch<SupplierOffer[]>(`/materials/offers?${qs}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
     },
 

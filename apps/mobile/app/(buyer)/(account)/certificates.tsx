@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ShieldCheck, FileDown, Recycle, ExternalLink } from 'lucide-react-native';
@@ -139,6 +140,11 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
 
 export default function CertificatesScreen() {
   const { token, user } = useAuth();
+  const _router = useRouter();
+  React.useEffect(() => {
+    if (user && !user.isCompany) _router.replace('/(buyer)/profile');
+  }, [user, _router]);
+  if (user && !user.isCompany) return null;
   const toast = useToast();
   const [records, setRecords] = useState<ApiWasteRecord[]>([]);
   const [loading, setLoading] = useState(true);

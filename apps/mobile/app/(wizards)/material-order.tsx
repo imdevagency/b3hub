@@ -73,6 +73,12 @@ type WizardDraft = {
 export default function OrderRequestWizard() {
   const router = useRouter();
   const { user, token } = useAuth();
+  // Keep a ref so submit callbacks always read the latest token,
+  // even when called from a closure captured before the auth gate resolved.
+  const tokenRef = useRef(token);
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
   const params = useLocalSearchParams<{
     initialCategory?: string;
     prefillMaterial?: string;
@@ -108,6 +114,8 @@ export default function OrderRequestWizard() {
     return !isNaN(prefill) && prefill > 0 ? prefill : TRUCK_OPTIONS[0].capacity;
   });
   const [notes, setNotes] = useState('');
+  const [bisNumber, setBisNumber] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [sitePhotoUri, setSitePhotoUri] = useState<string | null>(null);
   const [sitePhotoUrl, setSitePhotoUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -141,9 +149,22 @@ export default function OrderRequestWizard() {
   const [rfqNumber, setRfqNumber] = useState('');
   const [rfqId, setRfqId] = useState('');
 
-  // ── Contact ──
-  const [contactName] = useState(() => `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
-  const [contactPhone] = useState(() => user?.phone ?? '');
+  // ── Contact (mutable — can be overridden for site contact)
+  const [contactName, setContactName] = useState(() =>
+    `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+  );
+  const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
+
+  // Re-sync contact from profile after auth (guest → logged in mid-wizard)
+  const prevUserId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    if (prevUserId.current === user.id) return;
+    prevUserId.current = user.id;
+    if (!contactName) setContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
+    if (!contactPhone) setContactPhone(user.phone ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // ── Draft: restore ──
   const draftLoadedRef = useRef(false);
@@ -246,15 +267,16 @@ export default function OrderRequestWizard() {
   }, [orderType]);
 
   // ── Load offers when entering the offers step ──
+  // No auth required to browse prices — auth gate fires at the moment of commitment.
   useEffect(() => {
-    if (step !== 'offers' || !token || !pickedAddress) return;
+    if (step !== 'offers' || !pickedAddress) return;
     setOffersLoading(true);
     setOffersError('');
     setOffers([]);
     api.materials
       .getOffers(
         { category: selectedCategory, quantity, lat: pickedAddress.lat, lng: pickedAddress.lng },
-        token,
+        token ?? undefined,
       )
       .then(setOffers)
       .catch(() => {
@@ -345,11 +367,13 @@ export default function OrderRequestWizard() {
   };
 
   const uploadSitePhotoAsset = async (asset: ImagePicker.ImagePickerAsset) => {
-    if (!asset.base64 || !token) return;
+    if (!asset.base64) return;
+    const currentToken = tokenRef.current;
+    if (!currentToken) return;
     setUploadingPhoto(true);
     try {
       const mimeType = asset.mimeType ?? 'image/jpeg';
-      const { url } = await api.orders.uploadSitePhoto(asset.base64, mimeType, token);
+      const { url } = await api.orders.uploadSitePhoto(asset.base64, mimeType, currentToken);
       setSitePhotoUri(asset.uri);
       setSitePhotoUrl(url);
     } catch {
@@ -361,7 +385,8 @@ export default function OrderRequestWizard() {
 
   // ── Submit: buyer selects an offer ──
   const handleSelectOffer = async (offer: SupplierOffer) => {
-    if (!token || !pickedAddress) return;
+    const currentToken = tokenRef.current;
+    if (!currentToken || !pickedAddress) return;
     if (offer.minOrder && quantity < offer.minOrder) {
       setSubmitError(
         `Minimālais pasūtījuma daudzums šim piegādātājam ir ${offer.minOrder} ${UNIT_SHORT[unit] ?? unit}`,
@@ -388,12 +413,13 @@ export default function OrderRequestWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          bisNumber: bisNumber || undefined,
           sitePhotoUrl: sitePhotoUrl || undefined,
           projectId: params.projectId || undefined,
           truckCount,
           truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
         },
-        token,
+        currentToken,
       );
 
       if (repeatEnabled) {
@@ -414,7 +440,7 @@ export default function OrderRequestWizard() {
             intervalDays: repeatInterval,
             nextRunAt: firstRun,
           },
-          token,
+          currentToken,
         );
       }
 
@@ -449,7 +475,8 @@ export default function OrderRequestWizard() {
 
   // ── Submit: send RFQ ──
   const handleSendRFQ = async () => {
-    if (!token || !pickedAddress) return;
+    const currentToken = tokenRef.current;
+    if (!currentToken || !pickedAddress) return;
     setSubmitting(true);
     setSubmitError('');
     try {
@@ -464,8 +491,9 @@ export default function OrderRequestWizard() {
           deliveryLat: pickedAddress.lat,
           deliveryLng: pickedAddress.lng,
           notes: notes || undefined,
+          bisNumber: bisNumber || undefined,
         },
-        token,
+        currentToken,
       );
       setRfqNumber(result.requestNumber);
       setRfqId(result.id);
@@ -487,7 +515,7 @@ export default function OrderRequestWizard() {
         ? quantity > 0
         : step === 'when'
           ? true
-          : !offersLoading && !submitting && !submitted;
+          : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
     ? submitted === 'rfq'
@@ -605,6 +633,11 @@ export default function OrderRequestWizard() {
           truckCount={truckCount}
           truckIntervalMinutes={truckIntervalMinutes}
           deliveryDate={deliveryDate}
+          isAuthenticated={!!token}
+          bisNumber={bisNumber}
+          onBisNumberChange={setBisNumber}
+          termsAccepted={termsAccepted}
+          onTermsAcceptedChange={setTermsAccepted}
           onSelectOffer={handleSelectOffer}
           onSendRFQ={handleSendRFQ}
           onNavigateToOrder={() => {

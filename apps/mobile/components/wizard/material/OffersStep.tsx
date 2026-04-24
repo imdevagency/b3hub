@@ -7,16 +7,17 @@
  * Owns sort/filter UI state internally; all data and submit callbacks
  * come from the wizard root.
  */
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { MapPin, Truck, Calendar, Send, CheckCircle2 } from 'lucide-react-native';
+import { MapPin, Truck, Calendar, Send, CheckCircle2, Check } from 'lucide-react-native';
 import { OfferCard } from './OfferCard';
 import { UNIT_SHORT } from '@/lib/materials';
 import type { MaterialUnit } from '@/lib/materials';
@@ -25,6 +26,7 @@ import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { s } from './_styles';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 export type OffersStepProps = {
   offers: SupplierOffer[];
@@ -43,6 +45,12 @@ export type OffersStepProps = {
   truckCount: number;
   truckIntervalMinutes: number;
   deliveryDate: string;
+  /** Whether the current user has a valid auth token. */
+  isAuthenticated: boolean;
+  bisNumber: string;
+  onBisNumberChange: (v: string) => void;
+  termsAccepted: boolean;
+  onTermsAcceptedChange: (v: boolean) => void;
   onSelectOffer: (offer: SupplierOffer) => void;
   onSendRFQ: () => void;
   onNavigateToOrder: () => void;
@@ -66,6 +74,11 @@ export function OffersStep({
   truckCount,
   truckIntervalMinutes,
   deliveryDate,
+  isAuthenticated,
+  bisNumber,
+  onBisNumberChange,
+  termsAccepted,
+  onTermsAcceptedChange,
   onSelectOffer,
   onSendRFQ,
   onNavigateToOrder,
@@ -73,6 +86,32 @@ export function OffersStep({
 }: OffersStepProps) {
   // ── Internal filter/sort state ──
   const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
+
+  // ── Auth gate state ──
+  const [authGateVisible, setAuthGateVisible] = useState(false);
+  // Pending action to replay after successful auth
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  /** Wrap any action that requires auth — shows gate if unauthenticated. */
+  const requireAuth = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      pendingActionRef.current = action;
+      setAuthGateVisible(true);
+    }
+  };
+
+  const handleAuthenticated = () => {
+    setAuthGateVisible(false);
+    // Replay the action that triggered the gate (token is now set in context)
+    if (pendingActionRef.current) {
+      const action = pendingActionRef.current;
+      pendingActionRef.current = null;
+      // Slight delay so auth context propagates before the API call fires
+      setTimeout(action, 150);
+    }
+  };
   const [priceMaxFilter, setPriceMaxFilter] = useState<number | null>(null);
   const [distanceMaxFilter, setDistanceMaxFilter] = useState<number | null>(null);
 
@@ -206,7 +245,12 @@ export function OffersStep({
             {submitError}
           </Text>
         ) : null}
-        <View style={s.rfqBox}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => requireAuth(onSendRFQ)}
+          disabled={submitting}
+          style={s.rfqBox}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
             <View style={s.rfqIconBg}>
               <Send size={20} color="#111827" />
@@ -218,7 +262,7 @@ export function OffersStep({
               </Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -397,9 +441,70 @@ export function OffersStep({
             unit={unit}
             isCheapest={offersSort === 'price' && idx === 0}
             submitting={submitting}
-            onSelect={() => onSelectOffer(offer)}
+            onSelect={() => requireAuth(() => onSelectOffer(offer))}
           />
         ))}
+
+        {/* BIS number + terms — shown above RFQ fallback */}
+        <View style={{ gap: 12, marginTop: 4 }}>
+          <TextInput
+            value={bisNumber}
+            onChangeText={onBisNumberChange}
+            placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
+            placeholderTextColor={colors.textDisabled}
+            autoCapitalize="characters"
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              fontSize: 14,
+              color: colors.textPrimary,
+              fontFamily: 'Inter_400Regular',
+              backgroundColor: '#fff',
+            }}
+          />
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+            onPress={() => onTermsAcceptedChange(!termsAccepted)}
+            activeOpacity={0.7}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 6,
+                borderWidth: 1.5,
+                borderColor: termsAccepted ? '#111827' : '#d1d5db',
+                backgroundColor: termsAccepted ? '#111827' : '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 1,
+              }}
+            >
+              {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+            </View>
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 13,
+                color: colors.textSecondary,
+                fontFamily: 'Inter_400Regular',
+                lineHeight: 20,
+              }}
+            >
+              Piekrītu{' '}
+              <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
+                lietošanas noteikumiem
+              </Text>{' '}
+              un{' '}
+              <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
+                privātuma politikai
+              </Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* RFQ fallback */}
         <View
@@ -430,7 +535,7 @@ export function OffersStep({
               borderColor: '#d1d5db',
               borderRadius: 8,
             }}
-            onPress={onSendRFQ}
+            onPress={() => requireAuth(onSendRFQ)}
             disabled={submitting}
             activeOpacity={0.8}
           >
@@ -441,6 +546,16 @@ export function OffersStep({
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Auth gate — shown when a guest taps an offer or RFQ button */}
+      <WizardAuthGate
+        visible={authGateVisible}
+        onAuthenticated={handleAuthenticated}
+        onDismiss={() => {
+          setAuthGateVisible(false);
+          pendingActionRef.current = null;
+        }}
+      />
     </View>
   );
 }

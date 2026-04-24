@@ -96,6 +96,8 @@ export default function OrderWizard() {
   );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
+  const [bisNumber, setBisNumber] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [unloadingPointPhotoUrl, setUnloadingPointPhotoUrl] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
@@ -200,7 +202,7 @@ export default function OrderWizard() {
     (step === 1 && (!selectedWaste || !selectedSize)) ||
     (step === 2 && !picked) ||
     (step === 3 && !selectedDay) ||
-    (step === 4 && quotesLoading) ||
+    (step === 4 && (quotesLoading || !termsAccepted)) ||
     submitting;
 
   const onCTA = useCallback(async () => {
@@ -230,6 +232,7 @@ export default function OrderWizard() {
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          bisNumber: bisNumber || undefined,
           unloadingPointPhotoUrl: unloadingPointPhotoUrl || undefined,
           // Pass winning carrier so backend derives price server-side
           carrierId: quotes[0]?.carrierId || undefined,
@@ -279,6 +282,7 @@ export default function OrderWizard() {
     contactName,
     contactPhone,
     notes,
+    bisNumber,
     unloadingPointPhotoUrl,
     linkedMaterialOrderId,
     setDeliveryDate,
@@ -595,7 +599,28 @@ export default function OrderWizard() {
                 value={notes}
                 onChangeText={setNotes}
               />
+              <TextInputField
+                placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
+                value={bisNumber}
+                onChangeText={setBisNumber}
+                autoCapitalize="characters"
+              />
             </View>
+
+            {/* Terms consent */}
+            <TouchableOpacity
+              style={s.termsRow}
+              onPress={() => setTermsAccepted((v) => !v)}
+              activeOpacity={0.7}
+            >
+              <View style={[s.saveAddrCheck, termsAccepted && s.saveAddrCheckActive]}>
+                {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+              </View>
+              <Text style={s.termsText}>
+                Piekrītu <Text style={s.termsLink}>lietošanas noteikumiem</Text> un{' '}
+                <Text style={s.termsLink}>privātuma politikai</Text>
+              </Text>
+            </TouchableOpacity>
 
             {/* ── Link to material order (optional) ── */}
             <SectionLabel label="Saistīt ar materiālu pasūtījumu" style={{ marginTop: 20 }} />
@@ -825,6 +850,27 @@ const s = StyleSheet.create({
     color: colors.textPrimary,
   },
   saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: colors.primary,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
   photoCard: {
     backgroundColor: 'transparent',
     borderWidth: 0,

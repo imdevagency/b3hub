@@ -5,8 +5,6 @@ import {
   ScrollView,
   FlatList,
   TouchableOpacity,
-  Alert,
-  Modal,
   ActivityIndicator,
   RefreshControl,
   TextInput,
@@ -14,8 +12,8 @@ import {
   Platform,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -36,6 +34,7 @@ import {
   FileText,
   Package,
   Send,
+  AlertTriangle,
 } from 'lucide-react-native';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -154,89 +153,65 @@ function LoadingModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <View className="flex-row items-center justify-between px-5 py-4">
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          >
-            <View className="bg-gray-100 w-9 h-9 rounded-full items-center justify-center">
-              <X size={18} color="#111827" />
-            </View>
-          </TouchableOpacity>
-          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary }}>
-            Iekraušanas apstiprinājums
-          </Text>
-          <View style={{ width: 36 }} />
-        </View>
+    <BottomSheet visible={visible} onClose={onClose} title="Iekraušanas apstiprinājums" scrollable>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={{ padding: 20, gap: 24 }}>
+          <View className="pb-6 border-b border-gray-100">
+            <Text
+              style={{
+                fontSize: 26,
+                fontWeight: '800',
+                color: colors.textPrimary,
+                letterSpacing: -0.5,
+              }}
+            >
+              {order.material}
+            </Text>
+            <Text className="text-gray-500 font-medium mt-1" style={{ fontSize: 15 }}>
+              {order.buyerName} · #{order.orderNumber}
+            </Text>
+          </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          className="flex-1"
-        >
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 24 }}>
-            <View className="pb-6 border-b border-gray-100">
-              <Text
-                style={{
-                  fontSize: 26,
-                  fontWeight: '800',
-                  color: colors.textPrimary,
-                  letterSpacing: -0.5,
-                }}
+          <View>
+            <Text className="text-gray-900 font-bold text-sm mb-2">Faktiskais svars (tonnas)</Text>
+            <TextInput
+              className="bg-gray-100 rounded-2xl px-4 text-gray-900 font-bold"
+              style={{ paddingVertical: 16, fontSize: 22 }}
+              placeholder="Piem. 12.5"
+              placeholderTextColor="#9ca3af"
+              keyboardType="decimal-pad"
+              value={weight}
+              onChangeText={setWeight}
+            />
+          </View>
+
+          <View style={{ gap: 16 }}>
+            {CHECKLIST.map((item, i) => (
+              <TouchableOpacity
+                key={i}
+                className="flex-row items-center"
+                style={{ gap: 12 }}
+                onPress={() => toggle(i)}
+                activeOpacity={0.7}
               >
-                {order.material}
-              </Text>
-              <Text className="text-gray-500 font-medium mt-1" style={{ fontSize: 15 }}>
-                {order.buyerName} · #{order.orderNumber}
-              </Text>
-            </View>
-
-            <View>
-              <Text className="text-gray-900 font-bold text-sm mb-2">
-                Faktiskais svars (tonnas)
-              </Text>
-              <TextInput
-                className="bg-gray-100 rounded-2xl px-4 text-gray-900 font-bold"
-                style={{ paddingVertical: 16, fontSize: 22 }}
-                placeholder="Piem. 12.5"
-                placeholderTextColor="#9ca3af"
-                keyboardType="decimal-pad"
-                value={weight}
-                onChangeText={setWeight}
-              />
-            </View>
-
-            <View style={{ gap: 16 }}>
-              {CHECKLIST.map((item, i) => (
-                <TouchableOpacity
-                  key={i}
-                  className="flex-row items-center"
-                  style={{ gap: 12 }}
-                  onPress={() => toggle(i)}
-                  activeOpacity={0.7}
+                {checkedItems[i] ? (
+                  <CheckSquare2 size={26} color="#111827" />
+                ) : (
+                  <Square size={26} color="#d1d5db" />
+                )}
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: checkedItems[i] ? '#111827' : '#6b7280',
+                    fontWeight: checkedItems[i] ? '600' : '400',
+                  }}
                 >
-                  {checkedItems[i] ? (
-                    <CheckSquare2 size={26} color="#111827" />
-                  ) : (
-                    <Square size={26} color="#d1d5db" />
-                  )}
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      color: checkedItems[i] ? '#111827' : '#6b7280',
-                      fontWeight: checkedItems[i] ? '600' : '400',
-                    }}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        <View className="px-5 pb-6 pt-3">
           <TouchableOpacity
             className={`rounded-full items-center justify-center py-5 ${allChecked && !confirming ? 'bg-gray-900' : 'bg-gray-200'}`}
             onPress={() => {
@@ -261,8 +236,8 @@ function LoadingModal({
             )}
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    </Modal>
+      </KeyboardAvoidingView>
+    </BottomSheet>
   );
 }
 
@@ -467,6 +442,8 @@ export default function IncomingScreen() {
   const [actioning, setActioning] = useState<string | null>(null);
   const [confirmingLoad, setConfirmingLoad] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
+  // Reject confirmation bottom sheet
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
 
   const fetchOrders = useCallback(
     async (isRefresh = false) => {
@@ -532,27 +509,25 @@ export default function IncomingScreen() {
   };
 
   const handleReject = (id: string) => {
-    Alert.alert('Noraidīt', 'Vai tiešām noraidīt šo pasūtījumu?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Noraidīt',
-        style: 'destructive',
-        onPress: async () => {
-          if (!token) return;
-          setActioning(id);
-          try {
-            await api.orders.sellerCancel(id, 'Piegādātājs noraidīja pasūtījumu', token);
-            setOrders((prev) => prev.filter((o) => o.id !== id));
-            haptics.success();
-          } catch {
-            haptics.error();
-            toast.error('Neizdevās noraidīt pasūtījumu.');
-          } finally {
-            setActioning(null);
-          }
-        },
-      },
-    ]);
+    haptics.warning();
+    setRejectTarget(id);
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectTarget || !token) return;
+    const id = rejectTarget;
+    setRejectTarget(null);
+    setActioning(id);
+    try {
+      await api.orders.sellerCancel(id, 'Piegādātājs noraidīja pasūtījumu', token);
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      haptics.success();
+    } catch {
+      haptics.error();
+      toast.error('Neizdevās noraidīt pasūtījumu.');
+    } finally {
+      setActioning(null);
+    }
   };
 
   const handleStartLoading = (id: string) => {
@@ -859,6 +834,40 @@ export default function IncomingScreen() {
           confirming={confirmingLoad}
         />
       )}
+
+      {/* Reject confirmation sheet */}
+      <BottomSheet
+        visible={!!rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        title="Noraidīt pasūtījumu?"
+      >
+        <View style={{ padding: 20, gap: 16 }}>
+          <View className="flex-row items-center gap-3 bg-red-50 rounded-2xl p-4">
+            <AlertTriangle size={22} color="#dc2626" />
+            <Text className="text-red-700 font-medium flex-1" style={{ fontSize: 14 }}>
+              Pasūtītājs tiks informēts, ka jūs nevarat izpildīt šo pasūtījumu.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            className="bg-red-600 rounded-full items-center justify-center py-4"
+            onPress={handleRejectConfirm}
+          >
+            <Text className="text-white font-bold" style={{ fontSize: 16 }}>
+              Noraidīt pasūtījumu
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="items-center justify-center py-3"
+            onPress={() => setRejectTarget(null)}
+          >
+            <Text className="text-gray-500 font-medium" style={{ fontSize: 15 }}>
+              Atcelt
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </ScreenContainer>
   );
 }

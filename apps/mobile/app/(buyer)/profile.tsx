@@ -8,13 +8,13 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useRouter } from 'expo-router';
 import {
   X,
@@ -36,13 +36,16 @@ import {
   FileCheck,
   Receipt,
   MapPin,
+  Ticket,
+  Calendar,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
-import { api, type ProviderApplication } from '@/lib/api';
+import { api, type ProviderApplication, type AnalyticsOverview } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { getRoleName } from '@/lib/utils';
 // If this file runs in Seller mode, it can import quotes hook
@@ -81,8 +84,17 @@ export default function ProfileScreen() {
     api.providerApplications
       .mine(token)
       .then(setApplications)
-      .catch((err) => console.warn('Failed to load applications:', err));
+      .catch(() => {});
   }, [token]);
+
+  const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
+  useEffect(() => {
+    if (!token || !user?.isCompany) return;
+    api.analytics
+      .overview(token)
+      .then(setAnalyticsOverview)
+      .catch(() => {});
+  }, [token, user?.isCompany]);
 
   const ROLE_THEME: Record<string, string> = {
     BUYER: 'bg-red-50 text-red-700',
@@ -233,6 +245,44 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <ChevronRight size={16} color="#b45309" />
+          </TouchableOpacity>
+        )}
+
+        {/* Analytics Mini-card — company users only */}
+        {mode === 'BUYER' && user?.isCompany && (
+          <TouchableOpacity
+            style={[styles.cardGroup, { marginTop: 16, overflow: 'hidden' }]}
+            activeOpacity={0.85}
+            onPress={() => router.push('/(buyer)/(account)/analytics')}
+          >
+            <View className="flex-row">
+              <View className="flex-1 items-center py-4 border-r border-gray-100">
+                <Text style={{ fontSize: 22, fontWeight: '800', color: '#111827' }}>
+                  {analyticsOverview?.buyer?.monthlySpend?.slice(-1)[0]?.value != null
+                    ? new Intl.NumberFormat('lv-LV', {
+                        style: 'currency',
+                        currency: 'EUR',
+                        maximumFractionDigits: 0,
+                      }).format(analyticsOverview.buyer.monthlySpend.slice(-1)[0].value)
+                    : '—'}
+                </Text>
+                <Text className="text-xs text-gray-500 font-medium mt-0.5">Šomēnes</Text>
+              </View>
+              <View className="flex-1 items-center py-4">
+                <Text style={{ fontSize: 22, fontWeight: '800', color: '#111827' }}>
+                  {analyticsOverview?.buyer?.orderBreakdown != null
+                    ? analyticsOverview.buyer.orderBreakdown
+                        .filter((b) => ['IN_PROGRESS', 'CONFIRMED'].includes(b.status))
+                        .reduce((s, b) => s + b.count, 0)
+                    : '—'}
+                </Text>
+                <Text className="text-xs text-gray-500 font-medium mt-0.5">Aktīvi</Text>
+              </View>
+            </View>
+            <View className="border-t border-gray-100 px-4 py-2.5 flex-row items-center justify-between">
+              <Text className="text-xs text-gray-400 font-medium">Statistika</Text>
+              <ChevronRight size={14} color="#d1d5db" />
+            </View>
           </TouchableOpacity>
         )}
 
@@ -397,10 +447,10 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* General Settings */}
+        {/* Account section */}
         {mode === 'BUYER' && (
           <>
-            <SectionHeader label="PĀRVALDĪBA" />
+            <SectionHeader label="KONTS" />
             <View style={styles.cardGroup}>
               <MenuItem
                 icon={Receipt}
@@ -413,14 +463,34 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/(buyer)/(account)/documents')}
               />
               <MenuItem
-                icon={AlertCircle}
-                label="Strīdi"
-                onPress={() => router.push('/(buyer)/(account)/disputes')}
-              />
-              <MenuItem
                 icon={MapPin}
                 label="Saglabātās adreses"
                 onPress={() => router.push('/(buyer)/(account)/saved-addresses')}
+                hideBorder
+              />
+            </View>
+          </>
+        )}
+
+        {/* B2B-only section */}
+        {mode === 'BUYER' && user?.isCompany && (
+          <>
+            <SectionHeader label="UZŅĒMUMS" />
+            <View style={styles.cardGroup}>
+              <MenuItem
+                icon={Calendar}
+                label="Grafiki"
+                onPress={() => router.push('/(buyer)/(account)/schedules')}
+              />
+              <MenuItem
+                icon={Ticket}
+                label="Laukuma caurlaides"
+                onPress={() => router.push('/(buyer)/(account)/field-passes')}
+              />
+              <MenuItem
+                icon={ShieldCheck}
+                label="Atbilstības sertifikāti"
+                onPress={() => router.push('/(buyer)/(account)/certificates')}
                 hideBorder
               />
             </View>
@@ -493,97 +563,72 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Edit modal */}
-      <Modal
+      {/* Edit bottom sheet */}
+      <BottomSheet
         visible={editOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setEditOpen(false)}
+        onClose={() => !saving && setEditOpen(false)}
+        title="Konta informācija"
+        scrollable
+        maxHeightPct={0.95}
       >
-        <KeyboardAvoidingView
-          className="flex-1 bg-white"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          {/* Header */}
-          <View className="flex-row items-center px-4 pt-4 pb-2">
-            <TouchableOpacity
-              onPress={() => setEditOpen(false)}
-              hitSlop={10}
-              className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
-            >
-              <X size={20} color="#111827" strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Text className=" font-bold text-gray-900 mb-8 tracking-tight" style={{ fontSize: 32 }}>
-              Konta informācija
-            </Text>
-
-            <View className="gap-6">
-              <View>
-                <Text
-                  className=" font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
-                  style={{ fontSize: 13 }}
-                >
-                  Vārds
-                </Text>
-                <TextInput
-                  className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
-                  style={{ fontSize: 17 }}
-                  value={form.firstName}
-                  onChangeText={set('firstName')}
-                  placeholder="Ievadiet vārdu"
-                  placeholderTextColor="#9ca3af"
-                  maxLength={80}
-                />
-              </View>
-              <View>
-                <Text
-                  className=" font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
-                  style={{ fontSize: 13 }}
-                >
-                  Uzvārds
-                </Text>
-                <TextInput
-                  className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
-                  style={{ fontSize: 17 }}
-                  value={form.lastName}
-                  onChangeText={set('lastName')}
-                  placeholder="Ievadiet uzvārdu"
-                  placeholderTextColor="#9ca3af"
-                  maxLength={80}
-                />
-              </View>
-              <View>
-                <Text
-                  className=" font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
-                  style={{ fontSize: 13 }}
-                >
-                  Tālrunis
-                </Text>
-                <TextInput
-                  className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
-                  style={{ fontSize: 17 }}
-                  value={form.phone}
-                  onChangeText={set('phone')}
-                  placeholder="+371 20000000"
-                  placeholderTextColor="#9ca3af"
-                  keyboardType="phone-pad"
-                  maxLength={20}
-                />
-              </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12, gap: 24 }}>
+            <View>
+              <Text
+                className="font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                style={{ fontSize: 13 }}
+              >
+                Vārds
+              </Text>
+              <TextInput
+                className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
+                style={{ fontSize: 17 }}
+                value={form.firstName}
+                onChangeText={set('firstName')}
+                placeholder="Ievadiet vārdu"
+                placeholderTextColor="#9ca3af"
+                maxLength={80}
+              />
             </View>
-          </ScrollView>
-
-          {/* Sticky Footer */}
-          <View className="px-5 py-4 border-t border-gray-100 bg-white mb-2 pb-10">
+            <View>
+              <Text
+                className="font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                style={{ fontSize: 13 }}
+              >
+                Uzvārds
+              </Text>
+              <TextInput
+                className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
+                style={{ fontSize: 17 }}
+                value={form.lastName}
+                onChangeText={set('lastName')}
+                placeholder="Ievadiet uzvārdu"
+                placeholderTextColor="#9ca3af"
+                maxLength={80}
+              />
+            </View>
+            <View>
+              <Text
+                className="font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                style={{ fontSize: 13 }}
+              >
+                Tālrunis
+              </Text>
+              <TextInput
+                className="bg-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-semibold"
+                style={{ fontSize: 17 }}
+                value={form.phone}
+                onChangeText={set('phone')}
+                placeholder="+371 20000000"
+                placeholderTextColor="#9ca3af"
+                keyboardType="phone-pad"
+                maxLength={20}
+              />
+            </View>
+          </View>
+          <View className="px-5 py-4 border-t border-gray-100 bg-white">
             <TouchableOpacity
-              className={`bg-gray-900 py-4 rounded-full items-center justify-center flex-row shadow-sm ${saving ? 'opacity-70' : ''}`}
+              className={`bg-gray-900 py-4 rounded-full items-center justify-center flex-row ${saving ? 'opacity-70' : ''}`}
               onPress={saveEdit}
               disabled={saving}
               activeOpacity={0.85}
@@ -598,7 +643,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </BottomSheet>
 
       {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
     </ScreenContainer>

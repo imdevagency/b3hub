@@ -242,7 +242,7 @@ export interface SupplierOffer {
 }
 
 export async function getMaterialOffers(
-  token: string,
+  token: string | null | undefined,
   params: { category: MaterialCategory; quantity: number; lat?: number; lng?: number },
 ): Promise<SupplierOffer[]> {
   const qs = new URLSearchParams();
@@ -251,7 +251,7 @@ export async function getMaterialOffers(
   if (params.lat !== undefined) qs.set('lat', String(params.lat));
   if (params.lng !== undefined) qs.set('lng', String(params.lng));
   return apiFetch<SupplierOffer[]>(`/materials/offers?${qs}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
 

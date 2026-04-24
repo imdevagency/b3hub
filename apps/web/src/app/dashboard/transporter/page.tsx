@@ -104,7 +104,14 @@ export default function TransporterDashboardPage() {
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
-    else if (!isLoading && user && !user.canTransport) router.push('/dashboard');
+    else if (!isLoading && user) {
+      // Company drivers are field workers — redirect them to their assigned jobs list
+      if (user.companyRole === 'DRIVER') {
+        router.replace('/dashboard/transport-jobs');
+        return;
+      }
+      if (!user.canTransport) router.push('/dashboard');
+    }
   }, [user, isLoading, router]);
 
   useEffect(() => {

@@ -229,22 +229,18 @@ export default function HomeScreen() {
       >
         {/* Flat Minimal Header */}
         <View className="px-5 pt-8 pb-6 flex-row justify-between items-end">
-          <View>
-            <Text
-              className=" font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-0.5"
-              style={{ fontSize: 13 }}
-            >
-              Laipni lūdzam
-            </Text>
+          <View className="flex-1 mr-3">
             <Text className=" font-bold tracking-tight text-gray-900" style={{ fontSize: 32 }}>
               Sveiki{user?.firstName ? `, ${user.firstName}` : ''}
             </Text>
           </View>
-          <View className="bg-gray-100 px-3 py-1.5 rounded-full mb-1">
-            <Text className=" font-bold text-gray-900" style={{ fontSize: 13 }}>
-              Rīga
-            </Text>
-          </View>
+          {user?.company?.name && (
+            <View className="bg-gray-100 px-3 py-1.5 rounded-full mb-1">
+              <Text className=" font-bold text-gray-900" style={{ fontSize: 13 }} numberOfLines={1}>
+                {user.company.name}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Profile Nudge */}

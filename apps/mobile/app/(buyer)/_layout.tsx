@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
-import { Home, ClipboardList, User, MessageCircle } from 'lucide-react-native';
+import { Home, ClipboardList, User } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -92,13 +92,7 @@ function BuyerLayoutContent() {
             tabBarIcon: ({ color }) => <ClipboardList size={22} color={color} />,
           }}
         />
-        <Tabs.Screen
-          name="messages"
-          options={{
-            title: 'Čati',
-            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
-          }}
-        />
+        <Tabs.Screen name="messages" options={{ href: null }} />
         <Tabs.Screen
           name="profile"
           options={{

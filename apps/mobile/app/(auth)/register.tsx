@@ -27,16 +27,11 @@ type RoleKey = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 const TOTAL_STEPS = 3;
 
-const ROLES: {
+const PARTNER_ROLES: {
   value: RoleKey;
   title: string;
   desc: string;
 }[] = [
-  {
-    value: 'BUYER',
-    title: 'Pircējs',
-    desc: 'Pasūti materiālus, konteinerus un transportu',
-  },
   {
     value: 'SUPPLIER',
     title: 'Piegādātājs',
@@ -74,13 +69,12 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const isPartnerFlow = partner === '1';
 
-  const visibleRoles = isPartnerFlow ? ROLES.filter((r) => r.value !== 'BUYER') : ROLES;
-
   const [step, setStep] = useState(1);
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [roles, setRoles] = useState<Set<RoleKey>>(new Set<RoleKey>());
+  // Partner flow: let user pick SUPPLIER or CARRIER; standard flow: always BUYER
+  const [partnerRoles, setPartnerRoles] = useState<Set<RoleKey>>(new Set<RoleKey>());
   const [isCompany, setIsCompany] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -93,8 +87,7 @@ export default function RegisterScreen() {
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
 
-  const needsCompanyInfo = roles.has('SUPPLIER') || roles.has('CARRIER');
-  const isBuyerOnly = roles.has('BUYER') && !roles.has('SUPPLIER') && !roles.has('CARRIER');
+  const needsCompanyInfo = isCompany;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const strength = pwStrength(password);
@@ -102,14 +95,14 @@ export default function RegisterScreen() {
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (step === 1) {
-      if (roles.size === 0) e.roles = 'Izvēlieties vismaz vienu lomu';
+      if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Nederīga e-pasta adrese';
+      if (isCompany && companyName.trim().length < 2)
+        e.companyName = 'Nepieciešams uzņēmuma nosaukums';
+      if (isPartnerFlow && partnerRoles.size === 0) e.roles = 'Izvēlieties vismaz vienu lomu';
     }
     if (step === 2) {
       if (firstName.trim().length < 2) e.firstName = 'Nepieciešams vārds';
       if (lastName.trim().length < 2) e.lastName = 'Nepieciešams uzvārds';
-      if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Nederīga e-pasta adrese';
-      if (needsCompanyInfo && companyName.trim().length < 2)
-        e.companyName = 'Nepieciešams uzņēmuma nosaukums';
     }
     if (step === 3) {
       if (password.length < 8) e.password = 'Parolei jābūt vismaz 8 rakstzīmēm';
@@ -148,8 +141,8 @@ export default function RegisterScreen() {
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
-        roles: Array.from(roles),
-        isCompany: needsCompanyInfo ? true : isBuyerOnly ? isCompany : true,
+        roles: isPartnerFlow && partnerRoles.size > 0 ? Array.from(partnerRoles) : ['BUYER'],
+        isCompany,
         companyName: companyName.trim() || undefined,
         regNumber: regNumber.trim() || undefined,
         password,
@@ -172,59 +165,102 @@ export default function RegisterScreen() {
         className="text-3xl text-black mb-2"
         style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
       >
-        Kā jūs izmantosiet B3Hub?
+        {isPartnerFlow ? 'Pievienojieties kā partneris' : 'Izveidojiet kontu'}
       </Text>
       <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
-        Izvēlieties vienu vai vairākas lomas.
+        {isPartnerFlow ? 'Izvēlieties savu lomu un konta veidu.' : 'E-pasts un konta veids.'}
       </Text>
 
-      <View style={s.grid}>
-        {visibleRoles.map((r) => {
-          const active = roles.has(r.value);
-          return (
-            <TouchableOpacity
-              key={r.value}
-              style={[s.blockOption, active && s.blockOptionActive]}
-              onPress={() => {
-                haptics.light();
-                setRoles((prev) => {
-                  const n = new Set(prev);
-                  if (n.has(r.value)) n.delete(r.value);
-                  else n.add(r.value);
-                  return n;
-                });
-              }}
-              activeOpacity={0.9}
-            >
-              <Text style={[s.blockTitle, active && s.textWhite]}>{r.title}</Text>
-              <Text style={[s.blockDesc, active && s.textGray300]}>{r.desc}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {errors.roles && <Text style={s.err}>{errors.roles}</Text>}
-
-      {isBuyerOnly && (
-        <View style={{ marginTop: 32 }}>
-          <Text style={s.sectionLabel}>Konta veids</Text>
-          <View style={[s.grid, { flexDirection: 'row' }]}>
-            {ACCOUNT_KINDS.map((k) => {
-              const active = isCompany === k.value;
-              return (
-                <TouchableOpacity
-                  key={String(k.value)}
-                  style={[s.blockOption, s.flex1, active && s.blockOptionActive]}
-                  onPress={() => setIsCompany(k.value)}
-                  activeOpacity={0.9}
-                >
-                  <Text style={[s.blockTitle, active && s.textWhite]}>{k.label}</Text>
-                  <Text style={[s.blockDesc, active && s.textGray300]}>{k.desc}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+      {/* Partner role selection */}
+      {isPartnerFlow && (
+        <View style={[s.grid, { marginBottom: 24 }]}>
+          {PARTNER_ROLES.map((r) => {
+            const active = partnerRoles.has(r.value);
+            return (
+              <TouchableOpacity
+                key={r.value}
+                style={[s.blockOption, active && s.blockOptionActive]}
+                onPress={() => {
+                  haptics.light();
+                  setPartnerRoles((prev) => {
+                    const n = new Set(prev);
+                    if (n.has(r.value)) n.delete(r.value);
+                    else n.add(r.value);
+                    return n;
+                  });
+                }}
+                activeOpacity={0.9}
+              >
+                <Text style={[s.blockTitle, active && s.textWhite]}>{r.title}</Text>
+                <Text style={[s.blockDesc, active && s.textGray300]}>{r.desc}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {errors.roles && <Text style={s.err}>{errors.roles}</Text>}
         </View>
       )}
+
+      {/* Account kind */}
+      <View style={{ marginBottom: 20 }}>
+        <Text style={s.sectionLabel}>Konta veids</Text>
+        <View style={[s.grid, { flexDirection: 'row' }]}>
+          {ACCOUNT_KINDS.map((k) => {
+            const active = isCompany === k.value;
+            return (
+              <TouchableOpacity
+                key={String(k.value)}
+                style={[s.blockOption, s.flex1, active && s.blockOptionActive]}
+                onPress={() => setIsCompany(k.value)}
+                activeOpacity={0.9}
+              >
+                <Text style={[s.blockTitle, active && s.textWhite]}>{k.label}</Text>
+                <Text style={[s.blockDesc, active && s.textGray300]}>{k.desc}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Email */}
+      <View style={s.grid}>
+        <TextInput
+          style={[s.softInput, errors.email && s.inputErr]}
+          placeholder="E-pasta adrese"
+          placeholderTextColor="#9ca3af"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          maxLength={100}
+          value={email}
+          onChangeText={setEmail}
+        />
+        {errors.email && <Text style={s.err}>{errors.email}</Text>}
+
+        {/* Company name shown here for B2B so user fills it before moving on */}
+        {needsCompanyInfo && (
+          <>
+            <TextInput
+              style={[s.softInput, errors.companyName && s.inputErr]}
+              placeholder="Uzņēmuma nosaukums"
+              placeholderTextColor="#9ca3af"
+              value={companyName}
+              onChangeText={setCompanyName}
+              autoCapitalize="words"
+              maxLength={100}
+            />
+            {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
+            <TextInput
+              style={s.softInput}
+              placeholder="Reģistrācijas numurs (piem. 40003009497)"
+              placeholderTextColor="#9ca3af"
+              keyboardType="number-pad"
+              maxLength={12}
+              value={regNumber}
+              onChangeText={setRegNumber}
+            />
+          </>
+        )}
+      </View>
     </View>
   );
 
@@ -234,10 +270,10 @@ export default function RegisterScreen() {
         className="text-3xl text-black mb-2"
         style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
       >
-        Tavi dati
+        Jūsu vārds
       </Text>
       <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
-        Informācija līgumiem un piegādēm.
+        Redzams dokumentos un piegāžu apstiprinājumos.
       </Text>
 
       <View style={[s.grid, { flexDirection: 'row' }]}>
@@ -269,21 +305,6 @@ export default function RegisterScreen() {
 
       <View style={{ marginTop: 12 }}>
         <TextInput
-          style={[s.softInput, errors.email && s.inputErr]}
-          placeholder="E-pasta adrese"
-          placeholderTextColor="#9ca3af"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          maxLength={100}
-          value={email}
-          onChangeText={setEmail}
-        />
-        {errors.email && <Text style={s.err}>{errors.email}</Text>}
-      </View>
-
-      <View style={{ marginTop: 12 }}>
-        <TextInput
           style={s.softInput}
           placeholder="Tālruņa numurs (neobligāts)"
           placeholderTextColor="#9ca3af"
@@ -293,33 +314,6 @@ export default function RegisterScreen() {
           onChangeText={setPhone}
         />
       </View>
-
-      {needsCompanyInfo && (
-        <View style={{ marginTop: 24 }}>
-          <Text style={s.sectionLabel}>Uzņēmums</Text>
-          <View style={s.grid}>
-            <TextInput
-              style={[s.softInput, errors.companyName && s.inputErr]}
-              placeholder="Uzņēmuma nosaukums"
-              placeholderTextColor="#9ca3af"
-              value={companyName}
-              onChangeText={setCompanyName}
-              autoCapitalize="words"
-              maxLength={100}
-            />
-            {errors.companyName && <Text style={s.err}>{errors.companyName}</Text>}
-            <TextInput
-              style={s.softInput}
-              placeholder="Reģistrācijas numurs (neobligāts)"
-              placeholderTextColor="#9ca3af"
-              keyboardType="number-pad"
-              maxLength={12}
-              value={regNumber}
-              onChangeText={setRegNumber}
-            />
-          </View>
-        </View>
-      )}
     </View>
   );
 

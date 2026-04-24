@@ -77,8 +77,12 @@ function ScheduleRow({
 }
 
 export default function SchedulesScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
+  React.useEffect(() => {
+    if (user && !user.isCompany) router.replace('/(buyer)/profile');
+  }, [user, router]);
+  if (user && !user.isCompany) return null;
   const [schedules, setSchedules] = useState<ApiOrderSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

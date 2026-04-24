@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type AnalyticsOverview } from '@/lib/api';
@@ -59,7 +60,12 @@ function StatTile({
 }
 
 export default function AnalyticsScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const _router = useRouter();
+  React.useEffect(() => {
+    if (user && !user.isCompany) _router.replace('/(buyer)/profile');
+  }, [user, _router]);
+  if (user && !user.isCompany) return null;
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
 
   const fetcher = useCallback(async () => {
@@ -73,10 +79,8 @@ export default function AnalyticsScreen() {
   const buyer = overview?.buyer ?? null;
 
   const totalSpend = buyer?.monthlySpend?.reduce((s, m) => s + m.value, 0) ?? 0;
-  const thisMonth =
-    buyer?.monthlySpend?.slice(-1)[0]?.value ?? 0;
-  const completedOrders =
-    buyer?.orderBreakdown?.find((b) => b.status === 'COMPLETED')?.count ?? 0;
+  const thisMonth = buyer?.monthlySpend?.slice(-1)[0]?.value ?? 0;
+  const completedOrders = buyer?.orderBreakdown?.find((b) => b.status === 'COMPLETED')?.count ?? 0;
   const activeOrders =
     (buyer?.orderBreakdown?.find((b) => b.status === 'IN_PROGRESS')?.count ?? 0) +
     (buyer?.orderBreakdown?.find((b) => b.status === 'CONFIRMED')?.count ?? 0);
@@ -100,16 +104,8 @@ export default function AnalyticsScreen() {
       >
         {/* Key stats */}
         <View style={s.grid}>
-          <StatTile
-            icon={TrendingUp}
-            label="Šomēnes"
-            value={fmtEur(thisMonth)}
-          />
-          <StatTile
-            icon={Package}
-            label="Aktīvi"
-            value={String(activeOrders)}
-          />
+          <StatTile icon={TrendingUp} label="Šomēnes" value={fmtEur(thisMonth)} />
+          <StatTile icon={Package} label="Aktīvi" value={String(activeOrders)} />
           <StatTile
             icon={BarChart2}
             label="Pabeigti"
@@ -117,12 +113,7 @@ export default function AnalyticsScreen() {
             sub={`Kopā: ${fmtEur(totalSpend)}`}
           />
           {co2 != null && (
-            <StatTile
-              icon={Leaf}
-              label="CO₂ (kg)"
-              value={String(co2)}
-              accent="#16a34a"
-            />
+            <StatTile icon={Leaf} label="CO₂ (kg)" value={String(co2)} accent="#16a34a" />
           )}
         </View>
 
