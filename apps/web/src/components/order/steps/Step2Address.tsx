@@ -135,6 +135,7 @@ export function Step2Address({
           }}
           onSelect={handleMapPickerSelect}
           placeholder="Iela, mājas numurs, pilsēta..."
+          className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none h-14 text-base font-medium"
         />
       </div>
 
@@ -147,17 +148,17 @@ export function Step2Address({
       )}
 
       {/* Nav buttons */}
-      <div className="flex gap-3 pt-1">
+      <div className="flex gap-3 pt-4">
         <button
           onClick={onBack}
-          className="flex-1 rounded-xl border-2 border-border py-3 text-sm font-semibold text-muted-foreground hover:bg-muted transition-colors"
+          className="flex-1 rounded-full border-2 border-border/60 py-3.5 text-base font-bold text-foreground hover:bg-muted/50 transition-colors"
         >
           Atpakaļ
         </button>
         <button
           onClick={onNext}
           disabled={!isValid}
-          className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white shadow transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+          className="flex-[2] rounded-full bg-foreground py-3.5 text-base font-bold text-background shadow-md hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
         >
           {nextLabel ?? 'Rādīt piedāvājumus'}
         </button>

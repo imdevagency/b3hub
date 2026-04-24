@@ -2,10 +2,18 @@ import { Navbar } from '@/components/marketing/layout/Navbar';
 import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
-import { ArrowRight, Truck, HardHat, Pickaxe, Star, Check, Home, Building2 as B2 } from 'lucide-react';
+import {
+  ArrowRight,
+  Truck,
+  HardHat,
+  Pickaxe,
+  Star,
+  Check,
+  Home,
+  Building2 as B2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
-
 
 const AppIcon = ({ ios }: { ios: boolean }) =>
   ios ? (
@@ -59,93 +67,108 @@ export default function HomePage() {
 
         {/* ── 1b. B2C vs B2B SPLIT ─────────────────────────────────────────── */}
         <section id="uznemumiem" className="w-full border-t border-border">
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
-
-            {/* ── B2C — Private customer ── */}
-            <div className="flex flex-col gap-8 p-10 md:p-16 bg-background">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-foreground/8 rounded-full">
-                  <Home className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+          <Container className="px-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+              {/* ── B2C — Private customer ── */}
+              <div className="flex flex-col gap-8 p-10 md:p-16 bg-background">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-foreground/8 rounded-full">
+                    <Home className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
+                    Privātpersona / Māju saimnieks
+                  </span>
                 </div>
-                <span className="text-xs font-bold tracking-widest uppercase text-muted-foreground">
-                  Privātpersona / Māju saimnieks
-                </span>
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-4xl font-medium tracking-tighter leading-tight">
+                    Pasūti grants vai smiltis
+                    <br />
+                    bez konta.
+                  </h2>
+                  <p className="text-lg text-muted-foreground font-light leading-relaxed max-w-sm">
+                    Vienreizējs pasūtījums — norādi materiālu, daudzumu un piegādes adresi. Cena
+                    uzreiz. Maksā ar karti. Nav abonēšanas.
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-3">
+                  {[
+                    'Nav nepieciešams konts vai reģistrācija',
+                    'Cenas no vietējiem karjeriem uzreiz',
+                    'GPS izsekošana — zini, kad auto ierodas',
+                    'Piegāde uz māju, dārzu vai būvvietu',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm">
+                      <Check
+                        className="w-4 h-4 shrink-0 mt-0.5 text-foreground"
+                        strokeWidth={2.5}
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2">
+                  <CTAButton href={`/order`} variant="primary" size="default">
+                    Pasūtīt tagad <ArrowRight className="w-4 h-4 ml-1" />
+                  </CTAButton>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Nav nepieciešama kredītkarte pirms pasūtījuma
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-col gap-4">
-                <h2 className="text-4xl font-medium tracking-tighter leading-tight">
-                  Pasūti grants vai smiltis
-                  <br />
-                  bez konta.
-                </h2>
-                <p className="text-lg text-muted-foreground font-light leading-relaxed max-w-sm">
-                  Vienreizējs pasūtījums — norādi materiālu, daudzumu un piegādes adresi. Cena uzreiz. Maksā ar karti. Nav abonēšanas.
-                </p>
-              </div>
-              <ul className="flex flex-col gap-3">
-                {[
-                  'Nav nepieciešams konts vai reģistrācija',
-                  'Cenas no vietējiem karjeriem uzreiz',
-                  'GPS izsekošana — zini, kad auto ierodas',
-                  'Piegāde uz māju, dārzu vai būvvietu',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm">
-                    <Check className="w-4 h-4 shrink-0 mt-0.5 text-foreground" strokeWidth={2.5} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-2">
-                <CTAButton href={`/order`} variant="primary" size="default">
-                  Pasūtīt tagad <ArrowRight className="w-4 h-4 ml-1" />
-                </CTAButton>
-                <p className="text-xs text-muted-foreground mt-3">Nav nepieciešama kredītkarte pirms pasūtījuma</p>
+
+              {/* ── B2B — Business ── */}
+              <div className="flex flex-col gap-8 p-10 md:p-16 bg-foreground text-background">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-background/10 rounded-full">
+                    <B2 className="w-6 h-6 text-background" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-xs font-bold tracking-widest uppercase text-background/50">
+                    Uzņēmums / Celtniecība
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-4xl font-medium tracking-tighter leading-tight text-background">
+                    Pilna loģistikas
+                    <br />
+                    platforma.
+                  </h2>
+                  <p className="text-lg text-background/60 font-light leading-relaxed max-w-sm">
+                    Vairāki projekti, komandas konti, ietvara līgumi un automātiskie PVN rēķini —
+                    viss vienā sistēmā.
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-3">
+                  {[
+                    'Projektu vadība ar neierobežotiem pasūtījumiem',
+                    'Ietvara līgumi un izsaukuma orderi',
+                    'Komandas konti ar atļauju pārvaldību',
+                    'Automātiski PVN rēķini un dokumentu arhīvs',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-background/80">
+                      <Check
+                        className="w-4 h-4 shrink-0 mt-0.5 text-background"
+                        strokeWidth={2.5}
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2 flex flex-col gap-3">
+                  <CTAButton href={`/register`} variant="inverted" size="default">
+                    Reģistrēt uzņēmumu <ArrowRight className="w-4 h-4 ml-1" />
+                  </CTAButton>
+                  <CTAButton
+                    href={`/login`}
+                    variant="outline"
+                    size="default"
+                    className="border-background/20 text-background hover:border-background/60"
+                  >
+                    Ienākt esošajā kontā
+                  </CTAButton>
+                </div>
               </div>
             </div>
-
-            {/* ── B2B — Business ── */}
-            <div className="flex flex-col gap-8 p-10 md:p-16 bg-foreground text-background">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-background/10 rounded-full">
-                  <B2 className="w-6 h-6 text-background" strokeWidth={1.5} />
-                </div>
-                <span className="text-xs font-bold tracking-widest uppercase text-background/50">
-                  Uzņēmums / Celtniecība
-                </span>
-              </div>
-              <div className="flex flex-col gap-4">
-                <h2 className="text-4xl font-medium tracking-tighter leading-tight text-background">
-                  Pilna loģistikas
-                  <br />
-                  platforma.
-                </h2>
-                <p className="text-lg text-background/60 font-light leading-relaxed max-w-sm">
-                  Vairāki projekti, komandas konti, ietvara līgumi un automātiskie PVN rēķini — viss vienā sistēmā.
-                </p>
-              </div>
-              <ul className="flex flex-col gap-3">
-                {[
-                  'Projektu vadība ar neierobežotiem pasūtījumiem',
-                  'Ietvara līgumi un izsaukuma orderi',
-                  'Komandas konti ar atļauju pārvaldību',
-                  'Automātiski PVN rēķini un dokumentu arhīvs',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-background/80">
-                    <Check className="w-4 h-4 shrink-0 mt-0.5 text-background" strokeWidth={2.5} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-2 flex flex-col gap-3">
-                <CTAButton href={`/register`} variant="inverted" size="default">
-                  Reģistrēt uzņēmumu <ArrowRight className="w-4 h-4 ml-1" />
-                </CTAButton>
-                <CTAButton href={`/login`} variant="outline" size="default" className="border-background/20 text-background hover:border-background/60">
-                  Ienākt esošajā kontā
-                </CTAButton>
-              </div>
-            </div>
-
-          </div>
+          </Container>
         </section>
 
         {/* ── 2. WHO IS THIS FOR ── */}
@@ -440,10 +463,17 @@ export default function HomePage() {
               <CTAButton href={`/order`} variant="inverted" size="lg">
                 Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-2" />
               </CTAButton>
-              <CTAButton href={`/register`} variant="outline" size="lg" className="border-background/20 text-background hover:border-background/60">
+              <CTAButton
+                href={`/register`}
+                variant="outline"
+                size="lg"
+                className="border-background/20 text-background hover:border-background/60"
+              >
                 Reģistrēt uzņēmumu
               </CTAButton>
-              <p className="text-center text-background/40 text-sm">Privātpersonām — bez reģistrācijas</p>
+              <p className="text-center text-background/40 text-sm">
+                Privātpersonām — bez reģistrācijas
+              </p>
             </div>
           </Container>
         </section>

@@ -15,6 +15,11 @@
 
 B3Hub is a digital marketplace platform connecting construction companies, material suppliers, waste management companies, carriers, and drivers for efficient construction site supply, disposal, and circular economy management.
 
+B3Hub serves **two customer segments on the same platform**:
+
+- **B2C** — homeowners, small trades, micro-contractors. One-off orders, guest checkout, low friction entry. Public order wizards are a primary acquisition channel.
+- **B2B** — construction companies, contractors, project managers. Full accounts, framework contracts, team management, invoicing, project cost tracking.
+
 ---
 
 ## System Architecture

@@ -3,13 +3,19 @@
 
 ## What this product is
 
-B3Hub is a **construction logistics marketplace** for the Latvian/Baltic market (think Schüttflix).
+B3Hub is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
+
 It connects three sides:
-- **Buyers** — construction companies, contractors, homeowners needing materials delivered or waste removed
+- **Buyers** — ranges from homeowners ordering a skip for a garden project (B2C, guest checkout) to construction companies running 50 deliveries across multiple sites (B2B, full account with contracts and team management)
 - **Sellers/Suppliers** — quarries and material suppliers listing gravel, sand, concrete, soil
 - **Transport providers** — trucking companies and independent drivers executing deliveries
 
 Full order flow: buyer places order → seller confirms loading → driver delivers → documents auto-generated.
+
+**B2C segment**: homeowners, small trades, micro-contractors. One-off needs. Guest checkout supported; account offered post-order as convenience, not a gate. Public order wizards are a valid acquisition channel for this segment.
+**B2B segment**: construction companies, contractors, project managers. Account required. Framework contracts, project cost tracking, invoicing, team/permissions management.
+
+Both segments share the same backend and mobile app. The web portal serves sellers and admins primarily.
 
 ---
 
@@ -43,7 +49,9 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
+
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
+
 <!-- END GEN -->
 
 ### Module anatomy
@@ -71,6 +79,7 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
+
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -94,6 +103,7 @@ export interface RequestingUser {
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
 }
 ```
+
 <!-- END GEN -->
 
 ### User roles
@@ -152,6 +162,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
+
 - `(auth)` — apply-role, forgot-password, login, onboarding, register, welcome
 - `(buyer)` — (account)/, catalog, home, messages, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, profile, schedule, skips, vehicles

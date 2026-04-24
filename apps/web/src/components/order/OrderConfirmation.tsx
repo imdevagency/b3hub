@@ -64,80 +64,82 @@ export function OrderConfirmation({
   return (
     <div className="flex flex-col items-center text-center space-y-8">
       {/* Success icon */}
-      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-green-100">
-        <CheckCircle2 className="h-14 w-14 text-green-600" />
+      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-foreground">
+        <CheckCircle2 className="h-14 w-14 text-background" />
       </div>
 
       {/* Heading */}
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold text-gray-900">Pasūtījums Apstiprīnāts! 🎉</h2>
-        <p className="text-gray-500 max-w-sm mx-auto">
+        <h2 className="text-3xl font-bold text-foreground">Pasūtījums Apstiprināts!</h2>
+        <p className="text-muted-foreground max-w-sm mx-auto">
           Jūsu konteineri ir rezervēti. Drīzumā saņemsit apstiprinājuma e-pastu.
         </p>
       </div>
 
       {/* Order summary card */}
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-sm text-left overflow-hidden">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-sm text-left overflow-hidden">
         <div className="bg-primary px-6 py-4">
-          <p className="text-sm font-semibold text-red-100">Pasūtījuma Kopsavilkums</p>
-          <p className="text-xs text-red-200 mt-0.5">Pasūtījums #{orderNumber}</p>
+          <p className="text-sm font-semibold text-primary-foreground/80">
+            Pasūtījuma Kopsavilkums
+          </p>
+          <p className="text-xs text-primary-foreground/60 mt-0.5">Pasūtījums #{orderNumber}</p>
         </div>
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           <div className="flex items-center gap-4 px-6 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-              <MapPin className="h-5 w-5 text-gray-600" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <MapPin className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Atrasanos Vieta
               </p>
-              <p className="text-sm font-semibold text-gray-900">{location}</p>
+              <p className="text-sm font-semibold text-foreground">{location}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 px-6 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100">
-              <Trash2 className="h-5 w-5 text-orange-600" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <Trash2 className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Atkritumu Veids
               </p>
-              <p className="text-sm font-semibold text-gray-900">{WASTE_LABELS[wasteCategory]}</p>
+              <p className="text-sm font-semibold text-foreground">{WASTE_LABELS[wasteCategory]}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 px-6 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-              <Package className="h-5 w-5 text-blue-600" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <Package className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Konteinera Izmērs
               </p>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-foreground">
                 {sizeInfo.label} — {sizeInfo.volume}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 px-6 py-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
-              <CalendarDays className="h-5 w-5 text-green-600" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Piegādes Datums
               </p>
-              <p className="text-sm font-semibold text-gray-900">{formatDate(deliveryDate)}</p>
+              <p className="text-sm font-semibold text-foreground">{formatDate(deliveryDate)}</p>
             </div>
           </div>
         </div>
 
         {/* Total */}
-        <div className="flex items-center justify-between bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <p className="text-sm font-semibold text-gray-700">Kopā (iekļ. savakšana)</p>
+        <div className="flex items-center justify-between bg-muted/50 px-6 py-4 border-t border-border">
+          <p className="text-sm font-semibold text-muted-foreground">Kopā (iekļ. savakšana)</p>
           <p className="text-xl font-bold text-primary">
             {currency} {price}
           </p>
@@ -148,13 +150,13 @@ export function OrderConfirmation({
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
         <button
           onClick={onReset}
-          className="flex-1 rounded-xl border-2 border-gray-200 py-3.5 text-base font-semibold text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50"
+          className="flex-1 rounded-xl border-2 border-border py-3.5 text-base font-semibold text-foreground transition-all hover:border-foreground/30 hover:bg-muted/50"
         >
           Vēl viens pasūtījums
         </button>
         <Link
           href={authenticated ? '/dashboard/orders' : '/dashboard'}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-primary/90"
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90"
         >
           {authenticated ? 'Mani Pasūtījumi' : 'Uz Informācijas Paneli'}
           <ArrowRight className="h-5 w-5" />
@@ -162,17 +164,17 @@ export function OrderConfirmation({
       </div>
 
       {/* Badges */}
-      <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500 pt-2">
+      <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground pt-2">
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="h-2 w-2 rounded-full bg-primary" />
           Apstiprinājuma e-pasts nosūtīts
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="h-2 w-2 rounded-full bg-primary" />
           Iekļauta 14 dienu noma
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="h-2 w-2 rounded-full bg-primary" />
           Pilnibīgi licenzēta utilizācija
         </span>
       </div>

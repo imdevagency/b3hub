@@ -19,6 +19,8 @@ interface WizardShellProps {
   onBack?: (() => void) | null;
   /** Called when the X button is clicked */
   onClose?: () => void;
+  /** Enable internal scroll pane (for dashboard usages) */
+  innerScroll?: boolean;
   children: React.ReactNode;
 }
 
@@ -30,6 +32,7 @@ export function WizardShell({
   headerSlot,
   onBack,
   onClose,
+  innerScroll = false,
   children,
 }: WizardShellProps) {
   const progress = Math.min(1, Math.max(0, step / totalSteps));
@@ -81,7 +84,9 @@ export function WizardShell({
       )}
 
       {/* ── Scrollable content ──────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-5 pb-6">{children}</div>
+      <div className={cn('px-5 pt-5 pb-6', innerScroll && 'flex-1 min-h-0 overflow-y-auto')}>
+        {children}
+      </div>
     </div>
   );
 }

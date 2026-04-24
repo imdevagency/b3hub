@@ -81,7 +81,7 @@ export function MapWizardShell({
         </div>
 
         {/* ── Scrollable body ──────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-5 pt-5 pb-6 scrollbar-thin min-h-0">
+        <div className="px-5 pt-5 pb-6">
           {submitError && (
             <div className="mb-5 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               <span className="font-semibold">Kļūda:</span> {submitError}

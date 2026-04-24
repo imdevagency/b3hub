@@ -221,9 +221,9 @@ export function AddressAutocomplete({
   };
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="relative w-full group" ref={containerRef}>
       <div className="relative flex items-center">
-        <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none z-10 shrink-0" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none z-10 shrink-0" />
         <Input
           id={id}
           type="text"
@@ -237,18 +237,18 @@ export function AddressAutocomplete({
           }}
           placeholder={placeholder}
           required={required}
-          className={`pl-9 pr-9 ${className ?? ''}`}
+          className={`pl-11 pr-10 bg-transparent ${className ?? ''}`}
           autoComplete="new-password"
         />
         {loading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
       </div>
       {isOpen && predictions.length > 0 && (
-        <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white rounded-xl border border-gray-100 shadow-2xl overflow-hidden z-9999 animate-in fade-in slide-in-from-top-2 duration-200">
-          <ul className="max-h-64 overflow-y-auto w-full divide-y divide-gray-50 flex flex-col scrollbar-thin">
+        <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-background rounded-2xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
+          <ul className="max-h-72 overflow-y-auto w-full divide-y divide-border/40 flex flex-col scrollbar-thin">
             {predictions.map((p) => {
               const mainText = p.structured_formatting?.main_text || p.description;
               const secondaryText = p.structured_formatting?.secondary_text || '';
@@ -256,18 +256,18 @@ export function AddressAutocomplete({
                 <li key={p.place_id}>
                   <button
                     type="button"
-                    className="w-full text-left px-3 py-2.5 hover:bg-gray-50/80 active:bg-gray-100 transition-colors flex items-start gap-3 group focus:outline-none focus:bg-gray-50"
+                    className="w-full text-left px-4 py-3.5 hover:bg-muted/40 active:bg-muted transition-colors flex items-center gap-3.5 group/item focus:outline-none focus:bg-muted/60"
                     onClick={() => handleSelect(p)}
                   >
-                    <div className="mt-0.5 min-w-8 shrink-0 flex items-center justify-center bg-gray-100/50 rounded-full h-8 w-8 group-hover:bg-primary/10 group-hover:text-primary transition-colors text-gray-400">
-                      <MapPin className="h-4 w-4" />
+                    <div className="shrink-0 flex items-center justify-center bg-muted rounded-full h-10 w-10 group-hover/item:bg-foreground group-hover/item:text-background transition-colors text-muted-foreground">
+                      <MapPin className="h-5 w-5" />
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[14px] font-medium text-gray-900 truncate pr-2">
+                      <span className="text-[15px] font-bold text-foreground truncate pr-2">
                         {mainText}
                       </span>
                       {secondaryText && (
-                        <span className="text-[13px] text-gray-500 truncate pr-2">
+                        <span className="text-[13px] font-medium text-muted-foreground truncate pr-2">
                           {secondaryText}
                         </span>
                       )}
