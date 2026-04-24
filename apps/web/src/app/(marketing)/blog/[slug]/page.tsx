@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { getAllPosts, getPostBySlug } from '@/lib/blog';
 
 interface Props {
@@ -31,7 +29,6 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full min-h-screen">
         <article className="pt-32 pb-24 md:pt-48 md:pb-32 px-6 lg:px-12 max-w-4xl mx-auto">
           <div className="mb-16">
@@ -98,7 +95,6 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         </article>
       </main>
-      <Footer />
     </>
   );
 }

@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import { Check } from 'lucide-react';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
@@ -86,7 +84,6 @@ const faq = [
 export default function PricingPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background text-foreground">
         {/* ── HERO ── */}
         <Hero
@@ -198,7 +195,6 @@ export default function PricingPage() {
           </div>
         </Container>
       </main>
-      <Footer />
     </>
   );
 }

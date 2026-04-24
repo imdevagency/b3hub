@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Container } from '@/components/marketing/layout/Container';
 
 export const metadata: Metadata = {
@@ -54,7 +52,6 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background text-foreground">
         {/* Hero */}
         <section className="border-b border-border pt-32 pb-16">
@@ -84,7 +81,6 @@ export default function PrivacyPage() {
           </div>
         </Container>
       </main>
-      <Footer />
     </>
   );
 }

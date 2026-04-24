@@ -1,5 +1,3 @@
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { ArrowRight, CheckCircle } from 'lucide-react';
@@ -37,7 +35,6 @@ const journey = [
 export default function BuvnieckiemPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full overflow-clip">
         {/* ── HERO ── */}
         <Hero
@@ -331,7 +328,6 @@ export default function BuvnieckiemPage() {
           </CTAButton>
         </Container>
       </main>
-      <Footer />
     </>
   );
 }

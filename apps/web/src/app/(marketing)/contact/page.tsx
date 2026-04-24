@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import { Mail, MapPin, Phone } from 'lucide-react';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { ContactForm } from '@/components/marketing/contact-form';
@@ -14,7 +12,6 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background text-foreground">
         {/* ── HERO ── */}
         <Hero
@@ -73,7 +70,6 @@ export default function ContactPage() {
           </div>
         </Container>
       </main>
-      <Footer />
     </>
   );
 }

@@ -1,5 +1,3 @@
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import {
@@ -29,7 +27,6 @@ const AppIcon = ({ ios }: { ios: boolean }) =>
 export default function HomePage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* BRAND GRADIENT STRIP */}
         <div className="h-1.5 w-full bg-gradient-to-r from-b3-buyer via-b3-transport to-b3-quarry" />
@@ -478,7 +475,6 @@ export default function HomePage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

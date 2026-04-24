@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Par mums',
@@ -11,7 +9,6 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      <Navbar />
       <main>
         {/* Hero */}
         <section className="bg-muted py-24 sm:py-32">
@@ -97,7 +94,6 @@ export default function AboutPage() {
           </div>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

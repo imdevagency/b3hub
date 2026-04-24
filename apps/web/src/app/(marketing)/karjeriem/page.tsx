@@ -1,5 +1,3 @@
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { ArrowRight, CheckCircle, Bell, TrendingUp } from 'lucide-react';
@@ -51,7 +49,6 @@ const materials = [
 export default function KarjeriemPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background text-foreground w-full overflow-clip">
         {/* ── HERO ── */}
         <Hero
@@ -509,7 +506,6 @@ export default function KarjeriemPage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

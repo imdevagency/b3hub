@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { ArrowRight, Package, Recycle, Truck, CheckCircle } from 'lucide-react';
@@ -59,7 +57,6 @@ const locations = [
 export default function B3FieldsPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background text-foreground w-full overflow-hidden">
         {/* ── HERO ── */}
         <Hero
@@ -199,7 +196,6 @@ export default function B3FieldsPage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

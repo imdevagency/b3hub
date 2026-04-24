@@ -1,5 +1,3 @@
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
@@ -33,7 +31,6 @@ const benefits = [
 export default function AtgriešanāsBraucieniPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full overflow-clip">
         <Container className="pt-28 pb-0">
           <Link
@@ -177,7 +174,6 @@ export default function AtgriešanāsBraucieniPage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

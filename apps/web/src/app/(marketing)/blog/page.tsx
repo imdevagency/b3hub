@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { getAllPosts } from '@/lib/blog';
@@ -18,7 +16,6 @@ export default function BlogPage() {
 
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full min-h-screen">
         <Hero
           eyebrow="Blogs"
@@ -75,7 +72,6 @@ export default function BlogPage() {
           </div>
         </Container>
       </main>
-      <Footer />
     </>
   );
 }

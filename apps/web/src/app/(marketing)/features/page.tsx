@@ -1,6 +1,4 @@
 import React from 'react';
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 import {
@@ -53,7 +51,6 @@ const features: { icon: React.ElementType; slug: string | null; title: string }[
 export default function FeaturesPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
         <section className="pt-40 pb-24 md:pt-48 md:pb-32 border-b border-border">
@@ -175,7 +172,6 @@ export default function FeaturesPage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

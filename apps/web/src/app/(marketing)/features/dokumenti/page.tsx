@@ -1,5 +1,3 @@
-import { Navbar } from '@/components/marketing/layout/Navbar';
-import { Footer } from '@/components/marketing/layout/Footer';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
@@ -40,7 +38,6 @@ const docTypes = [
 export default function DokumentiPage() {
   return (
     <>
-      <Navbar />
       <main className="bg-background w-full overflow-clip">
         {/* Back */}
         <Container className="pt-28 pb-0">
@@ -185,7 +182,6 @@ export default function DokumentiPage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </>
   );
 }
