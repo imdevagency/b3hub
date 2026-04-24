@@ -78,7 +78,7 @@ export default function WelcomeScreen() {
               activeOpacity={0.7}
               onPress={() => {
                 haptics.light();
-                router.push('/(wizards)/material-order');
+                router.replace('/(buyer)/home' as never);
               }}
             >
               <Text

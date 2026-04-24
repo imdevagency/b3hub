@@ -12,6 +12,7 @@ import {
   ChevronRight,
   AlertCircle,
   ArrowRight,
+  LogIn,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -242,6 +243,31 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        {/* Guest sign-in invitation */}
+        {!user && (
+          <TouchableOpacity
+            className="mx-5 mb-6 bg-gray-900 p-4 rounded-[20px] flex-row items-center"
+            activeOpacity={0.85}
+            onPress={() => {
+              haptics.light();
+              router.push('/(buyer)/profile' as never);
+            }}
+          >
+            <View className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center mr-3">
+              <LogIn size={20} color="#fff" />
+            </View>
+            <View className="flex-1 mr-2">
+              <Text className="text-white font-bold mb-0.5 tracking-tight" style={{ fontSize: 15 }}>
+                Pierakstieties vai izveidojiet kontu
+              </Text>
+              <Text className="text-gray-400 font-medium" style={{ fontSize: 13 }}>
+                Sekojiet pasūtījumiem un saglabājiet adreses
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#6b7280" />
+          </TouchableOpacity>
+        )}
 
         {/* Profile Nudge */}
         {user && (!user.phone || (user.isCompany && !user.company?.id)) && (

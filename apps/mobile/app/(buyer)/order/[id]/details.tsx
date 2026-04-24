@@ -197,7 +197,10 @@ export default function OrderDetailsScreen() {
               const updated = await api.orders.confirmReceipt(order.id, token);
               setOrder(updated);
               haptics.success();
-              Alert.alert('Apstiprināts', 'Pasūtījums veiksmīgi pabeigts. Paldies!');
+              router.push({
+                pathname: '/review/[orderId]',
+                params: { orderId: order.id },
+              } as never);
             } catch (err: unknown) {
               haptics.error();
               toast.error(err instanceof Error ? err.message : 'Neizdevās apstiprināt');

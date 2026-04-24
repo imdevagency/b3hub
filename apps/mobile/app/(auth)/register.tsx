@@ -65,7 +65,7 @@ function pwStrength(pw: string): { label: string; color: string; pct: number } {
 export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
-  const { partner } = useLocalSearchParams<{ partner?: string }>();
+  const { partner, returnTo } = useLocalSearchParams<{ partner?: string; returnTo?: string }>();
   const insets = useSafeAreaInsets();
   const isPartnerFlow = partner === '1';
 
@@ -150,7 +150,11 @@ export default function RegisterScreen() {
       });
       await setAuth(res.user, res.token, res.refreshToken);
       haptics.success();
-      router.replace('/');
+      if (returnTo) {
+        router.replace(returnTo as never);
+      } else {
+        router.replace('/');
+      }
     } catch (err) {
       haptics.error();
       setApiError(err instanceof Error ? err.message : t.register.failed);

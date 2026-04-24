@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -39,6 +40,7 @@ import {
   Ticket,
   Calendar,
   ShieldCheck,
+  Building2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -143,11 +145,15 @@ export default function ProfileScreen() {
   };
 
   const openEdit = () => {
+    if (!user) {
+      router.push('/(auth)/register' as never);
+      return;
+    }
     haptics.light();
     setForm({
-      firstName: user?.firstName ?? '',
-      lastName: user?.lastName ?? '',
-      phone: user?.phone ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      phone: user.phone ?? '',
     });
     setEditOpen(true);
   };
@@ -185,6 +191,99 @@ export default function ProfileScreen() {
   ];
   const missing = steps.filter((step) => !step.done);
   const isComplete = missing.length === 0;
+
+  // ── Guest state ──────────────────────────────────────────────────────────
+  if (!user) {
+    return (
+      <ScreenContainer topInset={0} bg="#ffffff" noAnimation>
+        <ScreenHeader title="Profils" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: '#f3f4f6',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 20,
+            }}
+          >
+            <Text style={{ fontSize: 32 }}>👤</Text>
+          </View>
+          <Text
+            style={{
+              fontSize: 22,
+              fontFamily: 'Inter_700Bold',
+              fontWeight: '700',
+              color: '#111827',
+              textAlign: 'center',
+              marginBottom: 8,
+            }}
+          >
+            Pierakstieties vai izveidojiet kontu
+          </Text>
+          <Text
+            style={{
+              fontSize: 15,
+              color: '#6b7280',
+              textAlign: 'center',
+              marginBottom: 32,
+              lineHeight: 22,
+            }}
+          >
+            Lai skatītu pasūtījumus, saglabātu adreses un pārvaldītu kontu.
+          </Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#111827',
+              borderRadius: 100,
+              paddingVertical: 16,
+              paddingHorizontal: 40,
+              width: '100%',
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+            activeOpacity={0.85}
+            onPress={() => {
+              haptics.light();
+              router.push('/(auth)/register' as never);
+            }}
+          >
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 16,
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
+              }}
+            >
+              Izveidot kontu
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingVertical: 14, width: '100%', alignItems: 'center' }}
+            activeOpacity={0.7}
+            onPress={() => {
+              haptics.light();
+              router.push('/(auth)/login' as never);
+            }}
+          >
+            <Text
+              style={{
+                color: '#111827',
+                fontSize: 15,
+                fontFamily: 'Inter_500Medium',
+                fontWeight: '500',
+              }}
+            >
+              Jau ir konts? Ieiet
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer topInset={0} bg="#ffffff" noAnimation>
@@ -228,8 +327,8 @@ export default function ProfileScreen() {
           <ChevronRight size={20} color="#d1d5db" />
         </TouchableOpacity>
 
-        {/* Completeness Nudge */}
-        {!isComplete && (
+        {/* Completeness Nudge — only for logged-in users with incomplete profiles */}
+        {!!user && !isComplete && (
           <TouchableOpacity
             style={[styles.nudgeCard, { marginTop: 12 }]}
             activeOpacity={0.8}
@@ -463,6 +562,11 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/(buyer)/(account)/documents')}
               />
               <MenuItem
+                icon={AlertCircle}
+                label="Strīdi"
+                onPress={() => router.push('/(buyer)/(account)/disputes')}
+              />
+              <MenuItem
                 icon={MapPin}
                 label="Saglabātās adreses"
                 onPress={() => router.push('/(buyer)/(account)/saved-addresses')}
@@ -491,6 +595,15 @@ export default function ProfileScreen() {
                 icon={ShieldCheck}
                 label="Atbilstības sertifikāti"
                 onPress={() => router.push('/(buyer)/(account)/certificates')}
+              />
+              <MenuItem
+                icon={Building2}
+                label="Uzņēmuma profils"
+                value="b3hub.lv"
+                onPress={() => {
+                  haptics.light();
+                  Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null);
+                }}
                 hideBorder
               />
             </View>

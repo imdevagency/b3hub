@@ -38,6 +38,7 @@ import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 // ── Draft persistence ────────────────────────────────────────────
 const DISPOSAL_DRAFT_KEY = '@b3hub_disposal_draft';
@@ -203,6 +204,7 @@ export default function DisposalWizard() {
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [saveAddress, setSaveAddress] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -214,10 +216,16 @@ export default function DisposalWizard() {
   const derived = deriveTruckType(!isNaN(weightT) && weightT > 0 ? weightT : 1);
   const activeTruck = TIPPER_TRUCKS.find((t) => t.type === derived.truckType) ?? TIPPER_TRUCKS[0];
 
-  // Redirect to welcome if not authenticated
+  // Auth gate fires at commitment, not on mount
+  // (removed early redirect)
+
+  // Sync contact fields when user authenticates mid-wizard
   useEffect(() => {
-    if (!user) router.replace('/(auth)/welcome' as never);
-  }, [user, router]);
+    if (!user) return;
+    if (!contactName.trim())
+      setContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
+    if (!contactPhone.trim()) setContactPhone(user.phone ?? '');
+  }, [user?.id]);
 
   // ── Draft: restore from AsyncStorage on mount ──
   const draftLoadedRef = useRef(false);
@@ -432,6 +440,10 @@ export default function DisposalWizard() {
 
   const onCTA = useCallback(async () => {
     if (step === 4) {
+      if (!user) {
+        setShowAuthGate(true);
+        return;
+      }
       handleSubmit();
       return;
     }
@@ -725,6 +737,14 @@ export default function DisposalWizard() {
           </ScrollView>
         )}
       </WizardLayout>
+      <WizardAuthGate
+        visible={showAuthGate}
+        onAuthenticated={() => {
+          setShowAuthGate(false);
+          handleSubmit();
+        }}
+        onDismiss={() => setShowAuthGate(false)}
+      />
     </>
   );
 }

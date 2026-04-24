@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { X, Eye, EyeOff, ChevronRight } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -34,7 +35,7 @@ import { colors } from '@/lib/theme';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = 'choice' | 'register' | 'login';
+type Mode = 'choice' | 'login';
 
 interface WizardAuthGateProps {
   visible: boolean;
@@ -48,19 +49,10 @@ interface WizardAuthGateProps {
 export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAuthGateProps) {
   const insets = useSafeAreaInsets();
   const { setAuth } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [mode, setMode] = useState<Mode>('choice');
-
-  // Register fields
-  const [isCompany, setIsCompany] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [regNumber, setRegNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
 
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -75,14 +67,6 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
     if (visible) {
       setMode('choice');
       setError('');
-      setIsCompany(false);
-      setFirstName('');
-      setLastName('');
-      setEmail('');
-      setPhone('');
-      setCompanyName('');
-      setRegNumber('');
-      setPassword('');
       setLoginEmail('');
       setLoginPassword('');
     }
@@ -90,51 +74,12 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  const handleRegister = async () => {
-    setError('');
-    if (!firstName.trim() || !lastName.trim()) {
-      setError('Ievadiet vārdu un uzvārdu');
-      haptics.warning();
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setError('Nepareiza e-pasta adrese');
-      haptics.warning();
-      return;
-    }
-    if (password.length < 8) {
-      setError('Parolei jābūt vismaz 8 rakstzīmēm');
-      haptics.warning();
-      return;
-    }
-    if (isCompany && !companyName.trim()) {
-      setError('Ievadiet uzņēmuma nosaukumu');
-      haptics.warning();
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await api.register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim() || undefined,
-        roles: ['BUYER'],
-        isCompany,
-        companyName: isCompany ? companyName.trim() : undefined,
-        regNumber: isCompany && regNumber.trim() ? regNumber.trim() : undefined,
-        password,
-        termsAccepted: true,
-      });
-      await setAuth(res.user, res.token, res.refreshToken);
-      haptics.success();
-      onAuthenticated();
-    } catch (err) {
-      haptics.error();
-      setError(err instanceof Error ? err.message : 'Reģistrācija neizdevās. Mēģiniet vēlreiz.');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoToRegister = () => {
+    onDismiss();
+    router.push({
+      pathname: '/(auth)/register' as never,
+      params: { returnTo: pathname },
+    } as never);
   };
 
   const handleLogin = async () => {
@@ -237,11 +182,7 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                 color: colors.textPrimary,
               }}
             >
-              {mode === 'choice'
-                ? 'Apstiprināt pasūtījumu'
-                : mode === 'register'
-                  ? 'Izveidot kontu'
-                  : 'Ieiet'}
+              {mode === 'choice' ? 'Apstiprināt pasūtījumu' : 'Ieiet'}
             </Text>
             <TouchableOpacity
               onPress={onDismiss}
@@ -272,9 +213,9 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                   sekundes.
                 </Text>
 
-                {/* Quick register */}
+                {/* Create account → full register screen */}
                 <TouchableOpacity
-                  onPress={() => setMode('register')}
+                  onPress={handleGoToRegister}
                   activeOpacity={0.85}
                   style={{
                     backgroundColor: colors.primary,
@@ -367,196 +308,6 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                 >
                   Reģistrējoties jūs piekrītat lietošanas noteikumiem un privātuma politikai.
                 </Text>
-              </View>
-            )}
-
-            {/* ── REGISTER ── */}
-            {mode === 'register' && (
-              <View style={{ gap: 12 }}>
-                {/* Back */}
-                <TouchableOpacity
-                  onPress={() => {
-                    setMode('choice');
-                    setError('');
-                  }}
-                  style={{ marginBottom: 4 }}
-                >
-                  <Text
-                    style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}
-                  >
-                    ← Atpakaļ
-                  </Text>
-                </TouchableOpacity>
-
-                {/* B2C / B2B toggle */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {[
-                    { value: false, label: 'Privātpersona' },
-                    { value: true, label: 'Uzņēmums' },
-                  ].map((opt) => (
-                    <TouchableOpacity
-                      key={String(opt.value)}
-                      onPress={() => setIsCompany(opt.value)}
-                      activeOpacity={0.85}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 12,
-                        alignItems: 'center',
-                        borderWidth: 1.5,
-                        borderColor: isCompany === opt.value ? colors.textPrimary : colors.border,
-                        backgroundColor: isCompany === opt.value ? '#111827' : colors.bgMuted,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontFamily: 'Inter_600SemiBold',
-                          fontWeight: '600',
-                          color: isCompany === opt.value ? '#fff' : colors.textSecondary,
-                        }}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <TextInput
-                    style={[inputStyle, { flex: 1 }]}
-                    placeholder="Vārds"
-                    placeholderTextColor={colors.textDisabled}
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    autoCapitalize="words"
-                    returnKeyType="next"
-                  />
-                  <TextInput
-                    style={[inputStyle, { flex: 1 }]}
-                    placeholder="Uzvārds"
-                    placeholderTextColor={colors.textDisabled}
-                    value={lastName}
-                    onChangeText={setLastName}
-                    autoCapitalize="words"
-                    returnKeyType="next"
-                  />
-                </View>
-
-                <TextInput
-                  style={inputStyle}
-                  placeholder="E-pasts"
-                  placeholderTextColor={colors.textDisabled}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  returnKeyType="next"
-                />
-
-                <TextInput
-                  style={inputStyle}
-                  placeholder="Tālrunis (neobligāts)"
-                  placeholderTextColor={colors.textDisabled}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  returnKeyType="next"
-                />
-
-                {/* Company fields — shown only when Uzņēmums is selected */}
-                {isCompany && (
-                  <>
-                    <TextInput
-                      style={inputStyle}
-                      placeholder="Uzņēmuma nosaukums"
-                      placeholderTextColor={colors.textDisabled}
-                      value={companyName}
-                      onChangeText={setCompanyName}
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                    />
-                    <TextInput
-                      style={inputStyle}
-                      placeholder="Reģistrācijas numurs (piem. 40003009497)"
-                      placeholderTextColor={colors.textDisabled}
-                      value={regNumber}
-                      onChangeText={setRegNumber}
-                      keyboardType="number-pad"
-                      maxLength={12}
-                      returnKeyType="next"
-                    />
-                  </>
-                )}
-
-                {/* Password with toggle */}
-                <View style={{ position: 'relative' }}>
-                  <TextInput
-                    style={[inputStyle, { paddingRight: 48 }]}
-                    placeholder="Parole (min. 8 rakstzīmes)"
-                    placeholderTextColor={colors.textDisabled}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPw}
-                    autoComplete="new-password"
-                    returnKeyType="done"
-                    onSubmitEditing={handleRegister}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPw((v) => !v)}
-                    style={{
-                      position: 'absolute',
-                      right: 14,
-                      top: 0,
-                      bottom: 0,
-                      justifyContent: 'center',
-                    }}
-                    hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-                  >
-                    {showPw ? (
-                      <EyeOff size={18} color={colors.textMuted} />
-                    ) : (
-                      <Eye size={18} color={colors.textMuted} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-
-                {error ? (
-                  <Text
-                    style={{ fontSize: 13, color: colors.danger, fontFamily: 'Inter_400Regular' }}
-                  >
-                    {error}
-                  </Text>
-                ) : null}
-
-                <TouchableOpacity
-                  onPress={handleRegister}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                  style={{
-                    backgroundColor: colors.primary,
-                    borderRadius: 14,
-                    paddingVertical: 16,
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
-                        color: '#fff',
-                      }}
-                    >
-                      Izveidot kontu un pasūtīt
-                    </Text>
-                  )}
-                </TouchableOpacity>
               </View>
             )}
 

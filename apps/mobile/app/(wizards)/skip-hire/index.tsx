@@ -50,6 +50,7 @@ import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { colors } from '@/lib/theme';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 // Module-level constant — statuses eligible to link a skip hire to
 const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
@@ -91,6 +92,7 @@ export default function OrderWizard() {
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [saveAddress, setSaveAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -113,9 +115,15 @@ export default function OrderWizard() {
   const [showMatLink, setShowMatLink] = useState(false);
 
   // Redirect to welcome if not authenticated
+  // (removed — auth gate fires at commitment, not on mount)
+
+  // Sync contact fields when user authenticates mid-wizard
   useEffect(() => {
-    if (!user) router.replace('/(auth)/welcome' as never);
-  }, [user, router]);
+    if (!user) return;
+    if (!contactName.trim())
+      setContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
+    if (!contactPhone.trim()) setContactPhone(user.phone ?? '');
+  }, [user?.id]);
 
   // Fetch market prices once on mount
   useEffect(() => {
@@ -213,7 +221,7 @@ export default function OrderWizard() {
     }
     // Submit
     if (!token) {
-      toast.info('Lai veiktu pasūtījumu, lūdzu vispirms piesakieties.');
+      setShowAuthGate(true);
       return;
     }
     if (!state.location || !state.wasteCategory || !state.skipSize) return;
@@ -704,6 +712,14 @@ export default function OrderWizard() {
           </ScrollView>
         )}
       </WizardLayout>
+      <WizardAuthGate
+        visible={showAuthGate}
+        onAuthenticated={() => {
+          setShowAuthGate(false);
+          onCTA();
+        }}
+        onDismiss={() => setShowAuthGate(false)}
+      />
     </>
   );
 }

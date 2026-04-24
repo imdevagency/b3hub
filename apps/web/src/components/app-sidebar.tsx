@@ -94,6 +94,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         { label: 'Regulārie Pasūtījumi', href: '/dashboard/orders/schedules', icon: CalendarClock },
         { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
         { label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box },
+        { label: 'Mani Strīdi', href: '/dashboard/disputes', icon: AlertTriangle },
       ],
     },
     {

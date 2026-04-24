@@ -32,9 +32,7 @@ function BuyerLayoutContent() {
   );
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace('/(auth)/welcome');
-    } else if (!isLoading && user && user.userType === 'ADMIN') {
+    if (!isLoading && user && user.userType === 'ADMIN') {
       // Admin users must use the web portal — no admin UI exists on mobile
       // (stays in place; a blocking overlay is rendered below)
     } else if (!isLoading && user && !availableModes.includes('BUYER')) {
@@ -58,9 +56,13 @@ function BuyerLayoutContent() {
         router.push('/(buyer)/profile');
       }}
     >
-      <Text style={ls.avatarBtnText}>
-        {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
-      </Text>
+      {user ? (
+        <Text style={ls.avatarBtnText}>
+          {(user.firstName?.[0] ?? '') + (user.lastName?.[0] ?? '')}
+        </Text>
+      ) : (
+        <User size={18} color={colors.white} strokeWidth={2} />
+      )}
     </TouchableOpacity>
   );
 

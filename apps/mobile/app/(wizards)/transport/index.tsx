@@ -28,6 +28,7 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
 import { haptics } from '@/lib/haptics';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -151,6 +152,7 @@ export default function TransportWizard() {
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
 
   const [submitting, setSubmitting] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
   const [savePickup, setSavePickup] = useState(false);
   const [saveDropoff, setSaveDropoff] = useState(false);
   const [siteContactName, setSiteContactName] = useState(() =>
@@ -169,10 +171,13 @@ export default function TransportWizard() {
   const currentVehicle = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle);
   const currentVehiclePrice = currentVehicle?.fromPrice;
 
-  // Redirect to welcome if not authenticated
+  // Sync contact fields when user authenticates mid-wizard
   useEffect(() => {
-    if (!user) router.replace('/(auth)/welcome' as never);
-  }, [user, router]);
+    if (!user) return;
+    if (!siteContactName.trim())
+      setSiteContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
+    if (!siteContactPhone.trim()) setSiteContactPhone(user.phone ?? '');
+  }, [user?.id]);
 
   // ── Draft: restore from AsyncStorage on mount ──
   const draftLoadedRef = useRef(false);
@@ -429,12 +434,16 @@ export default function TransportWizard() {
 
   const onCTA = useCallback(() => {
     if (step === 5) {
+      if (!user) {
+        setShowAuthGate(true);
+        return;
+      }
       handleSubmit();
       return;
     }
     haptics.medium();
     setStep((s) => (s + 1) as Step);
-  }, [step, handleSubmit]);
+  }, [step, user, handleSubmit]);
 
   const STEP_TITLES: Record<Step, string> = {
     1: 'Kur paņemt kravu?',
@@ -779,6 +788,14 @@ export default function TransportWizard() {
           </ScrollView>
         )}
       </WizardLayout>
+      <WizardAuthGate
+        visible={showAuthGate}
+        onAuthenticated={() => {
+          setShowAuthGate(false);
+          handleSubmit();
+        }}
+        onDismiss={() => setShowAuthGate(false)}
+      />
     </>
   );
 }
