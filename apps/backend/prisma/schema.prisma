@@ -345,6 +345,7 @@ model User {
   avatar             String?
   userType           UserType     @default(BUYER)
   isCompany          Boolean      @default(false) // true = company account (VAT invoices etc.)
+  personalCode       String?      @unique // Latvian personal ID code (personas kods) — individuals only
   canSell            Boolean      @default(false) // approved to list & sell materials
   canTransport       Boolean      @default(false) // approved to offer transport services
   canSkipHire        Boolean      @default(false) // approved to manage skip hire fleet
@@ -1317,7 +1318,9 @@ model SkipHireOrder {
   skipSize SkipSize
 
   // Step 4 — Delivery date
-  deliveryDate DateTime
+  deliveryDate   DateTime
+  deliveryWindow String? // 'AM' (8–13) | 'PM' (13–18) | 'ANY'
+  hireDays       Int?    // hire period in days (e.g. 7, 14, 28)
 
   // Pricing (stored at time of order)
   price    Float

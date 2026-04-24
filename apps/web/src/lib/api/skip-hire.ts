@@ -51,6 +51,8 @@ export interface CreateSkipHireInput {
   carrierId?: string; // selected from quotes
   /** Preferred delivery time window: 'AM' (8–13), 'PM' (13–18), or 'ANY'. */
   deliveryWindow?: string;
+  /** Hire period in days (e.g. 7, 14, 28). */
+  hireDays?: number;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;

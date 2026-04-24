@@ -49,6 +49,7 @@ export class AuthService {
       phone,
       companyName,
       regNumber,
+      personalCode,
       termsAccepted,
     } = registerDto;
 
@@ -88,6 +89,7 @@ export class AuthService {
         phone,
         userType: 'BUYER',
         isCompany: isCompany ?? roles.some((r) => r !== 'BUYER'),
+        personalCode: !isCompany && personalCode?.trim() ? personalCode.trim() : undefined,
         termsAcceptedAt: new Date(),
         emailVerifyToken: hashedVerifyToken,
         emailVerifyExpiry: verifyExpiry,

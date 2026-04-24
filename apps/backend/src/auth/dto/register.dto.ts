@@ -53,6 +53,12 @@ export class RegisterDto {
   @IsString()
   regNumber?: string;
 
+  /** Latvian personal ID code (personas kods) — individuals only, optional */
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  personalCode?: string;
+
   /**
    * Must be true — the user explicitly accepted the Terms of Service and Privacy Policy.
    * Stored as a timestamp to satisfy GDPR Art. 7 and Apple guideline 5.1.1.

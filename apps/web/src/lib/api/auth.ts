@@ -67,6 +67,8 @@ export interface RegisterInput {
   companyId?: string;
   companyName?: string;
   regNumber?: string;
+  /** Latvian personal ID code (personas kods) — individuals only */
+  personalCode?: string;
   /** Must be true — user accepted T&C and Privacy Policy */
   termsAccepted: boolean;
 }

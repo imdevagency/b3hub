@@ -23,6 +23,7 @@ import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
+import { Calendar } from '@/components/ui/calendar';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { createTransportOrder, type TransportVehicleType } from '@/lib/api/orders';
@@ -454,7 +455,12 @@ export function TransportWizard({ mode }: Props) {
               Aprakstiet kravu — mēs piedāvāsim piemēroto transportlīdzekli
             </p>
           </div>
-
+          {mode === 'public' && (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2.5 border border-border/40">
+              Pieprasījuma noslēgšanai lūgums pierakstīties vai reģistrēties — aizņem mazāk nekā 30
+              sek.
+            </p>
+          )}
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Kravas apraksts</label>
             <Textarea
@@ -600,13 +606,42 @@ export function TransportWizard({ mode }: Props) {
             <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               <CalendarDays className="size-4" /> Vēlamais datums
             </label>
-            <Input
-              type="date"
-              value={date}
-              min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
-            />
+            <div className="rounded-2xl border overflow-hidden">
+              <Calendar
+                mode="single"
+                selected={
+                  date
+                    ? (() => {
+                        const [y, m, d] = date.split('-').map(Number);
+                        return new Date(y, m - 1, d);
+                      })()
+                    : undefined
+                }
+                onSelect={(d) => {
+                  if (!d) return;
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  setDate(`${y}-${m}-${day}`);
+                }}
+                disabled={{ before: new Date(Date.now() + 86400000) }}
+                className="p-3"
+              />
+            </div>
+            {date && (
+              <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+                <CalendarDays className="size-4 text-black shrink-0" />
+                <span className="text-sm font-semibold text-primary">
+                  Datums:{' '}
+                  {new Date(date + 'T00:00:00').toLocaleDateString('lv-LV', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -758,6 +793,12 @@ export function TransportWizard({ mode }: Props) {
         </div>
       )}
 
+      {showMap && selectedVehicle && (
+        <div className="absolute top-4 right-4 z-10 bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-sm font-bold text-foreground">
+          {selectedVehicle.label} · no €{selectedVehicle.fromPrice}
+        </div>
+      )}
+
       {/* Cargo step — vehicle guide */}
       {step === 'cargo' && mode === 'public' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center px-10">
@@ -812,6 +853,8 @@ export function TransportWizard({ mode }: Props) {
             setAuthGateOpen(false);
             setPendingAction(null);
           }}
+          prefilledName={contactName}
+          prefilledPhone={contactPhone}
         />
       </>
     );

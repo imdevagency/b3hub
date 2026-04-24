@@ -5,6 +5,8 @@ import {
   IsOptional,
   IsEmail,
   IsNumber,
+  IsInt,
+  Min,
   MinLength,
 } from 'class-validator';
 import { SkipWasteCategory, SkipSize } from '@prisma/client';
@@ -58,4 +60,17 @@ export class CreateSkipHireDto {
   @IsOptional()
   @IsString()
   carrierId?: string;
+
+  @IsOptional()
+  @IsString()
+  deliveryWindow?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  hireDays?: number;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

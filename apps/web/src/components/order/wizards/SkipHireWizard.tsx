@@ -23,6 +23,7 @@ import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
+import { Calendar } from '@/components/ui/calendar';
 import {
   createSkipHireOrder,
   mapWasteCategory,
@@ -312,10 +313,10 @@ export function SkipHireWizard({ mode }: Props) {
           skipSize: mapSkipSize(size),
           deliveryDate,
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+          hireDays,
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
-          notes:
-            [notes, `Nomas periods: ${hireDays} dienas`].filter(Boolean).join('\n') || undefined,
+          notes: notes || undefined,
         },
         tok,
       );
@@ -365,6 +366,14 @@ export function SkipHireWizard({ mode }: Props) {
               Izvēlieties izmēru pēc atkritumu daudzuma
             </p>
           </div>
+
+          {mode === 'public' && (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2.5 border border-border/40">
+              Pasūtījuma noslēgšanai lūgums pierakstīties vai reģistrēties — aizņem mazāk nekā 30
+              sek.
+            </p>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {SIZES.map((s) => (
               <button
@@ -447,12 +456,15 @@ export function SkipHireWizard({ mode }: Props) {
           {selectedSize && (
             <div className="rounded-2xl bg-muted/40 p-4 flex items-center gap-3">
               <Package className="size-5 text-foreground shrink-0" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground text-sm">
                   {selectedSize.label} konteiners ({selectedSize.sub})
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{address}</p>
               </div>
+              <p className="text-base font-bold text-foreground shrink-0">
+                no €{selectedSize.fromPrice}
+              </p>
             </div>
           )}
 
@@ -460,13 +472,42 @@ export function SkipHireWizard({ mode }: Props) {
             <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               <CalendarDays className="size-4" /> Piegādes datums
             </label>
-            <Input
-              type="date"
-              value={deliveryDate}
-              min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
-            />
+            <div className="rounded-2xl border overflow-hidden">
+              <Calendar
+                mode="single"
+                selected={
+                  deliveryDate
+                    ? (() => {
+                        const [y, m, d] = deliveryDate.split('-').map(Number);
+                        return new Date(y, m - 1, d);
+                      })()
+                    : undefined
+                }
+                onSelect={(d) => {
+                  if (!d) return;
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  setDeliveryDate(`${y}-${m}-${day}`);
+                }}
+                disabled={{ before: new Date(Date.now() + 86400000) }}
+                className="p-3"
+              />
+            </div>
+            {deliveryDate && (
+              <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+                <CalendarDays className="size-4 text-black shrink-0" />
+                <span className="text-sm font-semibold text-primary">
+                  Piegāde:{' '}
+                  {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -635,7 +676,11 @@ export function SkipHireWizard({ mode }: Props) {
         </div>
       )}
 
-      {/* Size step — compare all sizes */}
+      {showMap && selectedSize && (
+        <div className="absolute top-4 right-4 z-10 bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-sm font-bold text-foreground">
+          {selectedSize.label} · no €{selectedSize.fromPrice}
+        </div>
+      )}
       {step === 'size' && mode === 'public' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center px-10">
           <div className="w-full max-w-sm space-y-4">
@@ -687,6 +732,8 @@ export function SkipHireWizard({ mode }: Props) {
             setAuthGateOpen(false);
             setPendingAction(null);
           }}
+          prefilledName={contactName}
+          prefilledPhone={contactPhone}
         />
       </>
     );
