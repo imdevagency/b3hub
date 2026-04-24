@@ -333,7 +333,7 @@ export function SkipHireWizard({ mode }: Props) {
 
   const selectedSize = SIZES.find((s) => s.id === size);
   const isConfirmed = step === 'confirmed';
-  const showMap = step === 'address' || step === 'details' || isConfirmed;
+  const showMap = true;
 
   function getOnBack(): (() => void) | undefined {
     if (isConfirmed) return undefined;
@@ -650,7 +650,7 @@ export function SkipHireWizard({ mode }: Props) {
     <div
       className={
         mode === 'public'
-          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-24 h-[calc(100svh-6rem)]'
+          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-[600px] rounded-3xl shadow-xl ring-1 ring-border/40'
           : 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
@@ -681,36 +681,6 @@ export function SkipHireWizard({ mode }: Props) {
           {selectedSize.label} · no €{selectedSize.fromPrice}
         </div>
       )}
-      {step === 'size' && mode === 'public' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-10">
-          <div className="w-full max-w-sm space-y-4">
-            <div>
-              <p className="text-2xl font-bold text-foreground">Konteineru izmēri</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Izvēlieties atbilstoši darba apjomam
-              </p>
-            </div>
-            <div className="space-y-2.5">
-              {SIZES.map((s) => (
-                <div
-                  key={s.id}
-                  className="rounded-xl bg-background/80 border border-border/50 px-4 py-3.5 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">
-                      {s.label} — {s.sub}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{s.capacity}</p>
-                  </div>
-                  <p className="text-sm font-bold text-foreground shrink-0 ml-3">
-                    no €{s.fromPrice}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -720,7 +690,7 @@ export function SkipHireWizard({ mode }: Props) {
     return (
       <>
         <Container className="pt-32 pb-24 flex max-lg:flex-col items-start gap-10 lg:gap-20">
-          <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background">
+          <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background rounded-2xl shadow-xl border border-border/40 overflow-hidden">
             {wizardContent}
           </div>
           {rightPanel}

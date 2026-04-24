@@ -422,7 +422,7 @@ export function TransportWizard({ mode }: Props) {
 
   const selectedVehicle = VEHICLES.find((v) => v.type === vehicleType);
   const isSent = step === 'sent';
-  const showMap = step === 'from' || step === 'to' || step === 'details' || isSent;
+  const showMap = true;
 
   function getOnBack(): (() => void) | undefined {
     if (isSent) return undefined;
@@ -767,7 +767,7 @@ export function TransportWizard({ mode }: Props) {
     <div
       className={
         mode === 'public'
-          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-24 h-[calc(100svh-6rem)]'
+          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-[600px] rounded-3xl shadow-xl ring-1 ring-border/40'
           : 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
@@ -798,40 +798,6 @@ export function TransportWizard({ mode }: Props) {
           {selectedVehicle.label} · no €{selectedVehicle.fromPrice}
         </div>
       )}
-
-      {/* Cargo step — vehicle guide */}
-      {step === 'cargo' && mode === 'public' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-10">
-          <div className="w-full max-w-sm space-y-4">
-            <div>
-              <p className="text-2xl font-bold text-foreground">Transportlīdzekļi</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Ieteicamais tiek izvēlēts automātiski pēc svara
-              </p>
-            </div>
-            <div className="space-y-2.5">
-              {VEHICLES.map((v) => (
-                <div
-                  key={v.type}
-                  className={`rounded-2xl border px-5 py-4 flex items-center justify-between ${
-                    vehicleType === v.type
-                      ? 'border-foreground bg-foreground/5'
-                      : 'bg-background/80 border-border/50'
-                  }`}
-                >
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">{v.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{v.sub}</p>
-                  </div>
-                  <p className="text-sm font-bold text-foreground shrink-0 ml-3">
-                    no €{v.fromPrice}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -841,7 +807,7 @@ export function TransportWizard({ mode }: Props) {
     return (
       <>
         <Container className="pt-32 pb-24 flex max-lg:flex-col items-start gap-10 lg:gap-20">
-          <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background">
+          <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background rounded-2xl shadow-xl border border-border/40 overflow-hidden">
             {wizardContent}
           </div>
           {rightPanel}

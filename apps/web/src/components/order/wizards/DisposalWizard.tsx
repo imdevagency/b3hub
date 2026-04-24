@@ -329,7 +329,7 @@ export function DisposalWizard({ mode }: Props) {
   const selectedWaste = WASTE_TYPES.find((w) => w.id === wasteType);
   const priceBand = wasteType ? PRICE_BAND[wasteType] : null;
   const isSent = step === 'sent';
-  const showMap = step === 'address' || step === 'details' || isSent;
+  const showMap = true;
 
   function getOnBack(): (() => void) | undefined {
     if (isSent) return undefined;
@@ -667,7 +667,7 @@ export function DisposalWizard({ mode }: Props) {
     <div
       className={
         mode === 'public'
-          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-24 h-[calc(100svh-6rem)]'
+          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-[600px] rounded-3xl shadow-xl ring-1 ring-border/40'
           : 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
@@ -699,40 +699,6 @@ export function DisposalWizard({ mode }: Props) {
           {(priceBand.to * parseFloat(weightT)).toFixed(0)}
         </div>
       )}
-
-      {/* Waste step — price guide */}
-      {step === 'waste' && mode === 'public' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-10">
-          <div className="w-full max-w-sm space-y-4">
-            <div>
-              <p className="text-2xl font-bold text-foreground">Cenu pamatošanas</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Indikatīvā cena (galīgā — pēc svēršanas)
-              </p>
-            </div>
-            <div className="space-y-2">
-              {WASTE_TYPES.filter((w) => !w.hazardous).map((w) => (
-                <div
-                  key={w.id}
-                  className={`rounded-xl border px-4 py-3 flex items-center justify-between ${
-                    wasteType === w.id
-                      ? 'border-foreground bg-foreground/5'
-                      : 'bg-background/80 border-border/50'
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-foreground">{w.label}</p>
-                  <p className="text-xs text-muted-foreground shrink-0 ml-3">
-                    €{PRICE_BAND[w.id].from}–{PRICE_BAND[w.id].to}/t
-                  </p>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              * Bīstami atkritumi apstrādāti atsevišķi pēc licencēšanas
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -742,7 +708,7 @@ export function DisposalWizard({ mode }: Props) {
     return (
       <>
         <Container className="pt-32 pb-24 flex max-lg:flex-col items-start gap-10 lg:gap-20">
-          <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background">
+          <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background rounded-2xl shadow-xl border border-border/40 overflow-hidden">
             {wizardContent}
           </div>
           {rightPanel}
