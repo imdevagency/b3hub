@@ -90,7 +90,7 @@ export default function DisputesPage() {
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={<AlertTriangle className="size-8 text-muted-foreground" />}
+          icon={AlertTriangle}
           title="Nav strīdu"
           description={
             statusFilter === 'ALL'

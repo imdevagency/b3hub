@@ -1,21 +1,11 @@
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
-import { Hero } from '@/components/layout/Hero';
-import { Container } from '@/components/layout/Container';
-import {
-  ArrowRight,
-  Truck,
-  HardHat,
-  Pickaxe,
-  Star,
-  Check,
-  Home,
-  Building2 as B2,
-} from 'lucide-react';
+import { Navbar } from '@/components/marketing/layout/Navbar';
+import { Footer } from '@/components/marketing/layout/Footer';
+import { Hero } from '@/components/marketing/layout/Hero';
+import { Container } from '@/components/marketing/layout/Container';
+import { ArrowRight, Truck, HardHat, Pickaxe, Star, Check, Home, Building2 as B2 } from 'lucide-react';
 import Link from 'next/link';
-import { CTAButton } from '@/components/ui/cta-button';
+import { CTAButton } from '@/components/marketing/ui/cta-button';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 
 const AppIcon = ({ ios }: { ios: boolean }) =>
   ios ? (
@@ -51,7 +41,7 @@ export default function HomePage() {
           subtitle="Grants, smiltis, drupināts akmens — piegādāts uz māju vai būvvietu. Bez reģistrācijas, bez zvaniem."
           actions={
             <>
-              <CTAButton href={`${APP_URL}/order`} variant="primary" size="lg">
+              <CTAButton href={`/order`} variant="primary" size="lg">
                 Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-2" />
               </CTAButton>
               <CTAButton href={`#uznemumiem`} variant="secondary" size="lg">
@@ -70,6 +60,7 @@ export default function HomePage() {
         {/* ── 1b. B2C vs B2B SPLIT ─────────────────────────────────────────── */}
         <section id="uznemumiem" className="w-full border-t border-border">
           <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+
             {/* ── B2C — Private customer ── */}
             <div className="flex flex-col gap-8 p-10 md:p-16 bg-background">
               <div className="flex items-center gap-3">
@@ -87,8 +78,7 @@ export default function HomePage() {
                   bez konta.
                 </h2>
                 <p className="text-lg text-muted-foreground font-light leading-relaxed max-w-sm">
-                  Vienreizējs pasūtījums — norādi materiālu, daudzumu un piegādes adresi. Cena
-                  uzreiz. Maksā ar karti. Nav abonēšanas.
+                  Vienreizējs pasūtījums — norādi materiālu, daudzumu un piegādes adresi. Cena uzreiz. Maksā ar karti. Nav abonēšanas.
                 </p>
               </div>
               <ul className="flex flex-col gap-3">
@@ -105,12 +95,10 @@ export default function HomePage() {
                 ))}
               </ul>
               <div className="mt-2">
-                <CTAButton href={`${APP_URL}/order`} variant="primary" size="default">
+                <CTAButton href={`/order`} variant="primary" size="default">
                   Pasūtīt tagad <ArrowRight className="w-4 h-4 ml-1" />
                 </CTAButton>
-                <p className="text-xs text-muted-foreground mt-3">
-                  Nav nepieciešama kredītkarte pirms pasūtījuma
-                </p>
+                <p className="text-xs text-muted-foreground mt-3">Nav nepieciešama kredītkarte pirms pasūtījuma</p>
               </div>
             </div>
 
@@ -131,8 +119,7 @@ export default function HomePage() {
                   platforma.
                 </h2>
                 <p className="text-lg text-background/60 font-light leading-relaxed max-w-sm">
-                  Vairāki projekti, komandas konti, ietvara līgumi un automātiskie PVN rēķini — viss
-                  vienā sistēmā.
+                  Vairāki projekti, komandas konti, ietvara līgumi un automātiskie PVN rēķini — viss vienā sistēmā.
                 </p>
               </div>
               <ul className="flex flex-col gap-3">
@@ -149,19 +136,15 @@ export default function HomePage() {
                 ))}
               </ul>
               <div className="mt-2 flex flex-col gap-3">
-                <CTAButton href={`${APP_URL}/register`} variant="inverted" size="default">
+                <CTAButton href={`/register`} variant="inverted" size="default">
                   Reģistrēt uzņēmumu <ArrowRight className="w-4 h-4 ml-1" />
                 </CTAButton>
-                <CTAButton
-                  href={`${APP_URL}/login`}
-                  variant="outline"
-                  size="default"
-                  className="border-background/20 text-background hover:border-background/60"
-                >
+                <CTAButton href={`/login`} variant="outline" size="default" className="border-background/20 text-background hover:border-background/60">
                   Ienākt esošajā kontā
                 </CTAButton>
               </div>
             </div>
+
           </div>
         </section>
 
@@ -454,20 +437,13 @@ export default function HomePage() {
               strādāt gudrāk?
             </h2>
             <div className="flex flex-col gap-4 min-w-fit">
-              <CTAButton href={`${APP_URL}/order`} variant="inverted" size="lg">
+              <CTAButton href={`/order`} variant="inverted" size="lg">
                 Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-2" />
               </CTAButton>
-              <CTAButton
-                href={`${APP_URL}/register`}
-                variant="outline"
-                size="lg"
-                className="border-background/20 text-background hover:border-background/60"
-              >
+              <CTAButton href={`/register`} variant="outline" size="lg" className="border-background/20 text-background hover:border-background/60">
                 Reģistrēt uzņēmumu
               </CTAButton>
-              <p className="text-center text-background/40 text-sm">
-                Privātpersonām — bez reģistrācijas
-              </p>
+              <p className="text-center text-background/40 text-sm">Privātpersonām — bez reģistrācijas</p>
             </div>
           </Container>
         </section>

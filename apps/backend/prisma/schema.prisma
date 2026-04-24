@@ -670,6 +670,61 @@ model Order {
   @@map("orders")
 }
 
+// ── Guest Order ───────────────────────────────────────────────────────────────
+// Unauthenticated B2C order submitted from the public landing page.
+// Not linked to any User or Company — just contact info + delivery details.
+// Admin/seller is notified and can contact the guest directly, or the guest
+// can later register and have the order converted to a real Order.
+model GuestOrder {
+  id          String           @id @default(cuid())
+  orderNumber String           @unique
+  token       String           @unique // public tracking token — /order/[token]
+
+  // What
+  materialCategory String  // mirrors MaterialCategory enum values
+  materialName     String
+  quantity         Float
+  unit             String  // TONNE | M3 | KG | PIECE
+
+  // Where
+  deliveryAddress String
+  deliveryCity    String
+  deliveryPostal  String?
+  deliveryLat     Float?
+  deliveryLng     Float?
+
+  // When
+  deliveryDate   DateTime?
+  deliveryWindow String?   // e.g. "08:00-12:00"
+
+  // Who (guest contact — no account required)
+  contactName  String
+  contactPhone String
+  contactEmail String?
+  notes        String?
+
+  // Lifecycle
+  status GuestOrderStatus @default(PENDING)
+
+  // Optional: if converted, link to the real order
+  convertedOrderId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([token])
+  @@index([status])
+  @@index([contactPhone])
+  @@map("guest_orders")
+}
+
+enum GuestOrderStatus {
+  PENDING    // received, awaiting admin/seller action
+  CONTACTED  // admin or seller has reached out to the guest
+  CONVERTED  // guest registered and order moved to Order model
+  CANCELLED
+}
+
 model OrderItem {
   id String @id @default(cuid())
 

@@ -1,13 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { CTAButton } from '@/components/ui/cta-button';
+import { CTAButton } from '@/components/marketing/ui/cta-button';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Container } from './Container';
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
 
 const navItems = [
   { label: 'Funkcijas', href: '/features' },
@@ -47,15 +45,15 @@ export function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-4">
             <Link
-              href={`${APP_URL}/login`}
+              href={`/login`}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
             >
               Ienākt
             </Link>
-            <CTAButton href={`${APP_URL}/order`} variant="secondary" size="sm">
+            <CTAButton href={`/order`} variant="secondary" size="sm">
               Pasūtīt
             </CTAButton>
-            <CTAButton href={`${APP_URL}/register`} variant="primary" size="sm">
+            <CTAButton href={`/register`} variant="primary" size="sm">
               Reģistrēties
             </CTAButton>
           </div>
@@ -94,14 +92,14 @@ export function Navbar() {
           ))}
           <div className="flex flex-col gap-4 mt-4 pt-8 border-t border-border">
             <Link
-              href={`${APP_URL}/login`}
+              href={`/login`}
               className="text-xl font-medium text-foreground"
               onClick={() => setMobileOpen(false)}
             >
               Ienākt
             </Link>
             <CTAButton
-              href={`${APP_URL}/order`}
+              href={`/order`}
               variant="primary"
               size="lg"
               className="text-center w-full mt-2"
@@ -110,7 +108,7 @@ export function Navbar() {
               Pasūtīt tagad
             </CTAButton>
             <CTAButton
-              href={`${APP_URL}/register`}
+              href={`/register`}
               variant="secondary"
               size="lg"
               className="text-center w-full"
