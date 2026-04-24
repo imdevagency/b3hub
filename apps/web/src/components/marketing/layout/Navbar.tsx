@@ -43,18 +43,19 @@ export function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             <Link
               href={`/login`}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
             >
               Ienākt
             </Link>
-            <CTAButton href={`/order`} variant="secondary" size="sm">
-              Pasūtīt
-            </CTAButton>
-            <CTAButton href={`/register`} variant="primary" size="sm">
+            <CTAButton href={`/register`} variant="secondary" size="sm">
               Reģistrēties
+            </CTAButton>
+            <div className="w-px h-5 bg-border/60 mx-1" aria-hidden="true" />
+            <CTAButton href={`/order`} variant="primary" size="sm">
+              Pasūtīt
             </CTAButton>
           </div>
 
