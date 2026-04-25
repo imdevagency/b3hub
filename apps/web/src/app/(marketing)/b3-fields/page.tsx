@@ -1,3 +1,8 @@
+// TODO: B3 FIELDS — FUTURE FEATURE
+// This page is hidden from public navigation until B3 Field physical locations are operational.
+// Remove the redirect below and re-enable Footer + sidebar links when ready.
+import { redirect } from 'next/navigation';
+
 import type { Metadata } from 'next';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
@@ -6,6 +11,7 @@ import Link from 'next/link';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 
 export const metadata: Metadata = {
+  // NOTE: metadata export is kept so the page config is preserved for future use
   title: 'B3 Fields — Fiziskie loģistikas punkti Latvijā | B3Hub',
   description:
     'Paņem celtniecības materiālus, nodod atkritumus ar juridiski derīgu sertifikātu un īrē piekabes 6 punktos visā Latvijā. Viss caur B3Hub platformu.',
@@ -19,7 +25,6 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
-
 
 const services = [
   {
@@ -55,6 +60,8 @@ const locations = [
 ];
 
 export default function B3FieldsPage() {
+  // TODO: B3 FIELDS — remove this redirect when physical locations are operational
+  redirect('/');
   return (
     <>
       <main className="bg-background text-foreground w-full overflow-hidden">

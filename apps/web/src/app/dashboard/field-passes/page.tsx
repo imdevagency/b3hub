@@ -1,6 +1,8 @@
 /**
  * Field Passes page — /dashboard/field-passes
- * Buyer view: list, create, and download site access passes.
+ * TODO: B3 FIELDS — FUTURE FEATURE
+ * Hidden from sidebar navigation until B3 Field physical locations are operational.
+ * Re-enable sidebar link in app-sidebar.tsx (buyer-procurement section) when ready.
  */
 'use client';
 

@@ -16,7 +16,8 @@ const navigation = {
     { name: 'Būvniekiem', href: '/buvniekiem' },
     { name: 'Pārvadātājiem', href: '/parvadatajiem' },
     { name: 'Karjeriem & piegādātājiem', href: '/karjeriem' },
-    { name: 'B3 Fields', href: '/b3-fields' },
+    // TODO: B3 FIELDS — re-enable when physical locations are live
+    // { name: 'B3 Fields', href: '/b3-fields' },
     { name: 'Cenas', href: '/pricing' },
   ],
   company: [

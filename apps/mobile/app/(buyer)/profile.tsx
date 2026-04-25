@@ -586,11 +586,12 @@ export default function ProfileScreen() {
                 label="Grafiki"
                 onPress={() => router.push('/(buyer)/(account)/schedules')}
               />
-              <MenuItem
+              {/* TODO: B3 FIELDS — re-enable when physical locations are live */}
+              {/* <MenuItem
                 icon={Ticket}
                 label="Laukuma caurlaides"
                 onPress={() => router.push('/(buyer)/(account)/field-passes')}
-              />
+              /> */}
               <MenuItem
                 icon={ShieldCheck}
                 label="Atbilstības sertifikāti"

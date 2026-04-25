@@ -104,7 +104,8 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Pasūtīt Materiālus', href: '/dashboard/catalog', icon: Package },
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
-        { label: 'Caurlaides', href: '/dashboard/field-passes', icon: Ticket },
+        // TODO: B3 FIELDS — re-enable when physical locations are live
+        // { label: 'Caurlaides', href: '/dashboard/field-passes', icon: Ticket },
       ],
     },
     {
@@ -126,7 +127,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Sākumlapa', href: '/dashboard/supplier', icon: LayoutDashboard },
         { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
-        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/incoming-orders', icon: ClipboardList },
+        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
         { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
         { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
       ],
@@ -277,7 +278,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             ...section,
             items: [
               section.items[0],
-              { label: 'Dispečera Panelis', href: '/dashboard/fleet', icon: LayoutGrid },
+              { label: 'Dispečera Panelis', href: '/dashboard/active', icon: LayoutGrid },
               ...section.items.slice(1),
             ],
           };
@@ -821,18 +822,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="B3 Lauka caurlaides"
-                  isActive={isRouteActive('/dashboard/admin/field-passes')}
-                >
-                  <Link href="/dashboard/admin/field-passes">
-                    <Ticket className="size-4 shrink-0" />
-                    <span>Lauka caurlaides</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* TODO: B3 FIELDS — restore admin/field-passes link when physical locations are live */}
             </SidebarMenu>
           </SidebarGroup>
         )}

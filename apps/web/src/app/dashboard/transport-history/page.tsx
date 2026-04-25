@@ -1,36 +1,11 @@
 /**
  * Transport History — /dashboard/transport-history
- * Dedicated carrier view for reviewing completed and active transport jobs.
+ * Consolidated into /dashboard/orders (carrier tab).
+ * This stub exists so bookmarks/links don't break.
+ * Also listed in next.config.ts redirects for a zero-JS redirect.
  */
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useRequireAuth } from '@/hooks/use-require-auth';
-import { CarrierHistoryView } from '../orders/page';
-
-export default function TransportHistoryPage() {
-  const { token, user, isLoading } = useRequireAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && user && !user.canTransport) router.replace('/dashboard');
-  }, [user, isLoading, router]);
-
-  if (!token || (user && !user.canTransport)) {
-    return <div className="p-8 text-center text-muted-foreground text-sm">Ielādē...</div>;
-  }
-
-  return (
-    <div className="w-full h-full pb-20 space-y-8">
-      <div>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Mani Darbi</h1>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl">
-          Pārvadājumu vēsture — pabeigti darbi, ieņēmumi, maršruti
-        </p>
-      </div>
-
-      <CarrierHistoryView token={token} />
-    </div>
-  );
+export default function TransportHistoryRedirect() {
+  redirect('/dashboard/orders');
 }
