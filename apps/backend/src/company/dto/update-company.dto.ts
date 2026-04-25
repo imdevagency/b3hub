@@ -10,6 +10,14 @@ export class UpdateCompanyDto {
   legalName?: string;
 
   @IsOptional()
+  @IsString()
+  registrationNum?: string;
+
+  @IsOptional()
+  @IsString()
+  vatId?: string;
+
+  @IsOptional()
   @IsEmail()
   email?: string;
 

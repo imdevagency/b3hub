@@ -10,15 +10,18 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
@@ -29,6 +32,23 @@ import { ApiTags } from '@nestjs/swagger';
 @UseGuards(JwtAuthGuard)
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+
+  // ── UR public company lookup ───────────────────────────────────────────────
+
+  /** Public: look up a Latvian company by registration number via the UR open data API.
+   *  Does not require authentication. */
+  @Get('lookup/ur')
+  @UseGuards(OptionalJwtAuthGuard)
+  async lookupUr(@Query('regcode') regcode: string) {
+    if (!regcode || regcode.replace(/\D/g, '').length !== 11) {
+      throw new BadRequestException(
+        'regcode must be an 11-digit Latvian registration number',
+      );
+    }
+    const result = await this.companyService.lookupByRegcode(regcode);
+    if (!result) return { found: false };
+    return { found: true, ...result };
+  }
 
   // ── Company profile ────────────────────────────────────────────────────────
 

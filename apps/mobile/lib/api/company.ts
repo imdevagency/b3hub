@@ -264,4 +264,17 @@ export const companyApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
   },
+
+  /** Look up a Latvian company by 11-digit registration number via the public UR open data API.
+   *  No authentication required. */
+  lookupByRegcode: (regcode: string) =>
+    apiFetch<{
+      found: boolean;
+      name?: string;
+      legalName?: string;
+      address?: string;
+      type?: string;
+      registered?: string | null;
+      active?: boolean;
+    }>(`/company/lookup/ur?regcode=${encodeURIComponent(regcode)}`),
 };

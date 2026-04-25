@@ -95,6 +95,72 @@ export class CompanyService {
     }
   }
 
+  // ── UR (Uzņēmumu Reģistrs) public lookup ──────────────────────────────────
+
+  /** Look up a Latvian company by registration number via the public data.gov.lv datastore.
+   *  No authentication required — this is public government data. */
+  async lookupByRegcode(regcode: string): Promise<{
+    name: string;
+    legalName: string;
+    address: string;
+    type: string;
+    registered: string | null;
+    active: boolean;
+  } | null> {
+    // Sanitise: must be 11-digit Latvian reg number
+    const clean = regcode.replace(/\D/g, '');
+    if (clean.length !== 11) return null;
+
+    const url =
+      `https://data.gov.lv/dati/lv/api/3/action/datastore_search` +
+      `?resource_id=25e80bf3-f107-4ab4-89ef-251b5b9374e9` +
+      `&filters=%7B%22regcode%22%3A${encodeURIComponent(clean)}%7D` +
+      `&limit=1`;
+
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!res.ok) return null;
+
+      const data = (await res.json()) as {
+        result?: {
+          records?: Array<{
+            name?: string;
+            type_text?: string;
+            address?: string;
+            registered?: string | null;
+            terminated?: string | null;
+            closed?: string;
+          }>;
+        };
+      };
+
+      const record = data.result?.records?.[0];
+      if (!record) return null;
+
+      const name = record.name ?? '';
+      const active =
+        !record.terminated &&
+        (record.closed ?? '').trim() === '';
+
+      return {
+        name,
+        legalName: name,
+        address: record.address ?? '',
+        type: record.type_text ?? '',
+        registered: record.registered ?? null,
+        active,
+      };
+    } catch (e) {
+      this.logger.warn(
+        `UR lookup failed for regcode ${clean}: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return null;
+    }
+  }
+
   // ── Company profile ────────────────────────────────────────────────────────
 
   async getMyCompany(currentUser: RequestingUser) {
@@ -148,6 +214,8 @@ export class CompanyService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.legalName !== undefined && { legalName: dto.legalName }),
+        ...(dto.registrationNum !== undefined && { registrationNum: dto.registrationNum }),
+        ...(dto.vatId !== undefined && { taxId: dto.vatId }),
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
         ...(dto.website !== undefined && { website: dto.website }),

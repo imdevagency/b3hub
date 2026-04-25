@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { getMyCompany, updateMyCompany, type Company } from '@/lib/api';
+import { getMyCompany, updateMyCompany, lookupCompanyByRegcode, type Company } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,12 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Building2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Building2, CheckCircle, AlertCircle, Loader2, Search } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 
 type FormState = {
   name: string;
   legalName: string;
+  registrationNum: string;
+  vatId: string;
   email: string;
   phone: string;
   website: string;
@@ -36,9 +38,14 @@ export default function CompanyPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [errMsg, setErrMsg] = useState('');
+  const [urLookupState, setUrLookupState] = useState<'idle' | 'loading' | 'found' | 'notfound'>(
+    'idle',
+  );
   const [form, setForm] = useState<FormState>({
     name: '',
     legalName: '',
+    registrationNum: '',
+    vatId: '',
     email: '',
     phone: '',
     website: '',
@@ -57,6 +64,8 @@ export default function CompanyPage() {
         setForm({
           name: c.name ?? '',
           legalName: c.legalName ?? '',
+          registrationNum: c.registrationNum ?? '',
+          vatId: c.taxId ?? '',
           email: c.email ?? '',
           phone: c.phone ?? '',
           website: c.website ?? '',
@@ -77,6 +86,35 @@ export default function CompanyPage() {
     (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const handleUrLookup = async () => {
+    const regcode = form.registrationNum.replace(/\D/g, '');
+    if (regcode.length !== 11) return;
+    setUrLookupState('loading');
+    try {
+      const result = await lookupCompanyByRegcode(regcode);
+      if (!result.found) {
+        setUrLookupState('notfound');
+        return;
+      }
+      // Parse address: "Rīga, Brīvības iela 10" → try to extract street + city
+      const address = result.address ?? '';
+      const parts = address.split(',').map((s) => s.trim());
+      const city = parts[0] ?? '';
+      const street = parts.slice(1).join(', ') || '';
+      setForm((f) => ({
+        ...f,
+        legalName: result.legalName ?? f.legalName,
+        name: f.name || result.name || f.name,
+        street: street || f.street,
+        city: city || f.city,
+      }));
+      setUrLookupState('found');
+      setTimeout(() => setUrLookupState('idle'), 3000);
+    } catch {
+      setUrLookupState('notfound');
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !isOwnerOrManager) return;
@@ -87,6 +125,8 @@ export default function CompanyPage() {
         {
           name: form.name.trim() || undefined,
           legalName: form.legalName.trim() || undefined,
+          registrationNum: form.registrationNum.trim() || undefined,
+          vatId: form.vatId.trim() || undefined,
           email: form.email.trim() || undefined,
           phone: form.phone.trim() || undefined,
           website: form.website.trim() || undefined,
@@ -175,6 +215,68 @@ export default function CompanyPage() {
                   value={form.legalName}
                   onChange={set('legalName')}
                   placeholder="SIA Būvlaukums"
+                  disabled={!isOwnerOrManager}
+                />
+              </div>
+            </div>
+
+            {/* Registration number with UR lookup */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="registrationNum">Reģistrācijas numurs</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="registrationNum"
+                    value={form.registrationNum}
+                    onChange={(e) => {
+                      set('registrationNum')(e);
+                      if (urLookupState !== 'idle') setUrLookupState('idle');
+                    }}
+                    placeholder="40003009945"
+                    disabled={!isOwnerOrManager}
+                    maxLength={11}
+                  />
+                  {isOwnerOrManager && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      disabled={
+                        form.registrationNum.replace(/\D/g, '').length !== 11 ||
+                        urLookupState === 'loading'
+                      }
+                      onClick={handleUrLookup}
+                      title="Meklēt Uzņēmumu reģistrā"
+                    >
+                      {urLookupState === 'loading' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {urLookupState === 'found' && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Atrasts UR — dati automātiski aizpildīti
+                  </p>
+                )}
+                {urLookupState === 'notfound' && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Nav atrasts Uzņēmumu reģistrā
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vatId">PVN reģistrācijas numurs</Label>
+                <Input
+                  id="vatId"
+                  value={form.vatId}
+                  onChange={set('vatId')}
+                  placeholder="LV40003009945"
                   disabled={!isOwnerOrManager}
                 />
               </div>

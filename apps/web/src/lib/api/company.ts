@@ -75,6 +75,8 @@ export async function updateMyCompany(
   data: Partial<{
     name: string;
     legalName: string;
+    registrationNum: string;
+    vatId: string;
     email: string;
     phone: string;
     website: string;
@@ -92,6 +94,21 @@ export async function updateMyCompany(
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
+}
+
+export interface UrLookupResult {
+  found: boolean;
+  name?: string;
+  legalName?: string;
+  address?: string;
+  type?: string;
+  registered?: string | null;
+  active?: boolean;
+}
+
+/** Look up a Latvian company by 11-digit registration number via the public UR open data API. */
+export async function lookupCompanyByRegcode(regcode: string): Promise<UrLookupResult> {
+  return apiFetch<UrLookupResult>(`/company/lookup/ur?regcode=${encodeURIComponent(regcode)}`);
 }
 
 export async function getCompanyMembers(token: string): Promise<CompanyMember[]> {
