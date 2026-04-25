@@ -51,10 +51,16 @@ export function ActiveJobMap({
       : null;
 
   const showToPickup = currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP';
-  const { route: toPickupRoute } = useRoute(
-    showToPickup && validCurrent && pickup ? validCurrent : null,
-    showToPickup && pickup ? pickup : null,
-  );
+
+  // The dashed "to pickup" leg is a visual approximation — a straight line is
+  // accurate enough and avoids a Directions API call on every GPS fix.
+  const toPickupCoords =
+    showToPickup && validCurrent && pickup
+      ? [
+          { latitude: validCurrent.lat, longitude: validCurrent.lng },
+          { latitude: pickup.lat, longitude: pickup.lng },
+        ]
+      : [];
 
   // Fit camera to show job once coords are known
   const fitted = React.useRef(false);
@@ -100,15 +106,6 @@ export function ActiveJobMap({
       ? [
           { latitude: pickup.lat, longitude: pickup.lng },
           { latitude: delivery.lat, longitude: delivery.lng },
-        ]
-      : []);
-
-  const toPickupCoords =
-    toPickupRoute?.coords ??
-    (validCurrent && pickup
-      ? [
-          { latitude: validCurrent.lat, longitude: validCurrent.lng },
-          { latitude: pickup.lat, longitude: pickup.lng },
         ]
       : []);
 

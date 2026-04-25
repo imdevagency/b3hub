@@ -66,6 +66,35 @@ export function AnimatedDriverMarker({ id, coordinate, animationDuration = 900 }
     }),
   ).current;
 
+  // ── Pulse ring ─────────────────────────────────────────────────────────────
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const pulseOpacity = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(pulseScale, {
+            toValue: 2.6,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseOpacity, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(pulseScale, { toValue: 1, duration: 0, useNativeDriver: true }),
+          Animated.timing(pulseOpacity, { toValue: 0.5, duration: 0, useNativeDriver: true }),
+        ]),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
   // ── Rotation ─────────────────────────────────────────────────────────────
   // We track cumulative rotation (can exceed 360) so the shortest-path
   // interpolation never spins the wrong way.
@@ -121,6 +150,10 @@ export function AnimatedDriverMarker({ id, coordinate, animationDuration = 900 }
       flat
     >
       <Animated.View style={[styles.wrapper, { transform: [{ rotate }] }]}>
+        {/* Pulsing ring — expands outward from the truck bubble */}
+        <Animated.View
+          style={[styles.pulseRing, { transform: [{ scale: pulseScale }], opacity: pulseOpacity }]}
+        />
         <View style={styles.bubble}>
           <Truck size={16} color="#fff" strokeWidth={2.5} />
         </View>
@@ -134,6 +167,14 @@ export function AnimatedDriverMarker({ id, coordinate, animationDuration = 900 }
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
+    overflow: 'visible',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(79, 70, 229, 0.35)',
   },
   bubble: {
     width: 38,

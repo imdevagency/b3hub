@@ -73,6 +73,11 @@ export interface BaseMapProps {
    * Mirrors react-native-maps MapView's mapPadding prop.
    */
   mapPadding?: EdgePadding;
+  /**
+   * Custom Google Maps style array. Pass a valid Google Maps style spec to
+   * suppress POI clutter, adjust road colours, etc.
+   */
+  customMapStyle?: object[];
   /** Called once the map is ready to receive camera commands. */
   onMapReady?: () => void;
 }
@@ -94,6 +99,7 @@ export function BaseMap({
   showsMyLocationButton = false,
   mapType = 'standard',
   mapPadding,
+  customMapStyle,
   onMapReady: onMapReadyProp,
 }: BaseMapProps) {
   const mapRef = useRef<typeof MapView | null>(null);
@@ -243,6 +249,7 @@ export function BaseMap({
       onMapReady={onMapReady}
       onPress={onPress ? handlePress : undefined}
       mapPadding={mapPadding}
+      customMapStyle={customMapStyle}
     >
       {children}
     </MapView>

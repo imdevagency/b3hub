@@ -51,7 +51,19 @@ import {
   Map,
   List,
 } from 'lucide-react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+// react-native-maps is not bundled in Expo Go — guard the import so the app
+// loads in Expo Go and shows a fallback instead of crashing the JS runtime.
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_GOOGLE: any = undefined;
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+} catch {
+  /* Expo Go — react-native-maps not available */
+}
 import { colors } from '@/lib/theme';
 // Lazy-load: react-native-gesture-handler native module not available in Expo Go
 type SwipeableProps = {
@@ -493,7 +505,7 @@ export default function JobsScreen() {
 
   // ── View mode ─────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
 
   // ── Accept sheet ──────────────────────────────────────────────
   const [acceptSheetJob, setAcceptSheetJob] = useState<TransportJob | null>(null);
@@ -964,6 +976,11 @@ export default function JobsScreen() {
       {/* ── Map view ─────────────────────────────────────── */}
       {viewMode === 'map' ? (
         <View style={{ flex: 1 }}>
+          {!MapView ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#9ca3af', fontSize: 13 }}>Map not available in Expo Go</Text>
+            </View>
+          ) : (
           <MapView
             ref={mapRef}
             style={{ flex: 1 }}

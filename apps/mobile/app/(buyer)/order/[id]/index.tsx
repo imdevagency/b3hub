@@ -30,6 +30,31 @@ import { useLiveUpdates } from '@/lib/use-live-updates';
 import { MAT_STATUS } from '@/lib/materials';
 import { colors } from '@/lib/theme';
 
+/** Suppress POI / transit clutter on the tracking map. */
+const TRACKING_MAP_STYLE = [
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+];
+
+/** O(n) nearest-coordinate index — used for local route trimming. */
+function findNearestIdx(
+  coords: Array<{ latitude: number; longitude: number }>,
+  driver: { lat: number; lng: number },
+): number {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < coords.length; i++) {
+    const d = (coords[i].latitude - driver.lat) ** 2 + (coords[i].longitude - driver.lng) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
 const JOB_STATUS_LABEL: Record<string, string> = {
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
   EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
@@ -75,6 +100,14 @@ export default function OrderTrackingScreen() {
   } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
 
+  // Lock the route origin to the first driver GPS fix so useRoute is called
+  // only once — subsequent GPS updates trim the polyline locally instead of
+  // re-fetching the Directions API on every WebSocket location push.
+  const [lockedRouteOrigin, setLockedRouteOrigin] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
   // Don't open a live subscription for closed orders — saves battery and socket slots
   const orderIsTerminalForLive =
     order != null && ['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(order.status);
@@ -109,6 +142,8 @@ export default function OrderTrackingScreen() {
     const movedEnough =
       !prev || Math.abs(prev.lat - lat) > 0.0003 || Math.abs(prev.lng - lng) > 0.0003;
     setDriverLocationOnMap({ lat, lng });
+    // Lock origin once — never update it again so useRoute isn't re-called on GPS
+    setLockedRouteOrigin((cur) => cur ?? { lat, lng });
     if (movedEnough) {
       cameraRef.current?.setCamera({
         centerCoordinate: [lng, lat],
@@ -117,11 +152,7 @@ export default function OrderTrackingScreen() {
     }
   }, [liveLocation]);
 
-  const routeOrigin = useMemo(() => {
-    if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
-    return null;
-  }, [driverLocationOnMap]);
-
+  // routeOrigin is locked to the first GPS fix — never changes after that.
   const routeDestination = useMemo(() => {
     if (order?.deliveryLat != null && order?.deliveryLng != null) {
       return { lat: order.deliveryLat as number, lng: order.deliveryLng as number };
@@ -129,20 +160,35 @@ export default function OrderTrackingScreen() {
     return null;
   }, [order?.deliveryLat, order?.deliveryLng]);
 
-  const { route } = useRoute(routeOrigin, routeDestination);
+  const { route } = useRoute(lockedRouteOrigin, routeDestination);
 
+  // Trim the polyline locally from the driver's current position rather than
+  // re-fetching the Directions API on every GPS update.
+  const displayCoords = useMemo(() => {
+    const coords = route?.coords;
+    if (!coords || coords.length < 2) return coords ?? [];
+    const jobStatus = order?.transportJobs?.[0]?.status;
+    if (driverLocationOnMap && (jobStatus === 'EN_ROUTE_DELIVERY' || jobStatus === 'AT_DELIVERY')) {
+      const idx = findNearestIdx(coords, driverLocationOnMap);
+      return idx > 1 ? coords.slice(idx - 1) : coords;
+    }
+    return coords;
+  }, [route?.coords, driverLocationOnMap, order?.transportJobs]);
+
+  // Fit bounds once — only when the locked origin first becomes available.
   useEffect(() => {
-    if (!cameraRef.current || !routeOrigin || !routeDestination) return;
+    if (!cameraRef.current || !lockedRouteOrigin || !routeDestination) return;
     const ne: [number, number] = [
-      Math.max(routeOrigin.lng, routeDestination.lng),
-      Math.max(routeOrigin.lat, routeDestination.lat),
+      Math.max(lockedRouteOrigin.lng, routeDestination.lng),
+      Math.max(lockedRouteOrigin.lat, routeDestination.lat),
     ];
     const sw: [number, number] = [
-      Math.min(routeOrigin.lng, routeDestination.lng),
-      Math.min(routeOrigin.lat, routeDestination.lat),
+      Math.min(lockedRouteOrigin.lng, routeDestination.lng),
+      Math.min(lockedRouteOrigin.lat, routeDestination.lat),
     ];
-    cameraRef.current.fitBounds(ne, sw, [48, 48, 48, 48], 600);
-  }, [routeOrigin?.lat, routeOrigin?.lng, routeDestination?.lat, routeDestination?.lng]);
+    cameraRef.current.fitBounds(ne, sw, [48, 48, 280, 48], 600);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockedRouteOrigin != null, routeDestination?.lat, routeDestination?.lng]);
 
   if (loading) {
     return (
@@ -211,9 +257,11 @@ export default function OrderTrackingScreen() {
           style={styles.map}
           rotateEnabled={false}
           pitchEnabled={false}
+          customMapStyle={TRACKING_MAP_STYLE}
+          mapPadding={{ top: 150, right: 16, bottom: 330, left: 16 }}
         >
-          {route?.coords && route.coords.length > 1 && (
-            <RouteLayer id="order-route" coordinates={route.coords} color="#4f46e5" width={4} />
+          {displayCoords.length > 1 && (
+            <RouteLayer id="order-route" coordinates={displayCoords} color="#4f46e5" width={4} />
           )}
           {order.deliveryLat != null && order.deliveryLng != null && (
             <PinLayer

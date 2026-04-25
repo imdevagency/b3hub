@@ -60,6 +60,31 @@ const JOB_STATUS_TO_STEP: Record<string, number> = {
   AT_DELIVERY: 3,
   DELIVERED: 3,
 };
+
+/** Minimal Google Maps style: hides POIs and transit to keep tracking uncluttered. */
+const TRACKING_MAP_STYLE = [
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+];
+
+/** Find the index of the route coordinate closest to the driver's current position. */
+function findNearestIdx(
+  coords: Array<{ latitude: number; longitude: number }>,
+  driver: { lat: number; lng: number },
+): number {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < coords.length; i++) {
+    const d = (coords[i].latitude - driver.lat) ** 2 + (coords[i].longitude - driver.lng) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
 export default function TransportJobTrackingScreen() {
   const { token } = useAuth();
   const router = useRouter();
@@ -150,12 +175,13 @@ export default function TransportJobTrackingScreen() {
   }, [job, reloadJob, token]);
 
   const routeOrigin = useMemo(() => {
-    if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
+    // Fixed to pickup coords — never re-fetches on driver GPS updates.
+    // Route trimming from driver’s current position is done locally in displayCoords.
     if (job?.pickupLat != null && job?.pickupLng != null) {
       return { lat: job.pickupLat, lng: job.pickupLng };
     }
     return null;
-  }, [driverLocationOnMap, job?.pickupLat, job?.pickupLng]);
+  }, [job?.pickupLat, job?.pickupLng]);
 
   const routeDestination = useMemo(() => {
     if (job?.deliveryLat != null && job?.deliveryLng != null) {
@@ -165,6 +191,25 @@ export default function TransportJobTrackingScreen() {
   }, [job?.deliveryLat, job?.deliveryLng]);
 
   const { route } = useRoute(routeOrigin, routeDestination);
+
+  /**
+   * Route trimming — once the driver is en-route to delivery, slice the
+   * polyline from the nearest point to the driver’s current position forward.
+   * This avoids the expensive repeated Directions API calls that the old
+   * approach (driverLocationOnMap in routeOrigin) triggered every GPS update.
+   */
+  const displayCoords = useMemo(() => {
+    const coords = route?.coords;
+    if (!coords || coords.length < 2) return coords ?? [];
+    if (
+      driverLocationOnMap &&
+      (job?.status === 'EN_ROUTE_DELIVERY' || job?.status === 'AT_DELIVERY')
+    ) {
+      const idx = findNearestIdx(coords, driverLocationOnMap);
+      return idx > 1 ? coords.slice(idx - 1) : coords;
+    }
+    return coords;
+  }, [route?.coords, driverLocationOnMap, job?.status]);
 
   useEffect(() => {
     if (!cameraRef.current || !routeOrigin || !routeDestination) return;
@@ -232,9 +277,11 @@ export default function TransportJobTrackingScreen() {
           style={styles.map}
           rotateEnabled={false}
           pitchEnabled={false}
+          customMapStyle={TRACKING_MAP_STYLE}
+          mapPadding={{ top: 150, right: 16, bottom: 330, left: 16 }}
         >
-          {route?.coords && route.coords.length > 1 && (
-            <RouteLayer id="job-route" coordinates={route.coords} color="#4f46e5" width={4} />
+          {displayCoords.length > 1 && (
+            <RouteLayer id="job-route" coordinates={displayCoords} color="#4f46e5" width={4} />
           )}
           {job.pickupLat != null && job.pickupLng != null && (
             <PinLayer

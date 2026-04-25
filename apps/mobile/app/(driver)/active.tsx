@@ -733,8 +733,34 @@ export default function ActiveJobScreen() {
   }, []);
 
   // ── ETA to current target (pickup or delivery) ────────────────────────────
-  const validCurrentEta =
-    currentLat != null && currentLng != null ? { lat: currentLat, lng: currentLng } : null;
+  // etaOrigin is throttled: only update when the driver has moved >300 m from
+  // the last fetch position. Without this, useRoute fires a new Directions API
+  // HTTP request on every GPS fix (every 5 m / 2 s), burning quota fast.
+  const lastEtaFetchPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [etaOrigin, setEtaOrigin] = React.useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (currentLat == null || currentLng == null) return;
+    const prev = lastEtaFetchPosRef.current;
+    if (!prev) {
+      lastEtaFetchPosRef.current = { lat: currentLat, lng: currentLng };
+      setEtaOrigin({ lat: currentLat, lng: currentLng });
+      return;
+    }
+    const R = 6_371_000;
+    const dLat = ((currentLat - prev.lat) * Math.PI) / 180;
+    const dLng = ((currentLng - prev.lng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((prev.lat * Math.PI) / 180) *
+        Math.cos((currentLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+    if (6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) > 300) {
+      lastEtaFetchPosRef.current = { lat: currentLat, lng: currentLng };
+      setEtaOrigin({ lat: currentLat, lng: currentLng });
+    }
+  }, [currentLat, currentLng]);
+
   const etaTarget = React.useMemo(() => {
     if (!job) return null;
     const s = job.status as JobStatus;
@@ -749,8 +775,8 @@ export default function ActiveJobScreen() {
         : null;
     }
     return null;
-  }, [job, job?.status, job?.pickupLat, job?.pickupLng, job?.deliveryLat, job?.deliveryLng]);
-  const { route: etaRoute } = useRoute(validCurrentEta, etaTarget);
+  }, [job?.status, job?.pickupLat, job?.pickupLng, job?.deliveryLat, job?.deliveryLng]);
+  const { route: etaRoute } = useRoute(etaOrigin, etaTarget);
   const etaMin = etaRoute ? Math.max(1, Math.round(etaRoute.durationSec / 60)) : null;
 
   // ── Background tracking — starts once job id is known ─────────

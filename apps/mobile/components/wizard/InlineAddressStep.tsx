@@ -25,7 +25,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+// react-native-maps is not bundled in Expo Go — guard the import so the
+// component loads in Expo Go instead of crashing the JS runtime.
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_GOOGLE: any = undefined;
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+} catch {
+  /* Expo Go — react-native-maps not available */
+}
 import {
   ArrowLeft,
   Search,
@@ -90,7 +102,7 @@ export function InlineAddressStep({
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSearchText = useRef<string>('');
   const isSelectingRef = useRef<boolean>(false);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
   const { token } = useAuth();
 
@@ -324,6 +336,13 @@ export function InlineAddressStep({
   // ── Render: MAP_CONFIRM ───────────────────────────────────────────────────
 
   if (mode === 'MAP_CONFIRM' && pin) {
+    if (!MapView) {
+      return (
+        <View style={[s.root, { alignItems: 'center', justifyContent: 'center' }]}>
+          <Text style={{ color: '#9ca3af', fontSize: 13 }}>Map not available in Expo Go</Text>
+        </View>
+      );
+    }
     return (
       <View style={s.root}>
         <MapView
@@ -701,8 +720,18 @@ const s = StyleSheet.create({
   reversingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
   reversingText: { fontSize: 14, color: colors.textDisabled, fontFamily: 'Inter_400Regular' },
   mapAddrMain: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#000', lineHeight: 22 },
-  mapAddrCity: { fontSize: 13, fontFamily: 'Inter_400Regular', color: colors.textMuted, marginTop: 2 },
-  mapHint: { fontSize: 12, fontFamily: 'Inter_400Regular', color: colors.textDisabled, textAlign: 'center' },
+  mapAddrCity: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  mapHint: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: colors.textDisabled,
+    textAlign: 'center',
+  },
   confirmBtn: {
     backgroundColor: '#000',
     borderRadius: 8,

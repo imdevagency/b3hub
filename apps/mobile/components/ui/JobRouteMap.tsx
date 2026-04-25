@@ -130,8 +130,6 @@ export function JobRouteMap({
 
   // Route hooks — always called, pass null to disable a leg
   const { route: mainRoute, loading: routeLoading } = useRoute(pickup, delivery);
-  const toPickupOrigin = validCurrent && showToPickupLeg ? validCurrent : null;
-  const { route: toPickupRoute } = useRoute(toPickupOrigin, toPickupOrigin ? pickup : null);
 
   // Initial camera centre — exclude current to avoid being dragged to SF
   const jobPoints = [pickup, delivery, ...extras];
@@ -177,12 +175,15 @@ export function JobRouteMap({
     { latitude: pickup.lat, longitude: pickup.lng },
     { latitude: delivery.lat, longitude: delivery.lng },
   ];
-  const toPickupCoords = validCurrent
-    ? (toPickupRoute?.coords ?? [
-        { latitude: validCurrent.lat, longitude: validCurrent.lng },
-        { latitude: pickup.lat, longitude: pickup.lng },
-      ])
-    : [];
+  // The dashed "to pickup" leg is a visual approximation — always use a
+  // straight line to avoid a Directions API call on every GPS fix.
+  const toPickupCoords =
+    showToPickupLeg && validCurrent
+      ? [
+          { latitude: validCurrent.lat, longitude: validCurrent.lng },
+          { latitude: pickup.lat, longitude: pickup.lng },
+        ]
+      : [];
 
   // Split main route into passed (grey) + remaining (dark) segments
   const { passed: passedCoords, remaining: remainingCoords } =
