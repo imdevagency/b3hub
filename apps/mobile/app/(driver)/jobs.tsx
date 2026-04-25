@@ -981,43 +981,44 @@ export default function JobsScreen() {
               <Text style={{ color: '#9ca3af', fontSize: 13 }}>Map not available in Expo Go</Text>
             </View>
           ) : (
-          <MapView
-            ref={mapRef}
-            style={{ flex: 1 }}
-            provider={PROVIDER_GOOGLE}
-            initialRegion={{
-              latitude: 56.9496,
-              longitude: 24.1052,
-              latitudeDelta: 2.5,
-              longitudeDelta: 2.5,
-            }}
-            onMapReady={() => {
-              if (displayJobs.length > 0) {
-                const coords = displayJobs
-                  .filter((j) => j.fromLat && j.fromLng)
-                  .map((j) => ({ latitude: j.fromLat, longitude: j.fromLng }));
-                if (coords.length > 0) {
-                  mapRef.current?.fitToCoordinates(coords, {
-                    edgePadding: { top: 60, right: 40, bottom: 60, left: 40 },
-                    animated: false,
-                  });
+            <MapView
+              ref={mapRef}
+              style={{ flex: 1 }}
+              provider={PROVIDER_GOOGLE}
+              initialRegion={{
+                latitude: 56.9496,
+                longitude: 24.1052,
+                latitudeDelta: 2.5,
+                longitudeDelta: 2.5,
+              }}
+              onMapReady={() => {
+                if (displayJobs.length > 0) {
+                  const coords = displayJobs
+                    .filter((j) => j.fromLat && j.fromLng)
+                    .map((j) => ({ latitude: j.fromLat, longitude: j.fromLng }));
+                  if (coords.length > 0) {
+                    mapRef.current?.fitToCoordinates(coords, {
+                      edgePadding: { top: 60, right: 40, bottom: 60, left: 40 },
+                      animated: false,
+                    });
+                  }
                 }
-              }
-            }}
-          >
-            {displayJobs
-              .filter((j) => j.fromLat && j.fromLng)
-              .map((job) => (
-                <Marker
-                  key={job.id}
-                  coordinate={{ latitude: job.fromLat, longitude: job.fromLng }}
-                  title={`${job.fromCity} → ${job.toCity}`}
-                  description={`€${job.priceTotal.toFixed(0)} · ${job.weightTonnes}t · ${Math.round(job.distanceKm)} km`}
-                  pinColor="#111827"
-                  onCalloutPress={() => handleAcceptPressed(job.id)}
-                />
-              ))}
-          </MapView>
+              }}
+            >
+              {displayJobs
+                .filter((j) => j.fromLat && j.fromLng)
+                .map((job) => (
+                  <Marker
+                    key={job.id}
+                    coordinate={{ latitude: job.fromLat, longitude: job.fromLng }}
+                    title={`${job.fromCity} → ${job.toCity}`}
+                    description={`€${job.priceTotal.toFixed(0)} · ${job.weightTonnes}t · ${Math.round(job.distanceKm)} km`}
+                    pinColor="#111827"
+                    onCalloutPress={() => handleAcceptPressed(job.id)}
+                  />
+                ))}
+            </MapView>
+          )}
           {displayJobs.length === 0 && (
             <View
               style={{ position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' }}

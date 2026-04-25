@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import Animated from 'react-native-reanimated';
 import {
   View,
   Text,
@@ -43,6 +44,7 @@ import { useLiveUpdates } from '@/lib/use-live-updates';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
+import { entering } from '@/lib/transitions';
 
 const VEHICLE_LABEL: Record<string, string> = {
   TIPPER_SMALL: 'Pašizgāzējs (10 t)',
@@ -257,7 +259,7 @@ export default function TransportJobDetailsScreen() {
         )}
 
         {/* ── Hero ── */}
-        <View style={styles.heroSection}>
+        <Animated.View entering={entering.card(0)} style={styles.heroSection}>
           <Text style={styles.heroTitle} numberOfLines={2}>
             {typeLabel}
           </Text>
@@ -268,13 +270,13 @@ export default function TransportJobDetailsScreen() {
               {job.order?.orderNumber ? ` · #${job.order.orderNumber}` : ''}
             </Text>
           </View>
-        </View>
+        </Animated.View>
 
         <Divider color="#EBEBEB" marginV={0} />
 
         {/* ── Driver ── */}
         {driver && (
-          <>
+          <Animated.View entering={entering.card(1)}>
             {isJobClosed ? (
               <View style={styles.driverHighlightRow}>
                 <View style={styles.driverInfo}>
@@ -326,80 +328,88 @@ export default function TransportJobDetailsScreen() {
               </TouchableOpacity>
             )}
             <Divider color="#EBEBEB" marginV={0} />
-          </>
+          </Animated.View>
         )}
 
-        <InfoSection icon={<MapPin size={18} color="#111827" />} title="Maršruts">
-          {routeRows.map((row, index) => (
-            <DetailRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              last={index === routeRows.length - 1}
-            />
-          ))}
-        </InfoSection>
+        <Animated.View entering={entering.card(driver ? 2 : 1)}>
+          <InfoSection icon={<MapPin size={18} color="#111827" />} title="Maršruts">
+            {routeRows.map((row, index) => (
+              <DetailRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                last={index === routeRows.length - 1}
+              />
+            ))}
+          </InfoSection>
+        </Animated.View>
         <Divider color="#EBEBEB" marginV={0} />
 
-        <InfoSection icon={<Package size={18} color="#111827" />} title="Krava">
-          {cargoRows.map((row, index) => (
-            <DetailRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              last={index === cargoRows.length - 1}
-            />
-          ))}
-        </InfoSection>
+        <Animated.View entering={entering.card(driver ? 3 : 2)}>
+          <InfoSection icon={<Package size={18} color="#111827" />} title="Krava">
+            {cargoRows.map((row, index) => (
+              <DetailRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                last={index === cargoRows.length - 1}
+              />
+            ))}
+          </InfoSection>
+        </Animated.View>
         <Divider color="#EBEBEB" marginV={0} />
 
-        <InfoSection icon={<Clock3 size={18} color="#111827" />} title="Laiks">
-          {timingRows.map((row, index) => (
-            <DetailRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              last={index === timingRows.length - 1}
-            />
-          ))}
-        </InfoSection>
+        <Animated.View entering={entering.card(driver ? 4 : 3)}>
+          <InfoSection icon={<Clock3 size={18} color="#111827" />} title="Laiks">
+            {timingRows.map((row, index) => (
+              <DetailRow
+                key={row.label}
+                label={row.label}
+                value={row.value}
+                last={index === timingRows.length - 1}
+              />
+            ))}
+          </InfoSection>
+        </Animated.View>
         <Divider color="#EBEBEB" marginV={0} />
 
-        <InfoSection icon={<Phone size={18} color="#111827" />} title="Kontakti">
-          {contactRows.length > 0 ? (
-            contactRows.map((row, index) =>
-              row.phone ? (
-                <DetailRow
-                  key={row.label}
-                  label={row.label}
-                  last={index === contactRows.length - 1}
-                  value={
-                    <TouchableOpacity
-                      onPress={() => {
-                        haptics.medium();
-                        Linking.openURL(`tel:${row.phone}`).catch(() => null);
-                      }}
-                      activeOpacity={0.7}
-                      style={styles.phoneTapTarget}
-                    >
-                      <Text style={styles.phoneValueText}>{row.value as string}</Text>
-                      <Phone size={13} color="#4f46e5" />
-                    </TouchableOpacity>
-                  }
-                />
-              ) : (
-                <DetailRow
-                  key={row.label}
-                  label={row.label}
-                  value={row.value}
-                  last={index === contactRows.length - 1}
-                />
-              ),
-            )
-          ) : (
-            <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pieejama.</Text>
-          )}
-        </InfoSection>
+        <Animated.View entering={entering.card(driver ? 5 : 4)}>
+          <InfoSection icon={<Phone size={18} color="#111827" />} title="Kontakti">
+            {contactRows.length > 0 ? (
+              contactRows.map((row, index) =>
+                row.phone ? (
+                  <DetailRow
+                    key={row.label}
+                    label={row.label}
+                    last={index === contactRows.length - 1}
+                    value={
+                      <TouchableOpacity
+                        onPress={() => {
+                          haptics.medium();
+                          Linking.openURL(`tel:${row.phone}`).catch(() => null);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.phoneTapTarget}
+                      >
+                        <Text style={styles.phoneValueText}>{row.value as string}</Text>
+                        <Phone size={13} color="#4f46e5" />
+                      </TouchableOpacity>
+                    }
+                  />
+                ) : (
+                  <DetailRow
+                    key={row.label}
+                    label={row.label}
+                    value={row.value}
+                    last={index === contactRows.length - 1}
+                  />
+                ),
+              )
+            ) : (
+              <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pieejama.</Text>
+            )}
+          </InfoSection>
+        </Animated.View>
 
         {notes.length > 0 && (
           <InfoSection icon={<FileText size={18} color="#111827" />} title="Piezīmes">

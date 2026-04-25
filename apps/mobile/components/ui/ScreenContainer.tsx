@@ -2,12 +2,14 @@
  * ScreenContainer — universal page wrapper for consistent safe-area,
  * background color, and vertical layout across all screens.
  *
- * Animates in with a subtle fade + upward slide on mount (RN Animated).
+ * Animates in with a subtle fade + upward slide on mount AND on every
+ * tab-focus (useFocusEffect), so switching tabs feels snappy.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -46,16 +48,27 @@ export function ScreenContainer({
   const resolvedTopInset = topInset !== undefined ? topInset : standalone ? insets.top : 0;
 
   const opacity = useRef(new Animated.Value(noAnimation ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(noAnimation ? 0 : 18)).current;
+  const translateY = useRef(new Animated.Value(noAnimation ? 0 : 14)).current;
 
-  useEffect(() => {
-    if (noAnimation) return;
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      // Spring gives a lively overshoot-free slide-up (Uber content reveal)
-      Animated.spring(translateY, { toValue: 0, tension: 80, friction: 14, useNativeDriver: true }),
-    ]).start();
-  }, []);
+  // Replay on every tab focus — keeps the animation snappy when switching tabs.
+  // Falls back to a plain mount effect for standalone (non-tab) screens.
+  useFocusEffect(
+    useCallback(() => {
+      if (noAnimation) return;
+      // Reset to start position so re-entering a tab always animates
+      opacity.setValue(0);
+      translateY.setValue(14);
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 160, useNativeDriver: true }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          tension: 90,
+          friction: 14,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, [noAnimation]),
+  );
 
   // When topBg is provided, render a separate strip for the status-bar area
   // so the content background can differ from the header background.

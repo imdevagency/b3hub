@@ -33,9 +33,9 @@ import type { NativeStackNavigationOptions } from '@react-navigation/native-stac
 /** Duration constants. All times in ms. */
 export const DURATION = {
   /** Normal push / pop navigation */
-  push: 120,
+  push: 280,
   /** Bottom-sheet / wizard modal entrance */
-  modal: 150,
+  modal: 320,
   /** Fast fade (tab-to-tab, inline content) */
   fast: 100,
   /** Stagger step between list items */
@@ -60,21 +60,23 @@ export const spring = {
 
 type StackScreenOptions = NativeStackNavigationOptions;
 
-/** Standard push — smooth fade for all detail / list → detail screens. */
+/** Standard push — native slide for all detail / list → detail screens.
+ *  slide_from_right runs on the native thread → zero JS-bridge flash.
+ *  Gestures re-enabled so iOS swipe-back works naturally. */
 const push: StackScreenOptions = {
-  animation: 'fade',
+  animation: 'slide_from_right',
   animationDuration: DURATION.push,
-  gestureEnabled: false,
-  fullScreenGestureEnabled: false,
-  animationMatchesGesture: false,
+  gestureEnabled: true,
+  fullScreenGestureEnabled: true,
+  animationMatchesGesture: true,
 };
 
 /**
- * Modal / wizard — fade in, same non-intrusive feel as push.
+ * Modal / wizard — slides up from the bottom, feels intentional.
  * Gestures disabled — accidental swipe-back mid-wizard would lose form state.
  */
 const modal: StackScreenOptions = {
-  animation: 'fade',
+  animation: 'slide_from_bottom',
   animationDuration: DURATION.modal,
   gestureEnabled: false,
   fullScreenGestureEnabled: false,
