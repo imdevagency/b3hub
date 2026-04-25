@@ -19,6 +19,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Field Passes')
 @Controller('field-passes')
@@ -45,8 +46,10 @@ export class FieldPassesController {
    * GET /field-passes/validate/:passNumber — public gate validation.
    * No auth required — gate kiosk or driver's phone can call this
    * by scanning the QR code on the printed pass.
+   * Tightly throttled to prevent pass number enumeration attacks.
    */
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Get('validate/:passNumber')
   validate(@Param('passNumber') passNumber: string) {
     return this.service.validateByPassNumber(passNumber);

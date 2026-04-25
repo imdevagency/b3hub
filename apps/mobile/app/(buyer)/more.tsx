@@ -21,15 +21,12 @@ import {
   User,
   ClipboardList,
   MessageCircle,
-  Receipt,
   FileText,
   MapPin,
   Bell,
   AlertCircle,
   BarChart2,
-  ShieldCheck,
   Calendar,
-  Ticket,
   Settings,
   HelpCircle,
   Package,
@@ -155,13 +152,9 @@ export default function MoreScreen() {
       onPress: () => router.push('/messages'),
     },
     {
-      icon: Receipt,
-      label: 'Rēķini',
-      onPress: () => router.push('/(buyer)/(account)/invoices'),
-    },
-    {
       icon: FileText,
       label: 'Dokumenti',
+      // Rēķini + Sertifikāti are tabs inside the Documents hub — no separate tile needed
       onPress: () => router.push('/(buyer)/(account)/documents'),
     },
     {
@@ -192,23 +185,21 @@ export default function MoreScreen() {
         {
           icon: BarChart2,
           label: 'Analītika',
-          onPress: () => router.push('/(buyer)/(account)/analytics'),
+          // Full BI lives at web portal — open directly; mobile analytics screen is a stub
+          onPress: () => Linking.openURL('https://b3hub.lv/dashboard/analytics').catch(() => null),
         },
-        {
-          icon: ShieldCheck,
-          label: 'Sertifikāti',
-          onPress: () => router.push('/(buyer)/(account)/certificates'),
-        },
+        // Sertifikāti tab is inside the Documents hub — no separate tile needed
         {
           icon: Calendar,
           label: 'Grafiki',
           onPress: () => router.push('/(buyer)/(account)/schedules'),
         },
-        {
-          icon: Ticket,
-          label: 'Caurlaides',
-          onPress: () => router.push('/(buyer)/(account)/field-passes'),
-        },
+        // TODO: B3 FIELDS — re-enable when physical locations are live
+        // {
+        //   icon: Ticket,
+        //   label: 'Caurlaides',
+        //   onPress: () => router.push('/(buyer)/(account)/field-passes'),
+        // },
         {
           icon: Building2,
           label: 'Uzņēmums',
