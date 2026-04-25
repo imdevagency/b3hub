@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2, Search } from 'lucide-react';
@@ -110,6 +111,7 @@ export function AddressAutocomplete({
   const [isOpen, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Google Maps services
@@ -139,6 +141,30 @@ export function AddressAutocomplete({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Recalculate dropdown position whenever it opens or window resizes/scrolls
+  useEffect(() => {
+    function updatePosition() {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    }
+    if (isOpen) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isOpen]);
 
   // Debounced fetch
   useEffect(() => {
@@ -246,39 +272,46 @@ export function AddressAutocomplete({
           </div>
         )}
       </div>
-      {isOpen && predictions.length > 0 && (
-        <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-background rounded-2xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden z-[9999] animate-in fade-in slide-in-from-top-2 duration-200">
-          <ul className="max-h-72 overflow-y-auto w-full divide-y divide-border/40 flex flex-col scrollbar-thin">
-            {predictions.map((p) => {
-              const mainText = p.structured_formatting?.main_text || p.description;
-              const secondaryText = p.structured_formatting?.secondary_text || '';
-              return (
-                <li key={p.place_id}>
-                  <button
-                    type="button"
-                    className="w-full text-left px-4 py-3.5 hover:bg-muted/40 active:bg-muted transition-colors flex items-center gap-3.5 group/item focus:outline-none focus:bg-muted/60"
-                    onClick={() => handleSelect(p)}
-                  >
-                    <div className="shrink-0 flex items-center justify-center bg-muted rounded-full h-10 w-10 group-hover/item:bg-foreground group-hover/item:text-background transition-colors text-muted-foreground">
-                      <MapPin className="h-5 w-5" />
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[15px] font-bold text-foreground truncate pr-2">
-                        {mainText}
-                      </span>
-                      {secondaryText && (
-                        <span className="text-[13px] font-medium text-muted-foreground truncate pr-2">
-                          {secondaryText}
+      {isOpen &&
+        predictions.length > 0 &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            style={dropdownStyle}
+            className="bg-background rounded-2xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <ul className="max-h-72 overflow-y-auto w-full divide-y divide-border/40 flex flex-col scrollbar-thin">
+              {predictions.map((p) => {
+                const mainText = p.structured_formatting?.main_text || p.description;
+                const secondaryText = p.structured_formatting?.secondary_text || '';
+                return (
+                  <li key={p.place_id}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-3.5 hover:bg-muted/40 active:bg-muted transition-colors flex items-center gap-3.5 group/item focus:outline-none focus:bg-muted/60"
+                      onClick={() => handleSelect(p)}
+                    >
+                      <div className="shrink-0 flex items-center justify-center bg-muted rounded-full h-10 w-10 group-hover/item:bg-foreground group-hover/item:text-background transition-colors text-muted-foreground">
+                        <MapPin className="h-5 w-5" />
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-[15px] font-bold text-foreground truncate pr-2">
+                          {mainText}
                         </span>
-                      )}
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+                        {secondaryText && (
+                          <span className="text-[13px] font-medium text-muted-foreground truncate pr-2">
+                            {secondaryText}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

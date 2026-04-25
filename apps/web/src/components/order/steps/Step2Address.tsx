@@ -67,7 +67,7 @@ export function Step2Address({
     onAddressChange(addr, place.lat, place.lng, place.city);
   }
 
-  const isValid = input.trim().length >= 4;
+  const isValid = !!(_lat && _lng);
 
   return (
     <div className="flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-2">

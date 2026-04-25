@@ -161,6 +161,19 @@ const CATEGORY_META: Record<
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_META) as MaterialCategory[];
 
+const CATEGORY_FRACTIONS: Record<MaterialCategory, string[]> = {
+  SAND: ['Smalkā', 'Rupjā', 'Betonsmilts', '0–4 mm', 'Nav norādīts'],
+  GRAVEL: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', 'Nav norādīts'],
+  STONE: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', '63+ mm', 'Nav norādīts'],
+  CONCRETE: ['B15', 'B20', 'B22.5', 'B25', 'B30', 'Nav norādīts'],
+  SOIL: ['Izmestā augsne', 'Melnzeme', 'Dārza zeme', 'Nav norādīts'],
+  RECYCLED_CONCRETE: ['0–8 mm', '8–32 mm', '32–63 mm', 'Nav norādīts'],
+  RECYCLED_SOIL: ['Nav norādīts'],
+  ASPHALT: ['Karstais asfalts', 'Aukstais asfalts', 'Nav norādīts'],
+  CLAY: ['Nav norādīts'],
+  OTHER: ['Nav norādīts'],
+};
+
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
 const UNIT_LABEL: Record<MaterialUnit, string> = {
@@ -194,6 +207,7 @@ const STEP_INDEX: Record<WizardStep, number> = {
 interface WizardState {
   category: MaterialCategory;
   materialName: string;
+  selectedFraction: string;
   quantity: number;
   unit: MaterialUnit;
   address: string;
@@ -402,23 +416,29 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
   // ── Wizard state ──────────────────────────────────────────────────────────
 
   const [step, setStep] = useState<WizardStep>('specs');
-  const [form, setForm] = useState<WizardState>({
-    category,
-    materialName: meta.defaultName,
-    quantity: 5,
-    unit: meta.defaultUnit,
-    address: '',
-    city: '',
-    postal: '',
-    deliveryDate: '',
-    deliveryWindow: 'ANY',
-    asap: false,
-    notes: '',
-    truckCount: 1,
-    truckIntervalMinutes: 30,
-    siteContactName: '',
-    siteContactPhone: '',
-    driverNotes: '',
+  const [form, setForm] = useState<WizardState>(() => {
+    const firstFraction = CATEGORY_FRACTIONS[category][0];
+    const derivedName =
+      firstFraction !== 'Nav norādīts' ? `${meta.label} ${firstFraction}` : meta.label;
+    return {
+      category,
+      materialName: derivedName,
+      selectedFraction: firstFraction,
+      quantity: 5,
+      unit: meta.defaultUnit,
+      address: '',
+      city: '',
+      postal: '',
+      deliveryDate: '',
+      deliveryWindow: 'ANY',
+      asap: false,
+      notes: '',
+      truckCount: 1,
+      truckIntervalMinutes: 30,
+      siteContactName: '',
+      siteContactPhone: '',
+      driverNotes: '',
+    };
   });
 
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
@@ -730,7 +750,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
             </p>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground">Kategorija</label>
               <Select
@@ -742,7 +762,15 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
                     router.push('/order/materials/' + newCat.toLowerCase().replace(/_/g, '-'));
                   } else {
                     const m = CATEGORY_META[newCat];
-                    patch({ category: newCat, materialName: m.defaultName, unit: m.defaultUnit });
+                    const firstFraction = CATEGORY_FRACTIONS[newCat][0];
+                    const name =
+                      firstFraction !== 'Nav norādīts' ? `${m.label} ${firstFraction}` : m.label;
+                    patch({
+                      category: newCat,
+                      materialName: name,
+                      selectedFraction: firstFraction,
+                      unit: m.defaultUnit,
+                    });
                   }
                 }}
               >
@@ -762,16 +790,27 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">
-                Frakcija / Precizējums
-              </label>
-              <input
-                type="text"
-                value={form.materialName}
-                onChange={(e) => patch({ materialName: e.target.value })}
-                placeholder={meta.defaultName || 'Piem., 16-32 mm'}
-                className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-13 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
-              />
+              <label className="text-sm font-semibold text-foreground">Frakcija</label>
+              <div className="flex gap-2 flex-wrap">
+                {CATEGORY_FRACTIONS[form.category].map((fraction) => (
+                  <button
+                    key={fraction}
+                    onClick={() => {
+                      const catLabel = CATEGORY_META[form.category].label;
+                      const name =
+                        fraction !== 'Nav norādīts' ? `${catLabel} ${fraction}` : catLabel;
+                      patch({ selectedFraction: fraction, materialName: name });
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                      form.selectedFraction === fraction
+                        ? 'bg-foreground text-background'
+                        : 'bg-muted/50 text-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {fraction}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -931,13 +970,18 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
               </label>
               <textarea
                 placeholder="Piekļuves kodi, instrukcijas šoferim..."
-                value={form.notes}
-                onChange={(e) => patch({ notes: e.target.value })}
+                value={form.driverNotes}
+                onChange={(e) => patch({ driverNotes: e.target.value })}
                 rows={2}
                 className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-foreground/10"
               />
             </div>
           </div>
+          {!form.siteContactPhone.trim() && (
+            <p className="text-sm text-destructive font-medium">
+              Tālrunis ir obligāts — šoferim jāsazinās ar objekta kontaktpersonu.
+            </p>
+          )}
           <div className="flex gap-3 pt-1">
             <button
               onClick={() => setStep('when')}
@@ -947,7 +991,8 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
             </button>
             <button
               onClick={goToOffers}
-              className="flex-[2] rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors"
+              disabled={!form.siteContactPhone.trim()}
+              className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Skatīt piedāvājumus
             </button>

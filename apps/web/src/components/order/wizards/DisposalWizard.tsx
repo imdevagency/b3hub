@@ -608,11 +608,26 @@ export function DisposalWizard({ mode }: Props) {
             </div>
           </div>
 
+          {(!contactPhone.trim() || hasTruckAccess === null) && (
+            <div className="space-y-1">
+              {!contactPhone.trim() && (
+                <p className="text-sm text-destructive font-medium">
+                  Tālrunis ir obligāts — šoferim jāsazinās ar objekta kontaktpersonu.
+                </p>
+              )}
+              {hasTruckAccess === null && (
+                <p className="text-sm text-destructive font-medium">
+                  Lūdzu norādiet, vai ir kravas auto piekļuve objektam.
+                </p>
+              )}
+            </div>
+          )}
+
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
             onClick={() => (mode === 'public' ? requireAuth(submit) : token && submit(token))}
-            disabled={!date || submitting}
+            disabled={!date || !contactPhone.trim() || hasTruckAccess === null || submitting}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
             {submitting ? (

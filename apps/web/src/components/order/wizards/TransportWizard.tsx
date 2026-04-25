@@ -708,11 +708,17 @@ export function TransportWizard({ mode }: Props) {
             </div>
           </div>
 
+          {!contactPhone.trim() && (
+            <p className="text-sm text-destructive font-medium">
+              Tālrunis ir obligāts — šoferim jāsazinās ar iekraušanas vietas kontaktpersonu.
+            </p>
+          )}
+
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
             onClick={() => (mode === 'public' ? requireAuth(submit) : token && submit(token))}
-            disabled={!date || submitting}
+            disabled={!date || !contactPhone.trim() || submitting}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
             {submitting ? (
