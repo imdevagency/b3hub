@@ -68,21 +68,21 @@ type StackScreenOptions = NativeStackNavigationOptions;
 const push: StackScreenOptions = {
   animation: 'slide_from_right',
   animationDuration: DURATION.push,
-  gestureEnabled: true,
-  fullScreenGestureEnabled: true,   // swipe-back from anywhere (Uber-style)
-  animationMatchesGesture: true,    // gesture directly drives the transition
+  gestureEnabled: false,
+  fullScreenGestureEnabled: false,
+  animationMatchesGesture: false,
 };
 
 /**
  * Modal / wizard — slides in from the right, same feel as a push.
- * Full-screen back-swipe enabled so the gesture drives the animation directly.
+ * Gestures disabled — accidental swipe-back mid-wizard would lose form state.
  */
 const modal: StackScreenOptions = {
   animation: 'slide_from_right',
   animationDuration: DURATION.push,
-  gestureEnabled: true,
-  fullScreenGestureEnabled: true,
-  animationMatchesGesture: true,
+  gestureEnabled: false,
+  fullScreenGestureEnabled: false,
+  animationMatchesGesture: false,
 };
 
 /** Fade-only — used for auth screens, splash-to-app handoff. */

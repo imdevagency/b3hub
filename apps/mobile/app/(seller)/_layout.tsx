@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Inbox, User, Home } from 'lucide-react-native';
+import { Inbox, User, Home, LayoutGrid, MoreHorizontal } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -87,13 +87,20 @@ function SellerLayoutContent() {
           }}
         />
         <Tabs.Screen name="quotes" options={{ href: null }} />
-        <Tabs.Screen name="catalog" options={{ href: null }} />
-        <Tabs.Screen name="earnings" options={{ href: null }} />
         <Tabs.Screen
-          name="profile"
+          name="catalog"
           options={{
-            title: t.tabs.profile,
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
+            title: t.tabs.catalog,
+            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
+          }}
+        />
+        <Tabs.Screen name="earnings" options={{ href: null }} />
+        <Tabs.Screen name="profile" options={{ href: null }} />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: t.tabs.more,
+            tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
         <Tabs.Screen name="documents" options={{ href: null }} />

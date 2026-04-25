@@ -1,0 +1,592 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  Alert,
+  Linking,
+} from 'react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/lib/auth-context';
+import { useMode } from '@/lib/mode-context';
+import { haptics } from '@/lib/haptics';
+import { colors } from '@/lib/theme';
+import { getRoleName } from '@/lib/utils';
+import {
+  User,
+  ClipboardList,
+  MessageCircle,
+  Receipt,
+  FileText,
+  MapPin,
+  Bell,
+  AlertCircle,
+  BarChart2,
+  ShieldCheck,
+  Calendar,
+  Ticket,
+  Settings,
+  HelpCircle,
+  Package,
+  Truck,
+  ChevronRight,
+  LogOut,
+  Building2,
+  ArrowUpDown,
+  Euro,
+  Handshake,
+  FileCheck,
+} from 'lucide-react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const COLS = 3;
+const H_PAD = 16;
+const GAP = 10;
+const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - GAP * (COLS - 1)) / COLS;
+
+type TileItem = {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
+  label: string;
+  badge?: number;
+  onPress: () => void;
+};
+
+function TileGrid({ tiles }: { tiles: TileItem[] }) {
+  return (
+    <View style={s.grid}>
+      {tiles.map((tile, i) => (
+        <TouchableOpacity
+          key={i}
+          style={s.tile}
+          activeOpacity={0.72}
+          onPress={() => {
+            haptics.light();
+            tile.onPress();
+          }}
+        >
+          {tile.badge != null && tile.badge > 0 && (
+            <View style={s.tileBadge}>
+              <Text style={s.tileBadgeText}>{tile.badge > 99 ? '99+' : tile.badge}</Text>
+            </View>
+          )}
+          <tile.icon size={26} color={colors.textSecondary} strokeWidth={1.6} />
+          <Text style={s.tileLabel} numberOfLines={2}>
+            {tile.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+function ListRow({
+  icon: Icon,
+  label,
+  onPress,
+  isDestructive = false,
+  last = false,
+}: {
+  icon: TileItem['icon'];
+  label: string;
+  onPress: () => void;
+  isDestructive?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <>
+      <TouchableOpacity
+        style={s.listRow}
+        activeOpacity={0.7}
+        onPress={() => {
+          haptics.light();
+          onPress();
+        }}
+      >
+        <Icon size={20} color={isDestructive ? '#dc2626' : colors.textMuted} strokeWidth={1.8} />
+        <Text style={[s.listLabel, isDestructive && s.listLabelDestructive]}>{label}</Text>
+        <ChevronRight size={16} color={colors.border} />
+      </TouchableOpacity>
+      {!last && <View style={s.listDivider} />}
+    </>
+  );
+}
+
+export default function MoreScreen() {
+  const { user, logout } = useAuth();
+  const { mode, isMultiRole, setMode, availableModes } = useMode();
+  const router = useRouter();
+
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
+  const accountLabel = user ? getRoleName(user) : 'Viesis';
+
+  const handleLogout = () => {
+    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: 'Iziet',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+        },
+      },
+    ]);
+  };
+
+  // ── Main navigation tiles (always visible) ────────────────────
+  const mainTiles: TileItem[] = [
+    {
+      icon: User,
+      label: 'Profils',
+      onPress: () => router.push('/(buyer)/profile'),
+    },
+    {
+      icon: ClipboardList,
+      label: 'Pasūtījumi',
+      onPress: () => router.push('/(buyer)/orders'),
+    },
+    {
+      icon: MessageCircle,
+      label: 'Ziņojumi',
+      onPress: () => router.push('/messages'),
+    },
+    {
+      icon: Receipt,
+      label: 'Rēķini',
+      onPress: () => router.push('/(buyer)/(account)/invoices'),
+    },
+    {
+      icon: FileText,
+      label: 'Dokumenti',
+      onPress: () => router.push('/(buyer)/(account)/documents'),
+    },
+    {
+      icon: MapPin,
+      label: 'Adreses',
+      onPress: () => router.push('/(buyer)/(account)/saved-addresses'),
+    },
+    {
+      icon: Bell,
+      label: 'Paziņojumi',
+      onPress: () => router.push('/notifications'),
+    },
+    {
+      icon: AlertCircle,
+      label: 'Strīdi',
+      onPress: () => router.push('/(buyer)/(account)/disputes'),
+    },
+    {
+      icon: Settings,
+      label: 'Iestatījumi',
+      onPress: () => router.push('/settings'),
+    },
+  ];
+
+  // ── Company-only tiles ────────────────────────────────────────
+  const companyTiles: TileItem[] = user?.isCompany
+    ? [
+        {
+          icon: BarChart2,
+          label: 'Analītika',
+          onPress: () => router.push('/(buyer)/(account)/analytics'),
+        },
+        {
+          icon: ShieldCheck,
+          label: 'Sertifikāti',
+          onPress: () => router.push('/(buyer)/(account)/certificates'),
+        },
+        {
+          icon: Calendar,
+          label: 'Grafiki',
+          onPress: () => router.push('/(buyer)/(account)/schedules'),
+        },
+        {
+          icon: Ticket,
+          label: 'Caurlaides',
+          onPress: () => router.push('/(buyer)/(account)/field-passes'),
+        },
+        {
+          icon: Building2,
+          label: 'Uzņēmums',
+          onPress: () => Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null),
+        },
+      ]
+    : [];
+
+  // ── Seller/carrier mode tiles (if multi-role) ─────────────────
+  const roleTiles: TileItem[] =
+    mode === 'SUPPLIER'
+      ? [
+          {
+            icon: Package,
+            label: 'Katalogs',
+            onPress: () => router.push('/(seller)/catalog'),
+          },
+          {
+            icon: Euro,
+            label: 'Izpeļņa',
+            onPress: () => router.push('/(seller)/earnings'),
+          },
+          {
+            icon: Handshake,
+            label: 'Līgumi',
+            onPress: () => router.push('/(seller)/framework-contracts'),
+          },
+          {
+            icon: FileCheck,
+            label: 'Dokumenti',
+            onPress: () => router.push('/(seller)/documents'),
+          },
+        ]
+      : mode === 'CARRIER'
+        ? [
+            {
+              icon: Euro,
+              label: 'Izpeļņa',
+              onPress: () => router.push('/(driver)/earnings'),
+            },
+            {
+              icon: Truck,
+              label: 'Transporti',
+              onPress: () => router.push('/(driver)/vehicles'),
+            },
+            {
+              icon: Package,
+              label: 'Konteineri',
+              onPress: () => router.push('/(driver)/skips'),
+            },
+            {
+              icon: FileCheck,
+              label: 'Dokumenti',
+              onPress: () => router.push('/(driver)/documents'),
+            },
+          ]
+        : [];
+
+  // ── Become-a-partner tiles ────────────────────────────────────
+  const becomeTiles: TileItem[] = user
+    ? [
+        ...(!user.canSell
+          ? [
+              {
+                icon: Package,
+                label: 'Piegādātājs',
+                onPress: () => router.push('/(auth)/apply-role?type=supplier' as never),
+              },
+            ]
+          : []),
+        ...(!user.canTransport
+          ? [
+              {
+                icon: Truck,
+                label: 'Pārvadātājs',
+                onPress: () => router.push('/(auth)/apply-role?type=carrier' as never),
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+  return (
+    <ScreenContainer topInset={0} noAnimation>
+      <ScreenHeader title="Vairāk" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+        {/* ── Identity card ──────────────────────────────────── */}
+        <TouchableOpacity
+          style={s.identityCard}
+          activeOpacity={0.82}
+          onPress={() => {
+            haptics.light();
+            if (!user) {
+              router.push('/(auth)/register' as never);
+            } else {
+              router.push('/(buyer)/profile');
+            }
+          }}
+        >
+          <View style={s.avatar}>
+            {initials ? (
+              <Text style={s.avatarText}>{initials}</Text>
+            ) : (
+              <User size={22} color="#fff" strokeWidth={2} />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            {user ? (
+              <>
+                <Text style={s.identityName} numberOfLines={1}>
+                  {user.firstName} {user.lastName}
+                </Text>
+                <Text style={s.identityRole}>{accountLabel}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={s.identityName}>Viesis</Text>
+                <Text style={s.identityRole}>Pierakstieties vai reģistrējieties</Text>
+              </>
+            )}
+          </View>
+          <ChevronRight size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {/* ── Main tiles ─────────────────────────────────────── */}
+        <TileGrid tiles={mainTiles} />
+
+        {/* ── Company tiles ──────────────────────────────────── */}
+        {companyTiles.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
+            <TileGrid tiles={companyTiles} />
+          </>
+        )}
+
+        {/* ── Role tiles (supplier / carrier) ────────────────── */}
+        {roleTiles.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>MANA LOMA</Text>
+            <TileGrid tiles={roleTiles} />
+          </>
+        )}
+
+        {/* ── Role switch ────────────────────────────────────── */}
+        {isMultiRole && (
+          <>
+            <Text style={s.sectionLabel}>LOMA</Text>
+            <View style={s.listCard}>
+              <ListRow
+                icon={ArrowUpDown}
+                label="Mainīt lomu"
+                last
+                onPress={() => {
+                  // Navigate to profile where the RoleSheet lives, or trigger directly
+                  router.push('/(buyer)/profile');
+                }}
+              />
+            </View>
+          </>
+        )}
+
+        {/* ── Become a partner ───────────────────────────────── */}
+        {becomeTiles.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>KĻŪT PAR PARTNERI</Text>
+            <TileGrid tiles={becomeTiles} />
+          </>
+        )}
+
+        {/* ── Help & support ─────────────────────────────────── */}
+        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
+        <View style={s.listCard}>
+          <ListRow icon={HelpCircle} label="Palīdzība / BUJ" onPress={() => router.push('/help')} />
+          <ListRow
+            icon={MessageCircle}
+            label="Atbalsts"
+            last
+            onPress={() => router.push('/support-chat' as never)}
+          />
+        </View>
+
+        {/* ── Sign out ───────────────────────────────────────── */}
+        {user ? (
+          <View style={s.listCard}>
+            <ListRow icon={LogOut} label="Iziet" isDestructive last onPress={handleLogout} />
+          </View>
+        ) : (
+          <View style={s.guestActions}>
+            <TouchableOpacity
+              style={s.guestPrimary}
+              activeOpacity={0.85}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/register' as never);
+              }}
+            >
+              <Text style={s.guestPrimaryText}>Izveidot kontu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={s.guestSecondary}
+              activeOpacity={0.7}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/login' as never);
+              }}
+            >
+              <Text style={s.guestSecondaryText}>Jau ir konts? Ieiet</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ height: 32 }} />
+      </ScrollView>
+    </ScreenContainer>
+  );
+}
+
+const s = StyleSheet.create({
+  scroll: {
+    paddingBottom: 32,
+  },
+
+  // Identity card
+  identityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    marginHorizontal: H_PAD,
+    marginTop: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  identityName: {
+    fontSize: 17,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  identityRole: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: colors.textMuted,
+  },
+
+  // Tile grid
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: H_PAD,
+    gap: GAP,
+    marginBottom: 8,
+  },
+  tile: {
+    width: TILE_W,
+    minHeight: 90,
+    backgroundColor: colors.bgCard,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+    gap: 8,
+  },
+  tileLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  tileBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tileBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+  },
+
+  // Section label
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginHorizontal: H_PAD + 4,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+
+  // List card
+  listCard: {
+    backgroundColor: colors.bgCard,
+    marginHorizontal: H_PAD,
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  listLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    color: colors.textPrimary,
+  },
+  listLabelDestructive: {
+    color: '#dc2626',
+  },
+  listDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: 48,
+  },
+
+  // Guest actions
+  guestActions: {
+    marginHorizontal: H_PAD,
+    marginTop: 16,
+    gap: 10,
+  },
+  guestPrimary: {
+    backgroundColor: '#111827',
+    borderRadius: 100,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  guestPrimaryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
+  guestSecondary: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  guestSecondaryText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
+});

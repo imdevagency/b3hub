@@ -4,7 +4,15 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { ClipboardList, Map, User, Wallet, CalendarDays } from 'lucide-react-native';
+import {
+  ClipboardList,
+  Map,
+  User,
+  Wallet,
+  CalendarDays,
+  MessageCircle,
+  MoreHorizontal,
+} from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -142,12 +150,20 @@ function DriverLayoutContent() {
             tabBarIcon: ({ color }) => <Wallet size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="messages" options={{ href: null }} />
         <Tabs.Screen
-          name="profile"
+          name="messages"
           options={{
-            title: t.tabs.profile,
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
+            title: 'Ziņojumi',
+            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          }}
+        />
+        <Tabs.Screen name="profile" options={{ href: null }} />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: t.tabs.more,
+            tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
         <Tabs.Screen name="skips" options={{ href: null }} />

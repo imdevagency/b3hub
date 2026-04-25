@@ -5,7 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
-import { Home, ClipboardList, User } from 'lucide-react-native';
+import {
+  Home,
+  ClipboardList,
+  User,
+  MoreHorizontal,
+  LayoutGrid,
+  MessageCircle,
+} from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -86,7 +93,13 @@ function BuyerLayoutContent() {
           }}
         />
         <Tabs.Screen name="new-order" options={{ href: null }} />
-        <Tabs.Screen name="catalog" options={{ href: null }} />
+        <Tabs.Screen
+          name="catalog"
+          options={{
+            title: t.tabs.catalog,
+            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
+          }}
+        />
         <Tabs.Screen
           name="orders"
           options={{
@@ -95,11 +108,12 @@ function BuyerLayoutContent() {
           }}
         />
         <Tabs.Screen name="messages" options={{ href: null }} />
+        <Tabs.Screen name="profile" options={{ href: null }} />
         <Tabs.Screen
-          name="profile"
+          name="more"
           options={{
-            title: t.tabs.profile,
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
+            title: t.tabs.more,
+            tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
         {/* Detail screens — hidden from tab bar */}
