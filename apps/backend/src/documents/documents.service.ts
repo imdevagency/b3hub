@@ -359,31 +359,42 @@ export class DocumentsService {
    * Auto-generate weighing slip document when material weight is confirmed.
    */
   async generateWeighingSlip(
-    orderId: string,
+    orderId: string | undefined,
     ownerId: string,
     weight: number,
     unit: string,
     pdfUrl?: string,
     orderNumber?: string,
+    transportJobId?: string,
   ) {
+    const entityId = orderId ?? transportJobId ?? 'unknown';
     let resolvedPdfUrl = pdfUrl;
     if (!resolvedPdfUrl) {
       try {
         const pdfBuffer = await this.buildWeighingSlipPdf({
           weight,
           unit,
-          orderId,
+          orderId: entityId,
           orderNumber,
         });
-        const storagePath = `weighing-slips/${orderId}_${Date.now()}.pdf`;
+        const storagePath = `weighing-slips/${entityId}_${Date.now()}.pdf`;
         await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
         resolvedPdfUrl = this.supabase.getPublicUrl('documents', storagePath);
       } catch (err) {
         this.logger.warn(
-          `Weighing slip PDF failed for order ${orderId}: ${(err as Error).message}`,
+          `Weighing slip PDF failed for ${orderId ? `order ${orderId}` : `job ${transportJobId}`}: ${(err as Error).message}`,
         );
       }
     }
+
+    const linkEntity = orderId
+      ? { entityType: DocumentEntityType.ORDER, entityId: orderId, role: DocumentLinkRole.PRIMARY }
+      : {
+          entityType: DocumentEntityType.TRANSPORT_JOB,
+          entityId: transportJobId ?? entityId,
+          role: DocumentLinkRole.PRIMARY,
+        };
+
     return this.prisma.document.create({
       data: {
         title: `Svēršanas lapa — ${weight} ${unit}${orderNumber ? ` · #${orderNumber}` : ''}`,
@@ -391,16 +402,13 @@ export class DocumentsService {
         status: DocumentStatus.ISSUED,
         fileUrl: resolvedPdfUrl,
         mimeType: 'application/pdf',
-        orderId,
+        orderId: orderId ?? null,
+        transportJobId: transportJobId ?? null,
         ownerId,
         isGenerated: true,
         notes: `Svars: ${weight} ${unit}${orderNumber ? ` · Pasūtījums #${orderNumber}` : ''}`,
         links: {
-          create: {
-            entityType: DocumentEntityType.ORDER,
-            entityId: orderId,
-            role: DocumentLinkRole.PRIMARY,
-          },
+          create: linkEntity,
         },
       },
     });

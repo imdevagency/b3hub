@@ -1864,6 +1864,31 @@ export class TransportJobsService {
       }
     }
 
+    // Standalone freight job (no linked order) — generate weighing slip when LOADED
+    if (
+      dto.status === TransportJobStatus.LOADED &&
+      !orderId &&
+      dto.weightKg &&
+      updatedJob.requestedById
+    ) {
+      const weightTonnes = dto.weightKg / 1000;
+      this.documents
+        .generateWeighingSlip(
+          undefined,
+          updatedJob.requestedById,
+          weightTonnes,
+          't',
+          undefined,
+          updatedJob.jobNumber,
+          updatedJob.id,
+        )
+        .catch((err) =>
+          this.logger.error(
+            `Weighing slip failed for standalone freight job ${updatedJob.id}: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
+    }
+
     // Notify relevant parties on key transitions
     if (orderId) {
       const orderForNotify = await this.prisma.order.findUnique({

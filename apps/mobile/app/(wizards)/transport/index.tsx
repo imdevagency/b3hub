@@ -114,6 +114,9 @@ interface TransportDraft {
   siteContactPhone: string;
   notes: string;
   offeredRateText: string;
+  truckCount: number;
+  pricingMode: 'FLAT' | 'PER_TONNE';
+  pricePerTonneText: string;
   pickupPicked: PickedAddress | null;
   dropoffPicked: PickedAddress | null;
   savedAt: number;
@@ -150,6 +153,10 @@ export default function TransportWizard() {
   const [weightText, setWeightText] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>(DAY_OPTIONS[0].iso);
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
+
+  const [truckCount, setTruckCount] = useState(1);
+  const [pricingMode, setPricingMode] = useState<'FLAT' | 'PER_TONNE'>('FLAT');
+  const [pricePerTonneText, setPricePerTonneText] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
@@ -206,6 +213,9 @@ export default function TransportWizard() {
           if (d.siteContactPhone !== undefined) setSiteContactPhone(d.siteContactPhone);
           if (d.notes !== undefined) setNotes(d.notes);
           if (d.offeredRateText) setOfferedRateText(d.offeredRateText);
+          if (d.truckCount) setTruckCount(d.truckCount);
+          if (d.pricingMode) setPricingMode(d.pricingMode);
+          if (d.pricePerTonneText) setPricePerTonneText(d.pricePerTonneText);
           if (d.pickupPicked) {
             setPickupPicked(d.pickupPicked);
             setPickupStop({ lat: d.pickupPicked.lat, lng: d.pickupPicked.lng });
@@ -252,6 +262,9 @@ export default function TransportWizard() {
       siteContactPhone,
       notes,
       offeredRateText,
+      truckCount,
+      pricingMode,
+      pricePerTonneText,
       pickupPicked,
       dropoffPicked,
       savedAt: Date.now(),
@@ -269,7 +282,9 @@ export default function TransportWizard() {
     siteContactPhone,
     notes,
     offeredRateText,
-    pickupPicked,
+    truckCount,
+    pricingMode,
+    pricePerTonneText,
     dropoffPicked,
   ]);
 
@@ -311,6 +326,7 @@ export default function TransportWizard() {
           ? Math.round(currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm)
           : currentVehicle.fromPrice
         : 0;
+      const parsedPricePerTonne = parseFloat(pricePerTonneText);
       const job = await api.transport.create(
         {
           pickupAddress: pickupPicked?.address ?? '',
@@ -330,7 +346,14 @@ export default function TransportWizard() {
           siteContactPhone: siteContactPhone || undefined,
           notes: notes || undefined,
           quotedRate,
-          buyerOfferedRate: offeredRateText ? parseFloat(offeredRateText) : undefined,
+          buyerOfferedRate:
+            pricingMode === 'FLAT' && offeredRateText ? parseFloat(offeredRateText) : undefined,
+          pricingMode,
+          pricePerTonne:
+            pricingMode === 'PER_TONNE' && !isNaN(parsedPricePerTonne)
+              ? parsedPricePerTonne
+              : undefined,
+          truckCount: truckCount > 1 ? truckCount : undefined,
           projectId: projectId || undefined,
         },
         token,
@@ -411,6 +434,10 @@ export default function TransportWizard() {
     savePickup,
     saveDropoff,
     reset,
+    truckCount,
+    pricingMode,
+    offeredRateText,
+    pricePerTonneText,
   ]);
 
   const step3Valid = selectedVehicle !== null;
@@ -428,7 +455,7 @@ export default function TransportWizard() {
   const ctaLabel =
     step === 5
       ? currentVehiclePrice
-        ? `Pasūtīt — no €${currentVehiclePrice}`
+        ? `Pasūtīt${truckCount > 1 ? ` ${truckCount}×` : ''} — no €${currentVehiclePrice}`
         : 'Pasūtīt'
       : 'Turpināt';
 
@@ -652,6 +679,35 @@ export default function TransportWizard() {
               />
               <Text style={s.weightUnit}>tonnas</Text>
             </View>
+
+            <Text style={s.sectionTitle}>Automašīnu skaits</Text>
+            <View style={s.truckCountRow}>
+              <TouchableOpacity
+                style={[s.truckCountBtn, truckCount <= 1 && s.truckCountBtnDisabled]}
+                onPress={() => setTruckCount((n) => Math.max(1, n - 1))}
+                activeOpacity={0.7}
+                disabled={truckCount <= 1}
+              >
+                <Text style={s.truckCountBtnText}>−</Text>
+              </TouchableOpacity>
+              <View style={s.truckCountValue}>
+                <Text style={s.truckCountNum}>{truckCount}</Text>
+                <Text style={s.truckCountUnit}>{truckCount === 1 ? 'auto' : 'auto'}</Text>
+              </View>
+              <TouchableOpacity
+                style={[s.truckCountBtn, truckCount >= 10 && s.truckCountBtnDisabled]}
+                onPress={() => setTruckCount((n) => Math.min(10, n + 1))}
+                activeOpacity={0.7}
+                disabled={truckCount >= 10}
+              >
+                <Text style={s.truckCountBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            {truckCount > 1 && (
+              <Text style={s.truckCountHint}>
+                {truckCount} atsevišķi pārvadājuma darbi • iekraušana ik 30 min
+              </Text>
+            )}
           </ScrollView>
         )}
 
@@ -743,11 +799,35 @@ export default function TransportWizard() {
                     route && currentVehicle
                       ? `~€${Math.round(
                           currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm,
-                        )}`
+                        )}${truckCount > 1 ? ` × ${truckCount}` : ''}`
                       : `no €${currentVehiclePrice}`
                   }
                 />
               )}
+              {truckCount > 1 && (
+                <DetailRow label="Auto skaits" value={`${truckCount} (ik 30 min)`} />
+              )}
+            </View>
+
+            <SectionLabel label="Norēķinu veids" style={{ marginTop: 20 }} />
+            <View style={s.windowRow}>
+              {(
+                [
+                  ['FLAT', 'Par pārvadājumu'],
+                  ['PER_TONNE', 'Par tonnu'],
+                ] as const
+              ).map(([val, label]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.windowChip, pricingMode === val && s.windowChipActive]}
+                  onPress={() => setPricingMode(val)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.windowChipText, pricingMode === val && s.windowChipTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
             <SectionLabel label="Sūtīšana" />
@@ -777,12 +857,21 @@ export default function TransportWizard() {
                 value={notes}
                 onChangeText={setNotes}
               />
-              <TextInputField
-                placeholder="Jūsu piedāvātā cena (€) — pēc izvēles"
-                keyboardType="numeric"
-                value={offeredRateText}
-                onChangeText={setOfferedRateText}
-              />
+              {pricingMode === 'FLAT' ? (
+                <TextInputField
+                  placeholder="Jūsu piedāvātā cena (€) — pēc izvēles"
+                  keyboardType="numeric"
+                  value={offeredRateText}
+                  onChangeText={setOfferedRateText}
+                />
+              ) : (
+                <TextInputField
+                  placeholder="Cena par tonnu (€/t)"
+                  keyboardType="numeric"
+                  value={pricePerTonneText}
+                  onChangeText={setPricePerTonneText}
+                />
+              )}
             </View>
             <View style={{ height: 16 }} />
           </ScrollView>
@@ -972,6 +1061,47 @@ const s = StyleSheet.create({
   },
   weightInput: { flex: 1, fontSize: 15, color: colors.textPrimary, paddingVertical: 0 },
   weightUnit: { fontSize: 13, color: colors.textMuted, marginLeft: 8 },
+
+  // Truck count picker
+  truckCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 8,
+  },
+  truckCountBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  truckCountBtnDisabled: { backgroundColor: colors.bgMuted },
+  truckCountBtnText: {
+    fontSize: 22,
+    color: '#fff',
+    lineHeight: 26,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
+  truckCountValue: { alignItems: 'center', minWidth: 48 },
+  truckCountNum: {
+    fontSize: 28,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    lineHeight: 32,
+  },
+  truckCountUnit: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  truckCountHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
 
   // Day chips
   dayChip: {

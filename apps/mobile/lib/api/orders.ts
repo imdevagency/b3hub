@@ -79,6 +79,14 @@ export interface CreateTransportOrderInput {
   buyerOfferedRate?: number;
   /** Optional project tag for P&L roll-up */
   projectId?: string;
+  /** Number of trucks to dispatch (1-10). Each creates a separate transport job staggered by truckIntervalMinutes. */
+  truckCount?: number;
+  /** Minutes between consecutive truck pickups when truckCount > 1 (default 30). */
+  truckIntervalMinutes?: number;
+  /** 'FLAT' (default) = fixed rate per transport; 'PER_TONNE' = rate per tonne loaded. */
+  pricingMode?: 'FLAT' | 'PER_TONNE';
+  /** Buyer's offered rate per tonne when pricingMode = 'PER_TONNE'. */
+  pricePerTonne?: number;
 }
 
 export interface CreateMaterialOrderInput {

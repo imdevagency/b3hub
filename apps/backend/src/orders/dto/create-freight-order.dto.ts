@@ -1,9 +1,11 @@
 import {
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -106,4 +108,27 @@ export class CreateFreightOrderDto {
   @IsUUID()
   @IsOptional()
   projectId?: string; // optional project tag for P&L roll-up
+
+  // ── Multi-truck ───────────────────────────────────────────────────────────
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  @IsOptional()
+  truckCount?: number; // number of trucks to dispatch (each gets its own transport job)
+
+  @IsInt()
+  @Min(0)
+  @Max(240)
+  @IsOptional()
+  truckIntervalMinutes?: number; // minutes between consecutive truck pickups (default 30)
+
+  // ── Pricing mode ──────────────────────────────────────────────────────────
+  @IsString()
+  @IsOptional()
+  pricingMode?: string; // 'FLAT' | 'PER_TONNE'
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  pricePerTonne?: number; // buyer's offered rate per tonne (PER_TONNE mode)
 }

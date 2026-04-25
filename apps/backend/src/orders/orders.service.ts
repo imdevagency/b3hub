@@ -2371,70 +2371,90 @@ export class OrdersService {
 
     const vehicle =
       VEHICLE_LABELS[dto.vehicleType] ?? VEHICLE_LABELS.TIPPER_LARGE;
-    const jobNumber = this.generateTransportJobNumber();
-    const pickupDate = new Date(dto.requestedDate);
+    const basePickupDate = new Date(dto.requestedDate);
+    const truckCount = Math.min(Math.max(dto.truckCount ?? 1, 1), 10);
+    const intervalMs = (dto.truckIntervalMinutes ?? 30) * 60_000;
+    const isPricingPerTonne =
+      dto.pricingMode === 'PER_TONNE' && (dto.pricePerTonne ?? 0) > 0;
 
-    const job = await this.prisma.transportJob.create({
-      data: {
-        jobNumber,
-        jobType: TransportJobType.TRANSPORT,
-        requestedById: userId, // buyer who requested the freight
-        pickupAddress: dto.pickupAddress,
-        pickupCity: dto.pickupCity,
-        pickupState: dto.pickupState ?? '',
-        pickupPostal: dto.pickupPostal ?? '',
-        pickupDate,
-        pickupLat: dto.pickupLat ?? null,
-        pickupLng: dto.pickupLng ?? null,
-        deliveryAddress: dto.dropoffAddress,
-        deliveryCity: dto.dropoffCity,
-        deliveryState: dto.dropoffState ?? '',
-        deliveryPostal: dto.dropoffPostal ?? '',
-        deliveryDate: new Date(pickupDate.getTime() + 4 * 3_600_000),
-        deliveryLat: dto.dropoffLat ?? null,
-        deliveryLng: dto.dropoffLng ?? null,
-        cargoType: dto.loadDescription,
-        cargoWeight: dto.estimatedWeight ?? vehicle.capacity,
-        cargoVolume: vehicle.volume,
-        requiredVehicleType: vehicle.label,
-        specialRequirements: null,
-        rate: dto.quotedRate,
-        buyerOfferedRate: dto.buyerOfferedRate ?? null,
-        currency: 'EUR',
-        projectId: dto.projectId ?? null,
-        status: TransportJobStatus.AVAILABLE,
-      },
-    });
+    const baseJobData = {
+      jobType: TransportJobType.TRANSPORT,
+      requestedById: userId,
+      pickupAddress: dto.pickupAddress,
+      pickupCity: dto.pickupCity,
+      pickupState: dto.pickupState ?? '',
+      pickupPostal: dto.pickupPostal ?? '',
+      pickupLat: dto.pickupLat ?? null,
+      pickupLng: dto.pickupLng ?? null,
+      deliveryAddress: dto.dropoffAddress,
+      deliveryCity: dto.dropoffCity,
+      deliveryState: dto.dropoffState ?? '',
+      deliveryPostal: dto.dropoffPostal ?? '',
+      deliveryLat: dto.dropoffLat ?? null,
+      deliveryLng: dto.dropoffLng ?? null,
+      cargoType: dto.loadDescription,
+      cargoWeight: dto.estimatedWeight ?? vehicle.capacity,
+      cargoVolume: vehicle.volume,
+      requiredVehicleType: vehicle.label,
+      specialRequirements: null,
+      rate: dto.quotedRate,
+      pricePerTonne: isPricingPerTonne ? dto.pricePerTonne : null,
+      buyerOfferedRate: dto.buyerOfferedRate ?? null,
+      currency: 'EUR',
+      projectId: dto.projectId ?? null,
+      status: TransportJobStatus.AVAILABLE,
+    } as const;
+
+    // Create one transport job per truck, staggered by intervalMs
+    const jobs = await Promise.all(
+      Array.from({ length: truckCount }, (_, i) => {
+        const pickupDate = new Date(basePickupDate.getTime() + i * intervalMs);
+        const jobNumber =
+          truckCount > 1
+            ? `${this.generateTransportJobNumber()}-${i + 1}`
+            : this.generateTransportJobNumber();
+        return this.prisma.transportJob.create({
+          data: {
+            ...baseJobData,
+            jobNumber,
+            pickupDate,
+            deliveryDate: new Date(pickupDate.getTime() + 4 * 3_600_000),
+          },
+        });
+      }),
+    );
+
+    const firstJob = jobs[0];
 
     this.logger.log(
-      `Freight job ${jobNumber} created ` +
+      `Freight ${truckCount > 1 ? `${truckCount}×` : ''}job ${firstJob.jobNumber} created ` +
         `(${dto.pickupCity} → ${dto.dropoffCity}, ${vehicle.label})`,
     );
 
-    // Generate invoice + Stripe Payment Link for the quoted rate (fire-and-forget)
+    // Generate invoice for the first job (the primary billing record)
     this.invoices
       .createForCallOff({
-        id: job.id,
-        jobNumber: job.jobNumber,
+        id: firstJob.id,
+        jobNumber: firstJob.jobNumber,
         rate: dto.quotedRate,
         currency: 'EUR',
         requestedById: userId,
       })
       .catch((err) =>
         this.logger.error(
-          `Invoice creation failed for freight job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
+          `Invoice creation failed for freight job ${firstJob.id}: ${err instanceof Error ? err.message : String(err)}`,
         ),
       );
 
     // Notify all active drivers about the new job (fire-and-forget)
     this.notifyActiveDrivers(
       `🚚 Jauns kravas pārvadājuma darbs: ${dto.pickupCity} → ${dto.dropoffCity}`,
-      `${dto.loadDescription ?? vehicle.label}`,
+      `${dto.loadDescription ?? vehicle.label}${truckCount > 1 ? ` (${truckCount} auto)` : ''}`,
     ).catch((err) =>
       this.logger.error(err instanceof Error ? err.message : String(err)),
     );
 
-    return job;
+    return firstJob;
   }
 
   private async notifyActiveDrivers(title: string, message: string) {
@@ -2447,6 +2467,7 @@ export class OrdersService {
       { type: NotificationType.SYSTEM_ALERT, title, message },
     );
   }
+
 
   private generateOrderNumber(): string {
     const date = new Date();
