@@ -328,8 +328,8 @@ async function main() {
             quality: 'A',
         },
         {
-            name: 'Reciklēts betons (Frakcija 0-40 mm)',
-            description: 'Reciklēts betona materiāls ceļu un pamatņu izbūvei. Nav piemērots ekspozīcijas slānim.',
+            name: 'Pārstrādāts betons (Frakcija 0-40 mm)',
+            description: 'Pārstrādāts betona materiāls ceļu un pamatņu izbūvei. Nav piemērots ekspozīcijas slānim.',
             category: client_1.MaterialCategory.RECYCLED_CONCRETE,
             subCategory: 'RC šķembas',
             basePrice: 6.0,
@@ -342,7 +342,7 @@ async function main() {
         },
         {
             name: 'Asfalta granulāts (RAP)',
-            description: 'Reciklēts asfalta granulāts jauna asfalta ražošanai vai ceļu pamatnei.',
+            description: 'Pārstrādāts asfalta granulāts jauna asfalta ražošanai vai ceļu pamatnei.',
             category: client_1.MaterialCategory.ASPHALT,
             subCategory: 'RAP granulāts',
             basePrice: 8.5,

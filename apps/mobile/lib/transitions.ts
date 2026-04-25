@@ -16,7 +16,6 @@
  *   translateY.value = withSpring(0, spring.standard);
  */
 
-import { Platform } from 'react-native';
 import {
   FadeIn,
   FadeInDown,
@@ -34,11 +33,11 @@ import type { NativeStackNavigationOptions } from '@react-navigation/native-stac
 /** Duration constants. All times in ms. */
 export const DURATION = {
   /** Normal push / pop navigation */
-  push: Platform.OS === 'ios' ? undefined : 280,
+  push: 120,
   /** Bottom-sheet / wizard modal entrance */
-  modal: 360,
+  modal: 150,
   /** Fast fade (tab-to-tab, inline content) */
-  fast: 160,
+  fast: 100,
   /** Stagger step between list items */
   stagger: 60,
 } as const;
@@ -58,15 +57,12 @@ export const spring = {
 // ─── Screen-level transition presets ─────────────────────────────────────────
 //
 // Use these as `screenOptions` or in a `<Stack.Screen options={...} />`.
-// On iOS the `animation: 'slide_from_right'` already uses the native UIKit
-// spring so it's intentionally not overridden.
-// On Android we set `animationDuration` so it matches the iOS feel.
 
 type StackScreenOptions = NativeStackNavigationOptions;
 
-/** Standard push — used for detail screens, lists → detail, settings. */
+/** Standard push — smooth fade for all detail / list → detail screens. */
 const push: StackScreenOptions = {
-  animation: 'slide_from_right',
+  animation: 'fade',
   animationDuration: DURATION.push,
   gestureEnabled: false,
   fullScreenGestureEnabled: false,
@@ -74,12 +70,12 @@ const push: StackScreenOptions = {
 };
 
 /**
- * Modal / wizard — slides in from the right, same feel as a push.
+ * Modal / wizard — fade in, same non-intrusive feel as push.
  * Gestures disabled — accidental swipe-back mid-wizard would lose form state.
  */
 const modal: StackScreenOptions = {
-  animation: 'slide_from_right',
-  animationDuration: DURATION.push,
+  animation: 'fade',
+  animationDuration: DURATION.modal,
   gestureEnabled: false,
   fullScreenGestureEnabled: false,
   animationMatchesGesture: false,

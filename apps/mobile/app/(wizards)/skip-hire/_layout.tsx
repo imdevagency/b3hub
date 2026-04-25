@@ -9,7 +9,7 @@ export const unstable_settings = {
 export default function OrderLayout() {
   return (
     <OrderProvider>
-      <Stack initialRouteName="index" screenOptions={{ headerShown: false, ...SCREEN.push }} />
+      <Stack initialRouteName="index" screenOptions={{ headerShown: false, ...SCREEN.fade }} />
     </OrderProvider>
   );
 }

@@ -621,7 +621,7 @@ function MaterialFormModal({
                 }`}
               >
                 {form.isRecycled ? <Check className="size-4" /> : <X className="size-4" />}
-                Reciklēts
+                Pārstrādāts
               </button>
             </div>
 

@@ -12,7 +12,7 @@ export const unstable_settings = {
 export default function DisposalLayout() {
   return (
     <DisposalProvider>
-      <Stack initialRouteName="index" screenOptions={{ headerShown: false, ...SCREEN.push }} />
+      <Stack initialRouteName="index" screenOptions={{ headerShown: false, ...SCREEN.fade }} />
     </DisposalProvider>
   );
 }
