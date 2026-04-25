@@ -27,6 +27,8 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { JobStatusBadge } from '@/components/ui/OrderStatusBadge';
+import { JobRouteMap } from '@/components/ui/JobRouteMap';
+import { Divider } from '@/components/ui/Divider';
 import { Button } from '@/components/ui/button';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -166,6 +168,16 @@ export default function TransportJobDetailsScreen() {
   const vehicle = job.vehicle;
   const canCancel = job.status === 'AVAILABLE';
 
+  const hasMapData =
+    job.pickupLat != null &&
+    job.pickupLng != null &&
+    job.deliveryLat != null &&
+    job.deliveryLng != null;
+  const pickupPin = hasMapData ? { lat: job.pickupLat!, lng: job.pickupLng! } : null;
+  const deliveryPin = hasMapData ? { lat: job.deliveryLat!, lng: job.deliveryLng! } : null;
+
+  const isJobClosed = job.status === 'DELIVERED' || job.status === 'CANCELLED';
+
   const routeRows = [
     { label: 'Iekraušanas pilsēta', value: job.pickupCity },
     { label: 'Iekraušanas adrese', value: job.pickupAddress },
@@ -213,28 +225,91 @@ export default function TransportJobDetailsScreen() {
   const notes = job.order?.notes?.trim() ?? '';
 
   return (
-    <ScreenContainer bg="#F4F5F7" standalone>
-      <ScreenHeader title="Detaļas" />
+    <ScreenContainer bg="#FFFFFF" standalone>
+      <ScreenHeader title="Detaļas" noBorder />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
+        {pickupPin && deliveryPin && job.status !== 'CANCELLED' && (
+          <JobRouteMap pickup={pickupPin} delivery={deliveryPin} height={260} borderRadius={0} />
+        )}
+
         {/* ── Hero ── */}
         <View style={styles.heroSection}>
-          <View style={styles.heroTitleRow}>
-            <Text style={styles.heroTitle} numberOfLines={2}>
-              {typeLabel}
-            </Text>
-            <JobStatusBadge status={job.status} size="md" />
-          </View>
-          <Text style={styles.heroSubtitle}>
-            {formatDate(job.pickupDate)}
-            {job.order?.orderNumber ? ` · #${job.order.orderNumber}` : ''}
+          <Text style={styles.heroTitle} numberOfLines={2}>
+            {typeLabel}
           </Text>
+          <View style={styles.heroMetaRow}>
+            <JobStatusBadge status={job.status} size="md" />
+            <Text style={styles.heroSubtitle}>
+              {formatDate(job.pickupDate)}
+              {job.order?.orderNumber ? ` · #${job.order.orderNumber}` : ''}
+            </Text>
+          </View>
         </View>
 
-        <InfoSection icon={<MapPin size={16} color={colors.textMuted} />} title="Maršruts">
+        <Divider color="#EBEBEB" marginV={0} />
+
+        {/* ── Driver ── */}
+        {driver && (
+          <>
+            {isJobClosed ? (
+              <View style={styles.driverHighlightRow}>
+                <View style={styles.driverInfo}>
+                  <Text style={styles.driverName}>Šoferis {driver.firstName}</Text>
+                  <Text style={styles.driverVehicle}>
+                    {job.requiredVehicleType
+                      ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
+                      : 'Nav norādīts'}
+                    {vehicle?.licensePlate ? ` · ${vehicle.licensePlate}` : ''}
+                  </Text>
+                </View>
+                <View style={styles.driverAvatar}>
+                  <Text style={styles.driverInitials}>
+                    {(driver.firstName[0] || '').toUpperCase()}
+                    {(driver.lastName[0] || '').toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.driverHighlightRow}
+                onPress={() => {
+                  haptics.light();
+                  router.push({
+                    pathname: '/chat/[jobId]',
+                    params: { jobId: job.id, title: `${driver.firstName} ${driver.lastName}` },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.driverInfo}>
+                  <Text style={styles.driverName}>Šoferis {driver.firstName}</Text>
+                  <Text style={styles.driverVehicle}>
+                    {job.requiredVehicleType
+                      ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
+                      : 'Nav norādīts'}
+                    {vehicle?.licensePlate ? ` · ${vehicle.licensePlate}` : ''}
+                  </Text>
+                </View>
+                <View style={styles.driverAvatar}>
+                  <Text style={styles.driverInitials}>
+                    {(driver.firstName[0] || '').toUpperCase()}
+                    {(driver.lastName[0] || '').toUpperCase()}
+                  </Text>
+                  <View style={styles.chatBadge}>
+                    <MessageCircle size={10} color="#fff" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+            <Divider color="#EBEBEB" marginV={0} />
+          </>
+        )}
+
+        <InfoSection icon={<MapPin size={18} color="#111827" />} title="Maršruts">
           {routeRows.map((row, index) => (
             <DetailRow
               key={row.label}
@@ -244,8 +319,9 @@ export default function TransportJobDetailsScreen() {
             />
           ))}
         </InfoSection>
+        <Divider color="#EBEBEB" marginV={0} />
 
-        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Krava">
+        <InfoSection icon={<Package size={18} color="#111827" />} title="Krava">
           {cargoRows.map((row, index) => (
             <DetailRow
               key={row.label}
@@ -255,8 +331,9 @@ export default function TransportJobDetailsScreen() {
             />
           ))}
         </InfoSection>
+        <Divider color="#EBEBEB" marginV={0} />
 
-        <InfoSection icon={<Clock3 size={16} color={colors.textMuted} />} title="Laiks">
+        <InfoSection icon={<Clock3 size={18} color="#111827" />} title="Laiks">
           {timingRows.map((row, index) => (
             <DetailRow
               key={row.label}
@@ -266,8 +343,9 @@ export default function TransportJobDetailsScreen() {
             />
           ))}
         </InfoSection>
+        <Divider color="#EBEBEB" marginV={0} />
 
-        <InfoSection icon={<Phone size={16} color={colors.textMuted} />} title="Kontakti">
+        <InfoSection icon={<Phone size={18} color="#111827" />} title="Kontakti">
           {contactRows.length > 0 ? (
             contactRows.map((row, index) => (
               <DetailRow
@@ -283,13 +361,13 @@ export default function TransportJobDetailsScreen() {
         </InfoSection>
 
         {notes.length > 0 && (
-          <InfoSection icon={<FileText size={16} color={colors.textMuted} />} title="Piezīmes">
+          <InfoSection icon={<FileText size={18} color="#111827" />} title="Piezīmes">
             <Text style={styles.notesText}>{notes}</Text>
           </InfoSection>
         )}
 
         {job.order?.sitePhotoUrl && (
-          <InfoSection icon={<MapPin size={16} color={colors.textMuted} />} title="Objekta foto">
+          <InfoSection icon={<MapPin size={18} color="#111827" />} title="Objekta foto">
             <Image
               source={{ uri: job.order.sitePhotoUrl }}
               style={styles.siteImage}
@@ -302,9 +380,9 @@ export default function TransportJobDetailsScreen() {
           <InfoSection
             icon={
               isDisposal ? (
-                <Recycle size={16} color={colors.textMuted} />
+                <Recycle size={18} color="#111827" />
               ) : (
-                <Package size={16} color={colors.textMuted} />
+                <Package size={18} color="#111827" />
               )
             }
             title={isDisposal ? 'Kraušanas foto' : 'Svēršanas slip'}
@@ -324,7 +402,7 @@ export default function TransportJobDetailsScreen() {
         )}
 
         {job.status === 'DELIVERED' && !ratingSubmitted && (
-          <InfoSection icon={<Star size={16} color={colors.textMuted} />} title="Novērtēt šoferi">
+          <InfoSection icon={<Star size={18} color="#111827" />} title="Novērtēt šoferi">
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity
@@ -367,7 +445,7 @@ export default function TransportJobDetailsScreen() {
         )}
 
         {ratingSubmitted && job.status === 'DELIVERED' && (
-          <InfoSection icon={<Star size={16} color={colors.textMuted} />} title="Jūsu vērtējums">
+          <InfoSection icon={<Star size={18} color="#111827" />} title="Jūsu vērtējums">
             <View style={styles.ratingSubmittedRow}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
@@ -384,7 +462,7 @@ export default function TransportJobDetailsScreen() {
 
         {/* ── Secondary actions ── */}
         <View style={styles.secondaryActionsBlock}>
-          {driver && (
+          {driver && !isJobClosed && (
             <Button
               size="lg"
               variant="outline"
@@ -429,38 +507,85 @@ export default function TransportJobDetailsScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    padding: 16,
     paddingBottom: 100,
   },
   heroSection: {
-    marginTop: 8,
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  heroTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
   heroTitle: {
-    flex: 1,
-    fontSize: 26,
-    lineHeight: 32,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontSize: 32,
+    lineHeight: 36,
+    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '800',
     color: '#111827',
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+    flexWrap: 'wrap',
   },
   heroSubtitle: {
     fontSize: 15,
     fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
     color: '#6B7280',
-    marginTop: 8,
+  },
+  driverHighlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  driverInfo: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  driverName: {
+    fontSize: 18,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  driverVehicle: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+  },
+  driverAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#00A878',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverInitials: {
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#FFFFFF',
+  },
+  chatBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#111827',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   secondaryActionsBlock: {
     gap: 12,
-    marginTop: 12,
+    marginTop: 24,
+    paddingHorizontal: 20,
   },
   stickyFooter: {
     position: 'absolute',
@@ -496,8 +621,8 @@ const styles = StyleSheet.create({
   siteImage: {
     width: '100%',
     height: 220,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
   },
   weightBadge: {
     flexDirection: 'row',
