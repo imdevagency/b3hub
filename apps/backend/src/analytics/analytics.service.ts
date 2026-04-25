@@ -186,6 +186,7 @@ export class AnalyticsService {
         createdAt: { gte: yearAgo },
       },
       select: { total: true, createdAt: true },
+      take: 2000,
     });
 
     return this.aggregateByMonth(orders, (o) => o.total);
@@ -225,6 +226,7 @@ export class AnalyticsService {
         },
       },
       select: { total: true, order: { select: { createdAt: true } } },
+      take: 2000,
     });
 
     return this.aggregateByMonth(
@@ -278,6 +280,7 @@ export class AnalyticsService {
         },
       },
       select: { deliveryDate: true, statusUpdatedAt: true },
+      take: 2000,
     });
 
     if (jobs.length === 0) return 0;
@@ -302,6 +305,7 @@ export class AnalyticsService {
         companyType: true,
         rating: true,
       },
+      take: 500,
     });
 
     const scores = await Promise.all(
@@ -379,6 +383,7 @@ export class AnalyticsService {
         updatedAt: { gte: yearAgo },
       },
       select: { rate: true, updatedAt: true },
+      take: 2000,
     });
 
     return this.aggregateByMonth(
@@ -801,6 +806,7 @@ export class AnalyticsService {
     const suppliers = await this.prisma.company.findMany({
       where: { materials: { some: { active: true } } },
       select: { id: true },
+      take: 500,
     });
 
     for (const supplier of suppliers) {

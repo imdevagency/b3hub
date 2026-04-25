@@ -1086,68 +1086,80 @@ export class InvoicesService {
           },
         });
 
-        for (const inv of overdue) {
+        if (overdue.length > 0) {
+          // Batch-update all overdue invoices in one query instead of N individual updates
           await this.prisma.invoice
-            .update({
-              where: { id: inv.id },
+            .updateMany({
+              where: { id: { in: overdue.map((i) => i.id) } },
               data: { paymentStatus: PaymentStatus.FAILED },
             })
             .catch((err) =>
               this.logger.error(
-                `markOverdue: failed to flip invoice ${inv.id}: ${(err as Error).message}`,
+                `markOverdue: batch flip failed: ${(err as Error).message}`,
               ),
             );
 
-          const buyerId = inv.order?.createdById;
-          if (buyerId) {
-            await this.notifications
-              .create({
-                userId: buyerId,
-                type: NotificationType.INVOICE_OVERDUE,
-                title: 'Rēķins ir nokavēts',
-                message: `Rēķins #${inv.invoiceNumber} par pasūtījumu #${inv.order?.orderNumber} ir nokavēts. Lūdzu, samaksājiet pēc iespējas ātrāk.`,
-                data: { invoiceId: inv.id, orderId: inv.orderId },
-              })
-              .catch((err) =>
-                this.logger.warn(
-                  'Notification (invoice overdue) failed',
-                  (err as Error).message,
-                ),
-              );
+          // Batch-fetch all buyer users in one query
+          const buyerIds = [
+            ...new Set(
+              overdue.map((i) => i.order?.createdById).filter(Boolean) as string[],
+            ),
+          ];
+          const buyers = await this.prisma.user.findMany({
+            where: { id: { in: buyerIds } },
+            select: { id: true, email: true, firstName: true, lastName: true },
+          });
+          const buyerMap = Object.fromEntries(buyers.map((b) => [b.id, b]));
 
-            const buyer = await this.prisma.user.findUnique({
-              where: { id: buyerId },
-              select: { email: true, firstName: true, lastName: true },
-            });
-            if (buyer?.email) {
-              const daysLate = Math.floor(
-                (now.getTime() - (inv.dueDate?.getTime() ?? now.getTime())) /
-                  86_400_000,
-              );
-              this.emailService
-                .sendInvoiceOverdue(
-                  buyer.email,
-                  [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
-                    buyer.email,
-                  {
-                    invoiceNumber:
-                      inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase(),
-                    total: Number(inv.total ?? 0),
-                    daysLate,
-                    orderId: inv.orderId ?? '',
-                  },
-                )
+          for (const inv of overdue) {
+            const buyerId = inv.order?.createdById;
+            if (buyerId) {
+              await this.notifications
+                .create({
+                  userId: buyerId,
+                  type: NotificationType.INVOICE_OVERDUE,
+                  title: 'Rēķins ir nokavēts',
+                  message: `Rēķins #${inv.invoiceNumber} par pasūtījumu #${inv.order?.orderNumber} ir nokavēts. Lūdzu, samaksājiet pēc iespējas ātrāk.`,
+                  data: { invoiceId: inv.id, orderId: inv.orderId },
+                })
                 .catch((err) =>
                   this.logger.warn(
-                    `markOverdue: email failed for invoice ${inv.id}: ${(err as Error).message}`,
+                    'Notification (invoice overdue) failed',
+                    (err as Error).message,
                   ),
                 );
-            }
-          }
 
-          this.logger.log(
-            `markOverdueInvoices: invoice ${inv.invoiceNumber} marked OVERDUE`,
-          );
+              const buyer = buyerMap[buyerId];
+              if (buyer?.email) {
+                const daysLate = Math.floor(
+                  (now.getTime() - (inv.dueDate?.getTime() ?? now.getTime())) /
+                    86_400_000,
+                );
+                this.emailService
+                  .sendInvoiceOverdue(
+                    buyer.email,
+                    [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
+                      buyer.email,
+                    {
+                      invoiceNumber:
+                        inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase(),
+                      total: Number(inv.total ?? 0),
+                      daysLate,
+                      orderId: inv.orderId ?? '',
+                    },
+                  )
+                  .catch((err) =>
+                    this.logger.warn(
+                      `markOverdue: email failed for invoice ${inv.id}: ${(err as Error).message}`,
+                    ),
+                  );
+              }
+            }
+
+            this.logger.log(
+              `markOverdueInvoices: invoice ${inv.invoiceNumber} marked OVERDUE`,
+            );
+          }
         }
 
         // ── 2. 3-day reminder ─────────────────────────────────────────────────────
@@ -1167,39 +1179,52 @@ export class InvoicesService {
           },
         });
 
-        for (const inv of dueSoon) {
-          const buyerId = inv.order?.createdById;
-          if (!buyerId) continue;
-
-          const buyer = await this.prisma.user.findUnique({
-            where: { id: buyerId },
-            select: { email: true, firstName: true, lastName: true },
+        if (dueSoon.length > 0) {
+          // Batch-fetch all due-soon buyer users in one query
+          const dueSoonBuyerIds = [
+            ...new Set(
+              dueSoon.map((i) => i.order?.createdById).filter(Boolean) as string[],
+            ),
+          ];
+          const dueSoonBuyers = await this.prisma.user.findMany({
+            where: { id: { in: dueSoonBuyerIds } },
+            select: { id: true, email: true, firstName: true, lastName: true },
           });
-          if (!buyer?.email) continue;
-
-          const daysUntilDue = Math.ceil(
-            ((inv.dueDate?.getTime() ?? now.getTime()) - now.getTime()) /
-              86_400_000,
+          const dueSoonBuyerMap = Object.fromEntries(
+            dueSoonBuyers.map((b) => [b.id, b]),
           );
-          this.emailService
-            .sendInvoiceReminder(
-              buyer.email,
-              [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
-                buyer.email,
-              {
-                invoiceNumber:
-                  inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase(),
-                total: Number(inv.total ?? 0),
-                dueDate: inv.dueDate ?? new Date(),
-                daysUntilDue,
-                orderId: inv.orderId ?? '',
-              },
-            )
-            .catch((err) =>
-              this.logger.warn(
-                `dueSoonReminder: email failed for invoice ${inv.id}: ${(err as Error).message}`,
-              ),
+
+          for (const inv of dueSoon) {
+            const buyerId = inv.order?.createdById;
+            if (!buyerId) continue;
+
+            const buyer = dueSoonBuyerMap[buyerId];
+            if (!buyer?.email) continue;
+
+            const daysUntilDue = Math.ceil(
+              ((inv.dueDate?.getTime() ?? now.getTime()) - now.getTime()) /
+                86_400_000,
             );
+            this.emailService
+              .sendInvoiceReminder(
+                buyer.email,
+                [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
+                  buyer.email,
+                {
+                  invoiceNumber:
+                    inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase(),
+                  total: Number(inv.total ?? 0),
+                  dueDate: inv.dueDate ?? new Date(),
+                  daysUntilDue,
+                  orderId: inv.orderId ?? '',
+                },
+              )
+              .catch((err) =>
+                this.logger.warn(
+                  `dueSoonReminder: email failed for invoice ${inv.id}: ${(err as Error).message}`,
+                ),
+              );
+          }
         }
 
         if (overdue.length > 0 || dueSoon.length > 0) {

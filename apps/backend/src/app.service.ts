@@ -1,12 +1,12 @@
 /**
  * Root service.
- * Returns the health-check string used by AppController.
+ * Returns a minimal status object for the root route.
  */
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  getStatus(): { status: string; version: string } {
+    return { status: 'ok', version: '1' };
   }
 }

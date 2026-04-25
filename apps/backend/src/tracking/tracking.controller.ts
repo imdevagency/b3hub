@@ -4,6 +4,7 @@
  */
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { TrackingService } from './tracking.service';
@@ -19,6 +20,7 @@ export class TrackingController {
    * Returns a public, PII-safe snapshot of an order's status and transport jobs.
    * Anyone with the token URL can view live delivery progress.
    */
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Public()
   @Get(':token')
   getByToken(@Param('token') token: string) {

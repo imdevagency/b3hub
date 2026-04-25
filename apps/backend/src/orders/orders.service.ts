@@ -1480,7 +1480,11 @@ export class OrdersService {
         where: { id },
         data: { statusTimestamps: { ...sellerCancelPrevTs, CANCELLED: new Date().toISOString() } },
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.warn(
+          `cancelByBuyer: failed to stamp CANCELLED timestamp for order ${id}: ${(err as Error).message}`,
+        ),
+      );
 
     // Cascade-cancel assigned (but not yet loaded) transport jobs
     const cancelableJobStatuses: TransportJobStatus[] = [
@@ -1721,7 +1725,11 @@ export class OrdersService {
         where: { id },
         data: { statusTimestamps: { ...cancelPrevTs, CANCELLED: new Date().toISOString() } },
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.warn(
+          `cancelBySeller: failed to stamp CANCELLED timestamp for order ${id}: ${(err as Error).message}`,
+        ),
+      );
 
     // Void the Stripe PaymentIntent or issue a full refund depending on capture state.
     // Fire-and-forget — payment failure must never block order cancellation.

@@ -77,10 +77,10 @@ export default function SupportChatScreen() {
     })();
   }, [token, fetchMessages]);
 
-  // Poll for new messages every 5 s
+  // Poll for new messages every 20 s
   useEffect(() => {
     if (!token) return;
-    pollRef.current = setInterval(fetchMessages, 5000);
+    pollRef.current = setInterval(fetchMessages, 20_000);
     return () => clearInterval(pollRef.current);
   }, [token, fetchMessages]);
 

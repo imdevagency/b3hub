@@ -1,6 +1,6 @@
 /**
  * Root controller.
- * Exposes GET / — a minimal health-check endpoint that returns "Hello World!".
+ * GET / — minimal status probe (load-balancer / uptime checks).
  */
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
@@ -10,7 +10,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getStatus() {
+    return this.appService.getStatus();
   }
 }

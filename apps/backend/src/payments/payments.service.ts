@@ -579,6 +579,13 @@ export class PaymentsService {
     // For simplicity split seller payout equally among suppliers when multiple (rare after cart-split)
     const perSupplierCents = Math.round(sellerCents / supplierIds.length);
 
+    // Pre-fetch admins once — used in the error path when a supplier lacks a Connect account
+    const admins = await this.prisma.user.findMany({
+      where: { userType: 'ADMIN' },
+      select: { id: true },
+      take: 50,
+    });
+
     for (const supplierId of supplierIds) {
       const supplierItem = order.items.find(
         (i) => i.material.supplier.id === supplierId,
@@ -588,11 +595,6 @@ export class PaymentsService {
         this.logger.error(
           `Supplier ${supplierId} has no Stripe Connect account — skipping transfer for order ${orderId}. Manual payout required.`,
         );
-        const admins = await this.prisma.user.findMany({
-          where: { userType: 'ADMIN' },
-          select: { id: true },
-          take: 50,
-        });
         if (admins.length > 0) {
           await this.notifications
             .createForMany(
@@ -904,6 +906,13 @@ export class PaymentsService {
       sellerCents / (supplierIds.length || 1),
     );
 
+    // Pre-fetch admins once — used in the error path when a supplier lacks a Connect account
+    const invoiceAdmins = await this.prisma.user.findMany({
+      where: { userType: 'ADMIN' },
+      select: { id: true },
+      take: 50,
+    });
+
     for (const supplierId of supplierIds) {
       const supplierItem = order.items.find(
         (i) => i.material.supplier.id === supplierId,
@@ -913,15 +922,10 @@ export class PaymentsService {
         this.logger.error(
           `releaseInvoiceOrderFunds: supplier ${supplierId} has no Connect account — manual payout required for order ${orderId}`,
         );
-        const admins = await this.prisma.user.findMany({
-          where: { userType: 'ADMIN' },
-          select: { id: true },
-          take: 50,
-        });
-        if (admins.length > 0) {
+        if (invoiceAdmins.length > 0) {
           await this.notifications
             .createForMany(
-              admins.map((a) => a.id),
+              invoiceAdmins.map((a) => a.id),
               {
                 type: NotificationType.SYSTEM_ALERT,
                 title: '🚨 Piegādātāja izmaksa izlaista',
@@ -1333,7 +1337,13 @@ export class PaymentsService {
                 where: { companyId: confirmedSkip.carrierId },
                 select: { id: true },
               })
-              .catch(() => [] as { id: string }[]);
+              .catch((err) => {
+                this.logger.error(
+                  'Failed to fetch carrier users for skip-hire notification',
+                  (err as Error).message,
+                );
+                return [] as { id: string }[];
+              });
 
             if (carrierUsers.length > 0) {
               const deliveryDay = confirmedSkip.deliveryDate
@@ -1860,6 +1870,27 @@ export class PaymentsService {
           },
         });
 
+        // Batch-fetch all seller users for at-risk orders in one query
+        const atRiskSupplierIds = [
+          ...new Set(
+            atRisk
+              .map((o) => o.items[0]?.material?.supplierId)
+              .filter(Boolean) as string[],
+          ),
+        ];
+        const atRiskSellerUsers = await this.prisma.user.findMany({
+          where: { companyId: { in: atRiskSupplierIds }, canSell: true },
+          select: { id: true, companyId: true },
+        });
+        const sellerUsersByCompany = atRiskSellerUsers.reduce<
+          Record<string, string[]>
+        >((acc, u) => {
+          if (u.companyId) {
+            acc[u.companyId] = [...(acc[u.companyId] ?? []), u.id];
+          }
+          return acc;
+        }, {});
+
         for (const order of atRisk) {
           const isExpired = order.updatedAt <= sevenDaysAgo;
           const supplierId = order.items[0]?.material?.supplierId;
@@ -1873,14 +1904,11 @@ export class PaymentsService {
 
           // Notify seller to re-confirm / take action
           if (supplierId) {
-            const sellerUsers = await this.prisma.user.findMany({
-              where: { companyId: supplierId, canSell: true },
-              select: { id: true },
-            });
-            if (sellerUsers.length > 0) {
+            const sellerUserIds = sellerUsersByCompany[supplierId] ?? [];
+            if (sellerUserIds.length > 0) {
               await this.notifications
                 .createForMany(
-                  sellerUsers.map((u) => u.id),
+                  sellerUserIds,
                   {
                     type: NotificationType.SYSTEM_ALERT,
                     title: isExpired

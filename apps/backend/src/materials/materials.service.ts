@@ -333,6 +333,7 @@ export class MaterialsService {
         priceTiers: { orderBy: { minQty: 'asc' } },
       },
       orderBy: [{ featured: 'desc' }, { basePrice: 'asc' }],
+      take: 200,
     });
 
     // ── Compute supplier performance in one query ──────────────────────────
@@ -345,6 +346,7 @@ export class MaterialsService {
           material: { select: { supplierId: true } },
           order: { select: { status: true } },
         },
+        take: 5000,
       });
       for (const row of orderItems) {
         const sid = row.material.supplierId;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -53,13 +53,6 @@ export default function ChatScreen() {
   const otherParticipantName = messages.find((m) => m.senderId !== user?.id)?.senderName ?? null;
   const displayName = otherParticipantName ?? String(title ?? 'Čats');
   const flatListRef = useRef<FlatList>(null);
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    }
-  }, [messages.length]);
 
   const handleSend = async () => {
     if (!input.trim() || sending) return;

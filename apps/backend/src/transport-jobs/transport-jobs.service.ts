@@ -1246,10 +1246,33 @@ export class TransportJobsService {
 
     const scored: { id: string; distKm: number }[] = [];
 
+    // Batch-fetch which candidate drivers already have an active job — one query
+    // instead of N individual findMyActiveJob calls.
+    const activeStatuses: TransportJobStatus[] = [
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+      TransportJobStatus.LOADED,
+      TransportJobStatus.EN_ROUTE_DELIVERY,
+      TransportJobStatus.AT_DELIVERY,
+    ];
+    const busyDriverIds = new Set(
+      (
+        await this.prisma.transportJob.findMany({
+          where: {
+            driverId: { in: candidates.map((c) => c.id) },
+            status: { in: activeStatuses },
+          },
+          select: { driverId: true },
+        })
+      )
+        .map((j) => j.driverId)
+        .filter(Boolean) as string[],
+    );
+
     for (const driver of candidates) {
       // Skip drivers who already have an active job
-      const active = await this.findMyActiveJob(driver.id);
-      if (active) continue;
+      if (busyDriverIds.has(driver.id)) continue;
 
       if (!job.pickupLat || !job.pickupLng) {
         scored.push({ id: driver.id, distKm: 9999 });
@@ -3356,7 +3379,11 @@ export class TransportJobsService {
           message: `Pasūtītājs apstiprināja "${surcharge.label}" +€${Number(surcharge.amount).toFixed(2)} (darbs #${job.jobNumber})`,
           data: { jobId: job.id, surchargeId },
         })
-        .catch(() => undefined);
+        .catch((err) =>
+          this.logger.warn(
+            `approveSurcharge: notification failed for driver ${job.driverId}: ${(err as Error).message}`,
+          ),
+        );
     }
 
     return updated;
@@ -3413,7 +3440,11 @@ export class TransportJobsService {
           message: `Pasūtītājs noraidīja "${surcharge.label}" +€${Number(surcharge.amount).toFixed(2)} (darbs #${job.jobNumber})${note ? `: ${note}` : ''}`,
           data: { jobId: job.id, surchargeId, note },
         })
-        .catch(() => undefined);
+        .catch((err) =>
+          this.logger.warn(
+            `rejectSurcharge: notification failed for driver ${job.driverId}: ${(err as Error).message}`,
+          ),
+        );
     }
 
     return updated;
