@@ -29,6 +29,7 @@ export interface SkipHireOrder {
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string;
+  hireDays?: number | null;
   price: number;
   currency: string;
   status: SkipHireStatus;
@@ -41,8 +42,27 @@ export interface SkipHireOrder {
   carrier?: { id: string; name: string; phone?: string | null; rating?: number | null } | null;
   deliveryWindow?: string | null;
   statusTimestamps?: Record<string, string> | null;
+  /** Computed server-side on carrier-map endpoint — days past the agreed hire period */
+  overdueDays?: number;
+  /** Computed server-side — overdue fee in EUR (excl. VAT) */
+  overdueFeeEur?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OverdueInvoiceResult {
+  invoice: {
+    id: string;
+    invoiceNumber: string;
+    subtotal: number;
+    tax: number;
+    total: number;
+    currency: string;
+    dueDate: string;
+  };
+  overdueDays: number;
+  overdueFeeEur: number;
+  total: number;
 }
 
 export interface CreateSkipHireInput {
@@ -122,6 +142,13 @@ export const skipHireApi = {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
+      }),
+
+    /** Carrier: create an overdue invoice for a DELIVERED skip whose hire period has expired. */
+    overdueInvoice: (id: string, token: string) =>
+      apiFetch<OverdueInvoiceResult>(`/skip-hire/${id}/overdue-invoice`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
       }),
 
     /**

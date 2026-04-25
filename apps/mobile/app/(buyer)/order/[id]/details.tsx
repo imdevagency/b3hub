@@ -24,6 +24,8 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
+import { PriceRow } from '@/components/ui/PriceRow';
+import { OrderStatusBadge } from '@/components/ui/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -252,28 +254,35 @@ export default function OrderDetailsScreen() {
   const hasRated = alreadyRated || ratedLocally;
   const canRate = order.status === 'COMPLETED' && !hasRated;
 
-  const orderRows = [
-    { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
-    { label: 'Piegādes adrese', value: `${order.deliveryAddress}, ${order.deliveryCity}` },
-    {
-      label: 'Piegādes laiks',
-      value: `${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`,
-    },
-    { label: 'Saņēmējs', value: order.siteContactName || user?.firstName || '—' },
-    { label: 'Sazināties', value: order.siteContactPhone || user?.phone || '—' },
-    { label: 'Piezīmes šoferim', value: order.notes || '—' },
-    { label: 'Maksājuma veids', value: order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte' },
-    { label: 'Izveidots', value: new Date(order.createdAt).toLocaleDateString('lv-LV') },
-  ];
-
   return (
     <ScreenContainer bg="#F4F5F7" standalone>
       <ScreenHeader title="Detaļas" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* ── Hero ── */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroTitleRow}>
+            <Text style={styles.heroTitle} numberOfLines={2}>
+              {order.items && order.items.length > 0
+                ? order.items[0].material.name
+                : 'Materiālu pasūtījums'}
+            </Text>
+            <OrderStatusBadge status={order.status} size="md" />
+          </View>
+          <Text style={styles.heroSubtitle}>
+            {new Date(order.createdAt).toLocaleDateString('lv-LV', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}{' '}
+            · #{order.orderNumber}
+          </Text>
+        </View>
+
+        {/* ── Alerts ── */}
         {disputeFiled && order.status === 'DELIVERED' && (
           <View style={styles.alertCard}>
-            <AlertTriangle size={16} color="#B45309" />
+            <AlertTriangle size={20} color="#B45309" />
             <Text style={styles.alertText}>
               Saņemšanas apstiprinājums ir apturēts, kamēr tiek izskatīts strīds.
             </Text>
@@ -282,127 +291,63 @@ export default function OrderDetailsScreen() {
 
         {order.surcharges?.some((s) => s.approvalStatus === 'PENDING') && (
           <View style={styles.surchargeAlertCard}>
-            <AlertTriangle size={16} color="#B45309" />
+            <AlertTriangle size={20} color="#B45309" />
             <View style={{ flex: 1 }}>
               <Text style={[styles.alertText, { fontWeight: '700' }]}>
                 {order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length === 1
                   ? 'Šoferis pieprasa piemaksu'
                   : `${order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length} piemaksas gaida apstiprināšanu`}
               </Text>
-              <Text style={[styles.alertText, { fontWeight: '400', marginTop: 2 }]}>
+              <Text style={[styles.alertText, { fontWeight: '400', marginTop: 4 }]}>
                 Skatiet "Piemaksas" sadaļu zemāk, lai apstiprinātu vai noraidītu.
               </Text>
             </View>
           </View>
         )}
 
-        <View style={styles.actionsBlock}>
-          {order.status === 'DELIVERED' && (
-            <Button
-              size="lg"
-              onPress={handleConfirmReceipt}
-              disabled={actionLoading || disputeFiled}
-              isLoading={actionLoading}
-            >
-              Apstiprināt saņemšanu
-            </Button>
-          )}
-
-          {canPay && (
-            <Button size="lg" onPress={handlePay} disabled={payLoading} isLoading={payLoading}>
-              {`Maksāt €${order.total.toFixed(2)}`}
-            </Button>
-          )}
-
-          {driver && activeJob && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                router.push({
-                  pathname: '/chat/[jobId]',
-                  params: {
-                    jobId: activeJob.id,
-                    title: `${driver.firstName} ${driver.lastName}`,
-                  },
-                });
-              }}
-            >
-              Rakstīt šoferim
-            </Button>
-          )}
-
-          {canRate && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                setShowRating(true);
-              }}
-            >
-              Novērtēt pasūtījumu
-            </Button>
-          )}
-
-          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-            <Button variant="secondary" size="lg" onPress={() => setShowDispute(true)}>
-              Ziņot par problēmu
-            </Button>
-          )}
-
-          {canCancel && (
-            <View style={styles.rowActions}>
-              <View style={styles.rowActionItem}>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  onPress={handleCancel}
-                  isLoading={actionLoading}
-                >
-                  Atcelt
-                </Button>
-              </View>
-              <View style={styles.rowActionItem}>
-                <Button variant="secondary" size="lg" onPress={() => setShowAmend(true)}>
-                  Labot
-                </Button>
-              </View>
-            </View>
-          )}
-        </View>
-
-        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pasūtījums">
-          {orderRows.map((row, index) => (
-            <DetailRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              last={index === orderRows.length - 1}
-            />
-          ))}
-        </InfoSection>
-
+        {/* ── Delivery info ── */}
         <InfoSection
-          icon={<CreditCard size={16} color={colors.textMuted} />}
-          title="Summa"
-          right={<Text style={styles.totalText}>€{order.total.toFixed(2)}</Text>}
+          icon={<Package size={16} color={colors.textMuted} />}
+          title="Piegādes informācija"
         >
-          <DetailRow label="Materiāli" value={`€${order.subtotal.toFixed(2)}`} />
-          <DetailRow label="PVN" value={`€${order.tax.toFixed(2)}`} />
-          <DetailRow label="Piegāde" value={`€${order.deliveryFee.toFixed(2)}`} last />
+          <DetailRow label="Adrese" value={`${order.deliveryAddress}, ${order.deliveryCity}`} />
+          <DetailRow
+            label="Piegādes laiks"
+            value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
+          />
+          <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
+          <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
+          <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
+          <DetailRow
+            label="Maksājuma veids"
+            value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
+            last
+          />
         </InfoSection>
 
-        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pozīcijas">
-          {order.items.map((item, index) => (
-            <DetailRow
-              key={`${item.material.name}-${index}`}
-              label={item.material.name}
-              value={`${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit} · €${item.total.toFixed(2)}`}
-              last={index === order.items.length - 1}
-            />
-          ))}
+        {/* ── Items ── */}
+        {order.items && order.items.length > 0 && (
+          <InfoSection
+            icon={<Package size={16} color={colors.textMuted} />}
+            title="Pasūtījuma pozīcijas"
+          >
+            {order.items.map((item, index) => (
+              <DetailRow
+                key={`${item.material.name}-${index}`}
+                label={item.material.name}
+                value={`${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}`}
+                last={index === order.items.length - 1}
+              />
+            ))}
+          </InfoSection>
+        )}
+
+        {/* ── Pricing ── */}
+        <InfoSection icon={<CreditCard size={16} color={colors.textMuted} />} title="Apmaksa">
+          <PriceRow label="Materiāli" amount={order.subtotal} />
+          <PriceRow label="PVN" amount={order.tax} />
+          <PriceRow label="Piegāde" amount={order.deliveryFee} />
+          <PriceRow label="Pavisam kopā" amount={order.total} total />
         </InfoSection>
 
         {order.surcharges && order.surcharges.length > 0 && (
@@ -541,7 +486,89 @@ export default function OrderDetailsScreen() {
             <DetailRow label="Atkritumi" value={order.linkedSkipOrder.wasteCategory} last />
           </InfoSection>
         )}
+
+        {/* ── Secondary actions ── */}
+        <View style={styles.secondaryActionsBlock}>
+          {driver && activeJob && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push({
+                  pathname: '/chat/[jobId]',
+                  params: {
+                    jobId: activeJob.id,
+                    title: `${driver.firstName} ${driver.lastName}`,
+                  },
+                });
+              }}
+            >
+              Rakstīt šoferim
+            </Button>
+          )}
+
+          {canRate && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                setShowRating(true);
+              }}
+            >
+              Novērtēt pasūtījumu
+            </Button>
+          )}
+
+          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+            <Button variant="secondary" size="lg" onPress={() => setShowDispute(true)}>
+              Ziņot par problēmu
+            </Button>
+          )}
+
+          {canCancel && (
+            <View style={styles.rowActions}>
+              <View style={styles.rowActionItem}>
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  onPress={handleCancel}
+                  isLoading={actionLoading}
+                >
+                  Atcelt
+                </Button>
+              </View>
+              <View style={styles.rowActionItem}>
+                <Button variant="secondary" size="lg" onPress={() => setShowAmend(true)}>
+                  Labot
+                </Button>
+              </View>
+            </View>
+          )}
+        </View>
       </ScrollView>
+
+      {/* ── Sticky primary action footer ── */}
+      {(order.status === 'DELIVERED' || canPay) && (
+        <View style={styles.stickyFooter}>
+          {order.status === 'DELIVERED' && (
+            <Button
+              size="lg"
+              onPress={handleConfirmReceipt}
+              disabled={actionLoading || disputeFiled}
+              isLoading={actionLoading}
+            >
+              Apstiprināt saņemšanu
+            </Button>
+          )}
+          {canPay && (
+            <Button size="lg" onPress={handlePay} disabled={payLoading} isLoading={payLoading}>
+              {`Apmaksāt €${order.total.toFixed(2)}`}
+            </Button>
+          )}
+        </View>
+      )}
 
       {id && token && (
         <RatingModal
@@ -613,39 +640,83 @@ export default function OrderDetailsScreen() {
 const styles = StyleSheet.create({
   content: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
+  },
+  heroSection: {
+    marginTop: 8,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  heroTitle: {
+    flex: 1,
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 8,
   },
   alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
     backgroundColor: '#FEF3C7',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 14,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
   surchargeAlertCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 12,
     backgroundColor: '#FFF7ED',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#FED7AA',
-    padding: 12,
-    marginBottom: 14,
+    padding: 16,
+    marginBottom: 16,
   },
   alertText: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     fontFamily: 'Inter_500Medium',
     fontWeight: '500',
     color: '#92400E',
   },
-  actionsBlock: {
+  secondaryActionsBlock: {
+    gap: 12,
+    marginTop: 12,
+  },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 16,
+    paddingBottom: 36,
+    paddingHorizontal: 16,
     gap: 10,
-    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 8,
   },
   rowActions: {
     flexDirection: 'row',
@@ -654,17 +725,11 @@ const styles = StyleSheet.create({
   rowActionItem: {
     flex: 1,
   },
-  totalText: {
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
-  },
   surchargeList: {
     gap: 10,
   },
   surchargeCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F3F4F6',
     borderRadius: 16,
     padding: 14,
   },
@@ -676,13 +741,13 @@ const styles = StyleSheet.create({
   },
   surchargeLabel: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: '#111827',
   },
   surchargeAmount: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700',
     color: '#111827',
@@ -703,22 +768,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F3F4F6',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
   },
   documentMeta: {
     flex: 1,
     marginRight: 12,
   },
   documentTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: '#111827',
   },
   documentStatus: {
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 18,
     fontFamily: 'Inter_500Medium',
     fontWeight: '500',
@@ -726,7 +791,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   documentLink: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700',
     color: colors.primary,

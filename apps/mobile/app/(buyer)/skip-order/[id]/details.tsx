@@ -10,6 +10,7 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { RatingModal } from '@/components/ui/RatingModal';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
+import { OrderStatusBadge } from '@/components/ui/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/Toast';
 
@@ -147,40 +148,19 @@ export default function SkipOrderDetailsScreen() {
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
-        {(canRate || canCancel || isTerminal) && (
-          <View style={styles.actionsBlock}>
-            {canRate && (
-              <Button
-                size="lg"
-                onPress={() => {
-                  haptics.medium();
-                  setShowRating(true);
-                }}
-              >
-                Novērtēt pakalpojumu
-              </Button>
-            )}
-
-            {canCancel && (
-              <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
-                Atcelt pasūtījumu
-              </Button>
-            )}
-
-            {isTerminal && (
-              <Button
-                variant="outline"
-                size="lg"
-                onPress={() => {
-                  haptics.medium();
-                  router.push('/skip-hire' as any);
-                }}
-              >
-                Pasūtīt vēlreiz
-              </Button>
-            )}
+        {/* ── Hero ── */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroTitleRow}>
+            <Text style={styles.heroTitle} numberOfLines={2}>
+              {SIZE_LABEL[order.skipSize] ?? order.skipSize} ·{' '}
+              {WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory}
+            </Text>
+            <OrderStatusBadge status={order.status} size="md" />
           </View>
-        )}
+          <Text style={styles.heroSubtitle}>
+            {formatDate(order.createdAt)} · #{order.orderNumber}
+          </Text>
+        </View>
 
         <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pasūtījums">
           {orderRows.map((row, index) => (
@@ -234,7 +214,44 @@ export default function SkipOrderDetailsScreen() {
             />
           </InfoSection>
         )}
+
+        {/* ── Secondary actions ── */}
+        <View style={styles.secondaryActionsBlock}>
+          {canRate && (
+            <Button
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                setShowRating(true);
+              }}
+            >
+              Novērtēt pakalpojumu
+            </Button>
+          )}
+
+          {isTerminal && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push('/skip-hire' as any);
+              }}
+            >
+              Pasūtīt vēlreiz
+            </Button>
+          )}
+        </View>
       </ScrollView>
+
+      {/* ── Sticky footer: cancel ── */}
+      {canCancel && (
+        <View style={styles.stickyFooter}>
+          <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
+            Atcelt pasūtījumu
+          </Button>
+        </View>
+      )}
 
       {showRating && token && (
         <RatingModal
@@ -261,11 +278,54 @@ export default function SkipOrderDetailsScreen() {
 const styles = StyleSheet.create({
   content: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
-  actionsBlock: {
-    gap: 10,
-    marginBottom: 12,
+  heroSection: {
+    marginTop: 8,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  heroTitle: {
+    flex: 1,
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  secondaryActionsBlock: {
+    gap: 12,
+    marginTop: 12,
+  },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 16,
+    paddingBottom: 36,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 8,
   },
   priceText: {
     fontSize: 15,

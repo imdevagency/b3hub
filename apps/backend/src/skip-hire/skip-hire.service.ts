@@ -42,6 +42,11 @@ const SKIP_PRICES: Record<SkipSize, number> = {
 
 const CARRIER_TYPES: CompanyType[] = ['CARRIER', 'HYBRID'];
 
+/** Platform-standard daily rate charged for overdue skip hire (EUR/day). */
+const OVERDUE_DAILY_RATE_EUR = 20;
+/** Default hire period in days when the order has no explicit hireDays set. */
+const DEFAULT_HIRE_DAYS = 7;
+
 export interface SkipHireQuoteResult {
   carrierId: string;
   carrierName: string;
@@ -483,12 +488,33 @@ export class SkipHireService {
       throw new ForbiddenException('User is not associated with a company');
     }
 
-    return this.prisma.skipHireOrder.findMany({
+    const orders = await this.prisma.skipHireOrder.findMany({
       where: {
         carrierId: user.companyId,
         status: { in: [SkipHireStatus.CONFIRMED, SkipHireStatus.DELIVERED] },
       },
       orderBy: { deliveryDate: 'asc' },
+    });
+
+    const now = Date.now();
+    return orders.map((order) => {
+      let overdueDays = 0;
+      let overdueFeeEur = 0;
+      if (order.status === SkipHireStatus.DELIVERED) {
+        const hireDays = order.hireDays ?? DEFAULT_HIRE_DAYS;
+        const ts = order.statusTimestamps as Record<string, string> | null;
+        const deliveredAt = ts?.DELIVERED
+          ? new Date(ts.DELIVERED)
+          : order.deliveryDate;
+        const hireEndMs =
+          deliveredAt.getTime() + hireDays * 24 * 60 * 60 * 1000;
+        overdueDays = Math.max(
+          0,
+          Math.floor((now - hireEndMs) / (24 * 60 * 60 * 1000)),
+        );
+        overdueFeeEur = overdueDays * OVERDUE_DAILY_RATE_EUR;
+      }
+      return { ...order, overdueDays, overdueFeeEur };
     });
   }
 
@@ -567,6 +593,93 @@ export class SkipHireService {
       }
     }
     return updated;
+  }
+
+  // ── Create overdue invoice for a DELIVERED skip ───────────────
+  /**
+   * Calculates overdue days for a DELIVERED skip order and creates an Invoice
+   * that the carrier can use to bill the customer for the extra rental period.
+   *
+   * Overdue = days elapsed since (deliveredAt + hireDays).
+   * Fee = overdueDays × OVERDUE_DAILY_RATE_EUR (platform standard, €20/day).
+   * LV VAT 21 % is added on top.
+   */
+  async createOverdueInvoice(id: string, userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { companyId: true, canSkipHire: true },
+    });
+    if (!user?.canSkipHire)
+      throw new ForbiddenException('Skip hire access not enabled for this account');
+    if (!user.companyId)
+      throw new ForbiddenException('User is not associated with a company');
+
+    const order = await this.prisma.skipHireOrder.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
+    if (order.carrierId !== user.companyId)
+      throw new ForbiddenException('This order does not belong to your company');
+    if (order.status !== SkipHireStatus.DELIVERED)
+      throw new BadRequestException(
+        'Overdue invoice can only be issued for DELIVERED (active) skip orders',
+      );
+
+    const hireDays = order.hireDays ?? DEFAULT_HIRE_DAYS;
+    const ts = order.statusTimestamps as Record<string, string> | null;
+    const deliveredAt = ts?.DELIVERED
+      ? new Date(ts.DELIVERED)
+      : order.deliveryDate;
+    const hireEndMs = deliveredAt.getTime() + hireDays * 24 * 60 * 60 * 1000;
+    const overdueDays = Math.max(
+      0,
+      Math.floor((Date.now() - hireEndMs) / (24 * 60 * 60 * 1000)),
+    );
+
+    if (overdueDays === 0)
+      throw new BadRequestException(
+        'No overdue days — hire period has not expired yet',
+      );
+
+    const overdueFeeEur = overdueDays * OVERDUE_DAILY_RATE_EUR;
+    const VAT_RATE = 0.21;
+    const subtotal = Math.round(overdueFeeEur * 100) / 100;
+    const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
+    const total = Math.round((subtotal + tax) * 100) / 100;
+
+    // Generate invoice number that encodes the skip order reference
+    const suffix = Date.now().toString().slice(-4);
+    const invoiceNumber = `OVD-${order.orderNumber}-${suffix}`;
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14); // 14-day payment term
+
+    // Resolve buyer's company if they have one
+    let buyerCompanyId: string | null = null;
+    if (order.userId) {
+      const buyer = await this.prisma.user.findUnique({
+        where: { id: order.userId },
+        select: { companyId: true },
+      });
+      buyerCompanyId = buyer?.companyId ?? null;
+    }
+
+    const invoice = await this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        subtotal,
+        tax,
+        total,
+        currency: 'EUR',
+        dueDate,
+        paymentStatus: 'PENDING',
+        ...(buyerCompanyId ? { buyerCompanyId } : {}),
+      },
+    });
+
+    this.logger.log(
+      `Overdue invoice ${invoiceNumber} created for skip order ${order.orderNumber}: ${overdueDays} days × €${OVERDUE_DAILY_RATE_EUR} = €${total} incl. VAT`,
+    );
+
+    return { invoice, overdueDays, overdueFeeEur, total };
   }
 
   // ── Helpers ───────────────────────────────────────────────────

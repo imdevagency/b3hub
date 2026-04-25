@@ -26,6 +26,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { DetailRow } from '@/components/ui/DetailRow';
+import { JobStatusBadge } from '@/components/ui/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -219,41 +220,18 @@ export default function TransportJobDetailsScreen() {
         showsVerticalScrollIndicator={false}
         alwaysBounceVertical={false}
       >
-        <View style={styles.actionsBlock}>
-          {driver && (
-            <Button
-              size="lg"
-              variant="outline"
-              onPress={() => {
-                haptics.medium();
-                router.push({
-                  pathname: '/chat/[jobId]',
-                  params: { jobId: job.id, title: `${driver.firstName} ${driver.lastName}` },
-                });
-              }}
-            >
-              Rakstīt šoferim
-            </Button>
-          )}
-
-          {(job.status === 'DELIVERED' || job.status === 'CANCELLED') && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                router.push('/transport' as any);
-              }}
-            >
-              Pasūtīt vēlreiz
-            </Button>
-          )}
-
-          {canCancel && (
-            <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
-              Atcelt pasūtījumu
-            </Button>
-          )}
+        {/* ── Hero ── */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroTitleRow}>
+            <Text style={styles.heroTitle} numberOfLines={2}>
+              {typeLabel}
+            </Text>
+            <JobStatusBadge status={job.status} size="md" />
+          </View>
+          <Text style={styles.heroSubtitle}>
+            {formatDate(job.pickupDate)}
+            {job.order?.orderNumber ? ` · #${job.order.orderNumber}` : ''}
+          </Text>
         </View>
 
         <InfoSection icon={<MapPin size={16} color={colors.textMuted} />} title="Maršruts">
@@ -403,7 +381,48 @@ export default function TransportJobDetailsScreen() {
             <Text style={styles.ratingSubmittedText}>Paldies par vērtējumu!</Text>
           </InfoSection>
         )}
+
+        {/* ── Secondary actions ── */}
+        <View style={styles.secondaryActionsBlock}>
+          {driver && (
+            <Button
+              size="lg"
+              variant="outline"
+              onPress={() => {
+                haptics.medium();
+                router.push({
+                  pathname: '/chat/[jobId]',
+                  params: { jobId: job.id, title: `${driver.firstName} ${driver.lastName}` },
+                });
+              }}
+            >
+              Rakstīt šoferim
+            </Button>
+          )}
+
+          {(job.status === 'DELIVERED' || job.status === 'CANCELLED') && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.medium();
+                router.push('/transport' as any);
+              }}
+            >
+              Pasūtīt vēlreiz
+            </Button>
+          )}
+        </View>
       </ScrollView>
+
+      {/* ── Sticky footer: cancel ── */}
+      {canCancel && (
+        <View style={styles.stickyFooter}>
+          <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
+            Atcelt pasūtījumu
+          </Button>
+        </View>
+      )}
     </ScreenContainer>
   );
 }
@@ -411,11 +430,54 @@ export default function TransportJobDetailsScreen() {
 const styles = StyleSheet.create({
   content: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
-  actionsBlock: {
-    gap: 10,
-    marginBottom: 12,
+  heroSection: {
+    marginTop: 8,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  heroTitle: {
+    flex: 1,
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#111827',
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  secondaryActionsBlock: {
+    gap: 12,
+    marginTop: 12,
+  },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 16,
+    paddingBottom: 36,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 8,
   },
   emptySectionText: {
     fontSize: 14,

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronLeft,
   CheckCircle2,
+  X,
 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -69,8 +70,12 @@ export default function TransportJobTrackingScreen() {
   } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
 
+  // Don't open a live subscription for closed jobs — saves battery and socket slots
+  const jobIsTerminalForLive =
+    job != null && (job.status === 'DELIVERED' || job.status === 'CANCELLED');
+
   const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
-    jobId: typeof id === 'string' ? id : null,
+    jobId: jobIsTerminalForLive ? null : typeof id === 'string' ? id : null,
     token,
   });
 
@@ -238,10 +243,16 @@ export default function TransportJobTrackingScreen() {
               )}
               <View style={styles.courierInfo}>
                 <Text style={styles.courierName} numberOfLines={1}>
-                  {driver ? `${driver.firstName} ${driver.lastName}` : 'Meklējam šoferi...'}
+                  {driver
+                    ? `${driver.firstName} ${driver.lastName}`
+                    : isTerminal
+                      ? job.status === 'CANCELLED'
+                        ? 'Pasūtījums atcelts'
+                        : 'Piegāde pabeigta'
+                      : 'Meklējam šoferi...'}
                 </Text>
                 <Text style={styles.courierRole}>
-                  {driver ? 'Šoferis' : 'Pieprasījums nosūtīts'}
+                  {driver ? 'Šoferis' : isTerminal ? '' : 'Pieprasījums nosūtīts'}
                 </Text>
               </View>
               {driver?.phone && (
@@ -257,96 +268,131 @@ export default function TransportJobTrackingScreen() {
               )}
             </View>
 
-            {/* Vertical Timeline replacing the horizontal stepper */}
-            <View style={styles.statusSection}>
-              <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
-
-              <View style={styles.timelineContainer}>
-                {JOB_STEPS.map((step, index) => {
-                  const isDone = !isSearching && index <= currentStepIdx;
-                  const isCurrent = !isSearching && index === currentStepIdx;
-                  const isLast = index === JOB_STEPS.length - 1;
-
-                  let dateStr: string | null = null;
-                  // For simplicity in UI, we skip exact past timestamps here if unavailable cleanly
-                  if (etaMin != null && step.key === 'enroute' && isCurrent) {
-                    dateStr = `~${etaMin} min`;
-                  } else if (step.key === 'pickup') {
-                    dateStr = new Date(job.pickupDate).toLocaleDateString('lv-LV', {
-                      day: 'numeric',
-                      month: 'short',
-                    });
-                  } else if (step.key === 'delivered') {
-                    dateStr = new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
-                      day: 'numeric',
-                      month: 'short',
-                    });
-                  }
-
-                  let addressStr =
-                    step.key === 'pickup' || step.key === 'loading'
-                      ? job.pickupAddress || job.pickupCity
-                      : job.deliveryAddress || job.deliveryCity;
-
-                  return (
-                    <View key={step.key} style={styles.timelineRow}>
-                      <View style={styles.timelineMarkerCol}>
-                        {!isLast && (
-                          <View
-                            style={[
-                              styles.timelineLine,
-                              isDone && !isCurrent
-                                ? styles.timelineLineActive
-                                : styles.timelineLineInactive,
-                            ]}
-                          />
-                        )}
-
-                        {isCurrent ? (
-                          <View style={styles.markerCurrent}>
-                            <View style={styles.markerCurrentInner} />
-                          </View>
-                        ) : isDone ? (
-                          <View style={styles.markerCompleted}>
-                            <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
-                          </View>
-                        ) : (
-                          <View style={styles.markerFuture} />
-                        )}
-                      </View>
-
-                      <View style={styles.timelineContent}>
-                        <View style={styles.timelineTextWrap}>
-                          <Text
-                            style={[
-                              styles.timelineTitle,
-                              isCurrent && styles.timelineTitleCurrent,
-                              !isDone && !isCurrent && styles.timelineTitleFuture,
-                            ]}
-                          >
-                            {step.label}
-                          </Text>
-                          <Text style={styles.timelineSubtitle} numberOfLines={2}>
-                            {addressStr}
-                          </Text>
-                        </View>
-                        {dateStr && (
-                          <Text
-                            style={[
-                              styles.timelineDateText,
-                              isCurrent &&
-                                step.key === 'enroute' && { color: ORANGE, fontWeight: '700' },
-                            ]}
-                          >
-                            {dateStr}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })}
+            {/* Terminal state card or active timeline */}
+            {isTerminal ? (
+              <View style={styles.terminalSection}>
+                <View
+                  style={[
+                    styles.terminalIconWrap,
+                    { backgroundColor: job.status === 'CANCELLED' ? '#FEF2F2' : '#ECFDF5' },
+                  ]}
+                >
+                  {job.status === 'CANCELLED' ? (
+                    <X size={26} color="#DC2626" strokeWidth={2.5} />
+                  ) : (
+                    <CheckCircle2 size={26} color="#059669" strokeWidth={2} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.terminalTitle}>
+                    {job.status === 'CANCELLED' ? 'Pasūtījums atcelts' : 'Piegāde pabeigta'}
+                  </Text>
+                  {job.status !== 'CANCELLED' && job.deliveryAddress && (
+                    <Text style={styles.terminalAddress} numberOfLines={1}>
+                      {job.deliveryAddress.split(',')[0]}
+                    </Text>
+                  )}
+                  {job.status !== 'CANCELLED' && job.deliveryDate && (
+                    <Text style={styles.terminalDate}>
+                      {new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'long',
+                      })}
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
+            ) : (
+              <View style={styles.statusSection}>
+                <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
+
+                <View style={styles.timelineContainer}>
+                  {JOB_STEPS.map((step, index) => {
+                    const isDone = !isSearching && index <= currentStepIdx;
+                    const isCurrent = !isSearching && index === currentStepIdx;
+                    const isLast = index === JOB_STEPS.length - 1;
+
+                    let dateStr: string | null = null;
+                    // For simplicity in UI, we skip exact past timestamps here if unavailable cleanly
+                    if (etaMin != null && step.key === 'enroute' && isCurrent) {
+                      dateStr = `~${etaMin} min`;
+                    } else if (step.key === 'pickup') {
+                      dateStr = new Date(job.pickupDate).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'short',
+                      });
+                    } else if (step.key === 'delivered') {
+                      dateStr = new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'short',
+                      });
+                    }
+
+                    let addressStr =
+                      step.key === 'pickup' || step.key === 'loading'
+                        ? job.pickupAddress || job.pickupCity
+                        : job.deliveryAddress || job.deliveryCity;
+
+                    return (
+                      <View key={step.key} style={styles.timelineRow}>
+                        <View style={styles.timelineMarkerCol}>
+                          {!isLast && (
+                            <View
+                              style={[
+                                styles.timelineLine,
+                                isDone && !isCurrent
+                                  ? styles.timelineLineActive
+                                  : styles.timelineLineInactive,
+                              ]}
+                            />
+                          )}
+
+                          {isCurrent ? (
+                            <View style={styles.markerCurrent}>
+                              <View style={styles.markerCurrentInner} />
+                            </View>
+                          ) : isDone ? (
+                            <View style={styles.markerCompleted}>
+                              <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                            </View>
+                          ) : (
+                            <View style={styles.markerFuture} />
+                          )}
+                        </View>
+
+                        <View style={styles.timelineContent}>
+                          <View style={styles.timelineTextWrap}>
+                            <Text
+                              style={[
+                                styles.timelineTitle,
+                                isCurrent && styles.timelineTitleCurrent,
+                                !isDone && !isCurrent && styles.timelineTitleFuture,
+                              ]}
+                            >
+                              {step.label}
+                            </Text>
+                            <Text style={styles.timelineSubtitle} numberOfLines={2}>
+                              {addressStr}
+                            </Text>
+                          </View>
+                          {dateStr && (
+                            <Text
+                              style={[
+                                styles.timelineDateText,
+                                isCurrent &&
+                                  step.key === 'enroute' && { color: ORANGE, fontWeight: '700' },
+                              ]}
+                            >
+                              {dateStr}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             {/* Bottom actions */}
             <View style={styles.cardActions}>
@@ -641,5 +687,38 @@ const styles = StyleSheet.create({
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  terminalSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    gap: 14,
+  },
+  terminalIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  terminalTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    marginBottom: 3,
+  },
+  terminalAddress: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  terminalDate: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    color: '#9CA3AF',
   },
 });

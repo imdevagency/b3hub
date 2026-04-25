@@ -9,6 +9,7 @@ import {
   Truck,
   CheckCircle2,
   ChevronLeft,
+  X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -157,10 +158,16 @@ export default function SkipOrderTrackingScreen() {
               </View>
               <View style={styles.courierInfo}>
                 <Text style={styles.courierName} numberOfLines={1}>
-                  {carrier ? carrier.name : 'Meklējam pārvadātāju...'}
+                  {carrier
+                    ? carrier.name
+                    : isTerminal
+                      ? order.status === 'CANCELLED'
+                        ? 'Pasūtījums atcelts'
+                        : 'Pasnīgums pabeigts'
+                      : 'Meklējam pārvadātāju...'}
                 </Text>
                 <Text style={styles.courierRole}>
-                  {carrier ? 'Pārvadātājs' : 'Pieprasījums nosūtīts'}
+                  {carrier ? 'Pārvadātājs' : isTerminal ? '' : 'Pieprasījums nosūtīts'}
                 </Text>
               </View>
               {carrier?.phone && (
@@ -176,92 +183,159 @@ export default function SkipOrderTrackingScreen() {
               )}
             </View>
 
-            {/* Vertical Timeline replacing the horizontal stepper */}
-            <View style={styles.statusSection}>
-              <Text style={styles.statusSectionTitle}>Konteinera statuss</Text>
+            {/* Terminal state card or active timeline */}
+            {isTerminal ? (
+              <View style={styles.terminalSection}>
+                <View
+                  style={[
+                    styles.terminalIconWrap,
+                    { backgroundColor: order.status === 'CANCELLED' ? '#FEF2F2' : '#ECFDF5' },
+                  ]}
+                >
+                  {order.status === 'CANCELLED' ? (
+                    <X size={26} color="#DC2626" strokeWidth={2.5} />
+                  ) : (
+                    <CheckCircle2 size={26} color="#059669" strokeWidth={2} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.terminalTitle}>
+                    {order.status === 'CANCELLED'
+                      ? 'Pasūtījums atcelts'
+                      : order.status === 'COLLECTED'
+                        ? 'Konteiners savākts'
+                        : 'Pasūtījums pabeigts'}
+                  </Text>
+                  {order.status !== 'CANCELLED' && order.location && (
+                    <Text style={styles.terminalAddress} numberOfLines={1}>
+                      {order.location.split(',')[0]}
+                    </Text>
+                  )}
+                  {order.status !== 'CANCELLED' && order.createdAt && (
+                    <Text style={styles.terminalDate}>
+                      {new Date(order.createdAt).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'long',
+                      })}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <View style={styles.statusSection}>
+                <Text style={styles.statusSectionTitle}>Konteinera statuss</Text>
 
-              <View style={styles.timelineContainer}>
-                {SKIP_STEPS.map((step, index) => {
-                  const isDone = !isTerminal && index <= currentStepIdx;
-                  const isCurrent = index === currentStepIdx;
-                  const isLast = index === SKIP_STEPS.length - 1;
+                <View style={styles.timelineContainer}>
+                  {SKIP_STEPS.map((step, index) => {
+                    const isDone = !isTerminal && index <= currentStepIdx;
+                    const isCurrent = index === currentStepIdx;
+                    const isLast = index === SKIP_STEPS.length - 1;
 
-                  let dateStr: string | null = null;
-                  if (order.statusTimestamps && order.statusTimestamps[step.key]) {
-                    dateStr = new Date(order.statusTimestamps[step.key]).toLocaleDateString(
-                      'lv-LV',
-                      { day: 'numeric', month: 'short' },
-                    );
-                  } else if (index === 0) {
-                    dateStr = new Date(order.createdAt).toLocaleDateString('lv-LV', {
-                      day: 'numeric',
-                      month: 'short',
-                    });
-                  } else if (
-                    order.deliveryDate &&
-                    (step.key === 'DELIVERED' || step.key === 'CONFIRMED')
-                  ) {
-                    dateStr = new Date(order.deliveryDate).toLocaleDateString('lv-LV', {
-                      day: 'numeric',
-                      month: 'short',
-                    });
-                  }
+                    let dateStr: string | null = null;
+                    if (order.statusTimestamps && order.statusTimestamps[step.key]) {
+                      dateStr = new Date(order.statusTimestamps[step.key]).toLocaleDateString(
+                        'lv-LV',
+                        { day: 'numeric', month: 'short' },
+                      );
+                    } else if (index === 0) {
+                      dateStr = new Date(order.createdAt).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'short',
+                      });
+                    } else if (
+                      order.deliveryDate &&
+                      (step.key === 'DELIVERED' || step.key === 'CONFIRMED')
+                    ) {
+                      dateStr = new Date(order.deliveryDate).toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'short',
+                      });
+                    }
 
-                  return (
-                    <View key={step.key} style={styles.timelineRow}>
-                      <View style={styles.timelineMarkerCol}>
-                        {!isLast && (
-                          <View
-                            style={[
-                              styles.timelineLine,
-                              isDone && !isCurrent
-                                ? styles.timelineLineActive
-                                : styles.timelineLineInactive,
-                            ]}
-                          />
-                        )}
-
-                        {isCurrent ? (
-                          <View style={styles.markerCurrent}>
-                            <View style={styles.markerCurrentInner} />
-                          </View>
-                        ) : isDone ? (
-                          <View style={styles.markerCompleted}>
-                            <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
-                          </View>
-                        ) : (
-                          <View style={styles.markerFuture} />
-                        )}
-                      </View>
-
-                      <View style={styles.timelineContent}>
-                        <View style={styles.timelineTextWrap}>
-                          <Text
-                            style={[
-                              styles.timelineTitle,
-                              isCurrent && styles.timelineTitleCurrent,
-                              !isDone && !isCurrent && styles.timelineTitleFuture,
-                            ]}
-                          >
-                            {step.label}
-                          </Text>
-                          {isCurrent && order.location && (
-                            <Text style={styles.timelineSubtitle} numberOfLines={1}>
-                              {order.location.split(',')[0]}
-                            </Text>
+                    return (
+                      <View key={step.key} style={styles.timelineRow}>
+                        <View style={styles.timelineMarkerCol}>
+                          {!isLast && (
+                            <View
+                              style={[
+                                styles.timelineLine,
+                                isDone && !isCurrent
+                                  ? styles.timelineLineActive
+                                  : styles.timelineLineInactive,
+                              ]}
+                            />
                           )}
-                          {step.key === 'PENDING' && isCurrent && (
-                            <Text style={styles.timelineSubtitle} numberOfLines={1}>
-                              {orderSubDesc}
-                            </Text>
+
+                          {isCurrent ? (
+                            <View style={styles.markerCurrent}>
+                              <View style={styles.markerCurrentInner} />
+                            </View>
+                          ) : isDone ? (
+                            <View style={styles.markerCompleted}>
+                              <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                            </View>
+                          ) : (
+                            <View style={styles.markerFuture} />
                           )}
                         </View>
-                        {dateStr && <Text style={styles.timelineDateText}>{dateStr}</Text>}
+
+                        <View style={styles.timelineContent}>
+                          <View style={styles.timelineTextWrap}>
+                            <Text
+                              style={[
+                                styles.timelineTitle,
+                                isCurrent && styles.timelineTitleCurrent,
+                                !isDone && !isCurrent && styles.timelineTitleFuture,
+                              ]}
+                            >
+                              {step.label}
+                            </Text>
+                            {isCurrent && order.location && (
+                              <Text style={styles.timelineSubtitle} numberOfLines={1}>
+                                {order.location.split(',')[0]}
+                              </Text>
+                            )}
+                            {step.key === 'PENDING' && isCurrent && (
+                              <Text style={styles.timelineSubtitle} numberOfLines={1}>
+                                {orderSubDesc}
+                              </Text>
+                            )}
+                          </View>
+                          {dateStr && <Text style={styles.timelineDateText}>{dateStr}</Text>}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  })}
+                </View>
               </View>
+            )}
+
+            {/* Bottom actions */}
+            <View style={styles.cardActions}>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
+                onPress={() => {
+                  haptics.light();
+                  router.push(`/(buyer)/skip-order/${id}/details` as never);
+                }}
+              >
+                Detāļas
+              </Button>
+              {isTerminal && (
+                <Button
+                  variant="default"
+                  size="lg"
+                  className="flex-1 ml-2"
+                  onPress={() => {
+                    haptics.medium();
+                    router.replace('/(wizards)/skip-hire' as never);
+                  }}
+                >
+                  Pasūtīt vēlreiz
+                </Button>
+              )}
             </View>
           </View>
         </View>
@@ -525,5 +599,42 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     color: '#6B7280',
     paddingTop: 1,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  terminalSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    gap: 14,
+  },
+  terminalIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  terminalTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    marginBottom: 3,
+  },
+  terminalAddress: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  terminalDate: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    color: '#9CA3AF',
   },
 });

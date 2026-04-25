@@ -25,6 +25,8 @@ import {
   RefreshCw,
   List,
   MapPinOff,
+  AlertTriangle,
+  FileText,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -70,10 +72,14 @@ function OrderCard({
   order,
   onStatusUpdate,
   updating,
+  onOverdueInvoice,
+  invoicing,
 }: {
   order: SkipHireOrder;
   onStatusUpdate: (id: string, s: SkipHireStatus) => void;
   updating: boolean;
+  onOverdueInvoice?: (id: string) => void;
+  invoicing?: boolean;
 }) {
   const statusInfo = cs.status[order.status] ?? {
     label: order.status,
@@ -84,6 +90,8 @@ function OrderCard({
   const wasteLabel = cs.wasteTypes[order.wasteCategory] ?? order.wasteCategory;
   const canDeliver = order.status === 'CONFIRMED';
   const canCollect = order.status === 'DELIVERED';
+  const overdueDays = order.overdueDays ?? 0;
+  const overdueFeeEur = order.overdueFeeEur ?? 0;
 
   const confirm = () => {
     if (canDeliver) {
@@ -101,6 +109,16 @@ function OrderCard({
 
   return (
     <View style={s.card}>
+      {/* Overdue warning banner */}
+      {overdueDays > 0 && (
+        <View style={s.overdueBanner}>
+          <AlertTriangle size={14} color="#92400e" />
+          <Text style={s.overdueBannerText}>
+            {overdueDays} {overdueDays === 1 ? 'diena' : 'dienas'} pāri · €
+            {overdueFeeEur.toFixed(2)} pap. maksa
+          </Text>
+        </View>
+      )}
       <View style={s.cardHeader}>
         <View style={{ flex: 1 }}>
           <View style={s.titleRow}>
@@ -172,6 +190,23 @@ function OrderCard({
           )}
         </TouchableOpacity>
       )}
+      {overdueDays > 0 && !!onOverdueInvoice && (
+        <TouchableOpacity
+          style={[s.invoiceBtn, invoicing && { opacity: 0.5 }]}
+          onPress={() => onOverdueInvoice(order.id)}
+          disabled={invoicing}
+          activeOpacity={0.8}
+        >
+          {invoicing ? (
+            <ActivityIndicator color="#92400e" size="small" />
+          ) : (
+            <>
+              <FileText size={16} color="#92400e" />
+              <Text style={s.invoiceBtnText}>Izrakstīt papildu rēķinu</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -183,6 +218,7 @@ export default function CarrierSkipsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [invoicingId, setInvoicingId] = useState<string | null>(null);
 
   const cameraRef = useRef<CameraRefHandle | null>(null);
   const [coords, setCoords] = useState<Record<string, [number, number]>>({});
@@ -267,6 +303,21 @@ export default function CarrierSkipsScreen() {
     }
   };
 
+  const handleOverdueInvoice = async (id: string) => {
+    if (!token) return;
+    setInvoicingId(id);
+    try {
+      const result = await api.skipHire.overdueInvoice(id, token);
+      toast.success(
+        `Rēķins ${result.invoice.invoiceNumber} izrakstīts · €${result.total.toFixed(2)} ar PVN`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Neizdevās izrakstīt rēķinu.');
+    } finally {
+      setInvoicingId(null);
+    }
+  };
+
   if (!user?.canSkipHire) {
     return (
       <ScreenContainer bg="#fff">
@@ -281,6 +332,7 @@ export default function CarrierSkipsScreen() {
 
   const toDeliver = orders.filter((o) => o.status === 'CONFIRMED');
   const toCollect = orders.filter((o) => o.status === 'DELIVERED');
+  const overdueCount = toCollect.filter((o) => (o.overdueDays ?? 0) > 0).length;
   const resolved = orders.filter((o) => coords[o.id]);
 
   // No active skips — show empty state instead of an empty map
@@ -326,34 +378,48 @@ export default function CarrierSkipsScreen() {
   return (
     <View style={s.root}>
       <BaseMap cameraRef={cameraRef} center={RIGA} zoom={10} style={StyleSheet.absoluteFillObject}>
-        {resolved.map((order) => (
-          <Marker
-            key={order.id}
-            coordinate={{ latitude: coords[order.id]![1], longitude: coords[order.id]![0] }}
-            onPress={() => {
-              setSelectedOrder(order);
-              setShowList(false);
-            }}
-          >
-            <View
-              style={[
-                s.mapPin,
-                {
-                  backgroundColor: pinColor(order.status),
-                  transform: selectedOrder?.id === order.id ? [{ scale: 1.2 }] : [{ scale: 1 }],
-                },
-              ]}
+        {resolved.map((order) => {
+          const isOverdue = (order.overdueDays ?? 0) > 0;
+          return (
+            <Marker
+              key={order.id}
+              coordinate={{ latitude: coords[order.id]![1], longitude: coords[order.id]![0] }}
+              onPress={() => {
+                setSelectedOrder(order);
+                setShowList(false);
+              }}
             >
-              <Trash2 size={16} color="#fff" />
-            </View>
-          </Marker>
-        ))}
+              <View
+                style={[
+                  s.mapPin,
+                  {
+                    backgroundColor: isOverdue ? '#dc2626' : pinColor(order.status),
+                    transform: selectedOrder?.id === order.id ? [{ scale: 1.2 }] : [{ scale: 1 }],
+                    borderColor: isOverdue ? '#fca5a5' : '#fff',
+                  },
+                ]}
+              >
+                {isOverdue ? (
+                  <AlertTriangle size={16} color="#fff" />
+                ) : (
+                  <Trash2 size={16} color="#fff" />
+                )}
+              </View>
+              {isOverdue && (
+                <View style={s.overdueDayBadge}>
+                  <Text style={s.overdueDayBadgeText}>{order.overdueDays}d</Text>
+                </View>
+              )}
+            </Marker>
+          );
+        })}
       </BaseMap>
 
       {/* Floating Header */}
       <View style={[s.floatingTop, { top: 12 }]}>
         <View style={s.pillHeader}>
           <Text style={s.pillText}>{orders.length} aktīvi uzdevumi</Text>
+          {overdueCount > 0 && <Text style={s.pillOverdue}>{overdueCount} kavēti</Text>}
         </View>
       </View>
 
@@ -384,6 +450,8 @@ export default function CarrierSkipsScreen() {
               order={selectedOrder}
               onStatusUpdate={handleStatusUpdate}
               updating={updatingId === selectedOrder.id}
+              onOverdueInvoice={handleOverdueInvoice}
+              invoicing={invoicingId === selectedOrder.id}
             />
           </View>
         </View>
@@ -405,12 +473,14 @@ export default function CarrierSkipsScreen() {
                 order={o}
                 onStatusUpdate={handleStatusUpdate}
                 updating={updatingId === o.id}
+                onOverdueInvoice={handleOverdueInvoice}
+                invoicing={invoicingId === o.id}
               />
             </View>
           ))}
           {toCollect.length > 0 && (
             <Text style={[s.listSectionTitle, toDeliver.length > 0 && { marginTop: 8 }]}>
-              Jāsavāc
+              Jāsavāc {overdueCount > 0 ? `(${overdueCount} kavēti)` : ''}
             </Text>
           )}
           {toCollect.map((o) => (
@@ -419,6 +489,8 @@ export default function CarrierSkipsScreen() {
                 order={o}
                 onStatusUpdate={handleStatusUpdate}
                 updating={updatingId === o.id}
+                onOverdueInvoice={handleOverdueInvoice}
+                invoicing={invoicingId === o.id}
               />
             </View>
           ))}
@@ -560,4 +632,52 @@ const s = StyleSheet.create({
   },
   actionBtnPrimaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   listSectionTitle: { fontSize: 18, fontWeight: '800', color: '#000', marginBottom: 12 },
+  pillOverdue: {
+    color: '#fca5a5',
+    fontWeight: '700',
+    fontSize: 13,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  overdueBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fef3c7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  overdueBannerText: { fontSize: 13, color: '#92400e', fontWeight: '700', flex: 1 },
+  invoiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+    backgroundColor: '#fef3c7',
+    borderRadius: 12,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+  },
+  invoiceBtnText: { color: '#92400e', fontSize: 15, fontWeight: '700' },
+  overdueDayBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#dc2626',
+    borderRadius: 8,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  overdueDayBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
 });

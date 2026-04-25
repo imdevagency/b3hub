@@ -150,6 +150,21 @@ export class SkipHireController {
   }
 
   /**
+   * POST /api/v1/skip-hire/:id/overdue-invoice
+   * Carrier: issue an overdue invoice for a DELIVERED skip whose hire period has expired.
+   * Computes overdue days server-side (deliveredAt + hireDays vs. now) and creates an Invoice.
+   */
+  @Post(':id/overdue-invoice')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  createOverdueInvoice(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.skipHireService.createOverdueInvoice(id, req.user.userId);
+  }
+
+  /**
    * PATCH /api/v1/skip-hire/:id/carrier-status
    * Carriers update delivery progress for their own skip orders.
    * Allowed: CONFIRMED → DELIVERED, DELIVERED → COLLECTED

@@ -156,6 +156,8 @@ export interface CreateOrderResponse {
 }
 
 export interface ApiOrder {
+  materials: any;
+  supplierBranch: any;
   id: string;
   orderNumber: string;
   status: string;
