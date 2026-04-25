@@ -508,6 +508,7 @@ export default function JobsScreen() {
     totalKm: number;
   } | null>(null);
   const [tourResultVisible, setTourResultVisible] = useState(false);
+  const [acceptingTour, setAcceptingTour] = useState(false);
 
   // ── Avoid empty runs ──────────────────────────────────────────
   const [avoidEmptyRuns, setAvoidEmptyRuns] = useState(false);
@@ -762,6 +763,34 @@ export default function JobsScreen() {
     } finally {
       setOptimizing(false);
     }
+  };
+
+  const handleAcceptTour = async () => {
+    if (!tourResult || !token) return;
+    setAcceptingTour(true);
+    const accepted: string[] = [];
+    const failed: string[] = [];
+    for (const job of tourResult.orderedJobs) {
+      try {
+        await api.transportJobs.accept(job.id, token);
+        accepted.push(job.id);
+      } catch {
+        failed.push(job.jobNumber);
+      }
+    }
+    setAllJobs((prev) => prev.filter((j) => !accepted.includes(j.id)));
+    haptics.success();
+    setAcceptingTour(false);
+    setTourResultVisible(false);
+    setTourMode(false);
+    setSelectedIds(new Set());
+    setTourResult(null);
+    if (failed.length > 0) {
+      toast.error(`${accepted.length} pieņemti. Neizdevās: ${failed.join(', ')}`);
+    } else {
+      toast.success(`${accepted.length} darbi pieņemti!`);
+    }
+    router.replace('/(driver)/active');
   };
 
   const handleToggleAvoidEmptyRuns = useCallback(async () => {
@@ -1126,15 +1155,28 @@ export default function JobsScreen() {
               </View>
             ))}
             <TouchableOpacity
-              style={styles.tourDoneBtn}
+              style={[styles.tourDoneBtn, acceptingTour && { opacity: 0.6 }]}
+              onPress={handleAcceptTour}
+              disabled={acceptingTour}
+              activeOpacity={0.8}
+            >
+              {acceptingTour ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.tourDoneBtnText}>Pieņemt visus darbus</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sheetDeclineBtn}
               onPress={() => {
                 setTourResultVisible(false);
                 setTourMode(false);
                 setSelectedIds(new Set());
               }}
+              disabled={acceptingTour}
               activeOpacity={0.8}
             >
-              <Text style={styles.tourDoneBtnText}>Pabeigt</Text>
+              <Text style={styles.sheetDeclineBtnText}>Aizvērt bez pieņemšanas</Text>
             </TouchableOpacity>
           </View>
         )}

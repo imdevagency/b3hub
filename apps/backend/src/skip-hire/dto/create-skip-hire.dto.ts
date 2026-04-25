@@ -73,4 +73,9 @@ export class CreateSkipHireDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** BIS (Būvniecības informācijas sistēma) case reference for construction-site skip hires. */
+  @IsOptional()
+  @IsString()
+  bisNumber?: string;
 }

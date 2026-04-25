@@ -91,6 +91,12 @@ export class CreateOrderDto {
   @MaxLength(2000)
   notes?: string;
 
+  /** BIS (Būvniecības informācijas sistēma) case reference for construction-site waste orders. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  bisNumber?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(100)

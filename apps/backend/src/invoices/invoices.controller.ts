@@ -179,6 +179,29 @@ export class InvoicesController {
     res.end('\uFEFF' + csv); // BOM for Excel UTF-8 auto-detection
   }
 
+  /** GET /invoices/export/xml — download invoices as Tildes Jumis XML */
+  @Get('export/xml')
+  async exportJumisXml(
+    @CurrentUser() user: RequestingUser,
+    @Res() res: Response,
+  ) {
+    if (!canViewFinancials(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view invoices',
+      );
+    }
+    const xml = await this.invoicesService.exportJumisXml(
+      user.userId,
+      user.companyId,
+    );
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="rekini-jumis-${new Date().toISOString().slice(0, 10)}.xml"`,
+    );
+    res.end(xml);
+  }
+
   /** POST /invoices/:id/credit-note — issue a credit note for an existing invoice (ADMIN or invoice owner) */
   @Post(':id/credit-note')
   async createCreditNote(

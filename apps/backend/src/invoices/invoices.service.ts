@@ -345,6 +345,96 @@ export class InvoicesService {
     return [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
   }
 
+  /**
+   * Export invoices as a Tildes Jumis-compatible XML file.
+   * Jumis imports rēķini (invoices) via the <Dokumenti><Rekins> schema.
+   * Ref: Tildes Jumis XML import specification (v5 format).
+   */
+  async exportJumisXml(userId: string, companyId?: string): Promise<string> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { order: this.buyerAccess(userId, companyId) },
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            buyer: {
+              select: {
+                legalName: true,
+                registrationNum: true,
+                taxId: true,
+              },
+            },
+          },
+        },
+        buyerCompany: {
+          select: {
+            legalName: true,
+            registrationNum: true,
+            taxId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+    });
+
+    const esc = (v: string | null | undefined): string =>
+      String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+
+    const fmtDate = (d: Date | null | undefined): string =>
+      d ? d.toISOString().slice(0, 10) : '';
+
+    const fmtAmt = (n: number | null | undefined): string =>
+      n != null ? Number(n).toFixed(2) : '0.00';
+
+    const rekiniXml = invoices
+      .map((inv) => {
+        const buyerName =
+          inv.buyerCompany?.legalName ??
+          inv.order?.buyer?.legalName ??
+          '';
+        const buyerReg =
+          inv.buyerCompany?.registrationNum ??
+          inv.order?.buyer?.registrationNum ??
+          '';
+        const buyerVat =
+          inv.buyerVatNumber ??
+          inv.buyerCompany?.taxId ??
+          inv.order?.buyer?.taxId ??
+          '';
+        const vatPct =
+          inv.subtotal > 0
+            ? (((inv.total - inv.subtotal) / inv.subtotal) * 100).toFixed(0)
+            : '21';
+
+        return `  <Rekins>
+    <Numurs>${esc(inv.invoiceNumber)}</Numurs>
+    <Datums>${fmtDate(inv.createdAt)}</Datums>
+    <ApmaksasDatums>${fmtDate(inv.dueDate)}</ApmaksasDatums>
+    <Statuss>${esc(inv.paymentStatus)}</Statuss>
+    <PircejsNosaukums>${esc(buyerName)}</PircejsNosaukums>
+    <PircejsRegNr>${esc(buyerReg)}</PircejsRegNr>
+    <PircejsPVN>${esc(buyerVat)}</PircejsPVN>
+    <Summa>${fmtAmt(inv.subtotal)}</Summa>
+    <PVNProcents>${vatPct}</PVNProcents>
+    <PVN>${fmtAmt(inv.tax)}</PVN>
+    <KopsummaArPVN>${fmtAmt(inv.total)}</KopsummaArPVN>
+    <Valuta>${esc(inv.currency)}</Valuta>
+    <PasutijumaNumurs>${esc(inv.order?.orderNumber)}</PasutijumaNumurs>
+  </Rekins>`;
+      })
+      .join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<Dokumenti>\n${rekiniXml}\n</Dokumenti>`;
+  }
+
   async markAsPaid(
     invoiceId: string,
     userId: string,

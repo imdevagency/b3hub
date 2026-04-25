@@ -118,8 +118,16 @@ export function WebWizardAuthGate({
         const data: UrLookupResult = await res.json();
         setUrResult(data);
         if (data.found && data.name) {
-          setCompanyName(data.name);
-          setCompanyNameLocked(true);
+          // Block liquidated / struck-off companies
+          const inactive = data.status && /likvidēt|izslēgt|beidz/i.test(data.status);
+          if (inactive) {
+            setUrError(`Uzņēmums "${data.name}" ir ${data.status} — reģistrācija nav iespējama`);
+            setCompanyName('');
+            setCompanyNameLocked(false);
+          } else {
+            setCompanyName(data.name);
+            setCompanyNameLocked(true);
+          }
         } else {
           setCompanyNameLocked(false);
         }

@@ -260,6 +260,30 @@ export default function PricingPage() {
             ))}
           </div>
         </Container>
+
+        {/* ── ENTERPRISE / VOLUME ── */}
+        <Container as="section" className="pb-32 border-t border-border pt-16">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+            <div className="max-w-xl">
+              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
+                Liels apjoms?
+              </p>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+                Individuālie noteikumi
+              </h2>
+              <p className="text-muted-foreground text-lg font-light leading-relaxed">
+                Uzņēmumiem ar augstu darījumu apjomu — piegādātājiem, pārvadātājiem un būvniecības
+                kompānijām ar vairākiem aktīviem projektiem — piedāvājam individuālu komisijas
+                struktūru, dedikētu atbalstu un prioritāru integrāciju ar jūsu esošajiem sistēmiem.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <CTAButton href="/contact" variant="primary">
+                Sazināties ar komandu
+              </CTAButton>
+            </div>
+          </div>
+        </Container>
       </main>
     </>
   );

@@ -620,6 +620,10 @@ model Order {
   notes         String?
   internalNotes String?
 
+  // BIS (Būvniecības informācijas sistēma) case reference — required for waste disposal orders
+  // on construction sites. Collected in the wizard and stored for APUS reporting.
+  bisNumber String?
+
   // Project association (optional — retrospective tagging)
   project   Project? @relation(fields: [projectId], references: [id])
   projectId String?
@@ -1347,6 +1351,9 @@ model SkipHireOrder {
 
   // Internal notes
   notes String?
+
+  // BIS (Būvniecības informācijas sistēma) case reference — for construction-site skips
+  bisNumber String?
 
   // Optional unloading point photo (URL or data URI) captured during booking
   unloadingPointPhotoUrl String?

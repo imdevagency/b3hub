@@ -9,6 +9,7 @@ import { UpdatesModule } from '../updates/updates.module';
 import { MaterialsModule } from '../materials/materials.module';
 import { DocumentsModule } from '../documents/documents.module';
 import { SupabaseModule } from '../supabase/supabase.module';
+import { MapsModule } from '../maps/maps.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SupabaseModule } from '../supabase/supabase.module';
     MaterialsModule,
     DocumentsModule,
     SupabaseModule,
+    MapsModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

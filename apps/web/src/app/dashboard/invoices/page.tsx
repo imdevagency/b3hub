@@ -64,6 +64,7 @@ function InvoicesPageInner() {
   const [paying, setPaying] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [csvLoading, setCsvLoading] = useState(false);
+  const [xmlLoading, setXmlLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'OVERDUE'>('ALL');
   const [projectFilter, setProjectFilter] = useState<string>(initialProjectId);
   const [projects, setProjects] = useState<ApiProject[]>([]);
@@ -88,6 +89,29 @@ function InvoicesPageInner() {
       setError('Neizdevās eksportēt CSV.');
     } finally {
       setCsvLoading(false);
+    }
+  }
+
+  async function handleExportXml() {
+    if (!token) return;
+    setXmlLoading(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+      const res = await fetch(`${API_URL}/invoices/export/xml`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rekini-jumis-${new Date().toISOString().slice(0, 10)}.xml`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Neizdevās eksportēt Jumis XML.');
+    } finally {
+      setXmlLoading(false);
     }
   }
 
@@ -161,6 +185,20 @@ function InvoicesPageInner() {
                 <Download className="size-4 mr-1.5" />
               )}
               Eksportēt CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportXml}
+              disabled={xmlLoading}
+              title="Tildes Jumis XML importam"
+            >
+              {xmlLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4 mr-1.5" />
+              )}
+              Jumis XML
             </Button>
             <Button variant="outline" size="icon" onClick={load} disabled={loading}>
               <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />

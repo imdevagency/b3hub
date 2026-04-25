@@ -40,6 +40,7 @@ import { UpdatesGateway } from '../updates/updates.gateway';
 import { VAT_RATE } from '../common/constants/tax';
 import { MaterialsService } from '../materials/materials.service';
 import { DocumentsService } from '../documents/documents.service';
+import { MapsService } from '../maps/maps.service';
 
 @Injectable()
 export class OrdersService {
@@ -70,6 +71,7 @@ export class OrdersService {
     private updates: UpdatesGateway,
     private materials: MaterialsService,
     private documents: DocumentsService,
+    private maps: MapsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -507,6 +509,7 @@ export class OrdersService {
             siteContactName: orderData.siteContactName,
             siteContactPhone: orderData.siteContactPhone,
             sitePhotoUrl: orderData.sitePhotoUrl ?? null,
+            bisNumber: orderData.bisNumber ?? null,
             projectId: orderData.projectId ?? null,
             truckCount: orderData.truckCount ?? 1,
             truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
@@ -2113,6 +2116,34 @@ export class OrdersService {
     }
 
     const supplier = firstItem.material.supplier;
+
+    // Auto-geocode supplier if lat/lng is missing — needed for tour mode and return-trip matching
+    let supplierLat = supplier.lat;
+    let supplierLng = supplier.lng;
+    if ((supplierLat == null || supplierLng == null) && supplier.street && supplier.city) {
+      try {
+        const geocoded = await this.maps.forwardGeocode(
+          `${supplier.street}, ${supplier.city}, Latvia`,
+        );
+        if (geocoded) {
+          supplierLat = geocoded.lat;
+          supplierLng = geocoded.lng;
+          // Persist so future jobs don't need to re-geocode
+          await this.prisma.company.updateMany({
+            where: { name: supplier.name, lat: null },
+            data: { lat: geocoded.lat, lng: geocoded.lng },
+          });
+          this.logger.log(
+            `spawnTransportJobFromOrder: geocoded supplier "${supplier.name}" → (${geocoded.lat}, ${geocoded.lng})`,
+          );
+        }
+      } catch (e) {
+        this.logger.warn(
+          `spawnTransportJobFromOrder: failed to geocode supplier "${supplier.name}": ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
     const totalWeight = order.items.reduce((sum, i) => sum + i.quantity, 0);
     const cargoType = firstItem.material.name;
     const baseDate = order.deliveryDate
@@ -2126,17 +2157,17 @@ export class OrdersService {
     // Calculate straight-line distance using haversine if both ends have coordinates
     let distanceKm: number | null = null;
     if (
-      supplier.lat != null &&
-      supplier.lng != null &&
+      supplierLat != null &&
+      supplierLng != null &&
       order.deliveryLat != null &&
       order.deliveryLng != null
     ) {
       const R = 6371; // Earth radius in km
-      const dLat = ((order.deliveryLat - supplier.lat) * Math.PI) / 180;
-      const dLng = ((order.deliveryLng - supplier.lng) * Math.PI) / 180;
+      const dLat = ((order.deliveryLat - supplierLat) * Math.PI) / 180;
+      const dLng = ((order.deliveryLng - supplierLng) * Math.PI) / 180;
       const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos((supplier.lat * Math.PI) / 180) *
+        Math.cos((supplierLat * Math.PI) / 180) *
           Math.cos((order.deliveryLat * Math.PI) / 180) *
           Math.sin(dLng / 2) ** 2;
       distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
@@ -2180,8 +2211,8 @@ export class OrdersService {
           currency: 'EUR',
           status: TransportJobStatus.AVAILABLE,
           ...(truckCount > 1 ? { truckIndex: i + 1 } : {}),
-          ...(supplier.lat != null && supplier.lng != null
-            ? { pickupLat: supplier.lat, pickupLng: supplier.lng }
+          ...(supplierLat != null && supplierLng != null
+            ? { pickupLat: supplierLat, pickupLng: supplierLng }
             : {}),
           ...(order.deliveryLat != null && order.deliveryLng != null
             ? { deliveryLat: order.deliveryLat, deliveryLng: order.deliveryLng }

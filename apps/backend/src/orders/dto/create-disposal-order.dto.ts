@@ -77,6 +77,11 @@ export class CreateDisposalOrderDto {
   @IsOptional()
   notes?: string;
 
+  /** BIS (Būvniecības informācijas sistēma) case reference for construction-site waste disposal. */
+  @IsString()
+  @IsOptional()
+  bisNumber?: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()
