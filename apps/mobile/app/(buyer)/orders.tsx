@@ -280,7 +280,7 @@ export default function OrdersScreen() {
         ItemSeparatorComponent={() => (
           <View className="h-[1px] bg-gray-100" style={{ marginLeft: 76 }} />
         )}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
@@ -293,7 +293,13 @@ export default function OrdersScreen() {
             </View>
           ) : (
             <EmptyState
-              icon={<Search size={32} color="#d1d5db" />}
+              icon={
+                query ? (
+                  <Search size={32} color="#d1d5db" />
+                ) : (
+                  <ClipboardList size={32} color="#d1d5db" />
+                )
+              }
               title={query ? 'Nekas netika atrasts' : 'Nav pasūtījumu'}
               subtitle={query ? 'Pamēģiniet citu atslēgvārdu.' : 'Jums vēl nav neviena pasūtījuma.'}
             />
@@ -304,52 +310,63 @@ export default function OrdersScreen() {
       {/* ── Minimal Order Sheet ──────────────────────────────── */}
       {canManageOrders && (
         <BottomSheet visible={showTypePicker} onClose={() => setShowTypePicker(false)}>
-          <View className="pb-10 pt-2 px-2">
-            <Text className="text-xl font-bold text-gray-900 mb-6 px-4">Ko pasūtīsiet?</Text>
+          <View style={{ paddingBottom: 32, paddingTop: 8 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
+                color: '#9ca3af',
+                letterSpacing: 0.8,
+                textTransform: 'uppercase',
+                paddingHorizontal: 20,
+                marginBottom: 16,
+              }}
+            >
+              Jauns pasūtījums
+            </Text>
 
             <SheetRow
-              icon={<Package size={22} color="#111827" />}
+              iconBg="#ecfdf5"
+              icon={<Package size={20} color="#059669" />}
               title="Materiāli"
-              subtitle="Piegāde uz objektu"
+              subtitle="Smiltis, grants, betons un citi"
               onPress={() => {
                 setShowTypePicker(false);
                 router.push('/(buyer)/catalog');
               }}
             />
+            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
             <SheetRow
-              icon={<HardHat size={22} color="#111827" />}
+              iconBg="#eff6ff"
+              icon={<HardHat size={20} color="#2563eb" />}
               title="Konteiners"
-              subtitle="Noma un izvešana"
+              subtitle="Noma, piegāde un izvešana"
               onPress={() => {
                 setShowTypePicker(false);
                 router.push('/skip-hire');
               }}
             />
+            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
             <SheetRow
-              icon={<Trash2 size={22} color="#111827" />}
+              iconBg="#fff7ed"
+              icon={<Trash2 size={20} color="#ea580c" />}
               title="Utilizācija"
-              subtitle="Būvgružu izvešana"
+              subtitle="Būvgružu un atkritumu izvešana"
               onPress={() => {
                 setShowTypePicker(false);
                 router.push('/disposal');
               }}
             />
+            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
             <SheetRow
-              icon={<Truck size={22} color="#111827" />}
+              iconBg="#faf5ff"
+              icon={<Truck size={20} color="#7c3aed" />}
               title="Transports"
-              subtitle="Tehnikas pārvadājumi"
+              subtitle="Tehnikas un kravu pārvadājumi"
               onPress={() => {
                 setShowTypePicker(false);
                 router.push('/transport');
-              }}
-            />
-            <SheetRow
-              icon={<FileText size={22} color="#111827" />}
-              title="Cenu aptauja"
-              subtitle="Saņemiet piedāvājumus"
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/material-order');
               }}
             />
           </View>
@@ -363,31 +380,58 @@ export default function OrdersScreen() {
 
 function SheetRow({
   icon,
+  iconBg,
   title,
   subtitle,
   onPress,
 }: {
   icon: React.ReactNode;
+  iconBg: string;
   title: string;
   subtitle: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity
-      className="flex-row items-center px-4 py-3 active:bg-gray-50 rounded-xl mx-2"
-      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+      }}
+      onPress={() => {
+        haptics.light();
+        onPress();
+      }}
+      activeOpacity={0.7}
     >
-      <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-4">
+      <View
+        style={{
+          width: 46,
+          height: 46,
+          borderRadius: 13,
+          backgroundColor: iconBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 14,
+        }}
+      >
         {icon}
       </View>
-      <View className="flex-1">
-        <Text className="font-semibold text-gray-900" style={{ fontSize: 16 }}>
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontFamily: 'Inter_600SemiBold',
+            fontWeight: '600',
+            color: '#111827',
+          }}
+        >
           {title}
         </Text>
-        <Text className="text-gray-500 mt-0.5" style={{ fontSize: 14 }}>
-          {subtitle}
-        </Text>
+        <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{subtitle}</Text>
       </View>
+      <ChevronRight size={16} color="#d1d5db" strokeWidth={2} />
     </TouchableOpacity>
   );
 }
