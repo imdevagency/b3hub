@@ -61,7 +61,7 @@ export default function TransportJobTrackingScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { job, loading } = useTransportJob(id);
+  const { job, loading, reload: reloadJob } = useTransportJob(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
   const insets = useSafeAreaInsets();
   const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
@@ -96,6 +96,11 @@ export default function TransportJobTrackingScreen() {
       });
     }
   }, [liveLocation]);
+
+  // Reload job data when a live status push arrives (e.g. driver marks DELIVERED)
+  useEffect(() => {
+    if (liveJobStatus) reloadJob();
+  }, [liveJobStatus, reloadJob]);
 
   const routeOrigin = useMemo(() => {
     if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
@@ -397,7 +402,7 @@ export default function TransportJobTrackingScreen() {
             {/* Bottom actions */}
             <View style={styles.cardActions}>
               <Button
-                variant="secondary"
+                variant={job.status === 'DELIVERED' ? 'default' : 'secondary'}
                 size="lg"
                 className="flex-1"
                 onPress={() => {
@@ -405,9 +410,9 @@ export default function TransportJobTrackingScreen() {
                   router.push(`/(buyer)/transport-job/${id}/details` as never);
                 }}
               >
-                Detaļas
+                {job.status === 'DELIVERED' ? 'Novērtēt šoferi' : 'Detaļas'}
               </Button>
-              {isTerminal && (
+              {job.status === 'CANCELLED' && (
                 <Button
                   variant="default"
                   size="lg"

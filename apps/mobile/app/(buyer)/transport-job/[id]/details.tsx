@@ -77,6 +77,8 @@ export default function TransportJobDetailsScreen() {
   const [driverRating, setDriverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingChecked, setRatingChecked] = useState(false);
+  const [submittedRating, setSubmittedRating] = useState(0);
   const [ratingLoading, setRatingLoading] = useState(false);
 
   const { jobStatus: liveJobStatus } = useLiveUpdates({
@@ -89,15 +91,18 @@ export default function TransportJobDetailsScreen() {
   }, [liveJobStatus, loadJob]);
 
   useEffect(() => {
-    if (job && token && job.status === 'DELIVERED' && !ratingSubmitted) {
+    if (job && token && job.status === 'DELIVERED' && !ratingChecked) {
       api.reviews
         .status({ transportJobId: job.id }, token)
         .then(({ reviewed }) => {
           if (reviewed) setRatingSubmitted(true);
         })
-        .catch(() => null);
+        .catch(() => null)
+        .finally(() => setRatingChecked(true));
+    } else if (job && job.status !== 'DELIVERED') {
+      setRatingChecked(true);
     }
-  }, [job?.id, job?.status, token, ratingSubmitted]);
+  }, [job?.id, job?.status, token, ratingChecked]);
 
   const handleCancel = useCallback(() => {
     if (!job || !token) return;
@@ -135,6 +140,7 @@ export default function TransportJobDetailsScreen() {
         token,
       );
       setRatingSubmitted(true);
+      setSubmittedRating(driverRating);
       haptics.success();
     } catch (err) {
       haptics.error();
@@ -401,7 +407,7 @@ export default function TransportJobDetailsScreen() {
           </InfoSection>
         )}
 
-        {job.status === 'DELIVERED' && !ratingSubmitted && (
+        {job.status === 'DELIVERED' && ratingChecked && !ratingSubmitted && (
           <InfoSection icon={<Star size={18} color="#111827" />} title="Novērtēt šoferi">
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -446,16 +452,18 @@ export default function TransportJobDetailsScreen() {
 
         {ratingSubmitted && job.status === 'DELIVERED' && (
           <InfoSection icon={<Star size={18} color="#111827" />} title="Jūsu vērtējums">
-            <View style={styles.ratingSubmittedRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  size={24}
-                  color={star <= driverRating ? '#F59E0B' : '#E5E7EB'}
-                  fill={star <= driverRating ? '#F59E0B' : 'transparent'}
-                />
-              ))}
-            </View>
+            {submittedRating > 0 && (
+              <View style={styles.ratingSubmittedRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={24}
+                    color={star <= submittedRating ? '#F59E0B' : '#E5E7EB'}
+                    fill={star <= submittedRating ? '#F59E0B' : 'transparent'}
+                  />
+                ))}
+              </View>
+            )}
             <Text style={styles.ratingSubmittedText}>Paldies par vērtējumu!</Text>
           </InfoSection>
         )}
