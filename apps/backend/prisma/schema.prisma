@@ -953,6 +953,10 @@ model DeliveryProof {
   // Notes
   notes String?
 
+  // GPS coordinates captured at the moment of proof submission
+  proofLat Float?
+  proofLng Float?
+
   // Structured checklist fields
   loadCondition  String?  // 'FULL' | 'PARTIAL' | 'DAMAGED'
   isPartialLoad  Boolean  @default(false)

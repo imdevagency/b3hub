@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Svg, { Path as SvgPath } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -41,6 +42,10 @@ export default function DeliveryProofScreen() {
   const [notes, setNotes] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // GPS coords captured just before submission
+  const [proofLat, setProofLat] = useState<number | undefined>(undefined);
+  const [proofLng, setProofLng] = useState<number | undefined>(undefined);
 
   // ── Checklist state ─────────────────────────────────────────────────────────
   const [loadCondition, setLoadCondition] = useState<'FULL' | 'PARTIAL' | 'DAMAGED'>('FULL');
@@ -148,6 +153,24 @@ export default function DeliveryProofScreen() {
 
     setSubmitting(true);
     try {
+      // Capture GPS coordinates at the moment of submission (best-effort)
+      let lat: number | undefined;
+      let lng: number | undefined;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          lat = loc.coords.latitude;
+          lng = loc.coords.longitude;
+          setProofLat(lat);
+          setProofLng(lng);
+        }
+      } catch {
+        // GPS is best-effort — do not block submission if it fails
+      }
+
       await api.transportJobs.deliveryProof(
         jobId,
         {
@@ -160,6 +183,8 @@ export default function DeliveryProofScreen() {
           damageNote: hasDamage && damageNote.trim() ? damageNote.trim() : undefined,
           gradeConfirmed,
           signatureSvg: buildSignatureSvg(strokes),
+          proofLat: lat,
+          proofLng: lng,
         },
         token,
       );
@@ -188,6 +213,8 @@ export default function DeliveryProofScreen() {
           damageNote: hasDamage && damageNote.trim() ? damageNote.trim() : undefined,
           gradeConfirmed,
           signatureSvg: buildSignatureSvg(strokes),
+          proofLat,
+          proofLng,
         });
         haptics.success();
         Alert.alert(

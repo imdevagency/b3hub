@@ -717,6 +717,9 @@ export class DocumentsService {
     orderNumber?: string;
     siteContactName?: string;
     deliveredAt?: Date;
+    /** GPS coordinates captured at proof submission time. */
+    proofLat?: number;
+    proofLng?: number;
   }) {
     let fileUrl: string | undefined;
 
@@ -838,6 +841,8 @@ export class DocumentsService {
     siteContactName?: string;
     deliveredAt?: Date;
     isInternational?: boolean;
+    proofLat?: number;
+    proofLng?: number;
   }): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -991,6 +996,18 @@ export class DocumentsService {
         .font('Helvetica')
         .fillColor('#6b7280')
         .text(`Apstiprināts B3Hub platformā · ${dateStr}`, 50, stampY + 32);
+
+      if (params.proofLat != null && params.proofLng != null) {
+        doc
+          .fontSize(8)
+          .font('Helvetica')
+          .fillColor('#9ca3af')
+          .text(
+            `GPS: ${params.proofLat.toFixed(6)}, ${params.proofLng.toFixed(6)}`,
+            50,
+            stampY + 50,
+          );
+      }
 
       // ── Footer ───────────────────────────────────────────────────────────
       doc

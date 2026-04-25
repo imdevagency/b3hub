@@ -443,7 +443,6 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
 
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
-  const [offersError, setOffersError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
@@ -482,7 +481,8 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
       });
       setOffers(results);
     } catch {
-      setOffersError('Neizdevās ielādēt piedāvājumus. Jūs joprojām varat nosūtīt pieprasījumu.');
+      // Treat any fetch failure (incl. 401 for guests) as no instant offers —
+      // show the clean empty state, not a scary error message.
       setOffers([]);
     } finally {
       setOffersLoading(false);
@@ -900,6 +900,8 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
         <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
           <Step2Address
             value={form.address}
+            lat={form.lat}
+            lng={form.lng}
             onAddressChange={handleAddressChange}
             title="Kur piegādāt materiālus?"
             subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"
@@ -1010,18 +1012,14 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
                 Meklējam pieejamos piegādātājus...
               </p>
             </div>
-          ) : offersError || offers.length === 0 ? (
+          ) : offers.length === 0 ? (
             <div className="space-y-4">
-              {offersError ? (
-                <p className="text-sm text-destructive font-medium">{offersError}</p>
-              ) : (
-                <div>
-                  <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
-                  </p>
-                </div>
-              )}
+              <div>
+                <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
+                </p>
+              </div>
               <RFQPanel
                 submitting={submitting}
                 error={submitError}

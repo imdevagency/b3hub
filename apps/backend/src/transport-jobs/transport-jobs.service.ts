@@ -2330,6 +2330,8 @@ export class TransportJobsService {
         hasDamage: dto.hasDamage ?? false,
         damageNote: dto.damageNote,
         gradeConfirmed: dto.gradeConfirmed ?? false,
+        proofLat: dto.proofLat,
+        proofLng: dto.proofLng,
       },
     });
 
@@ -2405,6 +2407,8 @@ export class TransportJobsService {
             orderNumber: delivered.order?.orderNumber ?? undefined,
             siteContactName: delivered.order?.siteContactName ?? undefined,
             deliveredAt: new Date(),
+            proofLat: dto.proofLat,
+            proofLng: dto.proofLng,
           })
           .catch((err) =>
             this.logger.error(

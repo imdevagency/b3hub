@@ -113,6 +113,7 @@ export function AddressAutocomplete({
   const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Google Maps services
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
@@ -134,7 +135,10 @@ export function AddressAutocomplete({
   // Handle outside click to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideInput = containerRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideInput && !insideDropdown) {
         setOpen(false);
       }
     }
@@ -277,6 +281,7 @@ export function AddressAutocomplete({
         typeof document !== 'undefined' &&
         createPortal(
           <div
+            ref={dropdownRef}
             style={dropdownStyle}
             className="bg-background rounded-2xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
           >

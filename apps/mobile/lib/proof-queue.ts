@@ -19,6 +19,9 @@ export interface QueuedProof {
   damageNote?: string;
   gradeConfirmed?: boolean;
   signatureSvg?: string;
+  /** GPS captured at proof submission — may be missing when location was denied */
+  proofLat?: number;
+  proofLng?: number;
   queuedAt: string;
 }
 
@@ -78,6 +81,8 @@ export async function flushProofQueue(): Promise<{ flushed: number; failed: numb
           damageNote: item.damageNote,
           gradeConfirmed: item.gradeConfirmed,
           signatureSvg: item.signatureSvg,
+          proofLat: item.proofLat,
+          proofLng: item.proofLng,
         }),
       });
       await removeFromQueue(item.id);

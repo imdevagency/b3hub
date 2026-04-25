@@ -271,6 +271,10 @@ export const transportApi = {
         gradeConfirmed?: boolean;
         /** SVG path data of recipient signature */
         signatureSvg?: string;
+        /** Device GPS latitude at proof submission time */
+        proofLat?: number;
+        /** Device GPS longitude at proof submission time */
+        proofLng?: number;
       },
       token: string,
     ) =>

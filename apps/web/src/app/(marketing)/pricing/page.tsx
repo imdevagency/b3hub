@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Check } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
@@ -7,15 +7,16 @@ import { CTAButton } from '@/components/marketing/ui/cta-button';
 export const metadata: Metadata = {
   title: 'Cenas',
   description:
-    'Pārredzamas B3Hub cenas pircējiem, piegādātājiem un pārvadātājiem. Bez slēptajām maksām.',
+    'B3Hub komisijas modelis: maksājiet tikai tad, kad nopelnāt. Bez abonēšanas maksas, bez slēptajām maksām.',
 };
-
 
 const plans = [
   {
     name: 'Pircējs',
-    price: 'Bezmaksas',
-    description: 'Pasūtiet materiālus un izsekojiet piegādēm bez abonēšanas maksas.',
+    price: '0%',
+    label: 'Pilnīgi bez maksas',
+    description:
+      'Pasūtiet materiālus, izsekojiet piegādēm, pārvaldiet projektu izmaksas — bez jebkādas maksas.',
     href: `/register`,
     cta: 'Sākt bez maksas',
     featured: false,
@@ -23,61 +24,68 @@ const plans = [
       'Neierobežoti pasūtījumi',
       'Reāllaika piegāžu izsekošana',
       'Digitālie piegādes dokumenti',
-      'Vēsture un rēķini',
+      'Projektu izmaksu pārskati',
       'Mobilā lietotne (iOS & Android)',
+      'Komandas pārvaldība (B2B)',
     ],
   },
   {
     name: 'Piegādātājs',
-    price: '€49',
-    period: '/mēnesī',
-    description: 'Publicējiet materiālus, saņemiet pasūtījumus un pārvaldiet savu biznesu.',
+    price: '6%',
+    label: 'no katras pasūtījuma vērtības',
+    description: 'Publicējiet materiālus bez maksas. Maksājiet tikai tad, kad saņemat pasūtījumu.',
     href: `/apply`,
     cta: 'Pieteikties',
     featured: true,
     features: [
       'Neierobežoti materiālu ieraksti',
       'Pasūtījumu pārvaldība',
-      'Automātiskie rēķini',
+      'Automātiskie rēķini un dokumenti',
       'Piegādes koordinācija',
-      'Analītika un pārskati',
+      'Analītika un pārdošanas pārskati',
       'Prioritārs atbalsts',
     ],
+    example: { order: 500, rate: 0.06 },
   },
   {
     name: 'Pārvadātājs',
     price: '8%',
-    period: ' komisija',
-    description: 'Mēs iekasējam 8% komisiju no katras sekmīgas piegādes. Bez ikmēneša maksas.',
+    label: 'no katras piegādes vērtības',
+    description: 'Izvēlieties darbus brīvi. Mēs iekasējam komisiju tikai no sekmīgām piegādēm.',
     href: `/apply`,
     cta: 'Pieteikties',
     featured: false,
     features: [
       'Piekļuve visiem transporta darbiem',
-      'Darbu izvēle brīvi',
+      'Darbu izvēle bez saistībām',
       'Izmaksa nākamajā darba dienā',
       'Digitālie pavadraksti',
       'Maršrutu plānošana lietotnē',
     ],
+    example: { order: 300, rate: 0.08 },
   },
 ];
 
 const faq = [
   {
-    q: 'Vai ir kādi papildu maksājumi?',
-    a: 'Nē. Pircējiem nav nekādu maksu. Piegādātājiem ir fiksēta €49/mēn abonēšana — bez komisijas. Pārvadātājiem 8% komisija no katras piegādes un nekas vairāk.',
+    q: 'Vai piegādātājiem ir ikmēneša maksa?',
+    a: 'Nē. Nav abonēšanas, nav reģistrācijas maksas, nav maksa par ierakstiem. Jūs maksājat tikai 6% komisiju no katras pasūtījuma vērtības, kas veiksmīgi noslēgusies platformā.',
   },
   {
-    q: 'Kā notiek maksājumi pārvadātājiem?',
-    a: 'Izmaksa tiek veikta nākamajā darba dienā pēc piegādes apstiprināšanas. Minimālā izmaksa €10.',
+    q: 'Kā tiek aprēķināta komisija?',
+    a: 'Komisija tiek aprēķināta no kopējās pasūtījuma summas bez PVN. Piemēram, €500 pasūtījumam piegādātājs maksā €30 (6%), pārvadātājs par €300 piegādi maksā €24 (8%).',
   },
   {
-    q: 'Vai var atcelt piegādātāja abonementu?',
-    a: 'Jā, jelkad. Nav iesaistīšanās perioda un nav soda naudas. Pārtrauc no nākamā rēķina perioda.',
+    q: 'Kad notiek komisijas ieturēšana?',
+    a: 'Komisija tiek ieturēta automātiski pēc pasūtījuma apstiprināšanas un piegādes pabeigšanas. Pircēja maksājums tiek noturēts escrow līdz piegāde ir apstiprināta.',
   },
   {
-    q: 'Kas ir iekļauts €49 plānā?',
-    a: 'Visi uzskaitītie rīki: katalogu saraksti, automātiskie dokumenti, analītika un prioritārs atbalsts. Nav neviena "premium" papildinājuma.',
+    q: 'Kā notiek izmaksa pārvadātājiem?',
+    a: 'Izmaksa tiek veikta nākamajā darba dienā pēc piegādes apstiprināšanas. Minimālā izmaksa €10. Atbalstām Latvijas bankas pārskaitījumus.',
+  },
+  {
+    q: 'Vai var strādāt gan kā piegādātājs, gan pārvadātājs?',
+    a: 'Jā. Uzņēmums ar "HYBRID" tipu var vienlaikus pārdot materiālus un piedāvāt transportu. Katrai darbībai komisija tiek aprēķināta atsevišķi.',
   },
 ];
 
@@ -90,12 +98,12 @@ export default function PricingPage() {
           eyebrow="Cenas"
           title={
             <>
-              Vienkāršas,
+              Maksājiet tikai tad,
               <br />
-              pārredzamas.
+              kad nopelnāt.
             </>
           }
-          subtitle="Nav slēpto maksu. Nav pārsteigumu. Katrai lomai savs modelis."
+          subtitle="Nav abonēšanas. Nav reģistrācijas maksas. Komisija tikai no sekmīgiem darījumiem."
           align="center"
         />
 
@@ -122,24 +130,44 @@ export default function PricingPage() {
                   >
                     {plan.name}
                   </p>
-                  <div className="flex items-baseline gap-1">
+                  <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-bold tracking-tighter leading-none">
                       {plan.price}
                     </span>
-                    {plan.period && (
-                      <span
-                        className={`text-base ${plan.featured ? 'text-background/60' : 'text-muted-foreground'}`}
-                      >
-                        {plan.period}
-                      </span>
-                    )}
                   </div>
+                  <p
+                    className={`text-sm font-semibold ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
+                  >
+                    {plan.label}
+                  </p>
                   <p
                     className={`text-sm font-light leading-relaxed ${plan.featured ? 'text-background/60' : 'text-muted-foreground'}`}
                   >
                     {plan.description}
                   </p>
                 </div>
+
+                {/* Example calculation */}
+                {'example' in plan && plan.example && (
+                  <div
+                    className={`rounded-xl p-4 text-sm ${plan.featured ? 'bg-background/10' : 'bg-muted/50'}`}
+                  >
+                    <p
+                      className={`font-semibold mb-1 ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
+                    >
+                      Piemērs
+                    </p>
+                    <div
+                      className={`flex items-center justify-between ${plan.featured ? 'text-background/80' : 'text-foreground'}`}
+                    >
+                      <span>Pasūtījums €{plan.example.order}</span>
+                      <ArrowRight className="h-3.5 w-3.5 mx-2 shrink-0 opacity-40" />
+                      <span className="font-bold">
+                        Komisija €{(plan.example.order * plan.example.rate).toFixed(0)}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Features */}
                 <ul className="flex flex-col gap-3 flex-1">
@@ -166,6 +194,44 @@ export default function PricingPage() {
                 >
                   {plan.cta}
                 </CTAButton>
+              </div>
+            ))}
+          </div>
+        </Container>
+
+        {/* ── HOW IT WORKS ── */}
+        <Container as="section" className="pb-32 border-t border-border pt-16">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+            Kā darbojas komisija
+          </h2>
+          <p className="text-muted-foreground text-lg font-light mb-16 max-w-xl">
+            Visi darījumi iet caur platformu. Komisija tiek ieturēta automātiski — neviens rēķins,
+            nekāda uzskaite.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+            {[
+              {
+                step: '01',
+                title: 'Pircējs veic pasūtījumu',
+                body: 'Pircējs samaksā pasūtījuma summu. Nauda tiek turēta platformas escrow.',
+              },
+              {
+                step: '02',
+                title: 'Piegāde tiek izpildīta',
+                body: 'Piegādātājs un pārvadātājs izpilda pasūtījumu. Sistēma reģistrē pabeigšanu.',
+              },
+              {
+                step: '03',
+                title: 'Komisija tiek ieturēta automātiski',
+                body: 'No maksājuma automātiski tiek ieturēta piegādātāja (6%) un pārvadātāja (8%) komisija. Atlikums izmaksāts nākamajā darba dienā.',
+              },
+            ].map(({ step, title, body }) => (
+              <div key={step} className="bg-background p-10 flex flex-col gap-4">
+                <span className="text-sm font-bold tracking-widest text-muted-foreground">
+                  {step}
+                </span>
+                <h3 className="text-xl font-bold tracking-tight">{title}</h3>
+                <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
               </div>
             ))}
           </div>

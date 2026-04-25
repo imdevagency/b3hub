@@ -49,9 +49,7 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
-
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
-
 <!-- END GEN -->
 
 ### Module anatomy
@@ -79,7 +77,6 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
-
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -103,7 +100,6 @@ export interface RequestingUser {
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
 }
 ```
-
 <!-- END GEN -->
 
 ### User roles
@@ -162,7 +158,6 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
-
 - `(auth)` — apply-role, forgot-password, login, onboarding, register, welcome
 - `(buyer)` — (account)/, catalog, home, messages, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, profile, schedule, skips, vehicles

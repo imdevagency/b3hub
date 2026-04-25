@@ -145,6 +145,7 @@ export class PaymentsService {
           email: company.email,
           business_type: 'company',
           capabilities: { transfers: { requested: true } },
+          settings: { payouts: { schedule: { interval: 'daily' } } },
         });
         accountId = account.id;
         await this.prisma.company.update({
@@ -194,6 +195,7 @@ export class PaymentsService {
           ? { first_name: dbUser.firstName, last_name: dbUser.lastName }
           : undefined,
         capabilities: { transfers: { requested: true } },
+        settings: { payouts: { schedule: { interval: 'daily' } } },
       });
       accountId = account.id;
       await this.prisma.driverProfile.update({
