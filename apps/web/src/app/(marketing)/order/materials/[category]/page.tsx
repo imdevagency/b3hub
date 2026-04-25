@@ -1,14 +1,10 @@
-'use client';
-
 /**
  * Material order wizard — /order/materials/[category]
  *
- * Thin wrapper that reads the category slug from the URL and renders
- * the self-contained MaterialOrderWizard with that category pre-selected.
- * No wizard state lives here — everything is inside the component.
+ * Server component: validates the category slug and calls notFound() server-side.
+ * MaterialOrderWizard is a client component and is rendered as a child.
  */
 
-import { useParams } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { MaterialOrderWizard } from '@/components/order/wizards/MaterialOrderWizard';
 import type { MaterialCategory } from '@/lib/api';
@@ -26,11 +22,12 @@ const VALID_CATEGORIES: string[] = [
   'OTHER',
 ];
 
-export default function MaterialOrderPage() {
-  const params = useParams();
-  const slugParam = params.category;
-  const slug = typeof slugParam === 'string' ? slugParam : '';
+interface Props {
+  params: Promise<{ category: string }>;
+}
 
+export default async function MaterialOrderPage({ params }: Props) {
+  const { category: slug } = await params;
   // Convert URL slug (e.g. "recycled-concrete") → enum key (e.g. "RECYCLED_CONCRETE")
   const category = slug.toUpperCase().replace(/-/g, '_');
 
