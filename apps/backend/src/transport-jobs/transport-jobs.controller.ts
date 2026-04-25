@@ -601,6 +601,18 @@ export class TransportJobsController {
   }
 
   /**
+   * PATCH /transport-jobs/:id/buyer-cancel
+   * Buyer (job requester) cancels an AVAILABLE job before a driver is assigned.
+   */
+  @Patch(':id/buyer-cancel')
+  buyerCancel(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.buyerCancel(id, user.userId);
+  }
+
+  /**
    * POST /transport-jobs/:id/rate-buyer
    * Driver rates the buyer's site/instructions after a job is DELIVERED.
    * One rating per transport job — 409 if already rated.

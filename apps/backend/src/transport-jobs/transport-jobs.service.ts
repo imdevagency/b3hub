@@ -3846,6 +3846,48 @@ export class TransportJobsService {
     return updated;
   }
 
+  // ── Buyer cancels an AVAILABLE job (no driver yet) ────────────
+  async buyerCancel(jobId: string, userId: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        requestedById: true,
+        pickupCity: true,
+        deliveryCity: true,
+        order: { select: { createdById: true } },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    const creatorId = job.requestedById ?? job.order?.createdById ?? null;
+    if (creatorId !== userId) {
+      throw new ForbiddenException('You cannot cancel this job');
+    }
+
+    if (job.status !== TransportJobStatus.AVAILABLE) {
+      throw new BadRequestException(
+        'Job can only be cancelled while a driver is still being searched. Contact support for active jobs.',
+      );
+    }
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: {
+        status: TransportJobStatus.CANCELLED,
+        statusTimestamps: { CANCELLED: new Date().toISOString() },
+      },
+      select: this.jobSelect,
+    });
+
+    this.logger.log(
+      `Transport job ${job.jobNumber} cancelled by buyer ${userId}`,
+    );
+    return this.mapWithSla(updated);
+  }
+
   // ── Driver rates the buyer after a DELIVERED transport job ───
   async rateBuyer(
     transportJobId: string,

@@ -4,6 +4,8 @@ import { api } from './api';
 import type { ApiTransportJob } from './api';
 
 export const ACTIVE_STATUSES = new Set([
+  'AVAILABLE',
+  'ASSIGNED',
   'ACCEPTED',
   'EN_ROUTE_PICKUP',
   'AT_PICKUP',

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -81,8 +82,11 @@ export default function TransportJobDetailsScreen() {
   const [submittedRating, setSubmittedRating] = useState(0);
   const [ratingLoading, setRatingLoading] = useState(false);
 
+  // Don't subscribe to live updates for terminal jobs — no new events expected
+  const isTerminalJob = job?.status === 'DELIVERED' || job?.status === 'CANCELLED';
+
   const { jobStatus: liveJobStatus } = useLiveUpdates({
-    jobId: typeof id === 'string' ? id : null,
+    jobId: !isTerminalJob && typeof id === 'string' ? id : null,
     token,
   });
 
@@ -115,7 +119,7 @@ export default function TransportJobDetailsScreen() {
         onPress: async () => {
           setCancelling(true);
           try {
-            await api.transportJobs.updateStatus(job.id, 'CANCELLED', token);
+            await api.transportJobs.buyerCancel(job.id, token);
             haptics.success();
             loadJob();
           } catch (err) {
@@ -192,6 +196,7 @@ export default function TransportJobDetailsScreen() {
   ].filter((row) => row.value);
 
   const cargoRows = [
+    { label: 'Referents', value: job.jobNumber ?? null },
     { label: 'Darba tips', value: typeLabel },
     { label: 'Krava', value: CARGO_LABEL[job.cargoType] ?? job.cargoType },
     {
@@ -219,13 +224,22 @@ export default function TransportJobDetailsScreen() {
     {
       label: 'Šoferis',
       value: driver ? `${driver.firstName} ${driver.lastName}`.trim() : null,
+      phone: null,
     },
-    { label: 'Šofera tālrunis', value: driver?.phone },
-    { label: 'Numurzīme', value: vehicle?.licensePlate ?? null },
-    { label: 'Objekta kontakts', value: job.order?.siteContactName ?? null },
-    { label: 'Objekta tālrunis', value: job.order?.siteContactPhone ?? null },
-    { label: 'Piegādātājs', value: job.order?.supplierName ?? null },
-    { label: 'Piegādātāja tālrunis', value: job.order?.supplierPhone ?? null },
+    { label: 'Šofera tālrunis', value: driver?.phone, phone: driver?.phone },
+    { label: 'Numurzīme', value: vehicle?.licensePlate ?? null, phone: null },
+    { label: 'Objekta kontakts', value: job.order?.siteContactName ?? null, phone: null },
+    {
+      label: 'Objekta tālrunis',
+      value: job.order?.siteContactPhone ?? null,
+      phone: job.order?.siteContactPhone ?? null,
+    },
+    { label: 'Piegādātājs', value: job.order?.supplierName ?? null, phone: null },
+    {
+      label: 'Piegādātāja tālrunis',
+      value: job.order?.supplierPhone ?? null,
+      phone: job.order?.supplierPhone ?? null,
+    },
   ].filter((row) => row.value);
 
   const notes = job.order?.notes?.trim() ?? '';
@@ -353,14 +367,35 @@ export default function TransportJobDetailsScreen() {
 
         <InfoSection icon={<Phone size={18} color="#111827" />} title="Kontakti">
           {contactRows.length > 0 ? (
-            contactRows.map((row, index) => (
-              <DetailRow
-                key={row.label}
-                label={row.label}
-                value={row.value}
-                last={index === contactRows.length - 1}
-              />
-            ))
+            contactRows.map((row, index) =>
+              row.phone ? (
+                <DetailRow
+                  key={row.label}
+                  label={row.label}
+                  last={index === contactRows.length - 1}
+                  value={
+                    <TouchableOpacity
+                      onPress={() => {
+                        haptics.medium();
+                        Linking.openURL(`tel:${row.phone}`).catch(() => null);
+                      }}
+                      activeOpacity={0.7}
+                      style={styles.phoneTapTarget}
+                    >
+                      <Text style={styles.phoneValueText}>{row.value as string}</Text>
+                      <Phone size={13} color="#4f46e5" />
+                    </TouchableOpacity>
+                  }
+                />
+              ) : (
+                <DetailRow
+                  key={row.label}
+                  label={row.label}
+                  value={row.value}
+                  last={index === contactRows.length - 1}
+                />
+              ),
+            )
           ) : (
             <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pieejama.</Text>
           )}
@@ -677,5 +712,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontWeight: '500',
     color: '#6B7280',
+  },
+  phoneTapTarget: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  phoneValueText: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#4f46e5',
   },
 });

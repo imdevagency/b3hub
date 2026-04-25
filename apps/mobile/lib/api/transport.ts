@@ -420,6 +420,13 @@ export const transportApi = {
         body: JSON.stringify(dto),
       }),
 
+    /** Buyer: cancel an AVAILABLE job before a driver is assigned. */
+    buyerCancel: (id: string, token: string) =>
+      apiFetch<ApiTransportJob>(`/transport-jobs/${id}/buyer-cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     addSurcharge: (
       id: string,
       dto: { type: string; amount: number; label?: string; billable?: boolean },

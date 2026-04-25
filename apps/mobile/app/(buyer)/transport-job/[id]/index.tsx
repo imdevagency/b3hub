@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Linking, TouchableOpacity, Image } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Linking, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -24,6 +24,7 @@ import { BaseMap, RouteLayer, useRoute, PinLayer, AnimatedDriverMarker } from '@
 import type { CameraRefHandle } from '@/components/map';
 
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useTransportJob } from '@/lib/use-transport-job';
 import { useLiveUpdates } from '@/lib/use-live-updates';
@@ -31,6 +32,7 @@ import { colors } from '@/lib/theme';
 
 const JOB_STATUS_LABEL: Record<string, string> = {
   AVAILABLE: 'Pasūtījums publicēts platformā',
+  ASSIGNED: 'Piedāvāts šoferim',
   ACCEPTED: 'Šoferis pieņēma pasūtījumu',
   EN_ROUTE_PICKUP: 'Šoferis dodas uz kraušanu',
   AT_PICKUP: 'Šoferis ir pie kraušanas vietas',
@@ -49,6 +51,7 @@ const JOB_STEPS = [
 
 const JOB_STATUS_TO_STEP: Record<string, number> = {
   AVAILABLE: 0,
+  ASSIGNED: 0,
   ACCEPTED: 0,
   EN_ROUTE_PICKUP: 0,
   AT_PICKUP: 1,
@@ -69,12 +72,18 @@ export default function TransportJobTrackingScreen() {
     lng: number;
   } | null>(null);
   const [etaMin, setEtaMin] = useState<number | null>(null);
+  // null = not yet checked, true/false = result of API check
+  const [ratingAlreadyDone, setRatingAlreadyDone] = useState<boolean | null>(null);
 
-  // Don't open a live subscription for closed jobs — saves battery and socket slots
+  // Don't open a live subscription for truly terminal jobs (no new events expected)
   const jobIsTerminalForLive =
     job != null && (job.status === 'DELIVERED' || job.status === 'CANCELLED');
 
-  const { jobLocation: liveLocation, jobStatus: liveJobStatus } = useLiveUpdates({
+  const {
+    jobLocation: liveLocation,
+    jobStatus: liveJobStatus,
+    connected,
+  } = useLiveUpdates({
     jobId: jobIsTerminalForLive ? null : typeof id === 'string' ? id : null,
     token,
   });
@@ -101,6 +110,44 @@ export default function TransportJobTrackingScreen() {
   useEffect(() => {
     if (liveJobStatus) reloadJob();
   }, [liveJobStatus, reloadJob]);
+
+  // Clear stale driver marker and ETA when job becomes terminal
+  useEffect(() => {
+    if (job?.status === 'DELIVERED' || job?.status === 'CANCELLED') {
+      setDriverLocationOnMap(null);
+      setEtaMin(null);
+    }
+  }, [job?.status]);
+
+  // Check if buyer has already rated — determines tracking screen CTA label
+  useEffect(() => {
+    if (!job || !token || job.status !== 'DELIVERED' || ratingAlreadyDone !== null) return;
+    api.reviews
+      .status({ transportJobId: job.id }, token)
+      .then(({ reviewed }) => setRatingAlreadyDone(reviewed))
+      .catch(() => setRatingAlreadyDone(false));
+  }, [job?.id, job?.status, token, ratingAlreadyDone]);
+
+  const handleCancel = useCallback(() => {
+    if (!job || !token) return;
+    haptics.heavy();
+    Alert.alert('Atcelt pasūtījumu?', 'Šo darbību nevar atsaukt. Pasūtījums tiks atcelts.', [
+      { text: 'Nē', style: 'cancel' },
+      {
+        text: 'Atcelt',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.transportJobs.buyerCancel(job.id, token);
+            haptics.success();
+            reloadJob();
+          } catch {
+            haptics.error();
+          }
+        },
+      },
+    ]);
+  }, [job, reloadJob, token]);
 
   const routeOrigin = useMemo(() => {
     if (driverLocationOnMap) return { lat: driverLocationOnMap.lat, lng: driverLocationOnMap.lng };
@@ -154,13 +201,17 @@ export default function TransportJobTrackingScreen() {
   const driver = job.driver;
   const currentStepIdx = JOB_STATUS_TO_STEP[job.status] ?? -1;
   const isTerminal = job.status === 'DELIVERED' || job.status === 'CANCELLED';
-  const isSearching = job.status === 'AVAILABLE';
+  const isSearching = job.status === 'AVAILABLE' || job.status === 'ASSIGNED';
 
   const heroPrimary = (() => {
     if (job.status === 'DELIVERED') return 'Piegādāts';
     if (job.status === 'CANCELLED') return 'Atcelts';
-    if (etaMin != null) return `${etaMin} min`;
+    if (job.status === 'AT_DELIVERY') return 'Uz vietas';
+    if (job.status === 'AT_PICKUP' || job.status === 'LOADED') return 'Krauj kravu';
+    // Only show live ETA while the driver is actively en route
+    if (etaMin != null && job.status === 'EN_ROUTE_DELIVERY') return `${etaMin} min`;
     if (driver) return 'Ceļā';
+    if (job.status === 'ASSIGNED') return 'Piešķirts šoferim';
     if (job.status === 'AVAILABLE') return 'Meklē pārvadātāju';
     return 'Pārvadājumā';
   })();
@@ -229,13 +280,17 @@ export default function TransportJobTrackingScreen() {
               <Text style={styles.topCardTitle} numberOfLines={1}>
                 {isDisposal ? 'Būvgruži' : 'Materiāli'}
               </Text>
-              <Text style={styles.topCardSubtitle}>ID: {job.id.slice(-8).toUpperCase()}</Text>
+              <Text style={styles.topCardSubtitle}>
+                {job.jobNumber ?? job.id.slice(-8).toUpperCase()}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Uber-like Bottom Sheet / Overlay */}
         <View style={[styles.overlayContainer, { bottom: insets.bottom || 24 }]}>
+          {/* Offline indicator inside the overlay card area */}
+          {!jobIsTerminalForLive && <OfflinePill connected={connected} />}
           <View style={styles.overlayCard}>
             {/* Courier Header Row */}
             <View style={styles.courierHeader}>
@@ -254,10 +309,18 @@ export default function TransportJobTrackingScreen() {
                       ? job.status === 'CANCELLED'
                         ? 'Pasūtījums atcelts'
                         : 'Piegāde pabeigta'
-                      : 'Meklējam šoferi...'}
+                      : job.status === 'ASSIGNED'
+                        ? 'Gaida apstiprinājumu...'
+                        : 'Meklējam šoferi...'}
                 </Text>
                 <Text style={styles.courierRole}>
-                  {driver ? 'Šoferis' : isTerminal ? '' : 'Pieprasījums nosūtīts'}
+                  {driver
+                    ? 'Šoferis'
+                    : isTerminal
+                      ? ''
+                      : job.status === 'ASSIGNED'
+                        ? 'Piedāvājums nosūtīts'
+                        : 'Pieprasījums nosūtīts'}
                 </Text>
               </View>
               {driver?.phone && (
@@ -305,11 +368,34 @@ export default function TransportJobTrackingScreen() {
                       })}
                     </Text>
                   )}
+                  {job.status === 'DELIVERED' && job.pickupPhotoUrl && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        haptics.light();
+                        router.push(`/(buyer)/transport-job/${id}/details` as never);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.terminalDocsLink}>Skatīt dokumentus →</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             ) : (
               <View style={styles.statusSection}>
                 <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
+                {job.sla?.isOverdue && (
+                  <View style={styles.overdueBanner}>
+                    <Text style={styles.overdueText}>⚠ Kavējas {job.sla.overdueMinutes} min</Text>
+                  </View>
+                )}
+                {isSearching && (
+                  <Text style={styles.searchingHint}>
+                    {job.status === 'ASSIGNED'
+                      ? 'Gaida šofera apstiprinājumu. Parasti tas aizņem dažas minūtes.'
+                      : 'Meklējam brīvu šoferi jūsu maršrutam. Parasti tas aizņem 5–15 minūtes.'}
+                  </Text>
+                )}
 
                 <View style={styles.timelineContainer}>
                   {JOB_STEPS.map((step, index) => {
@@ -318,9 +404,27 @@ export default function TransportJobTrackingScreen() {
                     const isLast = index === JOB_STEPS.length - 1;
 
                     let dateStr: string | null = null;
-                    // For simplicity in UI, we skip exact past timestamps here if unavailable cleanly
+                    const ts = job.statusTimestamps ?? {};
+                    const fmtTs = (iso: string) => {
+                      const d = new Date(iso);
+                      return (
+                        d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' }) +
+                        ', ' +
+                        d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'short' })
+                      );
+                    };
+                    // Actual status timestamp keys per timeline step
+                    const actualTsKey: Record<string, string> = {
+                      pickup: 'AT_PICKUP',
+                      loading: 'LOADED',
+                      enroute: 'EN_ROUTE_DELIVERY',
+                      delivered: 'DELIVERED',
+                    };
                     if (etaMin != null && step.key === 'enroute' && isCurrent) {
                       dateStr = `~${etaMin} min`;
+                    } else if (isDone && !isCurrent && ts[actualTsKey[step.key]]) {
+                      // Completed step: show the actual timestamp recorded by driver
+                      dateStr = fmtTs(ts[actualTsKey[step.key]]);
                     } else if (step.key === 'pickup') {
                       dateStr = new Date(job.pickupDate).toLocaleDateString('lv-LV', {
                         day: 'numeric',
@@ -401,29 +505,61 @@ export default function TransportJobTrackingScreen() {
 
             {/* Bottom actions */}
             <View style={styles.cardActions}>
-              <Button
-                variant={job.status === 'DELIVERED' ? 'default' : 'secondary'}
-                size="lg"
-                className="flex-1"
-                onPress={() => {
-                  haptics.light();
-                  router.push(`/(buyer)/transport-job/${id}/details` as never);
-                }}
-              >
-                {job.status === 'DELIVERED' ? 'Novērtēt šoferi' : 'Detaļas'}
-              </Button>
-              {job.status === 'CANCELLED' && (
-                <Button
-                  variant="default"
-                  size="lg"
-                  className="flex-1 ml-2"
-                  onPress={() => {
-                    haptics.medium();
-                    router.replace('/transport' as never);
-                  }}
-                >
-                  Atkārtot
-                </Button>
+              {isSearching ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="flex-1"
+                    onPress={() => {
+                      haptics.light();
+                      router.push(`/(buyer)/transport-job/${id}/details` as never);
+                    }}
+                  >
+                    Detaļas
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    className="flex-1 ml-2"
+                    onPress={handleCancel}
+                  >
+                    Atcelt
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant={
+                      job.status === 'DELIVERED' && ratingAlreadyDone === false
+                        ? 'default'
+                        : 'secondary'
+                    }
+                    size="lg"
+                    className="flex-1"
+                    onPress={() => {
+                      haptics.light();
+                      router.push(`/(buyer)/transport-job/${id}/details` as never);
+                    }}
+                  >
+                    {job.status === 'DELIVERED' && ratingAlreadyDone === false
+                      ? 'Novērtēt šoferi'
+                      : 'Detaļas'}
+                  </Button>
+                  {isTerminal && (
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="flex-1 ml-2"
+                      onPress={() => {
+                        haptics.medium();
+                        router.replace('/transport' as never);
+                      }}
+                    >
+                      Atkārtot
+                    </Button>
+                  )}
+                </>
               )}
             </View>
           </View>
@@ -434,6 +570,34 @@ export default function TransportJobTrackingScreen() {
 }
 
 const ORANGE = '#4f46e5'; // Let's use Indigo for transport jobs similar to Waze driver UI
+
+// ── Offline pill (shown when WebSocket disconnects mid-tracking) ─────────────
+function OfflinePill({ connected }: { connected: boolean }) {
+  if (connected) return null;
+  return (
+    <View style={offlinePillStyle.wrap}>
+      <View style={offlinePillStyle.dot} />
+      <Text style={offlinePillStyle.text}>Tiešsaiste pārtraukta</Text>
+    </View>
+  );
+}
+const offlinePillStyle = StyleSheet.create({
+  wrap: {
+    position: 'absolute',
+    top: 0,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1F2937',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    zIndex: 20,
+  },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
+  text: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#FFFFFF' },
+});
 
 const styles = StyleSheet.create({
   mapWrapper: {
@@ -725,5 +889,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_500Medium',
     color: '#9CA3AF',
+  },
+  terminalDocsLink: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: ORANGE,
+    marginTop: 8,
+  },
+  searchingHint: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  overdueBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 14,
+    alignSelf: 'flex-start',
+  },
+  overdueText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#B45309',
   },
 });
