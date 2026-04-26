@@ -812,4 +812,313 @@ export class AdminService {
 
     return updated;
   }
+
+  // ── Operational response tools ────────────────────────────────────────────
+
+  /**
+   * POST /admin/orders/:id/cancel
+   * Force-cancel an order regardless of current status.
+   * Triggers voidOrRefund so the buyer is never left charged for a cancelled order.
+   * Audit-logged.
+   */
+  async cancelOrder(orderId: string, reason: string, adminId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        paymentStatus: true,
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status === 'CANCELLED')
+      throw new BadRequestException('Order is already cancelled');
+
+    // Void or refund via PaymentsService (non-fatal — cancellation must always succeed)
+    try {
+      await this.paymentsService.voidOrRefund(orderId);
+    } catch (err) {
+      this.logger.error(
+        `voidOrRefund failed during admin cancel of order ${orderId}: ${(err as Error).message}`,
+      );
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'CANCELLED' },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        paymentStatus: true,
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'CANCEL_ORDER',
+      'Order',
+      orderId,
+      { status: order.status },
+      { status: 'CANCELLED' },
+      reason,
+    );
+
+    return updated;
+  }
+
+  /**
+   * POST /admin/payments/:id/refund
+   * Issue a full refund for a CAPTURED or PAID payment.
+   * Delegates to voidOrRefund (which handles both Stripe refund and void flows).
+   * Audit-logged.
+   */
+  async refundPayment(paymentId: string, reason: string, adminId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        status: true,
+        orderId: true,
+        order: { select: { orderNumber: true } },
+      },
+    });
+    if (!payment) throw new NotFoundException('Payment not found');
+    if (!['CAPTURED', 'PAID'].includes(payment.status))
+      throw new BadRequestException(
+        `Cannot refund payment in status ${payment.status}. Only CAPTURED or PAID payments can be refunded.`,
+      );
+    if (!payment.orderId)
+      throw new BadRequestException(
+        'Payment has no linked order — manual Stripe refund required via Stripe dashboard',
+      );
+
+    await this.paymentsService.voidOrRefund(payment.orderId);
+
+    await this.prisma.adminAuditLog.create({
+      data: {
+        adminId,
+        action: 'REFUND_PAYMENT',
+        entityType: 'Payment',
+        entityId: paymentId,
+        note: `Manual admin refund for order ${payment.order?.orderNumber ?? payment.orderId}. Reason: ${reason}`,
+      },
+    });
+
+    return { ok: true, paymentId, orderId: payment.orderId };
+  }
+
+  /**
+   * PATCH /admin/jobs/:id/reassign
+   * Force-reassign a transport job to a different driver.
+   * Blocked for COMPLETED / CANCELLED jobs.
+   * Audit-logged.
+   */
+  async reassignJob(
+    jobId: string,
+    driverId: string,
+    adminId: string,
+    note?: string,
+  ) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        driverId: true,
+        carrierId: true,
+        driver: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (['COMPLETED', 'CANCELLED'].includes(job.status))
+      throw new BadRequestException(
+        `Cannot reassign a ${job.status} job`,
+      );
+
+    const newDriver = await this.prisma.user.findUnique({
+      where: { id: driverId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        canTransport: true,
+        companyId: true,
+      },
+    });
+    if (!newDriver) throw new NotFoundException('Driver not found');
+    if (!newDriver.canTransport)
+      throw new BadRequestException('User does not have canTransport capability');
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: {
+        driverId,
+        // If the new driver belongs to a different carrier, update carrierId too
+        ...(newDriver.companyId &&
+          newDriver.companyId !== job.carrierId && {
+            carrierId: newDriver.companyId,
+          }),
+        status: 'ASSIGNED',
+      },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        driver: { select: { id: true, firstName: true, lastName: true } },
+        carrier: { select: { id: true, name: true } },
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'REASSIGN_JOB',
+      'TransportJob',
+      jobId,
+      {
+        driverId: job.driverId,
+        driverName: job.driver
+          ? `${job.driver.firstName} ${job.driver.lastName}`
+          : null,
+      },
+      {
+        driverId,
+        driverName: `${newDriver.firstName} ${newDriver.lastName}`,
+      },
+      note,
+    );
+
+    return updated;
+  }
+
+  /**
+   * GET /admin/skip-hire — all skip hire orders (paginated)
+   */
+  async getSkipHireOrders(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.skipHireOrder.findMany({
+        select: {
+          id: true,
+          orderNumber: true,
+          location: true,
+          wasteCategory: true,
+          skipSize: true,
+          deliveryDate: true,
+          hireDays: true,
+          price: true,
+          currency: true,
+          paymentStatus: true,
+          status: true,
+          contactName: true,
+          contactEmail: true,
+          contactPhone: true,
+          notes: true,
+          carrier: { select: { id: true, name: true } },
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.skipHireOrder.count(),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * GET /admin/exceptions — all open transport job exceptions (paginated)
+   */
+  async getExceptions(page = 1, limit = 50, statusFilter?: string) {
+    const skip = (page - 1) * limit;
+    const where = statusFilter && statusFilter !== 'ALL'
+      ? { status: statusFilter as any }
+      : undefined;
+
+    const [data, total] = await Promise.all([
+      this.prisma.transportJobException.findMany({
+        where,
+        select: {
+          id: true,
+          type: true,
+          status: true,
+          notes: true,
+          photoUrls: true,
+          resolution: true,
+          createdAt: true,
+          resolvedAt: true,
+          transportJob: {
+            select: {
+              id: true,
+              jobNumber: true,
+              status: true,
+              order: { select: { id: true, orderNumber: true } },
+            },
+          },
+          reportedBy: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+          resolvedBy: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.transportJobException.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * PATCH /admin/exceptions/:id/resolve
+   * Mark a transport job exception as RESOLVED with a resolution note.
+   * Audit-logged.
+   */
+  async resolveException(
+    exceptionId: string,
+    resolution: string,
+    adminId: string,
+  ) {
+    const exception = await this.prisma.transportJobException.findUnique({
+      where: { id: exceptionId },
+      select: { id: true, status: true, type: true, transportJobId: true },
+    });
+    if (!exception) throw new NotFoundException('Exception not found');
+    if (exception.status === 'RESOLVED')
+      throw new BadRequestException('Exception is already resolved');
+
+    const updated = await this.prisma.transportJobException.update({
+      where: { id: exceptionId },
+      data: {
+        status: 'RESOLVED',
+        resolvedById: adminId,
+        resolution,
+        resolvedAt: new Date(),
+      },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        resolution: true,
+        resolvedAt: true,
+        resolvedBy: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'RESOLVE_EXCEPTION',
+      'TransportJobException',
+      exceptionId,
+      { status: exception.status },
+      { status: 'RESOLVED', resolution },
+    );
+
+    return updated;
+  }
 }

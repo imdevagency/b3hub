@@ -470,3 +470,117 @@ export async function adminRejectSurcharge(
     body: JSON.stringify({ note }),
   });
 }
+
+// ─── Order force-cancel ───────────────────────────────────────────────────────
+
+export async function adminCancelOrder(
+  orderId: string,
+  reason: string,
+  token: string,
+): Promise<{ id: string; orderNumber: string; status: string }> {
+  return apiFetch(`/admin/orders/${orderId}/cancel`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ reason }),
+  });
+}
+
+// ─── Payment refund ────────────────────────────────────────────────────────────
+
+export async function adminRefundPayment(
+  paymentId: string,
+  reason: string,
+  token: string,
+): Promise<{ ok: boolean; paymentId: string; orderId: string }> {
+  return apiFetch(`/admin/payments/${paymentId}/refund`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ reason }),
+  });
+}
+
+// ─── Job reassign ─────────────────────────────────────────────────────────────
+
+export async function adminReassignJob(
+  jobId: string,
+  driverId: string,
+  note: string,
+  token: string,
+): Promise<{ id: string; jobNumber: string; status: string; driver: { id: string; firstName: string; lastName: string } | null }> {
+  return apiFetch(`/admin/jobs/${jobId}/reassign`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ driverId, note }),
+  });
+}
+
+// ─── Skip hire orders ─────────────────────────────────────────────────────────
+
+export interface AdminSkipHireOrder {
+  id: string;
+  orderNumber: string;
+  location: string;
+  wasteCategory: string;
+  skipSize: string;
+  deliveryDate: string;
+  hireDays: number | null;
+  price: number;
+  currency: string;
+  paymentStatus: string;
+  status: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  notes: string | null;
+  carrier: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function adminGetSkipHireOrders(token: string): Promise<AdminSkipHireOrder[]> {
+  const res = await apiFetch<{ data: AdminSkipHireOrder[] }>('/admin/skip-hire', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// ─── Transport job exceptions ─────────────────────────────────────────────────
+
+export interface AdminException {
+  id: string;
+  type: string;
+  status: string;
+  notes: string;
+  photoUrls: string[];
+  resolution: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  transportJob: {
+    id: string;
+    jobNumber: string;
+    status: string;
+    order: { id: string; orderNumber: string } | null;
+  };
+  reportedBy: { id: string; firstName: string; lastName: string };
+  resolvedBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+export async function adminGetExceptions(token: string, status?: string): Promise<AdminException[]> {
+  const qs = status && status !== 'ALL' ? `?status=${status}` : '';
+  const res = await apiFetch<{ data: AdminException[] }>(`/admin/exceptions${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+export async function adminResolveException(
+  exceptionId: string,
+  resolution: string,
+  token: string,
+): Promise<{ id: string; status: string; resolution: string }> {
+  return apiFetch(`/admin/exceptions/${exceptionId}/resolve`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ resolution }),
+  });
+}

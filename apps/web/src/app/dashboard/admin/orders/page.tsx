@@ -1,17 +1,26 @@
 /**
  * Admin orders page — /dashboard/admin/orders
- * Platform-wide order view with status filtering and buyer/transport details.
+ * Platform-wide order view with status filtering, buyer/transport details, and force-cancel.
  */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetOrders, type AdminOrder } from '@/lib/api/admin';
+import { adminGetOrders, adminCancelOrder, type AdminOrder } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ClipboardList, Search, Truck } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { RefreshCw, ClipboardList, Search, Truck, XCircle } from 'lucide-react';
 
 // ── Status badge ────────────────────────────────────────────────────────────
 
@@ -71,6 +80,11 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
 
+  // Cancel dialog
+  const [cancelTarget, setCancelTarget] = useState<AdminOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
       router.push('/dashboard');
@@ -91,6 +105,21 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     if (!isLoading && token) fetchOrders();
   }, [isLoading, token, fetchOrders]);
+
+  const handleCancel = async () => {
+    if (!cancelTarget || !token) return;
+    setCancelling(true);
+    try {
+      await adminCancelOrder(cancelTarget.id, cancelReason || 'Admin force-cancel', token);
+      setOrders((prev) =>
+        prev.map((o) => (o.id === cancelTarget.id ? { ...o, status: 'CANCELLED' } : o)),
+      );
+      setCancelTarget(null);
+      setCancelReason('');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const filtered = orders.filter((o) => {
     if (statusFilter !== 'ALL' && o.status !== statusFilter) return false;
@@ -195,17 +224,22 @@ export default function AdminOrdersPage() {
                   <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Datums
                   </th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((o) => (
-                  <tr
-                    key={o.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                  >
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{o.orderNumber}</td>
-                    <td className="px-4 py-3">
+                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                    <td
+                      className="px-4 py-3 font-mono text-xs text-gray-500 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                    >
+                      {o.orderNumber}
+                    </td>
+                    <td
+                      className="px-4 py-3 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                    >
                       <div>
                         <p className="font-semibold text-gray-900">{o.buyer.name}</p>
                         {o.buyer.email && (
@@ -213,17 +247,28 @@ export default function AdminOrdersPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td
+                      className="px-4 py-3 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                    >
                       <span className="text-xs text-gray-600 font-medium">{o.orderType}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{o.deliveryCity}</td>
+                    <td
+                      className="px-4 py-3 text-gray-700 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                    >
+                      {o.deliveryCity}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge value={o.status} colorMap={STATUS_COLORS} />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge value={o.paymentStatus} colorMap={PAYMENT_COLORS} />
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
+                    <td
+                      className="px-4 py-3 text-right font-semibold text-gray-900 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                    >
                       {o.total.toLocaleString('lv-LV', { style: 'currency', currency: o.currency })}
                     </td>
                     <td className="px-4 py-3 text-center text-xs text-muted-foreground">
@@ -236,8 +281,28 @@ export default function AdminOrdersPage() {
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                    <td
+                      className="px-4 py-3 text-right text-xs text-muted-foreground cursor-pointer"
+                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                    >
                       {new Date(o.createdAt).toLocaleDateString('lv-LV')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {o.status !== 'CANCELLED' && o.status !== 'COMPLETED' && (
+                        <button
+                          type="button"
+                          title="Atcelt pasūtījumu"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCancelTarget(o);
+                            setCancelReason('');
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 border border-red-200 transition-colors"
+                        >
+                          <XCircle className="h-3 w-3" />
+                          Atcelt
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -246,6 +311,38 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Cancel confirmation dialog */}
+      <Dialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Atcelt pasūtījumu {cancelTarget?.orderNumber}?</DialogTitle>
+            <DialogDescription>
+              Pasūtījums tiks pārcelts uz CANCELLED statusu. Ja maksājums ir noturēts vai iekasēts,
+              tas tiks automātiski atcelts vai atgriezts pircējam.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Atcelšanas iemesls (neobligāts)..."
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelTarget(null)} disabled={cancelling}>
+              Atpakaļ
+            </Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={cancelling}>
+              {cancelling ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
+              ) : (
+                <XCircle className="h-4 w-4 mr-1.5" />
+              )}
+              Atcelt pasūtījumu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

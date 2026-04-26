@@ -823,6 +823,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* TODO: B3 FIELDS — restore admin/field-passes link when physical locations are live */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Skip noma (admin)"
+                  isActive={isRouteActive('/dashboard/admin/skip-hire')}
+                >
+                  <Link href="/dashboard/admin/skip-hire">
+                    <Box className="size-4 shrink-0" />
+                    <span>Skip Noma</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Incidenti"
+                  isActive={isRouteActive('/dashboard/admin/exceptions')}
+                >
+                  <Link href="/dashboard/admin/exceptions">
+                    <AlertTriangle className="size-4 shrink-0" />
+                    <span>Incidenti</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         )}

@@ -12,13 +12,30 @@ import {
   ArrowUpRight,
   Search,
   Zap,
+  RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
-import { adminGetPayments, adminReleasePayment, type AdminPayment } from '@/lib/api/admin';
+import {
+  adminGetPayments,
+  adminReleasePayment,
+  adminRefundPayment,
+  type AdminPayment,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -121,6 +138,9 @@ export default function AdminPaymentsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [releasing, setReleasing] = useState<string | null>(null);
+  const [refunding, setRefunding] = useState<string | null>(null);
+  const [refundTarget, setRefundTarget] = useState<AdminPayment | null>(null);
+  const [refundReason, setRefundReason] = useState('');
 
   useEffect(() => {
     if (isLoading) return;
@@ -187,6 +207,23 @@ export default function AdminPaymentsPage() {
       alert(e instanceof Error ? e.message : 'Izmaksa neizdevās');
     } finally {
       setReleasing(null);
+    }
+  };
+
+  const handleRefund = async () => {
+    if (!refundTarget || !token) return;
+    setRefunding(refundTarget.id);
+    try {
+      await adminRefundPayment(refundTarget.id, refundReason || 'Admin manual refund', token);
+      setPayments((prev) =>
+        prev.map((p) => (p.id === refundTarget.id ? { ...p, status: 'REFUNDED' } : p)),
+      );
+      setRefundTarget(null);
+      setRefundReason('');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Atmaksa neizdevās');
+    } finally {
+      setRefunding(null);
     }
   };
 
@@ -366,6 +403,20 @@ export default function AdminPaymentsPage() {
                             {releasing === p.id ? 'Apstrādā…' : 'Izmaksāt'}
                           </button>
                         )}
+                        {['CAPTURED', 'PAID'].includes(p.status) && (
+                          <button
+                            onClick={() => {
+                              setRefundTarget(p);
+                              setRefundReason('');
+                            }}
+                            disabled={!!refunding}
+                            className="inline-flex items-center gap-1 rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 text-xs font-semibold px-2.5 py-1.5 border border-red-200 transition-colors"
+                            title="Atmaksāt pircējam"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Atmaksāt
+                          </button>
+                        )}
                         {p.order?.id && (
                           <Link
                             href={`/dashboard/admin/orders/${p.order.id}`}
@@ -387,6 +438,40 @@ export default function AdminPaymentsPage() {
           </div>
         </div>
       )}
+
+      {/* Refund confirmation dialog */}
+      <Dialog open={!!refundTarget} onOpenChange={(open) => !open && setRefundTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Atmaksāt maksājumu — pasūtījums {refundTarget?.order?.orderNumber ?? ''}?
+            </DialogTitle>
+            <DialogDescription>
+              Tiks izpildīts pilns Stripe atmaksa vai maksājuma atcelšana pircēja kartei. Šo darbību{' '}
+              <strong>nevar atsaukt</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Atmaksas iemesls (neobligāts)..."
+            value={refundReason}
+            onChange={(e) => setRefundReason(e.target.value)}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRefundTarget(null)} disabled={!!refunding}>
+              Atpakaļ
+            </Button>
+            <Button variant="destructive" onClick={handleRefund} disabled={!!refunding}>
+              {refunding ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
+              ) : (
+                <RotateCcw className="h-4 w-4 mr-1.5" />
+              )}
+              Atmaksāt pircējam
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,10 +7,13 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Param,
   Body,
   UseGuards,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,6 +33,23 @@ import { PagePaginationDto } from '../common/dto/pagination.dto';
 
 class RejectSurchargeDto {
   @IsOptional() @IsString() note?: string;
+}
+
+class CancelOrderDto {
+  @IsOptional() @IsString() reason?: string;
+}
+
+class RefundPaymentDto {
+  @IsOptional() @IsString() reason?: string;
+}
+
+class ReassignJobDto {
+  @IsString() driverId!: string;
+  @IsOptional() @IsString() note?: string;
+}
+
+class ResolveExceptionDto {
+  @IsString() resolution!: string;
 }
 
 class UpdateCompanyDto {
@@ -200,5 +220,83 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.rejectSurcharge(id, body.note ?? '', admin.userId);
+  }
+
+  // ── Operational response tools ────────────────────────────────────────────
+
+  /**
+   * POST /admin/orders/:id/cancel
+   * Force-cancel an order and void/refund its payment.
+   */
+  @Post('orders/:id/cancel')
+  @HttpCode(HttpStatus.OK)
+  cancelOrder(
+    @Param('id') id: string,
+    @Body() body: CancelOrderDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.cancelOrder(id, body.reason ?? 'Admin force-cancel', admin.userId);
+  }
+
+  /**
+   * POST /admin/payments/:id/refund
+   * Issue a full refund for a CAPTURED or PAID payment.
+   */
+  @Post('payments/:id/refund')
+  @HttpCode(HttpStatus.OK)
+  refundPayment(
+    @Param('id') id: string,
+    @Body() body: RefundPaymentDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.refundPayment(id, body.reason ?? 'Admin manual refund', admin.userId);
+  }
+
+  /**
+   * PATCH /admin/jobs/:id/reassign
+   * Force-reassign a transport job to a different driver.
+   */
+  @Patch('jobs/:id/reassign')
+  reassignJob(
+    @Param('id') id: string,
+    @Body() body: ReassignJobDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.reassignJob(id, body.driverId, admin.userId, body.note);
+  }
+
+  /** GET /admin/skip-hire — all skip hire orders (paginated) */
+  @Get('skip-hire')
+  getSkipHireOrders(@Query() pagination: PagePaginationDto) {
+    return this.service.getSkipHireOrders(pagination.page ?? 1, pagination.limit ?? 50);
+  }
+
+  /**
+   * GET /admin/exceptions — all transport job exceptions
+   * Query param: ?status=OPEN|RESOLVED|ALL
+   */
+  @Get('exceptions')
+  getExceptions(
+    @Query() pagination: PagePaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.service.getExceptions(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+      status,
+    );
+  }
+
+  /**
+   * PATCH /admin/exceptions/:id/resolve
+   * Resolve a transport job exception with a resolution note.
+   */
+  @Patch('exceptions/:id/resolve')
+  resolveException(
+    @Param('id') id: string,
+    @Body() body: ResolveExceptionDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.resolveException(id, body.resolution, admin.userId);
   }
 }

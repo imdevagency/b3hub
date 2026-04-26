@@ -8,13 +8,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetTransportJobs, adminUpdateJobRate, type AdminTransportJob } from '@/lib/api/admin';
+import {
+  adminGetTransportJobs,
+  adminUpdateJobRate,
+  adminReassignJob,
+  type AdminTransportJob,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RefreshCw, Truck, Search, AlertTriangle, Pencil, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { RefreshCw, Truck, Search, AlertTriangle, Pencil, X, UserRoundCog } from 'lucide-react';
 
 // ── Rate override panel ───────────────────────────────────────────────────────
 
@@ -238,6 +251,10 @@ export default function AdminJobsPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<JobFilter>('ALL');
   const [rateJob, setRateJob] = useState<AdminTransportJob | null>(null);
+  const [reassignJob, setReassignJob] = useState<AdminTransportJob | null>(null);
+  const [reassignDriverId, setReassignDriverId] = useState('');
+  const [reassignNote, setReassignNote] = useState('');
+  const [reassigning, setReassigning] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -282,6 +299,31 @@ export default function AdminJobsPage() {
 
   function handleRateSaved(jobId: string, rate: number, pricePerTonne: number | null) {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, rate, pricePerTonne } : j)));
+  }
+
+  async function handleReassign() {
+    if (!reassignJob || !token || !reassignDriverId.trim()) return;
+    setReassigning(true);
+    try {
+      const updated = await adminReassignJob(
+        reassignJob.id,
+        reassignDriverId.trim(),
+        reassignNote,
+        token,
+      );
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === reassignJob.id ? { ...j, status: updated.status, driver: updated.driver } : j,
+        ),
+      );
+      setReassignJob(null);
+      setReassignDriverId('');
+      setReassignNote('');
+    } catch (err) {
+      alert((err as Error).message || 'Pārsūtīšana neizdevās');
+    } finally {
+      setReassigning(false);
+    }
   }
 
   if (loading) {
@@ -404,6 +446,7 @@ export default function AdminJobsPage() {
                   <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Datums
                   </th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -510,6 +553,24 @@ export default function AdminJobsPage() {
                     <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                       {new Date(j.createdAt).toLocaleDateString('lv-LV')}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      {!['COMPLETED', 'CANCELLED'].includes(j.status) && (
+                        <button
+                          type="button"
+                          title="Pārsūtīt šoferim"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReassignJob(j);
+                            setReassignDriverId(j.driver?.id ?? '');
+                            setReassignNote('');
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors"
+                        >
+                          <UserRoundCog className="h-3 w-3" />
+                          Pārsūtīt
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -517,6 +578,63 @@ export default function AdminJobsPage() {
           </div>
         </div>
       )}
+
+      {/* Reassign driver dialog */}
+      <Dialog open={!!reassignJob} onOpenChange={(open) => !open && setReassignJob(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pārsūtīt darbu {reassignJob?.jobNumber} citam šoferim</DialogTitle>
+            <DialogDescription>
+              Ievadiet jaunā šofera lietotāja ID. Darbam tiks piešķirts statuss ASSIGNED.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Šofera lietotāja ID *
+              </label>
+              <Input
+                placeholder="cuid šoferim (no Admin → Lietotāji)..."
+                value={reassignDriverId}
+                onChange={(e) => setReassignDriverId(e.target.value)}
+              />
+              {reassignJob?.driver && (
+                <p className="text-xs text-muted-foreground">
+                  Pašreizējais: {reassignJob.driver.firstName} {reassignJob.driver.lastName} (
+                  {reassignJob.driver.id})
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Pamatojums (ierakstīts audita žurnālā) *
+              </label>
+              <Textarea
+                placeholder="Pārsūtīšanas iemesls..."
+                value={reassignNote}
+                onChange={(e) => setReassignNote(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReassignJob(null)} disabled={reassigning}>
+              Atcelt
+            </Button>
+            <Button
+              onClick={handleReassign}
+              disabled={reassigning || !reassignDriverId.trim() || !reassignNote.trim()}
+            >
+              {reassigning ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
+              ) : (
+                <UserRoundCog className="h-4 w-4 mr-1.5" />
+              )}
+              Pārsūtīt šoferim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
