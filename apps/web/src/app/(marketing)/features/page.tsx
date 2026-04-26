@@ -20,9 +20,10 @@ import {
   Camera,
   Award,
   Check,
+  X,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
-
 
 const features: { icon: React.ElementType; slug: string | null; title: string }[] = [
   { icon: SlidersHorizontal, slug: 'meklesanas-radiuss', title: 'Meklēšanas rādiuss pasūtījumiem' },
@@ -87,16 +88,22 @@ export default function FeaturesPage() {
             {features.map(({ icon: Icon, slug, title }) => {
               const inner = (
                 <>
-                  <Icon className="w-8 h-8 shrink-0 text-foreground" strokeWidth={1.25} />
+                  <div className="p-3 bg-background shrink-0 w-fit rounded-full shadow-xs">
+                    <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+                  </div>
                   <span className="text-sm font-bold tracking-tight uppercase leading-snug">
                     {title}
                   </span>
                 </>
               );
               const cls =
-                'flex items-center gap-5 bg-muted/30 border border-border px-6 py-6 transition-colors';
+                'flex items-center gap-5 bg-secondary/30 rounded-3xl p-6 transition-all border border-transparent';
               return slug ? (
-                <Link key={title} href={`/features/${slug}`} className={`${cls} hover:bg-muted/60`}>
+                <Link
+                  key={title}
+                  href={`/features/${slug}`}
+                  className={`${cls} hover:bg-secondary/50 hover:shadow-sm`}
+                >
                   {inner}
                 </Link>
               ) : (
@@ -109,45 +116,61 @@ export default function FeaturesPage() {
         </Container>
 
         {/* ── COMPARE SECTION ── */}
-        <section className="w-full border-t border-b border-border bg-muted/20">
-          <Container className="py-24">
-            <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
-              Vecā metode vs B3Hub
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:divide-x divide-border">
-              <div className="flex flex-col gap-4 md:pr-16 pb-12 md:pb-0">
-                <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">
-                  Pirms B3Hub
+        <section className="w-full border-t border-border bg-background">
+          <Container className="py-24 md:py-32">
+            <div className="flex flex-col gap-12">
+              <div>
+                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
+                  Salīdzinājums
                 </p>
-                {[
-                  'Zvani karjeriem, lai noskaidrotu cenas',
-                  'WhatsApp grupas, lai sekotu piegādei',
-                  'Papīra svara zīmes un CMR',
-                  'Rēķini no 10 dažādiem piegādātājiem',
-                  'Excel, lai apkopotu projektus',
-                  'Dispečera zvans katram šoferim',
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
-                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-border shrink-0" />
-                    <span className="font-light">{item}</span>
-                  </div>
-                ))}
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-none">
+                  Kāpēc pārslēgties uz
+                  <br />
+                  B3Hub platformu?
+                </h2>
               </div>
-              <div className="flex flex-col gap-4 md:pl-16 pt-12 md:pt-0">
-                <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">
-                  Ar B3Hub
-                </p>
+
+              <div className="grid grid-cols-1 gap-4">
                 {[
-                  'Cenas katalogā — uzreiz un caurspīdīgi',
-                  'Reāllaika GPS lietotnē ar paziņojumiem',
-                  'Dokumenti ģenerējas automātiski',
-                  'Viens konsolidēts rēķins mēnesī',
-                  'Projekti ar apjomu kontroli platformā',
-                  'Darbi tiek nosūtīti šoferim automātiski',
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-sm">
-                    <Check className="w-4 h-4 shrink-0 mt-0.5 text-foreground" strokeWidth={2.5} />
-                    <span className="font-light">{item}</span>
+                  {
+                    old: 'Zvani karjeriem, lai noskaidrotu cenas',
+                    new: 'Cenas katalogā — uzreiz un caurspīdīgi',
+                  },
+                  {
+                    old: 'WhatsApp grupas, lai sekotu piegādei',
+                    new: 'Reāllaika GPS lietotnē ar paziņojumiem',
+                  },
+                  { old: 'Papīra svara zīmes un CMR', new: 'Dokumenti ģenerējas automātiski' },
+                  {
+                    old: 'Rēķini no 10 dažādiem piegādātājiem',
+                    new: 'Viens konsolidēts rēķins mēnesī',
+                  },
+                  {
+                    old: 'Excel, lai apkopotu projektus',
+                    new: 'Projekti ar apjomu kontroli platformā',
+                  },
+                  {
+                    old: 'Dispečera zvans katram šoferim',
+                    new: 'Darbi tiek nosūtīti šoferim automātiski',
+                  },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col md:flex-row md:items-center gap-6 bg-secondary/30 rounded-3xl p-6 md:px-8 md:py-8 transition-all hover:bg-secondary/50 hover:shadow-sm"
+                  >
+                    <div className="flex-1 flex gap-4 text-muted-foreground opacity-60">
+                      <X className="w-5 h-5 shrink-0 mt-0.5" strokeWidth={2} />
+                      <span className="line-through decoration-1 text-lg font-light">
+                        {item.old}
+                      </span>
+                    </div>
+                    <ArrowRight className="hidden md:block w-6 h-6 shrink-0 text-muted-foreground/30" />
+                    <div className="flex-1 flex gap-4 text-foreground">
+                      <div className="p-1 bg-background self-start rounded-full shrink-0 shadow-xs">
+                        <Check className="w-4 h-4 text-primary" strokeWidth={3} />
+                      </div>
+                      <span className="text-lg font-medium">{item.new}</span>
+                    </div>
                   </div>
                 ))}
               </div>

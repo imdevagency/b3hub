@@ -133,11 +133,11 @@ export default function ParvadatajemPage() {
         </Hero>
 
         {/* ── EARNINGS ── */}
-        <section className="w-full bg-[#0a0a0a] text-white">
+        <section className="w-full bg-foreground text-background">
           <Container className="py-32 flex flex-col">
-            <div className="flex flex-col md:flex-row gap-12 border-b border-white/20 pb-16 mb-8">
+            <div className="flex flex-col md:flex-row gap-12 border-b border-background/20 pb-16 mb-8">
               <div className="md:w-1/2">
-                <p className="text-sm font-bold tracking-widest uppercase text-white/40 mb-6">
+                <p className="text-sm font-bold tracking-widest uppercase text-background/40 mb-6">
                   Izpeļņa
                 </p>
                 <h2 className="text-5xl md:text-7xl font-medium tracking-tighter leading-none">
@@ -147,7 +147,7 @@ export default function ParvadatajemPage() {
                 </h2>
               </div>
               <div className="md:w-1/2 flex items-end">
-                <p className="text-lg font-light text-white/60 leading-relaxed">
+                <p className="text-lg font-light text-background/60 leading-relaxed">
                   Indikatīvas likmes Latvijā. Atkarīgs no reģiona, sezonas un kravas veida. Komisija
                   8% — nav citu maksu.
                 </p>
@@ -157,9 +157,9 @@ export default function ParvadatajemPage() {
               {earnings.map((e) => (
                 <div
                   key={e.type}
-                  className="flex flex-col md:flex-row justify-between py-8 border-b border-white/10 md:items-center gap-2"
+                  className="flex flex-col md:flex-row justify-between py-8 border-b border-background/10 md:items-center gap-2"
                 >
-                  <span className="text-xl md:text-2xl font-light tracking-tight text-white/60">
+                  <span className="text-xl md:text-2xl font-light tracking-tight text-background/60">
                     {e.type}
                   </span>
                   <span className="text-2xl md:text-4xl tracking-tighter font-medium">
@@ -242,8 +242,8 @@ export default function ParvadatajemPage() {
                   </p>
                 </div>
                 <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
-                  <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
-                    <span className="text-xl font-bold text-white tracking-widest uppercase">
+                  <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-background/20 rounded-xl flex items-center justify-center">
+                    <span className="text-xl font-bold text-background tracking-widest uppercase">
                       GPS LIVE
                     </span>
                   </div>

@@ -3,18 +3,18 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import Link from 'next/link';
 
 const ctaButtonVariants = cva(
-  'inline-flex items-center justify-center gap-2 text-lg font-medium transition-colors text-center px-10 py-5 select-none',
+  'inline-flex items-center justify-center gap-2 text-lg font-medium transition-colors text-center px-10 py-5 select-none rounded-full',
   {
     variants: {
       variant: {
-        /** Black fill — primary action on light background */
-        primary: 'bg-foreground text-background hover:bg-foreground/90',
+        /** Red fill — primary action on light background */
+        primary: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs',
         /** Muted fill — secondary action on light background */
-        secondary: 'bg-muted text-foreground hover:bg-muted/80',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs',
         /** Border only — tertiary action on light background */
-        outline: 'border border-border text-foreground hover:border-foreground',
+        outline: 'border border-border text-foreground hover:border-foreground shadow-xs',
         /** White fill — primary action on dark/inverted background */
-        inverted: 'bg-background text-foreground hover:bg-background/90',
+        inverted: 'bg-background text-foreground hover:bg-background/90 shadow-xs',
       },
       size: {
         sm: 'px-5 py-2.5 text-sm',

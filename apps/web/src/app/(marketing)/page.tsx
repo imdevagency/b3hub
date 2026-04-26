@@ -175,9 +175,9 @@ export default function HomePage() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
             {/* Buyers */}
-            <div className="border-t-4 border-b3-buyer bg-background shadow-sm border-border p-10 flex flex-col gap-8 justify-between group hover:border-b3-buyer/50 transition-colors">
-              <div className="p-4 bg-b3-buyer/10 w-fit rounded-full">
-                <HardHat className="w-10 h-10 text-b3-buyer" strokeWidth={1.5} />
+            <div className="bg-secondary/30 rounded-3xl p-10 flex flex-col gap-8 justify-between group hover:bg-secondary/50 transition-colors">
+              <div className="p-4 bg-background w-fit rounded-full shadow-xs">
+                <HardHat className="w-10 h-10 text-foreground" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-4">
                 <h3 className="text-2xl font-medium tracking-tight">Būvnieki & Pasūtītāji</h3>
@@ -187,7 +187,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/buvniekiem"
-                  className="flex items-center text-sm font-bold tracking-wide uppercase text-b3-buyer gap-2 group-hover:gap-3 transition-all mt-2"
+                  className="flex items-center text-sm font-bold tracking-wide uppercase text-primary gap-2 group-hover:gap-3 transition-all mt-2"
                 >
                   Uzzināt vairāk <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -195,9 +195,9 @@ export default function HomePage() {
             </div>
 
             {/* Drivers */}
-            <div className="border-t-4 border-b3-transport bg-background shadow-sm border-border p-10 flex flex-col gap-8 justify-between group hover:border-b3-transport/50 transition-colors">
-              <div className="p-4 bg-b3-transport/10 w-fit rounded-full">
-                <Truck className="w-10 h-10 text-b3-transport" strokeWidth={1.5} />
+            <div className="bg-secondary/30 rounded-3xl p-10 flex flex-col gap-8 justify-between group hover:bg-secondary/50 transition-colors">
+              <div className="p-4 bg-background w-fit rounded-full shadow-xs">
+                <Truck className="w-10 h-10 text-foreground" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-4">
                 <h3 className="text-2xl font-medium tracking-tight">Šoferi & Pārvadātāji</h3>
@@ -207,7 +207,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/parvadatajiem"
-                  className="flex items-center text-sm font-bold tracking-wide uppercase text-b3-transport gap-2 hover:gap-3 transition-all mt-2"
+                  className="flex items-center text-sm font-bold tracking-wide uppercase text-primary gap-2 group-hover:gap-3 transition-all mt-2"
                 >
                   Sākt braukt <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -215,9 +215,9 @@ export default function HomePage() {
             </div>
 
             {/* Suppliers */}
-            <div className="border-t-4 border-b3-quarry bg-background shadow-sm border-border p-10 flex flex-col gap-8 justify-between group hover:border-b3-quarry/50 transition-colors">
-              <div className="p-4 bg-b3-quarry/10 w-fit rounded-full">
-                <Pickaxe className="w-10 h-10 text-b3-quarry" strokeWidth={1.5} />
+            <div className="bg-secondary/30 rounded-3xl p-10 flex flex-col gap-8 justify-between group hover:bg-secondary/50 transition-colors">
+              <div className="p-4 bg-background w-fit rounded-full shadow-xs">
+                <Pickaxe className="w-10 h-10 text-foreground" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-4">
                 <h3 className="text-2xl font-medium tracking-tight">Karjeri & Piegādātāji</h3>
@@ -227,7 +227,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/karjeriem"
-                  className="flex items-center text-sm font-bold tracking-wide uppercase text-b3-quarry gap-2 group-hover:gap-3 transition-all mt-2"
+                  className="flex items-center text-sm font-bold tracking-wide uppercase text-primary gap-2 group-hover:gap-3 transition-all mt-2"
                 >
                   Pievienoties tīklam <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -302,7 +302,7 @@ export default function HomePage() {
             ].map(({ quote, name, role, stars }) => (
               <div
                 key={name}
-                className="border border-border p-8 flex flex-col gap-6 hover:border-foreground/30 transition-colors"
+                className="rounded-3xl border border-border p-8 flex flex-col gap-6 hover:border-foreground/30 hover:shadow-sm transition-all bg-background"
               >
                 <div className="flex gap-1">
                   {Array.from({ length: stars }).map((_, i) => (
@@ -342,27 +342,35 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
             {[
               {
-                role: 'Būvnieks / Pasūtītājs',
-                price: 'Bezmaksas',
-                note: 'Bez abonēšanas.',
-                items: ['Neierobežoti pasūtījumi', 'Dokumenti un rēķini', 'Reāllaika izsekošana'],
+                role: 'Pircējs',
+                price: '0%',
+                note: 'Pilnīgi bez maksas.',
+                items: [
+                  'Neierobežoti pasūtījumi',
+                  'Reāllaika piegāžu izsekošana',
+                  'Digitālie piegādes dokumenti',
+                ],
               },
               {
                 role: 'Piegādātājs / Karjers',
-                price: '€49',
-                note: 'mēnesī, bez komisijas.',
+                price: '6%',
+                note: 'no katras pasūtījuma vērtības.',
                 items: [
                   'Neierobežoti materiālu ieraksti',
-                  'Automātiskie rēķini',
-                  'Piegādes koordinācija',
+                  'Automātiskie rēķini un dokumenti',
+                  'Analītika un pārdošanas pārskati',
                 ],
                 featured: true,
               },
               {
                 role: 'Pārvadātājs / Šoferis',
                 price: '8%',
-                note: 'komisija no piegādes. Bez ikmēneša maksas.',
-                items: ['Izmaksa nākamajā dienā', 'Darbu izvēle brīvi', 'Digitālie pavadraksti'],
+                note: 'no katras piegādes vērtības.',
+                items: [
+                  'Izmaksa nākamajā darba dienā',
+                  'Darbu izvēle bez saistībām',
+                  'Digitālie pavadraksti',
+                ],
               },
             ].map(({ role, price, note, items, featured }) => (
               <div
@@ -423,7 +431,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 mt-2">
                   <div
-                    className="inline-flex items-center gap-3 bg-foreground/30 text-background/50 px-5 py-3.5 cursor-not-allowed select-none"
+                    className="inline-flex items-center gap-3 bg-foreground/30 text-background/50 px-5 py-3.5 cursor-not-allowed select-none rounded-full"
                     aria-label="App Store — drīzumā"
                   >
                     <AppIcon ios={true} />
@@ -433,7 +441,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div
-                    className="inline-flex items-center gap-3 bg-foreground/30 text-background/50 px-5 py-3.5 cursor-not-allowed select-none"
+                    className="inline-flex items-center gap-3 bg-foreground/30 text-background/50 px-5 py-3.5 cursor-not-allowed select-none rounded-full"
                     aria-label="Google Play — drīzumā"
                   >
                     <AppIcon ios={false} />
