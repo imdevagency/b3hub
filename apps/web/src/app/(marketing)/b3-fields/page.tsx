@@ -9,6 +9,7 @@ import { Container } from '@/components/marketing/layout/Container';
 import { ArrowRight, Package, Recycle, Truck, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
+import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 
 export const metadata: Metadata = {
   // NOTE: metadata export is kept so the page config is preserved for future use
@@ -138,47 +139,26 @@ export default function B3FieldsPage() {
         </Container>
 
         {/* ── FAQ ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-16 md:mb-24">
-            Biežāk uzdotie jautājumi
-          </h2>
-          <div className="flex flex-col">
-            {(
-              [
-                {
-                  q: 'Vai jāreģistrējas, lai izmantotu B3 Field?',
-                  a: 'Jā — reģistrācija ir bezmaksas un aizņem < 2 minūtes. Nepieciešama rezervācijai un dokumentu saņemšanai.',
-                },
-                {
-                  q: 'Kādus maksājumus pieņemat?',
-                  a: 'Maksājums notiek caur platformu pirms ierašanās — ar bankas karti vai pārskaitījumu. Skaidra nauda nav pieņemta.',
-                },
-                {
-                  q: 'Vai atkritumu sertifikāts ir juridiski derīgs?',
-                  a: 'Jā. Sertifikāts atbilst ES Direktīvai 2008/98/EK un Latvijas normatīvajiem aktiem. Pieejams platformā bez termiņa.',
-                },
-                {
-                  q: 'Vai piekabe jāatgriež tajā pašā vietā?',
-                  a: 'Atgriešanas nosacījumi tiek apstiprināti rezervācijas brīdī. Sazinieties ar mums, lai noskaidrotu atgriešanas opcijas savai konkrētajai rezervācijai.',
-                },
-              ] as { q: string; a: string }[]
-            ).map(({ q, a }) => (
-              <div
-                key={q}
-                className="flex flex-col md:flex-row gap-4 md:gap-12 py-10 border-t border-border"
-              >
-                <div className="md:w-1/2">
-                  <h3 className="text-2xl font-medium tracking-tight">{q}</h3>
-                </div>
-                <div className="md:w-1/2">
-                  <p className="text-muted-foreground font-light text-lg md:text-xl leading-relaxed">
-                    {a}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <FAQAccordion
+          items={[
+            {
+              q: 'Vai jāreģistrējas, lai izmantotu B3 Field?',
+              a: 'Jā — reģistrācija ir bezmaksas un aizņem < 2 minūtes. Nepieciešama rezervācijai un dokumentu saņemšanai.',
+            },
+            {
+              q: 'Kādus maksājumus pieņemat?',
+              a: 'Maksājums notiek caur platformu pirms ierašanās — ar bankas karti vai pārskaitījumu. Skaidra nauda nav pieņemta.',
+            },
+            {
+              q: 'Vai atkritumu sertifikāts ir juridiski derīgs?',
+              a: 'Jā. Sertifikāts atbilst ES Direktīvai 2008/98/EK un Latvijas normatīvajiem aktiem. Pieejams platformā bez termiņa.',
+            },
+            {
+              q: 'Vai piekabe jāatgriež tajā pašā vietā?',
+              a: 'Atgriešanas nosacījumi tiek apstiprināti rezervācijas brīdī. Sazinieties ar mums, lai noskaidrotu atgriešanas opcijas savai konkrētajai rezervācijai.',
+            },
+          ]}
+        />
 
         {/* ── CTA ── */}
         <section className="w-full py-32 bg-foreground">

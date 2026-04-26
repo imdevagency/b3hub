@@ -3,6 +3,7 @@ import { Check, ArrowRight } from 'lucide-react';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
+import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 
 export const metadata: Metadata = {
   title: 'Cenas',
@@ -238,28 +239,7 @@ export default function PricingPage() {
         </Container>
 
         {/* ── FAQ ── */}
-        <Container as="section" className="pb-32 border-t border-border pt-16">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-16 md:mb-24">
-            Biežāk uzdotie jautājumi
-          </h2>
-          <div className="flex flex-col">
-            {faq.map(({ q, a }) => (
-              <div
-                key={q}
-                className="flex flex-col md:flex-row gap-4 md:gap-12 py-10 border-t border-border"
-              >
-                <div className="md:w-1/2">
-                  <h3 className="text-2xl font-medium tracking-tight">{q}</h3>
-                </div>
-                <div className="md:w-1/2">
-                  <p className="text-muted-foreground font-light text-lg md:text-xl leading-relaxed">
-                    {a}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <FAQAccordion items={faq} />
 
         {/* ── ENTERPRISE / VOLUME ── */}
         <Container as="section" className="pb-32 border-t border-border pt-16">

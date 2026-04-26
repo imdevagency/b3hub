@@ -3,7 +3,7 @@ import { Container } from '@/components/marketing/layout/Container';
 import { ArrowRight, CheckCircle, Bell, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
-
+import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 
 const journey = [
   {
@@ -415,11 +415,7 @@ export default function KarjeriemPage() {
                 <p className="text-background/60 font-light">
                   /mēnesī. Nav komisijas. Nav slēpto maksu.
                 </p>
-                <CTAButton
-                  href={`/register?role=seller`}
-                  variant="inverted"
-                  className="mt-4 w-fit"
-                >
+                <CTAButton href={`/register?role=seller`} variant="inverted" className="mt-4 w-fit">
                   Sākt izmēģināt
                 </CTAButton>
               </div>
@@ -442,47 +438,26 @@ export default function KarjeriemPage() {
         </Container>
 
         {/* ── FAQ ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-16 md:mb-24">
-            Biežāk uzdotie jautājumi
-          </h2>
-          <div className="flex flex-col">
-            {(
-              [
-                {
-                  q: 'Cik maksā reģistrēties kā piegādātājam?',
-                  a: '€49 mēnesī. Nav komisijas no saņemtajiem pasūtījumiem. Nav slēpto maksājumu.',
-                },
-                {
-                  q: 'Cik ātri varu sākt saņemt pasūtījumus?',
-                  a: 'Pēc profila apstiprināšanas (parasti 1–2 darba dienas) jūsu materiāli ir redzami katalogā.',
-                },
-                {
-                  q: 'Vai platforma koordinē transportu manā vietā?',
-                  a: 'Jā. Jums nav jāmeklē šoferi — B3Hub savieno jūs ar apstiprinātu pārvadātāju tīklu.',
-                },
-                {
-                  q: 'Kas notiek, ja pircējs atceļ pasūtījumu?',
-                  a: 'Atcelšanas politika ir skaidra platformā. Ja materiāls jau ir iekrauts, atlīdzina transporta izmaksas.',
-                },
-              ] as { q: string; a: string }[]
-            ).map(({ q, a }) => (
-              <div
-                key={q}
-                className="flex flex-col md:flex-row gap-4 md:gap-12 py-10 border-t border-border"
-              >
-                <div className="md:w-1/2">
-                  <h3 className="text-2xl font-medium tracking-tight">{q}</h3>
-                </div>
-                <div className="md:w-1/2">
-                  <p className="text-muted-foreground font-light text-lg md:text-xl leading-relaxed">
-                    {a}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <FAQAccordion
+          items={[
+            {
+              q: 'Cik maksā reģistrēties kā piegādātājam?',
+              a: '€49 mēnesī. Nav komisijas no saņemtajiem pasūtījumiem. Nav slēpto maksājumu.',
+            },
+            {
+              q: 'Cik ātri varu sākt saņemt pasūtījumus?',
+              a: 'Pēc profila apstiprināšanas (parasti 1–2 darba dienas) jūsu materiāli ir redzami katalogā.',
+            },
+            {
+              q: 'Vai platforma koordinē transportu manā vietā?',
+              a: 'Jā. Jums nav jāmeklē šoferi — B3Hub savieno jūs ar apstiprinātu pārvadātāju tīklu.',
+            },
+            {
+              q: 'Kas notiek, ja pircējs atceļ pasūtījumu?',
+              a: 'Atcelšanas politika ir skaidra platformā. Ja materiāls jau ir iekrauts, atlīdzina transporta izmaksas.',
+            },
+          ]}
+        />
 
         {/* ── CTA ── */}
         <section className="w-full py-32 bg-foreground">

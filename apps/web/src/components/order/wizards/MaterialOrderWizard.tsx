@@ -443,6 +443,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
 
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(false);
+  const [offersError, setOffersError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');

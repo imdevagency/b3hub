@@ -2,6 +2,7 @@ import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { MapPin, Clock, CheckCircle, Banknote, ArrowRight } from 'lucide-react';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
+import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 
 const journey = [
   {
@@ -299,39 +300,18 @@ export default function ParvadatajemPage() {
         </Container>
 
         {/* ── FAQ ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-16 md:mb-24">
-            Biežāk uzdotie jautājumi
-          </h2>
-          <div className="flex flex-col">
-            {(
-              [
-                {
-                  q: 'Vai man jāstrādā noteiktā reģionā?',
-                  a: 'Nē. Jūs brīvi izvēlaties darbus visā Latvijā atbilstoši savai atrašanās vietai un maršrutam.',
-                },
-                {
-                  q: 'Kas notiek, ja nevaru pabeigt reisu?',
-                  a: 'Reisu var atcelt pirms iekraušanas bez sekām. Pēc iekraušanas — sazinieties ar atbalstu tieši lietotnē.',
-                },
-              ] as { q: string; a: string }[]
-            ).map(({ q, a }) => (
-              <div
-                key={q}
-                className="flex flex-col md:flex-row gap-4 md:gap-12 py-10 border-t border-border"
-              >
-                <div className="md:w-1/2">
-                  <h3 className="text-2xl font-medium tracking-tight">{q}</h3>
-                </div>
-                <div className="md:w-1/2">
-                  <p className="text-muted-foreground font-light text-lg md:text-xl leading-relaxed">
-                    {a}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <FAQAccordion
+          items={[
+            {
+              q: 'Vai man jāstrādā noteiktā reģionā?',
+              a: 'Nē. Jūs brīvi izvēlaties darbus visā Latvijā atbilstoši savai atrašanās vietai un maršrutam.',
+            },
+            {
+              q: 'Kas notiek, ja nevaru pabeigt reisu?',
+              a: 'Reisu var atcelt pirms iekraušanas bez sekām. Pēc iekraušanas — sazinieties ar atbalstu tieši lietotnē.',
+            },
+          ]}
+        />
 
         {/* ── CTA ── */}
         <Container
