@@ -73,7 +73,7 @@ export default function KarjeriemPage() {
               </CTAButton>
             </>
           }
-          pricingNote="€49/mēnesī. Nav komisijas no pasūtījumiem."
+          pricingNote="Bezmaksas reģistrācija. 6% komisija tikai no veiksmīgiem pasūtījumiem."
         >
           {/* Right: mock incoming order card */}
           <div className="w-full border border-border flex flex-col text-sm self-center">
@@ -141,308 +141,321 @@ export default function KarjeriemPage() {
         </Hero>
 
         {/* ── BEFORE → AFTER ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <div className="flex flex-col md:flex-row gap-16 items-start">
-            <div className="md:w-2/5 flex flex-col gap-4">
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                Problēma
-              </p>
-              <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
-                Karjeri tērē laiku tālrunim, nevis pārdošanai.
-              </h2>
+        <section className="w-full bg-neutral-50">
+          <Container className="py-32">
+            <div className="flex flex-col md:flex-row gap-16 items-start">
+              <div className="md:w-2/5 flex flex-col gap-4">
+                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                  Problēma
+                </p>
+                <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
+                  Karjeri tērē laiku tālrunim, nevis pārdošanai.
+                </h2>
+              </div>
+              <div className="md:w-3/5 flex flex-col divide-y divide-border border-t border-b border-border w-full">
+                {(
+                  [
+                    { before: 'Zvani ar cenu jautājumiem', after: 'Klients redz cenu katalogā' },
+                    {
+                      before: 'Manuāla iekraušanas koordinācija',
+                      after: 'Pasūtījums ierodas gatavs',
+                    },
+                    { before: 'Papīra svara zīmes', after: 'Automātiska digitāla svara zīme' },
+                    { before: 'Kavēti rēķini', after: 'Samaksa automātiski pēc piegādes' },
+                  ] as { before: string; after: string }[]
+                ).map(({ before, after }) => (
+                  <div key={before} className="py-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <p className="text-muted-foreground font-light line-through decoration-1 text-lg">
+                      {before}
+                    </p>
+                    <p className="text-foreground font-medium text-lg flex items-center gap-2">
+                      <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      {after}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="md:w-3/5 flex flex-col divide-y divide-border border-t border-b border-border w-full">
-              {(
-                [
-                  { before: 'Zvani ar cenu jautājumiem', after: 'Klients redz cenu katalogā' },
-                  {
-                    before: 'Manuāla iekraušanas koordinācija',
-                    after: 'Pasūtījums ierodas gatavs',
-                  },
-                  { before: 'Papīra svara zīmes', after: 'Automātiska digitāla svara zīme' },
-                  { before: 'Kavēti rēķini', after: 'Samaksa automātiski pēc piegādes' },
-                ] as { before: string; after: string }[]
-              ).map(({ before, after }) => (
-                <div key={before} className="py-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <p className="text-muted-foreground font-light line-through decoration-1 text-lg">
-                    {before}
-                  </p>
-                  <p className="text-foreground font-medium text-lg flex items-center gap-2">
-                    <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                    {after}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Container>
+          </Container>
+        </section>
 
         {/* ── BENTO FEATURES ── */}
-        <Container as="section" className="py-24 border-t border-border">
-          <div className="flex flex-col gap-16">
-            <div className="max-w-2xl">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-tight mb-4">
-                Mazāk tālruņa.
-                <br />
-                Vairāk pasūtījumu.
-              </h2>
-              <p className="text-xl text-muted-foreground font-light">
-                B3Hub nodrošina visu no pasūtījuma saņemšanas līdz samaksai — bez manuālas
-                koordinācijas.
-              </p>
-            </div>
-
-            {/* Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px]">
-              {/* Feature 1: Large Wide */}
-              <div className="md:col-span-2 bg-muted/30 border border-border p-8 flex flex-col justify-between group overflow-hidden relative">
-                <div className="z-10 max-w-sm">
-                  <h3 className="text-2xl font-bold tracking-tight mb-2">
-                    Pasūtījums — gatavs uzreiz
-                  </h3>
-                  <p className="text-muted-foreground font-light text-lg">
-                    Klients pasūta katalogā ar norādītu daudzumu, piegādes adresi un laiku. Jūs
-                    tikai apstipriniet iekraušanu.
-                  </p>
-                </div>
-                <div className="absolute -right-8 -bottom-8 w-80 h-64 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-4deg] rotate-[4deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out hidden md:flex flex-col justify-between p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
-                      <span className="text-xs font-mono tracking-widest text-muted-foreground">
-                        Jauns pasūtījums
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold tracking-tight">Granīta šķembas 20–40</p>
-                    <p className="text-sm text-muted-foreground">18 t · Rīga · šodien 14:00</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1 border border-border py-2 text-center text-xs text-muted-foreground">
-                      Noraidīt
-                    </div>
-                    <div className="flex-1 bg-foreground text-background py-2 text-center text-xs font-medium">
-                      Apstiprināt
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <TrendingUp className="w-24 h-24" />
-                </div>
-                <h3 className="text-6xl font-black tracking-tighter mb-2 z-10 mt-auto">€0</h3>
-                <p className="text-muted-foreground font-light z-10">
-                  Komisija no pasūtījumiem. Maksā tikai fiksētu €49/mēn.
+        <section className="w-full bg-background">
+          <Container className="py-24">
+            <div className="flex flex-col gap-16">
+              <div className="max-w-2xl">
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-tight mb-4">
+                  Mazāk tālruņa.
+                  <br />
+                  Vairāk pasūtījumu.
+                </h2>
+                <p className="text-xl text-muted-foreground font-light">
+                  B3Hub nodrošina visu no pasūtījuma saņemšanas līdz samaksai — bez manuālas
+                  koordinācijas.
                 </p>
               </div>
 
-              {/* Feature 3 */}
-              <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center">
-                <h3 className="text-6xl font-black tracking-tighter mb-2 mt-auto">Auto</h3>
-                <p className="text-muted-foreground font-light">
-                  Šoferis piešķirts automātiski. Nav jāmeklē transports.
-                </p>
-              </div>
-
-              {/* Feature 4: Dark Wide */}
-              <div className="md:col-span-2 bg-foreground text-background p-8 flex flex-col justify-between overflow-hidden relative">
-                <div className="z-10 max-w-sm">
-                  <h3 className="text-2xl font-bold tracking-tight mb-2">
-                    Visi dokumenti automātiski
-                  </h3>
-                  <p className="text-background/70 font-light text-lg">
-                    Svara zīme, CMR un rēķins tiek ģenerēti uzreiz pēc piegādes. Arhīvs mākonī 5
-                    gadus — jebkad pieejams.
-                  </p>
-                </div>
-                <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
-                  <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
-                    <span className="text-xl font-bold text-white tracking-widest uppercase">
-                      E-ARHĪVS
-                    </span>
+              {/* Bento Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px]">
+                {/* Feature 1: Large Wide */}
+                <div className="md:col-span-2 bg-muted/30 border border-border p-8 flex flex-col justify-between group overflow-hidden relative">
+                  <div className="z-10 max-w-sm">
+                    <h3 className="text-2xl font-bold tracking-tight mb-2">
+                      Pasūtījums — gatavs uzreiz
+                    </h3>
+                    <p className="text-muted-foreground font-light text-lg">
+                      Klients pasūta katalogā ar norādītu daudzumu, piegādes adresi un laiku. Jūs
+                      tikai apstipriniet iekraušanu.
+                    </p>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Container>
-
-        {/* ── STICKY JOURNEY ── */}
-        <Container as="section" className="py-24 border-t border-border">
-          <div className="flex flex-col md:flex-row gap-16 relative pb-32">
-            {/* Left: Scrollable Text Steps */}
-            <div className="md:w-1/2 flex flex-col gap-32 py-24">
-              {journey.map((item) => (
-                <div key={item.step} className="flex flex-col gap-5 pr-8">
-                  <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground border-b border-border pb-4 w-12">
-                    {item.step}
-                  </span>
-                  <h3 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mt-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-xl text-muted-foreground font-light leading-relaxed">
-                    {item.body}
-                  </p>
-                  <ul className="flex flex-col gap-3 mt-4 border-t border-border pt-6">
-                    {item.features.map((f) => (
-                      <li key={f} className="flex items-center gap-3 text-sm font-light">
-                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {/* Right: Sticky Phone Mockup */}
-            <div className="md:w-1/2 relative hidden md:block">
-              <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
-                {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
-
-                {/* App header */}
-                <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
-                  <div className="w-8 h-8 rounded-full bg-foreground" />
-                  <div className="h-3 w-28 bg-foreground/90 rounded-full" />
-                </div>
-
-                {/* Order card */}
-                <div className="flex-1 flex flex-col gap-3 py-4 px-2 overflow-hidden relative">
-                  {/* Incoming order */}
-                  <div className="w-full bg-background border border-border shadow-sm rounded-2xl p-4 flex flex-col gap-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
+                  <div className="absolute -right-8 -bottom-8 w-80 h-64 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-4deg] rotate-[4deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out hidden md:flex flex-col justify-between p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
                         <span className="text-xs font-mono tracking-widest text-muted-foreground">
                           Jauns pasūtījums
                         </span>
                       </div>
                     </div>
                     <div>
-                      <p className="font-bold text-base">Granīta šķembas 20–40</p>
-                      <p className="text-xs text-muted-foreground">18 t · SIA "BūvPro" · Rīga</p>
+                      <p className="text-xl font-bold tracking-tight">Granīta šķembas 20–40</p>
+                      <p className="text-sm text-muted-foreground">18 t · Rīga · šodien 14:00</p>
                     </div>
-                    <div className="flex items-center justify-between border-t border-border pt-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Ieņēmumi</p>
-                        <p className="text-xl font-black tracking-tight">€156</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Piegāde</p>
-                        <p className="text-sm font-medium">šodien 14:00</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="border border-border py-2 text-center text-xs font-medium text-muted-foreground rounded">
+                    <div className="flex gap-2">
+                      <div className="flex-1 border border-border py-2 text-center text-xs text-muted-foreground">
                         Noraidīt
                       </div>
-                      <div className="bg-foreground text-background py-2 text-center text-xs font-medium rounded">
+                      <div className="flex-1 bg-foreground text-background py-2 text-center text-xs font-medium">
                         Apstiprināt
                       </div>
                     </div>
                   </div>
-                  {/* Older orders faded */}
-                  <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-40">
-                    <div className="w-10 h-8 bg-muted rounded-lg" />
-                    <div className="flex-1 flex flex-col gap-1.5 justify-center">
-                      <div className="w-2/3 h-2 bg-muted-foreground rounded-full" />
-                      <div className="w-1/3 h-2 bg-muted rounded-full" />
-                    </div>
-                    <p className="text-sm font-bold self-center">€98</p>
+                </div>
+
+                {/* Feature 2 */}
+                <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <TrendingUp className="w-24 h-24" />
                   </div>
-                  <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-20">
-                    <div className="w-10 h-8 bg-muted rounded-lg" />
-                    <div className="flex-1 flex flex-col gap-1.5 justify-center">
-                      <div className="w-1/2 h-2 bg-muted-foreground rounded-full" />
-                      <div className="w-1/4 h-2 bg-muted rounded-full" />
-                    </div>
-                    <p className="text-sm font-bold self-center">€204</p>
+                  <h3 className="text-6xl font-black tracking-tighter mb-2 z-10 mt-auto">6%</h3>
+                  <p className="text-muted-foreground font-light z-10">
+                    Komisija tikai no veiksmīgiem pasūtījumiem. Nav abonēšanas.
+                  </p>
+                </div>
+
+                {/* Feature 3 */}
+                <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center">
+                  <h3 className="text-6xl font-black tracking-tighter mb-2 mt-auto">Auto</h3>
+                  <p className="text-muted-foreground font-light">
+                    Šoferis piešķirts automātiski. Nav jāmeklē transports.
+                  </p>
+                </div>
+
+                {/* Feature 4: Dark Wide */}
+                <div className="md:col-span-2 bg-foreground text-background p-8 flex flex-col justify-between overflow-hidden relative">
+                  <div className="z-10 max-w-sm">
+                    <h3 className="text-2xl font-bold tracking-tight mb-2">
+                      Visi dokumenti automātiski
+                    </h3>
+                    <p className="text-background/70 font-light text-lg">
+                      Svara zīme, CMR un rēķins tiek ģenerēti uzreiz pēc piegādes. Arhīvs mākonī 5
+                      gadus — jebkad pieejams.
+                    </p>
                   </div>
-                  {/* Gradient fade */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
+                  <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
+                    <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
+                      <span className="text-xl font-bold text-white tracking-widest uppercase">
+                        E-ARHĪVS
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Container>
+          </Container>
+        </section>
 
-        {/* ── MATERIALS + PRICING + STATS ── */}
-        <Container as="section" className="py-32 border-t border-border">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
-            {/* Materials */}
-            <div className="bg-background p-10 flex flex-col gap-8">
-              <div className="flex flex-col gap-3">
-                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                  Ko var pārdot?
-                </p>
-                <h2 className="text-4xl font-medium tracking-tighter leading-tight">
-                  Ja tev ir materiāls, mums ir pircējs.
-                </h2>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {materials.map((m) => (
-                  <span
-                    key={m}
-                    className="border border-border px-4 py-2 text-sm font-light text-muted-foreground"
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground font-light">
-                Nav sava materiāla sarakstā?{' '}
-                <Link
-                  href="/contact"
-                  className="underline underline-offset-2 hover:text-foreground transition-colors"
-                >
-                  Sazinieties ar mums
-                </Link>
-              </p>
-            </div>
-
-            {/* Pricing + Stats stacked */}
-            <div className="flex flex-col">
-              <div className="bg-foreground text-background p-10 flex flex-col gap-4 flex-1">
-                <p className="text-sm font-bold tracking-widest uppercase text-background/50">
-                  Cena
-                </p>
-                <p className="text-7xl font-bold tracking-tighter leading-none">€49</p>
-                <p className="text-background/60 font-light">
-                  /mēnesī. Nav komisijas. Nav slēpto maksu.
-                </p>
-                <CTAButton href={`/register?role=seller`} variant="inverted" className="mt-4 w-fit">
-                  Sākt izmēģināt
-                </CTAButton>
-              </div>
-              <div className="bg-background border-t border-border p-10 grid grid-cols-3 gap-6">
-                {[
-                  { value: '18', label: 'Piegādātāji' },
-                  { value: '240+', label: 'Pārvadātāji' },
-                  { value: '1.5M+', label: 'Tonnas' },
-                ].map(({ value, label }) => (
-                  <div key={label}>
-                    <p className="text-3xl md:text-4xl font-bold tracking-tighter leading-none">
-                      {value}
+        {/* ── STICKY JOURNEY ── */}
+        <section className="w-full bg-neutral-50">
+          <Container className="py-24">
+            <div className="flex flex-col md:flex-row gap-16 relative pb-32">
+              {/* Left: Scrollable Text Steps */}
+              <div className="md:w-1/2 flex flex-col gap-32 py-24">
+                {journey.map((item) => (
+                  <div key={item.step} className="flex flex-col gap-5 pr-8">
+                    <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground border-b border-border pb-4 w-12">
+                      {item.step}
+                    </span>
+                    <h3 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mt-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-xl text-muted-foreground font-light leading-relaxed">
+                      {item.body}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2 font-light">{label}</p>
+                    <ul className="flex flex-col gap-3 mt-4 border-t border-border pt-6">
+                      {item.features.map((f) => (
+                        <li key={f} className="flex items-center gap-3 text-sm font-light">
+                          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 ))}
               </div>
+
+              {/* Right: Sticky Phone Mockup */}
+              <div className="md:w-1/2 relative hidden md:block">
+                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
+
+                  {/* App header */}
+                  <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
+                    <div className="w-8 h-8 rounded-full bg-foreground" />
+                    <div className="h-3 w-28 bg-foreground/90 rounded-full" />
+                  </div>
+
+                  {/* Order card */}
+                  <div className="flex-1 flex flex-col gap-3 py-4 px-2 overflow-hidden relative">
+                    {/* Incoming order */}
+                    <div className="w-full bg-background border border-border shadow-sm rounded-2xl p-4 flex flex-col gap-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
+                          <span className="text-xs font-mono tracking-widest text-muted-foreground">
+                            Jauns pasūtījums
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-bold text-base">Granīta šķembas 20–40</p>
+                        <p className="text-xs text-muted-foreground">18 t · SIA "BūvPro" · Rīga</p>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border pt-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Ieņēmumi</p>
+                          <p className="text-xl font-black tracking-tight">€156</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Piegāde</p>
+                          <p className="text-sm font-medium">šodien 14:00</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="border border-border py-2 text-center text-xs font-medium text-muted-foreground rounded">
+                          Noraidīt
+                        </div>
+                        <div className="bg-foreground text-background py-2 text-center text-xs font-medium rounded">
+                          Apstiprināt
+                        </div>
+                      </div>
+                    </div>
+                    {/* Older orders faded */}
+                    <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-40">
+                      <div className="w-10 h-8 bg-muted rounded-lg" />
+                      <div className="flex-1 flex flex-col gap-1.5 justify-center">
+                        <div className="w-2/3 h-2 bg-muted-foreground rounded-full" />
+                        <div className="w-1/3 h-2 bg-muted rounded-full" />
+                      </div>
+                      <p className="text-sm font-bold self-center">€98</p>
+                    </div>
+                    <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-20">
+                      <div className="w-10 h-8 bg-muted rounded-lg" />
+                      <div className="flex-1 flex flex-col gap-1.5 justify-center">
+                        <div className="w-1/2 h-2 bg-muted-foreground rounded-full" />
+                        <div className="w-1/4 h-2 bg-muted rounded-full" />
+                      </div>
+                      <p className="text-sm font-bold self-center">€204</p>
+                    </div>
+                    {/* Gradient fade */}
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </Container>
+          </Container>
+        </section>
+
+        {/* ── MATERIALS + PRICING + STATS ── */}
+        <section className="w-full bg-background">
+          <Container className="py-32">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
+              {/* Materials */}
+              <div className="bg-background p-10 flex flex-col gap-8">
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                    Ko var pārdot?
+                  </p>
+                  <h2 className="text-4xl font-medium tracking-tighter leading-tight">
+                    Ja tev ir materiāls, mums ir pircējs.
+                  </h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {materials.map((m) => (
+                    <span
+                      key={m}
+                      className="border border-border px-4 py-2 text-sm font-light text-muted-foreground"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground font-light">
+                  Nav sava materiāla sarakstā?{' '}
+                  <Link
+                    href="/contact"
+                    className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  >
+                    Sazinieties ar mums
+                  </Link>
+                </p>
+              </div>
+
+              {/* Pricing + Stats stacked */}
+              <div className="flex flex-col">
+                <div className="bg-foreground text-background p-10 flex flex-col gap-4 flex-1">
+                  <p className="text-sm font-bold tracking-widest uppercase text-background/50">
+                    Cena
+                  </p>
+                  <p className="text-7xl font-bold tracking-tighter leading-none">6%</p>
+                  <p className="text-background/60 font-light">
+                    komisija no veiksmīgiem pasūtījumiem. Reģistrācija bezmaksas.
+                  </p>
+                  <CTAButton
+                    href={`/register?role=seller`}
+                    variant="inverted"
+                    className="mt-4 w-fit"
+                  >
+                    Sākt izmēģināt
+                  </CTAButton>
+                </div>
+                <div className="bg-background border-t border-border p-10 grid grid-cols-3 gap-6">
+                  {[
+                    { value: '18', label: 'Piegādātāji' },
+                    { value: '240+', label: 'Pārvadātāji' },
+                    { value: '1.5M+', label: 'Tonnas' },
+                  ].map(({ value, label }) => (
+                    <div key={label}>
+                      <p className="text-3xl md:text-4xl font-bold tracking-tighter leading-none">
+                        {value}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2 font-light">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Container>
+        </section>
 
         {/* ── FAQ ── */}
         <FAQAccordion
+          className="bg-neutral-50"
           items={[
             {
               q: 'Cik maksā reģistrēties kā piegādātājam?',
-              a: '€49 mēnesī. Nav komisijas no saņemtajiem pasūtījumiem. Nav slēpto maksājumu.',
+              a: 'Bezmaksas. Reģistrācija un materiālu publicēšana ir bez maksas. Jūs maksājat 6% komisiju tikai no veiksmīgi noslēgtiem pasūtījumiem. Nav abonēšanas. Nav slēpto maksājumu.',
             },
             {
               q: 'Cik ātri varu sākt saņemt pasūtījumus?',

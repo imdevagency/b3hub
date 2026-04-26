@@ -92,51 +92,53 @@ export default function B3FieldsPage() {
         ></Hero>
 
         {/* ── LOCATIONS ── */}
-        <Container as="section" id="locations" className="py-32 border-t border-border">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-            <div className="flex flex-col gap-4">
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                B3 Tīkls
-              </p>
-              <h2 className="text-5xl md:text-6xl font-bold tracking-tighter leading-none">
-                6 punkti.
-                <br />
-                Visā Latvijā.
-              </h2>
-            </div>
-            <div className="flex flex-col gap-2 md:text-right">
-              <p className="text-muted-foreground font-light text-sm">
-                Jaunas vietas gaidāmas 2026. gadā.
-              </p>
-              <p className="text-muted-foreground font-light text-sm">
-                P–Pk 07:00–19:00 · Sest 08:00–16:00
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col border-t border-border">
-            {locations.map(({ city, address, services: svc }) => (
-              <div
-                key={city}
-                className="flex flex-col md:flex-row md:items-center justify-between py-8 gap-4 border-b border-border"
-              >
-                <div className="flex items-baseline gap-8 min-w-0">
-                  <h3 className="text-3xl font-medium tracking-tight shrink-0">{city}</h3>
-                  <p className="text-muted-foreground font-light text-lg truncate">{address}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap md:justify-end shrink-0">
-                  {svc.map((s) => (
-                    <span
-                      key={s}
-                      className="text-xs font-bold tracking-widest uppercase bg-muted text-foreground px-3 py-1.5"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+        <section className="w-full bg-neutral-50">
+          <Container id="locations" className="py-32">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+              <div className="flex flex-col gap-4">
+                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                  B3 Tīkls
+                </p>
+                <h2 className="text-5xl md:text-6xl font-bold tracking-tighter leading-none">
+                  6 punkti.
+                  <br />
+                  Visā Latvijā.
+                </h2>
               </div>
-            ))}
-          </div>
-        </Container>
+              <div className="flex flex-col gap-2 md:text-right">
+                <p className="text-muted-foreground font-light text-sm">
+                  Jaunas vietas gaidāmas 2026. gadā.
+                </p>
+                <p className="text-muted-foreground font-light text-sm">
+                  P–Pk 07:00–19:00 · Sest 08:00–16:00
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col border-t border-border">
+              {locations.map(({ city, address, services: svc }) => (
+                <div
+                  key={city}
+                  className="flex flex-col md:flex-row md:items-center justify-between py-8 gap-4 border-b border-border"
+                >
+                  <div className="flex items-baseline gap-8 min-w-0">
+                    <h3 className="text-3xl font-medium tracking-tight shrink-0">{city}</h3>
+                    <p className="text-muted-foreground font-light text-lg truncate">{address}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap md:justify-end shrink-0">
+                    {svc.map((s) => (
+                      <span
+                        key={s}
+                        className="text-xs font-bold tracking-widest uppercase bg-muted text-foreground px-3 py-1.5"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* ── FAQ ── */}
         <FAQAccordion

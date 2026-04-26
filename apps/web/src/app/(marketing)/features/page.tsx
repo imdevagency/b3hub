@@ -54,7 +54,7 @@ export default function FeaturesPage() {
     <>
       <main className="bg-background w-full overflow-hidden">
         {/* ── HERO ── */}
-        <section className="pt-40 pb-24 md:pt-48 md:pb-32 border-b border-border">
+        <section className="pt-40 pb-24 md:pt-48 md:pb-32">
           <Container>
             <div className="flex flex-col gap-10 max-w-3xl">
               <div className="flex items-center gap-4">
@@ -83,40 +83,42 @@ export default function FeaturesPage() {
         </section>
 
         {/* ── FEATURE GRID ── */}
-        <Container as="section" className="py-24">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {features.map(({ icon: Icon, slug, title }) => {
-              const inner = (
-                <>
-                  <div className="p-3 bg-background shrink-0 w-fit rounded-full shadow-xs">
-                    <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+        <section className="w-full bg-neutral-50">
+          <Container className="py-24">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {features.map(({ icon: Icon, slug, title }) => {
+                const inner = (
+                  <>
+                    <div className="p-3 bg-background shrink-0 w-fit rounded-full shadow-xs">
+                      <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-sm font-bold tracking-tight uppercase leading-snug">
+                      {title}
+                    </span>
+                  </>
+                );
+                const cls =
+                  'flex items-center gap-5 bg-secondary/30 rounded-3xl p-6 transition-all border border-transparent';
+                return slug ? (
+                  <Link
+                    key={title}
+                    href={`/features/${slug}`}
+                    className={`${cls} hover:bg-secondary/50 hover:shadow-sm`}
+                  >
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={title} className={cls}>
+                    {inner}
                   </div>
-                  <span className="text-sm font-bold tracking-tight uppercase leading-snug">
-                    {title}
-                  </span>
-                </>
-              );
-              const cls =
-                'flex items-center gap-5 bg-secondary/30 rounded-3xl p-6 transition-all border border-transparent';
-              return slug ? (
-                <Link
-                  key={title}
-                  href={`/features/${slug}`}
-                  className={`${cls} hover:bg-secondary/50 hover:shadow-sm`}
-                >
-                  {inner}
-                </Link>
-              ) : (
-                <div key={title} className={cls}>
-                  {inner}
-                </div>
-              );
-            })}
-          </div>
-        </Container>
+                );
+              })}
+            </div>
+          </Container>
+        </section>
 
         {/* ── COMPARE SECTION ── */}
-        <section className="w-full border-t border-border bg-background">
+        <section className="w-full bg-background">
           <Container className="py-24 md:py-32">
             <div className="flex flex-col gap-12">
               <div>

@@ -4,7 +4,6 @@ import { CTAButton } from '@/components/marketing/ui/cta-button';
 import { Check, ArrowLeft, Truck, Smartphone, Route, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
-
 const benefits = [
   {
     icon: Smartphone,
@@ -124,23 +123,25 @@ export default function DispetsPage() {
         </Hero>
 
         {/* BENEFITS */}
-        <Container as="section" className="py-24 border-t border-border">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
-            Kāpēc šoferi izvēlas B3Hub
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-border divide-y md:divide-y-0 md:divide-x divide-border">
-            {benefits.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="p-8 flex flex-col gap-4">
-                <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-                <h3 className="text-xl font-bold tracking-tight">{title}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <section className="w-full bg-neutral-50">
+          <Container className="py-24">
+            <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
+              Kāpēc šoferi izvēlas B3Hub
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-border divide-y md:divide-y-0 md:divide-x divide-border">
+              {benefits.map(({ icon: Icon, title, body }) => (
+                <div key={title} className="p-8 flex flex-col gap-4">
+                  <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+                  <h3 className="text-xl font-bold tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* Flow */}
-        <section className="w-full border-t border-b border-border bg-muted/20">
+        <section className="w-full bg-background">
           <Container className="py-24">
             <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
               Šoferu maršruts platformā
@@ -187,20 +188,22 @@ export default function DispetsPage() {
         </section>
 
         {/* Stats */}
-        <Container as="section" className="py-24 border-b border-border">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
-            {[
-              { value: '1 klikšķis', label: 'Lai pieņemtu vai atteiktu piegādes darbu' },
-              { value: '1 darba diena', label: 'Izmaksa pēc piegādes apstiprināšanas' },
-              { value: '0', label: 'Dispečeru vai starppersonu nepieciešamība' },
-            ].map(({ value, label }) => (
-              <div key={label} className="md:px-12 first:pl-0 last:pr-0 py-8 md:py-0">
-                <p className="text-5xl font-bold tracking-tighter leading-none">{value}</p>
-                <p className="text-muted-foreground font-light mt-3 text-sm">{label}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <section className="w-full bg-neutral-50">
+          <Container className="py-24">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
+              {[
+                { value: '1 klikšķis', label: 'Lai pieņemtu vai atteiktu piegādes darbu' },
+                { value: '1 darba diena', label: 'Izmaksa pēc piegādes apstiprināšanas' },
+                { value: '0', label: 'Dispečeru vai starppersonu nepieciešamība' },
+              ].map(({ value, label }) => (
+                <div key={label} className="md:px-12 first:pl-0 last:pr-0 py-8 md:py-0">
+                  <p className="text-5xl font-bold tracking-tighter leading-none">{value}</p>
+                  <p className="text-muted-foreground font-light mt-3 text-sm">{label}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* CTA */}
         <section className="w-full py-32 bg-foreground">

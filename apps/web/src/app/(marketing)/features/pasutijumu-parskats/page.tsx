@@ -102,7 +102,8 @@ export default function PasutijumuParskatPage() {
           </div>
         </Hero>
 
-        <Container as="section" className="py-24 border-t border-border">
+        <section className="w-full bg-neutral-50">
+        <Container className="py-24">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
             Ko dod pilns pārskats
           </p>
@@ -116,8 +117,9 @@ export default function PasutijumuParskatPage() {
             ))}
           </div>
         </Container>
+        </section>
 
-        <section className="w-full border-t border-b border-border bg-muted/20">
+        <section className="w-full bg-background">
           <Container className="py-24">
             <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
               No pasūtīšanas līdz arhīvam

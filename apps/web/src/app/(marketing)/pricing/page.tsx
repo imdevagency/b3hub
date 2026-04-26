@@ -109,161 +109,170 @@ export default function PricingPage() {
         />
 
         {/* ── PLANS ── */}
-        <Container as="section" className="pb-32 border-t border-border pt-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`flex flex-col p-10 gap-8 relative ${
-                  plan.featured ? 'bg-foreground text-background' : 'bg-background text-foreground'
-                }`}
-              >
-                {plan.featured && (
-                  <span className="absolute top-6 right-6 text-xs font-bold tracking-widest uppercase text-background/50">
-                    Populārākais
-                  </span>
-                )}
-
-                {/* Name + price */}
-                <div className="flex flex-col gap-3">
-                  <p
-                    className={`text-sm font-bold tracking-widest uppercase ${plan.featured ? 'text-background/50' : 'text-muted-foreground'}`}
-                  >
-                    {plan.name}
-                  </p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold tracking-tighter leading-none">
-                      {plan.price}
+        <section className="w-full bg-neutral-50">
+          <Container className="pb-32 pt-16">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+              {plans.map((plan) => (
+                <div
+                  key={plan.name}
+                  className={`flex flex-col p-10 gap-8 relative ${
+                    plan.featured
+                      ? 'bg-foreground text-background'
+                      : 'bg-background text-foreground'
+                  }`}
+                >
+                  {plan.featured && (
+                    <span className="absolute top-6 right-6 text-xs font-bold tracking-widest uppercase text-background/50">
+                      Populārākais
                     </span>
-                  </div>
-                  <p
-                    className={`text-sm font-semibold ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
-                  >
-                    {plan.label}
-                  </p>
-                  <p
-                    className={`text-sm font-light leading-relaxed ${plan.featured ? 'text-background/60' : 'text-muted-foreground'}`}
-                  >
-                    {plan.description}
-                  </p>
-                </div>
+                  )}
 
-                {/* Example calculation */}
-                {'example' in plan && plan.example && (
-                  <div
-                    className={`rounded-xl p-4 text-sm ${plan.featured ? 'bg-background/10' : 'bg-muted/50'}`}
-                  >
+                  {/* Name + price */}
+                  <div className="flex flex-col gap-3">
                     <p
-                      className={`font-semibold mb-1 ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
+                      className={`text-sm font-bold tracking-widest uppercase ${plan.featured ? 'text-background/50' : 'text-muted-foreground'}`}
                     >
-                      Piemērs
+                      {plan.name}
                     </p>
-                    <div
-                      className={`flex items-center justify-between ${plan.featured ? 'text-background/80' : 'text-foreground'}`}
-                    >
-                      <span>Pasūtījums €{plan.example.order}</span>
-                      <ArrowRight className="h-3.5 w-3.5 mx-2 shrink-0 opacity-40" />
-                      <span className="font-bold">
-                        Komisija €{(plan.example.order * plan.example.rate).toFixed(0)}
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-bold tracking-tighter leading-none">
+                        {plan.price}
                       </span>
                     </div>
+                    <p
+                      className={`text-sm font-semibold ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
+                    >
+                      {plan.label}
+                    </p>
+                    <p
+                      className={`text-sm font-light leading-relaxed ${plan.featured ? 'text-background/60' : 'text-muted-foreground'}`}
+                    >
+                      {plan.description}
+                    </p>
                   </div>
-                )}
 
-                {/* Features */}
-                <ul className="flex flex-col gap-3 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-3">
-                      <Check
-                        className={`h-4 w-4 shrink-0 mt-0.5 ${plan.featured ? 'text-background/50' : 'text-foreground'}`}
-                        strokeWidth={2.5}
-                      />
-                      <span
-                        className={`text-sm font-light ${plan.featured ? 'text-background/80' : 'text-muted-foreground'}`}
+                  {/* Example calculation */}
+                  {'example' in plan && plan.example && (
+                    <div
+                      className={`rounded-xl p-4 text-sm ${plan.featured ? 'bg-background/10' : 'bg-muted/50'}`}
+                    >
+                      <p
+                        className={`font-semibold mb-1 ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
                       >
-                        {f}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                        Piemērs
+                      </p>
+                      <div
+                        className={`flex items-center justify-between ${plan.featured ? 'text-background/80' : 'text-foreground'}`}
+                      >
+                        <span>Pasūtījums €{plan.example.order}</span>
+                        <ArrowRight className="h-3.5 w-3.5 mx-2 shrink-0 opacity-40" />
+                        <span className="font-bold">
+                          Komisija €{(plan.example.order * plan.example.rate).toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-                {/* CTA */}
-                <CTAButton
-                  href={plan.href}
-                  variant={plan.featured ? 'inverted' : 'primary'}
-                  className="w-full justify-center"
-                >
-                  {plan.cta}
-                </CTAButton>
-              </div>
-            ))}
-          </div>
-        </Container>
+                  {/* Features */}
+                  <ul className="flex flex-col gap-3 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-3">
+                        <Check
+                          className={`h-4 w-4 shrink-0 mt-0.5 ${plan.featured ? 'text-background/50' : 'text-foreground'}`}
+                          strokeWidth={2.5}
+                        />
+                        <span
+                          className={`text-sm font-light ${plan.featured ? 'text-background/80' : 'text-muted-foreground'}`}
+                        >
+                          {f}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <CTAButton
+                    href={plan.href}
+                    variant={plan.featured ? 'inverted' : 'primary'}
+                    className="w-full justify-center"
+                  >
+                    {plan.cta}
+                  </CTAButton>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* ── HOW IT WORKS ── */}
-        <Container as="section" className="pb-32 border-t border-border pt-16">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
-            Kā darbojas komisija
-          </h2>
-          <p className="text-muted-foreground text-lg font-light mb-16 max-w-xl">
-            Visi darījumi iet caur platformu. Komisija tiek ieturēta automātiski — neviens rēķins,
-            nekāda uzskaite.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
-            {[
-              {
-                step: '01',
-                title: 'Pircējs veic pasūtījumu',
-                body: 'Pircējs samaksā pasūtījuma summu. Nauda tiek turēta platformas escrow.',
-              },
-              {
-                step: '02',
-                title: 'Piegāde tiek izpildīta',
-                body: 'Piegādātājs un pārvadātājs izpilda pasūtījumu. Sistēma reģistrē pabeigšanu.',
-              },
-              {
-                step: '03',
-                title: 'Komisija tiek ieturēta automātiski',
-                body: 'No maksājuma automātiski tiek ieturēta piegādātāja (6%) un pārvadātāja (8%) komisija. Atlikums izmaksāts nākamajā darba dienā.',
-              },
-            ].map(({ step, title, body }) => (
-              <div key={step} className="bg-background p-10 flex flex-col gap-4">
-                <span className="text-sm font-bold tracking-widest text-muted-foreground">
-                  {step}
-                </span>
-                <h3 className="text-xl font-bold tracking-tight">{title}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <section className="w-full bg-background">
+          <Container className="pb-32 pt-16">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+              Kā darbojas komisija
+            </h2>
+            <p className="text-muted-foreground text-lg font-light mb-16 max-w-xl">
+              Visi darījumi iet caur platformu. Komisija tiek ieturēta automātiski — neviens rēķins,
+              nekāda uzskaite.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+              {[
+                {
+                  step: '01',
+                  title: 'Pircējs veic pasūtījumu',
+                  body: 'Pircējs samaksā pasūtījuma summu. Nauda tiek turēta platformas escrow.',
+                },
+                {
+                  step: '02',
+                  title: 'Piegāde tiek izpildīta',
+                  body: 'Piegādātājs un pārvadātājs izpilda pasūtījumu. Sistēma reģistrē pabeigšanu.',
+                },
+                {
+                  step: '03',
+                  title: 'Komisija tiek ieturēta automātiski',
+                  body: 'No maksājuma automātiski tiek ieturēta piegādātāja (6%) un pārvadātāja (8%) komisija. Atlikums izmaksāts nākamajā darba dienā.',
+                },
+              ].map(({ step, title, body }) => (
+                <div key={step} className="bg-background p-10 flex flex-col gap-4">
+                  <span className="text-sm font-bold tracking-widest text-muted-foreground">
+                    {step}
+                  </span>
+                  <h3 className="text-xl font-bold tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* ── FAQ ── */}
-        <FAQAccordion items={faq} />
+        <FAQAccordion items={faq} className="bg-neutral-50" />
 
         {/* ── ENTERPRISE / VOLUME ── */}
-        <Container as="section" className="pb-32 border-t border-border pt-16">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-            <div className="max-w-xl">
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
-                Liels apjoms?
-              </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
-                Individuālie noteikumi
-              </h2>
-              <p className="text-muted-foreground text-lg font-light leading-relaxed">
-                Uzņēmumiem ar augstu darījumu apjomu — piegādātājiem, pārvadātājiem un būvniecības
-                kompānijām ar vairākiem aktīviem projektiem — piedāvājam individuālu komisijas
-                struktūru, dedikētu atbalstu un prioritāru integrāciju ar jūsu esošajiem sistēmiem.
-              </p>
+        <section className="w-full bg-background">
+          <Container className="pb-32 pt-16">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+              <div className="max-w-xl">
+                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
+                  Liels apjoms?
+                </p>
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+                  Individuālie noteikumi
+                </h2>
+                <p className="text-muted-foreground text-lg font-light leading-relaxed">
+                  Uzņēmumiem ar augstu darījumu apjomu — piegādātājiem, pārvadātājiem un būvniecības
+                  kompānijām ar vairākiem aktīviem projektiem — piedāvājam individuālu komisijas
+                  struktūru, dedikētu atbalstu un prioritāru integrāciju ar jūsu esošajiem
+                  sistēmiem.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <CTAButton href="/contact" variant="primary">
+                  Sazināties ar komandu
+                </CTAButton>
+              </div>
             </div>
-            <div className="shrink-0">
-              <CTAButton href="/contact" variant="primary">
-                Sazināties ar komandu
-              </CTAButton>
-            </div>
-          </div>
-        </Container>
+          </Container>
+        </section>
       </main>
     </>
   );

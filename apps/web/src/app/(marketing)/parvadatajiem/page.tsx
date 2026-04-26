@@ -172,135 +172,140 @@ export default function ParvadatajemPage() {
         </section>
 
         {/* ── STICKY JOURNEY ── */}
-        <Container as="section" className="py-24 border-t border-border">
-          <div className="flex flex-col md:flex-row gap-16 relative pb-32">
-            {/* Left: Scrollable Text Steps */}
-            <div className="md:w-1/2 flex flex-col gap-40 py-24">
-              {journey.map((item) => (
-                <div key={item.step} className="flex flex-col gap-5 pr-8">
-                  <span className="text-sm font-bold tracking-widest uppercase text-primary border-b border-border pb-4 w-12">
-                    {item.step}
-                  </span>
-                  <h3 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mt-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-xl text-muted-foreground font-light leading-relaxed">
-                    {item.body}
-                  </p>
-                  <ul className="flex flex-col gap-3 mt-4 border-t border-border pt-6">
-                    {item.features.map((f) => (
-                      <li key={f} className="flex items-center gap-3 text-sm font-light">
-                        <CheckCircle className="w-4 h-4 text-primary shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {/* Right: Sticky Phone Mockup */}
-            <div className="md:w-1/2 relative hidden md:block">
-              <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-foreground border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
-                {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
-
-                {/* App header */}
-                <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
-                  <div className="w-8 h-8 rounded-full bg-background/20" />
-                  <div className="h-3 w-32 bg-background/20 rounded-full" />
-                  <div className="ml-auto w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+        <section className="w-full bg-neutral-50">
+          <Container className="py-24">
+            <div className="flex flex-col md:flex-row gap-16 relative pb-32">
+              {/* Left: Scrollable Text Steps */}
+              <div className="md:w-1/2 flex flex-col gap-40 py-24">
+                {journey.map((item) => (
+                  <div key={item.step} className="flex flex-col gap-5 pr-8">
+                    <span className="text-sm font-bold tracking-widest uppercase text-primary border-b border-border pb-4 w-12">
+                      {item.step}
+                    </span>
+                    <h3 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mt-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-xl text-muted-foreground font-light leading-relaxed">
+                      {item.body}
+                    </p>
+                    <ul className="flex flex-col gap-3 mt-4 border-t border-border pt-6">
+                      {item.features.map((f) => (
+                        <li key={f} className="flex items-center gap-3 text-sm font-light">
+                          <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
+                ))}
+              </div>
 
-                {/* Internal UI */}
-                <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative text-background">
-                  {/* Current Active Trip */}
-                  <div className="w-full bg-background/10 border border-background/10 rounded-2xl p-5 flex flex-col gap-4">
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs uppercase tracking-widest text-primary font-bold">
-                        AKTĪVS REISS
-                      </span>
-                      <span className="text-xl font-bold tracking-tight">€122.00</span>
+              {/* Right: Sticky Phone Mockup */}
+              <div className="md:w-1/2 relative hidden md:block">
+                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-foreground border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
+
+                  {/* App header */}
+                  <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
+                    <div className="w-8 h-8 rounded-full bg-background/20" />
+                    <div className="h-3 w-32 bg-background/20 rounded-full" />
+                    <div className="ml-auto w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                     </div>
+                  </div>
 
-                    <div className="flex flex-col gap-3">
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center gap-1 mt-1">
-                          <div className="w-3 h-3 rounded-full bg-background border-2 border-primary" />
-                          <div className="w-0.5 h-8 bg-background/20 rounded-full" />
-                          <div className="w-3 h-3 rounded-full bg-primary" />
-                        </div>
-                        <div className="flex flex-col justify-between py-0.5">
-                          <div>
-                            <p className="text-sm font-bold">Karjers "Liepa"</p>
-                            <p className="text-xs text-background/50">Iekraušana</p>
+                  {/* Internal UI */}
+                  <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative text-background">
+                    {/* Current Active Trip */}
+                    <div className="w-full bg-background/10 border border-background/10 rounded-2xl p-5 flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs uppercase tracking-widest text-primary font-bold">
+                          AKTĪVS REISS
+                        </span>
+                        <span className="text-xl font-bold tracking-tight">€122.00</span>
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center gap-1 mt-1">
+                            <div className="w-3 h-3 rounded-full bg-background border-2 border-primary" />
+                            <div className="w-0.5 h-8 bg-background/20 rounded-full" />
+                            <div className="w-3 h-3 rounded-full bg-primary" />
                           </div>
-                          <div>
-                            <p className="text-sm font-bold">Zolitudes iela 11a, Rīga</p>
-                            <p className="text-xs text-background/50">Izkraušana</p>
+                          <div className="flex flex-col justify-between py-0.5">
+                            <div>
+                              <p className="text-sm font-bold">Karjers "Liepa"</p>
+                              <p className="text-xs text-background/50">Iekraušana</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">Zolitudes iela 11a, Rīga</p>
+                              <p className="text-xs text-background/50">Izkraušana</p>
+                            </div>
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-2 pt-4 border-t border-background/10">
+                        <div className="h-10 flex-1 bg-primary text-background rounded-lg flex items-center justify-center text-sm font-bold">
+                          Sākt Navigāciju
+                        </div>
+                        <div className="h-10 w-10 bg-background/20 rounded-lg flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-background" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-2 pt-4 border-t border-background/10">
-                      <div className="h-10 flex-1 bg-primary text-background rounded-lg flex items-center justify-center text-sm font-bold">
-                        Sākt Navigāciju
-                      </div>
-                      <div className="h-10 w-10 bg-background/20 rounded-lg flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-background" />
+                    {/* Future / Finished trips faded */}
+                    <div className="w-full h-20 bg-background/5 border border-background/5 rounded-2xl p-4 flex gap-4 opacity-50 items-center">
+                      <div className="w-12 h-12 bg-background/10 rounded-full" />
+                      <div className="flex-1 flex flex-col gap-2">
+                        <div className="w-1/2 h-2.5 bg-background/20 rounded-full" />
+                        <div className="w-1/3 h-2 bg-background/10 rounded-full" />
                       </div>
                     </div>
-                  </div>
 
-                  {/* Future / Finished trips faded */}
-                  <div className="w-full h-20 bg-background/5 border border-background/5 rounded-2xl p-4 flex gap-4 opacity-50 items-center">
-                    <div className="w-12 h-12 bg-background/10 rounded-full" />
-                    <div className="flex-1 flex flex-col gap-2">
-                      <div className="w-1/2 h-2.5 bg-background/20 rounded-full" />
-                      <div className="w-1/3 h-2 bg-background/10 rounded-full" />
-                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-foreground to-transparent" />
                   </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-foreground to-transparent" />
                 </div>
               </div>
             </div>
-          </div>
-        </Container>
+          </Container>
+        </section>
 
         {/* ── REQUIREMENTS ── */}
-        <Container as="section" className="py-24 border-t border-border">
-          <div className="flex flex-col md:flex-row gap-16 items-start">
-            <div className="md:w-2/5 flex flex-col gap-4">
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                Prasības
-              </p>
-              <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
-                Vai tu vari pievienoties?
-              </h2>
-              <p className="text-muted-foreground font-light">
-                Ja tev ir kravas auto un tālrunis — viss pārējais ir atrisināts.
-              </p>
+        <section className="w-full bg-background">
+          <Container className="py-24">
+            <div className="flex flex-col md:flex-row gap-16 items-start">
+              <div className="md:w-2/5 flex flex-col gap-4">
+                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                  Prasības
+                </p>
+                <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
+                  Vai tu vari pievienoties?
+                </h2>
+                <p className="text-muted-foreground font-light">
+                  Ja tev ir kravas auto un tālrunis — viss pārējais ir atrisināts.
+                </p>
+              </div>
+              <div className="md:w-3/5 grid grid-cols-1 sm:grid-cols-2 gap-px bg-border w-full">
+                {requirements.map((r) => (
+                  <div key={r} className="bg-background p-8 flex items-start gap-4">
+                    <CheckCircle
+                      className="w-4 h-4 text-foreground shrink-0 mt-0.5"
+                      strokeWidth={1.5}
+                    />
+                    <p className="text-base font-light">{r}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="md:w-3/5 grid grid-cols-1 sm:grid-cols-2 gap-px bg-border w-full">
-              {requirements.map((r) => (
-                <div key={r} className="bg-background p-8 flex items-start gap-4">
-                  <CheckCircle
-                    className="w-4 h-4 text-foreground shrink-0 mt-0.5"
-                    strokeWidth={1.5}
-                  />
-                  <p className="text-base font-light">{r}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Container>
+          </Container>
+        </section>
 
         {/* ── FAQ ── */}
         <FAQAccordion
+          className="bg-neutral-50"
           items={[
             {
               q: 'Vai man jāstrādā noteiktā reģionā?',
@@ -314,20 +319,19 @@ export default function ParvadatajemPage() {
         />
 
         {/* ── CTA ── */}
-        <Container
-          as="section"
-          className="py-32 border-t border-border flex flex-col items-center justify-center text-center gap-8"
-        >
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tighter leading-none">
-            Nākamais reiss — tavs.
-          </h2>
-          <p className="text-muted-foreground font-light text-lg">
-            Reģistrācija bez maksas. Komisija tikai par paveiktu darbu.
-          </p>
-          <CTAButton href={`/register?role=carrier`} variant="primary" size="lg">
-            Kļūt par šoferi <ArrowRight className="w-6 h-6" />
-          </CTAButton>
-        </Container>
+        <section className="w-full bg-background">
+          <Container className="py-32 flex flex-col items-center justify-center text-center gap-8">
+            <h2 className="text-5xl md:text-6xl font-bold tracking-tighter leading-none">
+              Nākamais reiss — tavs.
+            </h2>
+            <p className="text-muted-foreground font-light text-lg">
+              Reģistrācija bez maksas. Komisija tikai par paveiktu darbu.
+            </p>
+            <CTAButton href={`/register?role=carrier`} variant="primary" size="lg">
+              Kļūt par šoferi <ArrowRight className="w-6 h-6" />
+            </CTAButton>
+          </Container>
+        </section>
       </main>
     </>
   );

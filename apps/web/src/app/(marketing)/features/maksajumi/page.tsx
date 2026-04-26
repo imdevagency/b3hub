@@ -109,7 +109,8 @@ export default function MaksajumiPage() {
         </Hero>
 
         {/* BENEFITS */}
-        <Container as="section" className="py-24 border-t border-border">
+        <section className="w-full bg-neutral-50">
+        <Container className="py-24">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
             Finanses bez galvassāpēm
           </p>
@@ -123,9 +124,10 @@ export default function MaksajumiPage() {
             ))}
           </div>
         </Container>
+        </section>
 
         {/* Driver payout section */}
-        <section className="w-full border-t border-b border-border bg-muted/20">
+        <section className="w-full bg-background">
           <Container className="py-24">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:divide-x divide-border">
               {[
