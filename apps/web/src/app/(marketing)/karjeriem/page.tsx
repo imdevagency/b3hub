@@ -76,9 +76,9 @@ export default function KarjeriemPage() {
           pricingNote="Bezmaksas reģistrācija. 6% komisija tikai no veiksmīgiem pasūtījumiem."
         >
           {/* Right: mock incoming order card */}
-          <div className="w-full border border-border flex flex-col text-sm self-center">
+          <div className="w-full bg-background rounded-3xl shadow-xl flex flex-col text-sm self-center overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4 bg-neutral-50">
               <div className="flex items-center gap-2">
                 <Bell className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
                 <span className="font-mono text-xs text-muted-foreground tracking-widest">
@@ -103,7 +103,7 @@ export default function KarjeriemPage() {
               </div>
 
               {/* Buyer + route */}
-              <div className="grid grid-cols-2 gap-4 border-t border-border pt-6">
+              <div className="grid grid-cols-2 gap-4 bg-neutral-50 rounded-2xl p-4">
                 <div className="flex flex-col gap-1">
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">Pircējs</p>
                   <p className="font-medium">SIA "BūvPro"</p>
@@ -119,8 +119,8 @@ export default function KarjeriemPage() {
               </div>
 
               {/* Auto dispatch note */}
-              <div className="flex items-start gap-3 text-xs text-muted-foreground border border-border p-4">
-                <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={1.5} />
+              <div className="flex items-start gap-3 text-xs text-primary bg-primary/5 rounded-2xl p-4">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.5} />
                 <span>
                   Šoferis tiks piešķirts automātiski pēc iekraušanas apstiprināšanas. Nav
                   nepieciešams organizēt transportu.
@@ -128,11 +128,11 @@ export default function KarjeriemPage() {
               </div>
 
               {/* Action buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="border border-border py-3 text-center text-sm font-medium text-muted-foreground">
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="bg-neutral-100 hover:bg-neutral-200 transition-colors rounded-full py-3 text-center text-sm font-medium text-muted-foreground cursor-pointer">
                   Noraidīt
                 </div>
-                <div className="bg-foreground text-background py-3 text-center text-sm font-medium">
+                <div className="bg-foreground hover:bg-foreground/90 transition-colors text-background rounded-full py-3 text-center text-sm font-medium cursor-pointer shadow-sm">
                   Apstiprināt iekraušanu
                 </div>
               </div>
@@ -141,7 +141,7 @@ export default function KarjeriemPage() {
         </Hero>
 
         {/* ── BEFORE → AFTER ── */}
-        <section className="w-full bg-neutral-50">
+        <section className="w-full bg-neutral-100">
           <Container className="py-32">
             <div className="flex flex-col md:flex-row gap-16 items-start">
               <div className="md:w-2/5 flex flex-col gap-4">
@@ -152,7 +152,7 @@ export default function KarjeriemPage() {
                   Karjeri tērē laiku tālrunim, nevis pārdošanai.
                 </h2>
               </div>
-              <div className="md:w-3/5 flex flex-col divide-y divide-border border-t border-b border-border w-full">
+              <div className="md:w-3/5 flex flex-col gap-4 w-full">
                 {(
                   [
                     { before: 'Zvani ar cenu jautājumiem', after: 'Klients redz cenu katalogā' },
@@ -164,12 +164,22 @@ export default function KarjeriemPage() {
                     { before: 'Kavēti rēķini', after: 'Samaksa automātiski pēc piegādes' },
                   ] as { before: string; after: string }[]
                 ).map(({ before, after }) => (
-                  <div key={before} className="py-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div
+                    key={before}
+                    className="p-6 bg-background rounded-[2rem] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
                     <p className="text-muted-foreground font-light line-through decoration-1 text-lg">
                       {before}
                     </p>
-                    <p className="text-foreground font-medium text-lg flex items-center gap-2">
-                      <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <ArrowRight
+                      className="w-5 h-5 text-muted-foreground/30 hidden md:block shrink-0"
+                      strokeWidth={1.5}
+                    />
+                    <p className="text-foreground font-medium text-lg flex items-center gap-3">
+                      <ArrowRight
+                        className="w-5 h-5 text-muted-foreground md:hidden shrink-0"
+                        strokeWidth={1.5}
+                      />
                       {after}
                     </p>
                   </div>
@@ -196,20 +206,20 @@ export default function KarjeriemPage() {
               </div>
 
               {/* Bento Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
                 {/* Feature 1: Large Wide */}
-                <div className="md:col-span-2 bg-muted/30 border border-border p-8 flex flex-col justify-between group overflow-hidden relative">
+                <div className="md:col-span-2 bg-neutral-100 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between group overflow-hidden relative shadow-sm">
                   <div className="z-10 max-w-sm">
-                    <h3 className="text-2xl font-bold tracking-tight mb-2">
+                    <h3 className="text-3xl font-bold tracking-tight mb-3">
                       Pasūtījums — gatavs uzreiz
                     </h3>
-                    <p className="text-muted-foreground font-light text-lg">
+                    <p className="text-muted-foreground font-light text-lg leading-relaxed">
                       Klients pasūta katalogā ar norādītu daudzumu, piegādes adresi un laiku. Jūs
                       tikai apstipriniet iekraušanu.
                     </p>
                   </div>
-                  <div className="absolute -right-8 -bottom-8 w-80 h-64 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-4deg] rotate-[4deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out hidden md:flex flex-col justify-between p-6">
-                    <div className="flex items-center justify-between">
+                  <div className="absolute -right-8 -bottom-8 w-80 h-64 bg-background rounded-3xl shadow-2xl skew-x-[-4deg] rotate-[4deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out hidden md:flex flex-col justify-between p-6">
+                    <div className="flex items-center justify-between bg-neutral-50 px-4 py-2 -mx-6 -mt-6 rounded-t-3xl mb-4">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-foreground animate-pulse" />
                         <span className="text-xs font-mono tracking-widest text-muted-foreground">
@@ -219,13 +229,15 @@ export default function KarjeriemPage() {
                     </div>
                     <div>
                       <p className="text-xl font-bold tracking-tight">Granīta šķembas 20–40</p>
-                      <p className="text-sm text-muted-foreground">18 t · Rīga · šodien 14:00</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        18 t · Rīga · šodien 14:00
+                      </p>
                     </div>
                     <div className="flex gap-2">
-                      <div className="flex-1 border border-border py-2 text-center text-xs text-muted-foreground">
+                      <div className="flex-1 bg-neutral-100 rounded-full py-2.5 text-center text-xs text-muted-foreground font-medium">
                         Noraidīt
                       </div>
-                      <div className="flex-1 bg-foreground text-background py-2 text-center text-xs font-medium">
+                      <div className="flex-1 bg-foreground rounded-full text-background py-2.5 text-center text-xs font-medium shadow-sm">
                         Apstiprināt
                       </div>
                     </div>
@@ -233,37 +245,37 @@ export default function KarjeriemPage() {
                 </div>
 
                 {/* Feature 2 */}
-                <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <TrendingUp className="w-24 h-24" />
+                <div className="bg-neutral-100 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between text-center relative overflow-hidden shadow-sm">
+                  <div className="absolute top-0 right-0 p-6 opacity-10">
+                    <TrendingUp className="w-32 h-32" />
                   </div>
-                  <h3 className="text-6xl font-black tracking-tighter mb-2 z-10 mt-auto">6%</h3>
-                  <p className="text-muted-foreground font-light z-10">
-                    Komisija tikai no veiksmīgiem pasūtījumiem. Nav abonēšanas.
+                  <h3 className="text-7xl font-black tracking-tighter mb-2 z-10 mt-auto">6%</h3>
+                  <p className="text-muted-foreground font-light text-lg z-10 leading-snug">
+                    Komisija no veiksmīgiem pasūtījumiem.
                   </p>
                 </div>
 
                 {/* Feature 3 */}
-                <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center">
-                  <h3 className="text-6xl font-black tracking-tighter mb-2 mt-auto">Auto</h3>
-                  <p className="text-muted-foreground font-light">
-                    Šoferis piešķirts automātiski. Nav jāmeklē transports.
+                <div className="bg-neutral-100 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between text-center shadow-sm">
+                  <h3 className="text-7xl font-black tracking-tighter mb-2 mt-auto">Auto</h3>
+                  <p className="text-muted-foreground font-light text-lg leading-snug">
+                    Šoferis piešķirts automātiski.
                   </p>
                 </div>
 
                 {/* Feature 4: Dark Wide */}
-                <div className="md:col-span-2 bg-foreground text-background p-8 flex flex-col justify-between overflow-hidden relative">
+                <div className="md:col-span-2 bg-foreground text-background rounded-[2rem] p-8 md:p-12 flex flex-col justify-between overflow-hidden relative shadow-lg">
                   <div className="z-10 max-w-sm">
-                    <h3 className="text-2xl font-bold tracking-tight mb-2">
+                    <h3 className="text-3xl font-bold tracking-tight mb-3">
                       Visi dokumenti automātiski
                     </h3>
-                    <p className="text-background/70 font-light text-lg">
+                    <p className="text-background/70 font-light text-lg leading-relaxed">
                       Svara zīme, CMR un rēķins tiek ģenerēti uzreiz pēc piegādes. Arhīvs mākonī 5
                       gadus — jebkad pieejams.
                     </p>
                   </div>
-                  <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
-                    <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
+                  <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/10 to-transparent items-center justify-end pr-12 hidden md:flex">
+                    <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/10 rounded-3xl flex items-center justify-center shadow-2xl">
                       <span className="text-xl font-bold text-white tracking-widest uppercase">
                         E-ARHĪVS
                       </span>
@@ -306,9 +318,9 @@ export default function KarjeriemPage() {
 
               {/* Right: Sticky Phone Mockup */}
               <div className="md:w-1/2 relative hidden md:block">
-                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
+                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-background rounded-[4rem] p-4 flex flex-col gap-2 shadow-2xl ring-1 ring-border border-8 border-neutral-100">
                   {/* Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-100 rounded-b-2xl z-20" />
 
                   {/* App header */}
                   <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
@@ -319,8 +331,8 @@ export default function KarjeriemPage() {
                   {/* Order card */}
                   <div className="flex-1 flex flex-col gap-3 py-4 px-2 overflow-hidden relative">
                     {/* Incoming order */}
-                    <div className="w-full bg-background border border-border shadow-sm rounded-2xl p-4 flex flex-col gap-3">
-                      <div className="flex items-start justify-between">
+                    <div className="w-full bg-background ring-1 ring-border border-b-2 border-b-border rounded-[1.5rem] p-4 flex flex-col gap-3">
+                      <div className="flex items-start justify-between bg-neutral-50 px-3 py-2 -mx-2 -mt-2 rounded-xl mb-1">
                         <div className="flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
                           <span className="text-xs font-mono tracking-widest text-muted-foreground">
@@ -330,46 +342,48 @@ export default function KarjeriemPage() {
                       </div>
                       <div>
                         <p className="font-bold text-base">Granīta šķembas 20–40</p>
-                        <p className="text-xs text-muted-foreground">18 t · SIA "BūvPro" · Rīga</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          18 t · SIA "BūvPro" · Rīga
+                        </p>
                       </div>
                       <div className="flex items-center justify-between border-t border-border pt-3">
                         <div>
-                          <p className="text-xs text-muted-foreground">Ieņēmumi</p>
+                          <p className="text-xs text-muted-foreground mb-0.5">Ieņēmumi</p>
                           <p className="text-xl font-black tracking-tight">€156</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Piegāde</p>
+                          <p className="text-xs text-muted-foreground mb-0.5">Piegāde</p>
                           <p className="text-sm font-medium">šodien 14:00</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="border border-border py-2 text-center text-xs font-medium text-muted-foreground rounded">
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div className="bg-neutral-100 py-2.5 text-center text-xs font-medium text-muted-foreground rounded-full cursor-pointer">
                           Noraidīt
                         </div>
-                        <div className="bg-foreground text-background py-2 text-center text-xs font-medium rounded">
+                        <div className="bg-foreground text-background py-2.5 text-center text-xs font-medium rounded-full cursor-pointer shadow-sm">
                           Apstiprināt
                         </div>
                       </div>
                     </div>
                     {/* Older orders faded */}
-                    <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-40">
-                      <div className="w-10 h-8 bg-muted rounded-lg" />
-                      <div className="flex-1 flex flex-col gap-1.5 justify-center">
-                        <div className="w-2/3 h-2 bg-muted-foreground rounded-full" />
-                        <div className="w-1/3 h-2 bg-muted rounded-full" />
+                    <div className="w-full h-16 bg-background ring-1 ring-border border-b-2 border-b-border rounded-4xl p-4 flex gap-4 opacity-40 items-center">
+                      <div className="w-10 h-8 bg-neutral-100 rounded-xl" />
+                      <div className="flex-1 flex flex-col gap-1.5 justify-center mt-1">
+                        <div className="w-2/3 h-1.5 bg-muted-foreground rounded-full" />
+                        <div className="w-1/3 h-1.5 bg-neutral-200 rounded-full" />
                       </div>
                       <p className="text-sm font-bold self-center">€98</p>
                     </div>
-                    <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-20">
-                      <div className="w-10 h-8 bg-muted rounded-lg" />
-                      <div className="flex-1 flex flex-col gap-1.5 justify-center">
-                        <div className="w-1/2 h-2 bg-muted-foreground rounded-full" />
-                        <div className="w-1/4 h-2 bg-muted rounded-full" />
+                    <div className="w-full h-16 bg-background ring-1 ring-border border-b-2 border-b-border rounded-4xl p-4 flex gap-4 opacity-20 items-center">
+                      <div className="w-10 h-8 bg-neutral-100 rounded-xl" />
+                      <div className="flex-1 flex flex-col gap-1.5 justify-center mt-1">
+                        <div className="w-1/2 h-1.5 bg-muted-foreground rounded-full" />
+                        <div className="w-1/4 h-1.5 bg-neutral-200 rounded-full" />
                       </div>
                       <p className="text-sm font-bold self-center">€204</p>
                     </div>
                     {/* Gradient fade */}
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-background to-transparent" />
                   </div>
                 </div>
               </div>
@@ -380,32 +394,32 @@ export default function KarjeriemPage() {
         {/* ── MATERIALS + PRICING + STATS ── */}
         <section className="w-full bg-background">
           <Container className="py-32">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Materials */}
-              <div className="bg-background p-10 flex flex-col gap-8">
+              <div className="bg-neutral-50 rounded-[2rem] p-10 md:p-14 flex flex-col gap-8 flex-1">
                 <div className="flex flex-col gap-3">
                   <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                     Ko var pārdot?
                   </p>
-                  <h2 className="text-4xl font-medium tracking-tighter leading-tight">
+                  <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight max-w-lg">
                     Ja tev ir materiāls, mums ir pircējs.
                   </h2>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3 mt-4">
                   {materials.map((m) => (
                     <span
                       key={m}
-                      className="border border-border px-4 py-2 text-sm font-light text-muted-foreground"
+                      className="bg-background rounded-full shadow-sm px-6 py-3 text-sm font-medium text-foreground"
                     >
                       {m}
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground font-light">
+                <p className="text-sm text-muted-foreground font-light mt-auto pt-8">
                   Nav sava materiāla sarakstā?{' '}
                   <Link
                     href="/contact"
-                    className="underline underline-offset-2 hover:text-foreground transition-colors"
+                    className="underline underline-offset-4 hover:text-foreground font-medium transition-colors"
                   >
                     Sazinieties ar mums
                   </Link>
@@ -413,34 +427,33 @@ export default function KarjeriemPage() {
               </div>
 
               {/* Pricing + Stats stacked */}
-              <div className="flex flex-col">
-                <div className="bg-foreground text-background p-10 flex flex-col gap-4 flex-1">
+              <div className="flex flex-col gap-6 lg:w-md shrink-0">
+                <div className="bg-foreground text-background rounded-[2rem] p-10 md:p-14 flex flex-col gap-4 flex-1 shadow-lg">
                   <p className="text-sm font-bold tracking-widest uppercase text-background/50">
                     Cena
                   </p>
-                  <p className="text-7xl font-bold tracking-tighter leading-none">6%</p>
-                  <p className="text-background/60 font-light">
+                  <p className="text-8xl font-bold tracking-tighter leading-none my-2">6%</p>
+                  <p className="text-background/70 font-light text-lg leading-snug">
                     komisija no veiksmīgiem pasūtījumiem. Reģistrācija bezmaksas.
                   </p>
                   <CTAButton
                     href={`/register?role=seller`}
                     variant="inverted"
-                    className="mt-4 w-fit"
+                    className="mt-6 w-fit"
                   >
                     Sākt izmēģināt
                   </CTAButton>
                 </div>
-                <div className="bg-background border-t border-border p-10 grid grid-cols-3 gap-6">
+                <div className="bg-neutral-50 rounded-[2rem] p-10 grid grid-cols-2 gap-8 shadow-sm">
                   {[
                     { value: '18', label: 'Piegādātāji' },
                     { value: '240+', label: 'Pārvadātāji' },
-                    { value: '1.5M+', label: 'Tonnas' },
                   ].map(({ value, label }) => (
                     <div key={label}>
-                      <p className="text-3xl md:text-4xl font-bold tracking-tighter leading-none">
+                      <p className="text-4xl font-bold tracking-tighter leading-none mb-2">
                         {value}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2 font-light">{label}</p>
+                      <p className="text-sm text-muted-foreground font-medium">{label}</p>
                     </div>
                   ))}
                 </div>

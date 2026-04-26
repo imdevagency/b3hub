@@ -19,49 +19,52 @@ export default function ContactPage() {
           title={<>Sazinieties.</>}
           subtitle="Jautājumi par platformu, partnerību vai tehniski pieprasījumi — mūsu komanda atbild 1 darba dienas laikā."
           align="left"
+          wrapperClassName="bg-background"
         />
 
         {/* ── CONTACT GRID ── */}
-        <section className="w-full bg-neutral-50">
+        <section className="w-full bg-neutral-100">
           <Container className="pb-32 pt-16">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
               {/* Contact info */}
-              <div className="bg-background flex flex-col gap-10 p-10">
+              <div className="flex flex-col gap-12 lg:pr-10 lg:py-10">
                 <div className="flex items-start gap-6">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-border">
-                    <Mail className="h-4 w-4" strokeWidth={1.5} />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background text-foreground shadow-sm">
+                    <Mail className="h-6 w-6" strokeWidth={1.5} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-medium">E-pasts</p>
-                    <p className="text-muted-foreground font-light text-sm">info@b3hub.lv</p>
-                    <p className="text-xs text-muted-foreground">Atbildam 1 darba dienas laikā</p>
+                  <div className="flex flex-col gap-1.5 mt-0.5">
+                    <p className="text-xl font-medium tracking-tight">E-pasts</p>
+                    <p className="text-muted-foreground font-light text-base">info@b3hub.lv</p>
+                    <p className="text-sm text-muted-foreground/70">
+                      Atbildam 1 darba dienas laikā
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-6">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-border">
-                    <Phone className="h-4 w-4" strokeWidth={1.5} />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background text-foreground shadow-sm">
+                    <Phone className="h-6 w-6" strokeWidth={1.5} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-medium">Telefons</p>
-                    <p className="text-muted-foreground font-light text-sm">+371 20 000 000</p>
-                    <p className="text-xs text-muted-foreground">Darba dienās 9:00–18:00</p>
+                  <div className="flex flex-col gap-1.5 mt-0.5">
+                    <p className="text-xl font-medium tracking-tight">Telefons</p>
+                    <p className="text-muted-foreground font-light text-base">+371 20 000 000</p>
+                    <p className="text-sm text-muted-foreground/70">Darba dienās 9:00–18:00</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-6">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-border">
-                    <MapPin className="h-4 w-4" strokeWidth={1.5} />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background text-foreground shadow-sm">
+                    <MapPin className="h-6 w-6" strokeWidth={1.5} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-medium">Adrese</p>
-                    <p className="text-muted-foreground font-light text-sm">Rīga, Latvija</p>
+                  <div className="flex flex-col gap-1.5 mt-0.5">
+                    <p className="text-xl font-medium tracking-tight">Adrese</p>
+                    <p className="text-muted-foreground font-light text-base">Rīga, Latvija</p>
                   </div>
                 </div>
               </div>
 
               {/* Contact form — client component */}
-              <div className="bg-background">
+              <div className="w-full">
                 <ContactForm />
               </div>
             </div>

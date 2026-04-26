@@ -36,9 +36,14 @@ export function ContactForm() {
 
   if (status === 'sent') {
     return (
-      <div className="border border-border p-10 flex flex-col gap-4">
-        <p className="text-lg font-medium tracking-tight">Paldies!</p>
-        <p className="text-muted-foreground font-light text-sm">
+      <div className="bg-background rounded-[2rem] p-10 md:p-14 flex flex-col gap-4 text-center items-center justify-center min-h-100 shadow-sm">
+        <div className="h-16 w-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="text-2xl font-medium tracking-tight">Paldies!</p>
+        <p className="text-muted-foreground font-light text-base max-w-70">
           Jūsu ziņojums nosūtīts. Atbildēsim 1 darba dienas laikā.
         </p>
       </div>
@@ -49,10 +54,10 @@ export function ContactForm() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="border border-border p-10 flex flex-col gap-6"
+      className="bg-background rounded-[2rem] p-8 md:p-12 flex flex-col gap-6 shadow-sm"
     >
       <div className="flex flex-col gap-2">
-        <label htmlFor="name" className="text-sm font-medium">
+        <label htmlFor="name" className="text-base font-medium px-1">
           Vārds, uzvārds
         </label>
         <input
@@ -63,12 +68,12 @@ export function ContactForm() {
           required
           disabled={status === 'sending'}
           placeholder="Jānis Bērziņš"
-          className="border border-border bg-background text-foreground px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground disabled:opacity-50"
+          className="border-none bg-neutral-50 rounded-2xl text-foreground px-5 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-foreground transition-all disabled:opacity-50"
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="text-sm font-medium">
+        <label htmlFor="email" className="text-base font-medium px-1">
           E-pasts
         </label>
         <input
@@ -79,12 +84,12 @@ export function ContactForm() {
           required
           disabled={status === 'sending'}
           placeholder="janis@piemers.lv"
-          className="border border-border bg-background text-foreground px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground disabled:opacity-50"
+          className="border-none bg-neutral-50 rounded-2xl text-foreground px-5 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-foreground transition-all disabled:opacity-50"
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="message" className="text-sm font-medium">
+        <label htmlFor="message" className="text-base font-medium px-1">
           Ziņojums
         </label>
         <textarea
@@ -94,16 +99,16 @@ export function ContactForm() {
           required
           disabled={status === 'sending'}
           placeholder="Kā varam palīdzēt?"
-          className="border border-border bg-background text-foreground px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground resize-none disabled:opacity-50"
+          className="border-none bg-neutral-50 rounded-2xl text-foreground px-5 py-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-foreground transition-all resize-none disabled:opacity-50"
         />
       </div>
 
-      {status === 'error' && <p className="text-sm text-red-500">{errorMsg}</p>}
+      {status === 'error' && <p className="text-base text-red-500 px-1">{errorMsg}</p>}
 
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="w-full bg-foreground text-background px-10 py-5 text-lg font-semibold tracking-tight hover:bg-foreground/90 transition-colors disabled:opacity-50"
+        className="mt-2 w-full bg-foreground text-background rounded-full px-10 py-5 text-lg font-medium tracking-tight hover:bg-foreground/90 transition-all disabled:opacity-50"
       >
         {status === 'sending' ? 'Sūta…' : 'Nosūtīt ziņojumu'}
       </button>

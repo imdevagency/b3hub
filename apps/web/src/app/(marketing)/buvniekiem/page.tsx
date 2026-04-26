@@ -4,13 +4,6 @@ import { ArrowRight, CheckCircle } from 'lucide-react';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 
-const problems = [
-  { old: 'Zvani karjeriem un šoferiem', new: 'Cenas un pieejamība uzreiz' },
-  { old: 'Piegādes sekošana WhatsApp', new: 'Reāllaika GPS izsekošana' },
-  { old: 'Papīra svara zīmes un CMR', new: 'Visi dokumenti ģenerēti automātiski' },
-  { old: 'Rēķini no 10 dažādiem piegādātājiem', new: 'Viss pārskatāms vienā projektā' },
-];
-
 const journey = [
   {
     step: '01',
@@ -58,13 +51,13 @@ export default function BuvnieckiemPage() {
           }
         >
           {/* Right: mock live delivery card */}
-          <div className="w-full border border-border flex flex-col text-sm self-center">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="w-full bg-background rounded-3xl shadow-xl flex flex-col text-sm self-center overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 bg-neutral-50">
               <span className="font-mono text-xs text-muted-foreground tracking-widest">
                 B3-2847
               </span>
               <span className="text-xs font-bold tracking-widest uppercase flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
                 Aktīvs
               </span>
             </div>
@@ -74,7 +67,7 @@ export default function BuvnieckiemPage() {
                   Granīta šķembas 20-40
                 </p>
                 <p className="text-muted-foreground font-light text-sm">
-                  22 tonnas · Karjers "Liepa"
+                  22 tonnas · Karjers &quot;Liepa&quot;
                 </p>
               </div>
 
@@ -91,20 +84,22 @@ export default function BuvnieckiemPage() {
               </div>
 
               {/* Driver */}
-              <div className="flex items-center gap-4 border-t border-border pt-6">
-                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="flex items-center gap-4 bg-neutral-50 rounded-2xl p-4 mt-2">
+                <div className="h-10 w-10 rounded-full bg-background shadow-sm flex items-center justify-center text-xs font-bold shrink-0">
                   AK
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium">Andris K.</p>
+                  <p className="font-medium text-base">Andris K.</p>
                   <p className="text-xs text-muted-foreground">MAN TGX · LV-3847</p>
                 </div>
-                <p className="text-xs text-muted-foreground shrink-0">~15 min</p>
+                <p className="text-xs text-muted-foreground shrink-0 bg-background px-2.5 py-1 rounded-full shadow-sm">
+                  ~15 min
+                </p>
               </div>
 
               {/* Auto-doc note */}
-              <div className="flex items-start gap-3 text-xs text-muted-foreground border border-border p-4">
-                <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={1.5} />
+              <div className="flex items-start gap-3 text-xs text-primary bg-primary/5 rounded-2xl p-4">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.5} />
                 <span>
                   Svara zīme un CMR tiks ģenerēti automātiski pēc piegādes apstiprināšanas.
                 </span>
@@ -114,7 +109,7 @@ export default function BuvnieckiemPage() {
         </Hero>
 
         {/* ── BENTO FEATURES ── */}
-        <section className="w-full bg-neutral-50">
+        <section className="w-full bg-background">
           <Container className="py-24">
             <div className="flex flex-col gap-16">
               <div className="max-w-2xl">
@@ -123,26 +118,26 @@ export default function BuvnieckiemPage() {
                   <br />
                   Vairāk laika darbam.
                 </h2>
-                <p className="text-xl text-muted-foreground font-light">
+                <p className="text-xl text-muted-foreground font-light leading-relaxed">
                   B3Hub digitalizē visu piegādes ķēdi no karjera līdz objektam. Vairs nekādu
                   pazaudētu svara zīmju un lieku zvanu.
                 </p>
               </div>
 
               {/* Bento Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
                 {/* Feature 1: Large Wide */}
-                <div className="md:col-span-2 bg-muted/30 border border-border p-8 flex flex-col justify-between group overflow-hidden relative">
+                <div className="md:col-span-2 bg-neutral-100 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between group overflow-hidden relative shadow-sm">
                   <div className="z-10 max-w-sm">
-                    <h3 className="text-2xl font-bold tracking-tight mb-2">
+                    <h3 className="text-3xl font-bold tracking-tight mb-3">
                       Reāllaika GPS izsekošana
                     </h3>
-                    <p className="text-muted-foreground font-light text-lg">
+                    <p className="text-muted-foreground font-light text-lg leading-relaxed">
                       Seko līdzi katram auto no iekraušanas līdz būvobjektam bez WhatsApp zvaniem.
                     </p>
                   </div>
                   {/* Decorative map mock */}
-                  <div className="absolute -right-12 -bottom-12 w-80 h-80 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-5deg] rotate-[5deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out items-center justify-center overflow-hidden hidden md:flex">
+                  <div className="absolute -right-12 -bottom-12 w-80 h-80 bg-background rounded-3xl shadow-2xl skew-x-[-5deg] rotate-[5deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out items-center justify-center overflow-hidden hidden md:flex">
                     <div
                       className="absolute inset-0 opacity-20"
                       style={{
@@ -158,38 +153,38 @@ export default function BuvnieckiemPage() {
                 </div>
 
                 {/* Feature 2: Small Square */}
-                <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <CheckCircle className="w-24 h-24" />
+                <div className="bg-neutral-100 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between text-center relative overflow-hidden shadow-sm">
+                  <div className="absolute top-0 right-0 p-6 opacity-10">
+                    <CheckCircle className="w-32 h-32" />
                   </div>
-                  <h3 className="text-6xl font-black tracking-tighter mb-2 z-10 mt-auto">0</h3>
-                  <p className="text-muted-foreground font-light z-10">
+                  <h3 className="text-7xl font-black tracking-tighter mb-2 z-10 mt-auto">0</h3>
+                  <p className="text-muted-foreground font-light text-lg z-10 leading-snug">
                     Pazaudētu svara zīmju un CMR. Viss automātiski.
                   </p>
                 </div>
 
                 {/* Feature 3: Small Square */}
-                <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center">
-                  <h3 className="text-3xl font-bold tracking-tight mb-3 mt-auto">Katalogs</h3>
-                  <p className="text-muted-foreground font-light">
+                <div className="bg-neutral-100 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between text-center shadow-sm">
+                  <h3 className="text-4xl font-bold tracking-tight mb-3 mt-auto">Katalogs</h3>
+                  <p className="text-muted-foreground font-light text-lg leading-snug">
                     Karjeru un piegādātāju cenas un pieejamība vienā vietā.
                   </p>
                 </div>
 
                 {/* Feature 4: Medium Wide */}
-                <div className="md:col-span-2 bg-foreground text-background p-8 flex flex-col justify-between overflow-hidden relative">
+                <div className="md:col-span-2 bg-foreground text-background rounded-[2rem] p-8 md:p-12 flex flex-col justify-between overflow-hidden relative shadow-lg">
                   <div className="z-10 max-w-sm">
-                    <h3 className="text-2xl font-bold tracking-tight mb-2">
+                    <h3 className="text-3xl font-bold tracking-tight mb-3">
                       Vienots apkopots rēķins
                     </h3>
-                    <p className="text-background/70 font-light text-lg">
+                    <p className="text-background/70 font-light text-lg leading-relaxed">
                       Saņem vienu strukturētu rēķinu par visām mēneša piegādēm, eksportējamu
                       jebkurai grāmatvedībai.
                     </p>
                   </div>
                   {/* Decorative element */}
-                  <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
-                    <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center">
+                  <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/10 to-transparent items-center justify-end pr-12 hidden md:flex">
+                    <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-white/10 rounded-3xl flex items-center justify-center shadow-2xl">
                       <span className="text-xl font-bold text-white tracking-widest uppercase">
                         E-RĒĶINS
                       </span>
@@ -202,7 +197,7 @@ export default function BuvnieckiemPage() {
         </section>
 
         {/* ── STICKY JOURNEY ── */}
-        <section className="w-full bg-background">
+        <section className="w-full bg-neutral-50">
           <Container className="py-24">
             <div className="flex flex-col md:flex-row gap-16 relative pb-32">
               {/* Left: Scrollable Text Steps */}
@@ -232,9 +227,9 @@ export default function BuvnieckiemPage() {
 
               {/* Right: Sticky Mockup Wrapper */}
               <div className="md:w-1/2 relative hidden md:block">
-                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
+                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-background rounded-[4rem] p-4 flex flex-col gap-2 shadow-2xl ring-1 ring-border border-8 border-neutral-100">
                   {/* Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-100 rounded-b-2xl z-20" />
 
                   {/* App header mock */}
                   <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
@@ -244,28 +239,28 @@ export default function BuvnieckiemPage() {
 
                   {/* App body mock */}
                   <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative">
-                    <div className="w-full h-56 bg-background border border-border shadow-sm rounded-2xl flex items-center justify-center p-6">
-                      <div className="w-full h-full border-2 border-dashed border-border rounded-xl flex items-center justify-center text-muted-foreground font-medium text-xl">
+                    <div className="w-full h-56 bg-background ring-1 ring-border border-b-2 border-b-border rounded-3xl flex items-center justify-center p-6">
+                      <div className="w-full h-full rounded-2xl flex items-center justify-center text-muted-foreground font-medium text-xl text-center bg-neutral-100/50">
                         Solis mainās <br />
                         ritinot
                       </div>
                     </div>
-                    <div className="w-full h-20 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4">
-                      <div className="w-12 h-12 bg-muted rounded-xl" />
+                    <div className="w-full h-20 bg-background ring-1 ring-border rounded-2xl p-4 flex gap-4 items-center">
+                      <div className="w-12 h-12 bg-neutral-100 rounded-xl" />
                       <div className="flex-1 flex flex-col gap-2 justify-center">
                         <div className="w-2/3 h-2 bg-muted-foreground rounded-full" />
-                        <div className="w-1/3 h-2 bg-muted rounded-full" />
+                        <div className="w-1/3 h-2 bg-neutral-200 rounded-full" />
                       </div>
                     </div>
-                    <div className="w-full h-20 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-50">
-                      <div className="w-12 h-12 bg-muted rounded-xl" />
+                    <div className="w-full h-20 bg-background ring-1 ring-border rounded-2xl p-4 flex gap-4 opacity-40 items-center">
+                      <div className="w-12 h-12 bg-neutral-100 rounded-xl" />
                       <div className="flex-1 flex flex-col gap-2 justify-center">
-                        <div className="w-2/3 h-2 bg-muted-foreground rounded-full" />
-                        <div className="w-1/3 h-2 bg-muted rounded-full" />
+                        <div className="w-1/2 h-2 bg-muted-foreground rounded-full" />
+                        <div className="w-1/4 h-2 bg-neutral-200 rounded-full" />
                       </div>
                     </div>
                     {/* Gradient fade at bottom of mockup */}
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-background to-transparent" />
                   </div>
                 </div>
               </div>
@@ -275,7 +270,7 @@ export default function BuvnieckiemPage() {
 
         {/* ── FAQ ── */}
         <FAQAccordion
-          className="bg-neutral-50"
+          className="bg-background"
           items={[
             {
               q: 'Cik maksā izmantot B3Hub kā pircējam?',
@@ -297,17 +292,21 @@ export default function BuvnieckiemPage() {
         />
 
         {/* ── CTA ── */}
-        <section className="w-full bg-background">
-          <Container className="py-32 flex flex-col items-center justify-center text-center gap-8">
-            <h2 className="text-5xl md:text-6xl font-bold tracking-tighter leading-none">
-              Aizmirsti par papīriem.
-            </h2>
-            <p className="text-muted-foreground font-light text-lg">
-              Bezmaksas. Nav kreditkartes. Sāc šodien.
-            </p>
-            <CTAButton href={`/register`} variant="primary" size="lg">
-              Izveidot kontu <ArrowRight className="w-6 h-6" />
-            </CTAButton>
+        <section className="w-full py-32 bg-foreground">
+          <Container className="flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
+            <div className="flex flex-col gap-4">
+              <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-none">
+                Aizmirsti par papīriem.
+              </h2>
+              <p className="text-background/70 font-light text-xl">
+                Bezmaksas. Nav kreditkartes. Sāc šodien.
+              </p>
+            </div>
+            <div className="flex flex-col gap-4 min-w-fit">
+              <CTAButton href={`/register`} variant="inverted" size="lg">
+                Izveidot kontu <ArrowRight className="w-6 h-6 ml-2" />
+              </CTAButton>
+            </div>
           </Container>
         </section>
       </main>

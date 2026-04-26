@@ -58,14 +58,14 @@ export default function ParvadatajemPage() {
           pricingNote="Komisija 8%. Nav ikmēneša maksas."
         >
           {/* Right: mock job card */}
-          <div className="w-full border border-border flex flex-col text-sm self-center">
+          <div className="w-full bg-background rounded-3xl shadow-xl flex flex-col text-sm self-center overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4 bg-neutral-50 text-foreground">
               <span className="font-mono text-xs text-muted-foreground tracking-widest">
                 Jauns darbs
               </span>
               <span className="text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 text-foreground">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 Gaida atbildi
               </span>
             </div>
@@ -77,12 +77,12 @@ export default function ParvadatajemPage() {
                   Atkritumu grants — 22 t
                 </p>
                 <p className="text-muted-foreground font-light text-sm">
-                  Karjers "Liepa" → Būvlaukums Rīgā
+                  Karjers &quot;Liepa&quot; → Būvlaukums Rīgā
                 </p>
               </div>
 
               {/* Stats row */}
-              <div className="grid grid-cols-3 gap-4 border-t border-border pt-6">
+              <div className="grid grid-cols-3 gap-4 bg-neutral-50 rounded-2xl p-4 mt-2">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <MapPin className="w-3 h-3" strokeWidth={1.5} />
@@ -107,18 +107,18 @@ export default function ParvadatajemPage() {
               </div>
 
               {/* Action buttons (mocked) */}
-              <div className="grid grid-cols-2 gap-3 border-t border-border pt-6">
-                <div className="border border-border py-3 text-center text-sm font-medium text-muted-foreground">
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="bg-neutral-100 rounded-full py-3 text-center text-sm font-medium text-muted-foreground flex items-center justify-center cursor-pointer hover:bg-neutral-200 transition-colors">
                   Noraidīt
                 </div>
-                <div className="bg-foreground text-background py-3 text-center text-sm font-medium">
+                <div className="bg-foreground rounded-full text-background py-3 text-center text-sm font-medium flex items-center justify-center cursor-pointer hover:bg-foreground/90 transition-colors">
                   Pieņemt darbu
                 </div>
               </div>
 
               {/* Auto-doc note */}
-              <div className="flex items-start gap-3 text-xs text-muted-foreground border border-border p-4">
-                <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={1.5} />
+              <div className="flex items-start gap-3 text-xs text-primary bg-primary/5 rounded-2xl p-4">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.5} />
                 <span>CMR un svara zīme tiks ģenerēti automātiski pēc izkraušanas.</span>
               </div>
             </div>
@@ -165,7 +165,7 @@ export default function ParvadatajemPage() {
         </section>
 
         {/* ── STICKY JOURNEY ── */}
-        <section className="w-full bg-neutral-50">
+        <section className="w-full bg-background mt-48">
           <Container className="py-24">
             <div className="flex flex-col md:flex-row gap-16 relative pb-32">
               {/* Left: Scrollable Text Steps */}
@@ -195,9 +195,9 @@ export default function ParvadatajemPage() {
 
               {/* Right: Sticky Phone Mockup */}
               <div className="md:w-1/2 relative hidden md:block">
-                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-foreground border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
+                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-foreground rounded-[4rem] p-4 flex flex-col gap-2 shadow-2xl ring-1 ring-border border-8 border-neutral-100">
                   {/* Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-100 rounded-b-2xl z-20" />
 
                   {/* App header */}
                   <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
@@ -211,7 +211,7 @@ export default function ParvadatajemPage() {
                   {/* Internal UI */}
                   <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative text-background">
                     {/* Current Active Trip */}
-                    <div className="w-full bg-background/10 border border-background/10 rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="w-full bg-background/10 border border-background/10 rounded-3xl p-6 flex flex-col gap-5">
                       <div className="flex justify-between items-start">
                         <span className="text-xs uppercase tracking-widest text-primary font-bold">
                           AKTĪVS REISS
@@ -223,35 +223,35 @@ export default function ParvadatajemPage() {
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center gap-1 mt-1">
                             <div className="w-3 h-3 rounded-full bg-background border-2 border-primary" />
-                            <div className="w-0.5 h-8 bg-background/20 rounded-full" />
+                            <div className="w-0.5 h-10 bg-background/20 rounded-full" />
                             <div className="w-3 h-3 rounded-full bg-primary" />
                           </div>
                           <div className="flex flex-col justify-between py-0.5">
                             <div>
-                              <p className="text-sm font-bold">Karjers "Liepa"</p>
+                              <p className="text-sm font-bold">Karjers &quot;Liepa&quot;</p>
                               <p className="text-xs text-background/50">Iekraušana</p>
                             </div>
                             <div>
-                              <p className="text-sm font-bold">Zolitudes iela 11a, Rīga</p>
+                              <p className="text-sm font-bold mt-2">Zolitudes iela 11a, Rīga</p>
                               <p className="text-xs text-background/50">Izkraušana</p>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 mt-2 pt-4 border-t border-background/10">
-                        <div className="h-10 flex-1 bg-primary text-background rounded-lg flex items-center justify-center text-sm font-bold">
+                      <div className="flex items-center gap-3 mt-4 pt-5 border-t border-background/10">
+                        <div className="flex-1 bg-primary hover:bg-primary/90 transition-colors text-background rounded-2xl py-3.5 flex items-center justify-center text-sm font-bold cursor-pointer">
                           Sākt Navigāciju
                         </div>
-                        <div className="h-10 w-10 bg-background/20 rounded-lg flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-background" />
+                        <div className="w-12 h-12 bg-background/10 hover:bg-background/20 transition-colors rounded-2xl flex items-center justify-center cursor-pointer shrink-0">
+                          <MapPin className="w-5 h-5 text-background" />
                         </div>
                       </div>
                     </div>
 
                     {/* Future / Finished trips faded */}
                     <div className="w-full h-20 bg-background/5 border border-background/5 rounded-2xl p-4 flex gap-4 opacity-50 items-center">
-                      <div className="w-12 h-12 bg-background/10 rounded-full" />
+                      <div className="w-12 h-12 bg-background/10 rounded-xl" />
                       <div className="flex-1 flex flex-col gap-2">
                         <div className="w-1/2 h-2.5 bg-background/20 rounded-full" />
                         <div className="w-1/3 h-2 bg-background/10 rounded-full" />
@@ -268,7 +268,7 @@ export default function ParvadatajemPage() {
 
         {/* ── FAQ ── */}
         <FAQAccordion
-          className="bg-neutral-50"
+          className="bg-background"
           items={[
             {
               q: 'Vai tu vari pievienoties?',
@@ -286,17 +286,21 @@ export default function ParvadatajemPage() {
         />
 
         {/* ── CTA ── */}
-        <section className="w-full bg-background">
-          <Container className="py-32 flex flex-col items-center justify-center text-center gap-8">
-            <h2 className="text-5xl md:text-6xl font-bold tracking-tighter leading-none">
-              Nākamais reiss — tavs.
-            </h2>
-            <p className="text-muted-foreground font-light text-lg">
-              Reģistrācija bez maksas. Komisija tikai par paveiktu darbu.
-            </p>
-            <CTAButton href={`/register?role=carrier`} variant="primary" size="lg">
-              Kļūt par šoferi <ArrowRight className="w-6 h-6" />
-            </CTAButton>
+        <section className="w-full bg-foreground text-background py-32">
+          <Container className="flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
+            <div className="flex flex-col gap-4">
+              <h2 className="text-5xl md:text-7xl font-medium tracking-tighter leading-none">
+                Nākamais reiss — tavs.
+              </h2>
+              <p className="text-background/70 font-light text-xl">
+                Reģistrācija bez maksas. Komisija tikai par paveiktu darbu.
+              </p>
+            </div>
+            <div className="flex flex-col gap-4 min-w-fit">
+              <CTAButton href={`/register?role=carrier`} variant="inverted" size="lg">
+                Kļūt par šoferi <ArrowRight className="w-6 h-6 ml-2" />
+              </CTAButton>
+            </div>
           </Container>
         </section>
       </main>

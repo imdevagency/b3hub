@@ -9,6 +9,8 @@ interface HeroProps {
   pricingNote?: ReactNode;
   children?: ReactNode; // Right side mockup/visual content
   align?: 'left' | 'center';
+  className?: string;
+  wrapperClassName?: string; // full-bleed section background
 }
 
 export function Hero({
@@ -19,11 +21,16 @@ export function Hero({
   pricingNote,
   children,
   align = 'left',
+  className,
+  wrapperClassName,
 }: HeroProps) {
   const hasRightSide = Boolean(children);
 
-  return (
-    <Container as="section" className="pt-40 pb-32 md:pt-48 md:pb-40">
+  const inner = (
+    <Container
+      as="section"
+      className={`pt-40 pb-32 md:pt-48 md:pb-40${className ? ` ${className}` : ''}`}
+    >
       <div
         className={
           hasRightSide
@@ -79,4 +86,10 @@ export function Hero({
       </div>
     </Container>
   );
+
+  if (wrapperClassName) {
+    return <div className={`w-full ${wrapperClassName}`}>{inner}</div>;
+  }
+
+  return inner;
 }
