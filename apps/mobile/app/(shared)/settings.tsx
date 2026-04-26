@@ -176,71 +176,76 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ── Profile Header ─────────────────────────────── */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitial}>{user?.email?.charAt(0).toUpperCase() || 'U'}</Text>
-          </View>
-          <Text style={styles.profileName}>{user?.email?.split('@')[0] || 'Lietotājs'}</Text>
-
-          <View style={styles.profileBadges}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{user?.email || 'Nav adroles'}</Text>
+        {/* ── Profile Header — auth only ─────────────── */}
+        {user && (
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>{user.email?.charAt(0).toUpperCase() || 'U'}</Text>
             </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {user?.userType === 'BUYER' ? 'Pircējs' : 'Administrators'}
-              </Text>
+            <Text style={styles.profileName}>{user.email?.split('@')[0]}</Text>
+            <View style={styles.profileBadges}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{user.email}</Text>
+              </View>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {user.userType === 'BUYER' ? 'Pircējs' : 'Administrators'}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* ── Notifications ─────────────────────────────── */}
-        <SectionHeader label="PAZIŅOJUMI" />
-        <View style={styles.cardGroup}>
-          <ToggleRow
-            icon={<Bell size={20} color="#6b7280" />}
-            label="Push paziņojumi"
-            description="Saņemt paziņojumus uz ierīci"
-            value={pushEnabled}
-            onToggle={(v) => {
-              setPushEnabled(v);
-              savePrefs({ notifPush: v });
-            }}
-          />
-          <ToggleRow
-            icon={<Bell size={20} color="#6b7280" />}
-            label="Pasūtījumu atjauninājumi"
-            description="Statusa izmaiņas jūsu pasūtījumiem"
-            value={orderUpdates}
-            onToggle={(v) => {
-              setOrderUpdates(v);
-              savePrefs({ notifOrderUpdates: v });
-            }}
-          />
-          <ToggleRow
-            icon={<Bell size={20} color="#6b7280" />}
-            label="Jaunumi un paziņojumi"
-            description="Informācija par jaunumiem un piedāvājumiem"
-            value={jobAlerts}
-            onToggle={(v) => {
-              setJobAlerts(v);
-              savePrefs({ notifJobAlerts: v });
-            }}
-          />
-          <ToggleRow
-            icon={<Bell size={20} color="#6b7280" />}
-            label="Mārketinga e-pasti"
-            description="Jaunumi, piedāvājumi un atjauninājumi"
-            value={marketingEmails}
-            onToggle={(v) => {
-              setMarketingEmails(v);
-              savePrefs({ notifMarketing: v });
-            }}
-          />
-        </View>
+        {/* ── Notifications — auth only ─────────────────── */}
+        {user && (
+          <>
+            <SectionHeader label="PAZIŅOJUMI" />
+            <View style={styles.cardGroup}>
+              <ToggleRow
+                icon={<Bell size={20} color="#6b7280" />}
+                label="Push paziņojumi"
+                description="Saņemt paziņojumus uz ierīci"
+                value={pushEnabled}
+                onToggle={(v) => {
+                  setPushEnabled(v);
+                  savePrefs({ notifPush: v });
+                }}
+              />
+              <ToggleRow
+                icon={<Bell size={20} color="#6b7280" />}
+                label="Pasūtījumu atjauninājumi"
+                description="Statusa izmaiņas jūsu pasūtījumiem"
+                value={orderUpdates}
+                onToggle={(v) => {
+                  setOrderUpdates(v);
+                  savePrefs({ notifOrderUpdates: v });
+                }}
+              />
+              <ToggleRow
+                icon={<Bell size={20} color="#6b7280" />}
+                label="Jaunumi un paziņojumi"
+                description="Informācija par jaunumiem un piedāvājumiem"
+                value={jobAlerts}
+                onToggle={(v) => {
+                  setJobAlerts(v);
+                  savePrefs({ notifJobAlerts: v });
+                }}
+              />
+              <ToggleRow
+                icon={<Bell size={20} color="#6b7280" />}
+                label="Mārketinga e-pasti"
+                description="Jaunumi, piedāvājumi un atjauninājumi"
+                value={marketingEmails}
+                onToggle={(v) => {
+                  setMarketingEmails(v);
+                  savePrefs({ notifMarketing: v });
+                }}
+              />
+            </View>
+          </>
+        )}
 
-        {/* ── Language ──────────────────────────────────── */}
+        {/* ── Language — always visible ─────────────────── */}
         <SectionHeader label="VALODA" />
         <View style={styles.cardGroup}>
           <TouchableOpacity
@@ -301,27 +306,56 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* ── Account ───────────────────────────────────── */}
-        <SectionHeader label="KONTS" />
-        <View style={styles.cardGroup}>
-          <LinkRow
-            icon={<KeyRound size={20} color="#6b7280" />}
-            label="Nomainīt paroli"
-            onPress={() => {
-              haptics.light();
-              router.push('/change-password');
-            }}
-            rightSlot={
-              <Text style={{ color: '#3b82f6', fontWeight: '700', fontSize: 16 }}>{'>>>'}</Text>
-            }
-          />
-          <LinkRow
-            icon={<LogOut size={20} color="#ef4444" />}
-            label="Izrakstīties"
-            onPress={handleLogout}
-            danger
-          />
-        </View>
+        {/* ── Account — auth only ───────────────────────── */}
+        {user ? (
+          <>
+            <SectionHeader label="KONTS" />
+            <View style={styles.cardGroup}>
+              <LinkRow
+                icon={<KeyRound size={20} color="#6b7280" />}
+                label="Nomainīt paroli"
+                onPress={() => {
+                  haptics.light();
+                  router.push('/change-password');
+                }}
+                rightSlot={
+                  <Text style={{ color: '#3b82f6', fontWeight: '700', fontSize: 16 }}>{'>>>'}</Text>
+                }
+              />
+              <LinkRow
+                icon={<LogOut size={20} color="#ef4444" />}
+                label="Izrakstīties"
+                onPress={handleLogout}
+                danger
+              />
+            </View>
+          </>
+        ) : (
+          <View style={styles.guestSignInPrompt}>
+            <Text style={styles.guestSignInText}>
+              Pierakstieties, lai pārvaldītu kontu, paziņojumus un paroli
+            </Text>
+            <TouchableOpacity
+              style={styles.guestSignInBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/login' as never);
+              }}
+            >
+              <Text style={styles.guestSignInBtnText}>Ieiet kontā</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/register' as never);
+              }}
+            >
+              <Text style={styles.guestRegisterText}>Nav konta? Reģistrēties</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.bottom} />
       </ScrollView>
@@ -463,6 +497,44 @@ const styles = StyleSheet.create({
   },
   langOptActive: {
     color: colors.textPrimary,
+  },
+  guestSignInPrompt: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 20,
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  guestSignInText: {
+    fontSize: 13,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  guestSignInBtn: {
+    backgroundColor: '#111827',
+    borderRadius: 100,
+    paddingVertical: 13,
+    paddingHorizontal: 32,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
+  guestSignInBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
+  guestRegisterText: {
+    fontSize: 14,
+    color: '#374151',
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
   },
   bottom: {
     height: 40,

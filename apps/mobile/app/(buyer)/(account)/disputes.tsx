@@ -18,6 +18,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { GuestWall } from '@/components/ui/GuestWall';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Text } from '@/components/ui/text';
 import { colors } from '@/lib/theme';
@@ -40,8 +41,18 @@ const STATUS_MAP: Record<DisputeStatus, { label: string; bg: string; color: stri
 };
 
 export default function DisputesScreen() {
-  const { token } = useAuth();
+  const { token, user, isLoading } = useAuth();
   const router = useRouter();
+
+  if (!isLoading && !user) {
+    return (
+      <GuestWall
+        headerTitle="Strīdi"
+        title="Pierakstieties, lai skatītu strīdus"
+        subtitle="Strīdi par pasūtījumiem ir pieejami tikai reģistrētiem lietotājiem."
+      />
+    );
+  }
 
   const [disputes, setDisputes] = useState<ApiDispute[]>([]);
 

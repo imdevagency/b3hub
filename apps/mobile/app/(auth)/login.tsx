@@ -20,7 +20,7 @@ import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { t } from '@/lib/translations';
-import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
+import { ChevronLeft, Eye, EyeOff, Phone } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 
@@ -82,6 +82,23 @@ export default function LoginScreen() {
           {/* Typographic Hero */}
           <Text style={s.heroTitle}>Sveiki atpakaļ</Text>
           <Text style={s.heroSubtitle}>Ievadiet savus datus, lai turpinātu.</Text>
+
+          {/* Phone OTP — primary method */}
+          <TouchableOpacity
+            style={s.phonePrimaryBtn}
+            onPress={() => router.push('/(auth)/phone-otp')}
+            activeOpacity={0.85}
+          >
+            <Phone size={20} color="#fff" />
+            <Text style={s.phonePrimaryBtnText}>Pieslēgties ar tālruņa numuru</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={s.dividerRow}>
+            <View style={s.dividerLine} />
+            <Text style={s.dividerLabel}>vai ar e-pastu</Text>
+            <View style={s.dividerLine} />
+          </View>
 
           {apiError && (
             <View style={s.apiErrBox}>
@@ -213,7 +230,43 @@ const s = StyleSheet.create({
   heroSubtitle: {
     fontSize: 16,
     color: colors.textMuted,
-    marginBottom: 32,
+    marginBottom: 24,
+    fontFamily: 'Inter_400Regular',
+  },
+
+  // Phone primary button
+  phonePrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#000',
+    height: 56,
+    borderRadius: 28,
+    marginBottom: 20,
+  },
+  phonePrimaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
+
+  // Divider
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
     fontFamily: 'Inter_400Regular',
   },
 

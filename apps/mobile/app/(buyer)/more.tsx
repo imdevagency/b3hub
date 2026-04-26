@@ -114,12 +114,21 @@ function ListRow({
 }
 
 export default function MoreScreen() {
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const { mode, isMultiRole, setMode, availableModes } = useMode();
   const router = useRouter();
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
   const accountLabel = user ? getRoleName(user) : 'Viesis';
+
+  /** Redirect guests to register instead of navigating to a protected screen. */
+  const requireAuth = (action: () => void) => () => {
+    if (!user) {
+      router.push('/(auth)/register' as never);
+      return;
+    }
+    action();
+  };
 
   const handleLogout = () => {
     Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
@@ -134,44 +143,50 @@ export default function MoreScreen() {
     ]);
   };
 
-  // ── Main navigation tiles (always visible) ────────────────────
-  const mainTiles: TileItem[] = [
-    {
-      icon: User,
-      label: 'Profils',
-      onPress: () => router.push('/(buyer)/profile'),
-    },
-    {
-      icon: ClipboardList,
-      label: 'Pasūtījumi',
-      onPress: () => router.push('/(buyer)/orders'),
-    },
-    {
-      icon: MessageCircle,
-      label: 'Ziņojumi',
-      onPress: () => router.push('/messages'),
-    },
-    {
-      icon: FileText,
-      label: 'Dokumenti',
-      // Rēķini + Sertifikāti are tabs inside the Documents hub — no separate tile needed
-      onPress: () => router.push('/(buyer)/(account)/documents'),
-    },
-    {
-      icon: MapPin,
-      label: 'Adreses',
-      onPress: () => router.push('/(buyer)/(account)/saved-addresses'),
-    },
-    {
-      icon: Bell,
-      label: 'Paziņojumi',
-      onPress: () => router.push('/notifications'),
-    },
-    {
-      icon: AlertCircle,
-      label: 'Strīdi',
-      onPress: () => router.push('/(buyer)/(account)/disputes'),
-    },
+  // ── Main navigation tiles (auth-required) ────────────────────
+  const mainTiles: TileItem[] = user
+    ? [
+        {
+          icon: User,
+          label: 'Profils',
+          onPress: requireAuth(() => router.push('/(buyer)/profile')),
+        },
+        {
+          icon: ClipboardList,
+          label: 'Pasūtījumi',
+          onPress: requireAuth(() => router.push('/(buyer)/orders')),
+        },
+        {
+          icon: MessageCircle,
+          label: 'Ziņojumi',
+          onPress: requireAuth(() => router.push('/messages')),
+        },
+        {
+          icon: FileText,
+          label: 'Dokumenti',
+          // Rēķini + Sertifikāti are tabs inside the Documents hub — no separate tile needed
+          onPress: requireAuth(() => router.push('/(buyer)/(account)/documents')),
+        },
+        {
+          icon: MapPin,
+          label: 'Adreses',
+          onPress: requireAuth(() => router.push('/(buyer)/(account)/saved-addresses')),
+        },
+        {
+          icon: Bell,
+          label: 'Paziņojumi',
+          onPress: requireAuth(() => router.push('/notifications')),
+        },
+        {
+          icon: AlertCircle,
+          label: 'Strīdi',
+          onPress: requireAuth(() => router.push('/(buyer)/(account)/disputes')),
+        },
+      ]
+    : [];
+
+  // ── Always-public tiles (guests + authenticated) ──────────────
+  const publicTiles: TileItem[] = [
     {
       icon: Settings,
       label: 'Iestatījumi',
@@ -324,8 +339,16 @@ export default function MoreScreen() {
           <ChevronRight size={18} color={colors.textMuted} />
         </TouchableOpacity>
 
-        {/* ── Main tiles ─────────────────────────────────────── */}
-        <TileGrid tiles={mainTiles} />
+        {/* ── Main tiles (auth-required) ─────────────────────── */}
+        {!isLoading && !user && (
+          <View style={s.guestBanner}>
+            <User size={20} color={colors.textMuted} strokeWidth={1.6} />
+            <Text style={s.guestBannerText}>
+              Pierakstieties, lai piekļūtu pasūtījumiem, dokumentiem un kontam
+            </Text>
+          </View>
+        )}
+        {mainTiles.length > 0 && <TileGrid tiles={mainTiles} />}
 
         {/* ── Company tiles ──────────────────────────────────── */}
         {companyTiles.length > 0 && (
@@ -368,6 +391,10 @@ export default function MoreScreen() {
             <TileGrid tiles={becomeTiles} />
           </>
         )}
+
+        {/* ── Public tiles (settings — always visible) ───────── */}
+        <Text style={s.sectionLabel}>KONTS</Text>
+        <TileGrid tiles={publicTiles} />
 
         {/* ── Help & support ─────────────────────────────────── */}
         <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
@@ -550,6 +577,28 @@ const s = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
     marginLeft: 48,
+  },
+
+  // Guest banner
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.bgCard,
+    borderRadius: 14,
+    marginHorizontal: H_PAD,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  guestBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: colors.textMuted,
+    lineHeight: 18,
   },
 
   // Guest actions

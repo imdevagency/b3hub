@@ -11,11 +11,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
+    SmsModule,
     // registerAsync ensures ConfigModule has loaded .env before the secret is read
     JwtModule.registerAsync({
       imports: [ConfigModule],

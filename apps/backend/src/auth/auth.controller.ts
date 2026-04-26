@@ -29,6 +29,8 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SendPhoneOtpDto } from './dto/send-phone-otp.dto';
+import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 
 import { ApiTags } from '@nestjs/swagger';
@@ -84,6 +86,29 @@ export class AuthController {
   async refresh(@Body('refreshToken') refreshToken: string) {
     if (!refreshToken) throw new UnauthorizedException('refreshToken required');
     return this.authService.refreshAccessToken(refreshToken);
+  }
+
+  // ── Phone OTP ────────────────────────────────────────────────────────────
+
+  /** Send a 6-digit OTP to the provided phone number (60-second resend cooldown) */
+  @Post('phone/send-otp')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  async sendPhoneOtp(@Body() dto: SendPhoneOtpDto) {
+    return this.authService.sendPhoneOtp(dto);
+  }
+
+  /**
+   * Verify phone OTP.
+   * - Existing user → `{ user, token, refreshToken }`
+   * - New user, name provided → creates account, same response
+   * - New user, no name → `{ needsProfile: true }`
+   */
+  @Post('phone/verify')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  async verifyPhoneOtp(@Body() dto: VerifyPhoneOtpDto, @Req() req: Request) {
+    return this.authService.verifyPhoneOtp(dto, req.ip);
   }
 
   /** Revoke the current refresh token (server-side logout). */

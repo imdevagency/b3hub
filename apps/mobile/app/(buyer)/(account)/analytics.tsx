@@ -23,6 +23,7 @@ import { BarChart2, Leaf, Package, TrendingUp, ExternalLink } from 'lucide-react
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { GuestWall } from '@/components/ui/GuestWall';
 import { Text } from '@/components/ui/text';
 import { colors, spacing, radius } from '@/lib/tokens';
 
@@ -60,8 +61,19 @@ function StatTile({
 }
 
 export default function AnalyticsScreen() {
-  const { token, user } = useAuth();
+  const { token, user, isLoading } = useAuth();
   const _router = useRouter();
+
+  if (!isLoading && !user) {
+    return (
+      <GuestWall
+        headerTitle="Analītika"
+        title="Pierakstieties, lai skatītu analītiku"
+        subtitle="Pasūtījumu statistika un izdevumu analītika ir pieejama tikai reģistrētiem uznēmuma kontiem."
+      />
+    );
+  }
+
   React.useEffect(() => {
     if (user && !user.isCompany) _router.replace('/(buyer)/profile');
   }, [user, _router]);

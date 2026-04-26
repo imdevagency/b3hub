@@ -112,6 +112,29 @@ export const authApi = {
       body: JSON.stringify({ token, newPassword }),
     }),
 
+  /** Send a 6-digit OTP to the given E.164 phone number */
+  sendPhoneOtp: (phone: string) =>
+    apiFetch<{ ok: boolean }>('/auth/phone/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
+
+  /**
+   * Verify OTP.
+   * - Returns `AuthResponse` for existing users or new users with a name provided.
+   * - Returns `{ needsProfile: true }` for new users without a name yet.
+   */
+  verifyPhoneOtp: (
+    phone: string,
+    code: string,
+    firstName?: string,
+    lastName?: string,
+  ) =>
+    apiFetch<AuthResponse | { needsProfile: true }>('/auth/phone/verify', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code, firstName, lastName }),
+    }),
+
   getMe: (token: string) =>
     apiFetch<User>('/auth/me', {
       headers: { Authorization: `Bearer ${token}` },

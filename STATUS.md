@@ -166,7 +166,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - api-keys
@@ -207,7 +206,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (marketing)
@@ -270,28 +268,21 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin/weighing-slips
 - dashboard/analytics
 - dashboard/buyer
-- dashboard/buyer/projects
-- dashboard/buyer/projects/[id]
 - dashboard/catalog
-- dashboard/certificates
 - dashboard/chat
 - dashboard/chat/[jobId]
 - dashboard/checkout
 - dashboard/company
 - dashboard/company/team
-- dashboard/containers
-- dashboard/containers/fleet
 - dashboard/deliveries
 - dashboard/disputes
 - dashboard/documents
-- dashboard/driver/earnings
 - dashboard/earnings
 - dashboard/field-passes
 - dashboard/fleet
 - dashboard/fleet-management
 - dashboard/framework-contracts
 - dashboard/framework-contracts/[id]
-- dashboard/garage
 - dashboard/incoming-orders
 - dashboard/invoices
 - dashboard/jobs
@@ -314,11 +305,9 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/settings
 - dashboard/settings/saved-addresses
 - dashboard/supplier
-- dashboard/supplier/earnings
 - dashboard/transport-history
 - dashboard/transport-jobs/[id]
 - dashboard/transporter
-- dashboard/transporter/earnings
 - dashboard/transporter/settings
 - forgot-password
 - reset-password
@@ -328,7 +317,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -346,6 +334,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/catalog
 - (buyer)/home
 - (buyer)/messages
+- (buyer)/more
 - (buyer)/new-order
 - (buyer)/order/[id]/details
 - (buyer)/order/[id]/index
@@ -363,6 +352,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/job-stat/[id]
 - (driver)/jobs
 - (driver)/messages
+- (driver)/more
 - (driver)/profile
 - (driver)/schedule
 - (driver)/skips
@@ -374,6 +364,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (seller)/framework-contracts
 - (seller)/home
 - (seller)/incoming
+- (seller)/more
 - (seller)/order/[id]
 - (seller)/profile
 - (seller)/quotes

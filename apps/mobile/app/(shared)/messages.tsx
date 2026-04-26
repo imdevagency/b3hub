@@ -4,6 +4,7 @@
  */
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { GuestWall } from '@/components/ui/GuestWall';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
@@ -96,7 +97,17 @@ function RoomCard({ item, onPress }: { item: ApiChatRoom; onPress: () => void })
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MessagesScreen() {
-  const { token, user } = useAuth();
+  const { token, user, isLoading } = useAuth();
+
+  if (!isLoading && !user) {
+    return (
+      <GuestWall
+        headerTitle="Ziņojumi"
+        title="Pierakstieties, lai piekļūtu ziņojumiem"
+        subtitle="Tērzetāva starp piegādātājiem un transporta devašiem ir pieejama tikai reģistrētiem lietotājiem."
+      />
+    );
+  }
   const router = useRouter();
   const homeRoute = user?.canTransport
     ? '/(driver)/home'

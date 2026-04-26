@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { GuestWall } from '@/components/ui/GuestWall';
 import { Send } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -42,7 +43,17 @@ function Bubble({ msg, myId }: { msg: ApiSupportMessage; myId: string }) {
 // ── Screen ────────────────────────────────────────────────────────────────
 
 export default function SupportChatScreen() {
-  const { token, user } = useAuth();
+  const { token, user, isLoading } = useAuth();
+
+  if (!isLoading && !user) {
+    return (
+      <GuestWall
+        headerTitle="Atbalsts"
+        title="Pierakstieties, lai sazinātos ar atbalstu"
+        subtitle="Atbalsta tērzetāva ir pieejama tikai reģistrētiem lietotājiem."
+      />
+    );
+  }
 
   const [messages, setMessages] = useState<ApiSupportMessage[]>([]);
   const [loading, setLoading] = useState(true);

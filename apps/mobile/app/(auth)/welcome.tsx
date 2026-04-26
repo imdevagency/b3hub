@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Text } from '@/components/ui/text';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptics } from '@/lib/haptics';
+import { Phone } from 'lucide-react-native';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -40,23 +41,33 @@ export default function WelcomeScreen() {
             Materiāli, transports un atkritumi vienā viegli lietojamā lietotnē.
           </Text>
 
-          <View className="gap-y-4 w-full">
+          <View className="gap-y-3 w-full">
+            {/* Primary: Phone OTP */}
             <TouchableOpacity
-              className="w-full h-14 bg-black rounded-full items-center justify-center flex-row"
+              style={s.phonePrimaryBtn}
               activeOpacity={0.9}
+              onPress={() => {
+                haptics.light();
+                router.push('/(auth)/phone-otp');
+              }}
+            >
+              <Phone size={20} color="#fff" />
+              <Text style={s.phonePrimaryBtnText}>Turpināt ar tālruņa numuru</Text>
+            </TouchableOpacity>
+
+            {/* Secondary: Email register */}
+            <TouchableOpacity
+              style={s.outlineBtn}
+              activeOpacity={0.85}
               onPress={() => {
                 haptics.light();
                 router.push('/(auth)/register');
               }}
             >
-              <Text
-                className="text-white text-lg"
-                style={{ fontFamily: 'Inter_600SemiBold', fontWeight: '600' }}
-              >
-                Sākt
-              </Text>
+              <Text style={s.outlineBtnText}>Reģistrēties ar e-pastu</Text>
             </TouchableOpacity>
 
+            {/* Tertiary: login */}
             <TouchableOpacity
               className="w-full h-14 items-center justify-center"
               activeOpacity={0.8}
@@ -73,6 +84,7 @@ export default function WelcomeScreen() {
               </Text>
             </TouchableOpacity>
 
+            {/* Guest */}
             <TouchableOpacity
               className="w-full h-10 items-center justify-center"
               activeOpacity={0.7}
@@ -94,3 +106,37 @@ export default function WelcomeScreen() {
     </ScreenContainer>
   );
 }
+
+const s = StyleSheet.create({
+  phonePrimaryBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  phonePrimaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
+  outlineBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outlineBtnText: {
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+  },
+});

@@ -186,6 +186,7 @@ export class TransportJobsService {
     truckIndex: true,
     statusTimestamps: true,
     createdAt: true,
+    requestedById: true,
   } as const;
 
   private statusSortOrder: Record<TransportJobStatus, number> = {

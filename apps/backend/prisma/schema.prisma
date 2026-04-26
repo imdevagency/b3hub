@@ -339,7 +339,7 @@ model User {
   id                 String       @id @default(cuid())
   email              String?      @unique // optional: phone-only registration
   phone              String?      @unique // optional: email-only registration
-  password           String // Hashed
+  password           String?   // Hashed; null for phone-only accounts
   firstName          String
   lastName           String
   avatar             String?
@@ -413,6 +413,22 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+/**
+ * Ephemeral OTP record for phone-based authentication.
+ * One row per phone number — upserted on each new OTP request.
+ * Deleted once a user successfully verifies.
+ */
+model PhoneOtp {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  code      String   // SHA-256 hash of the 6-digit code
+  expiresAt DateTime
+  attempts  Int      @default(0) // failed verify attempts (blocked after 5)
+  createdAt DateTime @default(now())
+
+  @@map("phone_otps")
 }
 
 model Company {
@@ -1208,6 +1224,7 @@ model Invoice {
   creditNoteForId String?
   creditNoteFor   Invoice? @relation("InvoiceCreditNotes", fields: [creditNoteForId], references: [id], onDelete: SetNull)
   creditNotes     Invoice[] @relation("InvoiceCreditNotes")
+  notes           String?  // Free-text reason, e.g. credit note explanation
 
   // Stripe Payment Link — populated for INVOICE-method orders so buyer can pay online
   stripePaymentLinkId  String?

@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2107 lines, 49 models, 43 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2108 lines, 49 models, 43 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -253,7 +253,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Invoice — `@@map("invoices")`  
-**Fields:** `id`: String @id @default(cuid(), `invoiceNumber`: String @unique, `orderId`: String?, `transportJobId`: String?, `advanceForContractId`: String?, `buyerCompanyId`: String?, `subtotal`: Float, `tax`: Float, `total`: Float, `currency`: String @default("EUR"), `dueDate`: DateTime, `paidDate`: DateTime?, `pdfUrl`: String?, `supplierVatNumber`: String?, `buyerVatNumber`: String?, `taxPeriod`: String?, `supplierBankAccount`: String?, `isCreditNote`: Boolean @default(false), `creditNoteForId`: String?, `stripePaymentLinkId`: String?, `stripePaymentLinkUrl`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `invoiceNumber`: String @unique, `orderId`: String?, `transportJobId`: String?, `advanceForContractId`: String?, `buyerCompanyId`: String?, `subtotal`: Float, `tax`: Float, `total`: Float, `currency`: String @default("EUR"), `dueDate`: DateTime, `paidDate`: DateTime?, `pdfUrl`: String?, `supplierVatNumber`: String?, `buyerVatNumber`: String?, `taxPeriod`: String?, `supplierBankAccount`: String?, `isCreditNote`: Boolean @default(false), `creditNoteForId`: String?, `notes`: String?, `stripePaymentLinkId`: String?, `stripePaymentLinkUrl`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `paymentStatus`: PaymentStatus  
 **Relations:** → Order?, TransportJob?, FrameworkContract?, Company?, Invoice?, Invoice
 

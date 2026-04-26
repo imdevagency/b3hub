@@ -20,8 +20,14 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { SmsService } from '../sms/sms.service';
+import { SendPhoneOtpDto } from './dto/send-phone-otp.dto';
+import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 
 const BCRYPT_ROUNDS = 12; // OWASP recommended minimum for 2024 hardware
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_MAX_ATTEMPTS = 5; // max wrong guesses before OTP is invalidated
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000; // 60-second cooldown between resends
 const REFRESH_TOKEN_BYTES = 48; // 384 bits — opaque, URL-safe
 const REFRESH_TOKEN_TTL_DAYS = 30;
 const EMAIL_VERIFY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -36,6 +42,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private email: EmailService,
+    private sms: SmsService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -224,6 +231,12 @@ export class AuthService {
     }
 
     // Verify password
+    if (!user.password) {
+      // Phone-only account — direct them to the OTP flow
+      throw new UnauthorizedException(
+        'This account uses phone sign-in. Please log in with your phone number.',
+      );
+    }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       const attempts = (user.failedLoginAttempts ?? 0) + 1;
@@ -549,7 +562,9 @@ export class AuthService {
       );
     }
 
-    const valid = await bcrypt.compare(currentPassword, user.password);
+    const valid = user.password
+      ? await bcrypt.compare(currentPassword, user.password)
+      : false;
     if (!valid) {
       // Increment failed attempts so brute-forcing via change-password is throttled
       const attempts = (user.failedLoginAttempts ?? 0) + 1;
@@ -772,6 +787,228 @@ export class AuthService {
       UPDATE users SET "refreshToken" = NULL, "refreshTokenExpiry" = NULL
       WHERE id = ${userId}
     `;
+  }
+
+  // ── Phone OTP auth ─────────────────────────────────────────────────────────
+
+  /**
+   * Generate and send a 6-digit OTP to the given phone number.
+   * Rate-limited: one SMS per 60 seconds per number.
+   */
+  async sendPhoneOtp(dto: SendPhoneOtpDto): Promise<{ ok: boolean }> {
+    const { phone } = dto;
+
+    // Enforce resend cooldown (prevent SMS bombing)
+    const existing = await this.prisma.phoneOtp.findUnique({
+      where: { phone },
+    });
+    if (existing) {
+      const elapsed = Date.now() - existing.createdAt.getTime();
+      if (elapsed < OTP_RESEND_COOLDOWN_MS) {
+        const waitSecs = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
+        throw new BadRequestException(
+          `Please wait ${waitSecs} seconds before requesting a new code.`,
+        );
+      }
+    }
+
+    // Generate 6-digit numeric code
+    const rawCode = String(
+      Math.floor(100000 + Math.random() * 900000),
+    );
+    const hashed = crypto.createHash('sha256').update(rawCode).digest('hex');
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    // Upsert — reset attempts on new code issue
+    await this.prisma.phoneOtp.upsert({
+      where: { phone },
+      create: { phone, code: hashed, expiresAt, attempts: 0 },
+      update: { code: hashed, expiresAt, attempts: 0, createdAt: new Date() },
+    });
+
+    await this.sms.sendOtp(phone, rawCode);
+    this.logger.log(`OTP sent to ${phone}`);
+    return { ok: true };
+  }
+
+  /**
+   * Verify an OTP for a phone number.
+   *
+   * Response:
+   * - Existing user  → `{ user, token, refreshToken }` (login complete)
+   * - New user, name provided  → creates account, `{ user, token, refreshToken }`
+   * - New user, no name  → `{ needsProfile: true }` (mobile collects name, re-calls)
+   */
+  async verifyPhoneOtp(dto: VerifyPhoneOtpDto, ip?: string) {
+    const { phone, code, firstName, lastName } = dto;
+
+    const record = await this.prisma.phoneOtp.findUnique({ where: { phone } });
+
+    if (!record) {
+      throw new BadRequestException(
+        'No verification code was requested for this number.',
+      );
+    }
+
+    if (record.expiresAt < new Date()) {
+      await this.prisma.phoneOtp.delete({ where: { phone } });
+      throw new BadRequestException('Verification code has expired.');
+    }
+
+    if (record.attempts >= OTP_MAX_ATTEMPTS) {
+      await this.prisma.phoneOtp.delete({ where: { phone } });
+      throw new BadRequestException(
+        'Too many incorrect attempts. Please request a new code.',
+      );
+    }
+
+    const submittedHash = crypto
+      .createHash('sha256')
+      .update(code)
+      .digest('hex');
+
+    // Constant-time comparison to prevent timing attacks on the hash
+    const codeBuffer = Buffer.from(record.code, 'hex');
+    const submittedBuffer = Buffer.from(submittedHash, 'hex');
+    const isValid =
+      codeBuffer.length === submittedBuffer.length &&
+      crypto.timingSafeEqual(codeBuffer, submittedBuffer);
+
+    if (!isValid) {
+      await this.prisma.phoneOtp.update({
+        where: { phone },
+        data: { attempts: record.attempts + 1 },
+      });
+      const remaining = OTP_MAX_ATTEMPTS - (record.attempts + 1);
+      throw new BadRequestException(
+        `Invalid code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
+      );
+    }
+
+    // Code is correct — find or create user
+    const existingUser = await this.prisma.user.findUnique({
+      where: { phone },
+      include: {
+        company: { select: { id: true, name: true, companyType: true, payoutEnabled: true } },
+      },
+    });
+
+    if (existingUser) {
+      // --- Returning user: login ---
+      if (existingUser.status !== 'ACTIVE' && existingUser.status !== 'PENDING') {
+        throw new UnauthorizedException('Account is not active');
+      }
+
+      // Consume OTP
+      await this.prisma.phoneOtp.delete({ where: { phone } });
+
+      // Ensure phoneVerified is marked
+      if (!existingUser.phoneVerified) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { phoneVerified: true },
+        });
+      }
+
+      const token = this.generateToken(
+        existingUser.id,
+        existingUser.email ?? '',
+        existingUser.userType,
+        existingUser.isCompany,
+        existingUser.canSell,
+        existingUser.canTransport,
+        existingUser.canSkipHire,
+        existingUser.company?.id,
+        existingUser.companyRole ?? undefined,
+        {
+          permCreateContracts: existingUser.permCreateContracts ?? false,
+          permReleaseCallOffs: existingUser.permReleaseCallOffs ?? false,
+          permManageOrders: existingUser.permManageOrders ?? false,
+          permViewFinancials: existingUser.permViewFinancials ?? false,
+          permManageTeam: existingUser.permManageTeam ?? false,
+        },
+        existingUser.company?.payoutEnabled ?? false,
+        existingUser.tokenVersion ?? 0,
+      );
+
+      const { password: _pw, ...userWithoutPassword } = existingUser;
+      const { rawToken: refreshToken } = await this.issueRefreshToken(existingUser.id);
+
+      this.logger.log(
+        `PHONE_AUTH_SUCCESS userId=${existingUser.id} phone=${phone} ip=${ip ?? 'unknown'}`,
+      );
+      return { user: userWithoutPassword, token, refreshToken };
+    }
+
+    // --- New user ---
+    if (!firstName || !lastName) {
+      // OTP stays valid; mobile will re-call with name
+      return { needsProfile: true as const };
+    }
+
+    // Consume OTP before creating user
+    await this.prisma.phoneOtp.delete({ where: { phone } });
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        phone,
+        phoneVerified: true,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        password: null,
+        userType: 'BUYER',
+        isCompany: false,
+        termsAcceptedAt: new Date(),
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        userType: true,
+        isCompany: true,
+        canSell: true,
+        canTransport: true,
+        canSkipHire: true,
+        companyRole: true,
+        permCreateContracts: true,
+        permReleaseCallOffs: true,
+        permManageOrders: true,
+        permViewFinancials: true,
+        permManageTeam: true,
+        tokenVersion: true,
+        status: true,
+        company: { select: { id: true, name: true, payoutEnabled: true } },
+      },
+    });
+
+    const token = this.generateToken(
+      newUser.id,
+      newUser.email ?? '',
+      newUser.userType,
+      newUser.isCompany,
+      newUser.canSell,
+      newUser.canTransport,
+      newUser.canSkipHire,
+      newUser.company?.id,
+      newUser.companyRole ?? undefined,
+      {
+        permCreateContracts: newUser.permCreateContracts ?? false,
+        permReleaseCallOffs: newUser.permReleaseCallOffs ?? false,
+        permManageOrders: newUser.permManageOrders ?? false,
+        permViewFinancials: newUser.permViewFinancials ?? false,
+        permManageTeam: newUser.permManageTeam ?? false,
+      },
+      newUser.company?.payoutEnabled ?? false,
+      newUser.tokenVersion ?? 0,
+    );
+
+    const { rawToken: refreshToken } = await this.issueRefreshToken(newUser.id);
+
+    this.logger.log(`PHONE_REGISTER userId=${newUser.id} phone=${phone}`);
+    return { user: newUser, token, refreshToken };
   }
 
   private generateToken(

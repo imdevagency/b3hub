@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
 import { useScreenLoad } from '@/lib/use-screen-load';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { GuestWall } from '@/components/ui/GuestWall';
 import {
   Package,
   CheckCircle2,
@@ -229,8 +230,18 @@ function NotifCard({
 }
 
 export default function NotificationsScreen() {
-  const { token } = useAuth();
+  const { token, user, isLoading } = useAuth();
   const { mode } = useMode();
+
+  if (!isLoading && !user) {
+    return (
+      <GuestWall
+        headerTitle="Paziņojumi"
+        title="Pierakstieties, lai skatītu paziņojumus"
+        subtitle="Paziņojumi par pasūtījumiem un atjauninājumiem ir pieejami tikai reģistrētiem lietotājiem."
+      />
+    );
+  }
   const router = useRouter();
   const fallbackHome =
     mode === 'CARRIER'
