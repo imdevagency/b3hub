@@ -1,34 +1,33 @@
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
-import { ArrowRight, MapPin, Clock, Banknote, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, CheckCircle, Banknote, ArrowRight } from 'lucide-react';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 
+const journey = [
+  {
+    step: '01',
+    title: 'Pilns pārskats pirms izbraukšanas',
+    body: 'Pirms pieņem darbu, tu gūsti pilnu kontroli: precīzs maršruts, kilometri un krava. Un pats galvenais — tūlītēji un skaidri redzama izpeļņa eiro.',
+    features: ['Piedāvājumi atbilstoši atrašanās vietai', 'Nekādu slēptu nosacījumu'],
+  },
+  {
+    step: '02',
+    title: 'Viena lietotne visam reisam',
+    body: 'Aizmirsti par mētāšanos starp WhatsApp, SMS un Google Maps. Mēs vedam tevi cauri karjeram un tieši uz būvobjektu.',
+    features: ['Iebūvēta navigācija abiem punktiem', 'Poga saziņai ar pasūtītāju'],
+  },
+  {
+    step: '03',
+    title: 'Nodošana bez papīriem',
+    body: 'Ierodies objektā. Klients parakstās uz tava telefona ekrāna, un E-CMR kopā ar rēķinu ģenerējas automātiski tajā pašā sekundē.',
+    features: ['Klients parakstās tieši lietotnē', 'Aizmirsti par zīmogiem un dzeltenajām lapām'],
+  },
+];
 
 const earnings = [
   { type: 'Vietējais reiss (< 50 km)', rate: '€85–€140 / reiss' },
   { type: 'Reģionālais reiss (50–150 km)', rate: '€160–€280 / reiss' },
   { type: 'Skip hire piegāde', rate: '€65–€95 / piegāde' },
-];
-
-const journey = [
-  {
-    step: '01',
-    title: 'Saņem darbu',
-    body: 'Darbi parādās pēc atrašanās vietas un kravas veida. Pieņem vai noraidi — bez sekām.',
-    features: ['Push paziņojums ar detaļām', 'Redzama izpeļņa pirms piekrišanas'],
-  },
-  {
-    step: '02',
-    title: 'Brauc',
-    body: 'Lietotne parāda maršrutu uz iekraušanu un izkraušanu. Visi norādījumi vienā ekrānā.',
-    features: ['Maršruts un navigācija ar vienu pieskārienu', 'Saziņāšanās ar pasūtītāju tieši'],
-  },
-  {
-    step: '03',
-    title: 'Pelni',
-    body: 'Klienta paraksts uz ekrāna — piegāde apstiprināta. Nauda kontā nākamajā darba dienā.',
-    features: ['CMR un svara zīme automātiski', 'Izmaksa D+1, minimums €10'],
-  },
 ];
 
 const requirements = [
@@ -171,88 +170,6 @@ export default function ParvadatajemPage() {
           </Container>
         </section>
 
-        {/* ── BENTO FEATURES ── */}
-        <Container as="section" className="py-24 border-t border-border">
-          <div className="flex flex-col gap-16">
-            <div className="max-w-2xl">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-tight mb-4">
-                Mazāk papīra.
-                <br />
-                Vairāk ceļā.
-              </h2>
-              <p className="text-xl text-muted-foreground font-light">
-                B3Hub apstrādā visu birokrātiju automātiski — tu koncentrējies uz braukšanu un
-                peļņu.
-              </p>
-            </div>
-
-            {/* Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px]">
-              {/* Feature 1: Large Wide */}
-              <div className="md:col-span-2 bg-muted/30 border border-border p-8 flex flex-col justify-between group overflow-hidden relative">
-                <div className="z-10 max-w-sm">
-                  <h3 className="text-2xl font-bold tracking-tight mb-2">
-                    Automātiska dokumentācija
-                  </h3>
-                  <p className="text-muted-foreground font-light text-lg">
-                    CMR un svara zīme tiek ģenerētas uzreiz pēc izkraušanas. Nav jāraksta nekas —
-                    tikai jāparakstās uz ekrāna.
-                  </p>
-                </div>
-                <div className="absolute -right-8 -bottom-8 w-72 h-64 bg-background border border-border rounded-2xl shadow-2xl skew-x-[-4deg] rotate-[4deg] transition-transform group-hover:rotate-0 group-hover:skew-x-0 duration-500 ease-out hidden md:flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-                      CMR Nr.
-                    </p>
-                    <p className="text-3xl font-black tracking-tighter">B3-2847</p>
-                    <div className="w-16 h-px bg-border mx-auto my-3" />
-                    <p className="text-xs text-muted-foreground font-light">Parakstīts · 14:32</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Feature 2: Small Square */}
-              <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <Banknote className="w-24 h-24" />
-                </div>
-                <h3 className="text-6xl font-black tracking-tighter mb-2 z-10 mt-auto">D+1</h3>
-                <p className="text-muted-foreground font-light z-10">
-                  Izmaksa nākamajā darba dienā. Nav jāgaida nedēļas.
-                </p>
-              </div>
-
-              {/* Feature 3: Small Square */}
-              <div className="bg-muted/30 border border-border p-8 flex flex-col justify-between text-center">
-                <h3 className="text-6xl font-black tracking-tighter mb-2 mt-auto">8%</h3>
-                <p className="text-muted-foreground font-light">
-                  Komisija. Nav ikmēneša maksas, nav pievienošanās maksas.
-                </p>
-              </div>
-
-              {/* Feature 4: Medium Wide */}
-              <div className="md:col-span-2 bg-foreground text-background p-8 flex flex-col justify-between overflow-hidden relative">
-                <div className="z-10 max-w-sm">
-                  <h3 className="text-2xl font-bold tracking-tight mb-2">
-                    Maršruta norādījumi lietotnē
-                  </h3>
-                  <p className="text-background/70 font-light text-lg">
-                    Maršruts no karjera līdz objektam redzams lietotnē. Pasūtītājs redz tavu
-                    atrašanās vietu reāllaikā — bez zvaniem.
-                  </p>
-                </div>
-                <div className="absolute right-0 bottom-0 top-0 w-1/2 bg-linear-to-l from-background/20 to-transparent items-center justify-end pr-8 hidden md:flex">
-                  <div className="w-48 h-32 bg-background/10 backdrop-blur-md border border-background/20 rounded-xl flex items-center justify-center">
-                    <span className="text-xl font-bold text-background tracking-widest uppercase">
-                      GPS LIVE
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Container>
-
         {/* ── STICKY JOURNEY ── */}
         <Container as="section" className="py-24 border-t border-border">
           <div className="flex flex-col md:flex-row gap-16 relative pb-32">
@@ -260,7 +177,7 @@ export default function ParvadatajemPage() {
             <div className="md:w-1/2 flex flex-col gap-40 py-24">
               {journey.map((item) => (
                 <div key={item.step} className="flex flex-col gap-5 pr-8">
-                  <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground border-b border-border pb-4 w-12">
+                  <span className="text-sm font-bold tracking-widest uppercase text-primary border-b border-border pb-4 w-12">
                     {item.step}
                   </span>
                   <h3 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mt-2">
@@ -272,7 +189,7 @@ export default function ParvadatajemPage() {
                   <ul className="flex flex-col gap-3 mt-4 border-t border-border pt-6">
                     {item.features.map((f) => (
                       <li key={f} className="flex items-center gap-3 text-sm font-light">
-                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <CheckCircle className="w-4 h-4 text-primary shrink-0" />
                         {f}
                       </li>
                     ))}
@@ -283,67 +200,70 @@ export default function ParvadatajemPage() {
 
             {/* Right: Sticky Phone Mockup */}
             <div className="md:w-1/2 relative hidden md:block">
-              <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-muted/20 border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
+              <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-foreground border border-border rounded-[3rem] p-4 flex flex-col gap-2 shadow-2xl">
                 {/* Notch */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-border rounded-b-2xl z-20" />
 
                 {/* App header */}
                 <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
-                  <div className="w-8 h-8 rounded-full bg-foreground" />
-                  <div className="h-3 w-32 bg-foreground/90 rounded-full" />
+                  <div className="w-8 h-8 rounded-full bg-background/20" />
+                  <div className="h-3 w-32 bg-background/20 rounded-full" />
+                  <div className="ml-auto w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  </div>
                 </div>
 
-                {/* Job card mock */}
-                <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative">
-                  <div className="w-full bg-background border border-border shadow-sm rounded-2xl p-5 flex flex-col gap-3">
+                {/* Internal UI */}
+                <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative text-background">
+                  {/* Current Active Trip */}
+                  <div className="w-full bg-background/10 border border-background/10 rounded-2xl p-5 flex flex-col gap-4">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold text-base">Atkritumu grants — 22 t</p>
-                        <p className="text-xs text-muted-foreground">Karjers → Rīga, 48 km</p>
-                      </div>
-                      <span className="text-lg font-black tracking-tight">€122</span>
+                      <span className="text-xs uppercase tracking-widest text-primary font-bold">
+                        AKTĪVS REISS
+                      </span>
+                      <span className="text-xl font-bold tracking-tight">€122.00</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 border-t border-border pt-3">
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Attālums</p>
-                        <p className="font-bold text-sm">48 km</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Laiks</p>
-                        <p className="font-bold text-sm">~1h 45m</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Krava</p>
-                        <p className="font-bold text-sm">22 t</p>
+
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-4">
+                        <div className="flex flex-col items-center gap-1 mt-1">
+                          <div className="w-3 h-3 rounded-full bg-background border-2 border-primary" />
+                          <div className="w-0.5 h-8 bg-background/20 rounded-full" />
+                          <div className="w-3 h-3 rounded-full bg-primary" />
+                        </div>
+                        <div className="flex flex-col justify-between py-0.5">
+                          <div>
+                            <p className="text-sm font-bold">Karjers "Liepa"</p>
+                            <p className="text-xs text-background/50">Iekraušana</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold">Zolitudes iela 11a, Rīga</p>
+                            <p className="text-xs text-background/50">Izkraušana</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <div className="border border-border py-2 text-center text-xs font-medium text-muted-foreground rounded">
-                        Noraidīt
+
+                    <div className="flex items-center gap-2 mt-2 pt-4 border-t border-background/10">
+                      <div className="h-10 flex-1 bg-primary text-background rounded-lg flex items-center justify-center text-sm font-bold">
+                        Sākt Navigāciju
                       </div>
-                      <div className="bg-foreground text-background py-2 text-center text-xs font-medium rounded">
-                        Pieņemt darbu
+                      <div className="h-10 w-10 bg-background/20 rounded-lg flex items-center justify-center">
+                        <MapPin className="w-4 h-4 text-background" />
                       </div>
                     </div>
                   </div>
-                  <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-50">
-                    <div className="w-10 h-8 bg-muted rounded-lg" />
-                    <div className="flex-1 flex flex-col gap-1.5 justify-center">
-                      <div className="w-2/3 h-2 bg-muted-foreground rounded-full" />
-                      <div className="w-1/3 h-2 bg-muted rounded-full" />
+
+                  {/* Future / Finished trips faded */}
+                  <div className="w-full h-20 bg-background/5 border border-background/5 rounded-2xl p-4 flex gap-4 opacity-50 items-center">
+                    <div className="w-12 h-12 bg-background/10 rounded-full" />
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="w-1/2 h-2.5 bg-background/20 rounded-full" />
+                      <div className="w-1/3 h-2 bg-background/10 rounded-full" />
                     </div>
-                    <p className="text-sm font-bold self-center">€98</p>
                   </div>
-                  <div className="w-full h-16 bg-background border border-border shadow-sm rounded-2xl p-4 flex gap-4 opacity-30">
-                    <div className="w-10 h-8 bg-muted rounded-lg" />
-                    <div className="flex-1 flex flex-col gap-1.5 justify-center">
-                      <div className="w-1/2 h-2 bg-muted-foreground rounded-full" />
-                      <div className="w-1/4 h-2 bg-muted rounded-full" />
-                    </div>
-                    <p className="text-sm font-bold self-center">€145</p>
-                  </div>
-                  {/* Gradient fade */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-muted/20 to-transparent" />
+
+                  <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-foreground to-transparent" />
                 </div>
               </div>
             </div>
@@ -387,20 +307,12 @@ export default function ParvadatajemPage() {
             {(
               [
                 {
-                  q: 'Cik liela ir komisija?',
-                  a: '8% no katras sekmīgas piegādes. Nav ikmēneša maksas, nav pievienošanās maksas.',
-                },
-                {
-                  q: 'Kā notiek izmaksa?',
-                  a: 'Izmaksa nākamajā darba dienā pēc piegādes apstiprināšanas. Minimālā summa €10.',
-                },
-                {
                   q: 'Vai man jāstrādā noteiktā reģionā?',
                   a: 'Nē. Jūs brīvi izvēlaties darbus visā Latvijā atbilstoši savai atrašanās vietai un maršrutam.',
                 },
                 {
-                  q: 'Ko vajag reģistrācijai?',
-                  a: 'Derīga vadītāja apliecība (C vai CE), OCTA apdrošināšana un viedtālrunis ar iOS vai Android.',
+                  q: 'Kas notiek, ja nevaru pabeigt reisu?',
+                  a: 'Reisu var atcelt pirms iekraušanas bez sekām. Pēc iekraušanas — sazinieties ar atbalstu tieši lietotnē.',
                 },
               ] as { q: string; a: string }[]
             ).map(({ q, a }) => (
