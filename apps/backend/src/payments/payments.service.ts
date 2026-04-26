@@ -478,6 +478,9 @@ export class PaymentsService {
                 driverProfile: { select: { stripeConnectId: true } },
               },
             },
+            carrier: {
+              select: { carrierCommissionRate: true },
+            },
           },
           // Rate fields needed to calculate driver payout
           take: 1,
@@ -497,17 +500,49 @@ export class PaymentsService {
       0,
     );
     const totalCents = Math.round((Number(order.total) + surchargeTotal) * 100);
-    // Use the highest commissionRate among suppliers on this order, defaulting to 10%
-    const supplierRates = order.items.map(
-      (i) => i.material.supplier.commissionRate ?? 10,
-    );
-    const commissionPct = Math.max(...supplierRates) / 100;
-    const platformFeeCents = Math.round(totalCents * commissionPct);
+
+    // ── Material commission — per-supplier weighted on each supplier's item subtotal ──
+    // This avoids applying the highest single rate across the entire order when
+    // multiple suppliers with different rates appear on the same order.
+    const supplierIds = [
+      ...new Set(order.items.map((i) => i.material.supplier.id)),
+    ];
+    const supplierPayoutMap = new Map<string, number>(); // supplierId → net payout cents
+    let materialFeeCents = 0;
+    for (const sid of supplierIds) {
+      const supplierItems = order.items.filter(
+        (i) => i.material.supplier.id === sid,
+      );
+      const supplierSubtotalCents = Math.round(
+        supplierItems.reduce((s, i) => s + Number(i.total), 0) * 100,
+      );
+      const rate =
+        (supplierItems[0].material.supplier.commissionRate ?? 6) / 100;
+      const feeCents = Math.round(supplierSubtotalCents * rate);
+      materialFeeCents += feeCents;
+      supplierPayoutMap.set(sid, supplierSubtotalCents - feeCents);
+    }
+
+    // ── Transport commission — on deliveryFee using carrier's carrierCommissionRate ──
+    const deliveredJob = order.transportJobs?.[0];
+    const deliveryCents = Math.round(Number(order.deliveryFee) * 100);
+    const carrierJobRecord = deliveredJob as
+      | (typeof deliveredJob & { carrier?: { carrierCommissionRate?: number | null } | null })
+      | null
+      | undefined;
+    const carrierRate =
+      (carrierJobRecord?.carrier?.carrierCommissionRate ?? 8) / 100;
+    // Only charge transport commission when a driver is actually assigned
+    const transportFeeCents =
+      deliveredJob && deliveryCents > 0
+        ? Math.round(deliveryCents * carrierRate)
+        : 0;
+
+    const platformFeeCents = materialFeeCents + transportFeeCents;
     const payoutCents = totalCents - platformFeeCents;
 
     // Determine if a driver is involved; prefer company Connect ID, fall back to
     // individual driver profile Connect ID (owner-operators without a company).
-    const deliveredJob = order.transportJobs?.[0];
     const driverDriver = deliveredJob?.driver as
       | {
           company?: { stripeConnectId?: string | null } | null;
@@ -521,7 +556,7 @@ export class PaymentsService {
       null;
 
     // ── Driver payout — use agreed job rate, not a flat percentage ────────────
-    // Priority: pricePerTonne × actualWeight > flat rate > fallback 20% of payoutCents
+    // Priority: pricePerTonne × actualWeight > flat rate > fallback (deliveryCents - transportFeeCents)
     let driverCents = 0;
     if (driverConnectId && deliveredJob) {
       const job = deliveredJob as typeof deliveredJob & {
@@ -541,14 +576,14 @@ export class PaymentsService {
         // Flat rate for the whole job
         driverCents = Math.round(job.rate * 100);
       } else {
-        // No rate set — fall back to 20% of post-commission payout (legacy behaviour)
-        driverCents = Math.round(payoutCents * 0.2);
+        // No rate set — fall back to post-commission delivery pool (legacy behaviour)
+        driverCents = Math.max(0, deliveryCents - transportFeeCents);
         this.logger.warn(
-          `releaseFunds: transport job ${deliveredJob.id} has no rate/pricePerTonne — falling back to 20% share for order ${orderId}`,
+          `releaseFunds: transport job ${deliveredJob.id} has no rate/pricePerTonne — falling back to full delivery pool for order ${orderId}`,
         );
       }
-      // Cap driver payout so it never exceeds the post-commission pool
-      driverCents = Math.min(driverCents, payoutCents);
+      // Cap driver payout so it never exceeds the post-commission delivery pool
+      driverCents = Math.min(driverCents, Math.max(0, deliveryCents - transportFeeCents));
     }
     const sellerCents = payoutCents - driverCents;
 
@@ -573,11 +608,8 @@ export class PaymentsService {
       }
     }
 
-    const supplierIds = [
-      ...new Set(order.items.map((i) => i.material.supplier.id)),
-    ];
-    // For simplicity split seller payout equally among suppliers when multiple (rare after cart-split)
-    const perSupplierCents = Math.round(sellerCents / supplierIds.length);
+    // supplierIds already declared above in the commission block; supplierPayoutMap has the same keys
+    // Per-supplier payout is already calculated in supplierPayoutMap (weighted by item subtotal)
 
     // Pre-fetch admins once — used in the error path when a supplier lacks a Connect account
     const admins = await this.prisma.user.findMany({
@@ -617,7 +649,7 @@ export class PaymentsService {
 
       try {
         await this.stripe.transfers.create({
-          amount: perSupplierCents,
+          amount: supplierPayoutMap.get(supplierId) ?? 0,
           currency: order.currency.toLowerCase(),
           destination: supplierConnectId,
           transfer_group: transferGroup,

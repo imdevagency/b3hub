@@ -458,9 +458,10 @@ model Company {
   rating      Float?
 
   // Stripe & Commission
-  stripeConnectId String? // Stripe Connect Express account ID
-  commissionRate  Float   @default(10.0) // Platform fee percentage
-  payoutEnabled   Boolean @default(false)
+  stripeConnectId       String? // Stripe Connect Express account ID
+  commissionRate        Float   @default(6.0) // Supplier platform fee % (applied to material subtotal)
+  carrierCommissionRate Float   @default(8.0) // Carrier platform fee % (applied to deliveryFee)
+  payoutEnabled         Boolean @default(false)
 
   // Geo coordinates (set during onboarding — used for delivery-radius filtering in catalog)
   lat Float? // WGS-84 latitude of warehouse / base location

@@ -230,6 +230,7 @@ export class AdminService {
     data: {
       verified?: boolean;
       commissionRate?: number;
+      carrierCommissionRate?: number;
       payoutEnabled?: boolean;
     },
     adminId: string,
@@ -240,6 +241,7 @@ export class AdminService {
         id: true,
         verified: true,
         commissionRate: true,
+        carrierCommissionRate: true,
         payoutEnabled: true,
       },
     });
@@ -260,6 +262,7 @@ export class AdminService {
         verified: true,
         payoutEnabled: true,
         commissionRate: true,
+        carrierCommissionRate: true,
         createdAt: true,
         _count: { select: { users: true, orders: true } },
       },
@@ -362,8 +365,8 @@ export class AdminService {
     const gmvAllTime =
       Math.round((gmvAllTimeResult._sum.total ?? 0) * 100) / 100;
     const gmv30d = Math.round((gmv30dResult._sum.total ?? 0) * 100) / 100;
-    // Platform commission estimate at default 10% rate
-    const commissionEst30d = Math.round(gmv30d * 0.1 * 100) / 100;
+    // Platform commission estimate at default 6% supplier + 8% carrier blended rate (approximation)
+    const commissionEst30d = Math.round(gmv30d * 0.06 * 100) / 100;
 
     return {
       totalUsers,
