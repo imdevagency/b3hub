@@ -4,7 +4,6 @@ import { CTAButton } from '@/components/marketing/ui/cta-button';
 import { ArrowLeft, FileSignature, CalendarRange, BarChart3, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
-
 const benefits = [
   {
     icon: FileSignature,
@@ -62,38 +61,49 @@ export default function IetvaraLigumiPage() {
           }
         >
           {/* Mock */}
-          <div className="w-full border border-border flex flex-col text-sm self-center">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-foreground text-background">
+          <div className="w-full bg-background rounded-3xl shadow-xl flex flex-col text-sm self-center overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 bg-foreground text-background">
               <span className="font-bold text-sm">Ietvara līgums ILG-014</span>
-              <span className="font-mono text-xs opacity-60">Aktīvs</span>
+              <span className="font-mono text-xs opacity-60 flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-background animate-pulse" />
+                Aktīvs
+              </span>
             </div>
-            <div className="flex flex-col gap-5 p-6">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-6 p-8">
+              <div className="grid grid-cols-2 gap-6 bg-neutral-50 rounded-2xl p-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Piegādātājs</p>
-                  <p className="font-medium text-sm">Karjers "Liepa" SIA</p>
+                  <p className="text-xs text-muted-foreground mb-1 tracking-widest uppercase">
+                    Piegādātājs
+                  </p>
+                  <p className="font-medium text-base">Karjers &quot;Liepa&quot; SIA</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Materiāls</p>
-                  <p className="font-medium text-sm">Granīta šķembas 20–40</p>
+                  <p className="text-xs text-muted-foreground mb-1 tracking-widest uppercase">
+                    Materiāls
+                  </p>
+                  <p className="font-medium text-base">Granīta šķembas 20–40</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Nolīgtais apjoms</p>
-                  <p className="font-bold text-sm">500 t</p>
+                  <p className="text-xs text-muted-foreground mb-1 tracking-widest uppercase">
+                    Nolīgtais apjoms
+                  </p>
+                  <p className="font-bold text-base">500 t</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Izpildīts</p>
-                  <p className="font-bold text-sm">320 t (64%)</p>
+                  <p className="text-xs text-muted-foreground mb-1 tracking-widest uppercase">
+                    Izpildīts
+                  </p>
+                  <p className="font-bold text-base text-primary">320 t (64%)</p>
                 </div>
               </div>
-              <div className="relative w-full h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="relative w-full h-3 bg-neutral-100 rounded-full overflow-hidden shadow-inner">
                 <div className="absolute top-0 left-0 h-full bg-foreground rounded-full w-[64%]" />
               </div>
-              <div className="flex gap-3 border-t border-border pt-5">
-                <div className="flex-1 bg-muted/20 border border-border py-2.5 text-center text-xs font-bold tracking-wide uppercase">
+              <div className="flex gap-4 mt-2">
+                <div className="flex-1 bg-neutral-100 hover:bg-neutral-200 transition-colors rounded-full py-3.5 text-center text-sm font-bold cursor-pointer">
                   Vēsture (5)
                 </div>
-                <div className="flex-1 bg-foreground text-background py-2.5 text-center text-xs font-bold tracking-wide uppercase">
+                <div className="flex-1 bg-foreground hover:bg-foreground/90 transition-colors text-background rounded-full py-3.5 text-center text-sm font-bold cursor-pointer shadow-sm">
                   Jauns izsaukums
                 </div>
               </div>
@@ -102,30 +112,35 @@ export default function IetvaraLigumiPage() {
         </Hero>
 
         {/* BENEFITS */}
-        <section className="w-full bg-neutral-50">
-        <Container className="py-24">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
-            Kāpēc ietvara līgumi
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-border divide-y md:divide-y-0 md:divide-x divide-border">
-            {benefits.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="p-8 flex flex-col gap-4">
-                <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-                <h3 className="text-xl font-bold tracking-tight">{title}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <section className="w-full bg-neutral-50 pb-32 pt-16">
+          <Container>
+            <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
+              Kāpēc ietvara līgumi
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {benefits.map(({ icon: Icon, title, body }) => (
+                <div
+                  key={title}
+                  className="p-10 md:p-12 flex flex-col gap-5 bg-background rounded-[2rem] shadow-sm"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-neutral-100 flex items-center justify-center mb-2 shadow-sm">
+                    <Icon className="w-6 h-6 text-foreground" strokeWidth={2} />
+                  </div>
+                  <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground text-lg font-light leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
         </section>
 
         {/* FLOW */}
         <section className="w-full bg-background">
-          <Container className="py-24">
+          <Container className="py-32">
             <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
               Kā tas darbojas
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 md:divide-x divide-border">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
                 {
                   step: '01',
@@ -150,11 +165,15 @@ export default function IetvaraLigumiPage() {
               ].map(({ step, title, body }) => (
                 <div
                   key={step}
-                  className="md:px-10 first:pl-0 last:pr-0 py-8 md:py-0 flex flex-col gap-4"
+                  className="bg-neutral-50 rounded-[2rem] p-8 md:p-10 flex flex-col gap-4 shadow-sm"
                 >
-                  <span className="text-4xl font-bold tracking-tighter text-border">{step}</span>
-                  <h3 className="text-lg font-bold tracking-tight">{title}</h3>
-                  <p className="text-muted-foreground font-light text-sm leading-relaxed">{body}</p>
+                  <span className="text-5xl font-black tracking-tighter text-foreground/10 mb-2">
+                    {step}
+                  </span>
+                  <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground font-light text-base leading-relaxed">
+                    {body}
+                  </p>
                 </div>
               ))}
             </div>
@@ -162,18 +181,27 @@ export default function IetvaraLigumiPage() {
         </section>
 
         {/* CTA */}
-        <section className="w-full py-32 bg-foreground">
-          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-background leading-tight">
-              Pārtrauc katru reizi
-              <br />
-              sākt no nulles.
-            </h2>
-            <div className="flex flex-col gap-4 min-w-fit">
-              <CTAButton href={`/register`} variant="inverted" size="lg">
-                Reģistrēties bez maksas
-              </CTAButton>
-              <p className="text-center text-background/40 text-sm">Nav nepieciešama kredītkarte</p>
+        <section className="w-full bg-background pb-32">
+          <Container>
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-12 bg-foreground rounded-[4rem] p-12 md:p-20 shadow-2xl">
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-background leading-none max-w-2xl">
+                Pārtrauc katru reizi
+                <br />
+                sākt no nulles.
+              </h2>
+              <div className="flex flex-col gap-6 min-w-fit shrink-0">
+                <CTAButton
+                  href={`/register`}
+                  variant="inverted"
+                  size="lg"
+                  className="w-full text-center justify-center"
+                >
+                  Reģistrēties bez maksas
+                </CTAButton>
+                <p className="text-center text-background/50 text-sm font-medium tracking-wide uppercase">
+                  Nav nepieciešama kredītkarte
+                </p>
+              </div>
             </div>
           </Container>
         </section>

@@ -4,7 +4,6 @@ import { CTAButton } from '@/components/marketing/ui/cta-button';
 import { ArrowLeft, ArrowLeftRight, Fuel, Clock, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
-
 const benefits = [
   {
     icon: ArrowLeftRight,
@@ -57,8 +56,8 @@ export default function AtgriešanāsBraucieniPage() {
             </CTAButton>
           }
         >
-          <div className="w-full border border-border flex flex-col text-sm self-center">
-            <div className="px-6 py-4 border-b border-border bg-foreground text-background">
+          <div className="w-full bg-background rounded-[2rem] shadow-xl flex flex-col text-sm self-center overflow-hidden">
+            <div className="px-6 py-5 bg-foreground text-background">
               <span className="font-bold text-sm">Atgriešanās darbs pieejams!</span>
             </div>
             <div className="flex flex-col gap-4 p-6">
@@ -71,8 +70,8 @@ export default function AtgriešanāsBraucieniPage() {
                   <p className="font-bold text-sm">Rīga, Pārdaugava</p>
                 </div>
               </div>
-              <div className="h-px bg-border" />
-              <div className="border border-border p-4 flex flex-col gap-3">
+              <div className="h-px bg-" />
+              <div className="bg-neutral-50 rounded-2xl p-4 flex flex-col gap-3">
                 <div className="flex justify-between">
                   <span className="font-bold text-sm">Smilts 0–4 mm · 18 t</span>
                   <span className="font-bold text-sm text-foreground">€74.00</span>
@@ -80,7 +79,7 @@ export default function AtgriešanāsBraucieniPage() {
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
                     <p className="text-muted-foreground">Iekraušana</p>
-                    <p className="font-medium mt-0.5">Smilšu karjers "Ādaži"</p>
+                    <p className="font-medium mt-0.5">Smilšu karjers &quot;Ādaži&quot;</p>
                     <p className="text-muted-foreground">4.2 km no tevis</p>
                   </div>
                   <div>
@@ -91,8 +90,8 @@ export default function AtgriešanāsBraucieniPage() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 border-t border-border">
-              <div className="py-4 text-center text-xs font-bold text-muted-foreground border-r border-border">
+            <div className="grid grid-cols-2 ">
+              <div className="py-4 text-center text-xs font-bold text-muted-foreground ">
                 Izlaist
               </div>
               <div className="py-4 text-center text-xs font-bold bg-foreground text-background">
@@ -102,29 +101,34 @@ export default function AtgriešanāsBraucieniPage() {
           </div>
         </Hero>
 
-        <section className="w-full bg-neutral-50">
-        <Container className="py-24">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
-            Ko tas dod šoferam
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 border border-border divide-y md:divide-y-0 md:divide-x divide-border">
-            {benefits.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="p-8 flex flex-col gap-4">
-                <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-                <h3 className="text-xl font-bold tracking-tight">{title}</h3>
-                <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
+        <section className="w-full bg-neutral-50 pb-32 pt-16">
+          <Container>
+            <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
+              Ko tas dod šoferam
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {benefits.map(({ icon: Icon, title, body }) => (
+                <div
+                  key={title}
+                  className="p-10 flex flex-col gap-5 bg-background rounded-[2rem] shadow-sm"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-neutral-100 flex items-center justify-center mb-2 shadow-sm">
+                    <Icon className="w-6 h-6 text-foreground" strokeWidth={2} />
+                  </div>
+                  <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground text-lg font-light leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
         </section>
 
         <section className="w-full bg-background">
-          <Container className="py-24">
+          <Container className="py-32">
             <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
               Kā tas darbojas automātiski
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 md:divide-x divide-border">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {[
                 {
                   step: '01',
@@ -149,9 +153,11 @@ export default function AtgriešanāsBraucieniPage() {
               ].map(({ step, title, body }) => (
                 <div
                   key={step}
-                  className="md:px-10 first:pl-0 last:pr-0 py-8 md:py-0 flex flex-col gap-4"
+                  className="bg-neutral-50 rounded-[2rem] p-8 md:p-10 flex flex-col gap-4 shadow-sm"
                 >
-                  <span className="text-4xl font-bold tracking-tighter text-border">{step}</span>
+                  <span className="text-5xl font-black tracking-tighter text-foreground/10 mb-2">
+                    {step}
+                  </span>
                   <h3 className="text-lg font-bold tracking-tight">{title}</h3>
                   <p className="text-muted-foreground font-light text-sm leading-relaxed">{body}</p>
                 </div>
@@ -160,18 +166,27 @@ export default function AtgriešanāsBraucieniPage() {
           </Container>
         </section>
 
-        <section className="w-full py-32 bg-foreground">
-          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-background leading-tight">
-              Katrs brauciens
-              <br />
-              ar kravu.
-            </h2>
-            <div className="flex flex-col gap-4 min-w-fit">
-              <CTAButton href={`/register`} variant="inverted" size="lg">
-                Reģistrēties bez maksas
-              </CTAButton>
-              <p className="text-center text-background/40 text-sm">Nav nepieciešama kredītkarte</p>
+        <section className="w-full bg-background pb-32">
+          <Container>
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-12 bg-foreground rounded-[4rem] p-12 md:p-20 shadow-2xl">
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-background leading-none max-w-2xl">
+                Katrs brauciens
+                <br />
+                ar kravu.
+              </h2>
+              <div className="flex flex-col gap-6 min-w-fit shrink-0">
+                <CTAButton
+                  href={`/register`}
+                  variant="inverted"
+                  size="lg"
+                  className="w-full text-center justify-center"
+                >
+                  Reģistrēties bez maksas
+                </CTAButton>
+                <p className="text-center text-background/50 text-sm font-medium tracking-wide uppercase">
+                  Nav nepieciešama kredītkarte
+                </p>
+              </div>
             </div>
           </Container>
         </section>

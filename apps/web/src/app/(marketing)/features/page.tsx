@@ -83,14 +83,14 @@ export default function FeaturesPage() {
         </section>
 
         {/* ── FEATURE GRID ── */}
-        <section className="w-full bg-neutral-50">
-          <Container className="py-24">
+        <section className="w-full bg-neutral-50 pb-32 pt-16">
+          <Container>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {features.map(({ icon: Icon, slug, title }) => {
                 const inner = (
                   <>
-                    <div className="p-3 bg-background shrink-0 w-fit rounded-full shadow-xs">
-                      <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
+                    <div className="w-14 h-14 bg-background shrink-0 rounded-full shadow-xs flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-foreground" strokeWidth={2} />
                     </div>
                     <span className="text-sm font-bold tracking-tight uppercase leading-snug">
                       {title}
@@ -98,7 +98,7 @@ export default function FeaturesPage() {
                   </>
                 );
                 const cls =
-                  'flex items-center gap-5 bg-secondary/30 rounded-3xl p-6 transition-all border border-transparent';
+                  'flex items-center gap-5 bg-secondary/30 rounded-3xl p-6 transition-all border-transparent';
                 return slug ? (
                   <Link
                     key={title}
@@ -181,18 +181,27 @@ export default function FeaturesPage() {
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="w-full py-32 bg-foreground">
-          <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <h2 className="text-5xl md:text-6xl font-bold tracking-tighter text-background leading-none">
-              Gatavs izmēģināt
-              <br />
-              pilnu platformu?
-            </h2>
-            <div className="flex flex-col gap-4 min-w-fit">
-              <CTAButton href={`/register`} variant="inverted" size="lg">
-                Sākt bez maksas
-              </CTAButton>
-              <p className="text-center text-background/40 text-sm">Nav nepieciešama kredītkarte</p>
+        <section className="w-full bg-background pb-32">
+          <Container>
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-12 bg-foreground rounded-[4rem] p-12 md:p-20 shadow-2xl">
+              <h2 className="text-5xl md:text-6xl font-bold tracking-tighter text-background leading-none">
+                Gatavs izmēģināt
+                <br />
+                pilnu platformu?
+              </h2>
+              <div className="flex flex-col gap-6 min-w-fit shrink-0">
+                <CTAButton
+                  href={`/register`}
+                  variant="inverted"
+                  size="lg"
+                  className="w-full text-center justify-center"
+                >
+                  Sākt bez maksas
+                </CTAButton>
+                <p className="text-center text-background/50 text-sm font-medium tracking-wide uppercase">
+                  Nav nepieciešama kredītkarte
+                </p>
+              </div>
             </div>
           </Container>
         </section>
