@@ -31,13 +31,6 @@ const earnings = [
   { type: 'Skip hire piegāde', rate: '€65–€95 / piegāde' },
 ];
 
-const requirements = [
-  'Latvijā reģistrēts kravas auto (vai traktors)',
-  'Derīga vadītāja apliecība (C / CE kategorija)',
-  'Transportlīdzekļa apdrošināšana (OCTA)',
-  'Viedtālrunis ar Android vai iOS',
-];
-
 export default function ParvadatajemPage() {
   return (
     <>
@@ -273,40 +266,14 @@ export default function ParvadatajemPage() {
           </Container>
         </section>
 
-        {/* ── REQUIREMENTS ── */}
-        <section className="w-full bg-background">
-          <Container className="py-24">
-            <div className="flex flex-col md:flex-row gap-16 items-start">
-              <div className="md:w-2/5 flex flex-col gap-4">
-                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                  Prasības
-                </p>
-                <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight">
-                  Vai tu vari pievienoties?
-                </h2>
-                <p className="text-muted-foreground font-light">
-                  Ja tev ir kravas auto un tālrunis — viss pārējais ir atrisināts.
-                </p>
-              </div>
-              <div className="md:w-3/5 grid grid-cols-1 sm:grid-cols-2 gap-px bg-border w-full">
-                {requirements.map((r) => (
-                  <div key={r} className="bg-background p-8 flex items-start gap-4">
-                    <CheckCircle
-                      className="w-4 h-4 text-foreground shrink-0 mt-0.5"
-                      strokeWidth={1.5}
-                    />
-                    <p className="text-base font-light">{r}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Container>
-        </section>
-
         {/* ── FAQ ── */}
         <FAQAccordion
           className="bg-neutral-50"
           items={[
+            {
+              q: 'Vai tu vari pievienoties?',
+              a: 'Ja tev ir kravas auto un tālrunis — viss pārējais ir atrisināts. Nepieciešams: Latvijā reģistrēts kravas auto vai traktors, derīga vadītāja apliecība (C / CE kategorija), transportlīdzekļa apdrošināšana (OCTA) un viedtālrunis ar Android vai iOS.',
+            },
             {
               q: 'Vai man jāstrādā noteiktā reģionā?',
               a: 'Nē. Jūs brīvi izvēlaties darbus visā Latvijā atbilstoši savai atrašanās vietai un maršrutam.',
