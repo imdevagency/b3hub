@@ -88,7 +88,10 @@ export function Footer() {
               <ul role="list" className="space-y-3">
                 {navigation.features.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-sm hover:text-background transition-colors">
+                    <Link
+                      href={item.href}
+                      className="text-base hover:text-background transition-colors"
+                    >
                       {item.name}
                     </Link>
                   </li>
@@ -97,10 +100,13 @@ export function Footer() {
             </div>
             <div>
               <h3 className="text-lg font-medium text-background tracking-tight mb-6">Platforma</h3>
-              <ul role="list" className="space-y-4">
+              <ul role="list" className="space-y-3">
                 {navigation.platform.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-base hover:text-background transition-colors">
+                    <Link
+                      href={item.href}
+                      className="text-base hover:text-background transition-colors"
+                    >
                       {item.name}
                     </Link>
                   </li>
@@ -110,10 +116,13 @@ export function Footer() {
 
             <div>
               <h3 className="text-lg font-medium text-background tracking-tight mb-6">Uzņēmums</h3>
-              <ul role="list" className="space-y-4">
+              <ul role="list" className="space-y-3">
                 {navigation.company.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-base hover:text-background transition-colors">
+                    <Link
+                      href={item.href}
+                      className="text-base hover:text-background transition-colors"
+                    >
                       {item.name}
                     </Link>
                   </li>
@@ -123,10 +132,13 @@ export function Footer() {
 
             <div>
               <h3 className="text-lg font-medium text-background tracking-tight mb-6">Juridiski</h3>
-              <ul role="list" className="space-y-4">
+              <ul role="list" className="space-y-3">
                 {navigation.legal.map((item) => (
                   <li key={item.name}>
-                    <Link href={item.href} className="text-base hover:text-background transition-colors">
+                    <Link
+                      href={item.href}
+                      className="text-base hover:text-background transition-colors"
+                    >
                       {item.name}
                     </Link>
                   </li>

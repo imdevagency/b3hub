@@ -301,9 +301,9 @@ export default function HomePage() {
       <section className="w-full py-32 bg-foreground">
         <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
           <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-none">
-            Latvija būvē —
+            Viss būvlaukumam —
             <br />
-            B3Hub nodrošina.
+            vienuviet.
           </h2>
           <div className="flex flex-col gap-4 min-w-fit">
             <CTAButton href={'/order'} variant="inverted" size="lg">
