@@ -47,16 +47,19 @@ export function RoleTabs() {
         {activeRole === 'b2c' && (
           <div className="bg-secondary/30 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
+              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                Privātpersona vai mazais pasūtītājs
+              </p>
               <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight">
-                Pasūti materiālus
+                Grants vai smiltis
                 <br />
-                bez reģistrācijas.
+                bez zvaniem un e-pastiem.
               </h3>
               <ul className="flex flex-col gap-4">
                 {[
-                  'Cenas no vietējiem karjeriem uzreiz',
-                  'GPS izsekošana — zini, kad auto ierodas',
-                  'Maksā uzreiz ar karti',
+                  'Cenas no reģionālajiem karjeriem — redzamas uzreiz',
+                  'GPS izsekošana — zini minūtē, kad auto pie tevis būs',
+                  'Maksā ar karti, saņem rēķinu automātiski',
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-3 text-lg text-muted-foreground">
                     <div className="p-1 bg-background rounded-full shrink-0 shadow-xs">
@@ -79,16 +82,19 @@ export function RoleTabs() {
         {activeRole === 'b2b' && (
           <div className="bg-foreground text-background rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
+              <p className="text-sm font-bold tracking-widest uppercase text-background/50">
+                Būvniecības uzņēmums vai kontraktors
+              </p>
               <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight text-background">
-                Pilna būvniecības
+                Centralizē visu
                 <br />
-                loģistikas platforma.
+                celtniecības loģistiku.
               </h3>
               <ul className="flex flex-col gap-4">
                 {[
-                  'Projektu vadība un ietvara līgumi',
-                  'Komandas konti ar atļauju pārvaldību',
-                  'Automātiskie reģistri un PVN rēķini',
+                  'Ietvara līgumi un projektu apjoma kontrole',
+                  'Komantas konti ar lomām un atļau pārvaldību',
+                  'Automātiskie PVN rēķini un ikmēneša kopsavilkumi',
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-3 text-lg text-background/80">
                     <div className="p-1 bg-background/20 rounded-full shrink-0">
@@ -122,16 +128,19 @@ export function RoleTabs() {
         {activeRole === 'driver' && (
           <div className="bg-secondary/30 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
+              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                Pārvadātājs vai neatkarīgais šoferis
+              </p>
               <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight">
-                Maršruti un reisi
+                Saņem pārvadājumus.
                 <br />
-                tieši telefonā.
+                Pelni. Saņem naudu nākamajā dienā.
               </h3>
               <ul className="flex flex-col gap-4">
                 {[
-                  'Brīva darbu izvēle bez saistībām',
-                  'Digitālie pavadraksti un CMR (bez papīriem)',
-                  'Izmaksa par reisiem nākamajā darba dienā',
+                  'Brīva darbu izvēle — nekādu saistību, nekādu dispečeru',
+                  'Digitālie CMR un pavadzīmes — bez papīriem',
+                  'Izmaksa nākamajā darba dienā pēc katras piegādes',
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-3 text-lg text-muted-foreground">
                     <div className="p-1 bg-background rounded-full shrink-0 shadow-xs">
@@ -159,16 +168,19 @@ export function RoleTabs() {
         {activeRole === 'supplier' && (
           <div className="bg-secondary/30 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
+              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                Karjers vai materiālu piegādātājs
+              </p>
               <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight">
-                Saņem pasūtījumus
+                Pārdod materiālus
                 <br />
-                bez telefonu zvaniem.
+                bez papīra un WhatsApp.
               </h3>
               <ul className="flex flex-col gap-4">
                 {[
-                  'Klients atrod tavu karjeru katalogā',
-                  'Automātiskie PDF rēķini par katru kravu',
-                  'Vienkārša pārdošanas analītika',
+                  'Digitālais katalogs — rediģē cenas un pieejamību jebkurā brīdī',
+                  'Pasūtījumi ienāk automātiski — ne pa telefonu vai WhatsApp',
+                  'Rēķini un dokumenti ģenerējas pēc katras piegādes',
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-3 text-lg text-muted-foreground">
                     <div className="p-1 bg-background rounded-full shrink-0 shadow-xs">

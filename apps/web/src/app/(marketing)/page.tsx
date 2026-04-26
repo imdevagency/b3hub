@@ -34,24 +34,25 @@ export default function HomePage() {
 
       {/* ── 1. HERO ── */}
       <Hero
-        eyebrow="Latvija & Baltija"
+        eyebrow="Latvija · Baltija"
         title={
           <>
-            Pasūti.
+            Materiāli.
             <br />
-            Piegādā.
+            Transports.
             <br />
-            Dokumentē.
+            Dokumenti.
           </>
         }
-        subtitle="Grants, smiltis, drupināts akmens — piegādāts uz māju vai būvvietu. Bez reģistrācijas, bez zvaniem."
+        subtitle="Digitālā platforma, kas savieno karjerus, pārvadātājus un būvniekus — no pasūtījuma līdz rēķinam, automātiski."
+        pricingNote="Pircējiem — bezmaksas. Piegādātājiem no 6%. Pārvadātājiem no 8%."
         actions={
           <>
             <CTAButton href={'/order'} variant="primary" size="lg">
               Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-2" />
             </CTAButton>
             <CTAButton href={'#uznemumiem'} variant="secondary" size="lg">
-              Uzņēmumiem →
+              Uzzināt vairāk →
             </CTAButton>
           </>
         }
@@ -66,13 +67,17 @@ export default function HomePage() {
       <section id="uznemumiem" className="w-full bg-neutral-50">
         <Container className="py-24 flex flex-col items-center text-center">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
-            Platforma visiem
+            Kas ir B3Hub
           </p>
-          <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mb-16 max-w-xl">
-            Viens rīks pircējam,
+          <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mb-4 max-w-2xl">
+            Viens digitāls marķetpleiss
             <br />
-            piegādātājam un šoferim.
+            visai celtniecības loģistikai.
           </h2>
+          <p className="text-lg text-muted-foreground font-light mb-16 max-w-xl">
+            Pasūtiet materiālus, pārdodiet no karjera vai vediet kravas — platforma darbojas visām
+            trim pusēm vienlaikus.
+          </p>
 
           <RoleTabs />
         </Container>
@@ -88,18 +93,18 @@ export default function HomePage() {
             {[
               {
                 step: '01',
-                title: 'Pievieno pasūtījumu',
-                body: 'Izvēlies materiālu no kataloga, norādi piegādes vietu un daudzumu. Cenas redzamas uzreiz — bez zvaniem vai e-pastiem.',
+                title: 'Atver katalogu — cenas uzreiz',
+                body: 'Izvēlies materiālu, norādi apjomu un piegādes vietu. Cenas no reģionālajiem karjeriem — redzamas uzreiz, bez zvaniem, bez e-pastiem.',
               },
               {
                 step: '02',
-                title: 'Karjers apstiprina & šoferis brauc',
-                body: 'Piegādātājs apstiprina iekraušanu. Tuvākais brīvais šoferis saņem maršrutu. GPS izsekošana reāllaikā abām pusēm.',
+                title: 'Platforma saskaņo karjeru un šoferi',
+                body: 'Piegādātājs apstiprina iekraušanu. Tuvākais brīvais šoferis saņem maršrutu automātiski. Abas puses izseko piegādi reāllaikā.',
               },
               {
                 step: '03',
-                title: 'Piegāde & automātiskie dokumenti',
-                body: 'Pēc piegādes platforma ģenerē svara zīmi, CMR un rēķinu. Visi dokumenti arhīvā — juridiski derīgi, pieejami 5 gadus.',
+                title: 'Dokumenti ģenerējas — bez jūsu darba',
+                body: 'Svara zīme, CMR un PVN rēķins tiek sagatavoti automātiski pēc piegādes apstiprināšanas. Juridiski derīgi un arhīvā 5 gadus.',
               },
             ].map(({ step, title, body }) => (
               <div
@@ -125,18 +130,18 @@ export default function HomePage() {
             {[
               {
                 icon: FileText,
-                title: 'Automātiskie dokumenti',
-                body: 'Svara zīme, CMR un PVN rēķins tiek ģenerēti automātiski pēc katras piegādes. Juridiski derīgi, arhīvā 5 gadus.',
+                title: 'Nav vairāk papīra dokumentu',
+                body: 'Svara zīme, CMR un PVN rēķins ģenerējas automātiski pēc katras piegādes. Juridiski derīgi, arhīvā 5 gadus — bez manuāla darba.',
               },
               {
                 icon: MapPin,
-                title: 'GPS izsekošana reāllaikā',
-                body: 'No iekraušanas brīža līdz piegādei — pircējs un karjers redz šoferi kartē. Nav jāzvana, lai noskaidrotu atrašanās vietu.',
+                title: 'Zini, kur auto atrodas',
+                body: 'No iekraušanas brīža līdz ierašanās vietai — pircējs un karjers redz šoferi kartē reāllaikā. Nekad vairāk jautājums "kad atnāks?"',
               },
               {
                 icon: Banknote,
-                title: 'Nākamās dienas izmaksa',
-                body: 'Šoferi saņem atlīdzību nākamajā darba dienā automātiski. Nav rēķinu kārtošanas, nav kavēšanās, nav jautājumu.',
+                title: 'Nauda nākamajā dienā',
+                body: 'Šoferi saņem izmaksu nākamajā darba dienā pēc katras piegādes automātiski. Nav rēķinu gaidīšanas, nav kavēšanās, nav pārsteigumu.',
               },
             ].map(({ icon: Icon, title, body }) => (
               <div key={title} className="bg-secondary/30 rounded-3xl p-10 flex flex-col gap-6">
@@ -162,9 +167,9 @@ export default function HomePage() {
                 Cenas
               </p>
               <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-none">
-                Pārredzamas,
+                Maksā tikai
                 <br />
-                bez pārsteigumiem.
+                par rezultātu.
               </h2>
             </div>
             <Link
@@ -242,9 +247,9 @@ export default function HomePage() {
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-0 sm:divide-x divide-border flex-1">
               {[
-                { value: '100%', label: 'Automātiski ģenerēti dokumenti' },
-                { value: '3', label: 'Puses savienotas vienā platformā' },
-                { value: '1 DG', label: 'Šoferu izmaksa pēc piegādes' },
+                { value: '100%', label: 'Piegādes dokumenti ģenerējas automātiski' },
+                { value: '€0', label: 'Komisija pircējiem — pasūtīšana bezmaksas' },
+                { value: '1 DG', label: 'Šoferu izmaksa pēc katras piegādes' },
               ].map(({ value, label }) => (
                 <div key={label} className="sm:px-12 first:pl-0 last:pr-0">
                   <p className="text-6xl md:text-7xl font-medium tracking-tighter leading-none">
@@ -296,9 +301,9 @@ export default function HomePage() {
       <section className="w-full py-32 bg-foreground">
         <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
           <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-none">
-            Gatavs sākt
+            Latvija būvē —
             <br />
-            strādāt gudrāk?
+            B3Hub nodrošina.
           </h2>
           <div className="flex flex-col gap-4 min-w-fit">
             <CTAButton href={'/order'} variant="inverted" size="lg">
