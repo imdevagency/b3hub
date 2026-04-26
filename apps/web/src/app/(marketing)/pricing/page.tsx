@@ -111,13 +111,13 @@ export default function PricingPage() {
         {/* ── PLANS ── */}
         <section className="w-full bg-neutral-50">
           <Container className="pb-32 pt-16">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`flex flex-col p-10 gap-8 relative ${
+                  className={`flex flex-col p-10 md:p-12 gap-8 relative rounded-[2rem] shadow-xl ${
                     plan.featured
-                      ? 'bg-foreground text-background'
+                      ? 'bg-foreground text-background scale-100 md:scale-105 z-10'
                       : 'bg-background text-foreground'
                   }`}
                 >
@@ -154,19 +154,19 @@ export default function PricingPage() {
                   {/* Example calculation */}
                   {'example' in plan && plan.example && (
                     <div
-                      className={`rounded-xl p-4 text-sm ${plan.featured ? 'bg-background/10' : 'bg-muted/50'}`}
+                      className={`rounded-2xl p-5 text-sm ${plan.featured ? 'bg-background/10' : 'bg-neutral-100'}`}
                     >
                       <p
-                        className={`font-semibold mb-1 ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
+                        className={`font-semibold mb-2 tracking-widest uppercase text-xs ${plan.featured ? 'text-background/70' : 'text-muted-foreground'}`}
                       >
                         Piemērs
                       </p>
                       <div
-                        className={`flex items-center justify-between ${plan.featured ? 'text-background/80' : 'text-foreground'}`}
+                        className={`flex items-center justify-between font-medium ${plan.featured ? 'text-background/90' : 'text-foreground'}`}
                       >
                         <span>Pasūtījums €{plan.example.order}</span>
-                        <ArrowRight className="h-3.5 w-3.5 mx-2 shrink-0 opacity-40" />
-                        <span className="font-bold">
+                        <ArrowRight className="h-4 w-4 mx-2 shrink-0 opacity-40" />
+                        <span className="font-bold text-base">
                           Komisija €{(plan.example.order * plan.example.rate).toFixed(0)}
                         </span>
                       </div>
@@ -174,15 +174,16 @@ export default function PricingPage() {
                   )}
 
                   {/* Features */}
-                  <ul className="flex flex-col gap-3 flex-1">
+                  <ul className="flex flex-col gap-4 flex-1">
                     {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-3">
-                        <Check
-                          className={`h-4 w-4 shrink-0 mt-0.5 ${plan.featured ? 'text-background/50' : 'text-foreground'}`}
-                          strokeWidth={2.5}
-                        />
+                      <li key={f} className="flex items-start gap-4">
+                        <div
+                          className={`mt-0.5 p-1 rounded-full ${plan.featured ? 'bg-background/10 text-background/80' : 'bg-neutral-100 text-foreground'}`}
+                        >
+                          <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />
+                        </div>
                         <span
-                          className={`text-sm font-light ${plan.featured ? 'text-background/80' : 'text-muted-foreground'}`}
+                          className={`text-base font-light leading-snug ${plan.featured ? 'text-background/80' : 'text-muted-foreground'}`}
                         >
                           {f}
                         </span>
@@ -207,37 +208,40 @@ export default function PricingPage() {
         {/* ── HOW IT WORKS ── */}
         <section className="w-full bg-background">
           <Container className="pb-32 pt-16">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 relative z-10">
               Kā darbojas komisija
             </h2>
-            <p className="text-muted-foreground text-lg font-light mb-16 max-w-xl">
+            <p className="text-muted-foreground text-xl font-light mb-12 max-w-2xl relative z-10 leading-relaxed">
               Visi darījumi iet caur platformu. Komisija tiek ieturēta automātiski — neviens rēķins,
               nekāda uzskaite.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
                   step: '01',
                   title: 'Pircējs veic pasūtījumu',
-                  body: 'Pircējs samaksā pasūtījuma summu. Nauda tiek turēta platformas escrow.',
+                  body: 'Pircējs samaksā pasūtījuma summu. Nauda tiek turēta platformas escrow norēķinu kontā drošībā.',
                 },
                 {
                   step: '02',
                   title: 'Piegāde tiek izpildīta',
-                  body: 'Piegādātājs un pārvadātājs izpilda pasūtījumu. Sistēma reģistrē pabeigšanu.',
+                  body: 'Piegādātājs un pārvadātājs izpilda pasūtījumu. Sistēma reģistrē pabeigšanu izkraušanas punktā.',
                 },
                 {
                   step: '03',
-                  title: 'Komisija tiek ieturēta automātiski',
-                  body: 'No maksājuma automātiski tiek ieturēta piegādātāja (6%) un pārvadātāja (8%) komisija. Atlikums izmaksāts nākamajā darba dienā.',
+                  title: 'Komisija ieturēta automātiski',
+                  body: 'No gala maksājuma automātiski atskaita piegādātāja (6%) un pārvadātāja (8%) daļu. Atlikums nākamajā dienā jūsu kontā.',
                 },
               ].map(({ step, title, body }) => (
-                <div key={step} className="bg-background p-10 flex flex-col gap-4">
-                  <span className="text-sm font-bold tracking-widest text-muted-foreground">
-                    {step}
+                <div
+                  key={step}
+                  className="bg-neutral-50 rounded-[2rem] p-10 md:p-12 flex flex-col gap-5 shadow-sm"
+                >
+                  <span className="text-sm font-bold tracking-widest text-muted-foreground uppercase">
+                    {step} solis
                   </span>
-                  <h3 className="text-xl font-bold tracking-tight">{title}</h3>
-                  <p className="text-muted-foreground font-light leading-relaxed">{body}</p>
+                  <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
+                  <p className="text-muted-foreground text-lg font-light leading-relaxed">{body}</p>
                 </div>
               ))}
             </div>
@@ -248,25 +252,25 @@ export default function PricingPage() {
         <FAQAccordion items={faq} className="bg-neutral-50" />
 
         {/* ── ENTERPRISE / VOLUME ── */}
-        <section className="w-full bg-background">
-          <Container className="pb-32 pt-16">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-              <div className="max-w-xl">
-                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
+        <section className="w-full bg-background pb-32">
+          <Container>
+            <div className="flex flex-col md:flex-row md:items-center bg-neutral-50 rounded-[4rem] p-12 md:p-20 justify-between gap-12 shadow-sm border border-border/50">
+              <div className="max-w-2xl flex flex-col gap-6">
+                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
                   Liels apjoms?
                 </p>
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">
-                  Individuālie noteikumi
+                <h2 className="text-5xl md:text-7xl font-bold tracking-tighter leading-none">
+                  Individuāli
+                  <br /> noteikumi.
                 </h2>
-                <p className="text-muted-foreground text-lg font-light leading-relaxed">
+                <p className="text-muted-foreground text-xl font-light leading-relaxed">
                   Uzņēmumiem ar augstu darījumu apjomu — piegādātājiem, pārvadātājiem un būvniecības
                   kompānijām ar vairākiem aktīviem projektiem — piedāvājam individuālu komisijas
-                  struktūru, dedikētu atbalstu un prioritāru integrāciju ar jūsu esošajiem
-                  sistēmiem.
+                  struktūru un integrāciju esošajās sitēmās.
                 </p>
               </div>
-              <div className="shrink-0">
-                <CTAButton href="/contact" variant="primary">
+              <div className="shrink-0 flex items-center justify-center">
+                <CTAButton href="/contact" variant="primary" size="lg">
                   Sazināties ar komandu
                 </CTAButton>
               </div>
