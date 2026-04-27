@@ -129,7 +129,7 @@ export default function SkipOrderDetailsScreen() {
   const canAmend = order.status === 'PENDING' || order.status === 'CONFIRMED';
   const canRequestPickup = order.status === 'DELIVERED';
   const canExtend = order.status === 'DELIVERED';
-  const canCallCarrier = !!(order.carrier?.phone);
+  const canCallCarrier = !!order.carrier?.phone;
 
   const handleCallCarrier = useCallback(() => {
     if (!order.carrier?.phone) return;
@@ -170,47 +170,43 @@ export default function SkipOrderDetailsScreen() {
   const handleExtendHire = useCallback(() => {
     if (!order || !token) return;
     haptics.medium();
-    Alert.alert(
-      'Pagarināt nomu',
-      'Par cik dienām vēlaties pagarināt nomas periodu?',
-      [
-        { text: 'Atcelt', style: 'cancel' },
-        {
-          text: '7 dienas',
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              const updated = await api.skipHire.extendHire(order.id, 7, token);
-              setOrder(updated);
-              haptics.success();
-              toast.success(`Noma pagarināta par 7 dienām`);
-            } catch (err) {
-              haptics.error();
-              toast.error(err instanceof Error ? err.message : 'Neizdevās pagarināt nomu');
-            } finally {
-              setActionLoading(false);
-            }
-          },
+    Alert.alert('Pagarināt nomu', 'Par cik dienām vēlaties pagarināt nomas periodu?', [
+      { text: 'Atcelt', style: 'cancel' },
+      {
+        text: '7 dienas',
+        onPress: async () => {
+          setActionLoading(true);
+          try {
+            const updated = await api.skipHire.extendHire(order.id, 7, token);
+            setOrder(updated);
+            haptics.success();
+            toast.success(`Noma pagarināta par 7 dienām`);
+          } catch (err) {
+            haptics.error();
+            toast.error(err instanceof Error ? err.message : 'Neizdevās pagarināt nomu');
+          } finally {
+            setActionLoading(false);
+          }
         },
-        {
-          text: '14 dienas',
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              const updated = await api.skipHire.extendHire(order.id, 14, token);
-              setOrder(updated);
-              haptics.success();
-              toast.success(`Noma pagarināta par 14 dienām`);
-            } catch (err) {
-              haptics.error();
-              toast.error(err instanceof Error ? err.message : 'Neizdevās pagarināt nomu');
-            } finally {
-              setActionLoading(false);
-            }
-          },
+      },
+      {
+        text: '14 dienas',
+        onPress: async () => {
+          setActionLoading(true);
+          try {
+            const updated = await api.skipHire.extendHire(order.id, 14, token);
+            setOrder(updated);
+            haptics.success();
+            toast.success(`Noma pagarināta par 14 dienām`);
+          } catch (err) {
+            haptics.error();
+            toast.error(err instanceof Error ? err.message : 'Neizdevās pagarināt nomu');
+          } finally {
+            setActionLoading(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   }, [order, setOrder, token, toast]);
 
   const orderRows = [
@@ -397,11 +393,7 @@ export default function SkipOrderDetailsScreen() {
           )}
 
           {canCallCarrier && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={handleCallCarrier}
-            >
+            <Button variant="outline" size="lg" onPress={handleCallCarrier}>
               Zvanīt pārvadātājam
             </Button>
           )}

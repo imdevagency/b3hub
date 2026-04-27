@@ -143,7 +143,12 @@ export function OffersStep({
           activeOpacity={0.85}
         >
           <Text
-            style={{ fontSize: 16, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' }}
+            style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: '#fff',
+              fontFamily: 'Inter_600SemiBold',
+            }}
           >
             Apmaksāt pasūtījumu
           </Text>

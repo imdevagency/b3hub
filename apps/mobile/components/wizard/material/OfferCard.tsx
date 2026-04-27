@@ -16,7 +16,14 @@ export interface OfferCardProps {
   onSelect: () => void;
 }
 
-export function OfferCard({ offer, unit, isCheapest, isSelected, submitting, onSelect }: OfferCardProps) {
+export function OfferCard({
+  offer,
+  unit,
+  isCheapest,
+  isSelected,
+  submitting,
+  onSelect,
+}: OfferCardProps) {
   const hasPerfStats =
     (offer.onTimePct != null && offer.onTimePct >= 70) ||
     (offer.fulfillmentPct != null && offer.fulfillmentPct >= 70);

@@ -161,9 +161,7 @@ export default function RfqDetailScreen() {
         <View style={ss.center}>
           <Text style={ss.emptyText}>Pieprasījums nav atrasts</Text>
           <TouchableOpacity
-            onPress={() =>
-              router.canGoBack() ? router.back() : router.replace('/(buyer)/orders')
-            }
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
             style={{
               marginTop: 16,
               paddingVertical: 10,
@@ -172,7 +170,9 @@ export default function RfqDetailScreen() {
               borderRadius: 10,
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Atpakaļ</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
+              Atpakaļ
+            </Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -267,7 +267,9 @@ export default function RfqDetailScreen() {
         {sortedResponses.length === 0 && rfq.status === 'CANCELLED' && (
           <View style={[ss.emptyResponses, ss.emptyResponsesCancelled]}>
             <XCircle size={32} color="#fca5a5" />
-            <Text style={[ss.emptyResponsesTitle, { color: colors.dangerText }]}>Pieprasījums atcelts</Text>
+            <Text style={[ss.emptyResponsesTitle, { color: colors.dangerText }]}>
+              Pieprasījums atcelts
+            </Text>
             <Text style={ss.emptyResponsesDesc}>
               Šis pieprasījums ir atcelts. Varat iesniegt jaunu pieprasījumu jebkurā laikā.
             </Text>
@@ -346,30 +348,31 @@ export default function RfqDetailScreen() {
                 {resp.notes}
               </Text>
             )}
-            {resp.validUntil && (() => {
-              const ms = new Date(resp.validUntil).getTime() - Date.now();
-              const expired = ms <= 0;
-              const urgent = !expired && ms < 24 * 60 * 60 * 1000;
-              const hoursLeft = Math.max(0, Math.ceil(ms / (60 * 60 * 1000)));
-              const daysLeft = Math.ceil(hoursLeft / 24);
-              if (expired) {
+            {resp.validUntil &&
+              (() => {
+                const ms = new Date(resp.validUntil).getTime() - Date.now();
+                const expired = ms <= 0;
+                const urgent = !expired && ms < 24 * 60 * 60 * 1000;
+                const hoursLeft = Math.max(0, Math.ceil(ms / (60 * 60 * 1000)));
+                const daysLeft = Math.ceil(hoursLeft / 24);
+                if (expired) {
+                  return (
+                    <View style={ss.expiredPill}>
+                      <Text style={ss.expiredPillText}>Piedāvājums beidzies</Text>
+                    </View>
+                  );
+                }
                 return (
-                  <View style={ss.expiredPill}>
-                    <Text style={ss.expiredPillText}>Piedāvājums beidzies</Text>
+                  <View style={[ss.validityPill, urgent && ss.validityPillUrgent]}>
+                    <Clock size={12} color={urgent ? '#b91c1c' : colors.textMuted} />
+                    <Text style={[ss.validityPillText, urgent && ss.validityPillTextUrgent]}>
+                      {urgent
+                        ? `Beidzas pēc ${hoursLeft}h`
+                        : `Derīgs vēl ${daysLeft} d. (līdz ${formatDateShort(resp.validUntil)})`}
+                    </Text>
                   </View>
                 );
-              }
-              return (
-                <View style={[ss.validityPill, urgent && ss.validityPillUrgent]}>
-                  <Clock size={12} color={urgent ? '#b91c1c' : colors.textMuted} />
-                  <Text style={[ss.validityPillText, urgent && ss.validityPillTextUrgent]}>
-                    {urgent
-                      ? `Beidzas pēc ${hoursLeft}h`
-                      : `Derīgs vēl ${daysLeft} d. (līdz ${formatDateShort(resp.validUntil)})`}
-                  </Text>
-                </View>
-              );
-            })()}
+              })()}
             {rfq.status !== 'ACCEPTED' &&
               rfq.status !== 'CANCELLED' &&
               rfq.status !== 'EXPIRED' &&
@@ -441,7 +444,12 @@ export default function RfqDetailScreen() {
 
 const ss = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgCard },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCard },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bgCard,
+  },
   emptyText: { fontSize: 15, color: colors.textMuted },
   link: { fontSize: 15, color: colors.textPrimary, fontWeight: '600' },
 
@@ -510,8 +518,18 @@ const ss = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  emptyResponsesTitle: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, textAlign: 'center' },
-  emptyResponsesDesc: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  emptyResponsesTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  emptyResponsesDesc: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 
   // Response card
   responseCard: {

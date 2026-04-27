@@ -621,10 +621,7 @@ export default function OrderWizard() {
             showsVerticalScrollIndicator={false}
           >
             <InfoSection icon={<MapPin size={18} color="#6b7280" />} title="Kopsavilkums">
-              <DetailRow
-                label="Adrese"
-                value={picked?.address ?? state.location ?? '—'}
-              />
+              <DetailRow label="Adrese" value={picked?.address ?? state.location ?? '—'} />
               <DetailRow
                 label="Atkritumu veids"
                 value={
@@ -650,7 +647,14 @@ export default function OrderWizard() {
                       : 'Jebkurā laikā'
                 }
               />
-              <View style={{ height: 1, backgroundColor: '#f3f4f6', marginVertical: 12, marginHorizontal: -20 }} />
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: '#f3f4f6',
+                  marginVertical: 12,
+                  marginHorizontal: -20,
+                }}
+              />
               <DetailRow label="Cena (bez PVN)" value={`€${price.toFixed(2)}`} />
               <DetailRow label="PVN 21%" value={`€${(price * 0.21).toFixed(2)}`} />
               <DetailRow label="Kopā apmaksāt" value={`€${(price * 1.21).toFixed(2)}`} last />
@@ -715,7 +719,9 @@ export default function OrderWizard() {
                     onPress={() => setPaymentMethod(val)}
                     activeOpacity={0.75}
                   >
-                    <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
+                    <View
+                      style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}
+                    >
                       {paymentMethod === val && <View style={s.payMethodRadioDot} />}
                     </View>
                     <View style={{ flex: 1 }}>
@@ -1211,7 +1217,12 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
   },
-  successBtnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#fff' },
+  successBtnText: {
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#fff',
+  },
   payMethodRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
