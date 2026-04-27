@@ -9,7 +9,7 @@ export interface WizardState {
   skipSize: SkipSize | null;
   deliveryDate: string;
   confirmedOrder: SkipHireOrder | null;
-  skipPaymentClientSecret: string | null;
+  skipPaymentUrl: string | null;
 }
 
 interface OrderContextValue {
@@ -20,7 +20,7 @@ interface OrderContextValue {
   setSkipSize: (v: SkipSize) => void;
   setDeliveryDate: (v: string) => void;
   setConfirmedOrder: (v: SkipHireOrder) => void;
-  setSkipPaymentClientSecret: (v: string | null) => void;
+  setSkipPaymentUrl: (v: string | null) => void;
   reset: () => void;
 }
 
@@ -32,7 +32,7 @@ const INITIAL: WizardState = {
   skipSize: null,
   deliveryDate: '',
   confirmedOrder: null,
-  skipPaymentClientSecret: null,
+  skipPaymentUrl: null,
 };
 
 const OrderContext = createContext<OrderContextValue | null>(null);
@@ -51,8 +51,7 @@ export function OrderProvider({ children }: { children: React.ReactNode }) {
         setSkipSize: (skipSize) => setState((s) => ({ ...s, skipSize })),
         setDeliveryDate: (deliveryDate) => setState((s) => ({ ...s, deliveryDate })),
         setConfirmedOrder: (confirmedOrder) => setState((s) => ({ ...s, confirmedOrder })),
-        setSkipPaymentClientSecret: (skipPaymentClientSecret) =>
-          setState((s) => ({ ...s, skipPaymentClientSecret })),
+        setSkipPaymentUrl: (skipPaymentUrl) => setState((s) => ({ ...s, skipPaymentUrl })),
         reset: () => setState(INITIAL),
       }}
     >

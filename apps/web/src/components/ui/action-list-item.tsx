@@ -19,24 +19,24 @@ export function ActionListItem({
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between p-4 -mx-4 rounded-2xl hover:bg-muted/40 active:bg-muted/60 transition-all"
+      className="group flex items-center justify-between px-5 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors"
     >
       <div className="flex items-center gap-4">
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-colors ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors ${
             primary
-              ? 'bg-primary/10 text-primary group-hover:bg-primary/20'
-              : 'bg-muted text-foreground group-hover:bg-muted/80'
+              ? 'bg-primary/10 text-primary border-primary/20 group-hover:bg-primary/15'
+              : 'bg-white text-gray-500 border-gray-200 group-hover:border-gray-300 group-hover:text-gray-700'
           }`}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-foreground">{label}</h3>
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 pr-4">{description}</p>
         </div>
       </div>
-      <ChevronRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-foreground transition-colors group-hover:translate-x-0.5" />
+      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors group-hover:translate-x-0.5" />
     </Link>
   );
 }

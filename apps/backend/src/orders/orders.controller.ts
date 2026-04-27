@@ -278,4 +278,18 @@ export class OrdersController {
   deleteSchedule(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.deleteSchedule(id, user);
   }
+
+  /**
+   * POST /orders/:id/share-link
+   * Returns the public share URL so a foreman can fill in delivery details.
+   * Only the order creator (or admin) may call this.
+   */
+  @Post(':id/share-link')
+  generateShareLink(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    const webUrl = process.env.WEB_APP_URL ?? 'https://b3hub.lv';
+    return this.ordersService.generateShareLink(id, user, webUrl);
+  }
 }

@@ -22,7 +22,6 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { GuestWall } from '@/components/ui/GuestWall';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -106,18 +105,8 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
 // ── Screen ────────────────────────────────────────────────────
 
 export default function SavedAddressesScreen() {
-  const { token, user, isLoading } = useAuth();
+  const { token, user } = useAuth();
   const toast = useToast();
-
-  if (!isLoading && !user) {
-    return (
-      <GuestWall
-        headerTitle="Saglabātās adreses"
-        title="Pierakstieties, lai pārvaldītu adreses"
-        subtitle="Saglabātās piegādes adreses ir pieejamas tikai reģistrētiem lietotājiem."
-      />
-    );
-  }
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

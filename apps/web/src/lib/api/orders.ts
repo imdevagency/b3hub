@@ -443,3 +443,18 @@ export async function deleteSchedule(id: string, token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Share link ────────────────────────────────────────────────────────────
+
+export async function generateShareLink(
+  orderId: string,
+  token: string,
+): Promise<{ url: string; token: string }> {
+  return apiFetch<{ url: string; token: string }>(
+    `/orders/${encodeURIComponent(orderId)}/share-link`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+}

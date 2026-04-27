@@ -37,14 +37,14 @@ export interface ConnectBalanceResponse {
 }
 
 export interface PaymentIntentResponse {
-  clientSecret: string;
-  publishableKey: string;
-  paymentIntentId: string;
+  /** Paysera-hosted checkout URL — open in browser for buyer to complete payment */
+  paymentUrl: string;
+  payseraOrderId: string;
 }
 
 export const paymentsApi = {
   /**
-   * Generates a Stripe Connect onboarding link.
+   * Generates a Paysera IBAN payout onboarding link (for sellers/carriers to submit their IBAN).
    */
   setupPayouts: async (token: string): Promise<PaymentOnboardResponse> => {
     return apiFetch('/payments/onboard', {
@@ -54,8 +54,8 @@ export const paymentsApi = {
   },
 
   /**
-   * Returns the Stripe Connect account's available + pending balance.
-   * Returns { available: 0, pending: 0, onboarded: false } if not yet set up.
+   * Returns the current user's payout balance (always zero with Paysera;
+   * kept for API surface compatibility).
    */
   getBalance: async (token: string): Promise<ConnectBalanceResponse> => {
     return apiFetch('/payments/balance', {
@@ -64,8 +64,8 @@ export const paymentsApi = {
   },
 
   /**
-   * Creates (or retrieves) a Stripe PaymentIntent for the given order.
-   * Returns the clientSecret needed to present the payment sheet.
+   * Creates (or retrieves) a Paysera checkout for the given order.
+   * Returns a paymentUrl to open in the browser so the buyer can complete payment.
    */
   createIntent: async (orderId: string, token: string): Promise<PaymentIntentResponse> => {
     return apiFetch(`/payments/create-intent/${orderId}`, {

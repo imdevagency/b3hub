@@ -57,14 +57,14 @@ export class PaymentsController {
 
   /**
    * POST /payments/webhook
-   * Stripe sends events here (no JWT — verified by Stripe-Signature header).
+   * Paysera sends events here (no JWT — verified by X-Paysera-Signature header).
    * NestJS must be configured to expose rawBody for this route.
    */
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Req() req: RawBodyRequest<Request>,
-    @Headers('stripe-signature') signature: string,
+    @Headers('x-paysera-signature') signature: string,
   ) {
     await this.paymentsService.handleWebhookEvent(req.rawBody!, signature);
     return { received: true };

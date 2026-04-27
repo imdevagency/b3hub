@@ -298,11 +298,12 @@ export class DisputesService {
         );
     }
 
-    // Notify the buyer of the outcome
+    // Notify the buyer and driver(s) of the outcome
     if (dto.status === 'RESOLVED' || dto.status === 'REJECTED') {
       const resolutionText = dto.resolution
         ? ` Rezolūcija: ${dto.resolution}.`
         : '';
+      // Notify buyer
       this.notifications
         .create({
           userId: updated.raisedBy.id,
@@ -320,6 +321,39 @@ export class DisputesService {
         .catch((err) =>
           this.logger.warn(
             'Dispute resolution buyer notification failed',
+            (err as Error).message,
+          ),
+        );
+
+      // Notify driver(s) who handled the order
+      this.prisma.transportJob
+        .findMany({
+          where: { orderId: updated.order.id, driverId: { not: null } },
+          select: { driverId: true },
+          distinct: ['driverId'],
+        })
+        .then((jobs) => {
+          const driverIds = jobs
+            .map((j) => j.driverId)
+            .filter((id): id is string => id !== null);
+          if (driverIds.length === 0) return;
+          const driverMsg =
+            dto.status === 'RESOLVED'
+              ? `Strīds par pasūtījumu #${updated.order.orderNumber} atrisināts — krava apstrīdēta.${resolutionText}`
+              : `Strīds par pasūtījumu #${updated.order.orderNumber} noraidīts — piegāde apstiprināta.${resolutionText}`;
+          return this.notifications.createForMany(driverIds, {
+            type: NotificationType.DISPUTE_RESOLVED,
+            title:
+              dto.status === 'RESOLVED'
+                ? 'ℹ️ Strīds atrisināts'
+                : 'ℹ️ Strīds noraidīts',
+            message: driverMsg,
+            data: { orderId: updated.order.id, disputeId: id },
+          });
+        })
+        .catch((err) =>
+          this.logger.warn(
+            'Dispute resolution driver notification failed',
             (err as Error).message,
           ),
         );

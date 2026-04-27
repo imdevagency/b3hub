@@ -5,9 +5,14 @@
  * wizard that imports this file gets correct Latvian month/day names
  * regardless of which wizard was loaded first.
  *
+ * Supports two modes:
+ *   - Single-day selection (default): `selectedDate` + optional `minDate`
+ *   - Range selection: pass `rangeEndDate` to highlight a hire period as
+ *     a coloured band from `selectedDate` → `rangeEndDate`.
+ *
  * Uses Inter fonts (matching the rest of the wizard UI — not Geist).
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { colors } from '@/lib/theme';
@@ -87,18 +92,58 @@ type Props = {
    * Defaults to today — pass `toISO(addDays(new Date(), 1))` for next-day minimum.
    */
   minDate?: string;
+  /**
+   * When set, the calendar renders a **range** from `selectedDate` to
+   * `rangeEndDate` using `markingType="period"`.  End day is highlighted
+   * dark (collection day), middle days get a subtle tint.
+   */
+  rangeEndDate?: string;
 };
 
-export function WizardCalendar({ selectedDate, onDateChange, minDate }: Props) {
+// ── Period range marking helper ──────────────────────────────────
+
+const RANGE_START = { startingDay: true, color: '#111827', textColor: '#ffffff' } as const;
+const RANGE_MID = { color: '#EFF1F5', textColor: '#374151' } as const;
+const RANGE_END = { endingDay: true, color: '#111827', textColor: '#ffffff' } as const;
+const RANGE_SINGLE = {
+  startingDay: true,
+  endingDay: true,
+  color: '#111827',
+  textColor: '#ffffff',
+} as const;
+
+function buildRangeMarks(startISO: string, endISO: string): Record<string, object> {
+  if (startISO === endISO) return { [startISO]: RANGE_SINGLE };
+  const marks: Record<string, object> = {};
+  const end = new Date(endISO + 'T00:00:00');
+  const cur = new Date(startISO + 'T00:00:00');
+  while (cur <= end) {
+    const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+    if (key === startISO) marks[key] = RANGE_START;
+    else if (key === endISO) marks[key] = RANGE_END;
+    else marks[key] = RANGE_MID;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return marks;
+}
+
+export function WizardCalendar({ selectedDate, onDateChange, minDate, rangeEndDate }: Props) {
   const today = new Date().toISOString().split('T')[0];
   const current = selectedDate || today;
+
+  const markedDates = useMemo(() => {
+    if (rangeEndDate && selectedDate) return buildRangeMarks(selectedDate, rangeEndDate);
+    if (selectedDate) return { [selectedDate]: { selected: true, selectedColor: '#111827' } };
+    return {};
+  }, [selectedDate, rangeEndDate]);
 
   return (
     <View style={s.wrapper}>
       <Calendar
         current={current}
         onDayPress={(day: { dateString: string }) => onDateChange(day.dateString)}
-        markedDates={{ [current]: { selected: true, selectedColor: '#111827' } }}
+        markedDates={markedDates}
+        markingType={rangeEndDate && selectedDate ? 'period' : undefined}
         theme={CALENDAR_THEME}
         minDate={minDate ?? today}
         firstDay={1}

@@ -90,4 +90,10 @@ export class CreateDisposalOrderDto {
   @IsUUID()
   @IsOptional()
   projectId?: string; // optional project tag for P&L roll-up
+
+  /** Buyer-selected recycling centre override. When provided, the disposal job
+   *  is routed to this centre instead of the nearest available one. */
+  @IsUUID()
+  @IsOptional()
+  preferredRecyclingCenterId?: string;
 }

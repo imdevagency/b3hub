@@ -1,7 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Alert, Linking, Image, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Alert,
+  Linking,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Phone, Package, Trash2, Clock3 } from 'lucide-react-native';
+import { Phone, Package, Trash2, Clock3, Truck, CreditCard } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -130,6 +139,19 @@ export default function SkipOrderDetailsScreen() {
     },
     { label: 'Konteinera izmērs', value: SIZE_LABEL[order.skipSize] ?? order.skipSize },
     { label: 'Atkritumu veids', value: WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory },
+    {
+      label: 'Nomas periods',
+      value: order.hireDays ? `${order.hireDays} dienas` : null,
+    },
+    {
+      label: 'Maksājuma veids',
+      value:
+        order.paymentMethod === 'INVOICE'
+          ? 'Rēķins'
+          : order.paymentMethod === 'CARD'
+            ? 'Karte (Paysera)'
+            : null,
+    },
     { label: 'Izveidots', value: formatDate(order.createdAt) },
   ].filter((row) => row.value);
 
@@ -180,6 +202,29 @@ export default function SkipOrderDetailsScreen() {
         >
           <Text style={styles.priceNote}>Galīgā cena par konteineru piegādi un izvešanu.</Text>
         </InfoSection>
+
+        {order.carrier && (
+          <InfoSection icon={<Truck size={16} color={colors.textMuted} />} title="Pārvadātājs">
+            <DetailRow label="Uzņēmums" value={order.carrier.name} />
+            {order.carrier.phone && <DetailRow label="Tālrunis" value={order.carrier.phone} last />}
+            {order.carrier.phone && (
+              <TouchableOpacity
+                style={styles.callButton}
+                onPress={() => Linking.openURL(`tel:${order.carrier!.phone}`).catch(() => null)}
+                activeOpacity={0.7}
+              >
+                <Phone size={14} color="#fff" />
+                <Text style={styles.callButtonText}>Zvanīt pārvadātājam</Text>
+              </TouchableOpacity>
+            )}
+          </InfoSection>
+        )}
+
+        {!order.carrier && (order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+          <InfoSection icon={<Truck size={16} color={colors.textMuted} />} title="Pārvadātājs">
+            <Text style={styles.emptySectionText}>Pārvadātājs vēl nav piešķirts.</Text>
+          </InfoSection>
+        )}
 
         <InfoSection icon={<Phone size={16} color={colors.textMuted} />} title="Kontakti">
           {contactRows.length > 0 ? (
@@ -359,5 +404,22 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 16,
     backgroundColor: '#E5E7EB',
+  },
+  callButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#111827',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  callButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
 });

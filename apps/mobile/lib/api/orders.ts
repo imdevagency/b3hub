@@ -49,6 +49,9 @@ export interface CreateDisposalOrderInput {
   quotedRate?: number;
   /** Optional project tag for P&L roll-up */
   projectId?: string;
+  /** Buyer-selected recycling centre override. When provided, the disposal job
+   *  is routed to this centre instead of the nearest available one. */
+  preferredRecyclingCenterId?: string;
 }
 
 export interface CreateTransportOrderInput {
@@ -107,6 +110,7 @@ export interface CreateMaterialOrderInput {
   siteContactPhone?: string;
   sitePhotoUrl?: string;
   notes?: string;
+  bisNumber?: string;
   projectId?: string;
   /** Number of trucks to dispatch (each becomes a separate transport job). */
   truckCount?: number;

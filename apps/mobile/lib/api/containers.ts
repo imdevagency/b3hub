@@ -122,5 +122,12 @@ export const containersApi = {
         `/recycling-centers?wasteType=${encodeURIComponent(wasteType)}&activeOnly=true&limit=1`,
         { headers: { Authorization: `Bearer ${token}` } },
       ),
+
+    /** List all active centers for a given waste type (for buyer preference picker) */
+    listByWasteType: (wasteType: WasteType, token: string) =>
+      apiFetch<{ data: { id: string; name: string; city: string; address: string }[]; total: number }>(
+        `/recycling-centers?wasteType=${encodeURIComponent(wasteType)}&activeOnly=true&limit=50`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
   },
 };

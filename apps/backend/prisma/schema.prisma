@@ -121,9 +121,9 @@ enum PaymentStatus {
 }
 
 enum PaymentMethod {
-  CARD    // Stripe card — immediate authorization, captured on confirmation
-  INVOICE // NET terms — buyer pays via bank transfer or Stripe Payment Link
-  SEPA    // SEPA Direct Debit via Stripe (for approved B2B buyers)
+  CARD    // Card payment via Paysera Checkout
+  INVOICE // NET terms — buyer pays via bank transfer or Paysera payment link
+  SEPA    // SEPA Direct Debit via Paysera (for approved B2B buyers)
 }
 
 enum WastePurpose {
@@ -203,6 +203,7 @@ enum TransportJobStatus {
   AT_DELIVERY // At delivery location
   DELIVERED // Completed
   CANCELLED // Cancelled
+  DELIVERY_REFUSED // Buyer/site refused to accept delivery at the door
 }
 
 enum TransportExceptionType {
@@ -253,7 +254,7 @@ enum NotificationType {
   DOCUMENT_EXPIRING_SOON
   DRIVER_NEARBY
   WEIGHING_SLIP
-  PAYOUT_PENDING         // carrier needs to complete Stripe Connect onboarding
+  PAYOUT_PENDING         // carrier needs to provide IBAN for payouts
 }
 
 enum QuoteRequestStatus {
@@ -318,21 +319,91 @@ model Payment {
   orderId String @unique
   order   Order  @relation(fields: [orderId], references: [id])
 
-  stripePaymentId String? // pi_...
-  stripeChargeId  String? // ch_...
-  transferGroup   String? // Stripe transfer group ID
+  payseraOrderId  String? // Paysera order UUID
+  payseraPaymentUrl String? // Checkout redirect URL for buyer
 
-  amount   Float // Total amount
+  amount   Float // Total amount charged to buyer
   currency String @default("EUR")
 
   status PaymentStatus @default(PENDING)
 
-  platformFee  Float? // Commission kept
-  sellerPayout Float? // Net to seller
-  driverPayout Float? // Net to driver
+  platformFee  Float? // B3Hub margin / revenue retained
+  sellerPayout Float? // Amount owed to supplier(s) — recorded when payment RELEASED, paid out later via SupplierPayout
+  driverPayout Float? // Amount owed to carrier/driver — recorded when payment RELEASED, paid out later via CarrierPayout
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ── Principal Payout Models ───────────────────────────────────────────────────
+// B3Hub operates as principal: buyer pays B3Hub in full; B3Hub settles with
+// suppliers and carriers separately on agreed payment terms (default NET-30).
+// These models replace immediate Stripe Connect transfers — funds stay in
+// B3Hub's platform account until the payout is explicitly executed by admin.
+
+enum PayoutStatus {
+  PENDING    // Obligation recorded; awaiting settlement batch
+  PROCESSING // Paysera transfer initiated, awaiting confirmation
+  PAID       // Transfer confirmed paid
+  FAILED     // Transfer failed — manual action required
+  CANCELLED  // Order cancelled/refunded; obligation voided
+}
+
+model SupplierPayout {
+  id         String  @id @default(cuid())
+  order      Order   @relation("OrderSupplierPayouts", fields: [orderId], references: [id])
+  orderId    String
+  supplier   Company @relation("SupplierPayouts", fields: [supplierId], references: [id])
+  supplierId String
+
+  amount   Float
+  currency String @default("EUR")
+
+  status    PayoutStatus @default(PENDING)
+  dueDate   DateTime     // NET-30 from order completion date
+  paidAt    DateTime?
+
+  payseraTransferId String? // Populated when IBAN transfer is executed via Paysera Transfer API
+  notes             String? // Free text — e.g. reason for manual override
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("supplier_payouts")
+}
+
+model CarrierPayout {
+  id        String        @id @default(cuid())
+  order     Order?        @relation("OrderCarrierPayouts", fields: [orderId], references: [id])
+  orderId   String?
+  job       TransportJob? @relation("JobCarrierPayout", fields: [jobId], references: [id])
+  jobId     String?       @unique
+  driver    User?         @relation("DriverPayouts", fields: [driverId], references: [id])
+  driverId  String?
+  carrier   Company?      @relation("CarrierPayouts", fields: [carrierId], references: [id])
+  carrierId String?
+
+  amount   Float
+  currency String @default("EUR")
+
+  status    PayoutStatus @default(PENDING)
+  dueDate   DateTime     // NET-30 from order completion date
+  paidAt    DateTime?
+
+  payseraTransferId String? // Populated when IBAN transfer is executed via Paysera Transfer API
+  notes             String? // Free text — e.g. reason for manual override
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([carrierId])
+  @@index([driverId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("carrier_payouts")
 }
 
 model User {
@@ -408,6 +479,7 @@ model User {
   fieldPasses                 FieldPass[]
   driverRatingsGiven          DriverRating[]          @relation("DriverRatingsGiven")
   driverRatingsReceived       DriverRating[]          @relation("BuyerRatingsReceived")
+  driverPayouts               CarrierPayout[]         @relation("DriverPayouts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -457,11 +529,15 @@ model Company {
   verified    Boolean @default(false)
   rating      Float?
 
-  // Stripe & Commission
-  stripeConnectId       String? // Stripe Connect Express account ID
+  // Payout & Commission
+  ibanNumber            String? // IBAN for Paysera IBAN payouts (supplier / carrier)
   commissionRate        Float   @default(6.0) // Supplier platform fee % (applied to material subtotal)
   carrierCommissionRate Float   @default(8.0) // Carrier platform fee % (applied to deliveryFee)
-  payoutEnabled         Boolean @default(false)
+  payoutEnabled         Boolean @default(false) // true once IBAN is verified
+
+  // Marketplace billing agent agreement — supplier accepts that B3Hub generates
+  // invoices on their behalf (required for Path 1 / disclosed agent model).
+  billingAgentAgreedAt DateTime? // null = not yet accepted; non-null = accepted
 
   // Geo coordinates (set during onboarding — used for delivery-radius filtering in catalog)
   lat Float? // WGS-84 latitude of warehouse / base location
@@ -496,6 +572,9 @@ model Company {
   apiKeys                    ApiKey[]
   fieldPasses                FieldPass[]
   advanceInvoices            Invoice[]             @relation("BuyerInvoices")
+  sellerInvoices             Invoice[]             @relation("SellerInvoices")
+  supplierPayouts            SupplierPayout[]      @relation("SupplierPayouts")
+  carrierPayouts             CarrierPayout[]       @relation("CarrierPayouts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -678,6 +757,8 @@ model Order {
   dispute         Dispute?
   chatMessages    ChatMessage[]    @relation("OrderChatMessages")
   fieldPasses     FieldPass[]
+  supplierPayouts SupplierPayout[] @relation("OrderSupplierPayouts")
+  carrierPayouts  CarrierPayout[]  @relation("OrderCarrierPayouts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -730,6 +811,15 @@ model GuestOrder {
 
   // Optional: if converted, link to the real order
   convertedOrderId String? @unique
+
+  // Paysera payment — populated when guest initiates checkout
+  payseraOrderId    String? // Paysera order UUID
+  payseraPaymentUrl String? // Checkout redirect URL sent to guest
+  paymentStatus     String? // 'PENDING' | 'PAID' | 'FAILED'
+
+  // Price quoted to guest (set by admin before sending payment link)
+  quotedAmount   Float?
+  quotedCurrency String @default("EUR")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -917,6 +1007,7 @@ model TransportJob {
   invoices            Invoice[]
   surcharges          OrderSurcharge[]        @relation("JobSurcharges")
   driverRating        DriverRating?
+  carrierPayout       CarrierPayout?          @relation("JobCarrierPayout")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1125,9 +1216,9 @@ model DriverProfile {
   maxJobsPerDay   Int? // cap on daily job accepts; null = unlimited
   currentLocation Json?
 
-  // Stripe Connect for individual owner-operators (no company)
-  stripeConnectId String? // Stripe Express account ID when driver is not company-linked
-  payoutEnabled   Boolean @default(false) // true once Stripe onboarding complete
+  // Payout info for individual owner-operators (no company)
+  ibanNumber    String? // IBAN for Paysera IBAN payouts
+  payoutEnabled Boolean @default(false) // true once IBAN is set and verified
 
   // Schedule relations
   weeklySchedule DriverSchedule[]
@@ -1200,6 +1291,17 @@ model Invoice {
   buyerCompany   Company? @relation("BuyerInvoices", fields: [buyerCompanyId], references: [id])
   buyerCompanyId String?
 
+  // Marketplace / Path 1: which company is the legal seller on this invoice.
+  // Null = B3Hub is the issuer (legacy / commission invoices).
+  // Non-null = supplier-issued invoice generated by B3Hub acting as billing agent.
+  sellerCompany   Company? @relation("SellerInvoices", fields: [sellerCompanyId], references: [id])
+  sellerCompanyId String?
+
+  // Commission invoice — B3Hub's platform fee invoice issued TO the supplier.
+  // When true: buyerCompanyId = supplier company, sellerCompanyId = null (B3Hub is issuer).
+  isCommissionInvoice    Boolean  @default(false)
+  commissionForInvoiceId String?  // links to the supplier-issued invoice this fee is based on
+
   // Amounts
   subtotal Float
   tax      Float
@@ -1227,14 +1329,16 @@ model Invoice {
   creditNotes     Invoice[] @relation("InvoiceCreditNotes")
   notes           String?  // Free-text reason, e.g. credit note explanation
 
-  // Stripe Payment Link — populated for INVOICE-method orders so buyer can pay online
-  stripePaymentLinkId  String?
-  stripePaymentLinkUrl String?
+  // Paysera payment link — populated for INVOICE-method orders so buyer can pay online
+  payseraPaymentLinkId  String?
+  payseraPaymentLinkUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([creditNoteForId])
+  @@index([sellerCompanyId])
+  @@index([isCommissionInvoice])
   @@map("invoices")
 }
 
@@ -1353,8 +1457,10 @@ model SkipHireOrder {
   currency String @default("EUR")
 
   // Payment tracking
-  stripePaymentId String?       // Stripe PaymentIntent ID
-  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod     PaymentMethod @default(CARD)  // CARD = Paysera redirect; INVOICE = bank transfer
+  payseraOrderId    String?       // Paysera order UUID
+  payseraPaymentUrl String?       // Checkout redirect URL
+  paymentStatus     PaymentStatus @default(PENDING)
 
   // Status lifecycle
   status SkipHireStatus @default(PENDING)

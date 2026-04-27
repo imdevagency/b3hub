@@ -2117,6 +2117,42 @@ export default function ActiveJobScreen() {
               <ChevronRight size={20} color="#d1d5db" />
             </TouchableOpacity>
 
+            {currentStatus === 'AT_DELIVERY' && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 18,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#f3f4f6',
+                }}
+                onPress={() => {
+                  Alert.alert(
+                    'Atteikt piegādi?',
+                    'Izmantojiet tikai tad, ja saņēmējs fiziski atteica pieņemt kravu. Šī darbība ir neatgriezeniska un tiks paziņota administrācijai.',
+                    [
+                      { text: 'Atcelt', style: 'cancel' },
+                      {
+                        text: 'Jā, atteikt piegādi',
+                        style: 'destructive',
+                        onPress: () => submitStatusUpdate('DELIVERY_REFUSED' as JobStatus),
+                      },
+                    ],
+                  );
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <AlertCircle size={20} color="#ef4444" />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#ef4444' }}>
+                    Piegāde atteikta saņēmēja dēļ
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#fecaca" />
+              </TouchableOpacity>
+            )}
+
             {(currentStatus === 'ACCEPTED' || currentStatus === 'EN_ROUTE_PICKUP') && (
               <TouchableOpacity
                 style={{

@@ -50,3 +50,35 @@ export async function fetchTrackingData(token: string): Promise<TrackingData> {
 
   return res.json() as Promise<TrackingData>;
 }
+
+// ─── Update delivery details (public share link) ─────────────────────────────
+
+export interface UpdateDeliveryPayload {
+  deliveryAddress?: string;
+  deliveryCity?: string;
+  deliveryPostal?: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  notes?: string;
+}
+
+export async function updateDeliveryDetails(
+  token: string,
+  payload: UpdateDeliveryPayload,
+): Promise<void> {
+  const res = await fetch(
+    `${API_URL}/track/${encodeURIComponent(token)}/delivery`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    },
+  );
+
+  if (!res.ok) {
+    if (res.status === 400) throw new Error('bad_request');
+    if (res.status === 404) throw new Error('not_found');
+    throw new Error(`HTTP ${res.status}`);
+  }
+}

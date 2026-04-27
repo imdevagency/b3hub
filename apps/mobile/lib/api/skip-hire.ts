@@ -40,6 +40,7 @@ export interface SkipHireOrder {
   unloadingPointPhotoUrl?: string | null;
   carrierId?: string | null;
   carrier?: { id: string; name: string; phone?: string | null; rating?: number | null } | null;
+  paymentMethod?: 'CARD' | 'INVOICE' | null;
   deliveryWindow?: string | null;
   statusTimestamps?: Record<string, string> | null;
   /** Computed server-side on carrier-map endpoint — days past the agreed hire period */
@@ -72,13 +73,18 @@ export interface CreateSkipHireInput {
   wasteCategory: SkipWasteCategory;
   skipSize: SkipSize;
   deliveryDate: string;
+  /** Hire period in days (7, 14, 28). */
+  hireDays?: number;
   /** 'AM' | 'PM' | 'ANY' — preferred delivery window */
   deliveryWindow?: string;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  bisNumber?: string;
   unloadingPointPhotoUrl?: string;
+  /** CARD = Paysera redirect; INVOICE = bank transfer. Defaults to CARD. */
+  paymentMethod?: 'CARD' | 'INVOICE';
   /** Selected carrier id from a /quotes response — backend derives price from carrier pricing */
   carrierId?: string;
 }
@@ -97,7 +103,7 @@ export interface SkipHireQuote {
 export const skipHireApi = {
   skipHire: {
     create: (data: CreateSkipHireInput, token?: string) =>
-      apiFetch<SkipHireOrder & { clientSecret: string | null }>('/skip-hire', {
+      apiFetch<SkipHireOrder & { paymentUrl: string | null; payseraOrderId: string | null }>('/skip-hire', {
         method: 'POST',
         ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
         body: JSON.stringify(data),

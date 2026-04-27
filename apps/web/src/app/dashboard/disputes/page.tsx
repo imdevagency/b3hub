@@ -66,14 +66,14 @@ export default function DisputesPage() {
       />
 
       {/* Status filter tabs */}
-      <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit overflow-x-auto">
+      <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
         {STATUS_FILTERS.map(({ value, label }) => (
           <button
             key={value}
             onClick={() => setStatusFilter(value)}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
               statusFilter === value
-                ? 'bg-background shadow-xs text-foreground'
+                ? 'bg-gray-100 border border-gray-200 text-gray-900 font-semibold'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
           >

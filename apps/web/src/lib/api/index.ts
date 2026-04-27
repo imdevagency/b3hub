@@ -31,3 +31,4 @@ export * from './disputes';
 export * from './support';
 export * from './field-passes';
 export * from './tracking';
+export * from './guest-orders';

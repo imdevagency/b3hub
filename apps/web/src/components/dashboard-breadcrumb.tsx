@@ -102,13 +102,13 @@ export function DashboardBreadcrumb() {
         const isLast = i === crumbs.length - 1;
         return (
           <span key={crumb.href} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />}
+            {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-300 shrink-0" />}
             {isLast ? (
-              <span className="font-medium text-foreground">{crumb.label}</span>
+              <span className="font-medium text-gray-900">{crumb.label}</span>
             ) : (
               <Link
                 href={crumb.href}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-gray-500 hover:text-gray-900 transition-colors"
               >
                 {crumb.label}
               </Link>

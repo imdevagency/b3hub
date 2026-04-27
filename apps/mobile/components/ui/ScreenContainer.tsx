@@ -13,7 +13,7 @@ import { useFocusEffect } from 'expo-router';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
-  /** Override background. Defaults to '#f2f2f7' (iOS system grouped gray) */
+  /** Override background. Defaults to '#ffffff' (white) */
   bg?: string;
   /**
    * Background colour for the status-bar inset strip only.
@@ -36,7 +36,7 @@ interface ScreenContainerProps {
 
 export function ScreenContainer({
   children,
-  bg = '#f2f2f7',
+  bg = '#ffffff',
   topBg,
   standalone = false,
   topInset,

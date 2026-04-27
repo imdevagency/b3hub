@@ -21,7 +21,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
-import { CompanyType, SkipHireStatus, SkipSize, Prisma } from '@prisma/client';
+import { CompanyType, SkipHireStatus, SkipSize, Prisma, TransportJobStatus, TransportJobType } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 
 const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
@@ -138,6 +138,7 @@ export class SkipHireService {
         currency: 'EUR',
         status: SkipHireStatus.PENDING,
         statusTimestamps: { PENDING: new Date().toISOString() },
+        paymentMethod: dto.paymentMethod ?? 'CARD',
         contactName: dto.contactName,
         contactEmail: dto.contactEmail,
         contactPhone: dto.contactPhone,
@@ -152,16 +153,18 @@ export class SkipHireService {
       `Skip hire order ${order.orderNumber} created (${dto.skipSize}, ${dto.location})`,
     );
 
-    // Create a Stripe PaymentIntent so the buyer can pay immediately.
-    // Uses automatic capture — funds are taken once the buyer confirms.
-    let clientSecret: string | null = null;
-    try {
-      const pi = await this.payments.createSkipHirePaymentIntent(order.id);
-      clientSecret = pi.clientSecret ?? null;
-    } catch (err) {
-      this.logger.error(
-        `Failed to create PaymentIntent for skip-hire order ${order.id}: ${(err as Error).message}`,
-      );
+    // Create a Paysera payment link only for card payments.
+    // INVOICE orders are paid by bank transfer — no redirect needed.
+    let paymentUrl: string | null = null;
+    if ((dto.paymentMethod ?? 'CARD') === 'CARD') {
+      try {
+        const pi = await this.payments.createSkipHirePaymentIntent(order.id);
+        paymentUrl = pi.paymentUrl ?? null;
+      } catch (err) {
+        this.logger.error(
+          `Failed to create payment link for skip-hire order ${order.id}: ${(err as Error).message}`,
+        );
+      }
     }
 
     if (userId) {
@@ -180,7 +183,7 @@ export class SkipHireService {
           ),
         );
     }
-    return { ...order, clientSecret };
+    return { ...order, paymentUrl };
   }
 
   // ── Market prices (public) ───────────────────────────────────────────
@@ -413,6 +416,17 @@ export class SkipHireService {
           );
       }
     }
+
+    // Auto-create a CONTAINER_DELIVERY transport job when a skip hire is confirmed.
+    // Only create if a carrier is assigned and no delivery job already exists.
+    if (dto.status === SkipHireStatus.CONFIRMED && existing.carrierId) {
+      this.createSkipDeliveryJob(id, existing).catch((err) =>
+        this.logger.error(
+          `Failed to auto-create delivery transport job for skip hire ${id}: ${(err as Error).message}`,
+        ),
+      );
+    }
+
     return updated;
   }
 
@@ -595,6 +609,73 @@ export class SkipHireService {
     return updated;
   }
 
+  // ── Auto-create CONTAINER_DELIVERY transport job ──────────────
+  /**
+   * Called when a skip hire transitions to CONFIRMED and a carrier is assigned.
+   * Creates a TransportJob so the carrier's drivers can see and execute the delivery
+   * via the standard driver app flow.
+   */
+  private async createSkipDeliveryJob(
+    skipOrderId: string,
+    skipOrder: Awaited<ReturnType<typeof this.findOne>>,
+  ): Promise<void> {
+    // Guard: don't create a second job if one already exists for this skip hire order
+    const skipRef = `skipHireOrder:${skipOrderId}`;
+    const existing = await this.prisma.transportJob.findFirst({
+      where: { specialRequirements: skipRef },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    // Resolve carrier address to use as pickup point
+    const carrier = skipOrder.carrierId
+      ? await this.prisma.company.findUnique({
+          where: { id: skipOrder.carrierId },
+          select: { street: true, city: true, state: true, postalCode: true, lat: true, lng: true },
+        })
+      : null;
+
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const ms = (Date.now() % 100_000).toString().padStart(5, '0');
+    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const jobNumber = `SKP${year}${month}${ms}${rand}`;
+
+    await this.prisma.transportJob.create({
+      data: {
+        jobNumber,
+        jobType: TransportJobType.CONTAINER_DELIVERY,
+        carrierId: skipOrder.carrierId,
+        requestedById: skipOrder.userId ?? undefined,
+        pickupAddress: carrier?.street ?? 'Noliktava',
+        pickupCity: carrier?.city ?? '',
+        pickupState: carrier?.state ?? '',
+        pickupPostal: carrier?.postalCode ?? '',
+        pickupDate: skipOrder.deliveryDate,
+        pickupLat: carrier?.lat ?? undefined,
+        pickupLng: carrier?.lng ?? undefined,
+        deliveryAddress: skipOrder.location,
+        deliveryCity: skipOrder.location,
+        deliveryState: '',
+        deliveryPostal: '',
+        deliveryDate: skipOrder.deliveryDate,
+        deliveryWindow: skipOrder.deliveryWindow,
+        deliveryLat: skipOrder.lat ?? undefined,
+        deliveryLng: skipOrder.lng ?? undefined,
+        cargoType: `SKIP_${skipOrder.skipSize}`,
+        specialRequirements: skipRef,
+        rate: skipOrder.price,
+        currency: skipOrder.currency,
+        status: skipOrder.carrierId ? TransportJobStatus.ASSIGNED : TransportJobStatus.AVAILABLE,
+      },
+    });
+
+    this.logger.log(
+      `Auto-created delivery transport job ${jobNumber} for skip hire order ${skipOrder.orderNumber}`,
+    );
+  }
+
   // ── Create overdue invoice for a DELIVERED skip ───────────────
   /**
    * Calculates overdue days for a DELIVERED skip order and creates an Invoice
@@ -680,6 +761,112 @@ export class SkipHireService {
     );
 
     return { invoice, overdueDays, overdueFeeEur, total };
+  }
+
+  /**
+   * Daily cron: raise overdue invoices for all DELIVERED skip hire orders
+   * whose hire period has expired. Skips orders that already have an OVD
+   * invoice raised today (idempotent — safe to re-run on restart).
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_8AM)
+  async billingOverdueSkipOrders(): Promise<void> {
+    await withCronLock(this.prisma, 'billingOverdueSkipOrders', async () => {      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // Find all DELIVERED skip hire orders
+      const delivered = await this.prisma.skipHireOrder.findMany({
+        where: { status: SkipHireStatus.DELIVERED },
+        select: {
+          id: true,
+          orderNumber: true,
+          userId: true,
+          carrierId: true,
+          hireDays: true,
+          deliveryDate: true,
+          statusTimestamps: true,
+        },
+      });
+
+      for (const order of delivered) {
+        const hireDays = order.hireDays ?? DEFAULT_HIRE_DAYS;
+        const ts = order.statusTimestamps as Record<string, string> | null;
+        const deliveredAt = ts?.DELIVERED ? new Date(ts.DELIVERED) : order.deliveryDate;
+        const hireEndMs = deliveredAt.getTime() + hireDays * 24 * 60 * 60 * 1000;
+        const overdueDays = Math.max(
+          0,
+          Math.floor((Date.now() - hireEndMs) / (24 * 60 * 60 * 1000)),
+        );
+        if (overdueDays === 0) continue;
+
+        // Idempotency: skip if an overdue invoice was already created today for this order
+        const existingToday = await this.prisma.invoice.findFirst({
+          where: {
+            invoiceNumber: { startsWith: `OVD-${order.orderNumber}-` },
+            createdAt: { gte: todayStart },
+          },
+          select: { id: true },
+        });
+        if (existingToday) continue;
+
+        const overdueFeeEur = overdueDays * OVERDUE_DAILY_RATE_EUR;
+        const VAT_RATE = 0.21;
+        const subtotal = Math.round(overdueFeeEur * 100) / 100;
+        const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
+        const total = Math.round((subtotal + tax) * 100) / 100;
+        const suffix = Date.now().toString().slice(-4);
+        const invoiceNumber = `OVD-${order.orderNumber}-${suffix}`;
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 14);
+
+        let buyerCompanyId: string | null = null;
+        if (order.userId) {
+          const buyer = await this.prisma.user.findUnique({
+            where: { id: order.userId },
+            select: { companyId: true },
+          });
+          buyerCompanyId = buyer?.companyId ?? null;
+        }
+
+        try {
+          await this.prisma.invoice.create({
+            data: {
+              invoiceNumber,
+              subtotal,
+              tax,
+              total,
+              currency: 'EUR',
+              dueDate,
+              paymentStatus: 'PENDING',
+              ...(buyerCompanyId ? { buyerCompanyId } : {}),
+            },
+          });
+          this.logger.log(
+            `[billingOverdue] Invoice ${invoiceNumber} for skip order ${order.orderNumber}: ${overdueDays}d × €${OVERDUE_DAILY_RATE_EUR} = €${total} incl. VAT`,
+          );
+
+          // Notify buyer
+          if (order.userId) {
+            this.notifications
+              .create({
+                userId: order.userId,
+                type: NotificationType.SYSTEM_ALERT,
+                title: '📋 Kavēšanās maksa — konteiners jāatdod',
+                message: `Jūsu konteinera nomas termiņš ir beidzies (${overdueDays} diena${overdueDays !== 1 ? 's' : ''}). Papildu maksa €${total} tika iekļauta rēķinā ${invoiceNumber}.`,
+                data: { skipOrderId: order.id, invoiceNumber },
+              })
+              .catch((err: unknown) =>
+                this.logger.warn(
+                  `billingOverdue notif failed for order ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
+                ),
+              );
+          }
+        } catch (err: unknown) {
+          this.logger.error(
+            `[billingOverdue] Failed to create invoice for skip order ${order.orderNumber}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+    }, this.logger);
   }
 
   // ── Helpers ───────────────────────────────────────────────────

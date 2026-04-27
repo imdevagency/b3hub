@@ -161,6 +161,7 @@ export const materialsApi = {
         siteContactPhone?: string;
         sitePhotoUrl?: string;
         notes?: string;
+        bisNumber?: string;
         projectId?: string;
         truckCount?: number;
         truckIntervalMinutes?: number;
@@ -193,6 +194,7 @@ export const materialsApi = {
           siteContactPhone: input.siteContactPhone,
           sitePhotoUrl: input.sitePhotoUrl,
           notes: input.notes,
+          bisNumber: input.bisNumber,
           projectId: input.projectId ?? undefined,
           truckCount: input.truckCount ?? 1,
           truckIntervalMinutes: input.truckIntervalMinutes ?? undefined,

@@ -200,6 +200,7 @@ export class TransportJobsService {
     AT_DELIVERY: 7,
     DELIVERED: 8,
     CANCELLED: 9,
+    DELIVERY_REFUSED: 9, // Terminal — same weight as CANCELLED
   };
 
   private getSlaState(job: {
@@ -490,9 +491,9 @@ export class TransportJobsService {
       0,
     );
 
-    // Skip if within 1% tolerance
+    // Skip if within 5% tolerance (aggregate materials have natural weight variance)
     const diff = Math.abs(actualTonnes - orderedTonnes);
-    if (orderedTonnes === 0 || diff / orderedTonnes < 0.01) return;
+    if (orderedTonnes === 0 || diff / orderedTonnes < 0.05) return;
 
     // Recalculate totals based on actual weight; derive tax rate from original order.
     // Use a weighted-average unit price across all TONNE items so mixed-unit carts
@@ -648,7 +649,7 @@ export class TransportJobsService {
     ]);
 
     // Strip buyer contact details from the public job board.
-    // Drivers only receive siteContactName/Phone after being assigned.
+    // Drivers see siteContactName (helps identify the contact) but NOT siteContactPhone before being assigned.
     const safeJobs = jobs.map((j) => {
       const { order, ...rest } = j;
       return {
@@ -659,7 +660,7 @@ export class TransportJobsService {
               orderNumber: order.orderNumber,
               buyerId: order.buyerId,
               createdById: order.createdById,
-              siteContactName: null,
+              siteContactName: order.siteContactName, // name visible, phone hidden
               siteContactPhone: null,
               notes: null,
             }
@@ -1114,11 +1115,25 @@ export class TransportJobsService {
           orderNumber: updatedJob.order?.orderNumber ?? undefined,
           siteContactName: updatedJob.order?.siteContactName ?? undefined,
         })
-        .catch((err) =>
+        .catch((err) => {
           this.logger.warn(
             `Pre-generate delivery note failed for job ${updatedJob.id}: ${(err as Error).message}`,
-          ),
-        );
+          );
+          // Notify driver so they know to request documents manually at the quarry
+          this.notifications
+            .create({
+              userId: driverId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: '⚠️ CMR dokuments nav sagatavots',
+              message: `Brauciena dokumentu (CMR) sagatavošana neizdevās darba #${updatedJob.jobNumber} saistībā. Lūdzu, pieprasi dokumentus karerā vai sazinieties ar atbalstu.`,
+              data: { jobId: updatedJob.id },
+            })
+            .catch((notifErr) =>
+              this.logger.warn(
+                `CMR-fail driver notification also failed for job ${updatedJob.id}: ${(notifErr as Error).message}`,
+              ),
+            );
+        });
     }
 
     return updatedJob;
@@ -1308,7 +1323,7 @@ export class TransportJobsService {
 
     scored.sort((a, b) => a.distKm - b.distKm);
     const nextDriver = scored[0];
-    const offerExpiresAt = new Date(Date.now() + 45_000);
+    const offerExpiresAt = new Date(Date.now() + 300_000); // 5 minutes
 
     // Atomic offer assignment: only set offer if job is still AVAILABLE.
     // Also persist the expired driver into declinedDriverIds so the cron
@@ -1758,7 +1773,11 @@ export class TransportJobsService {
     }
 
     const expectedNext = NEXT_STATUS[job.status];
-    if (expectedNext !== dto.status) {
+    // DELIVERY_REFUSED is an alternative terminal exit from AT_DELIVERY (delivery refused at site)
+    const isRefusalFromAtDelivery =
+      dto.status === TransportJobStatus.DELIVERY_REFUSED &&
+      job.status === TransportJobStatus.AT_DELIVERY;
+    if (expectedNext !== dto.status && !isRefusalFromAtDelivery) {
       throw new BadRequestException(
         `Invalid transition: ${job.status} → ${dto.status}. Expected → ${expectedNext}`,
       );
@@ -1811,6 +1830,9 @@ export class TransportJobsService {
       });
       if (order?.createdById) {
         const weight = dto.weightKg ?? updatedJob.cargoWeight;
+        const slipDriverName = updatedJob.driver
+          ? `${updatedJob.driver.firstName} ${updatedJob.driver.lastName}`
+          : undefined;
         this.documents
           .generateWeighingSlip(
             orderId,
@@ -1819,6 +1841,9 @@ export class TransportJobsService {
             't',
             undefined,
             order.orderNumber,
+            undefined,
+            slipDriverName,
+            dto.pickupPhotoUrl,
           )
           .catch((err) =>
             this.logger.error(err instanceof Error ? err.message : String(err)),
@@ -1922,7 +1947,14 @@ export class TransportJobsService {
           orderNumber: true,
           items: {
             select: {
-              material: { select: { supplier: { select: { id: true } } } },
+              material: {
+                select: {
+                  id: true,
+                  name: true,
+                  certificates: true,
+                  supplier: { select: { id: true } },
+                },
+              },
             },
           },
         },
@@ -2005,6 +2037,29 @@ export class TransportJobsService {
                 err instanceof Error ? err.message : String(err),
               ),
             );
+
+          // ── Quality cert check: warn seller if any material lacks certs ──
+          const uncertifiedNames = (orderForNotify?.items ?? [])
+            .map((i) => i.material)
+            .filter((m) => m.certificates.length === 0)
+            .map((m) => m.name);
+          if (uncertifiedNames.length > 0) {
+            getSupplierUserIds()
+              .then((sellerIds) => {
+                if (sellerIds.length === 0) return;
+                return this.notifications.createForMany(sellerIds, {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '⚠️ Trūkst kvalitātes sertifikātu',
+                  message: `Lūdzu pievienojiet kvalitātes sertifikātus pirms iekraušanas: ${uncertifiedNames.join(', ')} · ${orderNum}`,
+                  data: { jobId: updatedJob.id, orderId },
+                });
+              })
+              .catch((err) =>
+                this.logger.error(
+                  err instanceof Error ? err.message : String(err),
+                ),
+              );
+          }
         } else if (dto.status === TransportJobStatus.LOADED) {
           this.notifications
             .create({
@@ -2077,6 +2132,42 @@ export class TransportJobsService {
                 message: `Pasūtījums ${orderNum} ir piegādāts. Maksājums tiks izmaksāts pēc apstiprināšanas.`,
                 data: { jobId: updatedJob.id, orderId },
               });
+            })
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
+        } else if (dto.status === TransportJobStatus.DELIVERY_REFUSED) {
+          // ── Notify buyer and admins that delivery was refused at the site ──
+          this.notifications
+            .create({
+              userId: buyerId,
+              type: NotificationType.SYSTEM_ALERT,
+              title: '⛔ Piegāde atteikta',
+              message: `Šoferis ziņo, ka piegāde pasūtījumam ${orderNum} tika atteikta saņemšanas vietā. Mūsu komanda sazināsies ar jums.`,
+              data: { jobId: updatedJob.id, orderId },
+            })
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
+
+          // Alert admins for manual intervention
+          this.prisma.user
+            .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+            .then((admins) => {
+              if (admins.length === 0) return;
+              return this.notifications.createForMany(
+                admins.map((a) => a.id),
+                {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '⛔ Piegāde atteikta — nepieciešama iejaukšanās',
+                  message: `Šoferis ${driverName} ziņo par atteiktu piegādi pasūtījumam ${orderNum} (darbs ${updatedJob.jobNumber}). Nepieciešama manuāla iejaukšanās.`,
+                  data: { jobId: updatedJob.id, orderId },
+                },
+              );
             })
             .catch((err) =>
               this.logger.error(
@@ -2203,19 +2294,58 @@ export class TransportJobsService {
       );
       if (distToDelivery <= 5) {
         this.nearbyNotifiedJobs.add(id);
+        const distLabel = `${Math.round(distToDelivery * 10) / 10} km`;
+        const nearbyNotifPayload = {
+          type: NotificationType.SYSTEM_ALERT,
+          title: 'Šoferis tuvojas',
+          message: `Šoferis atrodas ${distLabel} attālumā no piegādes vietas.`,
+          data: { jobId: id },
+        };
+
+        // Notify buyer
         const recipientId = job.requestedById;
         if (recipientId) {
           this.notifications
-            .create({
-              userId: recipientId,
-              type: NotificationType.SYSTEM_ALERT,
-              title: 'Šoferis tuvojas',
-              message: `Šoferis atrodas ${Math.round(distToDelivery * 10) / 10} km attālumā no piegādes vietas.`,
-              data: { jobId: id },
+            .create({ userId: recipientId, ...nearbyNotifPayload })
+            .catch((err) =>
+              this.logger.warn(
+                `Driver nearby notification (buyer) failed for job ${id}: ${err instanceof Error ? err.message : String(err)}`,
+              ),
+            );
+        }
+
+        // Notify supplier — look up users with canSell in the supplying company
+        if (job.orderId) {
+          this.prisma.orderItem
+            .findFirst({
+              where: { orderId: job.orderId },
+              select: { material: { select: { supplierId: true } } },
+            })
+            .then((item) => {
+              const supplierId = item?.material?.supplierId;
+              if (!supplierId) return;
+              return this.prisma.user
+                .findMany({
+                  where: { companyId: supplierId, canSell: true },
+                  select: { id: true },
+                  take: 10,
+                })
+                .then((users) => {
+                  for (const u of users) {
+                    if (u.id === recipientId) continue; // don't double-notify
+                    this.notifications
+                      .create({ userId: u.id, ...nearbyNotifPayload })
+                      .catch((err) =>
+                        this.logger.warn(
+                          `Driver nearby notification (supplier) failed for job ${id} user ${u.id}: ${err instanceof Error ? err.message : String(err)}`,
+                        ),
+                      );
+                  }
+                });
             })
             .catch((err) =>
               this.logger.warn(
-                `Driver nearby notification failed for job ${id}: ${err instanceof Error ? err.message : String(err)}`,
+                `Driver nearby supplier lookup failed for job ${id}: ${err instanceof Error ? err.message : String(err)}`,
               ),
             );
         }
@@ -2537,7 +2667,7 @@ export class TransportJobsService {
             select: {
               id: true,
               company: {
-                select: { payoutEnabled: true, stripeConnectId: true },
+                select: { payoutEnabled: true },
               },
             },
           });
@@ -2546,8 +2676,8 @@ export class TransportJobsService {
               .create({
                 userId: job.driverId!,
                 type: NotificationType.PAYOUT_PENDING,
-                title: '💳 Pabeidziet Stripe reģistrāciju',
-                message: `Darbs ${delivered.jobNumber} ir pabeigts, bet jūsu uzņēmums vēl nav aktivizējis izmaksas. Dodieties uz iestatījumiem, lai pabeigtu Stripe Connect iestatīšanu.`,
+                title: '💳 Aktivizējiet izmaksas',
+                message: `Darbs ${delivered.jobNumber} ir pabeigts, bet jūsu uzņēmums vēl nav aktivizējis izmaksas. Dodieties uz iestatījumiem, lai norādītu IBAN un aktivizētu izmaksas.`,
                 data: { jobId: id },
               })
               .catch((err) =>

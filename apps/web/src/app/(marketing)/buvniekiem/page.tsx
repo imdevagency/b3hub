@@ -239,10 +239,26 @@ export default function BuvnieckiemPage() {
 
                   {/* App body mock */}
                   <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative">
-                    <div className="w-full h-56 bg-background ring-1 ring-border border-b-2 border-b-border rounded-3xl flex items-center justify-center p-6">
-                      <div className="w-full h-full rounded-2xl flex items-center justify-center text-muted-foreground font-medium text-xl text-center bg-neutral-100/50">
-                        Solis mainās <br />
-                        ritinot
+                    <div className="w-full h-56 bg-neutral-50 rounded-3xl flex flex-col justify-between p-5 overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="h-2 w-20 bg-foreground/20 rounded-full" />
+                          <div className="h-3 w-32 bg-foreground/80 rounded-full" />
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-background rounded-full px-2.5 py-1 shadow-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
+                          <div className="h-2 w-10 bg-foreground/60 rounded-full" />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <div className="relative w-full h-1 bg-border rounded-full">
+                          <div className="absolute top-0 left-0 h-1 bg-foreground rounded-full w-3/4" />
+                          <div className="absolute top-1/2 left-3/4 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-foreground border-2 border-white shadow-sm" />
+                        </div>
+                        <div className="flex justify-between text-[9px] text-muted-foreground">
+                          <span>Izbrauca 13:45</span>
+                          <span>~15:20</span>
+                        </div>
                       </div>
                     </div>
                     <div className="w-full h-20 bg-background ring-1 ring-border rounded-2xl p-4 flex gap-4 items-center">

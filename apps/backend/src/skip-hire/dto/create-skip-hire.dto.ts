@@ -9,7 +9,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { SkipWasteCategory, SkipSize } from '@prisma/client';
+import { SkipWasteCategory, SkipSize, PaymentMethod } from '@prisma/client';
 
 export class CreateSkipHireDto {
   /** Postal code or city entered in step 1 */
@@ -78,4 +78,9 @@ export class CreateSkipHireDto {
   @IsOptional()
   @IsString()
   bisNumber?: string;
+
+  /** How the buyer intends to pay. Defaults to CARD (Paysera redirect). */
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 }

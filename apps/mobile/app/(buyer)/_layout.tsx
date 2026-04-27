@@ -39,7 +39,9 @@ function BuyerLayoutContent() {
   );
 
   useEffect(() => {
-    if (!isLoading && user && user.userType === 'ADMIN') {
+    if (!isLoading && !user) {
+      router.replace('/(auth)/welcome');
+    } else if (!isLoading && user && user.userType === 'ADMIN') {
       // Admin users must use the web portal — no admin UI exists on mobile
       // (stays in place; a blocking overlay is rendered below)
     } else if (!isLoading && user && !availableModes.includes('BUYER')) {
@@ -77,7 +79,7 @@ function BuyerLayoutContent() {
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.bgCard,
+        backgroundColor: '#ffffff',
         paddingTop: isFullScreenRoute ? 0 : insets.top,
       }}
     >

@@ -71,7 +71,7 @@ function wasteCategoryToWizardId(cat: string): string {
 function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
   return (
     <div
-      className={`p-4 rounded-2xl ${alert ? 'bg-red-50 text-red-900 border border-red-100' : 'bg-muted/30 border border-transparent'} flex flex-col justify-center`}
+      className={`p-4 rounded-xl ${alert ? 'bg-red-50 text-red-900 border border-red-200' : 'bg-white border border-gray-200'} flex flex-col justify-center`}
     >
       <span
         className={`text-xs font-semibold uppercase tracking-wider mb-1 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}
@@ -131,14 +131,14 @@ export function CarrierHistoryView({ token }: { token: string }) {
 
       {/* Filter + refresh */}
       <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
-        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
+        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit">
           {(['all', 'active', 'done'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
                 filter === f
-                  ? 'bg-background shadow-xs text-foreground'
+                  ? 'bg-gray-100 border border-gray-200 text-gray-900 font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
@@ -160,7 +160,7 @@ export function CarrierHistoryView({ token }: { token: string }) {
       {loading ? (
         <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
             <Truck className="h-10 w-10 text-muted-foreground/60" />
           </div>
@@ -851,7 +851,7 @@ function BuyerView({ token }: { token: string }) {
 
       {/* Tabs + refresh */}
       <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
-        <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
+        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit">
           {[
             { key: 'skip', label: `Konteineri (${skipOrders.length})` },
             { key: 'material', label: `Materiāli (${matOrders.length})` },
@@ -862,7 +862,7 @@ function BuyerView({ token }: { token: string }) {
               onClick={() => setTab(key as 'skip' | 'material' | 'transport')}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
                 tab === key
-                  ? 'bg-background shadow-xs text-foreground'
+                  ? 'bg-gray-100 border border-gray-200 text-gray-900 font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
@@ -885,7 +885,7 @@ function BuyerView({ token }: { token: string }) {
       ) : tab === 'skip' ? (
         /* Skip-hire table */
         skipOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
               <Trash2 className="h-10 w-10 text-muted-foreground/60" />
             </div>
@@ -995,7 +995,7 @@ function BuyerView({ token }: { token: string }) {
         )
       ) : /* Material orders table */
       matOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
             <Package className="h-10 w-10 text-muted-foreground/60" />
           </div>
@@ -1169,7 +1169,7 @@ function BuyerView({ token }: { token: string }) {
       {!loading &&
         tab === 'transport' &&
         (transportRequests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-muted/20 rounded-3xl">
+          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
               <Truck className="h-10 w-10 text-muted-foreground/60" />
             </div>

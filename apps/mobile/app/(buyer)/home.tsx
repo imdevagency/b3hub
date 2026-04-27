@@ -12,7 +12,6 @@ import {
   ChevronRight,
   AlertCircle,
   ArrowRight,
-  LogIn,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -215,7 +214,7 @@ export default function HomeScreen() {
   );
 
   return (
-        <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
+    <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -229,64 +228,106 @@ export default function HomeScreen() {
         }
       >
         {/* Flat Minimal Header */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 32, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 32,
+            paddingBottom: 24,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+          }}
+        >
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 36, letterSpacing: -1, color: '#111827' }}>
+            <Text
+              style={{
+                fontFamily: 'Inter_800ExtraBold',
+                fontWeight: '800',
+                fontSize: 36,
+                letterSpacing: -1,
+                color: '#111827',
+              }}
+            >
               Sveiki{user?.firstName ? `, ${user.firstName}` : ''}
             </Text>
           </View>
           {user?.company?.name && (
-            <View style={{ backgroundColor: '#f3f4f6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 4 }}>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 13, color: '#111827' }} numberOfLines={1}>
+            <View
+              style={{
+                backgroundColor: '#f3f4f6',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 999,
+                marginBottom: 4,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  fontSize: 13,
+                  color: '#111827',
+                }}
+                numberOfLines={1}
+              >
                 {user.company.name}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Guest sign-in invitation */}
-        {!user && (
-          <TouchableOpacity
-            style={{ marginHorizontal: 20, marginBottom: 24, backgroundColor: '#111827', padding: 24, borderRadius: 32, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 8 }}
-            activeOpacity={0.85}
-            onPress={() => {
-              haptics.light();
-              router.push('/(buyer)/profile' as never);
-            }}
-          >
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
-              <LogIn size={24} color="#fff" />
-            </View>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={{ color: '#fff', fontSize: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 }}>
-                Pierakstieties vai izveidojiet kontu
-              </Text>
-              <Text style={{ color: '#9ca3af', fontSize: 14, fontFamily: 'Inter_500Medium', fontWeight: '500' }}>
-                Sekojiet pasūtījumiem un saglabājiet adreses
-              </Text>
-            </View>
-            <ChevronRight size={24} color="#6b7280" />
-          </TouchableOpacity>
-        )}
-
         {/* Profile Nudge */}
         {user && (!user.phone || (user.isCompany && !user.company?.id)) && (
           <TouchableOpacity
-            style={{ marginHorizontal: 20, marginBottom: 32, backgroundColor: '#fffbeb', padding: 24, borderRadius: 32, flexDirection: 'row', alignItems: 'center' }}
+            style={{
+              marginHorizontal: 20,
+              marginBottom: 32,
+              backgroundColor: '#fffbeb',
+              padding: 24,
+              borderRadius: 32,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
               router.push('/(buyer)/profile');
             }}
           >
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: '#fef3c7',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 16,
+              }}
+            >
               <AlertCircle size={24} color="#d97706" />
             </View>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={{ color: '#92400e', fontSize: 18, fontFamily: 'Inter_800ExtraBold', fontWeight: '800', letterSpacing: -0.5, marginBottom: 4 }}>
+              <Text
+                style={{
+                  color: '#92400e',
+                  fontSize: 18,
+                  fontFamily: 'Inter_800ExtraBold',
+                  fontWeight: '800',
+                  letterSpacing: -0.5,
+                  marginBottom: 4,
+                }}
+              >
                 Pabeidziet konta reģistrāciju
               </Text>
-              <Text style={{ color: '#b45309', fontSize: 14, fontFamily: 'Inter_500Medium', fontWeight: '500' }}>
+              <Text
+                style={{
+                  color: '#b45309',
+                  fontSize: 14,
+                  fontFamily: 'Inter_500Medium',
+                  fontWeight: '500',
+                }}
+              >
                 {!user.phone
                   ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
                   : 'Pievienojiet uzņēmuma datus'}
@@ -299,7 +340,18 @@ export default function HomeScreen() {
         {/* Tracking (Uber-style dark card) */}
         {activeItem && (
           <TouchableOpacity
-            style={{ marginHorizontal: 20, marginBottom: 32, backgroundColor: '#111827', borderRadius: 32, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 32, elevation: 12 }}
+            style={{
+              marginHorizontal: 20,
+              marginBottom: 32,
+              backgroundColor: '#111827',
+              borderRadius: 32,
+              overflow: 'hidden',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.15,
+              shadowRadius: 32,
+              elevation: 12,
+            }}
             activeOpacity={0.9}
             onPress={() => {
               haptics.light();
@@ -313,10 +365,35 @@ export default function HomeScreen() {
               router.push(route);
             }}
           >
-             <View style={{ padding: 28 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
-                  <View style={{ position: 'relative', width: 10, height: 10, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+            <View style={{ padding: 28 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 28,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: 999,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <View
+                    style={{
+                      position: 'relative',
+                      width: 10,
+                      height: 10,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 8,
+                    }}
+                  >
                     <Animated.View
                       style={{
                         transform: [{ scale: pulseAnim }],
@@ -329,27 +406,84 @@ export default function HomeScreen() {
                       }}
                     />
                     <View
-                      style={{ backgroundColor: activeItem.dotColor, width: 6, height: 6, borderRadius: 3 }}
+                      style={{
+                        backgroundColor: activeItem.dotColor,
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                      }}
                     />
                   </View>
-                  <Text style={{ color: '#e5e7eb', fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Text
+                    style={{
+                      color: '#e5e7eb',
+                      fontFamily: 'Inter_700Bold',
+                      fontWeight: '700',
+                      fontSize: 12,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                    }}
+                  >
                     {activeCount > 1 ? `${activeCount} Aktīvi` : 'Aktīvs'}
                   </Text>
                 </View>
-                <Text style={{ color: '#9ca3af', fontFamily: 'Inter_600SemiBold', fontWeight: '600', fontSize: 14 }}>
+                <Text
+                  style={{
+                    color: '#9ca3af',
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    fontSize: 14,
+                  }}
+                >
                   {activeItem.num}
                 </Text>
               </View>
 
-              <Text style={{ color: '#fff', fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 32, letterSpacing: -1, lineHeight: 36, marginBottom: 8 }}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontFamily: 'Inter_800ExtraBold',
+                  fontWeight: '800',
+                  fontSize: 32,
+                  letterSpacing: -1,
+                  lineHeight: 36,
+                  marginBottom: 8,
+                }}
+              >
                 {activeCount > 1 ? `${activeCount} pasūtījumi ceļā` : activeItem.status}
               </Text>
-              <Text style={{ color: '#9ca3af', fontFamily: 'Inter_500Medium', fontWeight: '500', fontSize: 16, marginBottom: 32 }} numberOfLines={1}>
+              <Text
+                style={{
+                  color: '#9ca3af',
+                  fontFamily: 'Inter_500Medium',
+                  fontWeight: '500',
+                  fontSize: 16,
+                  marginBottom: 32,
+                }}
+                numberOfLines={1}
+              >
                 {activeItem.sub}
               </Text>
 
-              <View style={{ backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 16, paddingHorizontal: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontWeight: '700', fontSize: 16 }}>
+              <View
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                  borderRadius: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontFamily: 'Inter_700Bold',
+                    fontWeight: '700',
+                    fontSize: 16,
+                  }}
+                >
                   Sekot līdzi
                 </Text>
                 <ArrowRight size={20} color="#fff" />
@@ -358,13 +492,110 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Actions Grid */}
+        {/* ── Empty State / Actions Grid ── */}
         {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
           <View style={{ paddingHorizontal: 20 }}>
-            <Text style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 26, letterSpacing: -0.5, color: '#111827', marginBottom: 20 }}>
-              Ko vēlaties pasūtīt?
+            {/* If there are NO active orders at all, render a big "Empty State" hero section */}
+            {!activeItem && !loading && (
+              <View style={{ marginBottom: 32, alignItems: 'center' }}>
+                <View
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    backgroundColor: '#f3f4f6',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 20,
+                  }}
+                >
+                  <Package size={40} color="#9ca3af" strokeWidth={1.5} />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: 'Inter_800ExtraBold',
+                    fontWeight: '800',
+                    fontSize: 24,
+                    letterSpacing: -0.5,
+                    color: '#111827',
+                    marginBottom: 8,
+                    textAlign: 'center',
+                  }}
+                >
+                  Nav aktīvu pasūtījumu
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: 'Inter_500Medium',
+                    fontWeight: '500',
+                    fontSize: 16,
+                    color: '#6b7280',
+                    textAlign: 'center',
+                    marginBottom: 24,
+                  }}
+                >
+                  Pasūtiet konteineru, materiālus vai autotransportu — viss vienuviet.
+                </Text>
+                <View style={{ width: '100%', gap: 12 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      haptics.light();
+                      router.push('/skip-hire');
+                    }}
+                    style={{
+                      backgroundColor: '#111827',
+                      borderRadius: 16,
+                      paddingVertical: 18,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Package size={20} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 16 }}>
+                      Pasūtīt konteineru
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      haptics.light();
+                      router.push('/(buyer)/catalog');
+                    }}
+                    style={{
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 16,
+                      paddingVertical: 18,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <HardHat size={20} color="#111827" style={{ marginRight: 8 }} />
+                    <Text style={{ color: '#111827', fontFamily: 'Inter_700Bold', fontSize: 16 }}>
+                      Pasūtīt materiālus
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <Text
+              style={{
+                fontFamily: 'Inter_800ExtraBold',
+                fontWeight: '800',
+                fontSize: 26,
+                letterSpacing: -0.5,
+                color: '#111827',
+                marginBottom: 20,
+              }}
+            >
+              Katalogs
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}
+            >
               {SERVICES.map((svc) => {
                 const Icon = svc.icon;
                 return (
@@ -383,13 +614,44 @@ export default function HomeScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <View style={{ marginBottom: 24, backgroundColor: '#ffffff', alignSelf: 'flex-start', padding: 14, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+                    <View
+                      style={{
+                        marginBottom: 24,
+                        backgroundColor: '#ffffff',
+                        alignSelf: 'flex-start',
+                        padding: 14,
+                        borderRadius: 20,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 8,
+                        elevation: 2,
+                      }}
+                    >
                       <Icon size={24} color="#111827" strokeWidth={2} />
                     </View>
-                    <Text style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800', fontSize: 17, letterSpacing: -0.5, color: '#111827', marginBottom: 6 }}>
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_800ExtraBold',
+                        fontWeight: '800',
+                        fontSize: 17,
+                        letterSpacing: -0.5,
+                        color: '#111827',
+                        marginBottom: 6,
+                      }}
+                    >
                       {svc.label}
                     </Text>
-                    <Text style={{ fontFamily: 'Inter_500Medium', fontWeight: '500', fontSize: 14, color: '#6b7280', lineHeight: 18 }} numberOfLines={1}>
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_500Medium',
+                        fontWeight: '500',
+                        fontSize: 14,
+                        color: '#6b7280',
+                        lineHeight: 18,
+                      }}
+                      numberOfLines={1}
+                    >
                       {svc.sub}
                     </Text>
                   </TouchableOpacity>

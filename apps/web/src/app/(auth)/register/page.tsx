@@ -84,6 +84,9 @@ function RegisterPageInner() {
   const roleParam = searchParams.get('role')?.toLowerCase() ?? '';
   const initialUserType: FormData['userType'] = ROLE_PARAM_MAP[roleParam] ?? 'BUYER';
 
+  // Where to land after successful registration (middleware sets this)
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
+
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -115,7 +118,7 @@ function RegisterPageInner() {
       };
       const res = await registerUser(payload);
       setAuth(res.user, res.token);
-      router.push('/dashboard');
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Reģistrācija neizdevās');
     }
@@ -129,7 +132,11 @@ function RegisterPageInner() {
           B3Hub
         </a>
         <Link
-          href="/login"
+          href={
+            redirectTo !== '/dashboard'
+              ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+              : '/login'
+          }
           className="text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors px-5 py-2.5 rounded-full"
         >
           Ieiet

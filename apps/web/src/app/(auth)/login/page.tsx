@@ -4,9 +4,9 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,9 +25,21 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setAuth } = useAuth();
   const [error, setError] = useState<string | null>(null);
+
+  // Where to land after successful login (middleware sets this)
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -46,7 +58,7 @@ export default function LoginPage() {
         body: JSON.stringify({ token: res.token }),
       }).catch(() => null);
       setAuth(res.user, res.token);
-      router.push('/dashboard');
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Pieteikšanās neizdevās');
     }
@@ -60,7 +72,11 @@ export default function LoginPage() {
           B3Hub
         </a>
         <Link
-          href="/register"
+          href={
+            redirectTo !== '/dashboard'
+              ? `/register?redirect=${encodeURIComponent(redirectTo)}`
+              : '/register'
+          }
           className="text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors px-5 py-2.5 rounded-full"
         >
           Reģistrēties

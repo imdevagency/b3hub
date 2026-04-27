@@ -21,12 +21,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
-import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { createDisposalOrder, type WasteType, type DisposalTruckType } from '@/lib/api/orders';
+import { createGuestOrder } from '@/lib/api';
 import type { User } from '@/lib/api';
 import {
   ArrowRight,
@@ -278,6 +279,34 @@ export function DisposalWizard({ mode }: Props) {
     if (pendingAction) {
       pendingAction(authToken);
       setPendingAction(null);
+    }
+  }
+
+  async function handleGuestCheckout(contact: GuestContactInfo) {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await createGuestOrder({
+        materialCategory: 'DISPOSAL',
+        materialName: wasteType ? `Atkritumu izvešana: ${wasteType}` : 'Atkritumu izvešana',
+        quantity: parseFloat(weightT) || 1,
+        unit: 'TONNE',
+        deliveryAddress: address,
+        deliveryCity: city || address.split(',').slice(-1)[0]?.trim() || '',
+        deliveryLat: lat,
+        deliveryLng: lng,
+        deliveryDate: date || undefined,
+        deliveryWindow: timeWindow !== 'ANY' ? timeWindow : undefined,
+        contactName: contact.name,
+        contactPhone: contact.phone,
+        contactEmail: contact.email,
+        notes: notes || undefined,
+      });
+      setStep('sent');
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -731,6 +760,7 @@ export function DisposalWizard({ mode }: Props) {
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
+          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setPendingAction(null);

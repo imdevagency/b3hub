@@ -2,13 +2,15 @@
 import { API_URL as API_BASE } from './common';
 
 export interface PaymentOnboardResponse {
-  url: string;
+  type: 'COMPANY' | 'DRIVER';
+  ibanNumber: string | null;
+  payoutEnabled: boolean;
+  instructions: string;
 }
 
 export interface PaymentIntentResponse {
-  clientSecret: string;
-  publishableKey: string;
-  paymentIntentId: string;
+  paymentUrl: string;
+  payseraOrderId: string;
 }
 
 export interface EarningEntry {
@@ -29,7 +31,7 @@ export interface EarningsResponse {
   type: 'COMPANY' | 'DRIVER';
   totalEarned: number;
   pendingAmount: number;
-  stripeStatus: 'NOT_CONNECTED' | 'PENDING' | 'ACTIVE';
+  payoutStatus: 'NOT_CONFIGURED' | 'ACTIVE';
   payments: EarningEntry[];
 }
 

@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { GuestWall } from '@/components/ui/GuestWall';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useAuth } from '@/lib/auth-context';
@@ -78,21 +77,12 @@ function ScheduleRow({
 }
 
 export default function SchedulesScreen() {
-  const { token, user, isLoading } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   React.useEffect(() => {
     if (user && !user.isCompany) router.replace('/(buyer)/profile');
   }, [user, router]);
   if (user && !user.isCompany) return null;
-  if (!isLoading && !user) {
-    return (
-      <GuestWall
-        headerTitle="Atkārtoti pasūtījumi"
-        title="Pierakstieties, lai pārvaldītu grafikus"
-        subtitle="Atkārtotu pasūtījumu pārvaldība ir pieejama tikai reģistrētiem lietotājiem."
-      />
-    );
-  }
   const [schedules, setSchedules] = useState<ApiOrderSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

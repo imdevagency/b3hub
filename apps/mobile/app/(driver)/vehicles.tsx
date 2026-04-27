@@ -187,7 +187,7 @@ export default function DriverVehiclesScreen() {
           <EmptyState
             icon={<Truck size={32} color={colors.textMuted} strokeWidth={1.5} />}
             title="Nav transportlīdzekļu"
-            description="Jūsu flotei vēl nav pievienotu transportlīdzekļu. Pievienojiet tos tīmekļa portālā."
+            subtitle="Jūsu flotei vēl nav pievienotu transportlīdzekļu. Pievienojiet tos tīmekļa portālā."
           />
         ) : (
           <View style={s.list}>

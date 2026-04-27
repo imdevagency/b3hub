@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import {
   createCartOrder,
+  createGuestOrder,
   createQuoteRequest,
   getMaterialOffers,
   type MaterialCategory,
@@ -41,7 +42,7 @@ import {
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { MatStep3When } from '@/components/order/steps/MatStep3When';
-import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
@@ -505,6 +506,36 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
     if (pendingAction) {
       pendingAction(authToken);
       setPendingAction(null);
+    }
+  }
+
+  async function handleGuestCheckout(contact: GuestContactInfo) {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await createGuestOrder({
+        materialCategory: form.category,
+        materialName: form.materialName,
+        quantity: form.quantity,
+        unit: form.unit,
+        deliveryAddress: form.address,
+        deliveryCity: form.city || form.address.split(',').slice(-1)[0]?.trim() || '',
+        deliveryPostal: form.postal,
+        deliveryLat: form.lat,
+        deliveryLng: form.lng,
+        deliveryDate: form.asap ? undefined : form.deliveryDate || undefined,
+        deliveryWindow:
+          form.asap ? undefined : form.deliveryWindow !== 'ANY' ? form.deliveryWindow : undefined,
+        contactName: contact.name,
+        contactPhone: contact.phone,
+        contactEmail: contact.email,
+        notes: [form.notes, form.driverNotes].filter(Boolean).join('\n') || undefined,
+      });
+      setStep('order-confirmed');
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -1194,6 +1225,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
+          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setPendingAction(null);
@@ -1229,6 +1261,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
       <WebWizardAuthGate
         open={authGateOpen}
         onAuthenticated={handleAuthSuccess}
+        onGuestContact={handleGuestCheckout}
         onDismiss={() => {
           setAuthGateOpen(false);
           setPendingAction(null);

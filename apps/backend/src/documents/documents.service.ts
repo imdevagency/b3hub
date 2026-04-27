@@ -366,6 +366,8 @@ export class DocumentsService {
     pdfUrl?: string,
     orderNumber?: string,
     transportJobId?: string,
+    driverName?: string,
+    pickupPhotoUrl?: string,
   ) {
     const entityId = orderId ?? transportJobId ?? 'unknown';
     let resolvedPdfUrl = pdfUrl;
@@ -376,6 +378,8 @@ export class DocumentsService {
           unit,
           orderId: entityId,
           orderNumber,
+          driverName,
+          hasPickupPhoto: !!pickupPhotoUrl,
         });
         const storagePath = `weighing-slips/${entityId}_${Date.now()}.pdf`;
         await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
@@ -406,7 +410,14 @@ export class DocumentsService {
         transportJobId: transportJobId ?? null,
         ownerId,
         isGenerated: true,
-        notes: `Svars: ${weight} ${unit}${orderNumber ? ` · Pasūtījums #${orderNumber}` : ''}`,
+        notes: [
+          `Svars: ${weight} ${unit}`,
+          orderNumber ? `Pasūtījums #${orderNumber}` : null,
+          driverName ? `Šoferis: ${driverName}` : null,
+          pickupPhotoUrl ? `Svēršanas foto: ${pickupPhotoUrl}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
         links: {
           create: linkEntity,
         },
@@ -420,6 +431,8 @@ export class DocumentsService {
     unit: string;
     orderId: string;
     orderNumber?: string;
+    driverName?: string;
+    hasPickupPhoto?: boolean;
   }): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -471,16 +484,33 @@ export class DocumentsService {
         value(`#${params.orderNumber}`, 1);
       }
 
-      const weightRow = params.orderNumber ? 2 : 1;
-      label('Svars:', weightRow);
+      let nextRow = params.orderNumber ? 2 : 1;
+      label('Svars:', nextRow);
       doc
         .fontSize(16)
         .font('Helvetica-Bold')
-        .text(`${params.weight} ${params.unit}`, 220, y + weightRow * 22);
+        .text(`${params.weight} ${params.unit}`, 220, y + nextRow * 22);
+      nextRow++;
+
+      if (params.driverName) {
+        doc.fontSize(10).font('Helvetica').fillColor('#111827');
+        label('Šoferis:', nextRow);
+        value(params.driverName, nextRow);
+        nextRow++;
+      }
+
+      if (params.hasPickupPhoto) {
+        doc.fontSize(10).font('Helvetica').fillColor('#111827');
+        label('Svēršanas foto:', nextRow);
+        doc.fontSize(10).font('Helvetica').fillColor('#16a34a')
+          .text('✓ Pieejams platformā', 220, y + nextRow * 22);
+        doc.fillColor('#111827');
+        nextRow++;
+      }
 
       doc
-        .moveTo(50, y + (weightRow + 2) * 22)
-        .lineTo(545, y + (weightRow + 2) * 22)
+        .moveTo(50, y + (nextRow + 1) * 22)
+        .lineTo(545, y + (nextRow + 1) * 22)
         .strokeColor('#e5e7eb')
         .stroke();
 
@@ -488,14 +518,14 @@ export class DocumentsService {
         .fontSize(11)
         .font('Helvetica-Bold')
         .fillColor('#16a34a')
-        .text('APSTIPRINĀTS ✓', 50, y + (weightRow + 2) * 22 + 12)
+        .text('APSTIPRINĀTS ✓', 50, y + (nextRow + 1) * 22 + 12)
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#6b7280')
         .text(
           `Apstiprināts B3Hub platformā · ${dateStr}`,
           50,
-          y + (weightRow + 2) * 22 + 30,
+          y + (nextRow + 1) * 22 + 30,
         );
 
       doc

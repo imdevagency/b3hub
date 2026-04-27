@@ -23,8 +23,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
 import PDFDocument from 'pdfkit';
+import { PayseraService } from '../paysera/paysera.service';
 import { PaymentsService } from '../payments/payments.service';
 
 type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'CANCELLED';
@@ -121,7 +121,6 @@ function mapInvoiceExtended(inv: InvoiceWithRelationsExtended) {
 @Injectable()
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
-  private stripe?: Stripe;
 
   constructor(
     private prisma: PrismaService,
@@ -129,12 +128,8 @@ export class InvoicesService {
     private notifications: NotificationsService,
     private configService: ConfigService,
     private payments: PaymentsService,
-  ) {
-    const key = this.configService.get<string>('STRIPE_SECRET_KEY');
-    if (key) {
-      this.stripe = new Stripe(key, { apiVersion: '2026-02-25.clover' });
-    }
-  }
+    private paysera: PayseraService,
+  ) {}
 
   private buyerAccess(
     userId: string,
@@ -764,12 +759,22 @@ export class InvoicesService {
   }
 
   /**
-   * Create an invoice for a newly-confirmed order and email it to the buyer.
-   * Shared by OrdersService (direct orders) and QuoteRequestsService (RFQ orders)
-   * so both paths produce identical invoice output.
+   * Create invoices for a newly-confirmed order and email them to the buyer.
    *
-   * @param order  The minimal order shape needed to build the invoice
-   * @param buyerUserId  `User.id` of the buyer (createdById) — used for payment terms lookup + email
+   * Path 1 (marketplace / disclosed billing-agent):
+   *  - For each supplier that has accepted the billing agent agreement
+   *    (`billingAgentAgreedAt` is set), generates a separate supplier-issued
+   *    invoice with `sellerCompanyId` pointing to that supplier.
+   *  - Any items from suppliers without the agreement, plus the delivery fee,
+   *    fall back to a single platform-issued invoice (legacy behaviour).
+   *
+   * When multiple invoices are generated (one per supplier + optional platform
+   * invoice) each is emailed individually and, for INVOICE-method orders, gets
+   * its own Stripe Payment Link.
+   *
+   * @param order        Minimal order shape — id + financials
+   * @param buyerUserId  User.id of the buyer (createdById) — for payment terms + email
+   * @param paymentMethod  Controls whether a Stripe Payment Link is generated
    */
   async createForOrder(
     order: {
@@ -782,56 +787,224 @@ export class InvoicesService {
     buyerUserId: string,
     paymentMethod?: PaymentMethod,
   ): Promise<void> {
-    const invoiceNumber = this.generateInvoiceNumber();
+    const VAT_RATE = 0.21;
 
-    const buyerProfile = await this.prisma.buyerProfile.findUnique({
-      where: { userId: buyerUserId },
-      select: { paymentTerms: true },
-    });
+    // ── Resolve buyer payment terms ────────────────────────────────────────
+    const [buyerProfile, buyer] = await Promise.all([
+      this.prisma.buyerProfile.findUnique({
+        where: { userId: buyerUserId },
+        select: { paymentTerms: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: buyerUserId },
+        select: {
+          email: true,
+          firstName: true,
+          lastName: true,
+          company: { select: { taxId: true, legalName: true } },
+        },
+      }),
+    ]);
     const dueDate = this.parseDueDateFromTerms(buyerProfile?.paymentTerms);
+    const buyerVatNumber = buyer?.company?.taxId ?? null;
 
-    const inv = await this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        orderId: order.id,
-        subtotal: order.subtotal,
-        tax: order.tax,
-        total: order.total,
-        currency: order.currency,
-        dueDate,
-        paymentStatus: PaymentStatus.PENDING,
+    // ── Fetch order items grouped by supplier ─────────────────────────────
+    const fullOrder = await this.prisma.order.findUnique({
+      where: { id: order.id },
+      select: {
+        deliveryFee: true,
+        items: {
+          select: {
+            total: true,
+            material: {
+              select: {
+                supplier: {
+                  select: {
+                    id: true,
+                    taxId: true,
+                    legalName: true,
+                    billingAgentAgreedAt: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
-      select: { id: true },
     });
 
-    this.logger.log(`Invoice ${invoiceNumber} created for order ${order.id}`);
+    // ── Group items by supplier, separate agent-agreed from not ───────────
+    type SupplierGroup = {
+      supplierId: string;
+      supplierVat: string | null;
+      subtotalNet: number;
+      agentAgreed: boolean;
+    };
+    const supplierMap = new Map<string, SupplierGroup>();
 
-    // For INVOICE-method orders: generate a Stripe Payment Link so the buyer
-    // can pay online by card or bank transfer without a stored card.
-    if (paymentMethod === PaymentMethod.INVOICE && this.stripe) {
-      this.generateStripePaymentLink(inv.id, order).catch((err) =>
-        this.logger.warn(
-          `Payment Link generation failed for invoice ${inv.id}: ${(err as Error).message}`,
-        ),
-      );
+    for (const item of fullOrder?.items ?? []) {
+      const sup = item.material.supplier;
+      const existing = supplierMap.get(sup.id);
+      if (existing) {
+        existing.subtotalNet += Number(item.total);
+      } else {
+        supplierMap.set(sup.id, {
+          supplierId: sup.id,
+          supplierVat: sup.taxId ?? null,
+          subtotalNet: Number(item.total),
+          agentAgreed: sup.billingAgentAgreedAt != null,
+        });
+      }
     }
 
-    // Auto-email the invoice PDF to the buyer (fire-and-forget, non-fatal)
-    const buyer = await this.prisma.user.findUnique({
-      where: { id: buyerUserId },
-      select: { email: true, firstName: true, lastName: true },
-    });
-    if (buyer?.email) {
-      this.emailInvoice(
-        inv.id,
-        buyer.email,
-        [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
-          buyer.email,
-      ).catch((err) =>
-        this.logger.warn(
-          `Auto-email invoice ${inv.id} failed: ${(err as Error).message}`,
-        ),
+    const deliveryFeeNet = Number(fullOrder?.deliveryFee ?? 0);
+    const agentSuppliers = [...supplierMap.values()].filter((s) => s.agentAgreed);
+    const platformSuppliers = [...supplierMap.values()].filter((s) => !s.agentAgreed);
+
+    const createdInvoiceIds: string[] = [];
+
+    // ── Path 1: per-supplier billing-agent invoices ────────────────────────
+    // One invoice per supplier that has accepted the billing agent agreement.
+    // Buyer sees separate invoices per supplier — each with the supplier's VAT
+    // number as issuer (B3Hub generated on their behalf).
+    for (const sup of agentSuppliers) {
+      const subtotal = Math.round(sup.subtotalNet * 100) / 100;
+      const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
+      const total = Math.round((subtotal + tax) * 100) / 100;
+      const invoiceNumber = this.generateInvoiceNumber();
+      const taxPeriod = new Date().toLocaleDateString('lv-LV', {
+        month: 'long',
+        year: 'numeric',
+      });
+
+      const inv = await this.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          orderId: order.id,
+          sellerCompanyId: sup.supplierId,
+          subtotal,
+          tax,
+          total,
+          currency: order.currency,
+          dueDate,
+          paymentStatus: PaymentStatus.PENDING,
+          supplierVatNumber: sup.supplierVat,
+          buyerVatNumber,
+          taxPeriod,
+        },
+        select: { id: true },
+      });
+
+      createdInvoiceIds.push(inv.id);
+      this.logger.log(
+        `Invoice ${invoiceNumber} (supplier ${sup.supplierId}) created for order ${order.id}`,
       );
+
+      if (paymentMethod === PaymentMethod.INVOICE) {
+        this.generatePayseraPaymentLink(inv.id, {
+          id: order.id,
+          total,
+          currency: order.currency,
+        }).catch((err) =>
+          this.logger.warn(
+            `Payment Link generation failed for invoice ${inv.id}: ${(err as Error).message}`,
+          ),
+        );
+      }
+    }
+
+    // ── Fallback: platform invoice for non-agent suppliers + delivery fee ──
+    // Covers: (a) suppliers without billing agent agreement, (b) delivery fee
+    // which is B3Hub-arranged transport (carrier is separate entity, not the
+    // material supplier, so B3Hub issues this component directly).
+    const platformSubtotalNet =
+      platformSuppliers.reduce((s, p) => s + p.subtotalNet, 0) + deliveryFeeNet;
+
+    if (platformSubtotalNet > 0) {
+      const subtotal = Math.round(platformSubtotalNet * 100) / 100;
+      const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
+      const total = Math.round((subtotal + tax) * 100) / 100;
+      const invoiceNumber = this.generateInvoiceNumber();
+
+      const inv = await this.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          orderId: order.id,
+          // sellerCompanyId = null → B3Hub is issuer
+          subtotal,
+          tax,
+          total,
+          currency: order.currency,
+          dueDate,
+          paymentStatus: PaymentStatus.PENDING,
+          buyerVatNumber,
+        },
+        select: { id: true },
+      });
+
+      createdInvoiceIds.push(inv.id);
+      this.logger.log(
+        `Platform invoice ${invoiceNumber} created for order ${order.id}`,
+      );
+
+      if (paymentMethod === PaymentMethod.INVOICE) {
+        this.generatePayseraPaymentLink(inv.id, {
+          id: order.id,
+          total,
+          currency: order.currency,
+        }).catch((err) =>
+          this.logger.warn(
+            `Payment Link generation failed for platform invoice ${inv.id}: ${(err as Error).message}`,
+          ),
+        );
+      }
+    }
+
+    // ── If no items resolved at all, fall back to single total invoice ─────
+    // Safety net: covers orders with no items (e.g. transport-only) or if
+    // the items query returned nothing.
+    if (createdInvoiceIds.length === 0) {
+      const invoiceNumber = this.generateInvoiceNumber();
+      const inv = await this.prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          orderId: order.id,
+          subtotal: order.subtotal,
+          tax: order.tax,
+          total: order.total,
+          currency: order.currency,
+          dueDate,
+          paymentStatus: PaymentStatus.PENDING,
+          buyerVatNumber,
+        },
+        select: { id: true },
+      });
+      createdInvoiceIds.push(inv.id);
+      this.logger.log(
+        `Fallback invoice ${invoiceNumber} created for order ${order.id}`,
+      );
+
+      if (paymentMethod === PaymentMethod.INVOICE) {
+        this.generatePayseraPaymentLink(inv.id, order).catch((err) =>
+          this.logger.warn(
+            `Payment Link generation failed for fallback invoice ${inv.id}: ${(err as Error).message}`,
+          ),
+        );
+      }
+    }
+
+    // ── Email all generated invoices to the buyer (fire-and-forget) ────────
+    if (buyer?.email) {
+      const buyerName =
+        [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
+        buyer.email;
+      for (const invId of createdInvoiceIds) {
+        this.emailInvoice(invId, buyer.email, buyerName).catch((err) =>
+          this.logger.warn(
+            `Auto-email invoice ${invId} failed: ${(err as Error).message}`,
+          ),
+        );
+      }
     }
   }
 
@@ -880,19 +1053,17 @@ export class InvoicesService {
       `Invoice ${invoiceNumber} created for call-off job ${job.id}`,
     );
 
-    // Generate a Stripe Payment Link for online payment
-    if (this.stripe) {
-      this.generateStripePaymentLink(inv.id, {
-        id: job.id,
-        total,
-        currency: job.currency ?? 'EUR',
-        transportJobId: job.id,
-      }).catch((err) =>
-        this.logger.warn(
-          `Payment Link generation failed for call-off invoice ${inv.id}: ${(err as Error).message}`,
-        ),
-      );
-    }
+    // Generate a Paysera payment link for online payment
+    this.generatePayseraPaymentLink(inv.id, {
+      id: job.id,
+      total,
+      currency: job.currency ?? 'EUR',
+      transportJobId: job.id,
+    }).catch((err) =>
+      this.logger.warn(
+        `Payment Link generation failed for call-off invoice ${inv.id}: ${(err as Error).message}`,
+      ),
+    );
 
     // Email the invoice to the buyer
     if (job.requestedById) {
@@ -916,11 +1087,10 @@ export class InvoicesService {
   }
 
   /**
-   * Generate a Stripe Payment Link for an invoice and store the URL.
-   * Buyers with NET terms can click this link to pay by card or bank transfer
-   * without being prompted at original checkout.
+   * Generate a Paysera payment link for an invoice and store the URL.
+   * Buyers with NET terms can click this link to pay online.
    */
-  private async generateStripePaymentLink(
+  private async generatePayseraPaymentLink(
     invoiceId: string,
     order: {
       id: string;
@@ -929,49 +1099,32 @@ export class InvoicesService {
       transportJobId?: string;
     },
   ): Promise<void> {
-    if (!this.stripe) return;
-
     const amountCents = Math.round(order.total * 100);
-    const currency = order.currency.toLowerCase();
+    const currency = order.currency.toUpperCase();
+    const webBase = this.configService.get<string>('WEB_URL') ?? 'https://b3hub.lv';
+    const name = order.transportJobId
+      ? `B3Hub Invoice — Job ${order.id.slice(-8).toUpperCase()}`
+      : `B3Hub Invoice — Order ${order.id.slice(-8).toUpperCase()}`;
 
-    // Create a one-time stripe.Price then attach it to a PaymentLink
-    const price = await this.stripe.prices.create({
+    const { payseraOrderId, paymentUrl } = await this.paysera.createCheckout({
+      reference: invoiceId,
+      name,
+      amountCents,
       currency,
-      unit_amount: amountCents,
-      product_data: {
-        name: order.transportJobId
-          ? `B3Hub Invoice — Job ${order.id.slice(-8).toUpperCase()}`
-          : `B3Hub Invoice — Order ${order.id.slice(-8).toUpperCase()}`,
-        metadata: order.transportJobId
-          ? { transportJobId: order.transportJobId, invoiceId }
-          : { orderId: order.id, invoiceId },
-      },
-    });
-
-    const link = await this.stripe.paymentLinks.create({
-      line_items: [{ price: price.id, quantity: 1 }],
-      metadata: order.transportJobId
-        ? { invoiceId, transportJobId: order.transportJobId }
-        : { invoiceId, orderId: order.id },
-      after_completion: {
-        type: 'redirect',
-        redirect: {
-          url: `${this.configService.get<string>('WEB_URL') ?? 'https://b3hub.lv'}/dashboard/invoices?paid=1&invoiceId=${invoiceId}`,
-        },
-      },
+      successUrl: `${webBase}/dashboard/invoices?paid=1&invoiceId=${invoiceId}`,
+      failureUrl: `${webBase}/dashboard/invoices?failed=1&invoiceId=${invoiceId}`,
+      callbackUrl: `${webBase}/api/v1/payments/webhook`,
     });
 
     await this.prisma.invoice.update({
       where: { id: invoiceId },
       data: {
-        stripePaymentLinkId: link.id,
-        stripePaymentLinkUrl: link.url,
+        payseraPaymentLinkId: payseraOrderId,
+        payseraPaymentLinkUrl: paymentUrl,
       },
     });
 
-    this.logger.log(
-      `Payment Link created for invoice ${invoiceId}: ${link.url}`,
-    );
+    this.logger.log(`Paysera payment link created for invoice ${invoiceId}: ${paymentUrl}`);
   }
 
   /**

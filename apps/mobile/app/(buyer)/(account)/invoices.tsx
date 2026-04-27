@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { GuestWall } from '@/components/ui/GuestWall';
 import {
   FileText,
   CheckCircle2,
@@ -232,20 +231,10 @@ const FILTERS: { key: InvoiceStatus | 'ALL'; label: string }[] = [
 ];
 
 export default function InvoicesScreen() {
-  const { token, user, isLoading } = useAuth();
+  const { token, user } = useAuth();
   const toast = useToast();
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [loading, setLoading] = useState(true);
-
-  if (!isLoading && !user) {
-    return (
-      <GuestWall
-        headerTitle="Rēķini"
-        title="Pierakstieties, lai skatītu rēķinus"
-        subtitle="Jūsu rēķini un maksājumu vēsture ir pieejama tikai reģistrētiem lietotājiem."
-      />
-    );
-  }
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<ApiInvoice | null>(null);
   const [downloading, setDownloading] = useState(false);

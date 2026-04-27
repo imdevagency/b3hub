@@ -50,7 +50,8 @@ export type TransportJobStatus =
   | 'EN_ROUTE_DELIVERY'
   | 'AT_DELIVERY'
   | 'DELIVERED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'DELIVERY_REFUSED';
 
 // ── Order statuses ─────────────────────────────────────────────────────────
 

@@ -550,7 +550,7 @@ export class AdminService {
         platformFee: true,
         status: true,
         currency: true,
-        stripePaymentId: true,
+        payseraOrderId: true,
         createdAt: true,
         updatedAt: true,
         order: {

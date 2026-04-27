@@ -196,7 +196,7 @@ export default function SellerCatalogScreen() {
           <EmptyState
             icon={<PackageSearch size={32} color={colors.textMuted} strokeWidth={1.5} />}
             title="Nav materiālu"
-            description="Jūsu uzņēmumam vēl nav pievienotu materiālu. Pievienojiet tos tīmekļa portālā."
+            subtitle="Jūsu uzņēmumam vēl nav pievienotu materiālu. Pievienojiet tos tīmekļa portālā."
           />
         ) : (
           <View style={s.list}>

@@ -89,7 +89,7 @@ export default function TransportJobTrackingScreen() {
   const { token } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { job, loading, reload: reloadJob } = useTransportJob(id);
+  const { job, loading, reload: reloadJob, accessDenied } = useTransportJob(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
   const insets = useSafeAreaInsets();
   const [driverLocationOnMap, setDriverLocationOnMap] = useState<{
@@ -229,6 +229,19 @@ export default function TransportJobTrackingScreen() {
       <ScreenContainer bg="#F4F5F7" standalone>
         <ScreenHeader title="Pārvadājums" />
         <SkeletonDetail />
+      </ScreenContainer>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <ScreenContainer bg="#F4F5F7" standalone>
+        <ScreenHeader title="Pārvadājums" />
+        <EmptyState
+          icon={<X size={32} color="#9CA3AF" />}
+          title="Piekļuve liegta"
+          subtitle="Šis pārvadājums jums nav pieejams."
+        />
       </ScreenContainer>
     );
   }

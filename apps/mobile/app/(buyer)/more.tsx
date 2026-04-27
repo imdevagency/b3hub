@@ -273,8 +273,9 @@ export default function MoreScreen() {
           ]
         : [];
 
-  // ── Become-a-partner tiles ────────────────────────────────────
-  const becomeTiles: TileItem[] = user
+  // ── Become-a-partner tiles — only for company accounts ───────
+  // B2C (isCompany: false) homeowners have no interest in becoming suppliers/carriers
+  const becomeTiles: TileItem[] = user?.isCompany
     ? [
         ...(!user.canSell
           ? [

@@ -211,6 +211,14 @@ export default function DisposalWizard() {
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
 
+  // Recycling centre picker (populated after availability check when >1 center exists)
+  const [availableCenters, setAvailableCenters] = useState<
+    { id: string; name: string; city: string; address: string }[]
+  >([]);
+  const [preferredRecyclingCenterId, setPreferredRecyclingCenterId] = useState<string | undefined>(
+    undefined,
+  );
+
   // Auto-derive truck from weight (weight is required in step 1)
   const weightT = parseFloat(weightText);
   const derived = deriveTruckType(!isNaN(weightT) && weightT > 0 ? weightT : 1);
@@ -360,6 +368,7 @@ export default function DisposalWizard() {
           notes: notes || undefined,
           quotedRate: derived.fromPrice,
           projectId: projectId || undefined,
+          preferredRecyclingCenterId: preferredRecyclingCenterId || undefined,
         },
         token,
       );
@@ -467,7 +476,7 @@ export default function DisposalWizard() {
     if (step === 2 && state.wasteType && token) {
       setLoading(true);
       try {
-        const result = await api.recyclingCenters.checkAvailability(state.wasteType, token);
+        const result = await api.recyclingCenters.listByWasteType(state.wasteType, token);
         if (result.total === 0) {
           Alert.alert(
             'Nav pieejamu šķirošanas centru',
@@ -485,6 +494,13 @@ export default function DisposalWizard() {
             ],
           );
           return;
+        }
+        // If multiple centers, expose them for picker (user can override in step 3)
+        if (result.data.length > 1) {
+          setAvailableCenters(result.data);
+        } else {
+          setAvailableCenters([]);
+          setPreferredRecyclingCenterId(undefined);
         }
       } catch {
         // Fail-open: network error should not block the order flow
@@ -647,6 +663,79 @@ export default function DisposalWizard() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {availableCenters.length > 1 && (
+              <>
+                <SectionLabel label="Šķirošanas centrs (neobligāti)" style={{ marginTop: 20 }} />
+                <View style={{ gap: 8 }}>
+                  {[
+                    { id: '', name: 'Tuvākais pieejamais', city: '', address: '' },
+                    ...availableCenters,
+                  ].map((center) => (
+                    <TouchableOpacity
+                      key={center.id}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        padding: 14,
+                        borderRadius: 10,
+                        borderWidth: 1.5,
+                        borderColor:
+                          (preferredRecyclingCenterId ?? '') === center.id ? '#111827' : '#e5e7eb',
+                        backgroundColor:
+                          (preferredRecyclingCenterId ?? '') === center.id ? '#f9fafb' : '#fff',
+                        gap: 10,
+                      }}
+                      onPress={() => setPreferredRecyclingCenterId(center.id || undefined)}
+                      activeOpacity={0.75}
+                    >
+                      <View
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: 9,
+                          borderWidth: 2,
+                          borderColor:
+                            (preferredRecyclingCenterId ?? '') === center.id
+                              ? '#111827'
+                              : '#d1d5db',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {(preferredRecyclingCenterId ?? '') === center.id && (
+                          <View
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 4,
+                              backgroundColor: '#111827',
+                            }}
+                          />
+                        )}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: '#111827',
+                          }}
+                        >
+                          {center.name}
+                        </Text>
+                        {!!center.city && (
+                          <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                            {center.city}
+                            {center.address ? ` • ${center.address}` : ''}
+                          </Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
           </ScrollView>
         )}
 

@@ -42,14 +42,6 @@ import { colors } from '@/lib/theme';
 import { DisputeSheet } from '@/components/order/DisputeSheet';
 import { AmendSheet } from '@/components/order/AmendSheet';
 
-let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  useStripe = require('@stripe/stripe-react-native').useStripe;
-} catch {
-  /* Expo Go fallback */
-}
-
 export default function OrderDetailsScreen() {
   const { token, user } = useAuth();
   const toast = useToast();
@@ -67,8 +59,6 @@ export default function OrderDetailsScreen() {
   const [payLoading, setPayLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [surchargeActionLoading, setSurchargeActionLoading] = useState<string | null>(null);
-
-  const stripe = useStripe ? useStripe() : null;
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   useEffect(() => {
@@ -122,31 +112,18 @@ export default function OrderDetailsScreen() {
   );
 
   const handlePay = useCallback(async () => {
-    if (!token || !order || !stripe) return;
+    if (!token || !order) return;
     setPayLoading(true);
     haptics.light();
     try {
-      const { clientSecret } = await api.createIntent(order.id, token);
-      const { error: initError } = await stripe.initPaymentSheet({
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'B3Hub',
-        returnURL: 'b3hub://order/return',
-        defaultBillingDetails: {},
-      });
-      if (initError) {
-        toast.error(initError.message);
+      const { paymentUrl } = await api.createIntent(order.id, token);
+      const supported = await Linking.canOpenURL(paymentUrl);
+      if (!supported) {
+        toast.error('Nevar atvērt maksājuma lapu');
         return;
       }
-      const { error: presentError } = await stripe.presentPaymentSheet();
-      if (presentError) {
-        if (presentError.code !== 'Canceled') {
-          haptics.error();
-          Alert.alert('Maksājums neizdevās', presentError.message);
-        }
-        return;
-      }
-      haptics.success();
-      Alert.alert('Maksājums veiksmīgs', 'Jūsu pasūtījums tiek apstrādāts.');
+      await Linking.openURL(paymentUrl);
+      // Webhook will update payment status; reload order when user returns
       setPaymentProcessing(true);
       load();
     } catch (err: unknown) {
@@ -155,7 +132,7 @@ export default function OrderDetailsScreen() {
     } finally {
       setPayLoading(false);
     }
-  }, [load, order, stripe, toast, token]);
+  }, [load, order, toast, token]);
 
   const handleCancel = useCallback(() => {
     haptics.heavy();
@@ -249,8 +226,7 @@ export default function OrderDetailsScreen() {
     !paymentProcessing &&
     order.status === 'PENDING' &&
     (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
-    order.paymentMethod !== 'INVOICE' &&
-    !!stripe;
+    order.paymentMethod !== 'INVOICE';
   const hasRated = alreadyRated || ratedLocally;
   const canRate = order.status === 'COMPLETED' && !hasRated;
 
@@ -315,6 +291,17 @@ export default function OrderDetailsScreen() {
             label="Piegādes laiks"
             value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
           />
+          {order.statusTimestamps?.COMPLETED && (
+            <DetailRow
+              label="Pabeigts"
+              value={new Date(order.statusTimestamps.COMPLETED).toLocaleDateString('lv-LV', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            />
+          )}
+          {order.project && <DetailRow label="Projekts" value={order.project.name} />}
           <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
           <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
           <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />

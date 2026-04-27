@@ -491,12 +491,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="B3Hub">
               <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-900 text-white shrink-0">
                   <Building2 className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">B3Hub</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                  <span className="truncate text-xs text-gray-500">
                     {user?.userType === 'ADMIN' ? 'Administrācija' : MODE_LABEL[activeMode]}
                   </span>
                 </div>
@@ -515,8 +515,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 }}
                 className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
                   activeMode === mode
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 {MODE_LABEL[mode]}
@@ -532,7 +532,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {user?.userType !== 'ADMIN' && activeMode === 'BUYER' && (
             <SidebarMenuButton
               asChild
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+              className="bg-gray-900 text-white hover:bg-gray-800 hover:text-white w-full justify-center shadow font-semibold h-10"
             >
               <Link href="/dashboard/order">
                 <PackagePlus className="mr-2 size-4" />
@@ -543,7 +543,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {user?.userType !== 'ADMIN' && activeMode === 'SUPPLIER' && (
             <SidebarMenuButton
               asChild
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+              className="bg-gray-900 text-white hover:bg-gray-800 hover:text-white w-full justify-center shadow font-semibold h-10"
             >
               <Link href="/dashboard/materials?new=true">
                 <PackagePlus className="mr-2 size-4" />
@@ -554,7 +554,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {user?.userType !== 'ADMIN' && activeMode === 'CARRIER' && (
             <SidebarMenuButton
               asChild
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground w-full justify-center shadow font-semibold h-10"
+              className="bg-gray-900 text-white hover:bg-gray-800 hover:text-white w-full justify-center shadow font-semibold h-10"
             >
               <Link href="/dashboard/jobs">
                 <PackagePlus className="mr-2 size-4" />
@@ -568,7 +568,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {user?.userType !== 'ADMIN' &&
           navSections.map((section) => (
             <SidebarGroup key={section.id} className="pt-2">
-              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
+              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
                 {section.label}
               </SidebarGroupLabel>
               <SidebarMenu>
@@ -580,7 +580,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         asChild
                         tooltip={item.label}
                         isActive={isActive}
-                        className="font-medium text-muted-foreground hover:text-foreground"
+                        className="font-medium text-gray-600 hover:text-gray-900"
                       >
                         <Link href={item.href}>
                           <item.icon className="size-4 shrink-0" />
@@ -598,7 +598,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* Saziņa — always visible for non-admin */}
         {user?.userType !== 'ADMIN' && (
           <SidebarGroup className="pt-2">
-            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-muted-foreground/60 tracking-wider pb-1">
+            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
               Saziņa
             </SidebarGroupLabel>
             <SidebarMenu>
@@ -607,7 +607,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   asChild
                   tooltip="Paziņojumi"
                   isActive={isRouteActive('/dashboard/notifications')}
-                  className="font-medium text-muted-foreground hover:text-foreground"
+                  className="font-medium text-gray-600 hover:text-gray-900"
                 >
                   <Link href="/dashboard/notifications">
                     <Bell className="size-4 shrink-0" />
@@ -621,7 +621,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   asChild
                   tooltip="Ziņojumi"
                   isActive={isRouteActive('/dashboard/chat')}
-                  className="font-medium text-muted-foreground hover:text-foreground"
+                  className="font-medium text-gray-600 hover:text-gray-900"
                 >
                   <Link href="/dashboard/chat">
                     <MessageSquare className="size-4 shrink-0" />
@@ -636,7 +636,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* Admin section */}
         {user?.userType === 'ADMIN' && (
           <SidebarGroup className="pt-2">
-            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-destructive/80 tracking-wider">
+            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">
               Administrācija
             </SidebarGroupLabel>
             <SidebarMenu>
@@ -911,7 +911,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Avatar className="h-8 w-8 rounded-lg shrink-0">
                 {user?.avatar && <AvatarImage src={user.avatar} alt={initials} />}
-                <AvatarFallback className="rounded-lg bg-red-100 text-red-700 text-xs font-semibold">
+                <AvatarFallback className="rounded-lg bg-gray-200 text-gray-700 text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -919,7 +919,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="truncate font-medium">
                   {user?.firstName} {user?.lastName}
                 </span>
-                <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+                <span className="truncate text-xs text-gray-500">{user?.email}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -930,7 +930,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 logout();
                 router.push('/login');
               }}
-              className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+              className="text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             >
               <LogOut />
               <span>Iziet</span>

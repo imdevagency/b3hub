@@ -20,7 +20,6 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useToast } from '@/components/ui/Toast';
-import { GuestWall } from '@/components/ui/GuestWall';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type {
@@ -759,18 +758,11 @@ function CertsTab() {
 }
 
 export default function DocumentsScreen() {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const [topTab, setTopTab] = useState<TopTab>('docs');
 
-  if (!isLoading && !user) {
-    return (
-      <GuestWall
-        headerTitle="Dokumenti"
-        title="Pierakstieties, lai skatītu dokumentus"
-        subtitle="Jūsu piegādes apliecinājumi, rēķini un sertifitāti ir pieejami tikai reģistrētiem lietotājiem."
-      />
-    );
-  }
+  // B2C users only see delivery documents; invoices and waste certs are B2B-only
+  const visibleTabs = TOP_TABS.filter((tb) => tb.key === 'docs' || user?.isCompany);
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
@@ -783,31 +775,35 @@ export default function DocumentsScreen() {
         </Text>
       </View>
 
-      <View className="px-5 pb-2 mt-2">
-        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-          {TOP_TABS.map((tb) => {
-            const active = topTab === tb.key;
-            return (
-              <TouchableOpacity
-                key={tb.key}
-                className={`flex-1 items-center justify-center py-2 rounded-xl ${active ? 'bg-white shadow-sm' : ''}`}
-                onPress={() => {
-                  haptics.light();
-                  setTopTab(tb.key);
-                }}
-              >
-                <Text className={`font-bold text-sm ${active ? 'text-gray-900' : 'text-gray-500'}`}>
-                  {tb.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {visibleTabs.length > 1 && (
+        <View className="px-5 pb-2 mt-2">
+          <View className="flex-row bg-gray-100 p-1 rounded-2xl">
+            {visibleTabs.map((tb) => {
+              const active = topTab === tb.key;
+              return (
+                <TouchableOpacity
+                  key={tb.key}
+                  className={`flex-1 items-center justify-center py-2 rounded-xl ${active ? 'bg-white shadow-sm' : ''}`}
+                  onPress={() => {
+                    haptics.light();
+                    setTopTab(tb.key);
+                  }}
+                >
+                  <Text
+                    className={`font-bold text-sm ${active ? 'text-gray-900' : 'text-gray-500'}`}
+                  >
+                    {tb.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
 
       {topTab === 'docs' && <DocsTab />}
-      {topTab === 'invoices' && <InvoicesTab />}
-      {topTab === 'certs' && <CertsTab />}
+      {topTab === 'invoices' && user?.isCompany && <InvoicesTab />}
+      {topTab === 'certs' && user?.isCompany && <CertsTab />}
     </ScreenContainer>
   );
 }

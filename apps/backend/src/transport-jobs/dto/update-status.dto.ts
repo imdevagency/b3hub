@@ -16,6 +16,7 @@ const ALLOWED_DRIVER_STATUSES: TransportJobStatus[] = [
   TransportJobStatus.EN_ROUTE_DELIVERY,
   TransportJobStatus.AT_DELIVERY,
   TransportJobStatus.DELIVERED,
+  TransportJobStatus.DELIVERY_REFUSED,
 ];
 
 export class UpdateStatusDto {

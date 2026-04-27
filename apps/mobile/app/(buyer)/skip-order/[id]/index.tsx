@@ -143,7 +143,10 @@ export default function SkipOrderTrackingScreen() {
               <Text style={styles.topCardTitle} numberOfLines={1}>
                 {order.skipSize} konteiners
               </Text>
-              <Text style={styles.topCardSubtitle}>ID:{order.orderNumber}</Text>
+              <Text style={styles.topCardSubtitle}>
+                {order.hireDays ? `${order.hireDays} d. · ` : ''}€{order.price.toFixed(2)} · #
+                {order.orderNumber}
+              </Text>
             </View>
           </View>
         </View>

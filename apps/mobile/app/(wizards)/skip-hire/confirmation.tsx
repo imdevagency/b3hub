@@ -7,20 +7,13 @@ import {
   ScrollView,
   Animated,
   Alert,
+  Linking,
 } from 'react-native';
 // Guard: expo-clipboard requires a native build (not available in Expo Go)
 let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   Clipboard = require('expo-clipboard');
-} catch {
-  /* Expo Go fallback */
-}
-// Guard: @stripe/stripe-react-native requires a native build (not available in Expo Go)
-let useStripe: (() => { initPaymentSheet: Function; presentPaymentSheet: Function }) | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  useStripe = require('@stripe/stripe-react-native').useStripe;
 } catch {
   /* Expo Go fallback */
 }
@@ -43,8 +36,7 @@ export default function OrderConfirmation() {
   const router = useRouter();
   const { state, reset } = useOrder();
   const order = state.confirmedOrder;
-  const clientSecret = state.skipPaymentClientSecret;
-  const stripe = useStripe?.();
+  const paymentUrl = state.skipPaymentUrl;
   const [paying, setPaying] = useState(false);
 
   // ── Entrance animations ──────────────────────────────────────────────
@@ -118,6 +110,12 @@ export default function OrderConfirmation() {
     { label: t.skipHire.confirmation.size, value: sizeLabel },
     { label: t.skipHire.confirmation.wasteType, value: wasteLabel },
     { label: t.skipHire.confirmation.deliveryDate, value: formatDisplay(order.deliveryDate) },
+    ...(order.hireDays ? [{ label: 'Nomas periods', value: `${order.hireDays} dienas` }] : []),
+    {
+      label: 'Maksājums',
+      value:
+        order.paymentMethod === 'INVOICE' ? 'Rēķins (bankas pārskaitījums)' : 'Karte (Paysera)',
+    },
     { label: t.skipHire.confirmation.price, value: `€${order.price} ${order.currency}` },
   ];
 
@@ -159,53 +157,63 @@ export default function OrderConfirmation() {
               </View>
             ))}
           </View>
+
+          {/* What happens next */}
+          <View style={s.nextStepsCard}>
+            <Text style={s.nextStepsTitle}>Kas notiks tālāk?</Text>
+            <View style={s.nextStep}>
+              <Text style={s.nextStepNum}>1</Text>
+              <Text style={s.nextStepText}>
+                Mēs piešķirsim pārvadātāju jūsu pasūtījumam (parasti 1–2 darba stundu laikā).
+              </Text>
+            </View>
+            <View style={s.nextStep}>
+              <Text style={s.nextStepNum}>2</Text>
+              <Text style={s.nextStepText}>
+                Jūs saņemsiet paziņojumu, kad konteiners tiks piegādāts norādītajā adresē.
+              </Text>
+            </View>
+            <View style={s.nextStep}>
+              <Text style={s.nextStepNum}>3</Text>
+              <Text style={s.nextStepText}>
+                Pēc nomas perioda beigām pārvadātājs savāks konteineru. Sekojiet statusam sadaļā
+                "Pasūtījumi".
+              </Text>
+            </View>
+          </View>
         </Animated.View>
 
         {/* CTA buttons */}
         <Animated.View style={{ opacity: btnsOpacity, transform: [{ translateY: btnsY }] }}>
           {/* Pay Now — shown when booking still awaiting payment */}
-          {!!clientSecret && stripe && (
+          {!!paymentUrl && (
             <TouchableOpacity
               style={[s.primaryBtn, { backgroundColor: '#10b981', marginBottom: 10 }]}
               disabled={paying}
               onPress={async () => {
                 setPaying(true);
                 try {
-                  const { error: initError } = await stripe.initPaymentSheet({
-                    paymentIntentClientSecret: clientSecret,
-                    merchantDisplayName: 'B3Hub',
-                    returnURL: 'b3hub://order/confirmation',
-                  });
-                  if (initError) {
-                    toast.error(initError.message);
+                  const supported = await Linking.canOpenURL(paymentUrl);
+                  if (!supported) {
+                    toast.error('Nevar atvērt maksājuma lapu');
                     return;
                   }
-                  const { error: presentError } = await stripe.presentPaymentSheet();
-                  if (presentError) {
-                    if (presentError.code !== 'Canceled') {
-                      Alert.alert('Maksājuma kļūda', presentError.message);
-                    }
-                  } else {
-                    haptics.success();
-                    Alert.alert('✓ Apmaksāts', 'Jūsu rezervācija ir apstiprināta.', [
-                      {
-                        text: 'Labi',
-                        onPress: () => {
-                          reset();
-                          router.replace('/(buyer)/orders');
-                        },
-                      },
-                    ]);
-                  }
+                  await Linking.openURL(paymentUrl);
+                  // Webhook will mark the order as paid; user will see updated status on return
+                  reset();
+                  router.replace('/(buyer)/orders');
+                } catch (err: unknown) {
+                  Alert.alert(
+                    'Maksājuma kļūda',
+                    err instanceof Error ? err.message : 'Neizdevās atvērt Paysera',
+                  );
                 } finally {
                   setPaying(false);
                 }
               }}
               activeOpacity={0.8}
             >
-              <Text style={s.primaryBtnText}>
-                {paying ? 'Apstrādā…' : '💳 Apmaksāt pasūtījumu'}
-              </Text>
+              <Text style={s.primaryBtnText}>{paying ? 'Atver...' : '💳 Apmaksāt pasūtījumu'}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -338,5 +346,44 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
+  },
+  nextStepsCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 32,
+    gap: 14,
+  },
+  nextStepsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  nextStep: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  nextStepNum: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#111827',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center',
+    lineHeight: 22,
+    flexShrink: 0,
+  },
+  nextStepText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    fontFamily: 'Inter_500Medium',
   },
 });

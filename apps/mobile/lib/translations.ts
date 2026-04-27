@@ -148,10 +148,10 @@ export const lv = {
       next: 'Turpināt',
       popular: 'POPULĀRĀKAIS',
       sizes: {
-        MINI: { label: 'Mini', volume: '2 m³', desc: 'Maza pārbūve' },
-        MIDI: { label: 'Midi', volume: '4 m³', desc: 'Istabas atjaunošana' },
-        BUILDERS: { label: 'Celtnieks', volume: '6 m³', desc: 'Pilna pārbūve' },
-        LARGE: { label: 'Liels', volume: '8 m³', desc: 'Lieli projekti' },
+        MINI: { label: 'Mini', volume: '7 m³', desc: '≈ 50 ķerras / Nelieliem remontiem' },
+        MIDI: { label: 'Midi', volume: '10 m³', desc: '≈ 70 ķerras / Nelieliem nojaukšanas darbiem' },
+        BUILDERS: { label: 'Celtnieku', volume: '14 m³', desc: 'Lielgabarīta mēbelēm un būvgružiem' },
+        LARGE: { label: 'Lielais', volume: '20 m³', desc: 'Masīviem un liela apjoma objektiem' },
       } as Record<string, { label: string; volume: string; desc: string }>,
     },
     step4: {

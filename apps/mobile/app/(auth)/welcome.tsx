@@ -83,23 +83,6 @@ export default function WelcomeScreen() {
                 Pierakstīties
               </Text>
             </TouchableOpacity>
-
-            {/* Guest */}
-            <TouchableOpacity
-              className="w-full h-10 items-center justify-center"
-              activeOpacity={0.7}
-              onPress={() => {
-                haptics.light();
-                router.replace('/(buyer)/home' as never);
-              }}
-            >
-              <Text
-                className="text-sm"
-                style={{ color: '#9CA3AF', fontFamily: 'Inter_400Regular', fontWeight: '400' }}
-              >
-                Turpināt bez konta
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       </View>

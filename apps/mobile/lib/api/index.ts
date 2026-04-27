@@ -53,9 +53,9 @@ export * from './field-passes';
 export * from './analytics';
 
 
-// Re-export the helper for consumers that need it directly
+// Re-export the helper and error class for consumers that need them directly
 
-export { apiFetch } from './common';
+export { apiFetch, ApiError } from './common';
 
 
 

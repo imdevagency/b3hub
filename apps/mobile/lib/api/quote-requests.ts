@@ -111,6 +111,7 @@ export const quoteRequestsApi = {
         deliveryLat?: number;
         deliveryLng?: number;
         notes?: string;
+        bisNumber?: string;
       },
       token: string,
     ) =>

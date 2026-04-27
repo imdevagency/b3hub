@@ -9,14 +9,12 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 
 const TrackingMap = dynamic(() => import('@/components/tracking/TrackingMap'), {
   ssr: false,
   loading: () => <div className="rounded-2xl bg-slate-100 animate-pulse" style={{ height: 360 }} />,
 });
-import { getOrder, confirmReceipt, type ApiOrder } from '@/lib/api/orders';
+import { getOrder, confirmReceipt, generateShareLink, type ApiOrder } from '@/lib/api/orders';
 import {
   getTransportJob,
   getTransportJobLocation,
@@ -41,8 +39,10 @@ import {
   ArrowLeft,
   CheckCircle,
   Clock,
+  Copy,
   CreditCard,
   ExternalLink,
+  Link,
   MessageSquare,
   Package,
   Phone,
@@ -82,6 +82,7 @@ const JOB_STATUS_CFG: Record<TransportJobStatus, { label: string; bg: string; te
   AT_DELIVERY: { label: 'Atvedis', bg: '#dbeafe', text: '#1d4ed8' },
   DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', text: '#166534' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
+  DELIVERY_REFUSED: { label: 'Piegāde atteikta', bg: '#fef2f2', text: '#991b1b' },
 };
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -98,8 +99,6 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
-  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentInitLoading, setPaymentInitLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
@@ -114,6 +113,32 @@ export default function OrderDetailPage() {
   // Confirm receipt state
   const [confirmReceiptLoading, setConfirmReceiptLoading] = useState(false);
   const [confirmReceiptError, setConfirmReceiptError] = useState<string | null>(null);
+
+  // Share link state
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleGenerateShareLink = async () => {
+    if (!token || !order) return;
+    setShareLoading(true);
+    try {
+      const result = await generateShareLink(order.id, token);
+      setShareUrl(result.url);
+    } catch {
+      // keep modal closed on error
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareUrl = () => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  };
 
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -219,11 +244,9 @@ export default function OrderDetailPage() {
     setPaymentError(null);
     try {
       const payment = await createPaymentIntent(order.id, token);
-      setStripePromise(loadStripe(payment.publishableKey));
-      setPaymentClientSecret(payment.clientSecret);
+      window.location.href = payment.paymentUrl;
     } catch (err: unknown) {
       setPaymentError(err instanceof Error ? err.message : 'Neizdevās uzsākt maksājumu');
-    } finally {
       setPaymentInitLoading(false);
     }
   };
@@ -242,7 +265,19 @@ export default function OrderDetailPage() {
             {order.deliveryCity ? ` · ${order.deliveryCity}` : ''}
           </p>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {(order.status === 'DRAFT' || order.status === 'PENDING') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateShareLink}
+              disabled={shareLoading}
+              className="gap-1.5"
+            >
+              <Link className="h-3.5 w-3.5" />
+              {shareLoading ? 'Ģenerē...' : 'Kopīgot'}
+            </Button>
+          )}
           <span
             style={{ backgroundColor: orderStatusCfg.bg, color: orderStatusCfg.text }}
             className="inline-block rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap border border-black/5"
@@ -250,6 +285,36 @@ export default function OrderDetailPage() {
             {orderStatusCfg.label}
           </span>
         </div>
+
+        {/* Share link modal */}
+        {shareUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+              <h2 className="text-base font-semibold text-slate-900">Kopīgot piegādes saiti</h2>
+              <p className="text-sm text-slate-500">
+                Nosūtiet šo saiti laukuma meistaram. Viņš varēs ievadīt piegādes adresi un
+                kontaktinformāciju.
+              </p>
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <span className="flex-1 text-xs text-slate-700 break-all">{shareUrl}</span>
+                <button
+                  onClick={handleCopyShareUrl}
+                  className="shrink-0 rounded p-1.5 hover:bg-slate-100 transition-colors"
+                  title="Kopēt saiti"
+                >
+                  {shareCopied ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4 text-slate-500" />
+                  )}
+                </button>
+              </div>
+              <Button variant="outline" className="w-full" onClick={() => setShareUrl(null)}>
+                Aizvērt
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Order items ── */}
@@ -791,77 +856,15 @@ export default function OrderDetailPage() {
                 <CreditCard className="h-4 w-4 shrink-0" />
                 <span className="font-medium">Apmaksāts</span>
               </div>
-            ) : !paymentClientSecret || !stripePromise ? (
+            ) : (
               <Button onClick={handleStartPayment} disabled={paymentInitLoading} className="w-full">
                 <CreditCard className="h-4 w-4 mr-2" />
                 {paymentInitLoading ? 'Sagatavo maksājumu...' : 'Apmaksāt pasūtījumu'}
               </Button>
-            ) : (
-              <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
-                <InlinePaymentForm
-                  onError={setPaymentError}
-                  onSuccess={async () => {
-                    setPaymentError(null);
-                    await loadData();
-                  }}
-                />
-              </Elements>
             )}
             {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
           </div>
         )}
-    </div>
-  );
-}
-
-// ── Inline payment form ───────────────────────────────────────────────────────
-
-function InlinePaymentForm({
-  onError,
-  onSuccess,
-}: {
-  onError: (message: string | null) => void;
-  onSuccess: () => Promise<void>;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleConfirm = async () => {
-    if (!stripe || !elements) return;
-    setSubmitting(true);
-    onError(null);
-    const result = await stripe.confirmPayment({
-      elements,
-      redirect: 'if_required',
-    });
-    if (result.error) {
-      onError(result.error.message ?? 'Maksājums neizdevās');
-      setSubmitting(false);
-      return;
-    }
-
-    const status = result.paymentIntent?.status;
-    if (status === 'succeeded' || status === 'processing' || status === 'requires_capture') {
-      await onSuccess();
-      setSubmitting(false);
-      return;
-    }
-
-    onError('Maksājuma statuss nav apstiprināts. Lūdzu mēģiniet vēlreiz.');
-    setSubmitting(false);
-  };
-
-  return (
-    <div className="space-y-3">
-      <PaymentElement />
-      <Button
-        onClick={handleConfirm}
-        disabled={!stripe || !elements || submitting}
-        className="w-full"
-      >
-        {submitting ? 'Apstrādā...' : 'Apstiprināt maksājumu'}
-      </Button>
     </div>
   );
 }

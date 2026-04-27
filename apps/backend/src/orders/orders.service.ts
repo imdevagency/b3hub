@@ -41,6 +41,7 @@ import { VAT_RATE } from '../common/constants/tax';
 import { MaterialsService } from '../materials/materials.service';
 import { DocumentsService } from '../documents/documents.service';
 import { MapsService } from '../maps/maps.service';
+import { PayoutsService } from '../payouts/payouts.service';
 
 @Injectable()
 export class OrdersService {
@@ -72,6 +73,7 @@ export class OrdersService {
     private materials: MaterialsService,
     private documents: DocumentsService,
     private maps: MapsService,
+    private payoutsService: PayoutsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -1133,6 +1135,15 @@ export class OrdersService {
           ),
         );
 
+      // Cancel any pending payout obligations (principal model)
+      this.payoutsService
+        .cancelOrderPayouts(id)
+        .catch((err: unknown) =>
+          this.logger.error(
+            `cancelOrderPayouts failed for order ${id}: ${(err as Error).message}`,
+          ),
+        );
+
       if (order.total) {
         this.prisma.$executeRaw`
           UPDATE buyer_profiles
@@ -1271,6 +1282,41 @@ export class OrdersService {
         .catch((err) =>
           this.logger.warn(
             'Status-change notification failed',
+            (err as Error).message,
+          ),
+        );
+    }
+
+    // Notify seller(s) when order reaches CONFIRMED — they need to prepare the load.
+    // This is separate from the ORDER_CREATED notification they already received when
+    // the order was first placed; CONFIRMED means payment is secured and work should start.
+    if (status === OrderStatus.CONFIRMED) {
+      this.prisma.orderItem
+        .findMany({
+          where: { orderId: id },
+          select: { material: { select: { supplierId: true } } },
+        })
+        .then(async (items) => {
+          const companyIds = [...new Set(items.map((i) => i.material?.supplierId).filter(Boolean))] as string[];
+          if (companyIds.length === 0) return;
+          const users = await this.prisma.user.findMany({
+            where: { companyId: { in: companyIds }, canSell: true },
+            select: { id: true },
+            take: 50,
+          });
+          return this.notifications.createForMany(
+            users.map((u) => u.id),
+            {
+              type: NotificationType.ORDER_CONFIRMED,
+              title: 'Pasūtījums apstiprināts un apmaksāts',
+              message: `Pasūtījums #${order.orderNumber} ir apstiprināts. Sagatavojiet kravu piegādei.`,
+              data: { orderId: id },
+            },
+          );
+        })
+        .catch((err) =>
+          this.logger.warn(
+            'Seller ORDER_CONFIRMED notification failed',
             (err as Error).message,
           ),
         );
@@ -1530,6 +1576,15 @@ export class OrdersService {
           `voidOrRefund failed on seller-cancel for order ${id}: ${
             (err as Error).message
           }`,
+        ),
+      );
+
+    // Cancel any pending payout obligations (principal model)
+    this.payoutsService
+      .cancelOrderPayouts(id)
+      .catch((err: unknown) =>
+        this.logger.error(
+          `cancelOrderPayouts failed on seller-cancel for order ${id}: ${(err as Error).message}`,
         ),
       );
 
@@ -2270,23 +2325,55 @@ export class OrdersService {
     const jobNumber = this.generateTransportJobNumber();
     const pickupDate = new Date(dto.requestedDate);
 
-    // Find nearest recycling center that accepts this waste type
-    const center = await this.prisma.recyclingCenter.findFirst({
-      where: { active: true, acceptedWasteTypes: { has: dto.wasteType } },
-      select: {
-        name: true,
-        address: true,
-        city: true,
-        state: true,
-        postalCode: true,
-        coordinates: true,
-      },
-    });
+    // Find recycling center: use buyer preference if provided, otherwise nearest available
+    let center: {
+      name: string;
+      address: string;
+      city: string;
+      state: string | null;
+      postalCode: string | null;
+      coordinates: unknown;
+    } | null;
 
-    if (!center) {
-      throw new BadRequestException(
-        `No active recycling center found that accepts waste type "${dto.wasteType}". Please contact support.`,
-      );
+    if (dto.preferredRecyclingCenterId) {
+      center = await this.prisma.recyclingCenter.findFirst({
+        where: {
+          id: dto.preferredRecyclingCenterId,
+          active: true,
+          acceptedWasteTypes: { has: dto.wasteType },
+        },
+        select: {
+          name: true,
+          address: true,
+          city: true,
+          state: true,
+          postalCode: true,
+          coordinates: true,
+        },
+      });
+      if (!center) {
+        throw new BadRequestException(
+          `Recycling centre ${dto.preferredRecyclingCenterId} is not available or does not accept waste type "${dto.wasteType}".`,
+        );
+      }
+    } else {
+      center = await this.prisma.recyclingCenter.findFirst({
+        where: { active: true, acceptedWasteTypes: { has: dto.wasteType } },
+        select: {
+          name: true,
+          address: true,
+          city: true,
+          state: true,
+          postalCode: true,
+          coordinates: true,
+        },
+      });
+
+      if (!center) {
+        throw new BadRequestException(
+          `No active recycling center found that accepts waste type "${dto.wasteType}". Please contact support.`,
+        );
+      }
     }
 
     const deliveryAddress = center.address;
@@ -3296,5 +3383,39 @@ export class OrdersService {
     }
 
     return [headers.join(','), ...rows].join('\r\n');
+  }
+
+  /**
+   * Generate (or return existing) share link for an order so an unauthenticated
+   * foreman can fill in delivery details.
+   * Only the order creator or an admin may request the share link.
+   */
+  async generateShareLink(
+    orderId: string,
+    currentUser: RequestingUser,
+    webUrl: string,
+  ): Promise<{ url: string; token: string }> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, createdById: true, trackingToken: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      order.createdById !== currentUser.userId
+    ) {
+      throw new ForbiddenException('Only the order creator can share this order');
+    }
+
+    let token = order.trackingToken;
+    if (!token) {
+      token = randomBytes(16).toString('hex');
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: { trackingToken: token },
+      });
+    }
+
+    return { token, url: `${webUrl}/share/${token}` };
   }
 }

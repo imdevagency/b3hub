@@ -50,6 +50,8 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 import { FieldPassesModule } from './field-passes/field-passes.module';
 import { WeighingSlipsModule } from './weighing-slips/weighing-slips.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { GuestOrdersModule } from './guest-orders/guest-orders.module';
+import { PayoutsModule } from './payouts/payouts.module';
 
 @Module({
   imports: [
@@ -105,6 +107,8 @@ import { TrackingModule } from './tracking/tracking.module';
     FieldPassesModule,
     WeighingSlipsModule,
     TrackingModule,
+    GuestOrdersModule,
+    PayoutsModule,
   ],
   controllers: [AppController],
   providers: [

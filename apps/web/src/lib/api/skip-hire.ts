@@ -34,6 +34,9 @@ export interface SkipHireOrder {
   price: number;
   currency: string;
   status: SkipHireStatus;
+  paymentMethod?: 'CARD' | 'INVOICE';
+  /** Paysera checkout URL — present on CARD orders, null for INVOICE. */
+  paymentUrl?: string | null;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -57,6 +60,9 @@ export interface CreateSkipHireInput {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  bisNumber?: string;
+  /** CARD = Paysera redirect; INVOICE = bank transfer. Defaults to CARD. */
+  paymentMethod?: 'CARD' | 'INVOICE';
 }
 
 export interface SkipHireQuote {
@@ -126,7 +132,6 @@ export async function createSkipHireOrder(
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
-
 export async function getMySkipHireOrders(token: string): Promise<SkipHireOrder[]> {
   return apiFetch<SkipHireOrder[]>('/skip-hire/my', {
     headers: { Authorization: `Bearer ${token}` },

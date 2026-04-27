@@ -83,6 +83,7 @@ const STATUS_CFG: Record<TransportJobStatus, { label: string; bg: string; text: 
   AT_DELIVERY: { label: 'Atvedis', bg: '#dbeafe', text: '#1d4ed8' },
   DELIVERED: { label: 'Piegādāts', bg: '#f0fdf4', text: '#166534' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
+  DELIVERY_REFUSED: { label: 'Piegāde atteikta', bg: '#fef2f2', text: '#991b1b' },
 };
 
 const CARGO_LABELS: Record<string, string> = {

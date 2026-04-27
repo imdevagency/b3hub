@@ -72,7 +72,7 @@ export default function OrderWizard() {
     setSkipSize,
     setDeliveryDate,
     setConfirmedOrder,
-    setSkipPaymentClientSecret,
+    setSkipPaymentUrl,
   } = useOrder();
   const { user, token } = useAuth();
   const toast = useToast();
@@ -88,8 +88,23 @@ export default function OrderWizard() {
     state.wasteCategory,
   );
   const [selectedSize, setSelectedSizeState] = useState<SkipSize | null>(state.skipSize);
-  const [selectedDay, setSelectedDay] = useState<string>(toISO(addDays(today, 1)));
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // collectionDay = end of hire period; null until user taps the second date.
+  const [collectionDay, setCollectionDay] = useState<string | null>(null);
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
+  // Derived: days between delivery and collection (min 1). Falls back to 14 if not yet chosen.
+  const hireDays =
+    collectionDay && selectedDay
+      ? Math.max(
+          1,
+          Math.round(
+            (new Date(collectionDay + 'T00:00:00').getTime() -
+              new Date(selectedDay + 'T00:00:00').getTime()) /
+              86_400_000,
+          ),
+        )
+      : 14;
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [saveAddress, setSaveAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
@@ -209,7 +224,7 @@ export default function OrderWizard() {
   const ctaDisabled =
     (step === 1 && (!selectedWaste || !selectedSize)) ||
     (step === 2 && !picked) ||
-    (step === 3 && !selectedDay) ||
+    (step === 3 && (!selectedDay || !collectionDay)) ||
     (step === 4 && (quotesLoading || !termsAccepted)) ||
     submitting;
 
@@ -237,6 +252,8 @@ export default function OrderWizard() {
           skipSize: state.skipSize,
           deliveryDate: selectedDay,
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+          hireDays,
+          paymentMethod,
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -271,7 +288,7 @@ export default function OrderWizard() {
           .catch(() => {});
       }
       haptics.success();
-      setSkipPaymentClientSecret(order.clientSecret ?? null);
+      setSkipPaymentUrl(order.paymentUrl ?? null);
       setConfirmedOrder(order);
       router.push('/skip-hire/confirmation');
     } catch (err) {
@@ -285,7 +302,10 @@ export default function OrderWizard() {
     token,
     state,
     selectedDay,
+    collectionDay,
     deliveryWindow,
+    hireDays,
+    paymentMethod,
     saveAddress,
     contactName,
     contactPhone,
@@ -295,7 +315,7 @@ export default function OrderWizard() {
     linkedMaterialOrderId,
     setDeliveryDate,
     setConfirmedOrder,
-    setSkipPaymentClientSecret,
+    setSkipPaymentUrl,
     router,
   ]);
 
@@ -507,15 +527,66 @@ export default function OrderWizard() {
             contentContainerStyle={s.contentPad}
             showsVerticalScrollIndicator={false}
           >
-            <SectionLabel label="Piegādes datums" />
+            {/* ── Date range summary bar ── */}
+            <View style={s.rangeSummaryBar}>
+              <View style={s.rangeSummaryCol}>
+                <Text style={s.rangeSummaryLabel}>Piegāde</Text>
+                <Text style={[s.rangeSummaryDate, !selectedDay && s.rangeSummaryDateEmpty]}>
+                  {selectedDay
+                    ? new Date(selectedDay + 'T00:00:00').toLocaleDateString('lv-LV', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })
+                    : 'Izvēlieties'}
+                </Text>
+              </View>
+              <View style={s.rangeSummaryArrow}>
+                <Text style={s.rangeSummaryArrowText}>→</Text>
+              </View>
+              <View style={[s.rangeSummaryCol, { alignItems: 'flex-end' }]}>
+                <Text style={s.rangeSummaryLabel}>
+                  Savākšana{collectionDay ? ` · ${hireDays} d.` : ''}
+                </Text>
+                <Text style={[s.rangeSummaryDate, !collectionDay && s.rangeSummaryDateEmpty]}>
+                  {collectionDay
+                    ? new Date(collectionDay + 'T00:00:00').toLocaleDateString('lv-LV', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })
+                    : 'Izvēlieties'}
+                </Text>
+              </View>
+            </View>
+
+            {/* ── Calendar — two-tap range selection ── */}
             <WizardCalendar
               selectedDate={selectedDay || ''}
-              onDateChange={setSelectedDay}
+              onDateChange={(tapped) => {
+                // If both dates are already set, or no date is set, start over
+                if (!selectedDay || (selectedDay && collectionDay)) {
+                  setSelectedDay(tapped);
+                  setCollectionDay(null);
+                  return;
+                }
+
+                // At this point, selectedDay is set, but collectionDay is null
+                if (tapped < selectedDay) {
+                  // If tapped date is before the start date, shift the start date
+                  setSelectedDay(tapped);
+                  setCollectionDay(null);
+                } else {
+                  // Tapped date is >= start date: complete the range
+                  setCollectionDay(tapped);
+                }
+              }}
               minDate={toISO(addDays(today, 1))}
+              rangeEndDate={collectionDay ?? undefined}
             />
 
-            {/* Delivery window */}
-            <SectionLabel label="Vēlamais piegādes laiks" style={{ marginTop: 16 }} />
+            {/* ── Delivery window ── */}
+            <SectionLabel label="Vēlamais piegādes laiks" style={{ marginTop: 4 }} />
             <View style={s.windowRow}>
               {(
                 [
@@ -629,6 +700,40 @@ export default function OrderWizard() {
                 <Text style={s.termsLink}>privātuma politikai</Text>
               </Text>
             </TouchableOpacity>
+
+            {/* Payment method */}
+            <SectionLabel label="Maksājuma veids" style={{ marginTop: 20 }} />
+            <View style={{ gap: 8 }}>
+              {(
+                [
+                  [
+                    'CARD',
+                    '💳 Ar karti (Paysera)',
+                    'Tūlītējs maksājums ar debetkarti vai kredītkarti',
+                  ],
+                  ['INVOICE', '🧾 Priekšapmaksas rēķins', 'Rēķins tiks nosūtīts uz e-pastu'],
+                ] as const
+              ).map(([val, label, sub]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
+                  onPress={() => setPaymentMethod(val)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
+                    {paymentMethod === val && <View style={s.payMethodRadioDot} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
+                    >
+                      {label}
+                    </Text>
+                    <Text style={s.payMethodSub}>{sub}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {/* ── Link to material order (optional) ── */}
             <SectionLabel label="Saistīt ar materiālu pasūtījumu" style={{ marginTop: 20 }} />
@@ -786,6 +891,87 @@ const s = StyleSheet.create({
   },
   dayActive: { color: '#fff' },
   dayActiveSub: { color: colors.textDisabled },
+  // ── Step 3 hire-period chips ──────────────────────────────────
+  periodRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  periodChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.bgMuted,
+  },
+  periodChipActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  periodChipMain: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  periodChipSub: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  periodChipTextActive: { color: '#ffffff' },
+  periodChipSubActive: { color: '#9CA3AF' },
+  // ── Range summary bar ──────────────────────────────────────────
+  rangeSummaryBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  rangeSummaryCol: {
+    flex: 1,
+  },
+  rangeSummaryLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  rangeSummaryDate: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  rangeSummaryDateEmpty: {
+    color: colors.textDisabled,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+  },
+  rangeSummaryArrow: {
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  rangeSummaryArrowText: {
+    fontSize: 16,
+    color: colors.textMuted,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+  },
+  // ── Delivery window chips ─────────────────────────────────────
   windowRow: {
     flexDirection: 'row',
     gap: 8,
@@ -1031,4 +1217,49 @@ const s = StyleSheet.create({
     paddingHorizontal: 40,
   },
   successBtnText: { fontSize: 16, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#fff' },
+  payMethodRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSubtle,
+  },
+  payMethodRowActive: {
+    borderColor: '#111827',
+    backgroundColor: '#fff',
+  },
+  payMethodRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  payMethodRadioActive: { borderColor: '#111827' },
+  payMethodRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#111827',
+  },
+  payMethodLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  payMethodLabelActive: { color: colors.textPrimary },
+  payMethodSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+  },
 });

@@ -75,7 +75,8 @@ export default function RegisterScreen() {
 
   // Partner flow: let user pick SUPPLIER or CARRIER; standard flow: always BUYER
   const [partnerRoles, setPartnerRoles] = useState<Set<RoleKey>>(new Set<RoleKey>());
-  const [isCompany, setIsCompany] = useState(true);
+  // Default to personal/B2C; business users self-select "Uzņēmums" on step 1
+  const [isCompany, setIsCompany] = useState(isPartnerFlow ? true : false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');

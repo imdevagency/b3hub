@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
-import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -30,6 +30,7 @@ import {
   mapSkipSize,
   type SkipHireOrder,
 } from '@/lib/api/skip-hire';
+import { createGuestOrder } from '@/lib/api';
 import type { User } from '@/lib/api';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
@@ -133,6 +134,7 @@ export function SkipHireWizard({ mode }: Props) {
   const [deliveryDate, setDeliveryDate] = useState('');
   const [hireDays, setHireDays] = useState(14);
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -300,6 +302,34 @@ export function SkipHireWizard({ mode }: Props) {
     }
   }
 
+  async function handleGuestCheckout(contact: GuestContactInfo) {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await createGuestOrder({
+        materialCategory: 'SKIP_HIRE',
+        materialName: `Skip ${size || ''}`.trim(),
+        quantity: 1,
+        unit: 'PIECE',
+        deliveryAddress: address,
+        deliveryCity: address.split(',').slice(-1)[0]?.trim() || '',
+        deliveryLat: lat,
+        deliveryLng: lng,
+        deliveryDate: deliveryDate || undefined,
+        deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+        contactName: contact.name,
+        contactPhone: contact.phone,
+        contactEmail: contact.email,
+        notes: notes || undefined,
+      });
+      setStep('confirmed');
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
 
   async function submit(tok: string) {
@@ -314,6 +344,7 @@ export function SkipHireWizard({ mode }: Props) {
           deliveryDate,
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           hireDays,
+          paymentMethod,
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -322,6 +353,13 @@ export function SkipHireWizard({ mode }: Props) {
       );
       setConfirmedOrder(result);
       setStep('confirmed');
+      // For card orders, redirect to Paysera immediately after confirmation renders
+      if (result.paymentUrl) {
+        // Small delay so user sees the "Pasūtījums pieņemts" screen briefly
+        setTimeout(() => {
+          window.location.href = result.paymentUrl!;
+        }, 1500);
+      }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
     } finally {
@@ -599,6 +637,50 @@ export function SkipHireWizard({ mode }: Props) {
             </p>
           )}
 
+          {/* Payment method */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">Maksājuma veids</p>
+            <div className="flex flex-col gap-2">
+              {(
+                [
+                  {
+                    val: 'CARD',
+                    label: '💳 Ar karti (Paysera)',
+                    sub: 'Tūlītējs maksājums — jūs tiksiet novirzīts uz Paysera',
+                  },
+                  {
+                    val: 'INVOICE',
+                    label: '🧾 Priekšapmaksas rēķins',
+                    sub: 'Rēķins tiks nosūtīts uz e-pastu pirms piegādes',
+                  },
+                ] as const
+              ).map(({ val, label, sub }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setPaymentMethod(val)}
+                  className={`flex items-start gap-3 text-left rounded-2xl border-2 px-4 py-3 transition-colors ${
+                    paymentMethod === val
+                      ? 'border-foreground bg-foreground/5'
+                      : 'border-border hover:border-foreground/30'
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 size-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === val ? 'border-foreground' : 'border-muted-foreground/40'}`}
+                  >
+                    {paymentMethod === val && (
+                      <span className="size-2 rounded-full bg-foreground block" />
+                    )}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{sub}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
@@ -636,9 +718,25 @@ export function SkipHireWizard({ mode }: Props) {
               Nr. <span className="font-bold text-foreground">{confirmedOrder.orderNumber}</span>
             </p>
           </div>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Mēs sazināsimies ar jums, lai apstiprinātu piegādes laiku.
-          </p>
+          {confirmedOrder.paymentUrl ? (
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Novirzām uz Paysera maksājumu... Ja tas nenotiek automātiski, noklikšķiniet zemāk.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {confirmedOrder.paymentMethod === 'INVOICE'
+                ? 'Priekšapmaksas rēķins tiks nosūtīts uz jūsu e-pastu. Piegāde tiks apstiprināta pēc apmaksas.'
+                : 'Mēs sazināsimies ar jums, lai apstiprinātu piegādes laiku.'}
+            </p>
+          )}
+          {confirmedOrder.paymentUrl && (
+            <a
+              href={confirmedOrder.paymentUrl}
+              className="w-full flex items-center justify-center rounded-full h-14 text-base font-bold bg-foreground text-background shadow-md hover:shadow-lg transition-all"
+            >
+              💳 Apmaksāt pasūtījumu
+            </a>
+          )}
           <Button
             onClick={() => router.push('/dashboard/orders')}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
@@ -704,6 +802,7 @@ export function SkipHireWizard({ mode }: Props) {
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
+          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setPendingAction(null);

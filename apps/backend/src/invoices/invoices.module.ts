@@ -6,6 +6,7 @@ import { EmailModule } from '../email/email.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentsModule } from '../payments/payments.module';
+import { PayseraModule } from '../paysera/paysera.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PaymentsModule } from '../payments/payments.module';
     NotificationsModule,
     ConfigModule,
     PaymentsModule,
+    PayseraModule,
   ],
   controllers: [InvoicesController],
   providers: [InvoicesService],

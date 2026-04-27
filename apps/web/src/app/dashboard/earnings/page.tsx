@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getEarnings, setupPayouts, type EarningsResponse, type EarningEntry } from '@/lib/api';
+import { getEarnings, type EarningsResponse, type EarningEntry } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertCircle,
@@ -203,7 +203,6 @@ export default function EarningsPage() {
   const [data, setData] = useState<EarningsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [setupLoading, setSetupLoading] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
 
   // Role detection
@@ -244,14 +243,7 @@ export default function EarningsPage() {
     isSupplier ? (p.sellerPayout ?? p.grossAmount) : (p.driverPayout ?? p.grossAmount);
 
   const handleSetupPayouts = async () => {
-    if (!token) return;
-    setSetupLoading(true);
-    try {
-      const { url } = await setupPayouts(token);
-      if (url) window.location.href = url;
-    } catch {
-      setSetupLoading(false);
-    }
+    router.push('/dashboard/settings');
   };
 
   const load = async (showRefresh = false) => {
@@ -317,40 +309,32 @@ export default function EarningsPage() {
         }
       />
 
-      {/* Stripe Connect banner */}
-      {!loading && data && data.stripeStatus !== 'ACTIVE' && (
+      {/* Payout setup banner */}
+      {!loading && data && data.payoutStatus !== 'ACTIVE' && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/50">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
             <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">
-              {data.stripeStatus === 'PENDING'
-                ? 'Stripe reģistrācija nepilnīga'
-                : 'Pievienojiet izmaksu kontu'}
+              Norādiet IBAN kontu izmaksām
             </h3>
             <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-1 mb-3">
-              {data.stripeStatus === 'PENDING'
-                ? 'Pabeidz Stripe reģistrāciju, lai saņemtu naudas pārskaitījumus.'
-                : 'Pievienojiet savu bankas kontu, lai varētu saņemt izmaksas.'}
+              Lai saņemtu naudas pārskaitījumus, lūdzu norādiet sava uzņēmuma IBAN kontu profila
+              iestatījumos.
             </p>
             <Button
               onClick={handleSetupPayouts}
-              disabled={setupLoading}
               className="bg-amber-600 hover:bg-amber-700 text-white h-9 px-4 text-xs"
             >
-              {setupLoading
-                ? 'Notiek apstrāde...'
-                : data.stripeStatus === 'PENDING'
-                  ? 'Pabeigt reģistrāciju'
-                  : 'Pievienot bankas kontu'}
+              Iestatīt IBAN kontu
             </Button>
           </div>
         </div>
       )}
-      {data?.stripeStatus === 'ACTIVE' && (
+      {data?.payoutStatus === 'ACTIVE' && (
         <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900/50 px-4 py-3">
           <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
           <p className="text-sm text-green-800 dark:text-green-300">
-            Stripe Connect aktīvs — izmaksas tiek veiktas automātiski 2–7 darba dienu laikā.
+            IBAN konts konfigurēts — izmaksas tiek veiktas automātiski pēc pasūtījuma pabeigšanas.
           </p>
         </div>
       )}
@@ -391,7 +375,7 @@ export default function EarningsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 7-day bar chart */}
-        <div className="lg:col-span-1 rounded-3xl bg-muted/30 p-6 flex flex-col">
+        <div className="lg:col-span-1 rounded-xl bg-muted/30 p-6 flex flex-col">
           <div className="mb-6">
             <h2 className="text-base font-semibold">Ienākumi (7 dienas)</h2>
             <p className="text-sm text-muted-foreground mt-1">Sadalījums pa dienām</p>
@@ -428,7 +412,7 @@ export default function EarningsPage() {
         </div>
 
         {/* History */}
-        <div className="lg:col-span-2 rounded-3xl bg-muted/30 p-6">
+        <div className="lg:col-span-2 rounded-xl bg-muted/30 p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-base font-semibold">{historyLabel}</h2>

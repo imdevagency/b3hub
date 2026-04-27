@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { GuestWall } from '@/components/ui/GuestWall';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
@@ -46,17 +45,7 @@ const STRENGTH_META = [
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
-  const { token, user, isLoading } = useAuth();
-
-  if (!isLoading && !user) {
-    return (
-      <GuestWall
-        headerTitle="Nomainīt paroli"
-        title="Pierakstieties, lai nomainītu paroli"
-        subtitle="Paroles maiņa ir pieejama tikai reģistrētiem lietotājiem."
-      />
-    );
-  }
+  const { token, user } = useAuth();
 
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');

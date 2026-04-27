@@ -3,14 +3,14 @@
  *
  * Dialog shown when a guest tries to commit in the public /order wizard.
  * Three paths:
- *   1. Register — with Latvian-market specifics:
- *        • Privātpersona: includes Personas kods field
- *        • Uzņēmums: reg-number auto-lookup via UR open data API
- *        • Password is optional — if left blank we generate one and send
- *          a reset link so the user can set it later (guest-checkout UX)
- *   2. Login — email + password
+ *   1. Guest checkout — name + phone + optional email, NO account created.
+ *      Calls onGuestContact({ name, phone, email? }) so the wizard submits
+ *      directly to POST /api/v1/guest-orders.
+ *   2. Register — lightweight signup (password optional).
+ *   3. Login — email + password.
  *
- * On success calls onAuthenticated(user, token) so the wizard can continue.
+ * On account auth calls onAuthenticated(user, token).
+ * On guest path calls onGuestContact(contactInfo).
  */
 'use client';
 
@@ -22,7 +22,13 @@ import { forgotPassword, loginUser, registerUser, type User } from '@/lib/api';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = 'choice' | 'register' | 'login';
+type Mode = 'choice' | 'guest' | 'register' | 'login';
+
+export interface GuestContactInfo {
+  name: string;
+  phone: string;
+  email?: string;
+}
 
 interface UrLookupResult {
   found: boolean;
@@ -34,6 +40,8 @@ interface UrLookupResult {
 interface Props {
   open: boolean;
   onAuthenticated: (user: User, token: string) => void;
+  /** Called when user chooses the guest path — wizard uses this to submit via guest-orders API. */
+  onGuestContact?: (info: GuestContactInfo) => void;
   onDismiss: () => void;
   /** Pre-populate name + phone from the wizard's on-site contact fields. */
   prefilledName?: string;
@@ -56,11 +64,17 @@ function generateGuestPassword(): string {
 export function WebWizardAuthGate({
   open,
   onAuthenticated,
+  onGuestContact,
   onDismiss,
   prefilledName,
   prefilledPhone,
 }: Props) {
   const [mode, setMode] = useState<Mode>('choice');
+
+  // Guest checkout fields
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
 
   // Register fields
   const [isCompany, setIsCompany] = useState(false);
@@ -151,9 +165,11 @@ export function WebWizardAuthGate({
       const parts = prefilledName.trim().split(/\s+/);
       setFirstName((prev) => prev || parts[0] || '');
       setLastName((prev) => prev || parts.slice(1).join(' '));
+      setGuestName((prev) => prev || prefilledName.trim());
     }
     if (prefilledPhone) {
       setPhone((prev) => prev || prefilledPhone);
+      setGuestPhone((prev) => prev || prefilledPhone);
     }
   }, [open, prefilledName, prefilledPhone]);
 
@@ -162,6 +178,9 @@ export function WebWizardAuthGate({
   function reset() {
     setMode('choice');
     setError('');
+    setGuestName('');
+    setGuestPhone('');
+    setGuestEmail('');
     setIsCompany(false);
     setFirstName('');
     setLastName('');
@@ -182,6 +201,30 @@ export function WebWizardAuthGate({
   function handleDismiss() {
     reset();
     onDismiss();
+  }
+
+  // ── Guest checkout ────────────────────────────────────────────────────────
+
+  function handleGuestContinue() {
+    setError('');
+    if (!guestName.trim()) {
+      setError('Ievadiet vārdu un uzvārdu.');
+      return;
+    }
+    if (!/^\+?[0-9\s\-()\u200b]{7,20}$/.test(guestPhone.trim())) {
+      setError('Ievadiet derīgu tālruņa numuru.');
+      return;
+    }
+    if (guestEmail && !/^\S+@\S+\.\S+$/.test(guestEmail)) {
+      setError('Ievadiet derīgu e-pasta adresi vai atstājiet lauku tukšu.');
+      return;
+    }
+    reset();
+    onGuestContact?.({
+      name: guestName.trim(),
+      phone: guestPhone.trim(),
+      email: guestEmail.trim() || undefined,
+    });
   }
 
   // ── Register ──────────────────────────────────────────────────────────────
@@ -290,18 +333,33 @@ export function WebWizardAuthGate({
           {mode === 'choice' && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Turpināt pasūtījumu</h2>
+                <h2 className="text-xl font-bold text-gray-900">Kā turpināt?</h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Lai apstiprinātu pasūtījumu, lūdzu piesakieties vai izveidojiet kontu.
+                  Izvēlieties ērtu veidu, kā iesniegt pasūtījumu.
                 </p>
               </div>
+
+              {/* Guest — primary action when onGuestContact is provided */}
+              {onGuestContact && (
+                <button
+                  onClick={() => setMode('guest')}
+                  className="w-full flex items-center justify-between rounded-2xl border-2 border-gray-900 bg-gray-900 px-5 py-4 text-left hover:bg-gray-800 transition-colors"
+                >
+                  <div>
+                    <p className="text-[15px] font-bold text-white">Turpināt kā viesis</p>
+                    <p className="text-sm text-gray-400">Tikai vārds + tālrunis — bez konta</p>
+                  </div>
+                  <span className="text-xl text-gray-400">›</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setMode('register')}
                 className="w-full flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-left hover:bg-gray-100 transition-colors"
               >
                 <div>
                   <p className="text-[15px] font-bold text-gray-900">Izveidot kontu</p>
-                  <p className="text-sm text-gray-500">Ātri — tikai 30 sekundes</p>
+                  <p className="text-sm text-gray-500">Ātri — izsekojiet pasūtījumus, rēķini</p>
                 </div>
                 <span className="text-xl text-gray-400">›</span>
               </button>
@@ -325,6 +383,64 @@ export function WebWizardAuthGate({
                   privātuma politikai
                 </a>
                 .
+              </p>
+            </div>
+          )}
+
+          {/* ── GUEST CHECKOUT ── */}
+          {mode === 'guest' && (
+            <div className="space-y-3">
+              <button
+                onClick={() => { setMode('choice'); setError(''); }}
+                className="text-sm text-gray-500 hover:text-gray-700 mb-1"
+              >
+                ← Atpakaļ
+              </button>
+              <h2 className="text-xl font-bold text-gray-900">Turpināt kā viesis</h2>
+              <p className="text-sm text-gray-500">
+                Mēs sazināsimies ar jums, lai apstiprinātu pasūtījumu.
+              </p>
+
+              <Input
+                placeholder="Vārds Uzvārds"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                autoComplete="name"
+              />
+              <Input
+                type="tel"
+                placeholder="Tālrunis (piem. +371 20000000)"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+                autoComplete="tel"
+              />
+              <div className="space-y-1">
+                <Input
+                  type="email"
+                  placeholder="E-pasts (neobligāts — apstiprinājumam)"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  autoComplete="email"
+                />
+                <p className="text-xs text-gray-400 pl-1">
+                  Ja norādāt e-pastu, nosūtīsim pasūtījuma apstiprinājumu un izsekošanas saiti.
+                </p>
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <Button
+                onClick={handleGuestContinue}
+                className="w-full rounded-xl"
+              >
+                Iesniegt pasūtījumu
+              </Button>
+
+              <p className="text-xs text-gray-400 text-center pt-1">
+                Ar iesniegšanu jūs piekrītat{' '}
+                <a href="/terms" target="_blank" className="underline">lietošanas noteikumiem</a>{' '}
+                un{' '}
+                <a href="/privacy" target="_blank" className="underline">privātuma politikai</a>.
               </p>
             </div>
           )}

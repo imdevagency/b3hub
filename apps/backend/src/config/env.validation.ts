@@ -88,17 +88,34 @@ class EnvironmentVariables {
   @IsOptional()
   SUPABASE_ANON_KEY?: string;
 
-  // ── Stripe payments ──────────────────────────────────────────────────────
+  // ── Paysera payments ─────────────────────────────────────────────────────
 
-  /** Secret key (sk_live_* in production, sk_test_* in dev). */
+  /** Paysera OAuth2 client ID (from Paysera merchant dashboard). */
   @IsString()
   @IsOptional()
-  STRIPE_SECRET_KEY?: string;
+  PAYSERA_CLIENT_ID?: string;
 
-  /** Webhook signing secret (whsec_*) from the Stripe dashboard. */
+  /** Paysera OAuth2 client secret. */
   @IsString()
   @IsOptional()
-  STRIPE_WEBHOOK_SECRET?: string;
+  PAYSERA_CLIENT_SECRET?: string;
+
+  /** Paysera project ID (numeric, from dashboard). */
+  @IsString()
+  @IsOptional()
+  PAYSERA_PROJECT_ID?: string;
+
+  // ── App URLs (used for payment redirect callbacks) ────────────────────────
+
+  /** Public base URL for the mobile/web app (e.g. https://b3hub.app). Used for payment success/failure redirects. */
+  @IsString()
+  @IsOptional()
+  APP_BASE_URL?: string;
+
+  /** Public base URL for this API (e.g. https://api.b3hub.app). Used for webhook callback registration. */
+  @IsString()
+  @IsOptional()
+  API_URL?: string;
 
   // ── Google Maps (server-side only key) ──────────────────────────────────
 
@@ -116,8 +133,11 @@ class EnvironmentVariables {
 
 /** Secrets that must be present when NODE_ENV=production. */
 const REQUIRED_IN_PRODUCTION: Array<keyof EnvironmentVariables> = [
-  'STRIPE_SECRET_KEY',
-  'STRIPE_WEBHOOK_SECRET',
+  'PAYSERA_CLIENT_ID',
+  'PAYSERA_CLIENT_SECRET',
+  'PAYSERA_PROJECT_ID',
+  'APP_BASE_URL',
+  'API_URL',
   'SUPABASE_URL',
   'SUPABASE_KEY',
   'SENTRY_DSN',

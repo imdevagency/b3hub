@@ -337,7 +337,7 @@ export default function AnalyticsPage() {
                 onClick={() => setChartMonths(m)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   chartMonths === m
-                    ? 'bg-background shadow-xs text-foreground'
+                    ? 'bg-gray-100 border border-gray-200 text-gray-900 font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >

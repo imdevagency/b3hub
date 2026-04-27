@@ -110,17 +110,17 @@ export default function SupplierDashboardPage() {
         </div>
 
         {/* QUICK STATS STRIP */}
-        <div className="flex items-center gap-8 sm:gap-12 py-2">
-          <QuickStat value={n(data?.pendingOrders)} label="Gaida Izpildi" />
-          <QuickStat value={n(data?.activeListings)} label="Aktīvi Sludinājumi" />
-          <QuickStat value={money(data?.monthlyRevenue)} label="Mēneša Ieņēmumi" />
+        <div className="grid grid-cols-3 border border-gray-200 rounded-xl bg-white divide-x divide-gray-200 overflow-hidden">
+          <div className="px-5 py-4"><QuickStat value={n(data?.pendingOrders)} label="Gaida Izpildi" /></div>
+          <div className="px-5 py-4"><QuickStat value={n(data?.activeListings)} label="Aktīvi Sludinājumi" /></div>
+          <div className="px-5 py-4"><QuickStat value={money(data?.monthlyRevenue)} label="Mēneša Ieņēmumi" /></div>
         </div>
       </div>
 
       {/* MAIN BANNER ACTION */}
       <Link
         href="/dashboard/orders"
-        className="block relative overflow-hidden rounded-3xl bg-foreground text-background p-6 sm:p-8 transition-transform active:scale-[0.98] hover:shadow-lg"
+        className="block relative overflow-hidden rounded-xl bg-foreground text-background p-6 sm:p-8 transition-transform active:scale-[0.98] hover:shadow-lg"
       >
         <div className="relative z-10 flex items-center justify-between">
           <div>
@@ -146,13 +146,15 @@ export default function SupplierDashboardPage() {
       </Link>
 
       {/* MINIMAL MENU LIST */}
-      <div className="space-y-1 pt-4">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground px-4 mb-3">
+      <div className="pt-4">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
           Ātrās Darbības
         </h2>
-        {actions.map((action) => (
-          <ActionListItem key={action.label} {...action} />
-        ))}
+        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
+          {actions.map((action) => (
+            <ActionListItem key={action.label} {...action} />
+          ))}
+        </div>
       </div>
     </div>
   );
