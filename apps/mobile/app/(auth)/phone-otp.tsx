@@ -440,7 +440,7 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -449,10 +449,10 @@ const s = StyleSheet.create({
   // Hero
   heroTitle: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#000',
     marginBottom: 8,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
   },
   heroSubtitle: {
     fontSize: 16,
@@ -516,8 +516,8 @@ const s = StyleSheet.create({
     borderRadius: 14,
     height: 72,
     fontSize: 32,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#000',
     letterSpacing: 8,
     marginBottom: 24,
@@ -568,7 +568,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
@@ -580,7 +580,7 @@ const s = StyleSheet.create({
   primaryBtnText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });

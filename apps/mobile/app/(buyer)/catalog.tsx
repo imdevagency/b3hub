@@ -112,7 +112,7 @@ function CategoryCard({
 
       <View className="flex-1 justify-center pr-2">
         <Text
-          className="text-gray-900 font-bold tracking-tight mb-0.5 line-clamp-1"
+          className="text-gray-900 font-semibold tracking-tight mb-0.5 line-clamp-1"
           style={{ fontSize: 17 }}
         >
           {CATEGORY_LABELS[category]}
@@ -125,7 +125,7 @@ function CategoryCard({
             <View className="ml-2 bg-green-100 px-1.5 py-0.5 rounded flex-row items-center">
               <Leaf size={10} color="#166534" className="mr-1" />
               <Text
-                className="font-bold text-green-800 uppercase tracking-widest"
+                className="font-semibold text-green-800 uppercase tracking-widest"
                 style={{ fontSize: 10 }}
               >
                 Eco
@@ -138,7 +138,7 @@ function CategoryCard({
       <View className="items-end justify-center ml-2">
         {minPrice != null ? (
           <View className="bg-gray-100 px-3 py-1.5 rounded-full">
-            <Text className="text-gray-900 font-bold tracking-tight" style={{ fontSize: 13 }}>
+            <Text className="text-gray-900 font-semibold tracking-tight" style={{ fontSize: 13 }}>
               no €{minPrice.toFixed(2)}
             </Text>
           </View>
@@ -463,7 +463,7 @@ export default function CatalogScreen() {
         >
           <TouchableOpacity
             className={`px-4 py-2.5 rounded-full flex-row items-center ${
-              filterMode === 'ALL' ? 'bg-gray-900' : 'bg-gray-100'
+              filterMode === 'ALL' ? 'bg-[#F9423A]' : 'bg-gray-100'
             }`}
             onPress={() => {
               haptics.light();
@@ -471,7 +471,7 @@ export default function CatalogScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Text className={`font-bold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}>
+            <Text className={`font-semibold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}>
               Visi
             </Text>
           </TouchableOpacity>
@@ -491,7 +491,7 @@ export default function CatalogScreen() {
               className="mr-2"
             />
             <Text
-              className={`font-bold ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-900'}`}
+              className={`font-semibold ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-900'}`}
             >
               Pārstrādāts
             </Text>
@@ -530,7 +530,7 @@ export default function CatalogScreen() {
               <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-4">
                 <Box size={28} color="#9ca3af" />
               </View>
-              <Text className="text-gray-900 font-bold text-lg mb-1 text-center tracking-tight">
+              <Text className="text-gray-900 font-semibold text-lg mb-1 text-center tracking-tight">
                 Nekas nav atrasts
               </Text>
               <Text className="text-gray-500 font-medium text-center " style={{ fontSize: 15 }}>

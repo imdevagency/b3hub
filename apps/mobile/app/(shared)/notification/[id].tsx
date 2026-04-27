@@ -343,7 +343,7 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     lineHeight: 30,
     marginBottom: 14,
@@ -365,7 +365,7 @@ const s = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.white,
   },
   center: {

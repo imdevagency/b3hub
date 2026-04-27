@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   valueTotal: {
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     fontSize: 15,
   },
 });

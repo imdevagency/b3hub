@@ -27,8 +27,8 @@ export default function WelcomeScreen() {
               color: '#111827',
               fontSize: 32,
               lineHeight: 40,
-              fontFamily: 'Inter_800ExtraBold',
-              fontWeight: '800',
+              fontFamily: 'Inter_700Bold',
+              fontWeight: '700',
             }}
           >
             Būvē{'\n'}ātrāk. Jebkur.
@@ -95,7 +95,7 @@ const s = StyleSheet.create({
     width: '100%',
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -104,8 +104,8 @@ const s = StyleSheet.create({
   phonePrimaryBtnText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   outlineBtn: {
     width: '100%',

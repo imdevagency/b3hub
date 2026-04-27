@@ -241,8 +241,8 @@ export default function HomeScreen() {
           <View style={{ flex: 1, marginRight: 12 }}>
             <Text
               style={{
-                fontFamily: 'Inter_800ExtraBold',
-                fontWeight: '800',
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
                 fontSize: 36,
                 letterSpacing: -1,
                 color: '#111827',
@@ -263,8 +263,8 @@ export default function HomeScreen() {
             >
               <Text
                 style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
                   fontSize: 13,
                   color: '#111827',
                 }}
@@ -312,8 +312,8 @@ export default function HomeScreen() {
                 style={{
                   color: '#92400e',
                   fontSize: 18,
-                  fontFamily: 'Inter_800ExtraBold',
-                  fontWeight: '800',
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
                   letterSpacing: -0.5,
                   marginBottom: 4,
                 }}
@@ -343,7 +343,7 @@ export default function HomeScreen() {
             style={{
               marginHorizontal: 20,
               marginBottom: 32,
-              backgroundColor: '#111827',
+              backgroundColor: '#F9423A',
               borderRadius: 32,
               overflow: 'hidden',
               shadowColor: '#000',
@@ -417,8 +417,8 @@ export default function HomeScreen() {
                   <Text
                     style={{
                       color: '#e5e7eb',
-                      fontFamily: 'Inter_700Bold',
-                      fontWeight: '700',
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
                       fontSize: 12,
                       textTransform: 'uppercase',
                       letterSpacing: 0.5,
@@ -442,8 +442,8 @@ export default function HomeScreen() {
               <Text
                 style={{
                   color: '#fff',
-                  fontFamily: 'Inter_800ExtraBold',
-                  fontWeight: '800',
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
                   fontSize: 32,
                   letterSpacing: -1,
                   lineHeight: 36,
@@ -479,8 +479,8 @@ export default function HomeScreen() {
                 <Text
                   style={{
                     color: '#fff',
-                    fontFamily: 'Inter_700Bold',
-                    fontWeight: '700',
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
                     fontSize: 16,
                   }}
                 >
@@ -513,8 +513,8 @@ export default function HomeScreen() {
                 </View>
                 <Text
                   style={{
-                    fontFamily: 'Inter_800ExtraBold',
-                    fontWeight: '800',
+                    fontFamily: 'Inter_700Bold',
+                    fontWeight: '700',
                     fontSize: 24,
                     letterSpacing: -0.5,
                     color: '#111827',
@@ -544,7 +544,7 @@ export default function HomeScreen() {
                       router.push('/skip-hire');
                     }}
                     style={{
-                      backgroundColor: '#111827',
+                      backgroundColor: '#F9423A',
                       borderRadius: 16,
                       paddingVertical: 18,
                       flexDirection: 'row',
@@ -553,7 +553,7 @@ export default function HomeScreen() {
                     }}
                   >
                     <Package size={20} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 16 }}>
+                    <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
                       Pasūtīt konteineru
                     </Text>
                   </TouchableOpacity>
@@ -573,7 +573,7 @@ export default function HomeScreen() {
                     }}
                   >
                     <HardHat size={20} color="#111827" style={{ marginRight: 8 }} />
-                    <Text style={{ color: '#111827', fontFamily: 'Inter_700Bold', fontSize: 16 }}>
+                    <Text style={{ color: '#111827', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
                       Pasūtīt materiālus
                     </Text>
                   </TouchableOpacity>
@@ -583,8 +583,8 @@ export default function HomeScreen() {
 
             <Text
               style={{
-                fontFamily: 'Inter_800ExtraBold',
-                fontWeight: '800',
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
                 fontSize: 26,
                 letterSpacing: -0.5,
                 color: '#111827',
@@ -632,8 +632,8 @@ export default function HomeScreen() {
                     </View>
                     <Text
                       style={{
-                        fontFamily: 'Inter_800ExtraBold',
-                        fontWeight: '800',
+                        fontFamily: 'Inter_700Bold',
+                        fontWeight: '700',
                         fontSize: 17,
                         letterSpacing: -0.5,
                         color: '#111827',

@@ -718,12 +718,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  myrTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, flex: 1 },
+  myrTitle: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, flex: 1 },
   myrBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  myrBadgeText: { fontSize: 11, fontWeight: '700' },
+  myrBadgeText: { fontSize: 11, fontWeight: '600' },
   myrSub: { fontSize: 13, color: colors.textMuted },
   myrPriceRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  myrPrice: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  myrPrice: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   myrPriceSub: { fontSize: 12, color: colors.textDisabled },
   myrEta: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   myrNotes: { fontSize: 13, color: colors.textSecondary },
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignSelf: 'flex-start',
   },
-  countChipText: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
+  countChipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
 
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   cardTopLeft: { gap: 4, flex: 1, paddingRight: 10 },
-  materialText: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  materialText: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
   buyerText: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
 
   cardTopRight: { alignItems: 'flex-end', gap: 4 },
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  respondBtnText: { color: colors.white, fontWeight: '700', fontSize: 15 },
+  respondBtnText: { color: colors.white, fontWeight: '600', fontSize: 15 },
 
   // Modal styles (unchanged)
   fieldLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 8 },
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   priceUnit: { paddingHorizontal: 16, paddingVertical: 16 },
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   stepValue: {
     paddingHorizontal: 24,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     minWidth: 48,
     textAlign: 'center',
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   totalPreviewLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '500' },
-  totalPreviewValue: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  totalPreviewValue: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -914,9 +914,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginTop: 24,
   },
-  submitBtnText: { color: colors.white, fontWeight: '700', fontSize: 16 },
+  submitBtnText: { color: colors.white, fontWeight: '600', fontSize: 16 },
   successBox: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+  successTitle: { fontSize: 24, fontWeight: '600', color: colors.textPrimary },
   successMsg: { fontSize: 15, color: colors.textMuted, textAlign: 'center' },
 
   emptyBtn: {
@@ -931,6 +931,6 @@ const styles = StyleSheet.create({
   emptyBtnText: {
     color: colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

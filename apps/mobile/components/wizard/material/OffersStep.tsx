@@ -114,6 +114,7 @@ export function OffersStep({
   };
   const [priceMaxFilter, setPriceMaxFilter] = useState<number | null>(null);
   const [distanceMaxFilter, setDistanceMaxFilter] = useState<number | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<SupplierOffer | null>(null);
 
   // ── Success: order placed ──
   if (submitted === 'order') {
@@ -142,7 +143,7 @@ export function OffersStep({
           activeOpacity={0.85}
         >
           <Text
-            style={{ fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' }}
+            style={{ fontSize: 16, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' }}
           >
             Apmaksāt pasūtījumu
           </Text>
@@ -321,9 +322,9 @@ export function OffersStep({
         <Text
           style={{
             fontSize: 18,
-            fontWeight: '700',
+            fontWeight: '600',
             color: colors.textPrimary,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Inter_600SemiBold',
           }}
         >
           {sorted.length} piedāvājum{sorted.length === 1 ? 's' : 'i'}
@@ -428,7 +429,7 @@ export function OffersStep({
 
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: 32,
+          paddingBottom: selectedOffer ? 120 : 32, // make space for sticky button
           gap: 12,
           paddingHorizontal: 16,
           paddingTop: 16,
@@ -439,9 +440,14 @@ export function OffersStep({
             key={offer.id}
             offer={offer}
             unit={unit}
+            isSelected={selectedOffer?.id === offer.id}
             isCheapest={offersSort === 'price' && idx === 0}
-            submitting={submitting}
-            onSelect={() => requireAuth(() => onSelectOffer(offer))}
+            submitting={submitting && selectedOffer?.id === offer.id}
+            onSelect={() => {
+              if (submitting) return;
+              haptics.selection();
+              setSelectedOffer(offer);
+            }}
           />
         ))}
 
@@ -546,6 +552,57 @@ export function OffersStep({
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Sticky Bottom Bar for Submission */}
+      {selectedOffer && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: 16,
+            paddingBottom: 32, // Accommodate safe area roughly
+            backgroundColor: '#fff',
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.border,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+            elevation: 10,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              backgroundColor: termsAccepted ? colors.primary : '#d1d5db',
+              borderRadius: 14,
+              paddingVertical: 16,
+              alignItems: 'center',
+            }}
+            disabled={submitting || !termsAccepted}
+            activeOpacity={0.85}
+            onPress={() => requireAuth(() => onSelectOffer(selectedOffer))}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: '#fff',
+                  fontFamily: 'Inter_600SemiBold',
+                }}
+              >
+                {!termsAccepted
+                  ? 'Piekrītiet noteikumiem'
+                  : `Cena €${selectedOffer.totalPrice.toFixed(2)} — Apstiprināt`}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Auth gate — shown when a guest taps an offer or RFQ button */}
       <WizardAuthGate

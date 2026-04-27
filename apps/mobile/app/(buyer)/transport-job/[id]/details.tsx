@@ -570,8 +570,8 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 32,
     lineHeight: 36,
-    fontFamily: 'Inter_800ExtraBold',
-    fontWeight: '800',
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
     color: '#111827',
   },
   heroMetaRow: {
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     width: 20,
     height: 20,
     borderRadius: 10,

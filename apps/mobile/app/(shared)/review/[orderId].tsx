@@ -241,7 +241,7 @@ const s = StyleSheet.create({
   },
   successTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   successSub: {
@@ -260,7 +260,7 @@ const s = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
   },
@@ -318,7 +318,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.white,
   },
 

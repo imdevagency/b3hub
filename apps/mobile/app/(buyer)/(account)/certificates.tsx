@@ -268,7 +268,7 @@ export default function CertificatesScreen() {
 
 const s = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 24, fontWeight: '600', color: colors.textPrimary },
   headerSub: { fontSize: 14, color: colors.textMuted, marginTop: 2 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
@@ -289,7 +289,7 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   summaryItem: { alignItems: 'center', gap: 2 },
-  summaryNum: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  summaryNum: { fontSize: 22, fontWeight: '600', color: colors.textPrimary },
   summaryLabel: { fontSize: 12, color: colors.textDisabled },
   summaryDivider: { width: StyleSheet.hairlineWidth, height: 32, backgroundColor: '#e5e7eb' },
 
@@ -306,7 +306,7 @@ const s = StyleSheet.create({
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   typePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  typePillText: { fontSize: 12, fontWeight: '700' },
+  typePillText: { fontSize: 12, fontWeight: '600' },
   certBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -333,7 +333,7 @@ const s = StyleSheet.create({
 
   metricsRow: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
   metric: { gap: 1 },
-  metricValue: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  metricValue: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   metricLabel: { fontSize: 11, color: colors.textDisabled },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 

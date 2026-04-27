@@ -167,7 +167,7 @@ const ls = StyleSheet.create({
   },
   adminTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#111827',
     marginBottom: 8,
   },
@@ -179,7 +179,7 @@ const ls = StyleSheet.create({
   adminLogout: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     borderRadius: 12,
   },
   adminLogoutText: {
@@ -198,8 +198,8 @@ const ls = StyleSheet.create({
   avatarBtnText: {
     color: colors.white,
     fontSize: 14,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
 });
 

@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   icon: { fontSize: 28 },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#111',
     marginBottom: 8,
     textAlign: 'center',

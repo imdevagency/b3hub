@@ -294,7 +294,7 @@ const fs = StyleSheet.create({
     backgroundColor: colors.bgCard,
   },
   toolbarCancel: { fontSize: 16, color: colors.textPrimary, fontWeight: '500', lineHeight: 22 },
-  toolbarTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, lineHeight: 22 },
+  toolbarTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, lineHeight: 22 },
   toolbarReset: { fontSize: 16, color: colors.textPrimary, fontWeight: '500', lineHeight: 22 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 0, paddingBottom: 40, gap: 0 },
@@ -310,7 +310,7 @@ const fs = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 16,
     textTransform: 'uppercase',
@@ -350,7 +350,7 @@ const fs = StyleSheet.create({
 
   savedTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 16,
     textTransform: 'uppercase',
@@ -377,7 +377,7 @@ const fs = StyleSheet.create({
     justifyContent: 'center',
   },
   saveLink: { alignItems: 'center', paddingVertical: 24, marginTop: 10 },
-  saveLinkText: { fontSize: 16, color: colors.textPrimary, fontWeight: '700' },
+  saveLinkText: { fontSize: 16, color: colors.textPrimary, fontWeight: '600' },
   footer: {
     paddingHorizontal: 20,
     paddingBottom: 34,
@@ -395,6 +395,6 @@ const fs = StyleSheet.create({
   applyBtnText: {
     color: colors.white,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

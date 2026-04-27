@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   section: { gap: 12 },
   label: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -588,5 +588,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 17 },
+  submitBtnText: { color: '#fff', fontWeight: '600', fontSize: 17 },
 });

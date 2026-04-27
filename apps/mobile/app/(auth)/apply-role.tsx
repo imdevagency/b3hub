@@ -303,9 +303,9 @@ const s = StyleSheet.create({
     borderRadius: 20,
   },
   roleEmoji: { fontSize: 16 },
-  roleBadgeText: { fontSize: 14, fontWeight: '700' },
+  roleBadgeText: { fontSize: 14, fontWeight: '600' },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16 },
-  title: { fontSize: 26, fontWeight: '800', color: colors.textPrimary, marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
   subtitle: { fontSize: 14, color: colors.textMuted, lineHeight: 20, marginBottom: 24 },
   field: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 6 },
@@ -358,7 +358,7 @@ const s = StyleSheet.create({
   },
   termsTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1d4ed8',
   },
   termsList: {
@@ -403,7 +403,7 @@ const s = StyleSheet.create({
     paddingVertical: 17,
     alignItems: 'center',
   },
-  submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  submitBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   // Success
   successScreen: {
     flex: 1,
@@ -420,7 +420,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  successTitle: { fontSize: 24, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
+  successTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
   successDesc: {
     fontSize: 15,
     color: colors.textMuted,
@@ -434,5 +434,5 @@ const s = StyleSheet.create({
     paddingHorizontal: 40,
     alignItems: 'center',
   },
-  doneBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  doneBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
 });

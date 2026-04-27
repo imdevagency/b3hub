@@ -167,7 +167,7 @@ const s = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     flex: 1,
     letterSpacing: -0.3,
@@ -209,7 +209,7 @@ const s = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     minWidth: 36,
     textAlign: 'right',
   },

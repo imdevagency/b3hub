@@ -275,7 +275,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
   },
   panel: {
     position: 'absolute',
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   initials: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#334155',
   },
   bannerText: {
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   bannerName: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#0f172a',
     letterSpacing: -0.3,
   },

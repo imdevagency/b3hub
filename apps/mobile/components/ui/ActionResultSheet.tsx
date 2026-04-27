@@ -140,7 +140,7 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
     lineHeight: 28,
@@ -160,7 +160,7 @@ const s = StyleSheet.create({
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.white,
   },
   secondaryBtn: {

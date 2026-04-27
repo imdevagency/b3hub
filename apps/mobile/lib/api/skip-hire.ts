@@ -167,5 +167,38 @@ export const skipHireApi = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ base64, mimeType }),
       }),
+
+    /** Buyer: amend delivery date, window, notes, or contact on a PENDING/CONFIRMED order. */
+    amend: (
+      id: string,
+      data: {
+        deliveryDate?: string;
+        deliveryWindow?: string;
+        notes?: string;
+        contactName?: string;
+        contactPhone?: string;
+      },
+      token: string,
+    ) =>
+      apiFetch<SkipHireOrder>(`/skip-hire/${id}/amend`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      }),
+
+    /** Buyer: request early collection of a DELIVERED skip. */
+    requestPickup: (id: string, token: string) =>
+      apiFetch<{ ok: boolean; message: string }>(`/skip-hire/${id}/request-pickup`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
+    /** Buyer: extend the hire period by N additional days on a DELIVERED order. */
+    extendHire: (id: string, additionalDays: number, token: string) =>
+      apiFetch<SkipHireOrder>(`/skip-hire/${id}/extend`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ additionalDays }),
+      }),
   },
 };

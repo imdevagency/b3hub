@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#111827',
   },
   right: { marginLeft: 'auto' as any },

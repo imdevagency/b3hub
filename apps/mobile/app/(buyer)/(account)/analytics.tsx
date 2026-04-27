@@ -164,7 +164,7 @@ const s = StyleSheet.create({
   },
   tileValue: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: -0.5,
     color: colors.textPrimary,
     marginTop: 4,
@@ -195,6 +195,6 @@ const s = StyleSheet.create({
   },
   bannerLeft: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1 },
   bannerText: { flex: 1, gap: 3 },
-  bannerTitle: { fontSize: 14, fontWeight: '700', color: '#1d4ed8' },
+  bannerTitle: { fontSize: 14, fontWeight: '600', color: '#1d4ed8' },
   bannerSub: { fontSize: 12, color: '#3b82f6', lineHeight: 17 },
 });

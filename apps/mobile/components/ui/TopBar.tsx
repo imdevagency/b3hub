@@ -354,8 +354,8 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   badge: {
     position: 'absolute',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textDisabled,
     marginBottom: 16,
     textAlign: 'center',
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   },
   roleLabel: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   roleLabelActive: {

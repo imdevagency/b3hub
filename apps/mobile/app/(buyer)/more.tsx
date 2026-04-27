@@ -466,7 +466,7 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -474,8 +474,8 @@ const s = StyleSheet.create({
   avatarText: {
     color: '#fff',
     fontSize: 18,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     letterSpacing: 0.5,
   },
   identityName: {
@@ -533,8 +533,8 @@ const s = StyleSheet.create({
   tileBadgeText: {
     color: '#fff',
     fontSize: 10,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
 
   // Section label
@@ -609,7 +609,7 @@ const s = StyleSheet.create({
     gap: 10,
   },
   guestPrimary: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',

@@ -391,7 +391,7 @@ export default function SellerEarningsScreen() {
       >
         {user?.isCompany && user.payoutEnabled === false && (
           <View className="mb-4 mx-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <Text className="text-orange-900 font-bold mb-1">Aktivizēt izmaksas</Text>
+            <Text className="text-orange-900 font-semibold mb-1">Aktivizēt izmaksas</Text>
             <Text className="text-orange-800 text-sm mb-3">
               Pievienojiet bankas kontu, lai saņemtu ienēmumus.
             </Text>
@@ -481,7 +481,7 @@ export default function SellerEarningsScreen() {
                     <Text
                       style={[
                         s.an12MonthLabel,
-                        isThisMonth && { color: colors.textPrimary, fontWeight: '700' },
+                        isThisMonth && { color: colors.textPrimary, fontWeight: '600' },
                       ]}
                     >
                       {mo}/{y?.slice(2)}
@@ -656,7 +656,7 @@ const s = StyleSheet.create({
   },
   heroAmount: {
     fontSize: 48,
-    fontWeight: '800', // Heavy weight like Uber/Lyft
+    fontWeight: '700', // Heavy weight like Uber/Lyft
     color: colors.textPrimary,
     letterSpacing: -1.5,
   },
@@ -715,7 +715,7 @@ const s = StyleSheet.create({
   },
   metricValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   metricLabel: {
@@ -736,7 +736,7 @@ const s = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 16,
   },
@@ -758,7 +758,7 @@ const s = StyleSheet.create({
     padding: 16,
     gap: 4,
   },
-  anCardValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  anCardValue: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
   anCardLabel: { fontSize: 11, color: colors.textDisabled, fontWeight: '500', marginBottom: 6 },
   anBar: {
     height: 4,
@@ -780,7 +780,7 @@ const s = StyleSheet.create({
   },
   an12Label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.4,
@@ -814,14 +814,14 @@ const s = StyleSheet.create({
   anMatRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   anMatRank: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textDisabled,
     width: 16,
     textAlign: 'center',
   },
   anMatLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   anMatLabel: { fontSize: 13, fontWeight: '500', color: colors.textSecondary, flex: 1 },
-  anMatAmt: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  anMatAmt: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -853,7 +853,7 @@ const s = StyleSheet.create({
   },
   listAmount: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
 });

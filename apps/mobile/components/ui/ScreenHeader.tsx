@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
     flex: 1,
   },

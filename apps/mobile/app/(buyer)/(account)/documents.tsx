@@ -174,7 +174,7 @@ function DocRow({ doc }: { doc: ApiDocument }) {
         <Icon size={20} color={meta.iconColor} />
       </View>
       <View className="flex-1 justify-center gap-0.5 pr-2">
-        <Text className="text-gray-900 font-bold text-base tracking-tight" numberOfLines={1}>
+        <Text className="text-gray-900 font-semibold text-base tracking-tight" numberOfLines={1}>
           {doc.title}
         </Text>
         <View className="flex-row items-center mt-1">
@@ -264,13 +264,13 @@ function DocsTab() {
             return (
               <TouchableOpacity
                 key={tb.key}
-                className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-gray-900' : 'bg-gray-100'}`}
+                className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
                 onPress={() => {
                   haptics.light();
                   setFilter(tb.key);
                 }}
               >
-                <Text className={`font-bold text-sm ${active ? 'text-white' : 'text-gray-900'}`}>
+                <Text className={`font-semibold text-sm ${active ? 'text-white' : 'text-gray-900'}`}>
                   {tb.label}
                 </Text>
                 {count > 0 && (
@@ -351,7 +351,7 @@ function InvoiceRow({ invoice, onPress }: { invoice: ApiInvoice; onPress: () => 
     >
       <View className="flex-1 gap-1.5 pr-4">
         <View className="flex-row justify-between items-center">
-          <Text className="text-gray-900 font-bold text-base tracking-tight">
+          <Text className="text-gray-900 font-semibold text-base tracking-tight">
             #{invoice.invoiceNumber}
           </Text>
           <Text
@@ -398,7 +398,7 @@ function InvoiceDetailSheet({
     <BottomSheet visible={visible} onClose={onClose} scrollable>
       <View className="pb-4">
         <View className="items-center py-6 mb-2 border-b border-gray-100">
-          <Text className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-1">
+          <Text className="text-gray-400 font-semibold text-xs uppercase tracking-widest mb-1">
             Kopā jāmaksā
           </Text>
           <Text
@@ -413,12 +413,12 @@ function InvoiceDetailSheet({
         <View className="px-2">
           <View className="flex-row justify-between py-2.5">
             <Text className="text-gray-500 text-sm">Rēķins</Text>
-            <Text className="text-gray-900 font-bold text-sm">#{inv.invoiceNumber}</Text>
+            <Text className="text-gray-900 font-semibold text-sm">#{inv.invoiceNumber}</Text>
           </View>
           {inv.order && (
             <View className="flex-row justify-between py-2.5 border-b border-gray-100">
               <Text className="text-gray-500 text-sm">Pasūtījums</Text>
-              <Text className="text-gray-900 font-bold text-sm">#{inv.order.orderNumber}</Text>
+              <Text className="text-gray-900 font-semibold text-sm">#{inv.order.orderNumber}</Text>
             </View>
           )}
 
@@ -431,7 +431,7 @@ function InvoiceDetailSheet({
             <Text className="text-gray-900 font-medium text-sm">{fmtEur(inv.vatAmount)}</Text>
           </View>
           <View className="flex-row justify-between py-3 mt-1 border-t border-gray-100">
-            <Text className="text-gray-900 font-bold text-base">Kopā</Text>
+            <Text className="text-gray-900 font-semibold text-base">Kopā</Text>
             <Text className="text-gray-900 font-black text-lg">{fmtEur(inv.total)}</Text>
           </View>
 
@@ -443,7 +443,7 @@ function InvoiceDetailSheet({
             <View className="flex-row justify-between py-2.5">
               <Text className="text-gray-500 text-sm">Apmaksas termiņš</Text>
               <Text
-                className={`font-bold text-sm ${inv.status === 'OVERDUE' ? 'text-red-600' : 'text-gray-900'}`}
+                className={`font-semibold text-sm ${inv.status === 'OVERDUE' ? 'text-red-600' : 'text-gray-900'}`}
               >
                 {invFmtDate(inv.dueDate)}
               </Text>
@@ -452,7 +452,7 @@ function InvoiceDetailSheet({
           {inv.paidAt && (
             <View className="flex-row justify-between py-2.5">
               <Text className="text-gray-500 text-sm">Apmaksāts</Text>
-              <Text className="text-green-600 font-bold text-sm">{invFmtDate(inv.paidAt)}</Text>
+              <Text className="text-green-600 font-semibold text-sm">{invFmtDate(inv.paidAt)}</Text>
             </View>
           )}
 
@@ -476,7 +476,7 @@ function InvoiceDetailSheet({
             ) : (
               <>
                 <Download size={20} color="#111827" />
-                <Text className="text-gray-900 font-bold text-base ml-2">Lejupielādēt PDF</Text>
+                <Text className="text-gray-900 font-semibold text-base ml-2">Lejupielādēt PDF</Text>
               </>
             )}
           </TouchableOpacity>
@@ -550,7 +550,7 @@ function InvoicesTab() {
   return (
     <>
       <View className="px-5 pt-8 pb-6 border-b border-gray-100">
-        <Text className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-1">
+        <Text className="text-gray-400 font-semibold text-xs uppercase tracking-wider mb-1">
           Kopā apmaksājams
         </Text>
         <Text
@@ -570,14 +570,14 @@ function InvoicesTab() {
           {INV_FILTERS.map((f) => (
             <TouchableOpacity
               key={f.key}
-              className={`px-4 py-2.5 rounded-full flex-row items-center ${filter === f.key ? 'bg-gray-900' : 'bg-gray-100'}`}
+              className={`px-4 py-2.5 rounded-full flex-row items-center ${filter === f.key ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
               onPress={() => {
                 haptics.light();
                 setFilter(f.key);
               }}
             >
               <Text
-                className={`font-bold text-sm ${filter === f.key ? 'text-white' : 'text-gray-900'}`}
+                className={`font-semibold text-sm ${filter === f.key ? 'text-white' : 'text-gray-900'}`}
               >
                 {f.label}
               </Text>
@@ -642,7 +642,7 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
       </View>
       <View className="flex-1">
         <View className="flex-row justify-between mb-1">
-          <Text className="text-gray-900 font-bold text-base tracking-tight">
+          <Text className="text-gray-900 font-semibold text-base tracking-tight">
             {WASTE_TYPE_LABELS[item.wasteType] ?? item.wasteType}
           </Text>
           <Text className="text-gray-900 font-black text-base">{item.weight.toFixed(1)}t</Text>
@@ -667,7 +667,7 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
             onPress={() => Linking.openURL(item.certificateUrl!)}
           >
             <FileDown size={16} color="#111827" className="mr-2" />
-            <Text className="text-gray-900 font-bold " style={{ fontSize: 13 }}>
+            <Text className="text-gray-900 font-semibold " style={{ fontSize: 13 }}>
               Skatīt sertifikātu
             </Text>
           </TouchableOpacity>
@@ -720,21 +720,21 @@ function CertsTab() {
       <View className="flex-row px-5 py-6 bg-white border-b border-gray-100 items-center justify-between">
         <View className="items-center">
           <Text className="text-gray-900 font-black text-2xl">{certified.length}</Text>
-          <Text className="text-gray-500 font-bold text-xs uppercase">Sertificēti</Text>
+          <Text className="text-gray-500 font-semibold text-xs uppercase">Sertificēti</Text>
         </View>
         <View className="h-8 w-[1px] bg-gray-200" />
         <View className="items-center">
           <Text className="text-gray-900 font-black text-2xl">
             {records.length - certified.length}
           </Text>
-          <Text className="text-gray-500 font-bold text-xs uppercase">Gaida</Text>
+          <Text className="text-gray-500 font-semibold text-xs uppercase">Gaida</Text>
         </View>
         <View className="h-8 w-[1px] bg-gray-200" />
         <View className="items-center">
           <Text className="text-gray-900 font-black text-2xl">
             {records.reduce((a, r) => a + r.weight, 0).toFixed(1)}t
           </Text>
-          <Text className="text-gray-500 font-bold text-xs uppercase">Kopā</Text>
+          <Text className="text-gray-500 font-semibold text-xs uppercase">Kopā</Text>
         </View>
       </View>
       <ScrollView
@@ -768,7 +768,7 @@ export default function DocumentsScreen() {
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
       <View className="px-5 pt-6 pb-2">
         <Text
-          className=" font-bold tracking-tight text-gray-900 leading-tight"
+          className=" font-semibold tracking-tight text-gray-900 leading-tight"
           style={{ fontSize: 32 }}
         >
           Dokumenti
@@ -790,7 +790,7 @@ export default function DocumentsScreen() {
                   }}
                 >
                   <Text
-                    className={`font-bold text-sm ${active ? 'text-gray-900' : 'text-gray-500'}`}
+                    className={`font-semibold text-sm ${active ? 'text-gray-900' : 'text-gray-500'}`}
                   >
                     {tb.label}
                   </Text>

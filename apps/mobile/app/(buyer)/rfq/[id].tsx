@@ -346,12 +346,34 @@ export default function RfqDetailScreen() {
                 {resp.notes}
               </Text>
             )}
-            {resp.validUntil && (
-              <Text style={ss.validUntil}>Derīgs līdz {formatDateShort(resp.validUntil)}</Text>
-            )}
+            {resp.validUntil && (() => {
+              const ms = new Date(resp.validUntil).getTime() - Date.now();
+              const expired = ms <= 0;
+              const urgent = !expired && ms < 24 * 60 * 60 * 1000;
+              const hoursLeft = Math.max(0, Math.ceil(ms / (60 * 60 * 1000)));
+              const daysLeft = Math.ceil(hoursLeft / 24);
+              if (expired) {
+                return (
+                  <View style={ss.expiredPill}>
+                    <Text style={ss.expiredPillText}>Piedāvājums beidzies</Text>
+                  </View>
+                );
+              }
+              return (
+                <View style={[ss.validityPill, urgent && ss.validityPillUrgent]}>
+                  <Clock size={12} color={urgent ? '#b91c1c' : colors.textMuted} />
+                  <Text style={[ss.validityPillText, urgent && ss.validityPillTextUrgent]}>
+                    {urgent
+                      ? `Beidzas pēc ${hoursLeft}h`
+                      : `Derīgs vēl ${daysLeft} d. (līdz ${formatDateShort(resp.validUntil)})`}
+                  </Text>
+                </View>
+              );
+            })()}
             {rfq.status !== 'ACCEPTED' &&
               rfq.status !== 'CANCELLED' &&
-              rfq.status !== 'EXPIRED' && (
+              rfq.status !== 'EXPIRED' &&
+              (!resp.validUntil || new Date(resp.validUntil).getTime() > Date.now()) && (
                 <TouchableOpacity
                   style={[ss.acceptBtn, accepting === resp.id && { opacity: 0.6 }]}
                   onPress={() => {
@@ -450,7 +472,7 @@ const ss = StyleSheet.create({
     backgroundColor: colors.bgSubtle,
     borderColor: colors.border,
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   statusPill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
@@ -472,11 +494,11 @@ const ss = StyleSheet.create({
   },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   summaryLabel: { fontSize: 14, color: colors.textMuted, width: 90 }, // slightly larger label
-  summaryValue: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  summaryValue: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   summaryDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }, // light divider
 
   // Section title
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginTop: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginTop: 8 },
 
   // Empty responses
   emptyResponses: {
@@ -488,7 +510,7 @@ const ss = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f3f4f6',
   },
-  emptyResponsesTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  emptyResponsesTitle: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, textAlign: 'center' },
   emptyResponsesDesc: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
 
   // Response card
@@ -511,9 +533,9 @@ const ss = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 4,
   },
-  bestBadgeText: { color: colors.white, fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
+  bestBadgeText: { color: colors.white, fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
   responseTop: { gap: 2 },
-  supplierName: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  supplierName: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   supplierCity: { fontSize: 13, color: colors.textMuted },
   priceRow: {
     flexDirection: 'row',
@@ -521,7 +543,7 @@ const ss = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  priceMain: { fontSize: 24, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 },
+  priceMain: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5 },
   priceSub: { fontSize: 13, color: colors.textMuted, marginTop: 1 },
   etaChip: {
     backgroundColor: colors.bgMuted,
@@ -529,9 +551,34 @@ const ss = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  etaText: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  etaText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   respNotes: { fontSize: 13, color: colors.textMuted, lineHeight: 20, marginTop: 4 },
   validUntil: { fontSize: 12, color: colors.textDisabled, marginTop: 2 },
+  validityPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.bgMuted,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 8,
+  },
+  validityPillUrgent: {
+    backgroundColor: '#fef2f2',
+  },
+  validityPillText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  validityPillTextUrgent: { color: '#b91c1c' },
+  expiredPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 8,
+  },
+  expiredPillText: { fontSize: 12, fontWeight: '600', color: colors.textDisabled },
   acceptBtn: {
     backgroundColor: colors.primary,
     borderRadius: 16,
@@ -542,7 +589,7 @@ const ss = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  acceptBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  acceptBtnText: { color: colors.white, fontSize: 15, fontWeight: '600' },
   cancelBtn: {
     borderWidth: 1.5,
     borderColor: '#fecaca',
@@ -555,5 +602,5 @@ const ss = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  cancelBtnText: { color: '#ef4444', fontSize: 15, fontWeight: '700' },
+  cancelBtnText: { color: '#ef4444', fontSize: 15, fontWeight: '600' },
 });

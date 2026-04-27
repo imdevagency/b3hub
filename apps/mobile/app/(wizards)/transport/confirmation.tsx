@@ -236,7 +236,7 @@ const s = StyleSheet.create({
   headerWrap: { paddingHorizontal: 28, alignItems: 'center', marginBottom: 28 },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 10,
@@ -305,7 +305,7 @@ const s = StyleSheet.create({
     borderTopColor: colors.border,
   },
   estimatedLabel: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
-  estimatedValue: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  estimatedValue: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
 
   btns: { paddingHorizontal: 20, gap: 10 },
   btnPrimary: {
@@ -315,7 +315,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   btnSecondary: {
     backgroundColor: colors.bgMuted,
     borderRadius: 14,

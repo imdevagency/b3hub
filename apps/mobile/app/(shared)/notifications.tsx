@@ -294,7 +294,7 @@ export default function NotificationsScreen() {
               {markingAll ? (
                 <ActivityIndicator size="small" color="#111827" />
               ) : (
-                <Text className="text-sm font-bold text-gray-900">Atzīmēt</Text>
+                <Text className="text-sm font-semibold text-gray-900">Atzīmēt</Text>
               )}
             </TouchableOpacity>
           ) : undefined
@@ -319,7 +319,7 @@ export default function NotificationsScreen() {
               <View className="w-16 h-16 rounded-full bg-gray-50 items-center justify-center mb-4 border border-gray-100">
                 <Bell size={28} color="#d1d5db" strokeWidth={1.5} />
               </View>
-              <Text className="text-xl font-bold text-gray-900 mb-2">Nav jaunu paziņojumu</Text>
+              <Text className="text-xl font-semibold text-gray-900 mb-2">Nav jaunu paziņojumu</Text>
               <Text className="text-base text-gray-500 font-medium">
                 Šeit parādīsies jūsu paziņojumi
               </Text>

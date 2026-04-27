@@ -458,7 +458,7 @@ const s = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     textTransform: 'uppercase',
   },
@@ -490,14 +490,14 @@ const s = StyleSheet.create({
   },
   sheetHeader: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 24 },
   greetingLabel: { fontSize: 20, color: colors.textMuted, fontWeight: '500' },
-  greetingName: { fontSize: 20, color: colors.textPrimary, fontWeight: '800', marginLeft: 6 },
+  greetingName: { fontSize: 20, color: colors.textPrimary, fontWeight: '700', marginLeft: 6 },
 
   // Stats Grid
   statsContainer: { flexDirection: 'row', marginBottom: 24 },
   statBox: { flex: 1 },
   statValue: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -0.5,
     marginBottom: 4,
@@ -520,7 +520,7 @@ const s = StyleSheet.create({
     marginBottom: 24,
   },
   primaryActionActive: { backgroundColor: colors.success },
-  primaryActionText: { color: colors.white, fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+  primaryActionText: { color: colors.white, fontSize: 17, fontWeight: '700', letterSpacing: 0.5 },
   noJobsHint: { fontSize: 13, color: colors.textDisabled, textAlign: 'center', marginTop: 10 },
 
   // Vehicle first-run prompt
@@ -545,7 +545,7 @@ const s = StyleSheet.create({
   },
   vehiclePromptTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 2,
   },
@@ -567,7 +567,7 @@ const s = StyleSheet.create({
   },
   upcomingSectionTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -587,7 +587,7 @@ const s = StyleSheet.create({
   },
   upcomingCardLeft: { flex: 1, marginRight: 8 },
   upcomingTime: { fontSize: 11, fontWeight: '600', color: colors.textMuted, marginBottom: 2 },
-  upcomingRoute: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  upcomingRoute: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   upcomingCardRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  upcomingEarning: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  upcomingEarning: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
 });

@@ -48,6 +48,8 @@ export type WizardLayoutProps = {
   ctaLoading?: boolean;
   /** Optional custom content to left of CTA in footer */
   footerLeft?: React.ReactNode;
+  /** Hide the bottom bar completely */
+  hideFooter?: boolean;
 };
 
 export function WizardLayout({
@@ -62,6 +64,7 @@ export function WizardLayout({
   ctaDisabled,
   ctaLoading,
   footerLeft,
+  hideFooter,
 }: WizardLayoutProps) {
   const insets = useSafeAreaInsets();
   const progressPct = `${Math.round((step / totalSteps) * 100)}%`;
@@ -106,34 +109,36 @@ export function WizardLayout({
       <View style={wl.content}>{children}</View>
 
       {/* ── Footer CTA ── */}
-      <View style={[wl.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-          }}
-        >
-          {footerLeft && <View style={{ flexShrink: 1 }}>{footerLeft}</View>}
-          <TouchableOpacity
-            style={[
-              wl.cta,
-              { flex: footerLeft ? 1 : undefined, width: footerLeft ? undefined : '100%' },
-              ctaDisabled && wl.ctaDisabled,
-            ]}
-            disabled={!!(ctaDisabled || ctaLoading)}
-            onPress={onCTA}
-            activeOpacity={0.88}
+      {!hideFooter && (
+        <View style={[wl.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
           >
-            {ctaLoading ? (
-              <ActivityIndicator color={ctaDisabled ? '#9ca3af' : '#fff'} />
-            ) : (
-              <Text style={[wl.ctaText, ctaDisabled && wl.ctaTextDisabled]}>{ctaLabel}</Text>
-            )}
-          </TouchableOpacity>
+            {footerLeft && <View style={{ flexShrink: 1 }}>{footerLeft}</View>}
+            <TouchableOpacity
+              style={[
+                wl.cta,
+                { flex: footerLeft ? 1 : undefined, width: footerLeft ? undefined : '100%' },
+                ctaDisabled && wl.ctaDisabled,
+              ]}
+              disabled={!!(ctaDisabled || ctaLoading)}
+              onPress={onCTA}
+              activeOpacity={0.88}
+            >
+              {ctaLoading ? (
+                <ActivityIndicator color={ctaDisabled ? '#9ca3af' : '#fff'} />
+              ) : (
+                <Text style={[wl.ctaText, ctaDisabled && wl.ctaTextDisabled]}>{ctaLabel}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -176,7 +181,7 @@ const wl = StyleSheet.create({
   },
   stepCaption: {
     fontSize: 12,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textDisabled,
     letterSpacing: 1.0,
     textTransform: 'uppercase',
@@ -184,7 +189,7 @@ const wl = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
     color: colors.textPrimary,
     letterSpacing: -1,
     lineHeight: 38,

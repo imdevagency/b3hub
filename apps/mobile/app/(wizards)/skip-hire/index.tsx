@@ -50,6 +50,7 @@ import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
 import { colors } from '@/lib/theme';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
+import { InfoSection } from '@/components/ui/InfoSection';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 // Module-level constant — statuses eligible to link a skip hire to
@@ -153,7 +154,7 @@ export default function OrderWizard() {
     if (step !== 4 || !selectedSize || !picked) return;
     setQuotesLoading(true);
     api.skipHire
-      .getQuotes({ size: selectedSize, location: picked.address, date: selectedDay })
+      .getQuotes({ size: selectedSize, location: picked.address, date: selectedDay! })
       .then((q) => setQuotes(q))
       .catch(() => setQuotes([]))
       .finally(() => setQuotesLoading(false));
@@ -241,7 +242,7 @@ export default function OrderWizard() {
     }
     if (!state.location || !state.wasteCategory || !state.skipSize) return;
     setSubmitting(true);
-    setDeliveryDate(selectedDay);
+    setDeliveryDate(selectedDay!);
     try {
       const order = await api.skipHire.create(
         {
@@ -250,7 +251,7 @@ export default function OrderWizard() {
           ...(state.locationLng != null ? { lng: state.locationLng } : {}),
           wasteCategory: state.wasteCategory,
           skipSize: state.skipSize,
-          deliveryDate: selectedDay,
+          deliveryDate: selectedDay!,
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           hireDays,
           paymentMethod,
@@ -619,15 +620,11 @@ export default function OrderWizard() {
             contentContainerStyle={s.contentPad}
             showsVerticalScrollIndicator={false}
           >
-            {/* Summary */}
-            <SectionLabel label="Kopsavilkums" />
-            <View style={s.summaryCard}>
-              <View style={s.addressRow}>
-                <MapPin size={14} color="#374151" />
-                <Text style={s.addressValue} numberOfLines={2}>
-                  {picked?.address ?? state.location ?? '—'}
-                </Text>
-              </View>
+            <InfoSection icon={<MapPin size={18} color="#6b7280" />} title="Kopsavilkums">
+              <DetailRow
+                label="Adrese"
+                value={picked?.address ?? state.location ?? '—'}
+              />
               <DetailRow
                 label="Atkritumu veids"
                 value={
@@ -642,7 +639,7 @@ export default function OrderWizard() {
                   selectedSize ? (t.skipHire.step3.sizes[selectedSize]?.label ?? selectedSize) : '—'
                 }
               />
-              <DetailRow label="Piegādes datums" value={formatDate(selectedDay)} />
+              <DetailRow label="Piegādes datums" value={formatDate(selectedDay!)} />
               <DetailRow
                 label="Piegādes laiks"
                 value={
@@ -653,165 +650,163 @@ export default function OrderWizard() {
                       : 'Jebkurā laikā'
                 }
               />
-              <DetailRow label="Cena (bez PVN)" value={`€${price}`} />
+              <View style={{ height: 1, backgroundColor: '#f3f4f6', marginVertical: 12, marginHorizontal: -20 }} />
+              <DetailRow label="Cena (bez PVN)" value={`€${price.toFixed(2)}`} />
               <DetailRow label="PVN 21%" value={`€${(price * 0.21).toFixed(2)}`} />
-              <DetailRow label="Kopā apmaksāt" value={`€${(price * 1.21).toFixed(2)}`} />
-            </View>
+              <DetailRow label="Kopā apmaksāt" value={`€${(price * 1.21).toFixed(2)}`} last />
+            </InfoSection>
 
-            {/* Contact */}
-            <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
-            <View style={{ gap: 10, marginBottom: 8 }}>
-              <TextInputField
-                placeholder="Kontaktpersona"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-              <TextInputField
-                placeholder="Tālrunis"
-                keyboardType="phone-pad"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-              />
-              <TextInputField
-                placeholder="Piezīmes (piem., piekļuves kods, vārtu atvēršana)"
-                multiline
-                value={notes}
-                onChangeText={setNotes}
-              />
-              <TextInputField
-                placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
-                value={bisNumber}
-                onChangeText={setBisNumber}
-                autoCapitalize="characters"
-              />
-            </View>
-
-            {/* Terms consent */}
-            <TouchableOpacity
-              style={s.termsRow}
-              onPress={() => setTermsAccepted((v) => !v)}
-              activeOpacity={0.7}
-            >
-              <View style={[s.saveAddrCheck, termsAccepted && s.saveAddrCheckActive]}>
-                {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+            <InfoSection icon={<Bookmark size={18} color="#6b7280" />} title="Kontaktinformācija">
+              <View style={{ gap: 12 }}>
+                <TextInputField
+                  placeholder="Kontaktpersona"
+                  value={contactName}
+                  onChangeText={setContactName}
+                />
+                <TextInputField
+                  placeholder="Tālrunis"
+                  keyboardType="phone-pad"
+                  value={contactPhone}
+                  onChangeText={setContactPhone}
+                />
+                <TextInputField
+                  placeholder="Piezīmes (piem., piekļuves kods, vārtu atvēršana)"
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                />
+                <TextInputField
+                  placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
+                  value={bisNumber}
+                  onChangeText={setBisNumber}
+                  autoCapitalize="characters"
+                />
               </View>
-              <Text style={s.termsText}>
-                Piekrītu <Text style={s.termsLink}>lietošanas noteikumiem</Text> un{' '}
-                <Text style={s.termsLink}>privātuma politikai</Text>
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={s.termsRow}
+                onPress={() => setTermsAccepted((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <View style={[s.saveAddrCheck, termsAccepted && s.saveAddrCheckActive]}>
+                  {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                </View>
+                <Text style={s.termsText}>
+                  Piekrītu <Text style={s.termsLink}>lietošanas noteikumiem</Text> un{' '}
+                  <Text style={s.termsLink}>privātuma politikai</Text>
+                </Text>
+              </TouchableOpacity>
+            </InfoSection>
 
-            {/* Payment method */}
-            <SectionLabel label="Maksājuma veids" style={{ marginTop: 20 }} />
-            <View style={{ gap: 8 }}>
-              {(
-                [
+            <InfoSection icon={<Check size={18} color="#6b7280" />} title="Maksājuma veids">
+              <View style={{ gap: 10 }}>
+                {(
                   [
-                    'CARD',
-                    '💳 Ar karti (Paysera)',
-                    'Tūlītējs maksājums ar debetkarti vai kredītkarti',
-                  ],
-                  ['INVOICE', '🧾 Priekšapmaksas rēķins', 'Rēķins tiks nosūtīts uz e-pastu'],
-                ] as const
-              ).map(([val, label, sub]) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
-                  onPress={() => setPaymentMethod(val)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
-                    {paymentMethod === val && <View style={s.payMethodRadioDot} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
-                    >
-                      {label}
-                    </Text>
-                    <Text style={s.payMethodSub}>{sub}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* ── Link to material order (optional) ── */}
-            <SectionLabel label="Saistīt ar materiālu pasūtījumu" style={{ marginTop: 20 }} />
-            <TouchableOpacity
-              style={s.matLinkToggle}
-              onPress={() => setShowMatLink((v) => !v)}
-              activeOpacity={0.75}
-            >
-              <Link2 size={14} color="#059669" />
-              <Text style={s.matLinkToggleText}>
-                {linkedMaterialOrderId
-                  ? `Saistīts: #${matOrders.find((o) => o.id === linkedMaterialOrderId)?.orderNumber ?? '...'}`
-                  : 'Izvēlēties pasūtījumu (neobligāti)'}
-              </Text>
-              {showMatLink ? (
-                <ChevronUp size={14} color="#6b7280" />
-              ) : (
-                <ChevronDown size={14} color="#6b7280" />
-              )}
-            </TouchableOpacity>
-
-            {showMatLink && (
-              <View style={s.matOrderList}>
-                {matOrdersLoading ? (
-                  <ActivityIndicator size="small" color="#374151" style={{ margin: 12 }} />
-                ) : matOrders.length === 0 ? (
-                  <Text style={s.matOrderEmpty}>Nav aktīvu materiālu pasūtījumu</Text>
-                ) : (
-                  <>
-                    {linkedMaterialOrderId && (
-                      <TouchableOpacity
-                        style={s.matOrderRow}
-                        onPress={() => setLinkedMaterialOrderId(null)}
-                        activeOpacity={0.75}
+                    [
+                      'CARD',
+                      '💳 Ar karti (Paysera)',
+                      'Tūlītējs maksājums ar debetkarti vai kredītkarti',
+                    ],
+                    ['INVOICE', '🧾 Priekšapmaksas rēķins', 'Rēķins tiks nosūtīts uz e-pastu'],
+                  ] as const
+                ).map(([val, label, sub]) => (
+                  <TouchableOpacity
+                    key={val}
+                    style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
+                    onPress={() => setPaymentMethod(val)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
+                      {paymentMethod === val && <View style={s.payMethodRadioDot} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
                       >
-                        <Text style={[s.matOrderNum, { color: colors.textMuted }]}>
-                          Noņemt saiti
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {matOrders.map((o) => {
-                      const selected = o.id === linkedMaterialOrderId;
-                      const name = o.items?.[0]?.material?.name ?? '—';
-                      return (
+                        {label}
+                      </Text>
+                      <Text style={s.payMethodSub}>{sub}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </InfoSection>
+
+            <InfoSection icon={<Link2 size={18} color="#6b7280" />} title="Saistītie pasūtījumi">
+              <TouchableOpacity
+                style={s.matLinkToggle}
+                onPress={() => setShowMatLink((v) => !v)}
+                activeOpacity={0.75}
+              >
+                <Text style={s.matLinkToggleText}>
+                  {linkedMaterialOrderId
+                    ? `Saistīts: #${matOrders.find((o) => o.id === linkedMaterialOrderId)?.orderNumber ?? '...'}`
+                    : 'Izvēlēties pasūtījumu (neobligāti)'}
+                </Text>
+                {showMatLink ? (
+                  <ChevronUp size={16} color="#059669" />
+                ) : (
+                  <ChevronDown size={16} color="#059669" />
+                )}
+              </TouchableOpacity>
+
+              {showMatLink && (
+                <View style={s.matOrderList}>
+                  {matOrdersLoading ? (
+                    <ActivityIndicator size="small" color="#374151" style={{ margin: 12 }} />
+                  ) : matOrders.length === 0 ? (
+                    <Text style={s.matOrderEmpty}>Nav aktīvu materiālu pasūtījumu</Text>
+                  ) : (
+                    <>
+                      {linkedMaterialOrderId && (
                         <TouchableOpacity
-                          key={o.id}
-                          style={[s.matOrderRow, selected && s.matOrderRowActive]}
-                          onPress={() => {
-                            setLinkedMaterialOrderId(o.id);
-                            setShowMatLink(false);
-                          }}
+                          style={s.matOrderRow}
+                          onPress={() => setLinkedMaterialOrderId(null)}
                           activeOpacity={0.75}
                         >
-                          <View style={{ flex: 1 }}>
-                            <Text style={[s.matOrderNum, selected && { color: '#fff' }]}>
-                              #{o.orderNumber}
-                            </Text>
-                            <Text
-                              style={[s.matOrderName, selected && { color: '#d1fae5' }]}
-                              numberOfLines={1}
-                            >
-                              {name}
-                            </Text>
-                          </View>
-                          {selected && (
-                            <View style={s.matOrderCheck}>
-                              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>
-                                ✓
+                          <Text style={[s.matOrderNum, { color: colors.textMuted }]}>
+                            Noņemt saiti
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {matOrders.map((o) => {
+                        const selected = o.id === linkedMaterialOrderId;
+                        const name = o.items?.[0]?.material?.name ?? '—';
+                        return (
+                          <TouchableOpacity
+                            key={o.id}
+                            style={[s.matOrderRow, selected && s.matOrderRowActive]}
+                            onPress={() => {
+                              setLinkedMaterialOrderId(o.id);
+                              setShowMatLink(false);
+                            }}
+                            activeOpacity={0.75}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text style={[s.matOrderNum, selected && { color: '#fff' }]}>
+                                #{o.orderNumber}
+                              </Text>
+                              <Text
+                                style={[s.matOrderName, selected && { color: '#d1fae5' }]}
+                                numberOfLines={1}
+                              >
+                                {name}
                               </Text>
                             </View>
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </>
-                )}
-              </View>
-            )}
+                            {selected && (
+                              <View style={s.matOrderCheck}>
+                                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>
+                                  ✓
+                                </Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </>
+                  )}
+                </View>
+              )}
+            </InfoSection>
 
             <View style={{ height: 16 }} />
           </ScrollView>
@@ -878,8 +873,8 @@ const s = StyleSheet.create({
   },
   dayNum: {
     fontSize: 20,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginVertical: 2,
   },
@@ -908,13 +903,13 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgMuted,
   },
   periodChipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#F9423A',
+    borderColor: '#F9423A',
   },
   periodChipMain: {
     fontSize: 14,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   periodChipSub: {
@@ -987,7 +982,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
-  windowChipActive: { backgroundColor: '#000', borderColor: '#000' },
+  windowChipActive: { backgroundColor: '#F9423A', borderColor: '#F9423A' },
   windowChipText: {
     fontSize: 14,
     color: colors.textSecondary,
@@ -1044,7 +1039,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveAddrCheckActive: { backgroundColor: '#000', borderColor: '#000' },
+  saveAddrCheckActive: { backgroundColor: '#F9423A', borderColor: '#F9423A' },
   saveAddrLabel: {
     fontSize: 15,
     fontFamily: 'Inter_600SemiBold',
@@ -1155,8 +1150,8 @@ const s = StyleSheet.create({
   },
   matOrderNum: {
     fontSize: 13,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 2,
   },
@@ -1190,8 +1185,8 @@ const s = StyleSheet.create({
   },
   successTitle: {
     fontSize: 24,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 20,
     marginBottom: 8,
@@ -1206,8 +1201,8 @@ const s = StyleSheet.create({
   },
   jobBadgeText: {
     fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   successBtn: {
@@ -1216,7 +1211,7 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
   },
-  successBtnText: { fontSize: 16, fontFamily: 'Inter_700Bold', fontWeight: '700', color: '#fff' },
+  successBtnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#fff' },
   payMethodRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1228,7 +1223,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgSubtle,
   },
   payMethodRowActive: {
-    borderColor: '#111827',
+    borderColor: '#F9423A',
     backgroundColor: '#fff',
   },
   payMethodRadio: {
@@ -1241,12 +1236,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  payMethodRadioActive: { borderColor: '#111827' },
+  payMethodRadioActive: { borderColor: '#F9423A' },
   payMethodRadioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
   },
   payMethodLabel: {
     fontSize: 14,

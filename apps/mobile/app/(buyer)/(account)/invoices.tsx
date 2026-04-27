@@ -175,7 +175,7 @@ function InvoiceModal({
             <Text
               style={[
                 m.lineVal,
-                inv.status === 'OVERDUE' && { color: colors.danger, fontWeight: '700' },
+                inv.status === 'OVERDUE' && { color: colors.danger, fontWeight: '600' },
               ]}
             >
               {fmtDate(inv.dueDate)}
@@ -472,7 +472,7 @@ const s = StyleSheet.create({
   },
   summaryAmount: {
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -1.5,
     marginTop: 2,
@@ -508,7 +508,7 @@ const s = StyleSheet.create({
   },
   segmentActive: { backgroundColor: colors.bgMuted },
   segmentText: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
-  segmentTextActive: { color: colors.textPrimary, fontWeight: '700' },
+  segmentTextActive: { color: colors.textPrimary, fontWeight: '600' },
 
   // List
   list: { flex: 1 },
@@ -526,7 +526,7 @@ const s = StyleSheet.create({
   rowLeft: { flex: 1, gap: 5 },
   rowTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   rowNum: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  rowAmount: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  rowAmount: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   rowAmountDue: { color: colors.textPrimary },
   rowBottomLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -567,7 +567,7 @@ const m = StyleSheet.create({
   },
   amountHeroVal: {
     fontSize: 42,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -1.5,
     marginTop: 4,
@@ -610,8 +610,8 @@ const m = StyleSheet.create({
   lineItemTotal: { paddingTop: 12, marginTop: 4 },
   lineLabel: { fontSize: 14, color: colors.textMuted },
   lineVal: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
-  lineTotalLabel: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  lineTotalVal: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  lineTotalLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  lineTotalVal: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
 
   // CTA
   payInfo: {

@@ -82,7 +82,7 @@ const s2 = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   cardSelected: {
-    borderColor: '#000',
+    borderColor: '#F9423A',
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -97,7 +97,7 @@ const s2 = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
   },

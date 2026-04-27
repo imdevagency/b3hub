@@ -336,12 +336,12 @@ const styles = StyleSheet.create({
   },
   avatarInitialsText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1d4ed8',
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#111827',
   },
   statusRow: {

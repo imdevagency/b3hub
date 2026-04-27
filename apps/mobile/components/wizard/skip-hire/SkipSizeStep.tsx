@@ -49,8 +49,8 @@ export function SkipSizeStep({
               ]}
             />
             <View style={s3.wheels}>
-              <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
-              <View style={[s3.wheel, isSel && { backgroundColor: '#000' }]} />
+              <View style={[s3.wheel, isSel && { backgroundColor: '#F9423A' }]} />
+              <View style={[s3.wheel, isSel && { backgroundColor: '#F9423A' }]} />
             </View>
           </View>
 
@@ -103,7 +103,7 @@ const s3 = StyleSheet.create({
     marginBottom: 6,
   },
   cardSel: {
-    borderColor: '#000',
+    borderColor: '#F9423A',
     backgroundColor: '#f8fafc',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -118,7 +118,7 @@ const s3 = StyleSheet.create({
     borderRadius: 6,
     marginLeft: 8,
   },
-  popularTxt: { color: '#4b5563', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  popularTxt: { color: '#4b5563', fontSize: 10, fontWeight: '600', letterSpacing: 0.5 },
   row: { flexDirection: 'row', alignItems: 'center', width: '100%' },
   skipWrap: { alignItems: 'center', width: 60, justifyContent: 'center' },
   skipBox: { borderRadius: 3 },

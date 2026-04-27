@@ -83,7 +83,7 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
         style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.textPrimary }}>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.textPrimary }}>
             {pass.vehiclePlate}
           </Text>
           <Text style={{ fontSize: 12, color: colors.textMuted }}>{pass.passNumber}</Text>
@@ -233,7 +233,7 @@ export default function FieldPassesScreen() {
         >
           <ExternalLink size={16} color="#2563eb" />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#1d4ed8' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#1d4ed8' }}>
               Pārvaldīt caurlaides — b3hub.lv
             </Text>
             <Text style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>

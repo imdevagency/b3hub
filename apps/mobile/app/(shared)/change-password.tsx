@@ -236,7 +236,7 @@ const s = StyleSheet.create({
     gap: 12,
   },
   backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: ACCENT },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: ACCENT },
   scroll: { flex: 1, backgroundColor: '#f2f2f7' },
   content: { padding: 20, paddingBottom: 48 },
   label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
@@ -276,5 +276,5 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.45 },
-  btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

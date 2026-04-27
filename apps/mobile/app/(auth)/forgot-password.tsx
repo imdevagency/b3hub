@@ -123,7 +123,7 @@ export default function ForgotPasswordScreen() {
                 </View>
                 <Text style={s.successTitle}>Pārbaudiet e-pastu</Text>
                 <Text style={s.successSubtitle}>
-                  Ja konts ar e-pastu <Text style={{ fontWeight: '700' }}>{email}</Text> eksistē,
+                  Ja konts ar e-pastu <Text style={{ fontWeight: '600' }}>{email}</Text> eksistē,
                   mēs esam nosūtījuši paroles atjaunošanas saiti.
                 </Text>
 
@@ -177,7 +177,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  title: { fontSize: 24, fontWeight: '600', color: colors.textPrimary, textAlign: 'center' },
   subtitle: {
     fontSize: 14,
     color: colors.textMuted,
@@ -229,7 +229,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  successTitle: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
+  successTitle: { fontSize: 24, fontWeight: '600', color: colors.textPrimary, textAlign: 'center' },
   successSubtitle: {
     fontSize: 14,
     color: colors.textMuted,
@@ -249,7 +249,7 @@ const s = StyleSheet.create({
   },
   devLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#92400e',
     textTransform: 'uppercase',
     letterSpacing: 0.5,

@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   pill: { borderRadius: 10 },
   pillMd: { paddingHorizontal: 10, paddingVertical: 4 },
   pillSm: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  text: { fontWeight: '700' },
+  text: { fontWeight: '600' },
   textMd: { fontSize: 12 },
   textSm: { fontSize: 11 },
 });

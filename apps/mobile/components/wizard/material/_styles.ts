@@ -79,7 +79,7 @@ export const s = StyleSheet.create({
   },
   truckLabel: {
     fontSize: 13,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textMuted,
   },
   truckLabelActive: {
@@ -107,7 +107,7 @@ export const s = StyleSheet.create({
     color: colors.textSecondary,
   },
   sheetItemTextActive: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
   },
 
@@ -264,7 +264,7 @@ export const s = StyleSheet.create({
   stepperValueWrap: { minWidth: 100, alignItems: 'center' },
   stepperValue: {
     fontSize: 72, // Mega large quantity size
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
     color: colors.textPrimary,
     letterSpacing: -2.5,
     includeFontPadding: false,
@@ -432,7 +432,7 @@ export const s = StyleSheet.create({
   },
   calcResultValue: {
     fontSize: 20,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
     marginTop: 2,
   },
@@ -449,14 +449,14 @@ export const s = StyleSheet.create({
   },
   calcApplyText: {
     fontSize: 14,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.white,
   },
 
   // ── Offers step ──
   offersTitle: {
     fontSize: 22,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
@@ -536,7 +536,7 @@ export const s = StyleSheet.create({
   },
   successTitle: {
     fontSize: 26,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
@@ -632,7 +632,7 @@ export const oc = StyleSheet.create({
   },
   price: {
     fontSize: 22,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },

@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
 
   searchWrapper: {
     paddingHorizontal: 12,
@@ -378,5 +378,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
   },
-  confirmBtnText: { color: colors.white, fontWeight: '700', fontSize: 16 },
+  confirmBtnText: { color: colors.white, fontWeight: '600', fontSize: 16 },
 });

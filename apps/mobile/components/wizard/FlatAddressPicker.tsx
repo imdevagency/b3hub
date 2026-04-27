@@ -526,7 +526,7 @@ const fp = StyleSheet.create({
   savedSection: { marginTop: 20, paddingHorizontal: 20 },
   savedHeader: {
     fontSize: 11,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: colors.textDisabled,
     letterSpacing: 0.8,
     textTransform: 'uppercase',

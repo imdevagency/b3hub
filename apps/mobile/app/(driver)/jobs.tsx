@@ -332,7 +332,7 @@ const JobCard = React.memo(function JobCard({
         <Text
           style={{
             fontSize: 32,
-            fontWeight: '800',
+            fontWeight: '700',
             color: colors.textPrimary,
             lineHeight: 36,
             letterSpacing: -0.5,
@@ -356,7 +356,7 @@ const JobCard = React.memo(function JobCard({
               borderRadius: 8,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textPrimary }}>
               {job.distanceKm} km
             </Text>
           </View>
@@ -371,11 +371,11 @@ const JobCard = React.memo(function JobCard({
       {/* ── Route Visual ── */}
       <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24 }}>
         <View style={{ alignItems: 'center', paddingTop: 6, width: 12 }}>
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#000' }} />
+          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#F9423A' }} />
           <View
-            style={{ width: 2, flex: 1, backgroundColor: '#000', marginVertical: 4, minHeight: 40 }}
+            style={{ width: 2, flex: 1, backgroundColor: '#F9423A', marginVertical: 4, minHeight: 40 }}
           />
-          <View style={{ width: 10, height: 10, backgroundColor: '#000' }} />
+          <View style={{ width: 10, height: 10, backgroundColor: '#F9423A' }} />
         </View>
 
         <View style={{ flex: 1, gap: 18 }}>
@@ -383,7 +383,7 @@ const JobCard = React.memo(function JobCard({
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: '700',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 marginBottom: 2,
               }}
@@ -398,7 +398,7 @@ const JobCard = React.memo(function JobCard({
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: '700',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 marginBottom: 2,
               }}
@@ -1275,7 +1275,7 @@ const styles = StyleSheet.create({
   },
   earningsStripAmount: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
   },
   earningsStripLabel: {
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  activePillLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  activePillLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
   activePillText: { flex: 1, fontSize: 12, fontWeight: '600', color: colors.textPrimary },
   activePillClear: {
     backgroundColor: '#d1d5db',
@@ -1306,7 +1306,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  activePillClearText: { fontSize: 11, fontWeight: '700', color: colors.textPrimary },
+  activePillClearText: { fontSize: 11, fontWeight: '600', color: colors.textPrimary },
 
   resultsHeader: {
     flexDirection: 'row',
@@ -1369,14 +1369,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
   },
   // Sub-styles for card content
-  routeCity: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  routeCity: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
   routeAddress: { fontSize: 13, color: colors.textMuted },
-  priceTotal: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  priceTotal: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
   pricePerTonne: { fontSize: 12, color: colors.textDisabled, fontWeight: '500' },
   metaValue: { fontSize: 13, fontWeight: '600', color: '#4b5563' },
   jobNumber: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textDisabled,
     backgroundColor: colors.bgMuted,
     paddingHorizontal: 6,
@@ -1391,7 +1391,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary,
   },
-  emptyResetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  emptyResetBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
   modalInput: {
     borderWidth: 1,
@@ -1420,7 +1420,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalSaveDisabled: { opacity: 0.5 },
-  modalSaveText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  modalSaveText: { fontSize: 15, fontWeight: '600', color: colors.white },
 
   // ── Accept Bottom Sheet ────────────────────────────────────────
   sheetJobCard: {
@@ -1440,8 +1440,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sheetJobNum: { fontSize: 13, fontWeight: '700', color: colors.textDisabled },
-  sheetJobPrice: { fontSize: 24, fontWeight: '800', color: colors.textPrimary },
+  sheetJobNum: { fontSize: 13, fontWeight: '600', color: colors.textDisabled },
+  sheetJobPrice: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
   sheetRouteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1449,7 +1449,7 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
   },
   sheetRouteDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  sheetRouteCity: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, flexShrink: 1 },
+  sheetRouteCity: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, flexShrink: 1 },
   sheetJobMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1467,7 +1467,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 8,
   },
-  sheetReturnTitle: { fontSize: 14, fontWeight: '700', color: '#166534' },
+  sheetReturnTitle: { fontSize: 14, fontWeight: '600', color: '#166534' },
   sheetReturnCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1486,9 +1486,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  sheetReturnKmText: { fontSize: 11, fontWeight: '700', color: '#166534' },
+  sheetReturnKmText: { fontSize: 11, fontWeight: '600', color: '#166534' },
   sheetReturnCity: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  sheetReturnPrice: { fontSize: 16, fontWeight: '800', color: '#166534', marginLeft: 8 },
+  sheetReturnPrice: { fontSize: 16, fontWeight: '700', color: '#166534', marginLeft: 8 },
   sheetReturnNone: {
     fontSize: 13,
     color: colors.textDisabled,
@@ -1507,7 +1507,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  sheetAcceptBtnText: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  sheetAcceptBtnText: { color: '#fff', fontWeight: '700', fontSize: 18 },
   sheetDeclineBtn: {
     alignItems: 'center',
     paddingVertical: 10,
@@ -1517,7 +1517,7 @@ const styles = StyleSheet.create({
 
   // ── Tour route optimisation ────────────────────────────────────
   filterBtnActive: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
   },
   tourBar: {
     flexDirection: 'row',
@@ -1540,19 +1540,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 48,
   },
-  tourOptBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  tourOptBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   tourTotalRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 4,
   },
-  tourTotalText: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  tourTotalText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   tourStopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1565,23 +1565,23 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     marginTop: 1,
   },
-  tourStopIndexText: { color: '#fff', fontSize: 13, fontWeight: '800' },
-  tourStopRoute: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  tourStopIndexText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  tourStopRoute: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
   tourStopMeta: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
   tourDoneBtn: {
     marginTop: 8,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
   },
-  tourDoneBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  tourDoneBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 
   // ── Avoid empty runs chip ─────────────────────────────────────
   avoidEmptyRow: {
@@ -1601,8 +1601,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   avoidEmptyChipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#F9423A',
+    borderColor: '#F9423A',
   },
   avoidEmptyChipText: {
     fontSize: 13,
@@ -1632,5 +1632,5 @@ const mapStyles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
   },
-  swipeAcceptText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  swipeAcceptText: { color: '#fff', fontSize: 12, fontWeight: '600' },
 });

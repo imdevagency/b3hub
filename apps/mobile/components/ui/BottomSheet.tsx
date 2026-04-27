@@ -221,7 +221,7 @@ const s = StyleSheet.create({
     paddingBottom: 4,
   },
   headerText: { flex: 1, marginRight: 12 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  title: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
   subtitle: { fontSize: 13, color: colors.textDisabled, marginTop: 2 },
   closeCorner: { position: 'absolute', top: 14, right: 18 },
   scrollContent: { paddingHorizontal: 24, paddingBottom: 16, gap: 2 },

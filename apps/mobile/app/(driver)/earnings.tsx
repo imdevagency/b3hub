@@ -361,7 +361,7 @@ export default function EarningsScreen() {
           <Text
             style={{
               fontSize: 32,
-              fontWeight: '800',
+              fontWeight: '700',
               color: colors.textPrimary,
               letterSpacing: -0.8,
             }}
@@ -395,7 +395,7 @@ export default function EarningsScreen() {
           <Text
             style={{
               fontSize: 32,
-              fontWeight: '800',
+              fontWeight: '700',
               color: colors.textPrimary,
               letterSpacing: -0.8,
             }}
@@ -411,7 +411,7 @@ export default function EarningsScreen() {
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '800',
+                  fontWeight: '700',
                   color: colors.textPrimary,
                   marginLeft: 8,
                 }}
@@ -433,13 +433,13 @@ export default function EarningsScreen() {
             <TouchableOpacity
               onPress={handleSetupPayouts}
               disabled={setupLoading}
-              className="bg-gray-900 py-3.5 px-6 rounded-full items-center mt-4"
+              className="bg-[#F9423A] py-3.5 px-6 rounded-full items-center mt-4"
               activeOpacity={0.8}
             >
               {setupLoading ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.white }}>
                   Iestatīt bankas kontu
                 </Text>
               )}
@@ -494,7 +494,7 @@ export default function EarningsScreen() {
             style={{
               fontSize: 14,
               color: colors.textMuted,
-              fontWeight: '700',
+              fontWeight: '600',
               textTransform: 'uppercase',
               letterSpacing: 0.5,
               marginBottom: 8,
@@ -505,7 +505,7 @@ export default function EarningsScreen() {
           <Text
             style={{
               fontSize: 64,
-              fontWeight: '800',
+              fontWeight: '700',
               color: colors.textPrimary,
               letterSpacing: -2.5,
             }}
@@ -525,7 +525,7 @@ export default function EarningsScreen() {
             <Text
               style={{
                 fontSize: 22,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
               }}
@@ -543,7 +543,7 @@ export default function EarningsScreen() {
             <Text
               style={{
                 fontSize: 22,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
               }}
@@ -561,7 +561,7 @@ export default function EarningsScreen() {
             <Text
               style={{
                 fontSize: 22,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
               }}
@@ -593,7 +593,7 @@ export default function EarningsScreen() {
                     <Text
                       style={[
                         es.barLabel,
-                        isThisMonth && { color: colors.textPrimary, fontWeight: '700' },
+                        isThisMonth && { color: colors.textPrimary, fontWeight: '600' },
                       ]}
                     >
                       {mo}/{y?.slice(2)}
@@ -664,7 +664,7 @@ export default function EarningsScreen() {
                   style={{
                     fontSize: 13,
                     color: colors.textPrimary,
-                    fontWeight: '700',
+                    fontWeight: '600',
                     letterSpacing: 0.5,
                     textTransform: 'uppercase',
                   }}
@@ -677,7 +677,7 @@ export default function EarningsScreen() {
                   <Text
                     style={{
                       fontSize: 28,
-                      fontWeight: '800',
+                      fontWeight: '700',
                       color: colors.textPrimary,
                       letterSpacing: -1,
                     }}
@@ -700,7 +700,7 @@ export default function EarningsScreen() {
                   <Text
                     style={{
                       fontSize: 28,
-                      fontWeight: '800',
+                      fontWeight: '700',
                       color: colors.textDisabled,
                       letterSpacing: -1,
                     }}
@@ -730,7 +730,7 @@ export default function EarningsScreen() {
               style={{
                 fontSize: 13,
                 color: colors.textDisabled,
-                fontWeight: '700',
+                fontWeight: '600',
                 letterSpacing: 0.5,
                 textTransform: 'uppercase',
                 marginBottom: 20,
@@ -765,7 +765,7 @@ export default function EarningsScreen() {
                     className="w-7 h-7 rounded-full items-center justify-center"
                     style={{ backgroundColor: item.color }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: colors.white }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.white }}>
                       {item.step}
                     </Text>
                   </View>
@@ -774,7 +774,7 @@ export default function EarningsScreen() {
                   )}
                 </View>
                 <View className="flex-1" style={{ paddingBottom: i < arr.length - 1 ? 16 : 0 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>
                     {item.label}
                   </Text>
                   <Text
@@ -799,7 +799,7 @@ export default function EarningsScreen() {
             <Text
               style={{
                 fontSize: 22,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
               }}
@@ -839,7 +839,7 @@ export default function EarningsScreen() {
                     <Text
                       style={{
                         fontSize: 16,
-                        fontWeight: '700',
+                        fontWeight: '600',
                         color: colors.textPrimary,
                         letterSpacing: -0.2,
                       }}
@@ -852,7 +852,7 @@ export default function EarningsScreen() {
                     </Text>
                   </View>
                   <View className="flex-row items-center" style={{ gap: 6 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>
                       {item.amount > 0 ? `€${item.amount.toFixed(2)}` : '€0.00'}
                     </Text>
                     <ChevronRight size={18} color="#d1d5db" />
@@ -870,7 +870,7 @@ export default function EarningsScreen() {
 const es = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
@@ -929,12 +929,12 @@ const es = StyleSheet.create({
   fleetTitle: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
     color: colors.textPrimary,
   },
   fleetPct: {
     fontSize: 18,
-    fontWeight: '800' as const,
+    fontWeight: '700' as const,
     color: colors.textPrimary,
     letterSpacing: -0.3,
   },

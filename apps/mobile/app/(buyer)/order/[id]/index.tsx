@@ -480,7 +480,7 @@ export default function OrderTrackingScreen() {
                               style={[
                                 styles.timelineDateText,
                                 isCurrent &&
-                                  step.key === 'enroute' && { color: ORANGE, fontWeight: '700' },
+                                  step.key === 'enroute' && { color: ORANGE, fontWeight: '600' },
                               ]}
                             >
                               {dateStr}
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     textShadowColor: 'rgba(255, 255, 255, 0.8)',
     textShadowOffset: { width: 0, height: 2 },
@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
   },
   courierName: {
     fontSize: 18,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     marginBottom: 2,
     letterSpacing: -0.3,
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
   },
   statusSectionTitle: {
     fontSize: 18,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     marginBottom: 20,
     letterSpacing: -0.3,
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timelineTitleCurrent: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     letterSpacing: -0.2,
   },
   timelineTitleFuture: {
@@ -811,8 +811,8 @@ const styles = StyleSheet.create({
   },
   terminalTitle: {
     fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: '#111827',
     marginBottom: 3,
   },

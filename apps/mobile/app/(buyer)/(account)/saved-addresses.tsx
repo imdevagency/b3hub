@@ -474,7 +474,7 @@ const s = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
-  defaultBadgeText: { fontSize: 10, fontWeight: '700', color: colors.white },
+  defaultBadgeText: { fontSize: 10, fontWeight: '600', color: colors.white },
 
   rowActions: { flexDirection: 'row', gap: 4 },
   actionBtn: {
@@ -498,7 +498,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
   modalClose: {
     width: 32,
     height: 32,
@@ -556,7 +556,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: colors.white, fontSize: 16, fontWeight: '600' },
 
   emptyAction: {
     marginTop: 16,
@@ -565,5 +565,5 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  emptyActionText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  emptyActionText: { color: colors.white, fontSize: 15, fontWeight: '600' },
 });

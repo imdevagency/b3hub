@@ -11,11 +11,12 @@ export interface OfferCardProps {
   offer: SupplierOffer;
   unit: MaterialUnit;
   isCheapest: boolean;
+  isSelected?: boolean;
   submitting: boolean;
   onSelect: () => void;
 }
 
-export function OfferCard({ offer, unit, isCheapest, submitting, onSelect }: OfferCardProps) {
+export function OfferCard({ offer, unit, isCheapest, isSelected, submitting, onSelect }: OfferCardProps) {
   const hasPerfStats =
     (offer.onTimePct != null && offer.onTimePct >= 70) ||
     (offer.fulfillmentPct != null && offer.fulfillmentPct >= 70);
@@ -27,9 +28,10 @@ export function OfferCard({ offer, unit, isCheapest, submitting, onSelect }: Off
       disabled={submitting}
       style={[
         s.card,
-        isCheapest && s.cardBest,
-        isCheapest && s.cardShadow,
-        offer.featured && !isCheapest && s.cardFeatured,
+        isCheapest && !isSelected && s.cardBest,
+        isCheapest && !isSelected && s.cardShadow,
+        offer.featured && !isCheapest && !isSelected && s.cardFeatured,
+        isSelected && s.cardSelected,
       ]}
     >
       {/* Best Deal absolute badge */}
@@ -91,10 +93,18 @@ export function OfferCard({ offer, unit, isCheapest, submitting, onSelect }: Off
 
       {/* Right Column: Price */}
       <View style={s.rightCol}>
-        {submitting ? (
+        {submitting && isSelected ? (
           <ActivityIndicator color="#111827" size="small" />
         ) : (
-          <Text style={s.totalPrice}>€{offer.totalPrice?.toFixed(2) ?? '—'}</Text>
+          <View style={{ alignItems: 'flex-end', gap: 6 }}>
+            <Text style={s.totalPrice}>€{offer.totalPrice?.toFixed(2) ?? '—'}</Text>
+            {isSelected && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <CheckCircle size={14} color="#F9423A" strokeWidth={2.5} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#F9423A' }}>Izvēlēts</Text>
+              </View>
+            )}
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -112,8 +122,15 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'visible',
   },
-  cardBest: { borderColor: '#111827' },
+  cardSelected: {
+    borderColor: '#F9423A',
+    borderWidth: 2,
+    backgroundColor: '#fffdfd',
+  },
+  cardBest: { borderColor: '#F9423A' },
   cardFeatured: { borderColor: '#7c3aed', borderWidth: 1.5 },
   cardShadow: {
     shadowColor: '#000',
@@ -139,10 +156,10 @@ const s = StyleSheet.create({
   },
   bestBadgeText: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#fff',
     textTransform: 'uppercase',
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 0.5,
   },
   featuredBadge: {
@@ -160,9 +177,9 @@ const s = StyleSheet.create({
   },
   featuredBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#7c3aed',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     letterSpacing: 0.3,
   },
   leftCol: { flex: 1, paddingRight: 16 },
@@ -174,9 +191,9 @@ const s = StyleSheet.create({
   },
   supplierName: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
     marginRight: 8,
   },
   ratingBadge: {
@@ -190,9 +207,9 @@ const s = StyleSheet.create({
   },
   ratingText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
   },
   locationText: {
     fontSize: 13,
@@ -225,8 +242,8 @@ const s = StyleSheet.create({
   rightCol: { alignItems: 'flex-end', justifyContent: 'center' },
   totalPrice: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
   },
 });

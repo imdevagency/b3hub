@@ -256,7 +256,7 @@ const s = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     flex: 1,
     letterSpacing: -0.4,
@@ -289,7 +289,7 @@ const s = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textDisabled,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -311,7 +311,7 @@ const s = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -319,7 +319,7 @@ const s = StyleSheet.create({
   },
   progressPct: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   bigProgressTrack: {
     height: 8,
@@ -412,7 +412,7 @@ const s = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     minWidth: 36,
     textAlign: 'right',
   },

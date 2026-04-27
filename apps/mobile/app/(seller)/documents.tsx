@@ -262,7 +262,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   tabBadgeActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  tabBadgeText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  tabBadgeText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
   tabBadgeTextActive: { color: colors.white },
 
   list: { flex: 1 },

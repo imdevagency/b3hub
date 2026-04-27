@@ -56,6 +56,7 @@ export default function SkipOrderDetailsScreen() {
   const [showRating, setShowRating] = useState(false);
   const [alreadyRated, setAlreadyRated] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (order && token && (order.status === 'COLLECTED' || order.status === 'COMPLETED')) {
@@ -125,6 +126,92 @@ export default function SkipOrderDetailsScreen() {
   const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
   const isTerminal =
     order.status === 'COLLECTED' || order.status === 'COMPLETED' || order.status === 'CANCELLED';
+  const canAmend = order.status === 'PENDING' || order.status === 'CONFIRMED';
+  const canRequestPickup = order.status === 'DELIVERED';
+  const canExtend = order.status === 'DELIVERED';
+  const canCallCarrier = !!(order.carrier?.phone);
+
+  const handleCallCarrier = useCallback(() => {
+    if (!order.carrier?.phone) return;
+    haptics.light();
+    Linking.openURL(`tel:${order.carrier.phone}`).catch(() =>
+      toast.error('Neizdevās atvērt telefona klientu'),
+    );
+  }, [order.carrier?.phone, toast]);
+
+  const handleRequestPickup = useCallback(() => {
+    if (!order || !token) return;
+    haptics.medium();
+    Alert.alert(
+      'Pieprasīt savākšanu',
+      'Mēs informēsim pārvadātāju, ka esat gatavs konteineru nodot. Viņi sazināsies ar jums, lai vienotos par laiku.',
+      [
+        { text: 'Atcelt', style: 'cancel' },
+        {
+          text: 'Pieprasīt',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              await api.skipHire.requestPickup(order.id, token);
+              haptics.success();
+              toast.success('Savākšanas pieprasījums nosūtīts pārvadātājam');
+            } catch (err) {
+              haptics.error();
+              toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [order, token, toast]);
+
+  const handleExtendHire = useCallback(() => {
+    if (!order || !token) return;
+    haptics.medium();
+    Alert.alert(
+      'Pagarināt nomu',
+      'Par cik dienām vēlaties pagarināt nomas periodu?',
+      [
+        { text: 'Atcelt', style: 'cancel' },
+        {
+          text: '7 dienas',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              const updated = await api.skipHire.extendHire(order.id, 7, token);
+              setOrder(updated);
+              haptics.success();
+              toast.success(`Noma pagarināta par 7 dienām`);
+            } catch (err) {
+              haptics.error();
+              toast.error(err instanceof Error ? err.message : 'Neizdevās pagarināt nomu');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+        {
+          text: '14 dienas',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              const updated = await api.skipHire.extendHire(order.id, 14, token);
+              setOrder(updated);
+              haptics.success();
+              toast.success(`Noma pagarināta par 14 dienām`);
+            } catch (err) {
+              haptics.error();
+              toast.error(err instanceof Error ? err.message : 'Neizdevās pagarināt nomu');
+            } finally {
+              setActionLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [order, setOrder, token, toast]);
 
   const orderRows = [
     { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
@@ -274,6 +361,51 @@ export default function SkipOrderDetailsScreen() {
             </Button>
           )}
 
+          {canRequestPickup && (
+            <Button
+              variant="secondary"
+              size="lg"
+              onPress={handleRequestPickup}
+              isLoading={actionLoading}
+            >
+              Pieprasīt savākšanu
+            </Button>
+          )}
+
+          {canExtend && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={handleExtendHire}
+              isLoading={actionLoading}
+            >
+              Pagarināt nomu
+            </Button>
+          )}
+
+          {canAmend && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={() => {
+                haptics.light();
+                router.push(`/(buyer)/skip-order/${order.id}/amend` as any);
+              }}
+            >
+              Labot pasūtījumu
+            </Button>
+          )}
+
+          {canCallCarrier && (
+            <Button
+              variant="outline"
+              size="lg"
+              onPress={handleCallCarrier}
+            >
+              Zvanīt pārvadātājam
+            </Button>
+          )}
+
           {isTerminal && (
             <Button
               variant="outline"
@@ -340,8 +472,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 26,
     lineHeight: 32,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: '#111827',
   },
   heroSubtitle: {
@@ -374,8 +506,8 @@ const styles = StyleSheet.create({
   },
   priceText: {
     fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: '#111827',
   },
   priceNote: {
@@ -409,7 +541,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,

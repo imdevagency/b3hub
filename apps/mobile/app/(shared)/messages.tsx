@@ -161,7 +161,7 @@ export default function MessagesScreen() {
           <View className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-1 border border-red-100">
             <AlertCircle size={28} color="#ef4444" strokeWidth={1.6} />
           </View>
-          <Text className="text-base font-bold text-gray-900">Neizdevās ielādēt</Text>
+          <Text className="text-base font-semibold text-gray-900">Neizdevās ielādēt</Text>
           <Text className="text-sm text-gray-500 text-center">{error}</Text>
           <TouchableOpacity
             className="flex-row items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 bg-white mt-1 shadow-sm"
@@ -177,7 +177,7 @@ export default function MessagesScreen() {
           <View className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 border border-gray-100">
             <MessageCircle size={28} color="#d1d5db" strokeWidth={1.5} />
           </View>
-          <Text className="text-xl font-bold text-gray-900 mb-2 text-center">
+          <Text className="text-xl font-semibold text-gray-900 mb-2 text-center">
             Nav aktīvu sarunu
           </Text>
           <Text className="text-base text-gray-500 font-medium text-center">

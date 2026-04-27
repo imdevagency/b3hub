@@ -344,7 +344,7 @@ export default function CarrierSkipsScreen() {
           <Text
             style={{
               fontSize: 20,
-              fontWeight: '800',
+              fontWeight: '700',
               color: colors.textPrimary,
               marginTop: 20,
               marginBottom: 8,
@@ -368,7 +368,7 @@ export default function CarrierSkipsScreen() {
             }}
             onPress={() => load()}
           >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Atsvaidzināt</Text>
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Atsvaidzināt</Text>
           </TouchableOpacity>
         </View>
       </ScreenContainer>
@@ -509,7 +509,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
   floatingTop: { position: 'absolute', width: '100%', alignItems: 'center', zIndex: 10 },
   pillHeader: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 30,
@@ -519,7 +519,7 @@ const s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  pillText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  pillText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   floatingControls: { position: 'absolute', right: 16, gap: 12, zIndex: 10 },
   fab: {
     width: 50,
@@ -583,7 +583,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  orderNumber: { fontSize: 16, fontWeight: '800', color: '#000' },
+  orderNumber: { fontSize: 16, fontWeight: '700', color: '#000' },
   addressText: { fontSize: 15, color: colors.textSecondary, lineHeight: 22, fontWeight: '500' },
   metaWrap: {
     flexDirection: 'row',
@@ -608,7 +608,7 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   navBtn: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -616,7 +616,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
   },
-  navBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  navBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   callBtn: {
     width: 52,
     backgroundColor: colors.bgMuted,
@@ -625,16 +625,16 @@ const s = StyleSheet.create({
     borderRadius: 12,
   },
   actionBtnPrimary: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
-  actionBtnPrimaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  listSectionTitle: { fontSize: 18, fontWeight: '800', color: '#000', marginBottom: 12 },
+  actionBtnPrimaryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  listSectionTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 12 },
   pillOverdue: {
     color: '#fca5a5',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 13,
     marginTop: 2,
     textAlign: 'center',
@@ -651,7 +651,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fde68a',
   },
-  overdueBannerText: { fontSize: 13, color: '#92400e', fontWeight: '700', flex: 1 },
+  overdueBannerText: { fontSize: 13, color: '#92400e', fontWeight: '600', flex: 1 },
   invoiceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -664,7 +664,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#fde68a',
   },
-  invoiceBtnText: { color: '#92400e', fontSize: 15, fontWeight: '700' },
+  invoiceBtnText: { color: '#92400e', fontSize: 15, fontWeight: '600' },
   overdueDayBadge: {
     position: 'absolute',
     top: -6,
@@ -679,5 +679,5 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#fff',
   },
-  overdueDayBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  overdueDayBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
 });

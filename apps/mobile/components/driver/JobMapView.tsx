@@ -147,7 +147,7 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.4)',
   },
-  pinPrice: { fontSize: 12, fontWeight: '800', color: colors.white },
+  pinPrice: { fontSize: 12, fontWeight: '700', color: colors.white },
   radiusOverlay: {
     position: 'absolute',
     bottom: 80,
@@ -178,7 +178,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4b5563',
   },
-  countBadgeText: { fontSize: 13, fontWeight: '700', color: '#f9fafb' },
+  countBadgeText: { fontSize: 13, fontWeight: '600', color: '#f9fafb' },
   legend: {
     position: 'absolute',
     bottom: 16,

@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   badgeText: {
     color: colors.white,
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '700',
     lineHeight: 13,
   },
   ctaWrap: {

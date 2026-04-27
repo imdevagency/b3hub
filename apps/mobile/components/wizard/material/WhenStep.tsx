@@ -27,7 +27,7 @@ export function WhenStep({
     <View className="px-6 pt-5 pb-12">
       {/* Inline calendar */}
       <View className="mb-6">
-        <Text className="text-gray-900 text-base font-bold tracking-tight mb-4 ml-1">
+        <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
           Piegādes datums
         </Text>
         <WizardCalendar
@@ -42,7 +42,7 @@ export function WhenStep({
 
       {/* Time window selection */}
       <View className="mb-10">
-        <Text className="text-gray-900 text-base font-bold tracking-tight mb-4 ml-1">
+        <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
           Dienas laiks
         </Text>
         <View className="flex-row gap-3">
@@ -59,7 +59,7 @@ export function WhenStep({
               <TouchableOpacity
                 key={i}
                 className={`flex-1 rounded-2xl p-4 items-center justify-center ${
-                  active ? 'bg-gray-900' : 'bg-gray-50'
+                  active ? 'bg-[#F9423A]' : 'bg-gray-50'
                 }`}
                 onPress={() => {
                   haptics.light();
@@ -68,7 +68,7 @@ export function WhenStep({
                 activeOpacity={0.8}
               >
                 <Icon size={20} color={active ? '#ffffff' : '#9ca3af'} className="mb-2" />
-                <Text className={`font-bold text-xs ${active ? 'text-white' : 'text-gray-500'}`}>
+                <Text className={`font-semibold text-xs ${active ? 'text-white' : 'text-gray-500'}`}>
                   {w.label}
                 </Text>
               </TouchableOpacity>

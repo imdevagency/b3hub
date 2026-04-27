@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   infoDistance: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   infoDuration: {

@@ -121,7 +121,7 @@ const s = StyleSheet.create({
   section: { marginBottom: 20 },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textDisabled,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -157,7 +157,7 @@ const s = StyleSheet.create({
     padding: 24,
     marginTop: 4,
   },
-  contactTitle: { fontSize: 18, fontWeight: '800', color: '#fff', marginBottom: 6 },
+  contactTitle: { fontSize: 18, fontWeight: '700', color: '#fff', marginBottom: 6 },
   contactSub: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 20 },
   contactBtns: { flexDirection: 'row', gap: 10 },
   contactBtn: {

@@ -441,7 +441,7 @@ const s = StyleSheet.create({
   },
   heroAmount: {
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -1.5,
   },
@@ -518,7 +518,7 @@ const s = StyleSheet.create({
   },
   fsBackdrop: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     justifyContent: 'center',
     alignItems: 'center',
   },

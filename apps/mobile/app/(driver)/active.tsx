@@ -1129,8 +1129,8 @@ export default function ActiveJobScreen() {
           <RNText
             style={{
               fontSize: 11,
-              fontFamily: 'Inter_700Bold',
-              fontWeight: '700',
+              fontFamily: 'Inter_600SemiBold',
+              fontWeight: '600',
               color: phaseColor.text,
               letterSpacing: 0.5,
               textTransform: 'uppercase',
@@ -1141,8 +1141,8 @@ export default function ActiveJobScreen() {
           <RNText
             style={{
               fontSize: 15,
-              fontFamily: 'Inter_700Bold',
-              fontWeight: '700',
+              fontFamily: 'Inter_600SemiBold',
+              fontWeight: '600',
               color: colors.textPrimary,
               marginTop: 2,
             }}
@@ -1195,7 +1195,7 @@ export default function ActiveJobScreen() {
               activeOpacity={0.8}
             >
               <Truck size={16} color="#4ade80" />
-              <RNText style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>
+              <RNText style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
                 {returnTrips.length} atpakaļceļa krava{returnTrips.length > 1 ? 's' : ''} tuvumā
               </RNText>
             </TouchableOpacity>
@@ -1224,7 +1224,7 @@ export default function ActiveJobScreen() {
             <RNText
               style={{
                 fontSize: 28,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
                 lineHeight: 32,
@@ -1273,7 +1273,7 @@ export default function ActiveJobScreen() {
                 <RNText
                   style={{
                     fontSize: 14,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: '#fff',
                     letterSpacing: -0.2,
                   }}
@@ -1596,8 +1596,8 @@ export default function ActiveJobScreen() {
             <RNText
               style={{
                 fontSize: 12,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: phaseColor.text,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
@@ -1609,8 +1609,8 @@ export default function ActiveJobScreen() {
               style={{
                 fontSize: 18,
                 lineHeight: 24,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 marginTop: 4,
               }}
@@ -1680,7 +1680,7 @@ export default function ActiveJobScreen() {
                 style={{
                   fontSize: 12,
                   color: colors.textMuted,
-                  fontWeight: '700',
+                  fontWeight: '600',
                   marginBottom: 2,
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -1691,7 +1691,7 @@ export default function ActiveJobScreen() {
               <Text
                 style={{
                   fontSize: 28,
-                  fontWeight: '800',
+                  fontWeight: '700',
                   color: colors.textPrimary,
                   letterSpacing: -1,
                   lineHeight: 36,
@@ -1705,7 +1705,7 @@ export default function ActiveJobScreen() {
               </Text>
               {job.pricePerTonne ? (
                 <Text
-                  style={{ fontSize: 13, color: colors.success, fontWeight: '700', marginTop: 2 }}
+                  style={{ fontSize: 13, color: colors.success, fontWeight: '600', marginTop: 2 }}
                 >
                   €{job.pricePerTonne.toFixed(2)}/t
                 </Text>
@@ -1716,7 +1716,7 @@ export default function ActiveJobScreen() {
                 style={{
                   fontSize: 12,
                   color: colors.textMuted,
-                  fontWeight: '700',
+                  fontWeight: '600',
                   marginBottom: 2,
                   textAlign: 'right',
                   textTransform: 'uppercase',
@@ -1728,7 +1728,7 @@ export default function ActiveJobScreen() {
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '700',
+                  fontWeight: '600',
                   color: colors.textPrimary,
                   textAlign: 'right',
                   flexShrink: 1,
@@ -1759,7 +1759,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 13,
                     color: colors.textPrimary,
-                    fontWeight: '700',
+                    fontWeight: '600',
                     marginTop: 4,
                     textAlign: 'right',
                   }}
@@ -1789,7 +1789,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 13,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: '#a16207',
                     marginBottom: 4,
                     textTransform: 'uppercase',
@@ -1811,7 +1811,7 @@ export default function ActiveJobScreen() {
               <Text
                 style={{
                   fontSize: 13,
-                  fontWeight: '800',
+                  fontWeight: '700',
                   color: '#374151',
                   marginBottom: 8,
                   textTransform: 'uppercase',
@@ -1868,7 +1868,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 12,
                     color: colors.textMuted,
-                    fontWeight: '700',
+                    fontWeight: '600',
                     marginBottom: 4,
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
@@ -1883,7 +1883,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 18,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: colors.textPrimary,
                     letterSpacing: -0.5,
                     marginBottom: 2,
@@ -1919,7 +1919,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 12,
                     color: colors.textMuted,
-                    fontWeight: '700',
+                    fontWeight: '600',
                     marginBottom: 4,
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
@@ -1934,7 +1934,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 18,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: colors.textPrimary,
                     letterSpacing: -0.5,
                     marginBottom: 2,
@@ -1967,7 +1967,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 12,
                     color: colors.textDisabled,
-                    fontWeight: '700',
+                    fontWeight: '600',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                   }}
@@ -1977,7 +1977,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 16,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: colors.textPrimary,
                     marginTop: 4,
                   }}
@@ -1992,7 +1992,7 @@ export default function ActiveJobScreen() {
                   style={{
                     fontSize: 12,
                     color: colors.textDisabled,
-                    fontWeight: '700',
+                    fontWeight: '600',
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                   }}
@@ -2002,7 +2002,7 @@ export default function ActiveJobScreen() {
                 <Text
                   style={{
                     fontSize: 16,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: colors.textPrimary,
                     marginTop: 4,
                   }}
@@ -2017,7 +2017,7 @@ export default function ActiveJobScreen() {
           <Text
             style={{
               fontSize: 12,
-              fontWeight: '800',
+              fontWeight: '700',
               color: colors.textDisabled,
               marginBottom: 12,
               textTransform: 'uppercase',
@@ -2201,8 +2201,8 @@ export default function ActiveJobScreen() {
               <RNText
                 style={{
                   fontSize: 13,
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
                   color: colors.textPrimary,
                   marginBottom: 8,
                   textTransform: 'uppercase',
@@ -2218,8 +2218,8 @@ export default function ActiveJobScreen() {
                     <RNText
                       style={{
                         fontSize: 15,
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
+                        fontFamily: 'Inter_600SemiBold',
+                        fontWeight: '600',
                         color: colors.textPrimary,
                       }}
                     >
@@ -2247,8 +2247,8 @@ export default function ActiveJobScreen() {
           <RNText
             style={{
               fontSize: 15,
-              fontFamily: 'Inter_700Bold',
-              fontWeight: '700',
+              fontFamily: 'Inter_600SemiBold',
+              fontWeight: '600',
               color: colors.textPrimary,
               marginBottom: 12,
             }}
@@ -2279,7 +2279,7 @@ export default function ActiveJobScreen() {
                   <RNText
                     style={{
                       fontSize: 15,
-                      fontFamily: isActive ? 'Inter_700Bold' : 'Inter_600SemiBold',
+                      fontFamily: isActive ? 'Inter_600SemiBold' : 'Inter_600SemiBold',
                       fontWeight: isActive ? '700' : '600',
                       color: isActive ? '#ffffff' : '#374151',
                     }}
@@ -2297,8 +2297,8 @@ export default function ActiveJobScreen() {
               <RNText
                 style={{
                   fontSize: 15,
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
                   color: colors.textPrimary,
                   marginBottom: 12,
                 }}
@@ -2324,8 +2324,8 @@ export default function ActiveJobScreen() {
               <RNText
                 style={{
                   fontSize: 15,
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
                   color: colors.textPrimary,
                   marginTop: 20,
                   marginBottom: 12,
@@ -2373,8 +2373,8 @@ export default function ActiveJobScreen() {
             <RNText
               style={{
                 fontSize: 15,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 marginBottom: 12,
               }}
@@ -2467,8 +2467,8 @@ export default function ActiveJobScreen() {
             <RNText
               style={{
                 fontSize: 52,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: surchargeAmount ? '#111827' : '#d1d5db',
                 letterSpacing: -1,
                 marginRight: 4,
@@ -2488,8 +2488,8 @@ export default function ActiveJobScreen() {
               autoFocus
               style={{
                 fontSize: 60,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 letterSpacing: -2,
                 minWidth: 100,
@@ -2562,8 +2562,8 @@ export default function ActiveJobScreen() {
             <RNText
               style={{
                 fontSize: 15,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 marginBottom: 12,
               }}
@@ -2591,8 +2591,8 @@ export default function ActiveJobScreen() {
             <RNText
               style={{
                 fontSize: 15,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: colors.textPrimary,
                 marginBottom: 12,
               }}
@@ -2659,7 +2659,7 @@ export default function ActiveJobScreen() {
                 }}
               >
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>
                     €{rt.rate.toFixed(0)}
                   </Text>
                   <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
@@ -2921,7 +2921,7 @@ export default function ActiveJobScreen() {
             disabled={cancelling || !cancelReason.trim()}
             activeOpacity={0.8}
           >
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>
               {cancelling ? 'Atceļ...' : 'Apstiprināt atcelšanu'}
             </Text>
           </TouchableOpacity>

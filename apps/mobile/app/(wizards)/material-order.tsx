@@ -556,6 +556,7 @@ export default function OrderRequestWizard() {
       onCTA={handleCTA}
       ctaDisabled={!canProceed || submitting}
       ctaLoading={submitting && step !== 'offers'}
+      hideFooter={step === 'offers'}
       footerLeft={
         step === 'specs' ? (
           <View>

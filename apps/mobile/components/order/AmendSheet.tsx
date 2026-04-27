@@ -169,7 +169,7 @@ export function AmendSheet({ visible, onClose, order, token, onSuccess }: Props)
 
 const styles = StyleSheet.create({
   amendField: { gap: 8 },
-  amendLabel: { fontSize: 13, fontWeight: '700', color: '#374151' },
+  amendLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
   amendInput: {
     backgroundColor: '#f3f4f6',
     borderRadius: 16,
@@ -186,15 +186,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
-  amendWindowBtnActive: { backgroundColor: '#111827' },
-  amendWindowBtnText: { fontSize: 15, fontWeight: '700', color: '#4b5563' },
+  amendWindowBtnActive: { backgroundColor: '#F9423A' },
+  amendWindowBtnText: { fontSize: 15, fontWeight: '600', color: '#4b5563' },
   amendWindowBtnTextActive: { color: '#fff' },
   amendSubmitBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     borderRadius: 999,
     paddingVertical: 18,
     alignItems: 'center',
     marginTop: 12,
   },
-  amendSubmitBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  amendSubmitBtnText: { fontSize: 16, fontWeight: '600', color: '#fff' },
 });

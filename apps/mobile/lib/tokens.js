@@ -12,7 +12,7 @@
 // ── Palette ───────────────────────────────────────────────────────────────────
 const colors = {
   // Brand / primary
-  primary: '#111827',
+  primary: '#F9423A',
   primaryDark: '#030712',
   primaryMid: '#374151',
 

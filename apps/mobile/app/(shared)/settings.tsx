@@ -30,6 +30,7 @@ import {
   Shield,
   KeyRound,
   ChevronRight,
+  Trash2,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -162,6 +163,36 @@ export default function SettingsScreen() {
         },
       },
     ]);
+  };
+
+  /**
+   * GDPR Article 17 — Right to erasure.
+   * Calls DELETE /auth/me which anonymises PII and deactivates the account.
+   * Required by Apple App Store guideline 5.1.1.
+   */
+  const handleDeleteAccount = () => {
+    if (!token) return;
+    haptics.warning();
+    Alert.alert(
+      'Dzēst kontu',
+      'Jūsu konts tiks neatgriezeniski anonimizēts. Personas dati tiek dzēsti nekavējoties. Finanšu dokumenti tiek saglabāti saskaņā ar likumu (līdz 5 gadiem).\n\nVai turpināt?',
+      [
+        { text: 'Atcelt', style: 'cancel' },
+        {
+          text: 'Dzēst kontu',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteAccount(token);
+              haptics.success();
+              await logout();
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : 'Neizdevās dzēst kontu');
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -319,13 +350,19 @@ export default function SettingsScreen() {
                   router.push('/change-password');
                 }}
                 rightSlot={
-                  <Text style={{ color: '#3b82f6', fontWeight: '700', fontSize: 16 }}>{'>>>'}</Text>
+                  <Text style={{ color: '#3b82f6', fontWeight: '600', fontSize: 16 }}>{'>>>'}</Text>
                 }
               />
               <LinkRow
                 icon={<LogOut size={20} color="#ef4444" />}
                 label="Izrakstīties"
                 onPress={handleLogout}
+                danger
+              />
+              <LinkRow
+                icon={<Trash2 size={20} color="#ef4444" />}
+                label="Dzēst kontu"
+                onPress={handleDeleteAccount}
                 danger
               />
             </View>
@@ -391,12 +428,12 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#3b82f6',
   },
   profileName: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1f2937',
     marginBottom: 12,
   },
@@ -423,7 +460,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#111827',
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -517,7 +554,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   guestSignInBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     borderRadius: 100,
     paddingVertical: 13,
     paddingHorizontal: 32,

@@ -110,7 +110,7 @@ export function SpecsStep({
           >
             <Text className="text-gray-400 text-sm font-semibold mb-1">Materiāls</Text>
             <View className="flex-row items-center justify-between">
-              <Text className="text-gray-900 font-extrabold text-lg line-clamp-1" numberOfLines={1}>
+              <Text className="text-gray-900 font-bold text-lg line-clamp-1" numberOfLines={1}>
                 {CATEGORY_LABELS[category]}
               </Text>
               <ChevronDown size={18} color="#9ca3af" />
@@ -124,7 +124,7 @@ export function SpecsStep({
           >
             <Text className="text-gray-400 text-sm font-semibold mb-1">Frakcija</Text>
             <View className="flex-row items-center justify-between">
-              <Text className="text-gray-900 font-extrabold text-lg line-clamp-1" numberOfLines={1}>
+              <Text className="text-gray-900 font-bold text-lg line-clamp-1" numberOfLines={1}>
                 {selectedFraction}
               </Text>
               <ChevronDown size={18} color="#9ca3af" />
@@ -140,7 +140,7 @@ export function SpecsStep({
         >
           <Text className="text-gray-400 text-sm font-semibold mb-1">Pasūtījuma veids</Text>
           <View className="flex-row items-center justify-between">
-            <Text className="text-gray-900 font-extrabold text-lg">
+            <Text className="text-gray-900 font-bold text-lg">
               {ORDER_TYPE_LABELS[orderType]}
             </Text>
             <ChevronDown size={18} color="#9ca3af" />
@@ -149,7 +149,7 @@ export function SpecsStep({
 
         {/* Quantity stepper */}
         <View className="mb-10 items-center justify-center">
-          <Text className="text-gray-400 text-sm font-bold tracking-widest uppercase mb-6">
+          <Text className="text-gray-400 text-sm font-semibold tracking-widest uppercase mb-6">
             Kopējais apjoms
           </Text>
           <View className="flex-row items-center justify-center gap-6">
@@ -170,7 +170,7 @@ export function SpecsStep({
                   {quantity.toString()}
                 </Text>
                 <Text
-                  className="text-xl font-bold text-gray-400 mb-1 ml-1"
+                  className="text-xl font-semibold text-gray-400 mb-1 ml-1"
                   style={{ marginBottom: 6 }}
                 >
                   {ORDER_TYPE_UNIT_LABEL[orderType]}
@@ -194,7 +194,7 @@ export function SpecsStep({
             <Truck size={18} color="#111827" />
           </View>
           <View className="flex-1">
-            <Text className="text-gray-900 font-bold text-sm mb-0.5">Tehniska informācija</Text>
+            <Text className="text-gray-900 font-semibold text-sm mb-0.5">Tehniska informācija</Text>
             <Text className="text-gray-500 font-medium text-xs leading-tight">
               Nepieciešami {Math.ceil(quantity / 26)} reisi (26 {ORDER_TYPE_UNIT_LABEL[orderType]}{' '}
               ietilpība automašīnai)
@@ -435,7 +435,7 @@ export function SpecsStep({
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#1d4ed8' }}>
+                <Text style={{ fontSize: 22, fontFamily: 'Inter_600SemiBold', color: '#1d4ed8' }}>
                   {calcM3}
                 </Text>
                 <Text
@@ -458,7 +458,7 @@ export function SpecsStep({
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#16a34a' }}>
+                <Text style={{ fontSize: 22, fontFamily: 'Inter_600SemiBold', color: '#16a34a' }}>
                   {calcTonnes}
                 </Text>
                 <Text

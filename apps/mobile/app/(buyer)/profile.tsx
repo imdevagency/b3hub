@@ -199,14 +199,14 @@ export default function ProfileScreen() {
             className={`w-16 h-16 rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}
           >
             <Text
-              className={`text-2xl font-bold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}
+              className={`text-2xl font-semibold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}
             >
               {initials}
             </Text>
           </View>
           <View className="flex-1">
             <Text
-              className=" font-bold text-gray-900 mb-1"
+              className=" font-semibold text-gray-900 mb-1"
               style={{ fontSize: 28 }}
               numberOfLines={1}
             >
@@ -220,7 +220,7 @@ export default function ProfileScreen() {
               )}
               <View className="bg-gray-100 px-2 py-0.5 rounded flex-row items-center">
                 <Text
-                  className="font-bold text-gray-600 uppercase tracking-widest"
+                  className="font-semibold text-gray-600 uppercase tracking-widest"
                   style={{ fontSize: 10 }}
                 >
                   {accountTypeLabel}
@@ -240,7 +240,7 @@ export default function ProfileScreen() {
           >
             <AlertCircle size={20} color="#b45309" className="mr-3" />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-amber-900 mb-0.5">
+              <Text className="text-sm font-semibold text-amber-900 mb-0.5">
                 Pabeidziet konta reģistrāciju
               </Text>
               <Text className="text-xs font-medium text-amber-700">
@@ -260,7 +260,7 @@ export default function ProfileScreen() {
           >
             <View className="flex-row">
               <View className="flex-1 items-center py-4 border-r border-gray-100">
-                <Text style={{ fontSize: 22, fontWeight: '800', color: '#111827' }}>
+                <Text style={{ fontSize: 22, fontWeight: '700', color: '#111827' }}>
                   {analyticsOverview?.buyer?.monthlySpend?.slice(-1)[0]?.value != null
                     ? new Intl.NumberFormat('lv-LV', {
                         style: 'currency',
@@ -272,7 +272,7 @@ export default function ProfileScreen() {
                 <Text className="text-xs text-gray-500 font-medium mt-0.5">Šomēnes</Text>
               </View>
               <View className="flex-1 items-center py-4">
-                <Text style={{ fontSize: 22, fontWeight: '800', color: '#111827' }}>
+                <Text style={{ fontSize: 22, fontWeight: '700', color: '#111827' }}>
                   {analyticsOverview?.buyer?.orderBreakdown != null
                     ? analyticsOverview.buyer.orderBreakdown
                         .filter((b) => ['IN_PROGRESS', 'CONFIRMED'].includes(b.status))
@@ -593,7 +593,7 @@ export default function ProfileScreen() {
           <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12, gap: 24 }}>
             <View>
               <Text
-                className="font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                className="font-semibold text-gray-500 uppercase tracking-widest mb-2 ml-1"
                 style={{ fontSize: 13 }}
               >
                 Vārds
@@ -610,7 +610,7 @@ export default function ProfileScreen() {
             </View>
             <View>
               <Text
-                className="font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                className="font-semibold text-gray-500 uppercase tracking-widest mb-2 ml-1"
                 style={{ fontSize: 13 }}
               >
                 Uzvārds
@@ -627,7 +627,7 @@ export default function ProfileScreen() {
             </View>
             <View>
               <Text
-                className="font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1"
+                className="font-semibold text-gray-500 uppercase tracking-widest mb-2 ml-1"
                 style={{ fontSize: 13 }}
               >
                 Tālrunis
@@ -646,7 +646,7 @@ export default function ProfileScreen() {
           </View>
           <View className="px-5 py-4 border-t border-gray-100 bg-white">
             <TouchableOpacity
-              className={`bg-gray-900 py-4 rounded-full items-center justify-center flex-row ${saving ? 'opacity-70' : ''}`}
+              className={`bg-[#F9423A] py-4 rounded-full items-center justify-center flex-row ${saving ? 'opacity-70' : ''}`}
               onPress={saveEdit}
               disabled={saving}
               activeOpacity={0.85}
@@ -654,7 +654,7 @@ export default function ProfileScreen() {
               {saving ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text className="text-white font-bold" style={{ fontSize: 17 }}>
+                <Text className="text-white font-semibold" style={{ fontSize: 17 }}>
                   Saglabāt
                 </Text>
               )}
@@ -742,7 +742,7 @@ function ApplicationRow({
             </View>
             {onReapply && (
               <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: '#3b82f6' }}>Atkārtot</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#3b82f6' }}>Atkārtot</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#9ca3af',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
   },
   badgeAmberText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#b45309',
     textTransform: 'uppercase',
   },
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   },
   badgeRedText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#991b1b',
     textTransform: 'uppercase',
   },

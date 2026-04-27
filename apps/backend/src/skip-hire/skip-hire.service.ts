@@ -960,4 +960,159 @@ export class SkipHireService {
       this.logger,
     );
   }
+
+  // ── Buyer self-service actions ────────────────────────────────────────────
+
+  /**
+   * PATCH /skip-hire/:id/amend
+   * Buyer can amend delivery date, delivery window, and notes on a PENDING or
+   * CONFIRMED order (i.e. before the skip has been delivered).
+   */
+  async amend(
+    id: string,
+    userId: string,
+    data: { deliveryDate?: string; deliveryWindow?: string; notes?: string; contactName?: string; contactPhone?: string },
+  ) {
+    const order = await this.findOne(id, userId);
+    if (
+      order.status !== SkipHireStatus.PENDING &&
+      order.status !== SkipHireStatus.CONFIRMED
+    ) {
+      throw new BadRequestException(
+        'Pasūtījumu var labot tikai pirms piegādes (statuss: PENDING vai CONFIRMED)',
+      );
+    }
+    const updated = await this.prisma.skipHireOrder.update({
+      where: { id },
+      data: {
+        ...(data.deliveryDate ? { deliveryDate: new Date(data.deliveryDate) } : {}),
+        ...(data.deliveryWindow !== undefined ? { deliveryWindow: data.deliveryWindow } : {}),
+        ...(data.notes !== undefined ? { notes: data.notes } : {}),
+        ...(data.contactName !== undefined ? { contactName: data.contactName } : {}),
+        ...(data.contactPhone !== undefined ? { contactPhone: data.contactPhone } : {}),
+      },
+      include: {
+        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+      },
+    });
+
+    if (order.userId) {
+      this.notifications
+        .create({
+          userId: order.userId,
+          type: NotificationType.ORDER_CONFIRMED,
+          title: 'Pasūtījums labots',
+          message: `Konteinera pasūtījums #${order.orderNumber} ir veiksmīgi atjaunināts.`,
+          data: { orderId: id },
+        })
+        .catch(() => null);
+    }
+
+    this.logger.log(`Skip order ${order.orderNumber} amended by user ${userId}`);
+    return updated;
+  }
+
+  /**
+   * POST /skip-hire/:id/request-pickup
+   * Buyer requests early collection for a DELIVERED skip.
+   * Creates a notification to the carrier and marks a timestamp.
+   */
+  async requestPickup(id: string, userId: string) {
+    const order = await this.findOne(id, userId);
+    if (order.status !== SkipHireStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Savākšanu var pieprasīt tikai tad, kad konteiners ir piegādāts (statuss: DELIVERED)',
+      );
+    }
+
+    const existingTs =
+      order.statusTimestamps && typeof order.statusTimestamps === 'object'
+        ? (order.statusTimestamps as Record<string, string>)
+        : {};
+
+    // Don't allow duplicate requests
+    if (existingTs['PICKUP_REQUESTED']) {
+      throw new BadRequestException('Savākšana jau ir pieprasīta');
+    }
+
+    await this.prisma.skipHireOrder.update({
+      where: { id },
+      data: {
+        statusTimestamps: { ...existingTs, PICKUP_REQUESTED: new Date().toISOString() },
+      },
+    });
+
+    // Notify the carrier if one is assigned
+    if (order.carrierId) {
+      // Find any user belonging to the carrier company (owner/manager)
+      const carrierUsers = await this.prisma.user.findMany({
+        where: { companyId: order.carrierId, companyRole: { in: ['OWNER', 'MANAGER'] } },
+        select: { id: true },
+        take: 5,
+      });
+      await Promise.all(
+        carrierUsers.map((u) =>
+          this.notifications
+            .create({
+              userId: u.id,
+              type: NotificationType.SYSTEM_ALERT,
+              title: 'Savākšanas pieprasījums',
+              message: `Pircējs pieprasa konteinera savākšanu pasūtījumam #${order.orderNumber}.`,
+              data: { skipOrderId: id },
+            })
+            .catch(() => null),
+        ),
+      );
+    }
+
+    this.logger.log(`Pickup requested for skip order ${order.orderNumber} by user ${userId}`);
+    return { ok: true, message: 'Savākšanas pieprasījums nosūtīts pārvadātājam' };
+  }
+
+  /**
+   * PATCH /skip-hire/:id/extend
+   * Buyer extends the hire period by adding more days to hireDays.
+   * Only allowed on DELIVERED orders. Additional charge is not yet auto-invoiced;
+   * the carrier will issue a supplementary invoice manually.
+   */
+  async extendHire(id: string, userId: string, additionalDays: number) {
+    if (!Number.isInteger(additionalDays) || additionalDays < 1 || additionalDays > 90) {
+      throw new BadRequestException('additionalDays must be an integer between 1 and 90');
+    }
+
+    const order = await this.findOne(id, userId);
+    if (order.status !== SkipHireStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Nomas periodu var pagarināt tikai tad, kad konteiners ir piegādāts (statuss: DELIVERED)',
+      );
+    }
+
+    const existingDays = order.hireDays ?? DEFAULT_HIRE_DAYS;
+    const newHireDays = existingDays + additionalDays;
+
+    const updated = await this.prisma.skipHireOrder.update({
+      where: { id },
+      data: { hireDays: newHireDays },
+      include: {
+        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+      },
+    });
+
+    if (order.userId) {
+      this.notifications
+        .create({
+          userId: order.userId,
+          type: NotificationType.ORDER_CONFIRMED,
+          title: 'Nomas periods pagarināts',
+          message: `Konteinera nomas periods pasūtījumam #${order.orderNumber} pagarināts par ${additionalDays} d. (kopā ${newHireDays} d.).`,
+          data: { orderId: id },
+        })
+        .catch(() => null);
+    }
+
+    this.logger.log(
+      `Skip order ${order.orderNumber} extended by ${additionalDays} days (total ${newHireDays}) by user ${userId}`,
+    );
+    return updated;
+  }
 }

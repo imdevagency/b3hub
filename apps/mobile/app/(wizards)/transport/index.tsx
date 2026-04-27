@@ -989,7 +989,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   vehicleCardSel: {
-    borderColor: '#000',
+    borderColor: '#F9423A',
     backgroundColor: '#f8fafc',
   },
   vehicleCheckBadge: {
@@ -1038,8 +1038,8 @@ const s = StyleSheet.create({
     borderColor: 'transparent',
   },
   cargoChipSel: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: '#F9423A',
+    borderColor: '#F9423A',
   },
   cargoText: {
     fontSize: 14,
@@ -1074,7 +1074,7 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1089,8 +1089,8 @@ const s = StyleSheet.create({
   truckCountValue: { alignItems: 'center', minWidth: 48 },
   truckCountNum: {
     fontSize: 28,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     lineHeight: 32,
   },
@@ -1125,8 +1125,8 @@ const s = StyleSheet.create({
   },
   dayNum: {
     fontSize: 20,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginVertical: 2,
   },

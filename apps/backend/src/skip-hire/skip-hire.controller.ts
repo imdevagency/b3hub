@@ -20,6 +20,8 @@ import { SkipHireService } from './skip-hire.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { GetQuotesQueryDto } from './dto/get-quotes-query.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
+import { AmendSkipHireDto } from './dto/amend-skip-hire.dto';
+import { ExtendSkipHireDto } from './dto/extend-skip-hire.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
@@ -205,5 +207,47 @@ export class SkipHireController {
   ) {
     const isAdmin = req.user?.userType === 'ADMIN';
     return this.skipHireService.cancel(id, req.user.userId, isAdmin);
+  }
+
+  /**
+   * PATCH /api/v1/skip-hire/:id/amend
+   * Buyer can update delivery date, window, notes, and contact on a PENDING/CONFIRMED order.
+   */
+  @Patch(':id/amend')
+  @UseGuards(JwtAuthGuard)
+  amend(
+    @Param('id') id: string,
+    @Body() dto: AmendSkipHireDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.skipHireService.amend(id, req.user.userId, dto);
+  }
+
+  /**
+   * POST /api/v1/skip-hire/:id/request-pickup
+   * Buyer requests early/ready collection for a DELIVERED skip.
+   */
+  @Post(':id/request-pickup')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  requestPickup(
+    @Param('id') id: string,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.skipHireService.requestPickup(id, req.user.userId);
+  }
+
+  /**
+   * PATCH /api/v1/skip-hire/:id/extend
+   * Buyer extends the hire period by N additional days on a DELIVERED order.
+   */
+  @Patch(':id/extend')
+  @UseGuards(JwtAuthGuard)
+  extendHire(
+    @Param('id') id: string,
+    @Body() dto: ExtendSkipHireDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.skipHireService.extendHire(id, req.user.userId, dto.additionalDays);
   }
 }

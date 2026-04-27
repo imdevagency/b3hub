@@ -168,7 +168,7 @@ export default function RegisterScreen() {
     <View style={s.stepContent}>
       <Text
         className="text-3xl text-black mb-2"
-        style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+        style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
       >
         {isPartnerFlow ? 'Pievienojieties kā partneris' : 'Izveidojiet kontu'}
       </Text>
@@ -273,7 +273,7 @@ export default function RegisterScreen() {
     <View style={s.stepContent}>
       <Text
         className="text-3xl text-black mb-2"
-        style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+        style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
       >
         Jūsu vārds
       </Text>
@@ -326,7 +326,7 @@ export default function RegisterScreen() {
     <View style={s.stepContent}>
       <Text
         className="text-3xl text-black mb-2"
-        style={{ fontFamily: 'Inter_800ExtraBold', fontWeight: '800' }}
+        style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
       >
         Izveido paroli
       </Text>
@@ -489,14 +489,14 @@ const s = StyleSheet.create({
     padding: 20,
   },
   blockOptionActive: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
   },
   blockTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#000',
     marginBottom: 4,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
   },
   blockDesc: {
     fontSize: 14,
@@ -532,12 +532,12 @@ const s = StyleSheet.create({
 
   sectionLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
     marginBottom: 12,
     letterSpacing: 0.5,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
   },
 
   // Strength
@@ -571,7 +571,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
@@ -583,7 +583,7 @@ const s = StyleSheet.create({
   primaryBtnText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });

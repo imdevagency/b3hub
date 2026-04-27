@@ -269,7 +269,7 @@ export default function OrderDetailsScreen() {
           <View style={styles.surchargeAlertCard}>
             <AlertTriangle size={20} color="#B45309" />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.alertText, { fontWeight: '700' }]}>
+              <Text style={[styles.alertText, { fontWeight: '600' }]}>
                 {order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length === 1
                   ? 'Šoferis pieprasa piemaksu'
                   : `${order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length} piemaksas gaida apstiprināšanu`}
@@ -644,8 +644,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 26,
     lineHeight: 32,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: '#111827',
   },
   heroSubtitle: {
@@ -735,8 +735,8 @@ const styles = StyleSheet.create({
   },
   surchargeAmount: {
     fontSize: 15,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: '#111827',
   },
   surchargeStatus: {
@@ -779,8 +779,8 @@ const styles = StyleSheet.create({
   },
   documentLink: {
     fontSize: 14,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.primary,
   },
   documentLinkDisabled: {

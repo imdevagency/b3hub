@@ -222,10 +222,10 @@ const s = StyleSheet.create({
   // Hero
   heroTitle: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#000',
     marginBottom: 8,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Inter_700Bold',
   },
   heroSubtitle: {
     fontSize: 16,
@@ -240,7 +240,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     height: 56,
     borderRadius: 28,
     marginBottom: 20,
@@ -248,8 +248,8 @@ const s = StyleSheet.create({
   phonePrimaryBtnText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 
   // Divider
@@ -346,7 +346,7 @@ const s = StyleSheet.create({
     color: colors.dangerText,
     fontSize: 20,
     lineHeight: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     paddingLeft: 4,
   },
 
@@ -357,7 +357,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
@@ -369,7 +369,7 @@ const s = StyleSheet.create({
   primaryBtnText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });

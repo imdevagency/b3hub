@@ -68,7 +68,7 @@ function DayRow({
         <Text
           style={{
             fontSize: 17,
-            fontWeight: '700',
+            fontWeight: '600',
             color: slot.isActive ? '#111827' : '#9ca3af',
             letterSpacing: -0.3,
           }}
@@ -84,7 +84,7 @@ function DayRow({
               hitSlop={8}
             >
               <View className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
                   {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
                 </Text>
               </View>
@@ -303,7 +303,7 @@ export default function ScheduleScreen() {
           <View className="px-5">
             <View className="pt-2 pb-6">
               <Text
-                style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}
+                style={{ fontSize: 32, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.8 }}
               >
                 Grafiks
               </Text>
@@ -322,7 +322,7 @@ export default function ScheduleScreen() {
           <>
             <View className="px-5 pt-1 pb-6">
               <Text
-                style={{ fontSize: 32, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.8 }}
+                style={{ fontSize: 32, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.8 }}
               >
                 Grafiks
               </Text>
@@ -331,7 +331,7 @@ export default function ScheduleScreen() {
             {/* Status Hero */}
             <View className="px-5 mb-8">
               <View
-                className={`rounded-3xl p-6 items-center justify-center min-h-[220px] ${profile.isOnline ? 'bg-gray-900' : 'bg-gray-100'}`}
+                className={`rounded-3xl p-6 items-center justify-center min-h-[220px] ${profile.isOnline ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
               >
                 <View
                   className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${profile.isOnline ? 'bg-white/10' : 'bg-white'}`}
@@ -345,7 +345,7 @@ export default function ScheduleScreen() {
                 <Text
                   style={{
                     fontSize: 24,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: profile.isOnline ? '#ffffff' : '#111827',
                     letterSpacing: -0.5,
                     textAlign: 'center',
@@ -369,7 +369,7 @@ export default function ScheduleScreen() {
                 </Text>
 
                 <TouchableOpacity
-                  className={`mt-8 px-8 py-3.5 rounded-full w-full items-center justify-center ${profile.isOnline ? 'bg-white' : 'bg-gray-900'}`}
+                  className={`mt-8 px-8 py-3.5 rounded-full w-full items-center justify-center ${profile.isOnline ? 'bg-white' : 'bg-[#F9423A]'}`}
                   onPress={() => handleToggleOnline(!profile.isOnline)}
                   activeOpacity={0.8}
                 >
@@ -379,7 +379,7 @@ export default function ScheduleScreen() {
                     <Text
                       style={{
                         fontSize: 16,
-                        fontWeight: '700',
+                        fontWeight: '600',
                         color: profile.isOnline ? '#111827' : '#ffffff',
                       }}
                     >
@@ -394,7 +394,7 @@ export default function ScheduleScreen() {
             <View>
               <View className="px-5 pb-3">
                 <Text
-                  style={{ fontSize: 20, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+                  style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5 }}
                 >
                   Nedēļas plāns
                 </Text>
@@ -423,7 +423,7 @@ export default function ScheduleScreen() {
                   <Text
                     style={{
                       fontSize: 20,
-                      fontWeight: '800',
+                      fontWeight: '700',
                       color: colors.textPrimary,
                       letterSpacing: -0.5,
                     }}
@@ -437,7 +437,7 @@ export default function ScheduleScreen() {
                       key={block.id}
                       className={`py-4 px-5 bg-white border-gray-100 ${i !== futureBlocks.length - 1 ? 'border-b' : ''}`}
                     >
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                         {fmtBlockDate(block.blockedDate)}
                       </Text>
                       {block.reason ? (
@@ -481,7 +481,7 @@ export default function ScheduleScreen() {
           >
             <View className="flex-row justify-between items-center mb-6">
               <Text
-                style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.5 }}
+                style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5 }}
               >
                 {editingDay !== null ? DAY_FULL[editingDay] : ''}
               </Text>
@@ -516,7 +516,7 @@ export default function ScheduleScreen() {
                   maxLength={5}
                   style={{
                     fontSize: 32,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: colors.textPrimary,
                     textAlign: 'center',
                     marginTop: 4,
@@ -545,7 +545,7 @@ export default function ScheduleScreen() {
                   maxLength={5}
                   style={{
                     fontSize: 32,
-                    fontWeight: '800',
+                    fontWeight: '700',
                     color: colors.textPrimary,
                     textAlign: 'center',
                     marginTop: 4,
@@ -556,10 +556,10 @@ export default function ScheduleScreen() {
 
             <TouchableOpacity
               onPress={handleSaveTime}
-              className="mt-6 py-4 rounded-full bg-gray-900 items-center justify-center"
+              className="mt-6 py-4 rounded-full bg-[#F9423A] items-center justify-center"
               activeOpacity={0.8}
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.white }}>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.white }}>
                 Saglabāt grafiku
               </Text>
             </TouchableOpacity>

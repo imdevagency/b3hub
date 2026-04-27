@@ -160,7 +160,7 @@ function LoadingModal({
             <Text
               style={{
                 fontSize: 26,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
               }}
@@ -173,9 +173,9 @@ function LoadingModal({
           </View>
 
           <View>
-            <Text className="text-gray-900 font-bold text-sm mb-2">Faktiskais svars (tonnas)</Text>
+            <Text className="text-gray-900 font-semibold text-sm mb-2">Faktiskais svars (tonnas)</Text>
             <TextInput
-              className="bg-gray-100 rounded-2xl px-4 text-gray-900 font-bold"
+              className="bg-gray-100 rounded-2xl px-4 text-gray-900 font-semibold"
               style={{ paddingVertical: 16, fontSize: 22 }}
               placeholder="Piem. 12.5"
               placeholderTextColor="#9ca3af"
@@ -213,7 +213,7 @@ function LoadingModal({
           </View>
 
           <TouchableOpacity
-            className={`rounded-full items-center justify-center py-5 ${allChecked && !confirming ? 'bg-gray-900' : 'bg-gray-200'}`}
+            className={`rounded-full items-center justify-center py-5 ${allChecked && !confirming ? 'bg-[#F9423A]' : 'bg-gray-200'}`}
             onPress={() => {
               haptics.success();
               const parsed = parseFloat(weight.replace(',', '.'));
@@ -227,7 +227,7 @@ function LoadingModal({
               <Text
                 style={{
                   color: allChecked ? '#ffffff' : '#9ca3af',
-                  fontWeight: '700',
+                  fontWeight: '600',
                   fontSize: 16,
                 }}
               >
@@ -269,7 +269,7 @@ function OrderCard({
             <Text
               style={{
                 fontSize: 18,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.3,
               }}
@@ -281,7 +281,7 @@ function OrderCard({
             </Text>
           </View>
           <View className="items-end" style={{ gap: 4 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>
               €{order.price.toFixed(0)}
             </Text>
             <StatusPill
@@ -385,7 +385,7 @@ function OrderCard({
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            className={`flex-2 items-center justify-center rounded-full py-3.5 bg-gray-900 ${isBusy ? 'opacity-50' : ''}`}
+            className={`flex-2 items-center justify-center rounded-full py-3.5 bg-[#F9423A] ${isBusy ? 'opacity-50' : ''}`}
             style={{ flex: 2 }}
             disabled={!!isBusy}
             onPress={() => onConfirm(order.id)}
@@ -394,7 +394,7 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.white }}>
                 Apstiprināt
               </Text>
             )}
@@ -405,7 +405,7 @@ function OrderCard({
       {order.status === 'CONFIRMED' && (
         <View className="mt-4 mb-4">
           <TouchableOpacity
-            className={`items-center justify-center rounded-full py-3.5 bg-gray-900 ${isBusy ? 'opacity-50' : ''}`}
+            className={`items-center justify-center rounded-full py-3.5 bg-[#F9423A] ${isBusy ? 'opacity-50' : ''}`}
             disabled={!!isBusy}
             onPress={() => onStartLoading(order.id)}
             activeOpacity={0.7}
@@ -413,7 +413,7 @@ function OrderCard({
             {isBusy ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.white }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.white }}>
                 Sākt iekraušanu
               </Text>
             )}
@@ -599,7 +599,7 @@ export default function IncomingScreen() {
         <Text
           style={{
             fontSize: 32,
-            fontWeight: '800',
+            fontWeight: '700',
             color: colors.textPrimary,
             letterSpacing: -0.8,
             lineHeight: 38,
@@ -701,7 +701,7 @@ export default function IncomingScreen() {
                   <Package size={18} color="#2563eb" />
                 </View>
                 <View className="flex-1">
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                     {req.materialCategory}
                   </Text>
                   <Text className="text-gray-500 font-medium mt-0.5" style={{ fontSize: 13 }}>
@@ -713,7 +713,7 @@ export default function IncomingScreen() {
                   style={{ gap: 5 }}
                 >
                   <Send size={12} color="#fff" />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Atbildēt</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>Atbildēt</Text>
                 </View>
               </TouchableOpacity>
             ))
@@ -740,7 +740,7 @@ export default function IncomingScreen() {
                   return (
                     <TouchableOpacity
                       key={f.key}
-                      className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-gray-900' : 'bg-gray-100'}`}
+                      className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
                       style={{ gap: 6 }}
                       onPress={() => {
                         haptics.light();
@@ -763,7 +763,7 @@ export default function IncomingScreen() {
                           <Text
                             style={{
                               fontSize: 11,
-                              fontWeight: '700',
+                              fontWeight: '600',
                               color: active ? '#fff' : '#374151',
                             }}
                           >
@@ -810,7 +810,7 @@ export default function IncomingScreen() {
                 action={
                   orders.length === 0 ? (
                     <TouchableOpacity
-                      className="mt-3 bg-gray-900 rounded-full px-6 py-3"
+                      className="mt-3 bg-[#F9423A] rounded-full px-6 py-3"
                       onPress={() => router.push('/(seller)/catalog')}
                     >
                       <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>
@@ -853,7 +853,7 @@ export default function IncomingScreen() {
             className="bg-red-600 rounded-full items-center justify-center py-4"
             onPress={handleRejectConfirm}
           >
-            <Text className="text-white font-bold" style={{ fontSize: 16 }}>
+            <Text className="text-white font-semibold" style={{ fontSize: 16 }}>
               Noraidīt pasūtījumu
             </Text>
           </TouchableOpacity>

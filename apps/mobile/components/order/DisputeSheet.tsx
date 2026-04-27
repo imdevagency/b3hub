@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     backgroundColor: '#fff',
   },
-  disputeReasonRowActive: { borderColor: '#111827', backgroundColor: '#f3f4f6' },
+  disputeReasonRowActive: { borderColor: '#F9423A', backgroundColor: '#f3f4f6' },
   disputeRadio: {
     width: 24,
     height: 24,
@@ -142,10 +142,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  disputeRadioActive: { borderColor: '#111827' },
-  disputeRadioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#111827' },
+  disputeRadioActive: { borderColor: '#F9423A' },
+  disputeRadioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#F9423A' },
   disputeReasonText: { flex: 1, fontSize: 15, color: '#4b5563' },
-  disputeReasonTextActive: { color: '#111827', fontWeight: '700' },
+  disputeReasonTextActive: { color: '#111827', fontWeight: '600' },
   disputeDetailsInput: {
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -159,12 +159,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   disputeSubmitBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: '#F9423A',
     borderRadius: 999,
     paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
-  disputeSubmitBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  disputeSubmitBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

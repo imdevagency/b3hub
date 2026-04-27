@@ -177,8 +177,8 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
             <Text
               style={{
                 fontSize: 20,
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
                 color: colors.textPrimary,
               }}
             >
@@ -231,8 +231,8 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                     <Text
                       style={{
                         fontSize: 16,
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
+                        fontFamily: 'Inter_600SemiBold',
+                        fontWeight: '600',
                         color: '#fff',
                       }}
                     >
@@ -398,8 +398,8 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                     <Text
                       style={{
                         fontSize: 16,
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
+                        fontFamily: 'Inter_600SemiBold',
+                        fontWeight: '600',
                         color: '#fff',
                       }}
                     >

@@ -74,7 +74,7 @@ export function TruckIllustration({
         justifyContent: 'center',
       }}
     >
-      <Text style={{ fontSize: 10, color: onDark ? '#9ca3af' : '#9ca3af', fontWeight: '700', letterSpacing: 1 }}>AUTO</Text>
+      <Text style={{ fontSize: 10, color: onDark ? '#9ca3af' : '#9ca3af', fontWeight: '600', letterSpacing: 1 }}>AUTO</Text>
     </View>
   );
 }

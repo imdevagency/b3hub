@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 
   // ── Backdrop ──
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: 4,
   },
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modeCardBody: { flex: 1, gap: 3 },
-  modeCardLabel: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  modeCardLabel: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   modeCardSub: { fontSize: 13, color: colors.textMuted },
   activeCheck: {
     width: 28,

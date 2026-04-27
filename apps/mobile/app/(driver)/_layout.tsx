@@ -186,8 +186,8 @@ const ls = StyleSheet.create({
   avatarBtnText: {
     color: colors.white,
     fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
 });
 

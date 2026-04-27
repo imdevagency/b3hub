@@ -133,7 +133,7 @@ export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipO
 const s = StyleSheet.create({
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
   },
@@ -175,7 +175,7 @@ const s = StyleSheet.create({
   submitBtnText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   // Success
   successWrap: {
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
   },
   successTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textPrimary,
   },
   successSub: {

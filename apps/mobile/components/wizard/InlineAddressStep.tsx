@@ -733,14 +733,14 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   confirmBtn: {
-    backgroundColor: '#000',
+    backgroundColor: '#F9423A',
     borderRadius: 8,
     alignItems: 'center',
     paddingVertical: 16,
     marginTop: 4,
   },
   confirmBtnDisabled: { backgroundColor: '#d1d5db' },
-  confirmBtnText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_700Bold' },
+  confirmBtnText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_600SemiBold' },
 
   // Price preview
   previewWrap: {
@@ -769,7 +769,7 @@ const s = StyleSheet.create({
   previewMetaText: { fontSize: 11, color: colors.textMuted, fontFamily: 'Inter_400Regular' },
   previewMetaDot: { fontSize: 11, color: colors.textDisabled },
   previewPriceCol: { alignItems: 'flex-end' },
-  previewPrice: { fontSize: 14, color: colors.success, fontFamily: 'Inter_700Bold' },
+  previewPrice: { fontSize: 14, color: colors.success, fontFamily: 'Inter_600SemiBold' },
   previewUnit: { fontSize: 11, color: colors.textMuted, fontFamily: 'Inter_400Regular' },
 
   // ── Uber Stack (transport steps SEARCH mode) ──
@@ -797,9 +797,9 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     marginRight: 12,
   },
-  uberDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#000' },
+  uberDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#F9423A' },
   uberLine: { width: 2, flex: 1, backgroundColor: '#e5e7eb', marginVertical: 4 },
-  uberSquare: { width: 10, height: 10, backgroundColor: '#000' },
+  uberSquare: { width: 10, height: 10, backgroundColor: '#F9423A' },
   uberInputs: { flex: 1, gap: 10 },
   uberInputActiveWrap: { position: 'relative' },
   uberInputActive: {
@@ -845,7 +845,7 @@ const s = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
   },
-  headerTitle: { fontSize: 26, fontFamily: 'Inter_700Bold', color: '#000' },
+  headerTitle: { fontSize: 26, fontFamily: 'Inter_600SemiBold', color: '#000' },
   headerCloseBtn: {
     width: 36,
     height: 36,

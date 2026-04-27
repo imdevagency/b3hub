@@ -228,7 +228,7 @@ const pin = StyleSheet.create({
     elevation: 4,
   },
   label: {
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#111827',
     marginTop: 4,
     textAlign: 'center',
@@ -303,7 +303,7 @@ function ElegantPill({
           <Text
             style={{
               color: '#fff',
-              fontWeight: '800',
+              fontWeight: '700',
               fontSize: 13,
               transform: [{ translateY: -1 }],
             }}
@@ -312,7 +312,7 @@ function ElegantPill({
           </Text>
         </View>
         <View style={{ justifyContent: 'center' }}>
-          <Text style={{ fontSize: 14, fontWeight: '800', color: '#111827' }} numberOfLines={1}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }} numberOfLines={1}>
             {label || (isPickup ? 'Iekraušana' : 'Piegāde')}
           </Text>
           {subtitle ? (

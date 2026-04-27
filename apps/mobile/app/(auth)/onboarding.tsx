@@ -219,8 +219,8 @@ const s = StyleSheet.create({
   },
   slideTitle: {
     fontSize: 28,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,

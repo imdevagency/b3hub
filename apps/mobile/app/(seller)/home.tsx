@@ -162,11 +162,11 @@ export default function SellerHomeScreen() {
         <View className="px-5">
           {/* FIRST-RUN ONBOARDING */}
           {materialCount === 0 && pendingCount === 0 && (
-            <View className="bg-gray-900 rounded-3xl p-5 mb-6">
+            <View className="bg-[#F9423A] rounded-3xl p-5 mb-6">
               <Text
                 style={{
                   fontSize: 22,
-                  fontWeight: '700',
+                  fontWeight: '600',
                   color: colors.white,
                   letterSpacing: -0.5,
                   marginBottom: 8,
@@ -234,7 +234,7 @@ export default function SellerHomeScreen() {
                 router.push('/(seller)/incoming');
               }}
               className={`rounded-3xl p-5 min-h-[160px] justify-between ${
-                pendingCount !== null && pendingCount > 0 ? 'bg-gray-900' : 'bg-gray-100'
+                pendingCount !== null && pendingCount > 0 ? 'bg-[#F9423A]' : 'bg-gray-100'
               }`}
             >
               {pendingCount !== null ? (
@@ -258,7 +258,7 @@ export default function SellerHomeScreen() {
                         <Text
                           style={{
                             fontSize: 72,
-                            fontWeight: '800',
+                            fontWeight: '700',
                             color: colors.white,
                             lineHeight: 72,
                             letterSpacing: -3.5,
@@ -304,7 +304,7 @@ export default function SellerHomeScreen() {
                         <Text
                           style={{
                             fontSize: 32,
-                            fontWeight: '800',
+                            fontWeight: '700',
                             color: colors.textPrimary,
                             letterSpacing: -1,
                             marginTop: 4,
@@ -356,7 +356,7 @@ export default function SellerHomeScreen() {
             <Text
               style={{
                 fontSize: 20,
-                fontWeight: '800',
+                fontWeight: '700',
                 color: colors.textPrimary,
                 letterSpacing: -0.5,
               }}
@@ -397,7 +397,7 @@ export default function SellerHomeScreen() {
                 >
                   <View className="flex-1 pr-3">
                     <View className="flex-row items-center mb-1.5" style={{ gap: 10 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                         #{order.orderNumber}
                       </Text>
                       <StatusPill label={meta.text} bg={meta.bg} color={meta.color} size="sm" />
@@ -406,7 +406,7 @@ export default function SellerHomeScreen() {
                       {order.buyer?.name ?? '—'} · {order.deliveryCity}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>
                     €{order.total.toFixed(0)}
                   </Text>
                   <ChevronRight size={18} color="#d1d5db" className="ml-2" />
@@ -437,7 +437,7 @@ const ls = StyleSheet.create({
   },
   kpiValue: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },

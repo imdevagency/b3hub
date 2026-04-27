@@ -709,7 +709,7 @@ export default function DisposalWizard() {
                               width: 8,
                               height: 8,
                               borderRadius: 4,
-                              backgroundColor: '#111827',
+                              backgroundColor: '#F9423A',
                             }}
                           />
                         )}
@@ -958,8 +958,8 @@ const s = StyleSheet.create({
   },
   volRowPrice: {
     fontSize: 16,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textSecondary,
   },
   volRowPriceSel: {
@@ -1005,8 +1005,8 @@ const s = StyleSheet.create({
   },
   dayNum: {
     fontSize: 24,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
     color: colors.textPrimary,
     marginVertical: 4,
   },

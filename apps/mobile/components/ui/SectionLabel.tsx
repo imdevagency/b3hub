@@ -18,7 +18,7 @@ export function SectionLabel({ label, style }: Props) {
 const s = StyleSheet.create({
   label: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.textMuted,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
