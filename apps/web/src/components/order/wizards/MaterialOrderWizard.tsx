@@ -524,8 +524,11 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
         deliveryLat: form.lat,
         deliveryLng: form.lng,
         deliveryDate: form.asap ? undefined : form.deliveryDate || undefined,
-        deliveryWindow:
-          form.asap ? undefined : form.deliveryWindow !== 'ANY' ? form.deliveryWindow : undefined,
+        deliveryWindow: form.asap
+          ? undefined
+          : form.deliveryWindow !== 'ANY'
+            ? form.deliveryWindow
+            : undefined,
         contactName: contact.name,
         contactPhone: contact.phone,
         contactEmail: contact.email,

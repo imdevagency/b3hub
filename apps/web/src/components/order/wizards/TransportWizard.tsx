@@ -398,7 +398,8 @@ export function TransportWizard({ mode }: Props) {
         quantity: weightT ? parseFloat(weightT) : 1,
         unit: weightT ? 'TONNE' : 'LOAD',
         deliveryAddress: toAddress || fromAddress,
-        deliveryCity: toCity || fromCity || (toAddress || fromAddress).split(',').slice(-1)[0]?.trim() || '',
+        deliveryCity:
+          toCity || fromCity || (toAddress || fromAddress).split(',').slice(-1)[0]?.trim() || '',
         deliveryLat: toLat,
         deliveryLng: toLng,
         deliveryDate: date || undefined,

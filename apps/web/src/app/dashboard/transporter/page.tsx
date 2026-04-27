@@ -296,9 +296,15 @@ export default function TransporterDashboardPage() {
 
         {/* QUICK STATS STRIP */}
         <div className="grid grid-cols-3 border border-gray-200 rounded-xl bg-white divide-x divide-gray-200 overflow-hidden">
-          <div className="px-5 py-4"><QuickStat value={n(data?.activeJobs)} label="Aktīvi Darbi" /></div>
-          <div className="px-5 py-4"><QuickStat value={n(data?.completedToday)} label="Pabeigti Šodien" /></div>
-          <div className="px-5 py-4"><QuickStat value={isDispatcher ? n(data?.vehicleCount) : '—'} label="Tehnika" /></div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.activeJobs)} label="Aktīvi Darbi" />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.completedToday)} label="Pabeigti Šodien" />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat value={isDispatcher ? n(data?.vehicleCount) : '—'} label="Tehnika" />
+          </div>
         </div>
       </div>
 

@@ -12,15 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import {
-  Package,
-  MapPin,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Phone,
-  ArrowRight,
-} from 'lucide-react';
+import { Package, MapPin, Clock, CheckCircle2, AlertCircle, Phone, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -107,14 +99,14 @@ export default function GuestOrderTrackingPage() {
     );
   }
 
-  const currentStepIndex = order.status === 'CANCELLED'
-    ? -1
-    : STATUS_STEPS.indexOf(order.status as typeof STATUS_STEPS[number]);
+  const currentStepIndex =
+    order.status === 'CANCELLED'
+      ? -1
+      : STATUS_STEPS.indexOf(order.status as (typeof STATUS_STEPS)[number]);
 
   return (
     <div className="min-h-screen bg-neutral-50 px-4 py-10">
       <div className="mx-auto max-w-lg space-y-5">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -144,16 +136,10 @@ export default function GuestOrderTrackingPage() {
                       <div className="flex flex-col items-center flex-1">
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                            done
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-gray-100 text-gray-400'
+                            done ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400'
                           }`}
                         >
-                          {done && !active ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            idx + 1
-                          )}
+                          {done && !active ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
                         </div>
                         <p
                           className={`mt-2 text-[11px] font-semibold text-center ${active ? 'text-gray-900' : done ? 'text-gray-600' : 'text-gray-400'}`}
@@ -199,7 +185,9 @@ export default function GuestOrderTrackingPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Daudzums</span>
-              <span className="font-semibold">{order.quantity} {order.unit}</span>
+              <span className="font-semibold">
+                {order.quantity} {order.unit}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Piegādes adrese</span>
@@ -253,7 +241,6 @@ export default function GuestOrderTrackingPage() {
             </Link>
           </Button>
         </div>
-
       </div>
     </div>
   );

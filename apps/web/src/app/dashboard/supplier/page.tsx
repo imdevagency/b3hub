@@ -111,9 +111,15 @@ export default function SupplierDashboardPage() {
 
         {/* QUICK STATS STRIP */}
         <div className="grid grid-cols-3 border border-gray-200 rounded-xl bg-white divide-x divide-gray-200 overflow-hidden">
-          <div className="px-5 py-4"><QuickStat value={n(data?.pendingOrders)} label="Gaida Izpildi" /></div>
-          <div className="px-5 py-4"><QuickStat value={n(data?.activeListings)} label="Aktīvi Sludinājumi" /></div>
-          <div className="px-5 py-4"><QuickStat value={money(data?.monthlyRevenue)} label="Mēneša Ieņēmumi" /></div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.pendingOrders)} label="Gaida Izpildi" />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.activeListings)} label="Aktīvi Sludinājumi" />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat value={money(data?.monthlyRevenue)} label="Mēneša Ieņēmumi" />
+          </div>
         </div>
       </div>
 

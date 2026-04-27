@@ -142,9 +142,15 @@ export default function BuyerDashboardPage() {
 
         {/* QUICK STATS STRIP */}
         <div className="grid grid-cols-3 border border-gray-200 rounded-xl bg-white divide-x divide-gray-200 overflow-hidden">
-          <div className="px-5 py-4"><QuickStat value={n(data?.activeOrders)} label="Procesā" /></div>
-          <div className="px-5 py-4"><QuickStat value={n(data?.awaitingDelivery)} label="Gaidāmās Piegādes" /></div>
-          <div className="px-5 py-4"><QuickStat value={n(data?.myOrders)} label="Pasūtījumi" /></div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.activeOrders)} label="Procesā" />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.awaitingDelivery)} label="Gaidāmās Piegādes" />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat value={n(data?.myOrders)} label="Pasūtījumi" />
+          </div>
         </div>
       </div>
 

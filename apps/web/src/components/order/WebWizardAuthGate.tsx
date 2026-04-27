@@ -391,7 +391,10 @@ export function WebWizardAuthGate({
           {mode === 'guest' && (
             <div className="space-y-3">
               <button
-                onClick={() => { setMode('choice'); setError(''); }}
+                onClick={() => {
+                  setMode('choice');
+                  setError('');
+                }}
                 className="text-sm text-gray-500 hover:text-gray-700 mb-1"
               >
                 ← Atpakaļ
@@ -429,18 +432,20 @@ export function WebWizardAuthGate({
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 
-              <Button
-                onClick={handleGuestContinue}
-                className="w-full rounded-xl"
-              >
+              <Button onClick={handleGuestContinue} className="w-full rounded-xl">
                 Iesniegt pasūtījumu
               </Button>
 
               <p className="text-xs text-gray-400 text-center pt-1">
                 Ar iesniegšanu jūs piekrītat{' '}
-                <a href="/terms" target="_blank" className="underline">lietošanas noteikumiem</a>{' '}
+                <a href="/terms" target="_blank" className="underline">
+                  lietošanas noteikumiem
+                </a>{' '}
                 un{' '}
-                <a href="/privacy" target="_blank" className="underline">privātuma politikai</a>.
+                <a href="/privacy" target="_blank" className="underline">
+                  privātuma politikai
+                </a>
+                .
               </p>
             </div>
           )}
