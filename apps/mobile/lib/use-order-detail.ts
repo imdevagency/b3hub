@@ -13,8 +13,14 @@ export function useOrderDetail(id: string | undefined) {
   const [documents, setDocuments] = useState<ApiDocument[]>([]);
 
   const reload = useCallback(async (background = false) => {
-    if (!token || !id) {
+    if (!id) {
       setLoading(false);
+      return;
+    }
+    // If the token isn't available yet, keep the loading skeleton showing
+    // rather than flashing an empty "not found" state. The effect will re-run
+    // automatically once the token arrives (because token is in reload's deps).
+    if (!token) {
       return;
     }
     if (!background) setLoading(true);

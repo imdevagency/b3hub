@@ -1,14 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Animated,
-  Alert,
-  Linking,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 // Guard: expo-clipboard requires a native build (not available in Expo Go)
 let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
 try {
@@ -39,51 +30,8 @@ export default function OrderConfirmation() {
   const paymentUrl = state.skipPaymentUrl;
   const [paying, setPaying] = useState(false);
 
-  // ── Entrance animations ──────────────────────────────────────────────
-  const iconScale = useRef(new Animated.Value(0)).current;
-  const iconOpacity = useRef(new Animated.Value(0)).current;
-  const headerY = useRef(new Animated.Value(24)).current;
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const cardY = useRef(new Animated.Value(32)).current;
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const btnsY = useRef(new Animated.Value(20)).current;
-  const btnsOpacity = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     haptics.success();
-    Animated.sequence([
-      Animated.delay(80),
-      Animated.parallel([
-        Animated.spring(iconScale, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 120,
-          friction: 7,
-        }),
-        Animated.timing(iconOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      ]),
-    ]).start();
-    Animated.sequence([
-      Animated.delay(240),
-      Animated.parallel([
-        Animated.spring(headerY, { toValue: 0, useNativeDriver: true, tension: 80, friction: 10 }),
-        Animated.timing(headerOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
-      ]),
-    ]).start();
-    Animated.sequence([
-      Animated.delay(400),
-      Animated.parallel([
-        Animated.spring(cardY, { toValue: 0, useNativeDriver: true, tension: 70, friction: 10 }),
-        Animated.timing(cardOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
-      ]),
-    ]).start();
-    Animated.sequence([
-      Animated.delay(560),
-      Animated.parallel([
-        Animated.spring(btnsY, { toValue: 0, useNativeDriver: true, tension: 70, friction: 10 }),
-        Animated.timing(btnsOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
-      ]),
-    ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -122,15 +70,13 @@ export default function OrderConfirmation() {
   return (
     <ScreenContainer standalone bg="#fff">
       <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
-        <Animated.View
-          style={[{ opacity: iconOpacity, transform: [{ scale: iconScale }] }, s.iconWrap]}
-        >
+        <View style={[{ opacity: 1 }, s.iconWrap]}>
           <View style={s.successCircle}>
             <CheckCircle2 size={40} color="#059669" strokeWidth={2.5} />
           </View>
-        </Animated.View>
+        </View>
 
-        <Animated.View style={{ opacity: headerOpacity, transform: [{ translateY: headerY }] }}>
+        <View>
           <Text style={s.title}>{t.skipHire.confirmation.title}</Text>
           <Text style={s.subtitle}>{t.skipHire.confirmation.subtitle}</Text>
 
@@ -145,9 +91,9 @@ export default function OrderConfirmation() {
             <Text style={s.minimalOrderText}>Pasūtījums: {order.orderNumber}</Text>
             <Copy size={14} color="#6b7280" />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
 
-        <Animated.View style={{ opacity: cardOpacity, transform: [{ translateY: cardY }] }}>
+        <View>
           {/* Minimal details list without heavy background or borders */}
           <View style={s.minimalDetails}>
             {details.map((row, i) => (
@@ -181,10 +127,10 @@ export default function OrderConfirmation() {
               </Text>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* CTA buttons */}
-        <Animated.View style={{ opacity: btnsOpacity, transform: [{ translateY: btnsY }] }}>
+        <View>
           {/* Pay Now — shown when booking still awaiting payment */}
           {!!paymentUrl && (
             <TouchableOpacity
@@ -239,7 +185,7 @@ export default function OrderConfirmation() {
           >
             <Text style={s.secondaryBtnText}>{t.skipHire.confirmation.newOrder}</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </ScrollView>
     </ScreenContainer>
   );

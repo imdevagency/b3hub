@@ -514,7 +514,7 @@ export default function OrderRequestWizard() {
       : step === 'specs'
         ? quantity > 0
         : step === 'when'
-          ? true
+          ? !!deliveryDate
           : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
@@ -523,7 +523,9 @@ export default function OrderRequestWizard() {
       : 'Apmaksāt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
-      : 'Turpināt';
+      : step === 'when' && !deliveryDate
+        ? 'Izvēlieties datumu'
+        : 'Turpināt';
 
   const handleCTA = submitted
     ? submitted === 'rfq'

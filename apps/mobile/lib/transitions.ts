@@ -61,14 +61,13 @@ export const spring = {
 type StackScreenOptions = NativeStackNavigationOptions;
 
 /** Standard push — native slide for all detail / list → detail screens.
- *  slide_from_right runs on the native thread → zero JS-bridge flash.
- *  Gestures re-enabled so iOS swipe-back works naturally. */
+ *  slide_from_right runs on the native thread → zero JS-bridge flash. */
 const push: StackScreenOptions = {
   animation: 'slide_from_right',
   animationDuration: DURATION.push,
-  gestureEnabled: true,
-  fullScreenGestureEnabled: true,
-  animationMatchesGesture: true,
+  gestureEnabled: false,
+  fullScreenGestureEnabled: false,
+  animationMatchesGesture: false,
 };
 
 /**

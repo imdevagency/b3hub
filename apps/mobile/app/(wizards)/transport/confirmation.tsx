@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -46,50 +46,8 @@ export default function TransportConfirmation() {
     estimatedPrice: string;
   }>();
 
-  const iconScale = useRef(new Animated.Value(0)).current;
-  const iconOpacity = useRef(new Animated.Value(0)).current;
-  const headerY = useRef(new Animated.Value(24)).current;
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const cardY = useRef(new Animated.Value(32)).current;
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const btnsY = useRef(new Animated.Value(20)).current;
-  const btnsOpacity = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     haptics.success();
-    Animated.sequence([
-      Animated.delay(80),
-      Animated.parallel([
-        Animated.spring(iconScale, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 120,
-          friction: 7,
-        }),
-        Animated.timing(iconOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      ]),
-    ]).start();
-    Animated.sequence([
-      Animated.delay(240),
-      Animated.parallel([
-        Animated.spring(headerY, { toValue: 0, useNativeDriver: true, tension: 80, friction: 10 }),
-        Animated.timing(headerOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
-      ]),
-    ]).start();
-    Animated.sequence([
-      Animated.delay(400),
-      Animated.parallel([
-        Animated.spring(cardY, { toValue: 0, useNativeDriver: true, tension: 70, friction: 10 }),
-        Animated.timing(cardOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
-      ]),
-    ]).start();
-    Animated.sequence([
-      Animated.delay(560),
-      Animated.parallel([
-        Animated.spring(btnsY, { toValue: 0, useNativeDriver: true, tension: 70, friction: 10 }),
-        Animated.timing(btnsOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
-      ]),
-    ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -104,18 +62,14 @@ export default function TransportConfirmation() {
   return (
     <ScreenContainer standalone bg="#fff">
       {/* Icon */}
-      <Animated.View
-        style={[s.iconWrap, { opacity: iconOpacity, transform: [{ scale: iconScale }] }]}
-      >
+      <View style={s.iconWrap}>
         <View style={s.iconCircle}>
           <CheckCircle2 size={44} color="#22c55e" strokeWidth={1.5} />
         </View>
-      </Animated.View>
+      </View>
 
       {/* Header */}
-      <Animated.View
-        style={[s.headerWrap, { opacity: headerOpacity, transform: [{ translateY: headerY }] }]}
-      >
+      <View style={s.headerWrap}>
         <Text style={s.title}>Pieprasījums nosūtīts!</Text>
         <Text style={s.subtitle}>
           Meklējam piemērotāko pārvadātāju. Jūs saņemsiet paziņojumu, kad brauciens tiks
@@ -127,10 +81,10 @@ export default function TransportConfirmation() {
             <Text style={s.refText}>#{jobNumber}</Text>
           </View>
         )}
-      </Animated.View>
+      </View>
 
       {/* Summary card */}
-      <Animated.View style={[s.card, { opacity: cardOpacity, transform: [{ translateY: cardY }] }]}>
+      <View style={s.card}>
         <Text style={s.cardTitle}>Maršruta kopsavilkums</Text>
 
         {/* Route display */}
@@ -194,10 +148,10 @@ export default function TransportConfirmation() {
             </View>
           </View>
         ) : null}
-      </Animated.View>
+      </View>
 
       {/* Buttons */}
-      <Animated.View style={[s.btns, { opacity: btnsOpacity, transform: [{ translateY: btnsY }] }]}>
+      <View style={s.btns}>
         <TouchableOpacity
           style={s.btnPrimary}
           onPress={() => {
@@ -218,7 +172,7 @@ export default function TransportConfirmation() {
         >
           <Text style={s.btnSecondaryText}>Uz sākumu</Text>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </ScreenContainer>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,48 +10,20 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Linking,
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { useRouter } from 'expo-router';
-import {
-  X,
-  LogOut,
-  Trash2,
-  ChevronRight,
-  AlertCircle,
-  HelpCircle,
-  MessageCircle,
-  Settings,
-  Bell,
-  ArrowUpDown,
-  Globe,
-  Package,
-  Truck,
-  FileText,
-  Handshake,
-  Euro,
-  FileCheck,
-  Receipt,
-  MapPin,
-  Ticket,
-  Calendar,
-  ShieldCheck,
-  Building2,
-} from 'lucide-react-native';
+import { LogOut, Trash2, ChevronRight, AlertCircle, ArrowUpDown, Globe } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
-import { api, type ProviderApplication, type AnalyticsOverview } from '@/lib/api';
+import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { getRoleName } from '@/lib/utils';
-// If this file runs in Seller mode, it can import quotes hook
-import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 
 function SectionHeader({ label }: { label: string }) {
   return (
@@ -65,11 +37,9 @@ function SectionHeader({ label }: { label: string }) {
 export default function ProfileScreen() {
   const { user, token, updateUser, logout } = useAuth();
   const { mode, isMultiRole } = useMode();
-  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const openQuoteCount = useOpenQuoteCount(); // Used safely even if we don't show it
 
   const [form, setForm] = useState({
     firstName: user?.firstName ?? '',
@@ -79,24 +49,6 @@ export default function ProfileScreen() {
   const toast = useToast();
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
-
-  const [applications, setApplications] = useState<ProviderApplication[]>([]);
-  useEffect(() => {
-    if (!token) return;
-    api.providerApplications
-      .mine(token)
-      .then(setApplications)
-      .catch(() => {});
-  }, [token]);
-
-  const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverview | null>(null);
-  useEffect(() => {
-    if (!token || !user?.isCompany) return;
-    api.analytics
-      .overview(token)
-      .then(setAnalyticsOverview)
-      .catch(() => {});
-  }, [token, user?.isCompany]);
 
   const ROLE_THEME: Record<string, string> = {
     BUYER: 'bg-red-50 text-red-700',
@@ -231,7 +183,7 @@ export default function ProfileScreen() {
           <ChevronRight size={20} color="#d1d5db" />
         </TouchableOpacity>
 
-        {/* Completeness Nudge — only for logged-in users with incomplete profiles */}
+        {/* Completeness Nudge */}
         {!!user && !isComplete && (
           <TouchableOpacity
             style={[styles.nudgeCard, { marginTop: 12 }]}
@@ -248,44 +200,6 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <ChevronRight size={16} color="#b45309" />
-          </TouchableOpacity>
-        )}
-
-        {/* Analytics Mini-card — company users only */}
-        {mode === 'BUYER' && user?.isCompany && (
-          <TouchableOpacity
-            style={[styles.cardGroup, { marginTop: 16, overflow: 'hidden' }]}
-            activeOpacity={0.85}
-            onPress={() => router.push('/(buyer)/(account)/analytics')}
-          >
-            <View className="flex-row">
-              <View className="flex-1 items-center py-4 border-r border-gray-100">
-                <Text style={{ fontSize: 22, fontWeight: '700', color: '#111827' }}>
-                  {analyticsOverview?.buyer?.monthlySpend?.slice(-1)[0]?.value != null
-                    ? new Intl.NumberFormat('lv-LV', {
-                        style: 'currency',
-                        currency: 'EUR',
-                        maximumFractionDigits: 0,
-                      }).format(analyticsOverview.buyer.monthlySpend.slice(-1)[0].value)
-                    : '—'}
-                </Text>
-                <Text className="text-xs text-gray-500 font-medium mt-0.5">Šomēnes</Text>
-              </View>
-              <View className="flex-1 items-center py-4">
-                <Text style={{ fontSize: 22, fontWeight: '700', color: '#111827' }}>
-                  {analyticsOverview?.buyer?.orderBreakdown != null
-                    ? analyticsOverview.buyer.orderBreakdown
-                        .filter((b) => ['IN_PROGRESS', 'CONFIRMED'].includes(b.status))
-                        .reduce((s, b) => s + b.count, 0)
-                    : '—'}
-                </Text>
-                <Text className="text-xs text-gray-500 font-medium mt-0.5">Aktīvi</Text>
-              </View>
-            </View>
-            <View className="border-t border-gray-100 px-4 py-2.5 flex-row items-center justify-between">
-              <Text className="text-xs text-gray-400 font-medium">Statistika</Text>
-              <ChevronRight size={14} color="#d1d5db" />
-            </View>
           </TouchableOpacity>
         )}
 
@@ -308,241 +222,9 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* Dynamic Mode-Specific Links — only for non-buyer roles */}
-        {mode !== 'BUYER' && (
-          <>
-            <SectionHeader label="DARBĪBAS" />
-            <View style={styles.cardGroup}>
-              {mode === 'SUPPLIER' && (
-                <>
-                  <MenuItem
-                    icon={Package}
-                    label="Materiālu katalogs"
-                    onPress={() => router.push('/(seller)/catalog')}
-                  />
-                  <MenuItem
-                    icon={Euro}
-                    label="Izpeļņa"
-                    onPress={() => router.push('/(seller)/earnings')}
-                  />
-                  <MenuItem
-                    icon={FileText}
-                    label="Cenu pieprasījumi"
-                    value={openQuoteCount > 0 ? `${openQuoteCount} gaida` : undefined}
-                    onPress={() => router.push('/(seller)/quotes')}
-                  />
-                  <MenuItem
-                    icon={FileCheck}
-                    label="Pavadzīmes"
-                    onPress={() => router.push('/(seller)/documents')}
-                  />
-                  <MenuItem
-                    icon={Handshake}
-                    label="Ilgtermiņa līgumi"
-                    onPress={() => router.push('/(seller)/framework-contracts')}
-                    hideBorder
-                  />
-                </>
-              )}
-
-              {mode === 'CARRIER' && (
-                <>
-                  <MenuItem
-                    icon={Euro}
-                    label="Izpeļņa"
-                    onPress={() => router.push('/(driver)/earnings')}
-                  />
-                  <MenuItem
-                    icon={Truck}
-                    label="Transporti"
-                    onPress={() => router.push('/(driver)/vehicles')}
-                  />
-                  <MenuItem
-                    icon={Package}
-                    label="Konteineri (Skips)"
-                    onPress={() => router.push('/(driver)/skips')}
-                  />
-                  <MenuItem
-                    icon={FileCheck}
-                    label="Pavadzīmes"
-                    onPress={() => router.push('/(driver)/documents')}
-                    hideBorder
-                  />
-                </>
-              )}
-            </View>
-          </>
-        )}
-
-        {/* Application Section (Only show if missing rights and in BUYER mode commonly or generally) */}
-        {(!user?.canSell || !user?.canTransport) && mode === 'BUYER' && !!user?.company?.id && (
-          <>
-            <SectionHeader label="PIETEIKUMI" />
-            <View style={styles.cardGroup}>
-              {!user?.canSell &&
-                (() => {
-                  const app = applications.find((a) => a.appliesForSell);
-                  if (app?.status === 'PENDING') {
-                    return (
-                      <ApplicationRow
-                        icon={Package}
-                        label="Piegādātāja pieteikums"
-                        status="PENDING"
-                        hideBorder={!!user?.canTransport}
-                      />
-                    );
-                  }
-                  if (app?.status === 'REJECTED') {
-                    return (
-                      <ApplicationRow
-                        icon={Package}
-                        label="Piegādātāja pieteikums"
-                        status="REJECTED"
-                        onReapply={() => router.push('/(auth)/apply-role?type=supplier')}
-                        hideBorder={!!user?.canTransport}
-                      />
-                    );
-                  }
-                  return (
-                    <MenuItem
-                      icon={Package}
-                      label="Kļūt par piegādātāju"
-                      hideBorder={!!user?.canTransport}
-                      onPress={() => router.push('/(auth)/apply-role?type=supplier')}
-                    />
-                  );
-                })()}
-
-              {!user?.canTransport &&
-                (() => {
-                  const app = applications.find((a) => a.appliesForTransport);
-                  if (app?.status === 'PENDING') {
-                    return (
-                      <ApplicationRow
-                        icon={Truck}
-                        label="Pārvadātāja pieteikums"
-                        status="PENDING"
-                        hideBorder
-                      />
-                    );
-                  }
-                  if (app?.status === 'REJECTED') {
-                    return (
-                      <ApplicationRow
-                        icon={Truck}
-                        label="Pārvadātāja pieteikums"
-                        status="REJECTED"
-                        onReapply={() => router.push('/(auth)/apply-role?type=carrier')}
-                        hideBorder
-                      />
-                    );
-                  }
-                  return (
-                    <MenuItem
-                      icon={Truck}
-                      label="Kļūt par pārvadātāju"
-                      hideBorder
-                      onPress={() => router.push('/(auth)/apply-role?type=carrier')}
-                    />
-                  );
-                })()}
-            </View>
-          </>
-        )}
-
-        {/* Account section */}
-        {mode === 'BUYER' && (
-          <>
-            <SectionHeader label="KONTS" />
-            <View style={styles.cardGroup}>
-              <MenuItem
-                icon={Receipt}
-                label="Rēķini"
-                onPress={() => router.push('/(buyer)/(account)/invoices')}
-              />
-              <MenuItem
-                icon={FileText}
-                label="Dokumenti"
-                onPress={() => router.push('/(buyer)/(account)/documents')}
-              />
-              <MenuItem
-                icon={AlertCircle}
-                label="Strīdi"
-                onPress={() => router.push('/(buyer)/(account)/disputes')}
-              />
-              <MenuItem
-                icon={MapPin}
-                label="Saglabātās adreses"
-                onPress={() => router.push('/(buyer)/(account)/saved-addresses')}
-                hideBorder
-              />
-            </View>
-          </>
-        )}
-
-        {/* B2B-only section */}
-        {mode === 'BUYER' && user?.isCompany && (
-          <>
-            <SectionHeader label="UZŅĒMUMS" />
-            <View style={styles.cardGroup}>
-              <MenuItem
-                icon={Calendar}
-                label="Grafiki"
-                onPress={() => router.push('/(buyer)/(account)/schedules')}
-              />
-              {/* TODO: B3 FIELDS — re-enable when physical locations are live */}
-              {/* <MenuItem
-                icon={Ticket}
-                label="Laukuma caurlaides"
-                onPress={() => router.push('/(buyer)/(account)/field-passes')}
-              /> */}
-              <MenuItem
-                icon={ShieldCheck}
-                label="Atbilstības sertifikāti"
-                onPress={() => router.push('/(buyer)/(account)/certificates')}
-              />
-              <MenuItem
-                icon={Building2}
-                label="Uzņēmuma profils"
-                value="b3hub.lv"
-                onPress={() => {
-                  haptics.light();
-                  Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null);
-                }}
-                hideBorder
-              />
-            </View>
-          </>
-        )}
-
-        <SectionHeader label="VISPĀRĪGI" />
+        {/* Language Toggle */}
+        <SectionHeader label="VALODA" />
         <View style={styles.cardGroup}>
-          <MenuItem
-            icon={Bell}
-            label="Paziņojumi"
-            value={
-              [user?.notifOrderUpdates, user?.notifJobAlerts, user?.notifPush].filter(Boolean)
-                .length === 0
-                ? 'Izslēgti'
-                : user?.notifPush === false
-                  ? 'Tikai lietotnē'
-                  : 'Ieslēgti'
-            }
-            onPress={() => router.push('/notifications')}
-          />
-          <MenuItem
-            icon={MessageCircle}
-            label="Ziņojumi"
-            onPress={() => router.push('/messages')}
-          />
-          <MenuItem icon={Settings} label="Iestatījumi" onPress={() => router.push('/settings')} />
-          <MenuItem
-            icon={HelpCircle}
-            label="Palīdzība / BUJ"
-            onPress={() => router.push('/help')}
-          />
-
-          {/* Language Toggle inline item */}
           <TouchableOpacity
             style={styles.cardItem}
             onPress={() => {
@@ -551,7 +233,7 @@ export default function ProfileScreen() {
             }}
             activeOpacity={0.7}
           >
-            <View style={styles.row}>
+            <View style={[styles.row]}>
               <View style={styles.rowIcon}>
                 <Globe size={20} color="#6b7280" />
               </View>
@@ -708,50 +390,6 @@ function MenuItem({
   );
 }
 
-function ApplicationRow({
-  icon: Icon,
-  label,
-  status,
-  onReapply,
-  hideBorder,
-}: {
-  icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
-  label: string;
-  status: string;
-  onReapply?: () => void;
-  hideBorder?: boolean;
-}) {
-  return (
-    <View style={styles.cardItem}>
-      <View style={[styles.row, !hideBorder && styles.rowBorder]}>
-        <View style={styles.rowIcon}>
-          <Icon size={24} color="#6b7280" strokeWidth={1.5} />
-        </View>
-        <View style={styles.rowBody}>
-          <Text style={styles.rowLabel}>{label}</Text>
-        </View>
-
-        {status === 'PENDING' ? (
-          <View style={styles.badgeAmber}>
-            <Text style={styles.badgeAmberText}>Izskatīšanā</Text>
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={styles.badgeRed}>
-              <Text style={styles.badgeRedText}>Noraidīts</Text>
-            </View>
-            {onReapply && (
-              <TouchableOpacity onPress={onReapply} activeOpacity={0.7}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#3b82f6' }}>Atkārtot</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 80,
@@ -838,29 +476,5 @@ const styles = StyleSheet.create({
   },
   langOptActive: {
     color: '#111827',
-  },
-  badgeAmber: {
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeAmberText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#b45309',
-    textTransform: 'uppercase',
-  },
-  badgeRed: {
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeRedText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#991b1b',
-    textTransform: 'uppercase',
   },
 });

@@ -1,9 +1,6 @@
 /**
  * ScreenContainer — universal page wrapper for consistent safe-area,
  * background color, and vertical layout across all screens.
- *
- * Animates in with a subtle fade + upward slide on mount AND on every
- * tab-focus (useFocusEffect), so switching tabs feels snappy.
  */
 
 import React, { useRef, useCallback } from 'react';
@@ -48,25 +45,13 @@ export function ScreenContainer({
   const resolvedTopInset = topInset !== undefined ? topInset : standalone ? insets.top : 0;
 
   const opacity = useRef(new Animated.Value(noAnimation ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(noAnimation ? 0 : 14)).current;
 
-  // Replay on every tab focus — keeps the animation snappy when switching tabs.
-  // Falls back to a plain mount effect for standalone (non-tab) screens.
+  // Simple fade-in on focus — no spring, no bounce.
   useFocusEffect(
     useCallback(() => {
       if (noAnimation) return;
-      // Reset to start position so re-entering a tab always animates
       opacity.setValue(0);
-      translateY.setValue(14);
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 160, useNativeDriver: true }),
-        Animated.spring(translateY, {
-          toValue: 0,
-          tension: 90,
-          friction: 14,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.timing(opacity, { toValue: 1, duration: 160, useNativeDriver: true }).start();
     }, [noAnimation]),
   );
 
@@ -74,14 +59,7 @@ export function ScreenContainer({
   // so the content background can differ from the header background.
   if (topBg && resolvedTopInset > 0) {
     return (
-      <Animated.View
-        style={[
-          styles.base,
-          { backgroundColor: topBg },
-          { opacity, transform: [{ translateY }] },
-          style,
-        ]}
-      >
+      <Animated.View style={[styles.base, { backgroundColor: topBg }, { opacity }, style]}>
         <View style={{ height: resolvedTopInset, backgroundColor: topBg }} />
         <View style={[styles.base, { backgroundColor: bg }]}>{children}</View>
       </Animated.View>
@@ -94,7 +72,7 @@ export function ScreenContainer({
         styles.base,
         { backgroundColor: bg },
         resolvedTopInset > 0 && { paddingTop: resolvedTopInset },
-        { opacity, transform: [{ translateY }] },
+        { opacity },
         style,
       ]}
     >
