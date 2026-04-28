@@ -21,8 +21,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "send:notif": "node scripts/send-test-notification.mjs",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "android": "cd apps/mobile && APP_VARIANT=development npx expo run:android",
+    "ios": "cd apps/mobile && APP_VARIANT=development npx expo run:ios",
     "docs:generate": "node scripts/generate-instructions.mjs",
     "postinstall": "patch-package"
   },
