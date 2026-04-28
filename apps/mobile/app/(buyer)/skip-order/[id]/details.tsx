@@ -13,6 +13,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Phone, Package, Trash2, Clock3, Truck, CreditCard } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ChevronLeft } from 'lucide-react-native';
+import { PriceRow } from '@/components/ui/PriceRow';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonDetail } from '@/components/ui/Skeleton';
@@ -104,40 +106,13 @@ export default function SkipOrderDetailsScreen() {
     ]);
   }, [order, setOrder, toast, token]);
 
-  if (loading) {
-    return (
-      <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Detaļas" />
-        <SkeletonDetail />
-      </ScreenContainer>
-    );
-  }
-
-  if (!order) {
-    return (
-      <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Detaļas" />
-        <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
-      </ScreenContainer>
-    );
-  }
-
-  const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
-  const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
-  const isTerminal =
-    order.status === 'COLLECTED' || order.status === 'COMPLETED' || order.status === 'CANCELLED';
-  const canAmend = order.status === 'PENDING' || order.status === 'CONFIRMED';
-  const canRequestPickup = order.status === 'DELIVERED';
-  const canExtend = order.status === 'DELIVERED';
-  const canCallCarrier = !!order.carrier?.phone;
-
   const handleCallCarrier = useCallback(() => {
-    if (!order.carrier?.phone) return;
+    if (!order?.carrier?.phone) return;
     haptics.light();
-    Linking.openURL(`tel:${order.carrier.phone}`).catch(() =>
+    Linking.openURL(`tel:${order?.carrier?.phone}`).catch(() =>
       toast.error('Neizdevās atvērt telefona klientu'),
     );
-  }, [order.carrier?.phone, toast]);
+  }, [order?.carrier?.phone, toast]);
 
   const handleRequestPickup = useCallback(() => {
     if (!order || !token) return;
@@ -209,6 +184,31 @@ export default function SkipOrderDetailsScreen() {
     ]);
   }, [order, setOrder, token, toast]);
 
+  if (loading) {
+    return (
+      <ScreenContainer bg="#FFFFFF" standalone>
+        <SkeletonDetail />
+      </ScreenContainer>
+    );
+  }
+
+  if (!order) {
+    return (
+      <ScreenContainer bg="#FFFFFF" standalone>
+        <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
+      </ScreenContainer>
+    );
+  }
+
+  const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
+  const canRate = (order.status === 'COLLECTED' || order.status === 'COMPLETED') && !alreadyRated;
+  const isTerminal =
+    order.status === 'COLLECTED' || order.status === 'COMPLETED' || order.status === 'CANCELLED';
+  const canAmend = order.status === 'PENDING' || order.status === 'CONFIRMED';
+  const canRequestPickup = order.status === 'DELIVERED';
+  const canExtend = order.status === 'DELIVERED';
+  const canCallCarrier = !!order?.carrier?.phone;
+
   const orderRows = [
     { label: 'Pasūtījuma numurs', value: `#${order.orderNumber}` },
     { label: 'Piegādes vieta', value: order.location },
@@ -245,29 +245,133 @@ export default function SkipOrderDetailsScreen() {
   ].filter((row) => row.value);
 
   return (
-    <ScreenContainer bg="#F4F5F7" standalone>
-      <ScreenHeader title="Detaļas" />
+    <ScreenContainer bg="#FFFFFF" standalone topInset={0}>
+      <View style={styles.headerSpacer} />
+      <View style={styles.headerSection}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            haptics.light();
+            if (router.canGoBack()) router.back();
+            else router.replace('/(buyer)/orders');
+          }}
+          hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+        >
+          <ChevronLeft size={24} color="#111827" />
+        </TouchableOpacity>
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        alwaysBounceVertical={false}
-      >
-        {/* ── Hero ── */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroTitleRow}>
-            <Text style={styles.heroTitle} numberOfLines={2}>
-              {SIZE_LABEL[order.skipSize] ?? order.skipSize} ·{' '}
-              {WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory}
+        <View style={styles.titleRow}>
+          <View style={styles.titleLeft}>
+            <Text style={styles.titleText}>
+              {order.carrier ? order.carrier.name : 'Nav piešķirts pārvadātājs'}
             </Text>
-            <OrderStatusBadge status={order.status} size="md" />
+            <Text style={styles.dateText}>
+              {formatDate(order.deliveryDate || order.createdAt || '')}
+            </Text>
           </View>
-          <Text style={styles.heroSubtitle}>
-            {formatDate(order.createdAt)} · #{order.orderNumber}
-          </Text>
+          <View style={styles.avatarCircle}>
+            {order.carrier ? (
+              <Text style={styles.avatarText}>
+                {order.carrier.name.substring(0, 2).toUpperCase()}
+              </Text>
+            ) : (
+              <Package size={20} color="#9CA3AF" />
+            )}
+          </View>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.noMapSpacer} />
+
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeading}>Piegāde</Text>
+          <View style={styles.timeline}>
+            <View style={styles.timelineStop}>
+              <View style={styles.dotBgBlue}>
+                <View style={styles.dotCoreBlue} />
+              </View>
+              <View style={styles.stopContent}>
+                <Text style={styles.stopAddress}>{order.location}</Text>
+                <Text style={styles.stopCity}>
+                  {SIZE_LABEL[order.skipSize] ?? order.skipSize} ·{' '}
+                  {WASTE_LABEL[order.wasteCategory] ?? order.wasteCategory}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.actionRow}>
+            {canCallCarrier && (
+              <TouchableOpacity style={styles.pillButton} onPress={handleCallCarrier}>
+                <Text style={styles.pillText}>Zvanīt pārvadātājam</Text>
+              </TouchableOpacity>
+            )}
+            {canRequestPickup && (
+              <TouchableOpacity
+                style={styles.pillButton}
+                onPress={handleRequestPickup}
+                disabled={actionLoading}
+              >
+                <Text style={styles.pillText}>Pieprasīt savākšanu</Text>
+              </TouchableOpacity>
+            )}
+            {canExtend && (
+              <TouchableOpacity
+                style={styles.pillButton}
+                onPress={handleExtendHire}
+                disabled={actionLoading}
+              >
+                <Text style={styles.pillText}>Pagarināt nomu</Text>
+              </TouchableOpacity>
+            )}
+            {canCancel && (
+              <TouchableOpacity
+                style={styles.pillButton}
+                onPress={handleCancel}
+                disabled={cancelling}
+              >
+                <Text style={styles.pillText}>Atcelt pasūtījumu</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
-        <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Pasūtījums">
+        <View style={styles.divider} />
+
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeading}>Maksājums</Text>
+          <View style={styles.payRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.payLabel}>Konteinera noma</Text>
+              <Text style={styles.paySub}>
+                {SIZE_LABEL[order.skipSize] ?? order.skipSize}
+                {order.hireDays ? ` · ${order.hireDays} dienas` : ''}
+              </Text>
+            </View>
+            <Text style={styles.payAmount}>€{order.price.toFixed(2)}</Text>
+          </View>
+          <View style={styles.payHairline} />
+          <View style={styles.payRow}>
+            <Text style={styles.payTotalLabel}>Kopā</Text>
+            <Text style={styles.payTotalAmount}>€{order.price.toFixed(2)}</Text>
+          </View>
+          <View style={styles.payMethodRow}>
+            <CreditCard size={20} color="#6B7280" />
+            <Text style={styles.payMethodText}>
+              {order.paymentMethod === 'INVOICE'
+                ? 'Pārskaitījums (Rēķins)'
+                : order.paymentMethod === 'CARD'
+                  ? 'Karte (Paysera)'
+                  : order.paymentMethod}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeading}>Detaļas</Text>
           {orderRows.map((row, index) => (
             <DetailRow
               key={row.label}
@@ -276,167 +380,32 @@ export default function SkipOrderDetailsScreen() {
               last={index === orderRows.length - 1}
             />
           ))}
-        </InfoSection>
+        </View>
 
-        <InfoSection
-          icon={<Clock3 size={16} color={colors.textMuted} />}
-          title="Cena"
-          right={<Text style={styles.priceText}>€{order.price.toFixed(2)}</Text>}
-        >
-          <Text style={styles.priceNote}>Galīgā cena par konteineru piegādi un izvešanu.</Text>
-        </InfoSection>
-
-        {order.carrier && (
-          <InfoSection icon={<Truck size={16} color={colors.textMuted} />} title="Pārvadātājs">
-            <DetailRow label="Uzņēmums" value={order.carrier.name} />
-            {order.carrier.phone && <DetailRow label="Tālrunis" value={order.carrier.phone} last />}
-            {order.carrier.phone && (
-              <TouchableOpacity
-                style={styles.callButton}
-                onPress={() => Linking.openURL(`tel:${order.carrier!.phone}`).catch(() => null)}
-                activeOpacity={0.7}
-              >
-                <Phone size={14} color="#fff" />
-                <Text style={styles.callButtonText}>Zvanīt pārvadātājam</Text>
-              </TouchableOpacity>
-            )}
-          </InfoSection>
-        )}
-
-        {!order.carrier && (order.status === 'PENDING' || order.status === 'CONFIRMED') && (
-          <InfoSection icon={<Truck size={16} color={colors.textMuted} />} title="Pārvadātājs">
-            <Text style={styles.emptySectionText}>Pārvadātājs vēl nav piešķirts.</Text>
-          </InfoSection>
-        )}
-
-        <InfoSection icon={<Phone size={16} color={colors.textMuted} />} title="Kontakti">
-          {contactRows.length > 0 ? (
-            contactRows.map((row, index) => (
-              <DetailRow
-                key={row.label}
-                label={row.label}
-                value={row.value}
-                last={index === contactRows.length - 1}
-              />
-            ))
-          ) : (
-            <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pievienota.</Text>
-          )}
-        </InfoSection>
-
-        {order.notes && (
-          <InfoSection icon={<Package size={16} color={colors.textMuted} />} title="Piezīmes">
-            <Text style={styles.notesText}>{order.notes}</Text>
-          </InfoSection>
-        )}
-
-        {order.unloadingPointPhotoUrl && (
-          <InfoSection
-            icon={<Trash2 size={16} color={colors.textMuted} />}
-            title="Izkraušanas vietas foto"
-          >
-            <Image
-              source={{ uri: order.unloadingPointPhotoUrl }}
-              style={styles.photoThumb}
-              resizeMode="cover"
-            />
-          </InfoSection>
-        )}
-
-        {/* ── Secondary actions ── */}
-        <View style={styles.secondaryActionsBlock}>
-          {canRate && (
-            <Button
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                setShowRating(true);
-              }}
-            >
-              Novērtēt pakalpojumu
-            </Button>
-          )}
-
-          {canRequestPickup && (
-            <Button
-              variant="secondary"
-              size="lg"
-              onPress={handleRequestPickup}
-              isLoading={actionLoading}
-            >
-              Pieprasīt savākšanu
-            </Button>
-          )}
-
-          {canExtend && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={handleExtendHire}
-              isLoading={actionLoading}
-            >
-              Pagarināt nomu
-            </Button>
-          )}
-
-          {canAmend && (
-            <Button
-              variant="outline"
-              size="lg"
+        {isTerminal && (
+          <View style={[styles.cardSection, { paddingTop: 8 }]}>
+            <TouchableOpacity
+              style={styles.pillButton}
               onPress={() => {
                 haptics.light();
-                router.push(`/(buyer)/skip-order/${order.id}/amend` as any);
+                router.push('/(shared)/support-chat');
               }}
             >
-              Labot pasūtījumu
-            </Button>
-          )}
-
-          {canCallCarrier && (
-            <Button variant="outline" size="lg" onPress={handleCallCarrier}>
-              Zvanīt pārvadātājam
-            </Button>
-          )}
-
-          {isTerminal && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                router.push('/skip-hire' as any);
-              }}
-            >
-              Pasūtīt vēlreiz
-            </Button>
-          )}
-        </View>
+              <Text style={styles.pillText}>Saņemt čeku</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
-      {/* ── Sticky footer: cancel ── */}
-      {canCancel && (
-        <View style={styles.stickyFooter}>
-          <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
-            Atcelt pasūtījumu
-          </Button>
-        </View>
-      )}
-
-      {showRating && token && (
+      {canRate && (
         <RatingModal
           visible={showRating}
           onClose={() => setShowRating(false)}
           onSuccess={() => {
             setShowRating(false);
             setAlreadyRated(true);
-            if (id) {
-              api.skipHire
-                .getById(id, token)
-                .then(setOrder)
-                .catch(() => null);
-            }
           }}
-          token={token}
+          token={token!}
           skipOrderId={order.id}
         />
       )}
@@ -445,105 +414,182 @@ export default function SkipOrderDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 100,
+  headerSpacer: {
+    height: 48,
   },
-  heroSection: {
-    marginTop: 8,
-    marginBottom: 24,
-    paddingHorizontal: 4,
+  headerSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
-  heroTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  backButton: {
+    marginBottom: 16,
+    width: 40,
+    height: 40,
     alignItems: 'flex-start',
-    gap: 16,
+    justifyContent: 'center',
+    marginLeft: -8,
   },
-  heroTitle: {
-    flex: 1,
-    fontSize: 26,
-    lineHeight: 32,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  heroSubtitle: {
-    fontSize: 15,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 8,
-  },
-  secondaryActionsBlock: {
-    gap: 12,
-    marginTop: 12,
-  },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 16,
-    paddingBottom: 36,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  priceText: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  priceNote: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  emptySectionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  notesText: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#374151',
-  },
-  photoThumb: {
-    width: '100%',
-    height: 220,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
-  },
-  callButton: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F9423A',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    alignSelf: 'flex-start',
+    justifyContent: 'space-between',
   },
-  callButtonText: {
-    color: '#fff',
-    fontSize: 14,
+  titleLeft: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  titleText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  dateText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: '#6B7280',
+  },
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
     fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#374151',
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  noMapSpacer: {
+    height: 16,
+  },
+  cardSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  sectionHeading: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    color: '#111827',
+    marginBottom: 20,
+  },
+  timeline: {
+    position: 'relative',
+    marginLeft: 8,
+    marginBottom: 24,
+  },
+  timelineStop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  dotBgBlue: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  dotCoreBlue: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+  },
+  stopContent: {
+    marginLeft: 16,
+    width: '100%',
+  },
+  stopAddress: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+    marginBottom: 2,
+  },
+  stopCity: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  actionRow: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  pillButton: {
+    width: '100%',
+    height: 52,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
+    color: '#111827',
+  },
+  divider: {
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    width: '100%',
+  },
+  paymentMethodText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: '#374151',
+    marginLeft: 8,
+  },
+  payRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  payLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  paySub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  payAmount: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payHairline: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 4,
+  },
+  payTotalLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payTotalAmount: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payMethodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  payMethodText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: '#374151',
   },
 });

@@ -44,7 +44,11 @@ export default function GateFieldsScreen() {
   }, []);
 
   // Reload list every time this screen comes into focus (e.g. after returning from scan)
-  useFocusEffect(load);
+  useFocusEffect(
+    React.useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const handleLogout = () => {
     logout();

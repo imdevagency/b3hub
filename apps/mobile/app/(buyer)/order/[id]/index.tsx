@@ -242,27 +242,26 @@ export default function OrderTrackingScreen() {
     jobStatusLabel ?? (order.status === 'DELIVERED' ? 'Apstipriniet saņemšanu' : statusMeta.label);
 
   return (
-    <ScreenContainer bg="#F4F5F7" standalone topInset={0}>
+    <ScreenContainer bg="#FFFFFF" standalone topInset={0}>
       <View style={styles.mapWrapper}>
         <BaseMap
           cameraRef={cameraRef}
           center={
-            driverLocationOnMap
-              ? [driverLocationOnMap.lng, driverLocationOnMap.lat]
-              : order.deliveryLng && order.deliveryLat
-                ? [order.deliveryLng, order.deliveryLat]
-                : [24.1052, 56.9496]
+            order?.deliveryLat && order?.deliveryLng
+              ? [order.deliveryLng, order.deliveryLat]
+              : [24.1052, 56.9496]
           }
           zoom={12.5}
           style={styles.map}
           rotateEnabled={false}
           pitchEnabled={false}
           customMapStyle={TRACKING_MAP_STYLE}
-          mapPadding={{ top: 150, right: 16, bottom: 330, left: 16 }}
+          mapPadding={{ top: 120, right: 16, bottom: 360, left: 16 }}
         >
           {displayCoords.length > 1 && (
-            <RouteLayer id="order-route" coordinates={displayCoords} color="#4f46e5" width={4} />
+            <RouteLayer id="job-route" coordinates={displayCoords} color="#10b981" width={4} />
           )}
+
           {order.deliveryLat != null && order.deliveryLng != null && (
             <PinLayer
               id="delivery"
@@ -278,43 +277,59 @@ export default function OrderTrackingScreen() {
           )}
         </BaseMap>
 
-        {/* Floating Header */}
-        <View style={[styles.floatingHeader, { paddingTop: insets.top || 44 }]}>
+        {/* Minimal Bolt-style Top Pill */}
+        <View style={[styles.topPill, { top: Math.max(insets.top, 24) + 12 }]}>
           <TouchableOpacity
             style={styles.headerBtn}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
+            activeOpacity={0.7}
           >
             <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Pasūtījums</Text>
-          <View style={styles.headerSpacer} />
+
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Pasūtījums {order.orderNumber ?? order.id.slice(-8).toUpperCase()}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.headerBtn}
+            activeOpacity={0.7}
+            onPress={() => {
+              haptics.light();
+              router.push('/(shared)/help' as never);
+            }}
+          >
+            <MessageCircle size={22} color="#111827" />
+          </TouchableOpacity>
         </View>
 
-        {/* Uber-like Top Floating Card */}
-        <View style={[styles.topCardContainer, { top: (insets.top || 44) + 64 }]}>
-          <View style={styles.topCard}>
-            <View style={styles.topCardIcon}>
-              <Package size={24} color="#374151" strokeWidth={1.5} />
+        {/* Uber/Bolt-style Bottom Sheet (Docked to bottom edge) */}
+        <View style={[styles.bottomSheetWrapper, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+          {false && (
+            <View
+              className="absolute z-20 self-center flex-row items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1.5 border-[1.5px] border-white"
+              style={{
+                top: -24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+              <View className="h-2 w-2 rounded-full bg-red-500" />
+              <Text className="font-medium text-white text-xs">Tiešsaiste pārtraukta</Text>
             </View>
-            <View style={styles.topCardMeta}>
-              <Text style={styles.topCardTitle} numberOfLines={1}>
-                {order.materials?.[0]?.material?.name || 'Materiāli'}
-              </Text>
-              <Text style={styles.topCardSubtitle}>ID: {order.id.slice(-8).toUpperCase()}</Text>
-            </View>
-          </View>
-        </View>
+          )}
 
-        {/* Uber-like Bottom Sheet / Overlay */}
-        <View style={[styles.overlayContainer, { bottom: insets.bottom || 24 }]}>
-          <View style={styles.overlayCard}>
+          <View style={styles.bottomSheetContent}>
             {/* Courier Header Row */}
             <View style={styles.courierHeader}>
               {driver?.avatar ? (
                 <Image source={{ uri: driver.avatar }} style={styles.courierAvatar} />
               ) : (
                 <View style={styles.courierAvatarFallback}>
-                  <Truck size={20} color="#6B7280" strokeWidth={2} />
+                  <Truck size={24} color="#6B7280" strokeWidth={1.5} />
                 </View>
               )}
               <View style={styles.courierInfo}>
@@ -323,48 +338,41 @@ export default function OrderTrackingScreen() {
                     ? `${driver.firstName} ${driver.lastName}`
                     : isTerminal
                       ? order.status === 'CANCELLED'
-                        ? 'Pasūtījums atcelts'
-                        : 'Piegāde pabeigta'
-                      : 'Meklējam šoferi...'}
+                        ? 'Atcelts'
+                        : 'Pabeigts'
+                      : 'Gaidām pārvadātāju...'}
                 </Text>
                 <Text style={styles.courierRole}>
-                  {driver ? 'Šoferis' : isTerminal ? '' : 'Pieprasījums nosūtīts'}
+                  {driver ? 'Šoferis' : isTerminal ? '' : 'Piemeklēsim drīzumā'}
                 </Text>
               </View>
-
-              <View style={styles.driverActions}>
-                {activeJob && (
+              {driver?.phone && (
+                <View style={styles.driverActions}>
                   <TouchableOpacity
-                    style={styles.courierActionBtn}
+                    style={[styles.courierActionBtn, { backgroundColor: '#4f46e5' }]}
                     onPress={() => {
                       haptics.medium();
-                      router.push({
-                        pathname: '/chat/[jobId]',
-                        params: {
-                          jobId: activeJob.id,
-                          title: `${driver?.firstName} ${driver?.lastName}`,
-                        },
-                      });
+                      const tJobId = order?.transportJobs?.[0]?.id;
+                      if (!tJobId) return;
+                      router.push(`/(shared)/chat/${tJobId}` as never);
                     }}
                   >
-                    <MessageCircle size={18} color="#FFFFFF" />
+                    <MessageCircle size={20} color="#FFFFFF" />
                   </TouchableOpacity>
-                )}
-                {driver?.phone && (
                   <TouchableOpacity
-                    style={[styles.courierActionBtn, { marginLeft: 8 }]}
+                    style={styles.courierActionBtn}
                     onPress={() => {
                       haptics.medium();
                       Linking.openURL(`tel:${driver.phone}`).catch(() => null);
                     }}
                   >
-                    <Phone size={18} color="#FFFFFF" fill="#FFFFFF" />
+                    <Phone size={20} color="#FFFFFF" fill="#FFFFFF" />
                   </TouchableOpacity>
-                )}
-              </View>
+                </View>
+              )}
             </View>
 
-            {/* Status: success/cancelled card for terminal states, timeline for active */}
+            {/* Terminal state card or active timeline */}
             {isTerminal ? (
               <View style={styles.terminalSection}>
                 <View
@@ -388,50 +396,50 @@ export default function OrderTrackingScreen() {
                       {order.deliveryAddress.split(',')[0]}
                     </Text>
                   )}
-                  {order.status !== 'CANCELLED' && order.deliveryDate && (
-                    <Text style={styles.terminalDate}>
-                      {new Date(order.deliveryDate).toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'long',
-                      })}
-                    </Text>
-                  )}
                 </View>
               </View>
             ) : (
               <View style={styles.statusSection}>
-                <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
-
                 <View style={styles.timelineContainer}>
                   {JOB_STEPS.map((step, index) => {
-                    const isSearching = order.status === 'PENDING' || order.status === 'SEARCHING';
-                    const isDone = !isSearching && index <= currentStepIdx;
-                    const isCurrent = !isSearching && index === currentStepIdx;
+                    const isDone = index <= currentStepIdx;
+                    const isCurrent = index === currentStepIdx;
                     const isLast = index === JOB_STEPS.length - 1;
 
-                    let dateStr: string | null = null;
+                    let dateStr = null;
+                    const job = order.transportJobs?.[0];
+                    const ts = (job as any)?.statusTimestamps ?? {};
+                    const fmtTs = (iso: string) =>
+                      new Date(iso).toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                    const actualTsKey = {
+                      pickup: 'AT_PICKUP',
+                      loading: 'LOADED',
+                      enroute: 'EN_ROUTE_DELIVERY',
+                      delivered: 'DELIVERED',
+                    };
                     if (etaMin != null && step.key === 'enroute' && isCurrent) {
                       dateStr = `~${etaMin} min`;
-                    } else if (step.key === 'pickup') {
-                      dateStr = order.createdAt
-                        ? new Date(order.createdAt).toLocaleDateString('lv-LV', {
-                            day: 'numeric',
-                            month: 'short',
-                          })
-                        : null;
-                    } else if (step.key === 'delivered') {
-                      dateStr = order.deliveryDate
-                        ? new Date(order.deliveryDate).toLocaleDateString('lv-LV', {
-                            day: 'numeric',
-                            month: 'short',
-                          })
-                        : null;
+                    } else if (isDone && !isCurrent && ts[actualTsKey[step.key]]) {
+                      dateStr = fmtTs(ts[actualTsKey[step.key]]);
+                    } else if (step.key === 'pickup' && null) {
+                      dateStr = new Date().toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                    } else if (step.key === 'delivered' && order.deliveryDate) {
+                      dateStr = new Date(order.deliveryDate).toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
                     }
 
                     let addressStr =
                       step.key === 'pickup' || step.key === 'loading'
-                        ? order.siteContactName || order.supplierBranch?.name || 'Iekraušana'
-                        : order.deliveryAddress || order.deliveryCity;
+                        ? order.deliveryAddress
+                        : order.deliveryAddress;
 
                     return (
                       <View key={step.key} style={styles.timelineRow}>
@@ -453,7 +461,7 @@ export default function OrderTrackingScreen() {
                             </View>
                           ) : isDone ? (
                             <View style={styles.markerCompleted}>
-                              <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                              <CheckCircle2 size={10} color="#FFFFFF" strokeWidth={4} />
                             </View>
                           ) : (
                             <View style={styles.markerFuture} />
@@ -471,20 +479,31 @@ export default function OrderTrackingScreen() {
                             >
                               {step.label}
                             </Text>
-                            <Text style={styles.timelineSubtitle} numberOfLines={2}>
+                            <Text style={styles.timelineSubtitle} numberOfLines={1}>
                               {addressStr}
                             </Text>
                           </View>
                           {dateStr && (
-                            <Text
+                            <View
                               style={[
-                                styles.timelineDateText,
+                                styles.timePillHover,
                                 isCurrent &&
-                                  step.key === 'enroute' && { color: ORANGE, fontWeight: '600' },
+                                  step.key === 'enroute' && { backgroundColor: '#D1FAE5' },
                               ]}
                             >
-                              {dateStr}
-                            </Text>
+                              <Text
+                                style={[
+                                  styles.timelineDateText,
+                                  isCurrent &&
+                                    step.key === 'enroute' && {
+                                      color: '#059669',
+                                      fontWeight: '700',
+                                    },
+                                ]}
+                              >
+                                {dateStr}
+                              </Text>
+                            </View>
                           )}
                         </View>
                       </View>
@@ -493,8 +512,6 @@ export default function OrderTrackingScreen() {
                 </View>
               </View>
             )}
-
-            {/* Bottom actions */}
             <View style={styles.cardActions}>
               <Button
                 variant="secondary"
@@ -507,19 +524,6 @@ export default function OrderTrackingScreen() {
               >
                 Detaļas
               </Button>
-              {isTerminal && (
-                <Button
-                  variant="default"
-                  size="lg"
-                  className="flex-1 ml-2"
-                  onPress={() => {
-                    haptics.medium();
-                    router.replace('/(buyer)/catalog' as never);
-                  }}
-                >
-                  Atkārtot
-                </Button>
-              )}
             </View>
           </View>
         </View>
@@ -528,136 +532,101 @@ export default function OrderTrackingScreen() {
   );
 }
 
-const ORANGE = '#4f46e5';
+const ORANGE = '#10b981'; // Green for orders, indigo for transport
 
 const styles = StyleSheet.create({
   mapWrapper: {
     flex: 1,
     position: 'relative',
+    backgroundColor: '#FFFFFF',
   },
   map: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
-  floatingHeader: {
+  topPill: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(243, 244, 246, 0.8)',
   },
   headerBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  headerSpacer: {
-    width: 44,
-  },
-  topCardContainer: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-  },
-  topCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  topCardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  topCardMeta: {
     flex: 1,
-    justifyContent: 'center',
+    textAlign: 'center',
+    marginHorizontal: 8,
   },
-  topCardTitle: {
-    fontSize: 17,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  topCardSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    color: '#6B7280',
-  },
-  overlayContainer: {
+  bottomSheetWrapper: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-  },
-  overlayCard: {
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 24,
+    paddingTop: 28,
   },
   courierHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 26,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   courierAvatarFallback: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   courierAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    marginRight: 16,
+    marginRight: 14,
     backgroundColor: '#E5E7EB',
   },
   courierInfo: {
     flex: 1,
   },
   courierName: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     marginBottom: 2,
@@ -674,29 +643,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   courierActionBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F9423A',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusSection: {
     marginBottom: 8,
   },
-  statusSectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    marginBottom: 20,
-    letterSpacing: -0.3,
-  },
   timelineContainer: {
     paddingLeft: 4,
   },
   timelineRow: {
     flexDirection: 'row',
-    marginBottom: 2,
+    marginBottom: 0,
   },
   timelineMarkerCol: {
     width: 24,
@@ -708,7 +670,7 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     marginTop: 4,
     zIndex: 2,
@@ -745,7 +707,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 11,
     top: 20,
-    bottom: -6,
+    bottom: -4,
     width: 2,
     zIndex: 1,
   },
@@ -753,13 +715,13 @@ const styles = StyleSheet.create({
     backgroundColor: ORANGE,
   },
   timelineLineInactive: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   timelineContent: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: 24,
+    paddingBottom: 22,
   },
   timelineTextWrap: {
     flex: 1,
@@ -767,40 +729,44 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 3,
+    letterSpacing: -0.2,
   },
   timelineTitleCurrent: {
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: -0.2,
+    color: '#111827',
   },
   timelineTitleFuture: {
     color: '#9CA3AF',
+    fontFamily: 'Inter_500Medium',
   },
   timelineSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     color: '#6B7280',
   },
+  timePillHover: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
   timelineDateText: {
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
     color: '#6B7280',
-    paddingTop: 1,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   terminalSection: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 8,
     gap: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   terminalIconWrap: {
     width: 52,
@@ -812,21 +778,18 @@ const styles = StyleSheet.create({
   terminalTitle: {
     fontSize: 16,
     fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
     color: '#111827',
     marginBottom: 3,
   },
   terminalAddress: {
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
-    fontWeight: '400',
     color: '#6B7280',
     marginBottom: 2,
   },
-  terminalDate: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#9CA3AF',
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 16,
   },
 });

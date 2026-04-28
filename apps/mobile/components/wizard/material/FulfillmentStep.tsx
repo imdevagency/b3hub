@@ -81,7 +81,7 @@ export function FulfillmentStep({ value, onChange }: Props) {
                 borderWidth: 2,
                 borderColor: selected ? opt.color : colors.border,
                 borderRadius: radius.lg,
-                backgroundColor: selected ? opt.bg : colors.card,
+                backgroundColor: selected ? opt.bg : colors.bgCard,
                 padding: spacing.base,
               }}
             >
@@ -91,7 +91,7 @@ export function FulfillmentStep({ value, onChange }: Props) {
                     width: 44,
                     height: 44,
                     borderRadius: radius.md,
-                    backgroundColor: selected ? opt.color + '22' : colors.muted,
+                    backgroundColor: selected ? opt.color + '22' : colors.bgMuted,
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,

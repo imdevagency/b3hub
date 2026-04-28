@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   MapPin,
   Package,
+  MessageCircle,
   Truck,
   Phone,
   Star,
@@ -281,7 +282,7 @@ export default function TransportJobTrackingScreen() {
       : [24.1052, 56.9496];
 
   return (
-    <ScreenContainer bg="#F4F5F7" standalone topInset={0}>
+    <ScreenContainer bg="#FFFFFF" standalone topInset={0}>
       <View style={styles.mapWrapper}>
         <BaseMap
           cameraRef={cameraRef}
@@ -291,7 +292,7 @@ export default function TransportJobTrackingScreen() {
           rotateEnabled={false}
           pitchEnabled={false}
           customMapStyle={TRACKING_MAP_STYLE}
-          mapPadding={{ top: 150, right: 16, bottom: 330, left: 16 }}
+          mapPadding={{ top: 120, right: 16, bottom: 360, left: 16 }}
         >
           {displayCoords.length > 1 && (
             <RouteLayer id="job-route" coordinates={displayCoords} color="#4f46e5" width={4} />
@@ -318,62 +319,42 @@ export default function TransportJobTrackingScreen() {
           )}
         </BaseMap>
 
-        {/* Floating Header */}
-        <View style={[styles.floatingHeader, { paddingTop: insets.top || 44 }]}>
+        {/* Minimal Bolt-style Top Pill */}
+        <View style={[styles.topPill, { top: Math.max(insets.top, 24) + 12 }]}>
           <TouchableOpacity
             style={styles.headerBtn}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
+            activeOpacity={0.7}
           >
             <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Pārvadājums</Text>
-          <View style={styles.headerSpacer} />
+
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Pārvadājums {job.jobNumber ?? job.id.slice(-8).toUpperCase()}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.headerBtn}
+            activeOpacity={0.7}
+            onPress={() => {
+              haptics.light();
+              router.push('/(shared)/help' as never);
+            }}
+          >
+            <MessageCircle size={22} color="#111827" />
+          </TouchableOpacity>
         </View>
 
-        {/* Uber-like Top Floating Card */}
-        <View style={[styles.topCardContainer, { top: (insets.top || 44) + 64 }]}>
-          <View style={styles.topCard}>
-            <View style={styles.topCardIcon}>
-              <Package size={24} color="#374151" strokeWidth={1.5} />
-            </View>
-            <View style={styles.topCardMeta}>
-              <Text style={styles.topCardTitle} numberOfLines={1}>
-                {isDisposal ? 'Būvgruži' : 'Materiāli'}
-              </Text>
-              <Text style={styles.topCardSubtitle}>
-                {job.jobNumber ?? job.id.slice(-8).toUpperCase()}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Uber-like Bottom Sheet / Overlay */}
-        <View style={[styles.overlayContainer, { bottom: insets.bottom || 24 }]}>
-          {/* Offline indicator inside the overlay card area */}
-          {!jobIsTerminalForLive && !connected && (
-            <View
-              className="absolute z-20 self-center flex-row items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1 border-[1.5px] border-white"
-              style={{
-                top: -16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 3,
-              }}
-            >
-              <View className="h-2 w-2 rounded-full bg-red-500" />
-              <Text className="font-medium text-white text-xs">Tiešsaiste pārtraukta</Text>
-            </View>
-          )}
-          <View style={styles.overlayCard}>
+        {/* Uber/Bolt-style Bottom Sheet (Docked to bottom edge) */}
+        <View style={[styles.bottomSheetWrapper, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+          <View style={styles.bottomSheetContent}>
             {/* Courier Header Row */}
             <View style={styles.courierHeader}>
               {driver?.avatar ? (
                 <Image source={{ uri: driver.avatar }} style={styles.courierAvatar} />
               ) : (
                 <View style={styles.courierAvatarFallback}>
-                  <Truck size={20} color="#6B7280" strokeWidth={2} />
+                  <Truck size={24} color="#6B7280" strokeWidth={1.5} />
                 </View>
               )}
               <View style={styles.courierInfo}>
@@ -382,10 +363,10 @@ export default function TransportJobTrackingScreen() {
                     ? `${driver.firstName} ${driver.lastName}`
                     : isTerminal
                       ? job.status === 'CANCELLED'
-                        ? 'Pasūtījums atcelts'
-                        : 'Piegāde pabeigta'
+                        ? 'Atcelts'
+                        : 'Pabeigts'
                       : job.status === 'ASSIGNED'
-                        ? 'Gaida apstiprinājumu...'
+                        ? 'Gaida šoferi...'
                         : 'Meklējam šoferi...'}
                 </Text>
                 <Text style={styles.courierRole}>
@@ -406,7 +387,7 @@ export default function TransportJobTrackingScreen() {
                     Linking.openURL(`tel:${driver.phone}`).catch(() => null);
                   }}
                 >
-                  <Phone size={18} color="#FFFFFF" fill="#FFFFFF" />
+                  <Phone size={20} color="#FFFFFF" fill="#FFFFFF" />
                 </TouchableOpacity>
               )}
             </View>
@@ -435,14 +416,6 @@ export default function TransportJobTrackingScreen() {
                       {job.deliveryAddress.split(',')[0]}
                     </Text>
                   )}
-                  {job.status !== 'CANCELLED' && job.deliveryDate && (
-                    <Text style={styles.terminalDate}>
-                      {new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'long',
-                      })}
-                    </Text>
-                  )}
                   {job.status === 'DELIVERED' && job.pickupPhotoUrl && (
                     <TouchableOpacity
                       onPress={() => {
@@ -458,7 +431,6 @@ export default function TransportJobTrackingScreen() {
               </View>
             ) : (
               <View style={styles.statusSection}>
-                <Text style={styles.statusSectionTitle}>Pasūtījuma statuss</Text>
                 {job.sla?.isOverdue && (
                   <View style={styles.overdueBanner}>
                     <Text style={styles.overdueText}>⚠ Kavējas {job.sla.overdueMinutes} min</Text>
@@ -478,18 +450,14 @@ export default function TransportJobTrackingScreen() {
                     const isCurrent = !isSearching && index === currentStepIdx;
                     const isLast = index === JOB_STEPS.length - 1;
 
-                    let dateStr: string | null = null;
+                    let dateStr = null;
                     const ts = job.statusTimestamps ?? {};
-                    const fmtTs = (iso: string) => {
-                      const d = new Date(iso);
-                      return (
-                        d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' }) +
-                        ', ' +
-                        d.toLocaleDateString('lv-LV', { day: 'numeric', month: 'short' })
-                      );
-                    };
-                    // Actual status timestamp keys per timeline step
-                    const actualTsKey: Record<string, string> = {
+                    const fmtTs = (iso: string) =>
+                      new Date(iso).toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      });
+                    const actualTsKey = {
                       pickup: 'AT_PICKUP',
                       loading: 'LOADED',
                       enroute: 'EN_ROUTE_DELIVERY',
@@ -498,17 +466,16 @@ export default function TransportJobTrackingScreen() {
                     if (etaMin != null && step.key === 'enroute' && isCurrent) {
                       dateStr = `~${etaMin} min`;
                     } else if (isDone && !isCurrent && ts[actualTsKey[step.key]]) {
-                      // Completed step: show the actual timestamp recorded by driver
                       dateStr = fmtTs(ts[actualTsKey[step.key]]);
                     } else if (step.key === 'pickup') {
-                      dateStr = new Date(job.pickupDate).toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'short',
+                      dateStr = new Date(job.pickupDate).toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
                       });
                     } else if (step.key === 'delivered') {
-                      dateStr = new Date(job.deliveryDate).toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'short',
+                      dateStr = new Date(job.deliveryDate).toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
                       });
                     }
 
@@ -537,7 +504,7 @@ export default function TransportJobTrackingScreen() {
                             </View>
                           ) : isDone ? (
                             <View style={styles.markerCompleted}>
-                              <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                              <CheckCircle2 size={10} color="#FFFFFF" strokeWidth={4} />
                             </View>
                           ) : (
                             <View style={styles.markerFuture} />
@@ -555,20 +522,31 @@ export default function TransportJobTrackingScreen() {
                             >
                               {step.label}
                             </Text>
-                            <Text style={styles.timelineSubtitle} numberOfLines={2}>
+                            <Text style={styles.timelineSubtitle} numberOfLines={1}>
                               {addressStr}
                             </Text>
                           </View>
                           {dateStr && (
-                            <Text
+                            <View
                               style={[
-                                styles.timelineDateText,
+                                styles.timePillHover,
                                 isCurrent &&
-                                  step.key === 'enroute' && { color: ORANGE, fontWeight: '600' },
+                                  step.key === 'enroute' && { backgroundColor: '#D1FAE5' },
                               ]}
                             >
-                              {dateStr}
-                            </Text>
+                              <Text
+                                style={[
+                                  styles.timelineDateText,
+                                  isCurrent &&
+                                    step.key === 'enroute' && {
+                                      color: '#059669',
+                                      fontWeight: '700',
+                                    },
+                                ]}
+                              >
+                                {dateStr}
+                              </Text>
+                            </View>
                           )}
                         </View>
                       </View>
@@ -578,63 +556,27 @@ export default function TransportJobTrackingScreen() {
               </View>
             )}
 
-            {/* Bottom actions */}
             <View style={styles.cardActions}>
-              {isSearching ? (
-                <>
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="flex-1"
-                    onPress={() => {
-                      haptics.light();
-                      router.push(`/(buyer)/transport-job/${id}/details` as never);
-                    }}
-                  >
-                    Detaļas
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="lg"
-                    className="flex-1 ml-2"
-                    onPress={handleCancel}
-                  >
-                    Atcelt
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant={
-                      job.status === 'DELIVERED' && ratingAlreadyDone === false
-                        ? 'default'
-                        : 'secondary'
-                    }
-                    size="lg"
-                    className="flex-1"
-                    onPress={() => {
-                      haptics.light();
-                      router.push(`/(buyer)/transport-job/${id}/details` as never);
-                    }}
-                  >
-                    {job.status === 'DELIVERED' && ratingAlreadyDone === false
-                      ? 'Novērtēt šoferi'
-                      : 'Detaļas'}
-                  </Button>
-                  {isTerminal && (
-                    <Button
-                      variant="default"
-                      size="lg"
-                      className="flex-1 ml-2"
-                      onPress={() => {
-                        haptics.medium();
-                        router.replace('/transport' as never);
-                      }}
-                    >
-                      Atkārtot
-                    </Button>
-                  )}
-                </>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1 mr-2"
+                onPress={() => {
+                  haptics.light();
+                  router.push(`/(buyer)/transport-job/${id}/details` as never);
+                }}
+              >
+                Detaļas
+              </Button>
+              {isSearching && (
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="flex-1 ml-2"
+                  onPress={handleCancel}
+                >
+                  Atcelt
+                </Button>
               )}
             </View>
           </View>
@@ -644,136 +586,101 @@ export default function TransportJobTrackingScreen() {
   );
 }
 
-const ORANGE = '#4f46e5'; // Let's use Indigo for transport jobs similar to Waze driver UI
+const ORANGE = '#4f46e5';
 
 const styles = StyleSheet.create({
   mapWrapper: {
     flex: 1,
     position: 'relative',
+    backgroundColor: '#FFFFFF',
   },
   map: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
-  floatingHeader: {
+  topPill: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(243, 244, 246, 0.8)',
   },
   headerBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  headerSpacer: {
-    width: 44,
-  },
-  topCardContainer: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-  },
-  topCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  topCardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  topCardMeta: {
     flex: 1,
-    justifyContent: 'center',
+    textAlign: 'center',
+    marginHorizontal: 8,
   },
-  topCardTitle: {
-    fontSize: 17,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  topCardSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    color: '#6B7280',
-  },
-  overlayContainer: {
+  bottomSheetWrapper: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-  },
-  overlayCard: {
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 24,
+    paddingTop: 28,
   },
   courierHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 26,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   courierAvatarFallback: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   courierAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    marginRight: 16,
+    marginRight: 14,
     backgroundColor: '#E5E7EB',
   },
   courierInfo: {
     flex: 1,
   },
   courierName: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     marginBottom: 2,
@@ -785,29 +692,22 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   courierPhoneBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F9423A',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusSection: {
     marginBottom: 8,
   },
-  statusSectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    marginBottom: 20,
-    letterSpacing: -0.3,
-  },
   timelineContainer: {
     paddingLeft: 4,
   },
   timelineRow: {
     flexDirection: 'row',
-    marginBottom: 2,
+    marginBottom: 0,
   },
   timelineMarkerCol: {
     width: 24,
@@ -819,7 +719,7 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     marginTop: 4,
     zIndex: 2,
@@ -856,7 +756,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 11,
     top: 20,
-    bottom: -6,
+    bottom: -4,
     width: 2,
     zIndex: 1,
   },
@@ -864,13 +764,13 @@ const styles = StyleSheet.create({
     backgroundColor: ORANGE,
   },
   timelineLineInactive: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   timelineContent: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingBottom: 24,
+    paddingBottom: 22,
   },
   timelineTextWrap: {
     flex: 1,
@@ -878,40 +778,49 @@ const styles = StyleSheet.create({
   },
   timelineTitle: {
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 3,
+    letterSpacing: -0.2,
   },
   timelineTitleCurrent: {
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: -0.2,
+    color: '#111827',
   },
   timelineTitleFuture: {
     color: '#9CA3AF',
+    fontFamily: 'Inter_500Medium',
   },
   timelineSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     color: '#6B7280',
   },
+  timePillHover: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
   timelineDateText: {
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
     color: '#6B7280',
-    paddingTop: 1,
   },
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingTop: 12,
   },
   terminalSection: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 8,
     gap: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   terminalIconWrap: {
     width: 52,
@@ -932,35 +841,33 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 2,
   },
-  terminalDate: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-    color: '#9CA3AF',
-  },
   terminalDocsLink: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     color: ORANGE,
-    marginTop: 8,
+    marginTop: 6,
   },
   searchingHint: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
     color: '#6B7280',
-    lineHeight: 18,
-    marginBottom: 16,
+    lineHeight: 20,
+    marginBottom: 20,
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   overdueBanner: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 14,
-    alignSelf: 'flex-start',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 20,
   },
   overdueText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#B45309',
+    color: '#DC2626',
   },
 });

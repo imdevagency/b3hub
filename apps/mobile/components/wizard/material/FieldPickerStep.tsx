@@ -135,7 +135,7 @@ export function FieldPickerStep({
                   borderWidth: 2,
                   borderColor: selected ? colors.primary : colors.border,
                   borderRadius: radius.lg,
-                  backgroundColor: selected ? '#F0FBF7' : colors.card,
+                  backgroundColor: selected ? '#F0FBF7' : colors.bgCard,
                   padding: spacing.base,
                 }}
               >
@@ -145,7 +145,7 @@ export function FieldPickerStep({
                       width: 40,
                       height: 40,
                       borderRadius: radius.md,
-                      backgroundColor: selected ? colors.primary + '22' : colors.muted,
+                      backgroundColor: selected ? colors.primary + '22' : colors.bgMuted,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -175,7 +175,7 @@ export function FieldPickerStep({
                               flexDirection: 'row',
                               alignItems: 'center',
                               gap: 3,
-                              backgroundColor: colors.muted,
+                              backgroundColor: colors.bgMuted,
                               borderRadius: 100,
                               paddingHorizontal: 8,
                               paddingVertical: 2,
@@ -257,7 +257,7 @@ export function FieldPickerStep({
                     borderRadius: radius.lg,
                     borderWidth: 2,
                     borderColor: sel ? colors.primary : colors.border,
-                    backgroundColor: sel ? '#F0FBF7' : colors.card,
+                    backgroundColor: sel ? '#F0FBF7' : colors.bgCard,
                     alignItems: 'center',
                     minWidth: 72,
                   }}
@@ -296,7 +296,7 @@ export function FieldPickerStep({
           ) : slots.length === 0 ? (
             <View
               style={{
-                backgroundColor: colors.muted,
+                backgroundColor: colors.bgMuted,
                 borderRadius: radius.lg,
                 padding: spacing.base,
                 alignItems: 'center',
@@ -331,7 +331,7 @@ export function FieldPickerStep({
                       borderWidth: 2,
                       borderColor: sel ? colors.primary : full ? colors.border : colors.border,
                       borderRadius: radius.lg,
-                      backgroundColor: sel ? '#F0FBF7' : full ? colors.muted : colors.card,
+                      backgroundColor: sel ? '#F0FBF7' : full ? colors.bgMuted : colors.bgCard,
                       padding: spacing.base,
                       opacity: full ? 0.5 : 1,
                     }}

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import {
   MapPin,
   Package,
@@ -195,7 +196,7 @@ export default function OrderDetailsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#F4F5F7" standalone>
+      <ScreenContainer bg="#FFFFFF" standalone>
         <ScreenHeader title="Detaļas" />
         <SkeletonDetail />
       </ScreenContainer>
@@ -204,7 +205,7 @@ export default function OrderDetailsScreen() {
 
   if (!order) {
     return (
-      <ScreenContainer bg="#F4F5F7" standalone>
+      <ScreenContainer bg="#FFFFFF" standalone>
         <ScreenHeader title="Detaļas" />
         <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
@@ -232,401 +233,399 @@ export default function OrderDetailsScreen() {
   const canRate = order.status === 'COMPLETED' && !hasRated;
 
   return (
-    <ScreenContainer bg="#F4F5F7" standalone>
-      <ScreenHeader title="Detaļas" />
+    <ScreenContainer bg="#FFFFFF" standalone>
+      <View style={styles.headerSpacer} />
+      <View style={styles.headerSection}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            haptics.light();
+            if (router.canGoBack()) router.back();
+            else router.replace('/(buyer)/orders');
+          }}
+          hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+        >
+          <ChevronLeft size={24} color="#111827" />
+        </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* ── Hero ── */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroTitleRow}>
-            <Text style={styles.heroTitle} numberOfLines={2}>
+        <View style={styles.titleRow}>
+          <View style={styles.titleLeft}>
+            <Text style={styles.titleText}>
               {order.items && order.items.length > 0
                 ? order.items[0].material.name
-                : 'Materiālu pasūtījums'}
+                : 'Materiālu piegāde'}
             </Text>
-            <OrderStatusBadge status={order.status} size="md" />
+            <Text style={styles.dateText}>
+              {new Date(order.createdAt).toLocaleDateString('lv-LV', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}{' '}
+              · #{order.orderNumber}
+            </Text>
           </View>
-          <Text style={styles.heroSubtitle}>
-            {new Date(order.createdAt).toLocaleDateString('lv-LV', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}{' '}
-            · #{order.orderNumber}
-          </Text>
+          <View style={styles.avatarCircle}>
+            <Package size={20} color="#9CA3AF" />
+          </View>
         </View>
+      </View>
 
-        {/* ── Alerts ── */}
-        {disputeFiled && order.status === 'DELIVERED' && (
-          <View style={styles.alertCard}>
-            <AlertTriangle size={20} color="#B45309" />
-            <Text style={styles.alertText}>
-              Saņemšanas apstiprinājums ir apturēts, kamēr tiek izskatīts strīds.
-            </Text>
-          </View>
-        )}
-
-        {order.surcharges?.some((s) => s.approvalStatus === 'PENDING') && (
-          <View style={styles.surchargeAlertCard}>
-            <AlertTriangle size={20} color="#B45309" />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.alertText, { fontWeight: '600' }]}>
-                {order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length === 1
-                  ? 'Šoferis pieprasa piemaksu'
-                  : `${order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length} piemaksas gaida apstiprināšanu`}
-              </Text>
-              <Text style={[styles.alertText, { fontWeight: '400', marginTop: 4 }]}>
-                Skatiet "Piemaksas" sadaļu zemāk, lai apstiprinātu vai noraidītu.
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* ── B3 Field Pickup Pass ── */}
-        {order.fulfillmentType === 'PICKUP' && order.pickupField && (
-          <View style={styles.pickupPassCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  backgroundColor: '#FFFBEB',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <QrCode size={20} color="#92400E" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.pickupPassTitle}>B3 Field caurlaude</Text>
-                <Text style={styles.pickupPassSub}>
-                  {order.pickupField.name} · {order.pickupField.city}
-                </Text>
-              </View>
-            </View>
-
-            {order.pickupSlot && (
-              <View style={styles.pickupPassSlot}>
-                <Text style={styles.pickupPassSlotLabel}>Rezervētais laiks</Text>
-                <Text style={styles.pickupPassSlotTime}>
-                  {new Date(order.pickupSlot.slotStart).toLocaleDateString('lv-LV', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}
-                  {'\n'}
-                  {new Date(order.pickupSlot.slotStart).toLocaleTimeString('lv-LV', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {' – '}
-                  {new Date(order.pickupSlot.slotEnd).toLocaleTimeString('lv-LV', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {((disputeFiled && order.status === 'DELIVERED') ||
+          order.surcharges?.some((s) => s.approvalStatus === 'PENDING')) && (
+          <View style={styles.cardSection}>
+            {disputeFiled && order.status === 'DELIVERED' && (
+              <View style={styles.alertCard}>
+                <AlertTriangle size={20} color="#B45309" />
+                <Text style={styles.alertText}>
+                  Saņemšanas apstiprinājums ir apturēts, kamēr tiek izskatīts strīds.
                 </Text>
               </View>
             )}
+            {order.surcharges?.some((s) => s.approvalStatus === 'PENDING') && (
+              <View style={styles.surchargeAlertCard}>
+                <AlertTriangle size={20} color="#B45309" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.alertText, { fontWeight: '600' }]}>
+                    {order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length === 1
+                      ? 'Šoferis pieprasa piemaksu'
+                      : `${order.surcharges!.filter((s) => s.approvalStatus === 'PENDING').length} piemaksas gaida apstiprināšanu`}
+                  </Text>
+                  <Text style={[styles.alertText, { fontWeight: '400', marginTop: 4 }]}>
+                    Skatiet "Piemaksas" sadaļu zemāk, lai apstiprinātu vai noraidītu.
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
-            {order.fieldPasses && order.fieldPasses.length > 0 ? (
-              <View style={{ gap: 8, marginTop: 8 }}>
-                {order.fieldPasses.map((pass) => (
-                  <View key={pass.id} style={styles.passRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.passNumber}>{pass.passNumber}</Text>
-                      <Text style={styles.passPlate}>{pass.vehiclePlate}</Text>
-                    </View>
-                    <View
-                      style={{
-                        backgroundColor: pass.status === 'ACTIVE' ? '#ECFDF5' : '#F3F4F6',
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                        borderRadius: 100,
-                      }}
-                    >
-                      <Text
+        {order.fulfillmentType === 'PICKUP' && order.pickupField && (
+          <View style={styles.cardSection}>
+            <Text style={styles.sectionHeading}>B3 Field caurlaide</Text>
+            <View style={styles.pickupPassCard}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: '#FFFBEB',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <QrCode size={20} color="#92400E" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pickupPassTitle}>{order.pickupField.name}</Text>
+                  <Text style={styles.pickupPassSub}>{order.pickupField.city}</Text>
+                </View>
+              </View>
+
+              {order.pickupSlot && (
+                <View style={styles.pickupPassSlot}>
+                  <Text style={styles.pickupPassSlotLabel}>Rezervētais laiks</Text>
+                  <Text style={styles.pickupPassSlotTime}>
+                    {new Date(order.pickupSlot.slotStart).toLocaleDateString('lv-LV', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                    {`\n`}
+                    {new Date(order.pickupSlot.slotStart).toLocaleTimeString('lv-LV', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    {' – '}
+                    {new Date(order.pickupSlot.slotEnd).toLocaleTimeString('lv-LV', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+              )}
+
+              {order.fieldPasses && order.fieldPasses.length > 0 ? (
+                <View style={{ gap: 8, marginTop: 8 }}>
+                  {order.fieldPasses.map((pass) => (
+                    <View key={pass.id} style={styles.passRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.passNumber}>{pass.passNumber}</Text>
+                        <Text style={styles.passPlate}>{pass.vehiclePlate}</Text>
+                      </View>
+                      <View
                         style={{
-                          fontSize: 11,
-                          fontFamily: 'Inter_600SemiBold',
-                          color: pass.status === 'ACTIVE' ? '#059669' : '#6B7280',
+                          backgroundColor: pass.status === 'ACTIVE' ? '#ECFDF5' : '#F3F4F6',
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                          borderRadius: 100,
                         }}
                       >
-                        {pass.status === 'ACTIVE'
-                          ? 'Aktīva'
-                          : pass.status === 'EXPIRED'
-                            ? 'Beigusies'
-                            : pass.status}
-                      </Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontFamily: 'Inter_600SemiBold',
+                            color: pass.status === 'ACTIVE' ? '#059669' : '#6B7280',
+                          }}
+                        >
+                          {pass.status === 'ACTIVE'
+                            ? 'Aktīva'
+                            : pass.status === 'EXPIRED'
+                              ? 'Beigusies'
+                              : pass.status}
+                        </Text>
+                      </View>
                     </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.passWaiting}>
+                  <Text style={styles.passWaitingText}>
+                    Caurlaude tiks izsniegta pēc pasūtījuma apstiprināšanas
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {order.fulfillmentType !== 'PICKUP' && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Piegādes informācija</Text>
+              <DetailRow label="Adrese" value={`${order.deliveryAddress}, ${order.deliveryCity}`} />
+              <DetailRow
+                label="Piegādes laiks"
+                value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
+              />
+              {order.statusTimestamps?.COMPLETED && (
+                <DetailRow
+                  label="Pabeigts"
+                  value={new Date(order.statusTimestamps.COMPLETED).toLocaleDateString('lv-LV', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                />
+              )}
+              {order.project && <DetailRow label="Projekts" value={order.project.name} />}
+              <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
+              <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
+              <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
+              <DetailRow
+                label="Maksājuma veids"
+                value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
+                last
+              />
+            </View>
+          </>
+        )}
+
+        {order.items && order.items.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Pasūtījuma pozīcijas</Text>
+              {order.items.map((item, index) => (
+                <DetailRow
+                  key={`${item.material.name}-${index}`}
+                  label={item.material.name}
+                  value={`${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}`}
+                  last={index === order.items.length - 1}
+                />
+              ))}
+            </View>
+          </>
+        )}
+
+        <>
+          <View style={styles.divider} />
+          <View style={styles.cardSection}>
+            <Text style={styles.sectionHeading}>Apmaksa</Text>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>Materiāli</Text>
+              <Text style={styles.payAmount}>€{order.subtotal.toFixed(2)}</Text>
+            </View>
+            {order.tax > 0 && (
+              <View style={styles.payRow}>
+                <Text style={styles.payLabel}>PVN</Text>
+                <Text style={styles.payAmount}>€{order.tax.toFixed(2)}</Text>
+              </View>
+            )}
+            {order.deliveryFee > 0 && (
+              <View style={styles.payRow}>
+                <Text style={styles.payLabel}>Piegāde</Text>
+                <Text style={styles.payAmount}>€{order.deliveryFee.toFixed(2)}</Text>
+              </View>
+            )}
+            <View style={styles.payHairline} />
+            <View style={styles.payRow}>
+              <Text style={styles.payTotalLabel}>Kopā</Text>
+              <Text style={styles.payTotalAmount}>€{order.total.toFixed(2)}</Text>
+            </View>
+            <View style={styles.payMethodRow}>
+              <CreditCard size={20} color="#6B7280" />
+              <Text style={styles.payMethodText}>
+                {order.paymentMethod === 'INVOICE' ? 'Pārskaitījums (Rēķins)' : 'Karte (Paysera)'}
+              </Text>
+            </View>
+          </View>
+        </>
+
+        {order.surcharges && order.surcharges.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Piemaksas</Text>
+              <View style={styles.surchargeList}>
+                {order.surcharges.map((surcharge) => (
+                  <View key={surcharge.id} style={styles.surchargeCard}>
+                    <View style={styles.surchargeHeader}>
+                      <Text style={styles.surchargeLabel}>{surcharge.label}</Text>
+                      <Text style={styles.surchargeAmount}>€{surcharge.amount.toFixed(2)}</Text>
+                    </View>
+                    <Text style={styles.surchargeStatus}>
+                      Statuss:{' '}
+                      {surcharge.approvalStatus === 'APPROVED'
+                        ? 'Apstiprināta'
+                        : surcharge.approvalStatus === 'REJECTED'
+                          ? 'Noraidīta'
+                          : 'Gaida apstiprinājumu'}
+                    </Text>
+                    {surcharge.approvalStatus === 'PENDING' && (
+                      <View style={styles.rowActions}>
+                        <View style={styles.rowActionItem}>
+                          <Button
+                            size="sm"
+                            onPress={() => {
+                              void handleApproveSurcharge(surcharge.id);
+                            }}
+                            disabled={surchargeActionLoading === surcharge.id}
+                            isLoading={surchargeActionLoading === surcharge.id}
+                          >
+                            Apstiprināt
+                          </Button>
+                        </View>
+                        <View style={styles.rowActionItem}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onPress={() => {
+                              void handleRejectSurcharge(surcharge.id);
+                            }}
+                            disabled={surchargeActionLoading === surcharge.id}
+                          >
+                            Noraidīt
+                          </Button>
+                        </View>
+                      </View>
+                    )}
                   </View>
                 ))}
               </View>
-            ) : (
-              <View style={styles.passWaiting}>
-                <Text style={styles.passWaitingText}>
-                  Caurlaude tiks izsniegta pēc pasūtījuma apstiprināšanas
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* ── Delivery info (shown only for DELIVERY orders) ── */}
-        {order.fulfillmentType !== 'PICKUP' && (
-          <InfoSection
-            icon={<Package size={16} color={colors.textMuted} />}
-            title="Piegādes informācija"
-          >
-            <DetailRow label="Adrese" value={`${order.deliveryAddress}, ${order.deliveryCity}`} />
-            <DetailRow
-              label="Piegādes laiks"
-              value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
-            />
-            {order.statusTimestamps?.COMPLETED && (
-              <DetailRow
-                label="Pabeigts"
-                value={new Date(order.statusTimestamps.COMPLETED).toLocaleDateString('lv-LV', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              />
-            )}
-            {order.project && <DetailRow label="Projekts" value={order.project.name} />}
-            <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
-            <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
-            <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
-            <DetailRow
-              label="Maksājuma veids"
-              value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
-              last
-            />
-          </InfoSection>
-        )}
-
-        {/* ── Items ── */}
-        {order.items && order.items.length > 0 && (
-          <InfoSection
-            icon={<Package size={16} color={colors.textMuted} />}
-            title="Pasūtījuma pozīcijas"
-          >
-            {order.items.map((item, index) => (
-              <DetailRow
-                key={`${item.material.name}-${index}`}
-                label={item.material.name}
-                value={`${item.quantity} ${UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}`}
-                last={index === order.items.length - 1}
-              />
-            ))}
-          </InfoSection>
-        )}
-
-        {/* ── Pricing ── */}
-        <InfoSection icon={<CreditCard size={16} color={colors.textMuted} />} title="Apmaksa">
-          <PriceRow label="Materiāli" amount={order.subtotal} />
-          <PriceRow label="PVN" amount={order.tax} />
-          <PriceRow label="Piegāde" amount={order.deliveryFee} />
-          <PriceRow label="Pavisam kopā" amount={order.total} total />
-        </InfoSection>
-
-        {order.surcharges && order.surcharges.length > 0 && (
-          <InfoSection
-            icon={<AlertTriangle size={16} color={colors.textMuted} />}
-            title="Piemaksas"
-          >
-            <View style={styles.surchargeList}>
-              {order.surcharges.map((surcharge) => (
-                <View key={surcharge.id} style={styles.surchargeCard}>
-                  <View style={styles.surchargeHeader}>
-                    <Text style={styles.surchargeLabel}>{surcharge.label}</Text>
-                    <Text style={styles.surchargeAmount}>€{surcharge.amount.toFixed(2)}</Text>
-                  </View>
-                  <Text style={styles.surchargeStatus}>
-                    Statuss:{' '}
-                    {surcharge.approvalStatus === 'APPROVED'
-                      ? 'Apstiprināta'
-                      : surcharge.approvalStatus === 'REJECTED'
-                        ? 'Noraidīta'
-                        : 'Gaida apstiprinājumu'}
-                  </Text>
-                  {surcharge.approvalStatus === 'PENDING' && (
-                    <View style={styles.rowActions}>
-                      <View style={styles.rowActionItem}>
-                        <Button
-                          size="sm"
-                          onPress={() => {
-                            void handleApproveSurcharge(surcharge.id);
-                          }}
-                          disabled={surchargeActionLoading === surcharge.id}
-                          isLoading={surchargeActionLoading === surcharge.id}
-                        >
-                          Apstiprināt
-                        </Button>
-                      </View>
-                      <View style={styles.rowActionItem}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onPress={() => {
-                            void handleRejectSurcharge(surcharge.id);
-                          }}
-                          disabled={surchargeActionLoading === surcharge.id}
-                        >
-                          Noraidīt
-                        </Button>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              ))}
             </View>
-          </InfoSection>
+          </>
         )}
 
-        {documents.length > 0 && (
-          <InfoSection icon={<FileText size={16} color={colors.textMuted} />} title="Dokumenti">
-            <View style={styles.documentList}>
-              {documents.map((document) => (
-                <TouchableOpacity
-                  key={document.id}
-                  style={styles.documentCard}
-                  onPress={() => {
-                    if (document.fileUrl) {
-                      haptics.light();
-                      Linking.openURL(document.fileUrl).catch(() => null);
-                    }
-                  }}
-                  disabled={!document.fileUrl}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.documentMeta}>
-                    <Text style={styles.documentTitle}>{document.title}</Text>
-                    <Text style={styles.documentStatus}>{document.status}</Text>
-                  </View>
-                  <Text
-                    style={[styles.documentLink, !document.fileUrl && styles.documentLinkDisabled]}
+        {documents && documents.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Dokumenti</Text>
+              <View style={styles.documentList}>
+                {documents.map((document) => (
+                  <TouchableOpacity
+                    key={document.id}
+                    style={styles.documentCard}
+                    onPress={() => {
+                      if (document.fileUrl) {
+                        haptics.light();
+                        Linking.openURL(document.fileUrl).catch(() => null);
+                      }
+                    }}
+                    disabled={!document.fileUrl}
+                    activeOpacity={0.8}
                   >
-                    {document.fileUrl ? 'Atvērt' : 'Drīzumā'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <View style={styles.documentMeta}>
+                      <Text style={styles.documentTitle}>{document.title}</Text>
+                      <Text style={styles.documentStatus}>{document.status}</Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.documentLink,
+                        !document.fileUrl && styles.documentLinkDisabled,
+                      ]}
+                    >
+                      {document.fileUrl ? 'Atvērt' : 'Drīzumā'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </InfoSection>
+          </>
         )}
 
         {activeJob?.deliveryProof && (
-          <InfoSection
-            icon={<CheckCircle size={16} color={colors.textMuted} />}
-            title="Piegādes apliecinājums"
-          >
-            <DetailRow label="Saņēmējs" value={activeJob.deliveryProof.recipientName || '—'} />
-            <DetailRow
-              label="Piezīmes"
-              value={activeJob.deliveryProof.notes || '—'}
-              last={activeJob.deliveryProof.photos.length === 0}
-            />
-            {activeJob.deliveryProof.photos.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.photoRow}
-              >
-                {activeJob.deliveryProof.photos.map((photo, index) => (
-                  <Image
-                    key={`${photo}-${index}`}
-                    source={{ uri: photo }}
-                    style={styles.proofImage}
-                  />
-                ))}
-              </ScrollView>
-            )}
-          </InfoSection>
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Piegādes apliecinājums</Text>
+              <DetailRow label="Saņēmējs" value={activeJob.deliveryProof.recipientName || '—'} />
+              <DetailRow
+                label="Piezīmes"
+                value={activeJob.deliveryProof.notes || '—'}
+                last={activeJob.deliveryProof.photos.length === 0}
+              />
+              {activeJob.deliveryProof.photos.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.photoRow}
+                >
+                  {activeJob.deliveryProof.photos.map((photo, index) => (
+                    <Image
+                      key={`${photo}-${index}`}
+                      source={{ uri: photo }}
+                      style={styles.proofImage}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </>
         )}
 
         {order.sitePhotoUrl && (
-          <InfoSection icon={<MapPin size={16} color={colors.textMuted} />} title="Objekta foto">
-            <Image
-              source={{ uri: order.sitePhotoUrl }}
-              style={styles.siteImage}
-              resizeMode="cover"
-            />
-          </InfoSection>
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Objekta foto</Text>
+              <Image
+                source={{ uri: order.sitePhotoUrl }}
+                style={styles.siteImage}
+                resizeMode="cover"
+              />
+            </View>
+          </>
         )}
 
         {order.linkedSkipOrder && (
-          <InfoSection
-            icon={<Truck size={16} color={colors.textMuted} />}
-            title="Saistītais skip pasūtījums"
-          >
-            <DetailRow label="Numurs" value={`#${order.linkedSkipOrder.orderNumber}`} />
-            <DetailRow label="Konteinera ID" value={order.linkedSkipOrder.id} />
-            <DetailRow label="Statuss" value={order.linkedSkipOrder.status} />
-            <DetailRow label="Izmērs" value={order.linkedSkipOrder.skipSize} />
-            <DetailRow label="Atkritumi" value={order.linkedSkipOrder.wasteCategory} last />
-          </InfoSection>
-        )}
-
-        {/* ── Secondary actions ── */}
-        <View style={styles.secondaryActionsBlock}>
-          {driver && activeJob && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                router.push({
-                  pathname: '/chat/[jobId]',
-                  params: {
-                    jobId: activeJob.id,
-                    title: `${driver.firstName} ${driver.lastName}`,
-                  },
-                });
-              }}
-            >
-              Rakstīt šoferim
-            </Button>
-          )}
-
-          {canRate && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                setShowRating(true);
-              }}
-            >
-              Novērtēt pasūtījumu
-            </Button>
-          )}
-
-          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-            <Button variant="secondary" size="lg" onPress={() => setShowDispute(true)}>
-              Ziņot par problēmu
-            </Button>
-          )}
-
-          {canCancel && (
-            <View style={styles.rowActions}>
-              <View style={styles.rowActionItem}>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  onPress={handleCancel}
-                  isLoading={actionLoading}
-                >
-                  Atcelt
-                </Button>
-              </View>
-              <View style={styles.rowActionItem}>
-                <Button variant="secondary" size="lg" onPress={() => setShowAmend(true)}>
-                  Labot
-                </Button>
-              </View>
+          <>
+            <View style={styles.divider} />
+            <View style={styles.cardSection}>
+              <Text style={styles.sectionHeading}>Saistītais skip pasūtījums</Text>
+              <DetailRow label="Numurs" value={`#${order.linkedSkipOrder.orderNumber}`} />
+              <DetailRow label="Konteinera ID" value={order.linkedSkipOrder.id} />
+              <DetailRow label="Statuss" value={order.linkedSkipOrder.status} />
+              <DetailRow label="Izmērs" value={order.linkedSkipOrder.skipSize} />
+              <DetailRow label="Atkritumi" value={order.linkedSkipOrder.wasteCategory} last />
             </View>
-          )}
-        </View>
+          </>
+        )}
       </ScrollView>
 
       {/* ── Sticky primary action footer ── */}
@@ -718,35 +717,120 @@ export default function OrderDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: 16,
-    paddingBottom: 100,
+  headerSpacer: {
+    height: 48,
   },
-  heroSection: {
-    marginTop: 8,
-    marginBottom: 24,
-    paddingHorizontal: 4,
+  headerSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
-  heroTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  backButton: {
+    marginBottom: 16,
+    width: 40,
+    height: 40,
     alignItems: 'flex-start',
-    gap: 16,
+    justifyContent: 'center',
+    marginLeft: -8,
   },
-  heroTitle: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  titleLeft: {
     flex: 1,
-    fontSize: 26,
-    lineHeight: 32,
+    paddingRight: 16,
+  },
+  titleText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  dateText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: '#6B7280',
+  },
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
     fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
+    fontSize: 16,
+    color: '#374151',
+  },
+  content: {
+    paddingBottom: 120,
+  },
+  cardSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  sectionHeading: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    color: '#111827',
+    marginBottom: 20,
+  },
+  divider: {
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    width: '100%',
+  },
+  paymentMethodText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: '#374151',
+    marginLeft: 8,
+  },
+  payRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  payLabel: {
+    flex: 1,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
     color: '#111827',
   },
-  heroSubtitle: {
-    fontSize: 15,
+  payAmount: {
     fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-    marginTop: 8,
+    fontSize: 16,
+    color: '#111827',
+  },
+  payHairline: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 4,
+  },
+  payTotalLabel: {
+    flex: 1,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payTotalAmount: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payMethodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  payMethodText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: '#374151',
   },
   alertCard: {
     flexDirection: 'row',
@@ -755,7 +839,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
   },
   surchargeAlertCard: {
     flexDirection: 'row',
@@ -766,7 +849,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FED7AA',
     padding: 16,
-    marginBottom: 16,
   },
   alertText: {
     flex: 1,
@@ -776,34 +858,81 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#92400E',
   },
-  secondaryActionsBlock: {
-    gap: 12,
+  pickupPassCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 16,
+    padding: 16,
+  },
+  pickupPassTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  pickupPassSub: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  pickupPassSlot: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 12,
     marginTop: 12,
   },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 16,
-    paddingBottom: 36,
-    paddingHorizontal: 16,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 8,
+  pickupPassSlotLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
   },
-  rowActions: {
+  pickupPassSlotTime: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+    marginTop: 4,
+  },
+  passRow: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
   },
-  rowActionItem: {
-    flex: 1,
+  passNumber: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  passPlate: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  passWaiting: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  passWaitingText: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: '#6B7280',
+    textAlign: 'center',
   },
   surchargeList: {
     gap: 10,
@@ -841,32 +970,37 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 10,
   },
+  rowActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  rowActionItem: {
+    flex: 1,
+  },
   documentList: {
     gap: 10,
   },
   documentCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 14,
+    borderRadius: 12,
   },
   documentMeta: {
     flex: 1,
-    marginRight: 12,
   },
   documentTitle: {
     fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
     color: '#111827',
   },
   documentStatus: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
     color: '#6B7280',
     marginTop: 2,
   },
@@ -874,20 +1008,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
-    color: colors.primary,
+    color: '#10B981',
+    paddingLeft: 12,
   },
   documentLinkDisabled: {
     color: '#9CA3AF',
   },
   photoRow: {
-    gap: 10,
-    paddingTop: 12,
+    paddingVertical: 8,
+    gap: 12,
   },
   proofImage: {
-    width: 160,
-    height: 120,
-    borderRadius: 14,
-    backgroundColor: '#E5E7EB',
+    width: 140,
+    height: 140,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
   },
   siteImage: {
     width: '100%',
@@ -895,79 +1030,22 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#E5E7EB',
   },
-  pickupPassCard: {
-    backgroundColor: '#FFFBEB',
-    borderWidth: 2,
-    borderColor: '#FCD34D',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  pickupPassTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#92400E',
-  },
-  pickupPassSub: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: '#B45309',
-    marginTop: 1,
-  },
-  pickupPassSlot: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-  },
-  pickupPassSlotLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    color: '#92400E',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: 4,
-  },
-  pickupPassSlotTime: {
-    fontSize: 15,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#78350F',
-    lineHeight: 22,
-  },
-  passRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFEF0',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  passNumber: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#111827',
-  },
-  passPlate: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-    color: '#6B7280',
-    marginTop: 1,
-  },
-  passWaiting: {
-    backgroundColor: '#FEF9C3',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 8,
-  },
-  passWaitingText: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: '#92400E',
-    textAlign: 'center',
-    lineHeight: 18,
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 16,
+    paddingBottom: 36,
+    paddingHorizontal: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });

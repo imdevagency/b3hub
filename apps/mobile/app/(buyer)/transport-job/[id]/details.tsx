@@ -1,3 +1,4 @@
+import { PriceRow } from '@/components/ui/PriceRow';
 import React, { useCallback, useEffect, useState } from 'react';
 import Animated from 'react-native-reanimated';
 import {
@@ -22,6 +23,7 @@ import {
   Recycle,
   Hash,
   MessageCircle,
+  ChevronLeft,
 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -158,8 +160,7 @@ export default function TransportJobDetailsScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Detaļas" />
+      <ScreenContainer bg="#FFFFFF" standalone>
         <SkeletonDetail />
       </ScreenContainer>
     );
@@ -167,8 +168,7 @@ export default function TransportJobDetailsScreen() {
 
   if (!job) {
     return (
-      <ScreenContainer bg="#F4F5F7" standalone>
-        <ScreenHeader title="Detaļas" />
+      <ScreenContainer bg="#FFFFFF" standalone>
         <EmptyState icon={<Package size={32} color="#9CA3AF" />} title="Pasūtījums nav atrasts" />
       </ScreenContainer>
     );
@@ -247,491 +247,423 @@ export default function TransportJobDetailsScreen() {
   const notes = job.order?.notes?.trim() ?? '';
 
   return (
-    <ScreenContainer bg="#FFFFFF" standalone>
-      <ScreenHeader title="Detaļas" noBorder />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        alwaysBounceVertical={false}
-      >
-        {pickupPin && deliveryPin && job.status !== 'CANCELLED' && (
-          <JobRouteMap pickup={pickupPin} delivery={deliveryPin} height={260} borderRadius={0} />
+    <ScreenContainer bg="#FFFFFF" standalone topInset={0}>
+      <View style={styles.headerSpacer} />
+      <View style={styles.headerSection}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            haptics.light();
+            router.back();
+          }}
+          hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+        >
+          <ChevronLeft size={24} color="#111827" />
+        </TouchableOpacity>
+
+        <View style={styles.titleRow}>
+          <View style={styles.titleLeft}>
+            <Text style={styles.titleText}>
+              {driver ? `${driver.firstName} ${driver.lastName}` : 'Nav piešķirts šoferis'}
+            </Text>
+            <Text style={styles.dateText}>{formatDate(job.pickupDate || job.createdAt || '')}</Text>
+          </View>
+          <View style={styles.avatarCircle}>
+            {driver ? (
+              <Text style={styles.avatarText}>
+                {driver.firstName[0]}
+                {driver.lastName[0]}
+              </Text>
+            ) : (
+              <Package size={20} color="#9CA3AF" />
+            )}
+          </View>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {hasMapData ? (
+          <View style={styles.mapWrap}>
+            <JobRouteMap
+              pickup={pickupPin!}
+              delivery={deliveryPin!}
+              height={200}
+              borderRadius={16}
+            />
+            {job.distanceKm != null && (
+              <View style={styles.mapPill}>
+                <Clock3 size={14} color="#111827" />
+                <Text style={styles.mapPillText}>{`${job.distanceKm.toFixed(1)} km`}</Text>
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.noMapSpacer} />
         )}
 
-        {/* ── Hero ── */}
-        <Animated.View entering={entering.card(0)} style={styles.heroSection}>
-          <Text style={styles.heroTitle} numberOfLines={2}>
-            {typeLabel}
-          </Text>
-          <View style={styles.heroMetaRow}>
-            <JobStatusBadge status={job.status} size="md" />
-            <Text style={styles.heroSubtitle}>
-              {formatDate(job.pickupDate)}
-              {job.order?.orderNumber ? ` · #${job.order.orderNumber}` : ''}
-            </Text>
-          </View>
-        </Animated.View>
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeading}>Maršruts</Text>
+          <View style={styles.timeline}>
+            <View style={styles.timelineTrack} />
 
-        <Divider color="#EBEBEB" marginV={0} />
-
-        {/* ── Driver ── */}
-        {driver && (
-          <Animated.View entering={entering.card(1)}>
-            {isJobClosed ? (
-              <View style={styles.driverHighlightRow}>
-                <View style={styles.driverInfo}>
-                  <Text style={styles.driverName}>Šoferis {driver.firstName}</Text>
-                  <Text style={styles.driverVehicle}>
-                    {job.requiredVehicleType
-                      ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
-                      : 'Nav norādīts'}
-                    {vehicle?.licensePlate ? ` · ${vehicle.licensePlate}` : ''}
-                  </Text>
-                </View>
-                <View style={styles.driverAvatar}>
-                  <Text style={styles.driverInitials}>
-                    {(driver.firstName[0] || '').toUpperCase()}
-                    {(driver.lastName[0] || '').toUpperCase()}
+            <View style={styles.timelineStop}>
+              <View style={styles.dotBgGreen}>
+                <View style={styles.dotCoreGreen} />
+              </View>
+              <View style={styles.stopContent}>
+                <View style={styles.stopRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.stopAddress}>{job.pickupAddress}</Text>
+                    {job.pickupCity && <Text style={styles.stopCity}>{job.pickupCity}</Text>}
+                  </View>
+                  <Text style={styles.stopTime}>
+                    {job.pickupWindow || formatDate(job.pickupDate)}
                   </Text>
                 </View>
               </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.driverHighlightRow}
-                onPress={() => {
-                  haptics.light();
-                  router.push({
-                    pathname: '/chat/[jobId]',
-                    params: { jobId: job.id, title: `${driver.firstName} ${driver.lastName}` },
-                  });
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.driverInfo}>
-                  <Text style={styles.driverName}>Šoferis {driver.firstName}</Text>
-                  <Text style={styles.driverVehicle}>
-                    {job.requiredVehicleType
-                      ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
-                      : 'Nav norādīts'}
-                    {vehicle?.licensePlate ? ` · ${vehicle.licensePlate}` : ''}
-                  </Text>
-                </View>
-                <View style={styles.driverAvatar}>
-                  <Text style={styles.driverInitials}>
-                    {(driver.firstName[0] || '').toUpperCase()}
-                    {(driver.lastName[0] || '').toUpperCase()}
-                  </Text>
-                  <View style={styles.chatBadge}>
-                    <MessageCircle size={10} color="#fff" />
+            </View>
+
+            <View style={[styles.timelineStop, { marginTop: 24 }]}>
+              <View style={styles.dropoffPin}>
+                <MapPin size={16} color="#FFFFFF" fill="#3B82F6" strokeWidth={0} />
+                <View style={styles.dropoffPinDot} />
+              </View>
+              <View style={styles.stopContent}>
+                <View style={styles.stopRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.stopAddress}>{job.deliveryAddress}</Text>
+                    {job.deliveryCity && <Text style={styles.stopCity}>{job.deliveryCity}</Text>}
                   </View>
+                  <Text style={styles.stopTime}>
+                    {job.deliveryWindow || formatDate(job.deliveryDate)}
+                  </Text>
                 </View>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.actionRow}>
+            {canCancel && (
+              <TouchableOpacity
+                style={styles.pillButton}
+                onPress={handleCancel}
+                disabled={cancelling}
+              >
+                <Text style={styles.pillText}>Atcelt darbu</Text>
               </TouchableOpacity>
             )}
-            <Divider color="#EBEBEB" marginV={0} />
-          </Animated.View>
-        )}
-
-        <Animated.View entering={entering.card(driver ? 2 : 1)}>
-          <InfoSection icon={<MapPin size={18} color="#111827" />} title="Maršruts">
-            {routeRows.map((row, index) => (
-              <DetailRow
-                key={row.label}
-                label={row.label}
-                value={row.value}
-                last={index === routeRows.length - 1}
-              />
-            ))}
-          </InfoSection>
-        </Animated.View>
-        <Divider color="#EBEBEB" marginV={0} />
-
-        <Animated.View entering={entering.card(driver ? 3 : 2)}>
-          <InfoSection icon={<Package size={18} color="#111827" />} title="Krava">
-            {cargoRows.map((row, index) => (
-              <DetailRow
-                key={row.label}
-                label={row.label}
-                value={row.value}
-                last={index === cargoRows.length - 1}
-              />
-            ))}
-          </InfoSection>
-        </Animated.View>
-        <Divider color="#EBEBEB" marginV={0} />
-
-        <Animated.View entering={entering.card(driver ? 4 : 3)}>
-          <InfoSection icon={<Clock3 size={18} color="#111827" />} title="Laiks">
-            {timingRows.map((row, index) => (
-              <DetailRow
-                key={row.label}
-                label={row.label}
-                value={row.value}
-                last={index === timingRows.length - 1}
-              />
-            ))}
-          </InfoSection>
-        </Animated.View>
-        <Divider color="#EBEBEB" marginV={0} />
-
-        <Animated.View entering={entering.card(driver ? 5 : 4)}>
-          <InfoSection icon={<Phone size={18} color="#111827" />} title="Kontakti">
-            {contactRows.length > 0 ? (
-              contactRows.map((row, index) =>
-                row.phone ? (
-                  <DetailRow
-                    key={row.label}
-                    label={row.label}
-                    last={index === contactRows.length - 1}
-                    value={
-                      <TouchableOpacity
-                        onPress={() => {
-                          haptics.medium();
-                          Linking.openURL(`tel:${row.phone}`).catch(() => null);
-                        }}
-                        activeOpacity={0.7}
-                        style={styles.phoneTapTarget}
-                      >
-                        <Text style={styles.phoneValueText}>{row.value as string}</Text>
-                        <Phone size={13} color="#4f46e5" />
-                      </TouchableOpacity>
-                    }
-                  />
-                ) : (
-                  <DetailRow
-                    key={row.label}
-                    label={row.label}
-                    value={row.value}
-                    last={index === contactRows.length - 1}
-                  />
-                ),
-              )
-            ) : (
-              <Text style={styles.emptySectionText}>Kontaktu informācija vēl nav pieejama.</Text>
+            {driver?.phone && (
+              <TouchableOpacity
+                style={styles.pillButton}
+                onPress={() => {
+                  haptics.light();
+                  Linking.openURL(`tel:${driver.phone}`).catch(console.error);
+                }}
+              >
+                <Text style={styles.pillText}>Zvanīt šoferim</Text>
+              </TouchableOpacity>
             )}
-          </InfoSection>
-        </Animated.View>
+            <TouchableOpacity
+              style={styles.pillButton}
+              onPress={() => {
+                haptics.light();
+                router.push('/(shared)/support-chat');
+              }}
+            >
+              <Text style={styles.pillText}>Atbalsts</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {notes.length > 0 && (
-          <InfoSection icon={<FileText size={18} color="#111827" />} title="Piezīmes">
-            <Text style={styles.notesText}>{notes}</Text>
-          </InfoSection>
-        )}
+        <View style={{ height: 8, backgroundColor: '#F3F4F6' }} />
 
-        {job.order?.sitePhotoUrl && (
-          <InfoSection icon={<MapPin size={18} color="#111827" />} title="Objekta foto">
-            <Image
-              source={{ uri: job.order.sitePhotoUrl }}
-              style={styles.siteImage}
-              resizeMode="cover"
-            />
-          </InfoSection>
-        )}
-
-        {job.pickupPhotoUrl && (
-          <InfoSection
-            icon={
-              isDisposal ? (
-                <Recycle size={18} color="#111827" />
-              ) : (
-                <Package size={18} color="#111827" />
-              )
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeading}>Papildu informācija</Text>
+          <DetailRow label="Darba tips" value={typeLabel} />
+          <DetailRow label="Krava" value={CARGO_LABEL[job.cargoType] ?? job.cargoType} />
+          <DetailRow
+            label="Svars"
+            value={job.cargoWeight != null ? `${(job.cargoWeight / 1000).toFixed(1)} t` : null}
+          />
+          <DetailRow
+            label="Transportlīdzeklis"
+            value={
+              job.requiredVehicleType
+                ? (VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType)
+                : null
             }
-            title={isDisposal ? 'Kraušanas foto' : 'Svēršanas slip'}
-          >
-            <Image
-              source={{ uri: job.pickupPhotoUrl }}
-              style={styles.siteImage}
-              resizeMode="cover"
-            />
-            {job.actualWeightKg != null && (
-              <View style={styles.weightBadge}>
-                <Hash size={14} color="#374151" />
-                <Text style={styles.weightText}>{(job.actualWeightKg / 1000).toFixed(2)} t</Text>
-              </View>
-            )}
-          </InfoSection>
-        )}
+            last
+          />
+        </View>
 
-        {job.status === 'DELIVERED' && ratingChecked && !ratingSubmitted && (
-          <InfoSection icon={<Star size={18} color="#111827" />} title="Novērtēt šoferi">
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => {
-                    haptics.light();
-                    setDriverRating(star);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Star
-                    size={28}
-                    color={star <= driverRating ? '#F59E0B' : '#E5E7EB'}
-                    fill={star <= driverRating ? '#F59E0B' : 'transparent'}
-                  />
-                </TouchableOpacity>
-              ))}
+        <View style={{ height: 8, backgroundColor: '#F3F4F6' }} />
+
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeading}>Maksājums</Text>
+          <View style={styles.payRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.payLabel}>Pārvadājuma maksa</Text>
+              {job.distanceKm != null && (
+                <Text style={styles.paySub}>{job.distanceKm.toFixed(1)} km</Text>
+              )}
             </View>
-            <TextInput
-              style={styles.ratingInput}
-              placeholder="Komentārs (nav obligāts)..."
-              placeholderTextColor="#9CA3AF"
-              value={ratingComment}
-              onChangeText={setRatingComment}
-              multiline
-              numberOfLines={3}
-              maxLength={500}
-            />
-            <Button
-              size="lg"
-              onPress={() => {
-                void handleRateDriver();
-              }}
-              disabled={driverRating === 0 || ratingLoading}
-              isLoading={ratingLoading}
-            >
-              Iesniegt vērtējumu
-            </Button>
-          </InfoSection>
-        )}
-
-        {ratingSubmitted && job.status === 'DELIVERED' && (
-          <InfoSection icon={<Star size={18} color="#111827" />} title="Jūsu vērtējums">
-            {submittedRating > 0 && (
-              <View style={styles.ratingSubmittedRow}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    size={24}
-                    color={star <= submittedRating ? '#F59E0B' : '#E5E7EB'}
-                    fill={star <= submittedRating ? '#F59E0B' : 'transparent'}
-                  />
-                ))}
-              </View>
-            )}
-            <Text style={styles.ratingSubmittedText}>Paldies par vērtējumu!</Text>
-          </InfoSection>
-        )}
-
-        {/* ── Secondary actions ── */}
-        <View style={styles.secondaryActionsBlock}>
-          {driver && !isJobClosed && (
-            <Button
-              size="lg"
-              variant="outline"
-              onPress={() => {
-                haptics.medium();
-                router.push({
-                  pathname: '/chat/[jobId]',
-                  params: { jobId: job.id, title: `${driver.firstName} ${driver.lastName}` },
-                });
-              }}
-            >
-              Rakstīt šoferim
-            </Button>
-          )}
-
-          {(job.status === 'DELIVERED' || job.status === 'CANCELLED') && (
-            <Button
-              variant="outline"
-              size="lg"
-              onPress={() => {
-                haptics.medium();
-                router.push('/transport' as any);
-              }}
-            >
-              Pasūtīt vēlreiz
-            </Button>
-          )}
+            <Text style={styles.payAmount}>€{job.rate.toFixed(2)}</Text>
+          </View>
+          <View style={styles.payHairline} />
+          <View style={styles.payRow}>
+            <Text style={styles.payTotalLabel}>Kopā</Text>
+            <Text style={styles.payTotalAmount}>€{job.rate.toFixed(2)}</Text>
+          </View>
         </View>
+
+        {isJobClosed && (
+          <View style={[styles.cardSection, { paddingTop: 8 }]}>
+            <TouchableOpacity
+              style={styles.pillButton}
+              onPress={() => {
+                haptics.light();
+                router.push('/(shared)/support-chat');
+              }}
+            >
+              <Text style={styles.pillText}>Saņemt čeku</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
-
-      {/* ── Sticky footer: cancel ── */}
-      {canCancel && (
-        <View style={styles.stickyFooter}>
-          <Button variant="destructive" size="lg" onPress={handleCancel} isLoading={cancelling}>
-            Atcelt pasūtījumu
-          </Button>
-        </View>
-      )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingBottom: 100,
+  headerSpacer: {
+    height: 48,
+    backgroundColor: '#FFFFFF',
   },
-  heroSection: {
+  headerSection: {
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingBottom: 16,
   },
-  heroTitle: {
-    fontSize: 32,
-    lineHeight: 36,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700',
-    color: '#111827',
+  backButton: {
+    marginBottom: 16,
   },
-  heroMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 16,
-    flexWrap: 'wrap',
-  },
-  heroSubtitle: {
-    fontSize: 15,
-    fontFamily: 'Inter_500Medium',
-    color: '#6B7280',
-  },
-  driverHighlightRow: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 24,
   },
-  driverInfo: {
+  titleLeft: {
     flex: 1,
     paddingRight: 16,
   },
-  driverName: {
-    fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
+  titleText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
     color: '#111827',
     marginBottom: 4,
   },
-  driverVehicle: {
-    fontSize: 14,
+  dateText: {
     fontFamily: 'Inter_400Regular',
+    fontSize: 15,
     color: '#6B7280',
   },
-  driverAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#00A878',
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  driverInitials: {
-    fontSize: 16,
+  avatarText: {
     fontFamily: 'Inter_600SemiBold',
-    color: '#FFFFFF',
-  },
-  chatBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: '#F9423A',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  secondaryActionsBlock: {
-    gap: 12,
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 16,
-    paddingBottom: 36,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  emptySectionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  notesText: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
+    fontSize: 16,
     color: '#374151',
   },
-  siteImage: {
-    width: '100%',
-    height: 220,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+  scrollContent: {
+    paddingBottom: 40,
   },
-  weightBadge: {
+  mapWrap: {
+    marginHorizontal: 20,
+    height: 200,
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mapPill: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginTop: 10,
-    alignSelf: 'flex-start',
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  weightText: {
-    fontSize: 14,
+  mapPillText: {
     fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#374151',
-  },
-  starsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  ratingInput: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
     color: '#111827',
-    height: 88,
-    textAlignVertical: 'top',
-    marginBottom: 14,
   },
-  ratingSubmittedRow: {
+  noMapSpacer: {
+    height: 16,
+  },
+  cardSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  sectionHeading: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    color: '#111827',
+    marginBottom: 20,
+  },
+  timeline: {
+    position: 'relative',
+    marginLeft: 8,
+    marginBottom: 24,
+  },
+  timelineTrack: {
+    position: 'absolute',
+    left: 7,
+    top: 24,
+    bottom: 24,
+    width: 2,
+    backgroundColor: '#E5E7EB',
+  },
+  timelineStop: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    alignItems: 'flex-start',
   },
-  ratingSubmittedText: {
-    fontSize: 14,
+  dotBgGreen: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  dotCoreGreen: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  dotBgBlue: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  dotCoreBlue: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+  },
+  stopContent: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  stopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  stopAddress: {
     fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#111827',
+    marginBottom: 2,
+  },
+  stopCity: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
     color: '#6B7280',
   },
-  phoneTapTarget: {
+  stopTime: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: '#6B7280',
+  },
+  dropoffPin: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  dropoffPinDot: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+  },
+  payRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    paddingVertical: 12,
   },
-  phoneValueText: {
-    fontSize: 15,
+  payLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  paySub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  payAmount: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payHairline: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 4,
+  },
+  payTotalLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 16,
+    color: '#111827',
+  },
+  payTotalAmount: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    color: '#111827',
+  },
+  actionRow: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  pillButton: {
+    width: '100%',
+    height: 52,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillText: {
     fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: '#4f46e5',
+    fontSize: 15,
+    color: '#111827',
   },
 });
