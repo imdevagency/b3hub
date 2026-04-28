@@ -20,7 +20,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
-import { api, type ApiOrder, type OpenQuoteRequest } from '@/lib/api';
+import { api, type ApiOrder } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { colors } from '@/lib/theme';
 import {
@@ -32,8 +32,6 @@ import {
   Clock,
   Phone,
   FileText,
-  Package,
-  Send,
   AlertTriangle,
 } from 'lucide-react-native';
 
@@ -447,9 +445,6 @@ export default function IncomingScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
-  const [section, setSection] = useState<'orders' | 'quotes'>('orders');
-  const [quoteRequests, setQuoteRequests] = useState<OpenQuoteRequest[]>([]);
-  const [quotesLoading, setQuotesLoading] = useState(false);
   const [orders, setOrders] = useState<IncomingOrder[]>([]);
   const [fetching, setFetching] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -484,23 +479,10 @@ export default function IncomingScreen() {
     [token, user?.company?.id],
   );
 
-  const fetchQuotes = useCallback(async () => {
-    if (!token) return;
-    setQuotesLoading(true);
-    try {
-      const data = await api.quoteRequests.openRequests(token);
-      setQuoteRequests(data);
-    } catch {
-    } finally {
-      setQuotesLoading(false);
-    }
-  }, [token]);
-
   useFocusEffect(
     useCallback(() => {
       fetchOrders();
-      fetchQuotes();
-    }, [fetchOrders, fetchQuotes]),
+    }, [fetchOrders]),
   );
 
   const { sellerNewOrder } = useLiveUpdates({ sellerCompanyId: user?.company?.id ?? null, token });
@@ -624,221 +606,101 @@ export default function IncomingScreen() {
         </Text>
       </View>
 
-      {/* ── Segment control ── */}
-      <View className="px-5 mt-2 mb-4">
-        <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-          {(
-            [
-              {
-                key: 'orders',
-                label: `Pasūtījumi${orders.length > 0 ? ` · ${orders.length}` : ''}`,
-              },
-              {
-                key: 'quotes',
-                label: `Cenas${quoteRequests.length > 0 ? ` · ${quoteRequests.length}` : ''}`,
-                dot: quoteRequests.length > 0,
-              },
-            ] as const
-          ).map((s) => {
-            const active = section === s.key;
-            return (
-              <TouchableOpacity
-                key={s.key}
-                className={`flex-1 flex-row items-center justify-center py-2.5 rounded-xl ${active ? 'bg-white' : ''}`}
-                style={
-                  active
-                    ? {
-                        shadowColor: '#000',
-                        shadowOpacity: 0.06,
-                        shadowRadius: 4,
-                        elevation: 1,
-                        shadowOffset: { width: 0, height: 1 },
-                      }
-                    : {}
-                }
-                onPress={() => {
-                  haptics.light();
-                  setSection(s.key);
-                }}
-              >
-                <Text
-                  style={{ fontSize: 14, fontWeight: '600', color: active ? '#111827' : '#6b7280' }}
-                >
-                  {s.label}
-                </Text>
-                {'dot' in s && s.dot && !active && (
-                  <View className="ml-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* ── Quotes section ── */}
-      {section === 'quotes' && (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={quotesLoading}
-              onRefresh={fetchQuotes}
-              tintColor="#111827"
-            />
-          }
-        >
-          {quotesLoading && quoteRequests.length === 0 ? (
-            <View className="px-5 pt-2">
-              <SkeletonCard count={3} />
-            </View>
-          ) : quoteRequests.length === 0 ? (
-            <EmptyState
-              icon={<FileText size={32} color="#9ca3af" />}
-              title="Nav cenu pieprasījumu"
-              subtitle="Jauni pieprasījumi parādīsies šeit."
-            />
-          ) : (
-            quoteRequests.map((req) => (
-              <TouchableOpacity
-                key={req.id}
-                className="flex-row items-center px-5 py-4 border-b border-gray-100 bg-white"
-                style={{ gap: 12 }}
-                activeOpacity={0.7}
-                onPress={() => {
-                  haptics.light();
-                  router.push({
-                    pathname: '/(seller)/quotes',
-                    params: { highlight: req.id },
-                  } as any);
-                }}
-              >
-                <View className="w-11 h-11 rounded-full bg-blue-50 items-center justify-center">
-                  <Package size={18} color="#2563eb" />
-                </View>
-                <View className="flex-1">
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
-                    {req.materialCategory}
-                  </Text>
-                  <Text className="text-gray-500 font-medium mt-0.5" style={{ fontSize: 13 }}>
-                    {req.quantity} {req.unit} · {req.deliveryCity}
-                  </Text>
-                </View>
-                <View
-                  className="flex-row items-center bg-blue-600 px-3 py-2 rounded-full"
-                  style={{ gap: 5 }}
-                >
-                  <Send size={12} color="#fff" />
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>Atbildēt</Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
-        </ScrollView>
-      )}
-
       {/* ── Orders section ── */}
-      {section === 'orders' && (
-        <>
-          {orders.length > 0 && (
-            <View className="mb-3">
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-              >
-                {STATUS_FILTERS.map((f) => {
-                  const count =
-                    f.key === 'ALL'
-                      ? orders.length
-                      : orders.filter((o) => o.status === f.key).length;
-                  const active = filterStatus === f.key;
-                  return (
-                    <TouchableOpacity
-                      key={f.key}
-                      className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
-                      style={{ gap: 6 }}
-                      onPress={() => {
-                        haptics.light();
-                        setFilterStatus(f.key);
-                      }}
+      {orders.length > 0 && (
+        <View className="mb-3">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+          >
+            {STATUS_FILTERS.map((f) => {
+              const count =
+                f.key === 'ALL' ? orders.length : orders.filter((o) => o.status === f.key).length;
+              const active = filterStatus === f.key;
+              return (
+                <TouchableOpacity
+                  key={f.key}
+                  className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
+                  style={{ gap: 6 }}
+                  onPress={() => {
+                    haptics.light();
+                    setFilterStatus(f.key);
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: active ? '#fff' : '#374151',
+                    }}
+                  >
+                    {f.label}
+                  </Text>
+                  {count > 0 && (
+                    <View
+                      className={`px-1.5 py-0.5 rounded-full items-center justify-center ${active ? 'bg-gray-700' : 'bg-gray-200'}`}
                     >
                       <Text
                         style={{
-                          fontSize: 14,
+                          fontSize: 11,
                           fontWeight: '600',
                           color: active ? '#fff' : '#374151',
                         }}
                       >
-                        {f.label}
+                        {count}
                       </Text>
-                      {count > 0 && (
-                        <View
-                          className={`px-1.5 py-0.5 rounded-full items-center justify-center ${active ? 'bg-gray-700' : 'bg-gray-200'}`}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              fontWeight: '600',
-                              color: active ? '#fff' : '#374151',
-                            }}
-                          >
-                            {count}
-                          </Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
-          <FlatList
-            data={visibleOrders}
-            keyExtractor={(item) => item.id}
-            removeClippedSubviews={true}
-            initialNumToRender={10}
-            maxToRenderPerBatch={5}
-            renderItem={renderOrderItem}
-            contentContainerStyle={
-              visibleOrders.length === 0 ? { flexGrow: 1 } : { paddingBottom: 60 }
+      <FlatList
+        data={visibleOrders}
+        keyExtractor={(item) => item.id}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        renderItem={renderOrderItem}
+        contentContainerStyle={visibleOrders.length === 0 ? { flexGrow: 1 } : { paddingBottom: 60 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchOrders(true);
+            }}
+            tintColor="#111827"
+          />
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon={<Inbox size={32} color="#9ca3af" />}
+            title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
+            subtitle={
+              orders.length === 0
+                ? 'Šobrīd nav neviena aktīva pasūtījuma.'
+                : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'
             }
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  setRefreshing(true);
-                  fetchOrders(true);
-                }}
-                tintColor="#111827"
-              />
-            }
-            ListEmptyComponent={
-              <EmptyState
-                icon={<Inbox size={32} color="#9ca3af" />}
-                title={orders.length === 0 ? 'Nav pasūtījumu' : 'Nav atrasts'}
-                subtitle={
-                  orders.length === 0
-                    ? 'Šobrīd nav neviena aktīva pasūtījuma.'
-                    : 'Šajā kategorijā pašlaik nav neviena pasūtījuma.'
-                }
-                action={
-                  orders.length === 0 ? (
-                    <TouchableOpacity
-                      className="mt-3 bg-[#F9423A] rounded-full px-6 py-3"
-                      onPress={() => router.push('/(seller)/catalog')}
-                    >
-                      <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>
-                        Pārbaudīt katalogu →
-                      </Text>
-                    </TouchableOpacity>
-                  ) : undefined
-                }
-              />
+            action={
+              orders.length === 0 ? (
+                <TouchableOpacity
+                  className="mt-3 bg-[#F9423A] rounded-full px-6 py-3"
+                  onPress={() => router.push('/(seller)/catalog')}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>
+                    Pārbaudīt katalogu →
+                  </Text>
+                </TouchableOpacity>
+              ) : undefined
             }
           />
-        </>
-      )}
+        }
+      />
 
       {loadingOrder && (
         <LoadingModal

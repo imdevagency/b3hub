@@ -8,7 +8,6 @@ import { Inbox, User, Home, LayoutGrid, MoreHorizontal } from 'lucide-react-nati
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
-import { useOpenQuoteCount } from '@/lib/use-open-quote-count';
 import { useUnreadCount } from '@/lib/use-unread-count';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
@@ -19,7 +18,6 @@ function SellerLayoutContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const openQuoteCount = useOpenQuoteCount();
   const unreadCount = useUnreadCount();
   const { config } = useHeaderConfig();
   // eslint-disable-next-line react/display-name
@@ -83,7 +81,6 @@ function SellerLayoutContent() {
           options={{
             title: 'Pieprasījumi',
             tabBarIcon: ({ color }) => <Inbox size={22} color={color} />,
-            tabBarBadge: openQuoteCount > 0 ? openQuoteCount : undefined,
           }}
         />
         <Tabs.Screen name="quotes" options={{ href: null }} />
