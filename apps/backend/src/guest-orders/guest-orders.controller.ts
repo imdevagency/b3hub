@@ -27,7 +27,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, Min, IsEmail, MinLength } from 'class-validator';
 import { GuestOrderStatus } from '@prisma/client';
 import { GuestOrdersService } from './guest-orders.service';
 import { CreateGuestOrderDto } from './dto/create-guest-order.dto';
@@ -55,6 +55,23 @@ class SetGuestQuoteDto {
   @IsString()
   @IsOptional()
   quotedCurrency?: string;
+}
+
+class ClaimGuestOrderDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
 }
 
 @ApiTags('Guest Orders')
@@ -138,6 +155,15 @@ export class GuestOrdersController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } }) // 5 per minute per IP — anti-abuse
   async createPaymentIntent(@Param('id') id: string) {
     return this.service.createPaymentIntent(id);
+  }
+
+  // ── Public: claim a guest order — guest creates an account post-checkout ─
+
+  @Public()
+  @Post('track/:token/claim')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } }) // 5 per minute per IP — anti-abuse
+  async claim(@Param('token') token: string, @Body() dto: ClaimGuestOrderDto) {
+    return this.service.claimByToken(token, dto);
   }
 
   // ── Authenticated: convert guest order → real order ───────────────────────

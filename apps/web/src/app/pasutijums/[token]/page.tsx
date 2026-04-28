@@ -6,13 +6,29 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { getGuestOrderByToken, type GuestOrderTracking } from '@/lib/api/guest-orders';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  claimGuestOrder,
+  getGuestOrderByToken,
+  type GuestOrderTracking,
+} from '@/lib/api/guest-orders';
+import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Package, MapPin, Clock, CheckCircle2, AlertCircle, Phone, ArrowRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Package,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Phone,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  ShieldCheck,
+} from 'lucide-react';
 import Link from 'next/link';
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -54,10 +70,20 @@ function formatDate(iso: string | null | undefined): string {
 export default function GuestOrderTrackingPage() {
   const params = useParams<{ token: string }>();
   const token = params?.token ?? '';
+  const router = useRouter();
+  const { setAuth, user: authUser } = useAuth();
 
   const [order, setOrder] = useState<GuestOrderTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // ── Claim form state ──────────────────────────────────────────────────────
+  const [claimEmail, setClaimEmail] = useState('');
+  const [claimPassword, setClaimPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState('');
+  const [claimDone, setClaimDone] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -67,6 +93,37 @@ export default function GuestOrderTrackingPage() {
       .catch(() => setError('Pasūtījums nav atrasts vai saite ir nederīga.'))
       .finally(() => setLoading(false));
   }, [token]);
+
+  async function handleClaim() {
+    setClaimError('');
+    if (!/^\S+@\S+\.\S+$/.test(claimEmail.trim())) {
+      setClaimError('Ievadiet derīgu e-pastu.');
+      return;
+    }
+    if (claimPassword.length < 8) {
+      setClaimError('Parolei jābūt vismaz 8 rakstzīmēm.');
+      return;
+    }
+    setClaiming(true);
+    try {
+      const res = await claimGuestOrder(token, {
+        email: claimEmail.trim().toLowerCase(),
+        password: claimPassword,
+      });
+      setAuth(res.user, res.token);
+      setClaimDone(true);
+      // Brief success flash, then forward to dashboard
+      setTimeout(() => router.push('/dashboard'), 800);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Konta izveide neizdevās.';
+      // Friendlier message for the most common case
+      setClaimError(
+        /already exists/i.test(msg) ? 'Šāds e-pasts jau ir reģistrēts. Lūdzu pieslēdzieties.' : msg,
+      );
+    } finally {
+      setClaiming(false);
+    }
+  }
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -230,17 +287,99 @@ export default function GuestOrderTrackingPage() {
           </CardContent>
         </Card>
 
-        {/* CTA to register */}
-        <div className="text-center pt-2">
-          <p className="text-sm text-gray-500 mb-3">
-            Vēlaties sekot pasūtījumiem, rediģēt adreses un saņemt ātrāku apkalpošanu?
-          </p>
-          <Button asChild className="rounded-xl gap-2">
-            <Link href="/apply">
-              Izveidot kontu <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+        {/* CTA — claim this order with a real account */}
+        {authUser ? (
+          <div className="text-center pt-2">
+            <p className="text-sm text-gray-500 mb-3">
+              Skatiet visus savus pasūtījumus kontrolpanelī.
+            </p>
+            <Button asChild className="rounded-xl gap-2">
+              <Link href="/dashboard">
+                Uz kontrolpaneli <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        ) : claimDone ? (
+          <Card className="rounded-2xl border-0 shadow-sm bg-green-50">
+            <CardContent className="pt-5 pb-5 text-center">
+              <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-green-600" />
+              <p className="text-sm font-bold text-green-900 mb-1">Konts izveidots!</p>
+              <p className="text-sm text-green-700">Pārvietojam uz kontrolpaneli…</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="rounded-2xl border-0 shadow-sm bg-white">
+            <CardContent className="pt-5 pb-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-gray-700" />
+                <p className="text-sm font-bold text-gray-900">Saglabājiet šo pasūtījumu</p>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Izveidojiet kontu, lai sekotu pasūtījumiem, saglabātu adreses un nākamreiz pasūtītu
+                ar vienu klikšķi. Mēs jau zinām jūsu vārdu un tālruni — vajag tikai e-pastu un
+                paroli.
+              </p>
+
+              <Input
+                type="email"
+                placeholder="E-pasts"
+                value={claimEmail}
+                onChange={(e) => setClaimEmail(e.target.value)}
+                autoComplete="email"
+                className="rounded-xl"
+              />
+              <div className="relative">
+                <Input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="Parole (vismaz 8 rakstzīmes)"
+                  value={claimPassword}
+                  onChange={(e) => setClaimPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="rounded-xl pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                  aria-label={showPw ? 'Slēpt paroli' : 'Rādīt paroli'}
+                >
+                  {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+
+              {claimError && <p className="text-sm text-red-600">{claimError}</p>}
+
+              <Button
+                onClick={handleClaim}
+                disabled={claiming || !claimEmail || !claimPassword}
+                className="w-full rounded-xl gap-2"
+              >
+                {claiming ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" />
+                )}
+                Izveidot kontu
+              </Button>
+
+              <p className="text-[11px] text-gray-400 text-center pt-1">
+                Reģistrējoties piekrītat{' '}
+                <a href="/terms" target="_blank" className="underline">
+                  noteikumiem
+                </a>{' '}
+                un{' '}
+                <a href="/privacy" target="_blank" className="underline">
+                  privātuma politikai
+                </a>
+                .{' '}
+                <Link href="/login" className="underline font-semibold">
+                  Jau ir konts? Ieiet
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

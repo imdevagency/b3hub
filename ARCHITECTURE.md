@@ -33,7 +33,7 @@ B3Hub serves **two customer segments on the same platform**:
 - **Authentication**: Supabase Auth
 - **File Storage**: Supabase Storage
 - **Real-time**: WebSockets/Supabase Realtime
-- **Payment**: Stripe (future)
+- **Payment**: Paysera (redirect checkout + webhook); Stripe Connect for solo individual driver payouts only
 
 ---
 

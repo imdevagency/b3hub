@@ -46,6 +46,12 @@ interface Props {
   /** Pre-populate name + phone from the wizard's on-site contact fields. */
   prefilledName?: string;
   prefilledPhone?: string;
+  /**
+   * Open directly in this mode and hide the choice screen. Use this when the
+   * wizard already has the user's contact info and only needs login — avoids
+   * the "How do you want to continue?" wall.
+   */
+  initialMode?: 'login' | 'register' | 'guest';
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -68,8 +74,14 @@ export function WebWizardAuthGate({
   onDismiss,
   prefilledName,
   prefilledPhone,
+  initialMode,
 }: Props) {
-  const [mode, setMode] = useState<Mode>('choice');
+  const [mode, setMode] = useState<Mode>(initialMode ?? 'choice');
+
+  // Re-sync mode whenever the gate is re-opened with a different initialMode.
+  useEffect(() => {
+    if (open) setMode(initialMode ?? 'choice');
+  }, [open, initialMode]);
 
   // Guest checkout fields
   const [guestName, setGuestName] = useState('');

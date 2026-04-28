@@ -11,6 +11,7 @@ import type { ExpoConfig, ConfigContext } from 'expo/config';
  *   development  → bundle ID lv.b3hub.app.dev,     name "B3Hub Dev"     (dev client)
  *   staging      → bundle ID lv.b3hub.app.staging,  name "B3Hub Staging" (preview/TestFlight internal)
  *   production   → bundle ID lv.b3hub.app,           name "B3Hub"         (App Store)
+ *   gate         → bundle ID lv.b3hub.app.gate,      name "B3Hub Gate"    (internal — gate operators, no store)
  *
  * Required for production builds:
  *   EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID — Android Maps SDK key (Android apps restriction)
@@ -24,7 +25,8 @@ import type { ExpoConfig, ConfigContext } from 'expo/config';
 const APP_VARIANT = (process.env.APP_VARIANT ?? 'production') as
   | 'development'
   | 'staging'
-  | 'production';
+  | 'production'
+  | 'gate';
 
 const variants = {
   development: {
@@ -41,6 +43,12 @@ const variants = {
     name: 'B3Hub',
     bundleId: 'lv.b3hub.app',
     androidPackage: 'lv.b3hub.app',
+  },
+  // Internal build for quarry gate operators — distributed via APK link, no store
+  gate: {
+    name: 'B3Hub Gate',
+    bundleId: 'lv.b3hub.app.gate',
+    androidPackage: 'lv.b3hub.app.gate',
   },
 } as const;
 

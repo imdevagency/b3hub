@@ -58,6 +58,7 @@ import {
   Layers,
   Leaf,
   Loader2,
+  Mail,
   Map,
   MapPin,
   Minus,
@@ -224,6 +225,8 @@ interface WizardState {
   truckIntervalMinutes: number;
   siteContactName: string;
   siteContactPhone: string;
+  /** Optional buyer email — used for guest checkout status notifications and account-claim. */
+  contactEmail: string;
   /** Separate from notes (material specs) — driver site-access instructions entered in the contact step */
   driverNotes: string;
 }
@@ -438,6 +441,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
       truckIntervalMinutes: 30,
       siteContactName: '',
       siteContactPhone: '',
+      contactEmail: '',
       driverNotes: '',
     };
   });
@@ -448,9 +452,11 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [guestToken, setGuestToken] = useState('');
   const [rfqNumber, setRfqNumber] = useState('');
 
   const [authGateOpen, setAuthGateOpen] = useState(false);
+  const [authGateMode, setAuthGateMode] = useState<'login' | 'register' | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<((tok: string) => Promise<void>) | null>(null);
 
   function patch(updates: Partial<WizardState>) {
@@ -491,13 +497,32 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
     }
   }
 
+  /**
+   * Smart submit helper — in dashboard mode runs the authenticated action;
+   * in public mode skips the auth wall and creates a guest order directly
+   * using the contact info already collected in the wizard.
+   */
   function requireAuth(action: (tok: string) => Promise<void>) {
     if (token) {
       action(token);
+    } else if (mode === 'public') {
+      handleGuestCheckout({
+        name: form.siteContactName.trim() || 'Klients',
+        phone: form.siteContactPhone.trim(),
+        email: form.contactEmail.trim() || undefined,
+      });
     } else {
+      // dashboard mode without token — fall back to the auth gate
       setPendingAction(() => action);
       setAuthGateOpen(true);
     }
+  }
+
+  /** Open the auth gate directly in login mode for users who already have an account. */
+  function openLoginGate(action: (tok: string) => Promise<void>) {
+    setAuthGateMode('login');
+    setPendingAction(() => action);
+    setAuthGateOpen(true);
   }
 
   function handleAuthSuccess(authUser: User, authToken: string) {
@@ -513,7 +538,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
     setSubmitting(true);
     setSubmitError('');
     try {
-      await createGuestOrder({
+      const guestRes = await createGuestOrder({
         materialCategory: form.category,
         materialName: form.materialName,
         quantity: form.quantity,
@@ -534,6 +559,8 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
         contactEmail: contact.email,
         notes: [form.notes, form.driverNotes].filter(Boolean).join('\n') || undefined,
       });
+      setOrderNumber(guestRes.orderNumber);
+      setGuestToken(guestRes.token);
       setStep('order-confirmed');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
@@ -1001,6 +1028,21 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
                 className="rounded-xl"
               />
             </div>
+            {mode === 'public' && (
+              <div>
+                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
+                  <Mail className="size-3.5" /> E-pasts (neobligāti, statusu paziņojumiem)
+                </label>
+                <Input
+                  type="email"
+                  placeholder="jusu@epasts.lv"
+                  value={form.contactEmail}
+                  onChange={(e) => patch({ contactEmail: e.target.value })}
+                  autoComplete="email"
+                  className="rounded-xl"
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm font-semibold text-foreground mb-1.5 block">
                 Papildus piezīmes (neobligāti)
@@ -1098,6 +1140,18 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
               </div>
             </div>
           )}
+          {mode === 'public' && (
+            <p className="text-xs text-center text-muted-foreground">
+              Pasūtīt var bez konta ·{' '}
+              <button
+                type="button"
+                onClick={() => openLoginGate((tok) => execSendRFQ(tok))}
+                className="underline font-semibold hover:text-foreground transition-colors"
+              >
+                Jau ir konts? Ieiet
+              </button>
+            </p>
+          )}
         </div>
       )}
 
@@ -1182,12 +1236,21 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
             ) : null}
           </div>
           <div className="w-full space-y-3">
-            <Button
-              onClick={() => router.push('/dashboard/orders')}
-              className="w-full rounded-2xl h-12 font-bold"
-            >
-              <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
-            </Button>
+            {guestToken ? (
+              <Button
+                onClick={() => router.push(`/pasutijums/${guestToken}`)}
+                className="w-full rounded-2xl h-12 font-bold"
+              >
+                <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
+              </Button>
+            ) : (
+              <Button
+                onClick={() => router.push('/dashboard/orders')}
+                className="w-full rounded-2xl h-12 font-bold"
+              >
+                <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => router.push(catalogHref)}
@@ -1231,10 +1294,12 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
           onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
+            setAuthGateMode(undefined);
             setPendingAction(null);
           }}
           prefilledName={form.siteContactName}
           prefilledPhone={form.siteContactPhone}
+          initialMode={authGateMode}
         />
       </>
     );
@@ -1267,10 +1332,12 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
         onGuestContact={handleGuestCheckout}
         onDismiss={() => {
           setAuthGateOpen(false);
+          setAuthGateMode(undefined);
           setPendingAction(null);
         }}
         prefilledName={form.siteContactName}
         prefilledPhone={form.siteContactPhone}
+        initialMode={authGateMode}
       />
     </>
   );

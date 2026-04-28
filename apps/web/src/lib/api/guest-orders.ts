@@ -2,6 +2,7 @@
  * Guest Orders API — public endpoints, no auth required.
  */
 import { API_URL, apiFetch } from './common';
+import type { AuthResponse } from './auth';
 
 export interface CreateGuestOrderPayload {
   materialCategory: string;
@@ -64,4 +65,29 @@ export async function getGuestOrderByToken(
     throw new Error('Pasūtījums nav atrasts');
   }
   return res.json();
+}
+
+/**
+ * Claim a guest order by creating a real account pre-filled with the
+ * order's contact info. Returns the same shape as registerUser/loginUser
+ * (User + JWT) so callers can persist auth and redirect to the dashboard.
+ */
+export interface ClaimGuestOrderPayload {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export async function claimGuestOrder(
+  token: string,
+  payload: ClaimGuestOrderPayload,
+): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>(
+    `/guest-orders/track/${encodeURIComponent(token)}/claim`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
 }

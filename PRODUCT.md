@@ -155,13 +155,13 @@ These can't be replicated by a competitor who doesn't own the supply network.
 ### How money flows through the platform (core mechanics)
 
 ```
-Buyer pays → Stripe (full order total)
+Buyer pays → Paysera checkout (full order total, redirect-and-webhook flow)
   ├─ Platform fee retained   (commissionRate % — default 10%)
-  ├─ Seller payout released  (sellerPayout)
-  └─ Carrier payout released (driverPayout)
+  ├─ Seller payout released  (sellerPayout — manual / batch payout)
+  └─ Carrier payout released (driverPayout — manual / batch, or Stripe Connect for solo individual drivers)
 ```
 
-`commissionRate` and `payoutEnabled` are per-company (`Company` model), so rates are fully negotiable per partner.
+`commissionRate` and `payoutEnabled` are per-company (`Company` model), so rates are fully negotiable per partner. Solo individual drivers (no company) optionally use Stripe Connect (`DriverProfile.stripeConnectId`); all other payouts go via Paysera or bank transfer.
 
 ---
 
@@ -214,7 +214,7 @@ These all sit inside the transport layer. The spread between what B3Hub charges 
 
 | #   | Stream                         | Mechanism                                                                                                                                                                                   |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 13  | **Payment float / interest**   | Stripe holds funds between buyer payment and seller payout. At volume, even 2–5 days of float on €1M/month GMV earns ~€3–5k/year. Modest but free.                                          |
+| 13  | **Payment float / interest**   | Paysera holds funds between buyer payment and platform-initiated seller payout. At volume, even 2–5 days of float on €1M/month GMV earns ~€3–5k/year. Modest but free.                      |
 | 14  | **Trade credit for buyers**    | Verified construction companies buy now, pay in 30/60 days. Funded via a lending partner (B3Hub earns referral + spread). Construction companies live on credit — this is extremely sticky. |
 | 15  | **Early payout for suppliers** | Suppliers get paid instantly (for a 1–2% discount) instead of waiting for buyer payment cycle. Platform or factoring partner absorbs the receivable.                                        |
 | 16  | **Cargo insurance**            | Bundle per-shipment transit insurance into transport orders. Zero effort for the user — opt-out rather than opt-in. Revenue split with insurer.                                             |
@@ -455,7 +455,7 @@ Permission flags (independently toggleable):
 Landing page wizard (skip hire or materials)
   → Phone or email at step 1
   → Complete order details (service-specific fields)
-  → Review + pay (Stripe card or bank transfer)
+  → Review + pay (Paysera — card or bank transfer)
   → Order confirmed
   → Post-checkout prompt: "Create account to track order & reorder faster"
       → If accepted: account created, order linked
@@ -518,15 +518,17 @@ Switching mode changes the entire navigation and all visible features.
 
 ### Guest (B2C, unauthenticated)
 
-| Feature                               | Landing | Notes                                                        |
-| ------------------------------------- | ------- | ------------------------------------------------------------ |
-| Price estimator widget                | ✅      | No order created; CTA to sign up                             |
-| Skip hire guest wizard                | ❌      | Planned — 5-step: size, waste type, postcode, dates, contact |
-| Materials quick-order guest wizard    | ❌      | Planned — material type, qty, postcode, contact              |
-| Guest checkout (Stripe)               | ❌      | Planned — card payment, no account required                  |
-| Order confirmation via email/SMS      | ❌      | Planned — confirmation link for tracking                     |
-| Post-checkout account creation prompt | ❌      | Planned — link existing guest order to new account           |
-| Waste transfer note auto-generation   | ❌      | Planned — same doc gen as authenticated orders               |
+| Feature                               | Landing | Notes                                                   |
+| ------------------------------------- | ------- | ------------------------------------------------------- |
+| Price estimator widget                | ✅      | No order created; CTA to sign up                        |
+| Skip hire guest wizard                | ✅      | Built — `apps/web/src/app/(marketing)/order/skip-hire/` |
+| Materials quick-order guest wizard    | ✅      | Built — `apps/web/src/app/(marketing)/order/materials/` |
+| Transport guest wizard                | ✅      | Built — `apps/web/src/app/(marketing)/order/transport/` |
+| Disposal guest wizard                 | ✅      | Built — `apps/web/src/app/(marketing)/order/disposal/`  |
+| Guest checkout (Paysera)              | ✅      | Card / bank transfer, no account required               |
+| Order confirmation via email/SMS      | ✅      | Confirmation email sent on order creation               |
+| Post-checkout account creation prompt | ❌      | Planned — link existing guest order to new account      |
+| Waste transfer note auto-generation   | ✅      | Same doc generation as authenticated orders             |
 
 ### Buyer features
 
@@ -550,7 +552,7 @@ Switching mode changes the entire navigation and all visible features.
 | Company & team management         | ✅        | ✅      | Roles + perm flags                     |
 | Push notifications                | ✅        | ✅ push |                                        |
 | Profile & settings                | ✅        | ✅      |                                        |
-| Payment (Stripe)                  | ✅        | ✅      | PaymentIntent, Stripe Connect          |
+| Payment (Paysera)                 | ✅        | ✅      | Redirect checkout + webhook            |
 
 ### Seller features (`canSell: true`)
 
@@ -660,8 +662,8 @@ Neither platform replicates the other's primary domain.
    └─ Delivery note, weighing slip, invoice
    └─ All parties download from their Documents section
 
-10. Payment processed via Stripe
-    └─ Platform fee retained, seller + carrier paid out
+10. Payment captured via Paysera webhook
+    └─ Platform fee retained, seller + carrier paid out (manual/batch payout, or Stripe Connect for solo individual drivers)
     └─ Order status: COMPLETED
 ```
 
@@ -780,35 +782,35 @@ Features that are uniquely possible because B3Hub owns the transaction layer —
 
 ### B2C Roadmap
 
-| Priority  | Feature                                         | Why                                                                    |
-| --------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
-| **B2C-1** | Landing price estimator widget                  | Conversion funnel; no backend needed; pure marketing                   |
-| **B2C-2** | Skip hire guest wizard on landing               | Highest-value B2C product; commodity transaction; 5 fields max         |
-| **B2C-3** | Guest checkout via Stripe (card only)           | Revenue from B2C without forcing account creation                      |
-| **B2C-4** | Order confirmation email/SMS with tracking link | Operational necessity; carrier needs to confirm delivery slot          |
-| **B2C-5** | Post-checkout account creation prompt           | Convert one-off buyers to repeat users; link existing order to account |
-| **B2C-6** | Materials quick-order guest wizard on landing   | Second B2C product; slightly more complex (qty, specs) than skip hire  |
-| **B2C-7** | Carrier order-type filter (B2C opt-in/out)      | Let carriers choose which order types they accept                      |
-| **B2C-8** | Shareable draft order link                      | PM creates draft, shares with site foreman to fill in delivery details |
+| Priority  | Feature                                           | Why                                                                    |
+| --------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| **B2C-1** | Landing price estimator widget                    | Conversion funnel; no backend needed; pure marketing                   |
+| **B2C-2** | Skip hire guest wizard on landing                 | Highest-value B2C product; commodity transaction; 5 fields max         |
+| **B2C-3** | Guest checkout via Paysera (card + bank transfer) | Revenue from B2C without forcing account creation                      |
+| **B2C-4** | Order confirmation email/SMS with tracking link   | Operational necessity; carrier needs to confirm delivery slot          |
+| **B2C-5** | Post-checkout account creation prompt             | Convert one-off buyers to repeat users; link existing order to account |
+| **B2C-6** | Materials quick-order guest wizard on landing     | Second B2C product; slightly more complex (qty, specs) than skip hire  |
+| **B2C-7** | Carrier order-type filter (B2C opt-in/out)        | Let carriers choose which order types they accept                      |
+| **B2C-8** | Shareable draft order link                        | PM creates draft, shares with site foreman to fill in delivery details |
 
 ---
 
 ## Tech Stack
 
-| Layer            | Technology                              |
-| ---------------- | --------------------------------------- |
-| Backend API      | NestJS (Node.js)                        |
-| Database         | PostgreSQL on Supabase, Prisma ORM      |
-| Authentication   | Supabase Auth (JWT)                     |
-| File storage     | Supabase Storage                        |
-| Mobile app       | React Native + Expo Router              |
-| Web app          | Next.js 14 (App Router)                 |
-| Styling — web    | Tailwind CSS + shadcn/ui                |
-| Styling — mobile | NativeWind (Tailwind for RN)            |
-| Real-time        | WebSockets (NestJS Gateway)             |
-| Payments         | Stripe (PaymentIntent + Stripe Connect) |
-| Email            | Resend                                  |
-| Monorepo         | npm workspaces                          |
+| Layer            | Technology                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| Backend API      | NestJS (Node.js)                                                                              |
+| Database         | PostgreSQL on Supabase, Prisma ORM                                                            |
+| Authentication   | Supabase Auth (JWT)                                                                           |
+| File storage     | Supabase Storage                                                                              |
+| Mobile app       | React Native + Expo Router                                                                    |
+| Web app          | Next.js 14 (App Router)                                                                       |
+| Styling — web    | Tailwind CSS + shadcn/ui                                                                      |
+| Styling — mobile | NativeWind (Tailwind for RN)                                                                  |
+| Real-time        | WebSockets (NestJS Gateway)                                                                   |
+| Payments         | Paysera (redirect checkout + webhook); Stripe Connect for solo individual driver payouts only |
+| Email            | Resend                                                                                        |
+| Monorepo         | npm workspaces                                                                                |
 
 ### API
 

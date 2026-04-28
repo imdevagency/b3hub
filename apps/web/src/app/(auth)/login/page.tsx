@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { loginUser } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 
+const IS_ADMIN_APP = process.env.NEXT_PUBLIC_APP_MODE === 'admin';
+
 const schema = z.object({
   email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
   password: z.string().min(1, 'Parole ir nepieciešana'),
@@ -38,8 +40,11 @@ function LoginPageInner() {
   const { setAuth } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
-  // Where to land after successful login (middleware sets this)
-  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  // Where to land after successful login.
+  // Admin app always lands on /dashboard/admin; marketplace uses redirect param.
+  const redirectTo = IS_ADMIN_APP
+    ? '/dashboard/admin'
+    : searchParams.get('redirect') || '/dashboard';
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -69,18 +74,20 @@ function LoginPageInner() {
       {/* Absolute Header */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
         <a href="/" className="text-black text-2xl font-bold tracking-tight">
-          B3Hub
+          B3Hub{IS_ADMIN_APP ? ' Admin' : ''}
         </a>
-        <Link
-          href={
-            redirectTo !== '/dashboard'
-              ? `/register?redirect=${encodeURIComponent(redirectTo)}`
-              : '/register'
-          }
-          className="text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors px-5 py-2.5 rounded-full"
-        >
-          Reģistrēties
-        </Link>
+        {!IS_ADMIN_APP && (
+          <Link
+            href={
+              redirectTo !== '/dashboard'
+                ? `/register?redirect=${encodeURIComponent(redirectTo)}`
+                : '/register'
+            }
+            className="text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors px-5 py-2.5 rounded-full"
+          >
+            Reģistrēties
+          </Link>
+        )}
       </div>
 
       {/* Main Content Centered */}
@@ -151,14 +158,16 @@ function LoginPageInner() {
                 )}
               </Button>
 
-              <div className="text-center mt-6 pt-4">
-                <Link
-                  href="/forgot-password"
-                  className="text-[14px] text-gray-500 hover:text-black font-medium transition-colors"
-                >
-                  Aizmirsāt paroli?
-                </Link>
-              </div>
+              {!IS_ADMIN_APP && (
+                <div className="text-center mt-6 pt-4">
+                  <Link
+                    href="/forgot-password"
+                    className="text-[14px] text-gray-500 hover:text-black font-medium transition-colors"
+                  >
+                    Aizmirsāt paroli?
+                  </Link>
+                </div>
+              )}
             </form>
           </Form>
         </div>

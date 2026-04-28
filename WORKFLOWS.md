@@ -48,7 +48,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 1. Buyer opens the catalog, selects Crushed Stone 0/16, enters 50 tonnes, selects delivery site and time window (e.g. Wednesday morning). Sets site contact name and phone number.
 2. Order goes to the supplier. Supplier confirms in the app. Buyer gets a push notification.
-3. Stripe payment authorised (funds held, not charged yet). Supplier knows payment is guaranteed.
+3. Paysera payment captured (buyer redirected through Paysera checkout, webhook confirms). Supplier knows payment has cleared.
 
 **Transport assignment (automatic):** 4. System finds available drivers near the pickup location. Closest available driver is offered the job. Driver accepts on the mobile app — sees pickup address, delivery address, cargo type, required vehicle, and site contact. 5. Driver's vehicle details are sent to the buyer and the site contact automatically.
 
@@ -66,7 +66,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
     - **CMR / kravas pavadzīme** is auto-generated and signed with GPS coordinates and timestamp.
     - Invoice is auto-generated. VAT invoice with supplier's VAT number and bank details.
     - Buyer gets all documents in the Documents section immediately.
-12. Stripe captures the payment. Funds transferred to supplier and carrier via Stripe Connect. No invoice chasing.
+12. Payment was already captured at step 3 via Paysera. Platform initiates supplier and carrier payouts (manual/batch payout, or Stripe Connect for solo individual drivers). No invoice chasing.
 
 **What B3Hub eliminated:**
 | Manual step | B3Hub equivalent |
@@ -76,7 +76,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 | Paper weighing slip | Auto-generated weighing slip PDF |
 | Handwritten delivery note | Auto-generated signed CMR |
 | Manual invoice 3–5 days later | Auto-generated at delivery |
-| Payment chase | Stripe capture on delivery |
+| Payment chase | Paysera capture at checkout |
 | Missing quality cert | Real-time seller alert at AT_PICKUP |
 | Weight dispute | 5% tolerance alert, auto-reconciled invoice |
 
@@ -264,7 +264,7 @@ This dispute has no clean resolution without evidence. Both sides argue from mem
 2. System immediately notifies all B3Hub admins.
 3. Admin reviews: checks delivery proof photos, weighing slip, CMR, any quality certificates attached to the material listing, chat history between buyer and seller.
 4. Admin resolves:
-   - **In buyer's favour**: order cancelled, Stripe payment refunded. Buyer notified. Driver notified (dispute resolved, delivery was contested).
+   - **In buyer's favour**: order cancelled, Paysera payment refunded. Buyer notified. Driver notified (dispute resolved, delivery was contested).
    - **In seller's favour**: order completed, payment released to seller and carrier. Buyer notified. Driver notified (dispute rejected, their delivery was validated).
 5. Resolution message logged. Dispute history available if it recurs.
 
@@ -325,7 +325,7 @@ B3Hub connects all three sides under one transaction model. The value increases 
 | Handwritten CMR / delivery note     | Auto-generated, GPS-signed on delivery              |
 | Chasing quality certificates        | Alert to seller the moment driver arrives at pickup |
 | Manual invoice 3–5 days later       | Generated at the moment of delivery                 |
-| Payment chase                       | Stripe captures automatically on completion         |
+| Payment chase                       | Paysera captures at checkout (no invoice chasing)   |
 | Paper waste certificates            | Auto-generated, stored in the platform              |
 | Monthly reconciliation              | Real-time P&L per project                           |
 | Dispute with no evidence            | Full document trail + admin mediation               |

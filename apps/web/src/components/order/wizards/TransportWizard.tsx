@@ -34,6 +34,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Loader2,
+  Mail,
   MapPin,
   Phone,
   Send,
@@ -149,15 +150,18 @@ export function TransportWizard({ mode }: Props) {
   const [timeWindow, setTimeWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [refNumber, setRefNumber] = useState('');
+  const [guestToken, setGuestToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   // Auth gate (public mode only)
   const [authGateOpen, setAuthGateOpen] = useState(false);
+  const [authGateMode, setAuthGateMode] = useState<'login' | 'register' | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<((tok: string) => Promise<void>) | null>(null);
 
   // Auto-suggest vehicle from weight
@@ -365,15 +369,6 @@ export function TransportWizard({ mode }: Props) {
 
   // ── Auth helpers ──────────────────────────────────────────────────────────
 
-  function requireAuth(action: (tok: string) => Promise<void>) {
-    if (token) {
-      action(token);
-    } else {
-      setPendingAction(() => action);
-      setAuthGateOpen(true);
-    }
-  }
-
   function handleAuthSuccess(authUser: User, authToken: string) {
     setAuth(authUser, authToken);
     setAuthGateOpen(false);
@@ -392,7 +387,7 @@ export function TransportWizard({ mode }: Props) {
         toAddress ? `Izkraušana: ${toAddress}` : '',
         notes,
       ].filter(Boolean);
-      await createGuestOrder({
+      const guestRes = await createGuestOrder({
         materialCategory: 'TRANSPORT',
         materialName: cargoDesc || 'Transporta pasūtījums',
         quantity: weightT ? parseFloat(weightT) : 1,
@@ -409,6 +404,8 @@ export function TransportWizard({ mode }: Props) {
         contactEmail: contact.email,
         notes: noteParts.join('\n') || undefined,
       });
+      setRefNumber(guestRes.orderNumber);
+      setGuestToken(guestRes.token);
       setStep('sent');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
@@ -729,6 +726,21 @@ export function TransportWizard({ mode }: Props) {
                 className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
               />
             </div>
+            {mode === 'public' && (
+              <div>
+                <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                  <Mail className="size-3" /> E-pasts (neobligāti, statusu paziņojumiem)
+                </label>
+                <Input
+                  type="email"
+                  placeholder="jusu@epasts.lv"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  autoComplete="email"
+                  className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">
                 Piezīmes (neobligāti)
@@ -752,7 +764,18 @@ export function TransportWizard({ mode }: Props) {
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
-            onClick={() => (mode === 'public' ? requireAuth(submit) : token && submit(token))}
+            onClick={() => {
+              if (token) {
+                submit(token);
+              } else {
+                // Public mode — submit directly as guest using already-collected contact info.
+                handleGuestCheckout({
+                  name: contactName.trim() || 'Klients',
+                  phone: contactPhone.trim(),
+                  email: contactEmail.trim() || undefined,
+                });
+              }
+            }}
             disabled={!date || !contactPhone.trim() || submitting}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
@@ -768,7 +791,18 @@ export function TransportWizard({ mode }: Props) {
 
           {mode === 'public' && (
             <p className="text-xs text-center text-muted-foreground -mt-2">
-              Jums būs nepieciešams konts, lai pabeigtu pieprasījumu
+              Pasūtīt var bez konta ·{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthGateMode('login');
+                  setPendingAction(() => submit);
+                  setAuthGateOpen(true);
+                }}
+                className="underline font-semibold hover:text-foreground transition-colors"
+              >
+                Jau ir konts? Ieiet
+              </button>
             </p>
           )}
         </div>
@@ -791,12 +825,21 @@ export function TransportWizard({ mode }: Props) {
           <p className="text-sm text-muted-foreground max-w-xs">
             Pārvadātāji aprajonā saņēma paziņojumu. Labākais piedāvājums tiks apstiprināts.
           </p>
-          <Button
-            onClick={() => router.push('/dashboard/orders')}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
-          >
-            <CheckCircle2 className="size-4 mr-1.5" /> Skatīt pasūtījumus
-          </Button>
+          {guestToken ? (
+            <Button
+              onClick={() => router.push(`/pasutijums/${guestToken}`)}
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            >
+              <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
+            </Button>
+          ) : (
+            <Button
+              onClick={() => router.push('/dashboard/orders')}
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            >
+              <CheckCircle2 className="size-4 mr-1.5" /> Skatīt pasūtījumus
+            </Button>
+          )}
         </div>
       )}
     </WizardShell>
@@ -859,10 +902,12 @@ export function TransportWizard({ mode }: Props) {
           onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
+            setAuthGateMode(undefined);
             setPendingAction(null);
           }}
           prefilledName={contactName}
           prefilledPhone={contactPhone}
+          initialMode={authGateMode}
         />
       </>
     );

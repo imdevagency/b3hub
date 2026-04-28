@@ -34,6 +34,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Loader2,
+  Mail,
   MapPin,
   Phone,
   Send,
@@ -125,15 +126,18 @@ export function DisposalWizard({ mode }: Props) {
   const [hasTruckAccess, setHasTruckAccess] = useState<boolean | null>(null);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [refNumber, setRefNumber] = useState('');
+  const [guestToken, setGuestToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   // Auth gate (public mode only)
   const [authGateOpen, setAuthGateOpen] = useState(false);
+  const [authGateMode, setAuthGateMode] = useState<'login' | 'register' | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<((tok: string) => Promise<void>) | null>(null);
 
   // Pre-fill contact from authenticated user profile
@@ -264,14 +268,7 @@ export function DisposalWizard({ mode }: Props) {
 
   // ── Auth helpers ──────────────────────────────────────────────────────────
 
-  function requireAuth(action: (tok: string) => Promise<void>) {
-    if (token) {
-      action(token);
-    } else {
-      setPendingAction(() => action);
-      setAuthGateOpen(true);
-    }
-  }
+  // ── Auth helpers ──────────────────────────────────────────────────────────
 
   function handleAuthSuccess(authUser: User, authToken: string) {
     setAuth(authUser, authToken);
@@ -286,7 +283,7 @@ export function DisposalWizard({ mode }: Props) {
     setSubmitting(true);
     setSubmitError('');
     try {
-      await createGuestOrder({
+      const guestRes = await createGuestOrder({
         materialCategory: 'DISPOSAL',
         materialName: wasteType ? `Atkritumu izvešana: ${wasteType}` : 'Atkritumu izvešana',
         quantity: parseFloat(weightT) || 1,
@@ -302,6 +299,8 @@ export function DisposalWizard({ mode }: Props) {
         contactEmail: contact.email,
         notes: notes || undefined,
       });
+      setRefNumber(guestRes.orderNumber);
+      setGuestToken(guestRes.token);
       setStep('sent');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
@@ -623,6 +622,21 @@ export function DisposalWizard({ mode }: Props) {
                 className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
               />
             </div>
+            {mode === 'public' && (
+              <div>
+                <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                  <Mail className="size-3" /> E-pasts (neobligāti, statusu paziņojumiem)
+                </label>
+                <Input
+                  type="email"
+                  placeholder="jusu@epasts.lv"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  autoComplete="email"
+                  className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">
                 Papildus informācija (neobligāti)
@@ -655,7 +669,17 @@ export function DisposalWizard({ mode }: Props) {
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
-            onClick={() => (mode === 'public' ? requireAuth(submit) : token && submit(token))}
+            onClick={() => {
+              if (token) {
+                submit(token);
+              } else {
+                handleGuestCheckout({
+                  name: contactName.trim() || 'Klients',
+                  phone: contactPhone.trim(),
+                  email: contactEmail.trim() || undefined,
+                });
+              }
+            }}
             disabled={!date || !contactPhone.trim() || hasTruckAccess === null || submitting}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
@@ -671,7 +695,18 @@ export function DisposalWizard({ mode }: Props) {
 
           {mode === 'public' && (
             <p className="text-xs text-center text-muted-foreground -mt-2">
-              Jums būs nepieciešams konts, lai pabeigtu pieprasījumu
+              Pasūtīt var bez konta ·{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthGateMode('login');
+                  setPendingAction(() => submit);
+                  setAuthGateOpen(true);
+                }}
+                className="underline font-semibold hover:text-foreground transition-colors"
+              >
+                Jau ir konts? Ieiet
+              </button>
             </p>
           )}
         </div>
@@ -694,12 +729,21 @@ export function DisposalWizard({ mode }: Props) {
           <p className="text-sm text-muted-foreground max-w-xs">
             Operatori pārskatīs jūsu pieprasījumu un sazināsies ar cenu piedāvājumu.
           </p>
-          <Button
-            onClick={() => router.push('/dashboard/orders')}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
-          >
-            <CheckCircle2 className="size-4 mr-1.5" /> Skatīt pasūtījumus
-          </Button>
+          {guestToken ? (
+            <Button
+              onClick={() => router.push(`/pasutijums/${guestToken}`)}
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            >
+              <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
+            </Button>
+          ) : (
+            <Button
+              onClick={() => router.push('/dashboard/orders')}
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            >
+              <CheckCircle2 className="size-4 mr-1.5" /> Skatīt pasūtījumus
+            </Button>
+          )}
         </div>
       )}
     </WizardShell>
@@ -763,10 +807,12 @@ export function DisposalWizard({ mode }: Props) {
           onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
+            setAuthGateMode(undefined);
             setPendingAction(null);
           }}
           prefilledName={contactName}
           prefilledPhone={contactPhone}
+          initialMode={authGateMode}
         />
       </>
     );

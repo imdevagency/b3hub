@@ -39,6 +39,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Loader2,
+  Mail,
   MapPin,
   Package,
   Phone,
@@ -137,15 +138,19 @@ export function SkipHireWizard({ mode }: Props) {
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
+  const [guestToken, setGuestToken] = useState('');
+  const [guestOrderNumber, setGuestOrderNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   // Auth gate (public mode only)
   const [authGateOpen, setAuthGateOpen] = useState(false);
+  const [authGateMode, setAuthGateMode] = useState<'login' | 'register' | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<((tok: string) => Promise<void>) | null>(null);
 
   // Pre-fill contact from authenticated user profile
@@ -284,15 +289,6 @@ export function SkipHireWizard({ mode }: Props) {
 
   // ── Auth helpers ──────────────────────────────────────────────────────────
 
-  function requireAuth(action: (tok: string) => Promise<void>) {
-    if (token) {
-      action(token);
-    } else {
-      setPendingAction(() => action);
-      setAuthGateOpen(true);
-    }
-  }
-
   function handleAuthSuccess(authUser: User, authToken: string) {
     setAuth(authUser, authToken);
     setAuthGateOpen(false);
@@ -306,7 +302,7 @@ export function SkipHireWizard({ mode }: Props) {
     setSubmitting(true);
     setSubmitError('');
     try {
-      await createGuestOrder({
+      const guestRes = await createGuestOrder({
         materialCategory: 'SKIP_HIRE',
         materialName: `Skip ${size || ''}`.trim(),
         quantity: 1,
@@ -322,6 +318,8 @@ export function SkipHireWizard({ mode }: Props) {
         contactEmail: contact.email,
         notes: notes || undefined,
       });
+      setGuestToken(guestRes.token);
+      setGuestOrderNumber(guestRes.orderNumber);
       setStep('confirmed');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
@@ -617,6 +615,21 @@ export function SkipHireWizard({ mode }: Props) {
                 className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
               />
             </div>
+            {mode === 'public' && (
+              <div>
+                <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                  <Mail className="size-3" /> E-pasts (neobligāti, statusu paziņojumiem)
+                </label>
+                <Input
+                  type="email"
+                  placeholder="jusu@epasts.lv"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  autoComplete="email"
+                  className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">
                 Piezīmes šoferim (neobligāti)
@@ -684,7 +697,17 @@ export function SkipHireWizard({ mode }: Props) {
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
-            onClick={() => (mode === 'public' ? requireAuth(submit) : token && submit(token))}
+            onClick={() => {
+              if (token) {
+                submit(token);
+              } else {
+                handleGuestCheckout({
+                  name: contactName.trim() || 'Klients',
+                  phone: contactPhone.trim(),
+                  email: contactEmail.trim() || undefined,
+                });
+              }
+            }}
             disabled={!deliveryDate || !contactPhone.trim() || submitting}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
@@ -700,7 +723,18 @@ export function SkipHireWizard({ mode }: Props) {
 
           {mode === 'public' && (
             <p className="text-xs text-center text-muted-foreground -mt-2">
-              Jums būs nepieciešams konts, lai pabeigtu pasūtījumu
+              Pasūtīt var bez konta ·{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthGateMode('login');
+                  setPendingAction(() => submit);
+                  setAuthGateOpen(true);
+                }}
+                className="underline font-semibold hover:text-foreground transition-colors"
+              >
+                Jau ir konts? Ieiet
+              </button>
             </p>
           )}
         </div>
@@ -742,6 +776,31 @@ export function SkipHireWizard({ mode }: Props) {
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
             Skatīt pasūtījumus
+          </Button>
+        </div>
+      )}
+
+      {/* ── Confirmed (guest, no payment intent) ── */}
+      {isConfirmed && !confirmedOrder && guestToken && (
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
+          <div className="flex size-20 items-center justify-center rounded-full bg-foreground">
+            <CheckCircle2 className="size-9 text-background" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">Pasūtījums saņemts!</p>
+            <p className="text-base text-muted-foreground font-medium mt-1">
+              Nr. <span className="font-bold text-foreground">{guestOrderNumber}</span>
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            Mēs sazināsimies ar jūsu kontaktpersonu, lai apstiprinātu pieprasījumu un pieprasītu
+            apmaksu.
+          </p>
+          <Button
+            onClick={() => router.push(`/pasutijums/${guestToken}`)}
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+          >
+            <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
           </Button>
         </div>
       )}
@@ -805,10 +864,12 @@ export function SkipHireWizard({ mode }: Props) {
           onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
+            setAuthGateMode(undefined);
             setPendingAction(null);
           }}
           prefilledName={contactName}
           prefilledPhone={contactPhone}
+          initialMode={authGateMode}
         />
       </>
     );

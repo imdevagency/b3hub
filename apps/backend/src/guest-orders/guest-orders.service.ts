@@ -23,6 +23,7 @@ import { GuestOrderStatus } from '@prisma/client';
 import { CreateGuestOrderDto } from './dto/create-guest-order.dto';
 import { randomBytes } from 'crypto';
 import { PayseraService } from '../paysera/paysera.service';
+import { AuthService } from '../auth/auth.service';
 
 /** Generate a 24-char URL-safe token (no external dependency). */
 function generateToken(): string {
@@ -39,6 +40,7 @@ export class GuestOrdersService {
     private email: EmailService,
     private config: ConfigService,
     private paysera: PayseraService,
+    private auth: AuthService,
   ) {
     this.webUrl = this.config.get<string>('WEB_URL') ?? 'https://b3hub.lv';
   }
@@ -225,6 +227,66 @@ export class GuestOrdersService {
         convertedOrderId: newOrderId,
       },
     });
+  }
+
+  // ── Public: claim guest order by registering an account ──────────────────
+  /**
+   * Lets a guest who has just placed an order create a real B3Hub account
+   * pre-filled with the contact info already on the GuestOrder. The order
+   * itself stays a GuestOrder until admin runs convertToOrder(); this only
+   * promotes the buyer from anonymous → registered so they can log in,
+   * track future orders, and have history.
+   *
+   * Returns the same shape as POST /auth/register: { user, token, refreshToken }.
+   */
+  async claimByToken(
+    token: string,
+    payload: { email: string; password: string; firstName?: string; lastName?: string },
+  ) {
+    const guestOrder = await this.prisma.guestOrder.findUnique({
+      where: { token },
+    });
+    if (!guestOrder) {
+      throw new NotFoundException('Pasūtījums nav atrasts');
+    }
+
+    // Split contactName into first/last as a fallback when the form omitted them.
+    const nameParts = (guestOrder.contactName ?? '').trim().split(/\s+/);
+    const firstName = payload.firstName?.trim() || nameParts[0] || 'Klients';
+    const lastName =
+      payload.lastName?.trim() || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+
+    const result = await this.auth.register({
+      email: payload.email.trim().toLowerCase(),
+      password: payload.password,
+      firstName,
+      lastName,
+      phone: guestOrder.contactPhone || undefined,
+      roles: ['BUYER'],
+      isCompany: false,
+      termsAccepted: true,
+    });
+
+    // Mark guest order CONTACTED so admin sees the buyer is now registered.
+    // Don't set CONVERTED — that is reserved for "linked to a real Order".
+    if (guestOrder.status === GuestOrderStatus.PENDING) {
+      await this.prisma.guestOrder
+        .update({
+          where: { token },
+          data: { status: GuestOrderStatus.CONTACTED },
+        })
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to mark guest order ${guestOrder.id} as CONTACTED after claim: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    this.logger.log(
+      `Guest order ${guestOrder.orderNumber} claimed → user ${result.user.id} (${payload.email})`,
+    );
+
+    return result;
   }
 
   // ── Admin: set quoted price ───────────────────────────────────────────────
