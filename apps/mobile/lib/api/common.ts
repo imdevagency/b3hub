@@ -151,7 +151,7 @@ export async function apiFetch<T>(
       }
       const message =
         typeof parsed.message === 'string' ? parsed.message : `HTTP ${res.status}`;
-      throw new ApiError(res.status, message, parsed);
+      console.log("API_ERR", res.status, message, url); throw new ApiError(res.status, message, parsed);
     }
 
     // Handle empty body (e.g. 204 No Content)

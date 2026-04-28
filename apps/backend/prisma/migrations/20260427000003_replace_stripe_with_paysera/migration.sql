@@ -3,16 +3,16 @@
 -- Date: 2026-04-27
 
 -- Payment table
-ALTER TABLE "payments"
+ALTER TABLE "Payment"
   RENAME COLUMN "stripePaymentId" TO "payseraOrderId";
 
-ALTER TABLE "payments"
+ALTER TABLE "Payment"
   DROP COLUMN IF EXISTS "stripeChargeId";
 
-ALTER TABLE "payments"
+ALTER TABLE "Payment"
   DROP COLUMN IF EXISTS "transferGroup";
 
-ALTER TABLE "payments"
+ALTER TABLE "Payment"
   ADD COLUMN IF NOT EXISTS "payseraPaymentUrl" TEXT;
 
 -- SupplierPayout table

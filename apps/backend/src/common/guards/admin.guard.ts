@@ -12,7 +12,8 @@ import {
 @Injectable()
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const { user } = context.switchToHttp().getRequest<Express.Request>();
+    const req = context.switchToHttp().getRequest<any>();
+    const user = req.user;
     if (user?.userType !== 'ADMIN') {
       throw new ForbiddenException('Admin access required');
     }

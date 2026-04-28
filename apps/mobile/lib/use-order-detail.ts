@@ -42,7 +42,8 @@ export function useOrderDetail(id: string | undefined) {
           // Non-critical — documents may not be generated yet
         }
       }
-    } catch {
+    } catch (err) {
+      console.log('ORDER FETCH ERROR, id:', id, err);
       // order stays null — screen will show empty state
     } finally {
       setLoading(false);
