@@ -290,8 +290,11 @@ export default function OrderRequestWizard() {
   // ── Navigation ──
   const goBack = useCallback(() => {
     if (submitted) {
-      if (submitted === 'order' && orderId) {
+      if (submitted === 'order' && orderId && !orderId.startsWith('guest:')) {
         router.replace(`/(buyer)/order/${orderId}` as never);
+      } else if (submitted === 'order') {
+        // Guest order — no protected screen to land on; go home.
+        router.replace('/(buyer)/home' as never);
       } else {
         router.replace('/(buyer)/orders' as never);
       }
@@ -518,6 +521,50 @@ export default function OrderRequestWizard() {
     }
   };
 
+  // ── Submit: guest checkout (no account) — uses public /guest-orders ──
+  const handleGuestSelectOffer = async (
+    offer: SupplierOffer,
+    contact: { name: string; phone: string; email?: string },
+  ) => {
+    if (!pickedAddress) return;
+    if (submittingRef.current) return;
+    setSubmitting(true);
+    setSubmitError('');
+    submittingRef.current = true;
+    try {
+      const result = await api.guestOrders.create({
+        category: 'MATERIAL',
+        materialCategory: category,
+        materialName,
+        quantity,
+        unit,
+        deliveryAddress: pickedAddress.address,
+        deliveryCity: pickedAddress.city,
+        deliveryLat: pickedAddress.lat,
+        deliveryLng: pickedAddress.lng,
+        deliveryDate: deliveryDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+        contactName: contact.name,
+        contactPhone: contact.phone,
+        contactEmail: contact.email,
+        notes: notes || undefined,
+      });
+      // Reuse the same success UI: stash the order number/token.
+      setOrderNumber(result.orderNumber);
+      // Use the public tracking token as the "order id" so the success CTA
+      // can navigate to the public tracking screen instead of a protected one.
+      setOrderId(`guest:${result.token}`);
+      setSubmitted('order');
+      haptics.success();
+      AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
+    } finally {
+      setSubmitting(false);
+      submittingRef.current = false;
+    }
+  };
+
   // ── CTA ──
   const canProceed =
     step === 'address'
@@ -541,7 +588,9 @@ export default function OrderRequestWizard() {
   const handleCTA = submitted
     ? submitted === 'rfq'
       ? () => router.replace(`/(buyer)/rfq/${rfqId}` as never)
-      : () => router.replace(`/(buyer)/order/${orderId}` as never)
+      : orderId.startsWith('guest:')
+        ? () => router.replace('/(buyer)/home' as never)
+        : () => router.replace(`/(buyer)/order/${orderId}` as never)
     : step === 'offers'
       ? handleSendRFQ
       : goNext;
@@ -654,8 +703,17 @@ export default function OrderRequestWizard() {
           onTermsAcceptedChange={setTermsAccepted}
           onSelectOffer={handleSelectOffer}
           onSendRFQ={handleSendRFQ}
+          onGuestContact={handleGuestSelectOffer}
+          prefilledContactName={contactName}
+          prefilledContactPhone={contactPhone}
+          prefilledContactEmail={user?.email}
+          isGuestSuccess={orderId.startsWith('guest:')}
           onNavigateToOrder={() => {
-            if (orderId) router.replace(`/(buyer)/order/${orderId}` as never);
+            if (!orderId) return;
+            // Guest orders navigate to the public tracking screen via deep link;
+            // for now we just stay on the success screen — add screen later.
+            if (orderId.startsWith('guest:')) return;
+            router.replace(`/(buyer)/order/${orderId}` as never);
           }}
           onNavigateToRFQ={() => {
             if (rfqId) router.replace(`/(buyer)/rfq/${rfqId}` as never);

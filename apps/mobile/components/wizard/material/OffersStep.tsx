@@ -8,6 +8,7 @@
  * come from the wizard root.
  */
 import React, { useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -26,7 +27,7 @@ import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { s } from './_styles';
-import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
+import { WizardAuthGate, type GuestContactInfo } from '@/components/wizard/WizardAuthGate';
 
 export type OffersStepProps = {
   offers: SupplierOffer[];
@@ -53,6 +54,19 @@ export type OffersStepProps = {
   onTermsAcceptedChange: (v: boolean) => void;
   onSelectOffer: (offer: SupplierOffer) => void;
   onSendRFQ: () => void;
+  /**
+   * Called when an unauthenticated user picks "Continue as guest" and
+   * submits contact info. Parent should submit the order via the public
+   * guest-orders endpoint and navigate to the success screen.
+   * If omitted, the guest path is hidden in the auth gate.
+   */
+  onGuestContact?: (offer: SupplierOffer, contact: GuestContactInfo) => void;
+  /** Pre-filled contact info from earlier wizard steps (when available). */
+  prefilledContactName?: string;
+  prefilledContactPhone?: string;
+  prefilledContactEmail?: string;
+  /** True if the success screen is for a guest order (no instant-pay path). */
+  isGuestSuccess?: boolean;
   onNavigateToOrder: () => void;
   onNavigateToRFQ: () => void;
 };
@@ -81,9 +95,15 @@ export function OffersStep({
   onTermsAcceptedChange,
   onSelectOffer,
   onSendRFQ,
+  onGuestContact,
+  prefilledContactName,
+  prefilledContactPhone,
+  prefilledContactEmail,
+  isGuestSuccess,
   onNavigateToOrder,
   onNavigateToRFQ,
 }: OffersStepProps) {
+  const router = useRouter();
   // ── Internal filter/sort state ──
   const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
 
@@ -91,13 +111,16 @@ export function OffersStep({
   const [authGateVisible, setAuthGateVisible] = useState(false);
   // Pending action to replay after successful auth
   const pendingActionRef = useRef<(() => void) | null>(null);
+  // If set, guest checkout is allowed for this offer
+  const pendingGuestOfferRef = useRef<SupplierOffer | null>(null);
 
   /** Wrap any action that requires auth — shows gate if unauthenticated. */
-  const requireAuth = (action: () => void) => {
+  const requireAuth = (action: () => void, guestOffer?: SupplierOffer) => {
     if (isAuthenticated) {
       action();
     } else {
       pendingActionRef.current = action;
+      pendingGuestOfferRef.current = guestOffer ?? null;
       setAuthGateVisible(true);
     }
   };
@@ -127,42 +150,97 @@ export function OffersStep({
           <Text style={s.successTitle}>Pasūtījums izveidots</Text>
           <Text style={s.successNum}>Nr. {orderNumber}</Text>
           <Text style={[s.successSub, { marginTop: 4 }]}>
-            Piegādātājs saņēma jūsu pasūtījumu. Lai to apstiprinātu, veiciet apmaksu.
+            {isGuestSuccess
+              ? 'Mēs sazināsimies ar jums tuvākajā laikā, lai apstiprinātu cenu un piegādes laiku. Apstiprinājums nosūtīts uz jūsu e-pastu.'
+              : 'Piegādātājs saņēma jūsu pasūtījumu. Lai to apstiprinātu, veiciet apmaksu.'}
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={{
-            backgroundColor: colors.primary,
-            borderRadius: 14,
-            paddingVertical: 16,
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-          onPress={onNavigateToOrder}
-          activeOpacity={0.85}
-        >
-          <Text
+        {!isGuestSuccess && (
+          <TouchableOpacity
             style={{
-              fontSize: 16,
-              fontWeight: '600',
-              color: '#fff',
-              fontFamily: 'Inter_600SemiBold',
+              backgroundColor: colors.primary,
+              borderRadius: 14,
+              paddingVertical: 16,
+              alignItems: 'center',
+              marginBottom: 12,
             }}
+            onPress={onNavigateToOrder}
+            activeOpacity={0.85}
           >
-            Apmaksāt pasūtījumu
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '600',
+                color: '#fff',
+                fontFamily: 'Inter_600SemiBold',
+              }}
+            >
+              Apmaksāt pasūtījumu
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
-          style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+          style={{
+            backgroundColor: isGuestSuccess ? colors.primary : 'transparent',
+            borderRadius: 14,
+            paddingVertical: isGuestSuccess ? 16 : 14,
+            alignItems: 'center',
+          }}
           onPress={onNavigateToOrder}
           activeOpacity={0.7}
         >
-          <Text style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}>
-            Skatīt pasūtījumu
+          <Text
+            style={{
+              fontSize: isGuestSuccess ? 16 : 14,
+              color: isGuestSuccess ? '#fff' : colors.textMuted,
+              fontFamily: isGuestSuccess ? 'Inter_600SemiBold' : 'Inter_500Medium',
+              fontWeight: isGuestSuccess ? '600' : undefined,
+            }}
+          >
+            {isGuestSuccess ? 'Atgriezties uz sākumu' : 'Skatīt pasūtījumu'}
           </Text>
         </TouchableOpacity>
+
+        {/* Guest-only: upsell card */}
+        {isGuestSuccess && (
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.bgSubtle,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 14,
+              padding: 16,
+              marginBottom: 20,
+              alignItems: 'center',
+            }}
+            onPress={() => router.push('/(auth)/register' as never)}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={{
+                fontSize: 15,
+                fontFamily: 'Inter_600SemiBold',
+                color: colors.textPrimary,
+                marginBottom: 4,
+              }}
+            >
+              Sekojiet pasūtījumam ar kontu
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: 'Inter_400Regular',
+                color: colors.textMuted,
+                textAlign: 'center',
+                lineHeight: 18,
+              }}
+            >
+              Reģistrējieties, lai sekotu statusam reāllaikā un saglabātu adreses.
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={s.summaryCard}>
           <View style={s.summaryRow}>
@@ -587,7 +665,7 @@ export function OffersStep({
             }}
             disabled={submitting || !termsAccepted}
             activeOpacity={0.85}
-            onPress={() => requireAuth(() => onSelectOffer(selectedOffer))}
+            onPress={() => requireAuth(() => onSelectOffer(selectedOffer), selectedOffer)}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
@@ -613,9 +691,25 @@ export function OffersStep({
       <WizardAuthGate
         visible={authGateVisible}
         onAuthenticated={handleAuthenticated}
+        onGuestContact={
+          onGuestContact && pendingGuestOfferRef.current
+            ? (info) => {
+                const offer = pendingGuestOfferRef.current;
+                if (!offer) return;
+                setAuthGateVisible(false);
+                pendingActionRef.current = null;
+                pendingGuestOfferRef.current = null;
+                onGuestContact(offer, info);
+              }
+            : undefined
+        }
+        prefilledName={prefilledContactName}
+        prefilledPhone={prefilledContactPhone}
+        prefilledEmail={prefilledContactEmail}
         onDismiss={() => {
           setAuthGateVisible(false);
           pendingActionRef.current = null;
+          pendingGuestOfferRef.current = null;
         }}
       />
     </View>

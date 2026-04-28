@@ -29,6 +29,7 @@ import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
 import { haptics } from '@/lib/haptics';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
+import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -161,6 +162,9 @@ export default function TransportWizard() {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
+    null,
+  );
   const [savePickup, setSavePickup] = useState(false);
   const [saveDropoff, setSaveDropoff] = useState(false);
   const [siteContactName, setSiteContactName] = useState(() =>
@@ -444,6 +448,57 @@ export default function TransportWizard() {
     pricePerTonneText,
   ]);
 
+  // ── Guest submit handler ─────────────────────────────────────────────────
+  const handleGuestSubmit = useCallback(
+    async (contact: { name: string; phone: string; email?: string }) => {
+      if (!pickupPicked || !dropoffPicked || !selectedVehicle) return;
+      if (submittingRef.current) return;
+      setSubmitting(true);
+      submittingRef.current = true;
+      try {
+        const resolvedDesc = activeDesc === 'Cits' ? otherText.trim() || 'Cits' : activeDesc;
+        const result = await api.guestOrders.create({
+          category: 'TRANSPORT',
+          pickupAddress: pickupPicked.address,
+          pickupCity: pickupPicked.city ?? '',
+          pickupLat: pickupPicked.lat,
+          pickupLng: pickupPicked.lng,
+          deliveryAddress: dropoffPicked.address,
+          deliveryCity: dropoffPicked.city ?? '',
+          deliveryLat: dropoffPicked.lat,
+          deliveryLng: dropoffPicked.lng,
+          vehicleType: selectedVehicle,
+          cargoDescription: resolvedDesc || undefined,
+          estimatedWeight: weightText ? parseFloat(weightText) : undefined,
+          deliveryDate: selectedDay,
+          deliveryWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+          contactEmail: contact.email,
+          notes: notes || undefined,
+        });
+        haptics.success();
+        setGuestResult({ token: result.token, orderNumber: result.orderNumber });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu.');
+      } finally {
+        setSubmitting(false);
+        submittingRef.current = false;
+      }
+    },
+    [
+      pickupPicked,
+      dropoffPicked,
+      selectedVehicle,
+      activeDesc,
+      otherText,
+      weightText,
+      selectedDay,
+      pickupWindow,
+      notes,
+    ],
+  );
+
   const step3Valid = selectedVehicle !== null;
   const step4Valid = !!selectedDay;
   const step5Valid = !!siteContactName.trim() && !!siteContactPhone.trim();
@@ -490,6 +545,16 @@ export default function TransportWizard() {
     4: 'Kad?',
     5: 'Apstiprini pasūtījumu',
   };
+
+  // ── Guest success screen ──────────────────────────────────────────────────
+  if (guestResult) {
+    return (
+      <GuestOrderSuccess
+        orderNumber={guestResult.orderNumber}
+        onBack={() => router.replace('/(buyer)/home' as never)}
+      />
+    );
+  }
 
   return (
     <>
@@ -919,6 +984,12 @@ export default function TransportWizard() {
           setShowAuthGate(false);
           handleSubmit();
         }}
+        onGuestContact={(contact) => {
+          setShowAuthGate(false);
+          handleGuestSubmit(contact);
+        }}
+        prefilledName={siteContactName}
+        prefilledPhone={siteContactPhone}
         onDismiss={() => setShowAuthGate(false)}
       />
     </>

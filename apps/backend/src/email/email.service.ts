@@ -536,10 +536,20 @@ export class EmailService {
     contactName: string,
     orderNumber: string,
     trackingUrl: string,
+    category: string,
     details: {
-      materialName: string;
-      quantity: number;
-      unit: string;
+      materialName?: string;
+      quantity?: number;
+      unit?: string;
+      skipSize?: string;
+      skipWasteCategory?: string;
+      hireDays?: number;
+      pickupAddress?: string;
+      pickupCity?: string;
+      vehicleType?: string;
+      cargoDescription?: string;
+      wasteTypes?: string;
+      disposalVolume?: number;
       deliveryAddress: string;
       deliveryCity: string;
       deliveryDate?: Date;
@@ -548,30 +558,66 @@ export class EmailService {
   ) {
     const safeName = this.escape(contactName);
     const safeOrder = this.escape(orderNumber);
-    const safeAddress = this.escape(details.deliveryAddress);
-    const safeCity = this.escape(details.deliveryCity);
-    const safeMaterial = this.escape(details.materialName);
+    const safeDeliveryAddr = this.escape(details.deliveryAddress);
+    const safeDeliveryCity = this.escape(details.deliveryCity);
+
+    // Build category-specific detail rows
+    let detailRows = '';
+    switch (category) {
+      case 'SKIP_HIRE':
+        detailRows = `
+          <tr><td style="padding:6px 0;color:#6b7280;width:40%">Konteiners</td><td style="padding:6px 0;font-weight:600">${this.escape(details.skipSize ?? '')} — ${this.escape(details.skipWasteCategory ?? '')}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Nomas periods</td><td style="padding:6px 0;font-weight:600">${details.hireDays ?? 14} dienas</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Piegādes adrese</td><td style="padding:6px 0;font-weight:600">${safeDeliveryAddr}, ${safeDeliveryCity}</td></tr>
+        `;
+        break;
+      case 'TRANSPORT':
+        detailRows = `
+          <tr><td style="padding:6px 0;color:#6b7280;width:40%">Iekraušana</td><td style="padding:6px 0;font-weight:600">${this.escape(details.pickupAddress ?? '')}${details.pickupCity ? `, ${this.escape(details.pickupCity)}` : ''}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Izkraušana</td><td style="padding:6px 0;font-weight:600">${safeDeliveryAddr}, ${safeDeliveryCity}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Transports</td><td style="padding:6px 0;font-weight:600">${this.escape(details.vehicleType ?? '')}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Krava</td><td style="padding:6px 0;font-weight:600">${this.escape(details.cargoDescription ?? '')}</td></tr>
+        `;
+        break;
+      case 'DISPOSAL': {
+        let wasteLabel = '';
+        try {
+          const types: string[] = JSON.parse(details.wasteTypes ?? '[]');
+          wasteLabel = types.join(', ');
+        } catch {
+          wasteLabel = details.wasteTypes ?? '';
+        }
+        detailRows = `
+          <tr><td style="padding:6px 0;color:#6b7280;width:40%">Atkritumu veids</td><td style="padding:6px 0;font-weight:600">${this.escape(wasteLabel)}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Apjoms</td><td style="padding:6px 0;font-weight:600">${details.disposalVolume ?? '—'} t</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Ievākšanas adrese</td><td style="padding:6px 0;font-weight:600">${safeDeliveryAddr}, ${safeDeliveryCity}</td></tr>
+        `;
+        break;
+      }
+      default: // MATERIAL
+        detailRows = `
+          <tr><td style="padding:6px 0;color:#6b7280;width:40%">Materiāls</td><td style="padding:6px 0;font-weight:600">${this.escape(details.materialName ?? '')} — ${details.quantity} ${details.unit}</td></tr>
+          <tr><td style="padding:6px 0;color:#6b7280">Piegādes adrese</td><td style="padding:6px 0;font-weight:600">${safeDeliveryAddr}, ${safeDeliveryCity}</td></tr>
+        `;
+    }
+
+    const dateRow = details.deliveryDate
+      ? `<tr><td style="padding:6px 0;color:#6b7280">${category === 'DISPOSAL' ? 'Ievākšanas datums' : 'Piegāde'}</td><td style="padding:6px 0;font-weight:600">${details.deliveryDate.toLocaleDateString('lv-LV')}${details.deliveryWindow ? ` ${details.deliveryWindow}` : ''}</td></tr>`
+      : '';
 
     await this.send({
       to,
       subject: `Pasūtījums saņemts — ${safeOrder} — B3Hub`,
       html: this.base({
-        title: 'Jūsu pasūtījums ir saņemts!',
+        title: 'Jūsu pieprasījums ir saņemts!',
         body: `
           <p>Labdien, ${safeName}!</p>
           <p>Paldies! Mēs saņēmām jūsu pasūtījumu <strong>${safeOrder}</strong>.</p>
           <table style="border-collapse:collapse;width:100%;margin:12px 0;font-size:14px">
-            <tr>
-              <td style="padding:6px 0;color:#6b7280;width:40%">Materiāls</td>
-              <td style="padding:6px 0;font-weight:600">${safeMaterial} — ${details.quantity} ${details.unit}</td>
-            </tr>
-            <tr>
-              <td style="padding:6px 0;color:#6b7280">Piegādes adrese</td>
-              <td style="padding:6px 0;font-weight:600">${safeAddress}, ${safeCity}</td>
-            </tr>
-            ${details.deliveryDate ? `<tr><td style="padding:6px 0;color:#6b7280">Piegāde</td><td style="padding:6px 0;font-weight:600">${details.deliveryDate.toLocaleDateString('lv-LV')}${details.deliveryWindow ? ` ${details.deliveryWindow}` : ''}</td></tr>` : ''}
+            ${detailRows}
+            ${dateRow}
           </table>
-          <p>Mūsu komanda ar jums sazināsies tuvākajā laikā. Pasūtījuma statusu var sekot, izmantojot zemāk esošo saiti.</p>
+          <p>Mūsu komanda ar jums sazināsies tuvākajā laikā, lai apstiprinātu cenu un detaļas. Pasūtījuma statusu var sekot, izmantojot zemāk esošo saiti.</p>
           <p style="font-size:12px;color:#9ca3af">Jautājumu gadījumā: <a href="mailto:info@b3hub.lv">info@b3hub.lv</a></p>
         `,
         cta: { label: 'Sekot pasūtījumam', url: trackingUrl },

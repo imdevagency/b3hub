@@ -158,7 +158,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
-- `(auth)` — apply-role, forgot-password, login, onboarding, register, welcome
+- `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, vehicles
 - `(seller)` — catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes

@@ -35,18 +35,42 @@ import { colors } from '@/lib/theme';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = 'choice' | 'login';
+type Mode = 'choice' | 'login' | 'guest';
+
+export interface GuestContactInfo {
+  name: string;
+  phone: string;
+  email?: string;
+}
 
 interface WizardAuthGateProps {
   visible: boolean;
   /** Called after successful auth — wizard continues the pending action. */
   onAuthenticated: () => void;
+  /**
+   * Called when the user picks "Continue as guest" and submits contact info.
+   * If omitted, the guest path is hidden (back-compat for wizards that don't
+   * yet support guest checkout — currently only material orders do).
+   */
+  onGuestContact?: (info: GuestContactInfo) => void;
   onDismiss: () => void;
+  /** Pre-populate guest form fields from the wizard's on-site contact fields. */
+  prefilledName?: string;
+  prefilledPhone?: string;
+  prefilledEmail?: string;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAuthGateProps) {
+export function WizardAuthGate({
+  visible,
+  onAuthenticated,
+  onGuestContact,
+  onDismiss,
+  prefilledName,
+  prefilledPhone,
+  prefilledEmail,
+}: WizardAuthGateProps) {
   const insets = useSafeAreaInsets();
   const { setAuth } = useAuth();
   const router = useRouter();
@@ -59,6 +83,11 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPw, setShowLoginPw] = useState(false);
 
+  // Guest fields
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -69,8 +98,11 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
       setError('');
       setLoginEmail('');
       setLoginPassword('');
+      setGuestName(prefilledName ?? '');
+      setGuestPhone(prefilledPhone ?? '');
+      setGuestEmail(prefilledEmail ?? '');
     }
-  }, [visible]);
+  }, [visible, prefilledName, prefilledPhone, prefilledEmail]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -104,6 +136,32 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGuestSubmit = () => {
+    setError('');
+    const name = guestName.trim();
+    const phone = guestPhone.trim();
+    const email = guestEmail.trim();
+    if (!name || !phone) {
+      setError('Lūdzu, ievadiet vārdu un tālruņa numuru');
+      haptics.warning();
+      return;
+    }
+    // Simple LV phone sanity: at least 8 digits.
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 8) {
+      setError('Pārbaudiet tālruņa numuru');
+      haptics.warning();
+      return;
+    }
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      setError('Pārbaudiet e-pasta adresi');
+      haptics.warning();
+      return;
+    }
+    haptics.success();
+    onGuestContact?.({ name, phone, email: email || undefined });
   };
 
   // ── Input style ──────────────────────────────────────────────────────────
@@ -182,7 +240,11 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                 color: colors.textPrimary,
               }}
             >
-              {mode === 'choice' ? 'Apstiprināt pasūtījumu' : 'Ieiet'}
+              {mode === 'choice'
+                ? 'Pabeigt pasūtījumu'
+                : mode === 'guest'
+                  ? 'Turpināt bez konta'
+                  : 'Ieiet'}
             </Text>
             <TouchableOpacity
               onPress={onDismiss}
@@ -209,22 +271,66 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                     marginBottom: 4,
                   }}
                 >
-                  Lai pabeigtu pasūtījumu, piesakieties vai izveidojiet kontu — tas aizņems 30
-                  sekundes.
+                  {onGuestContact
+                    ? 'Pasūtiet ātri bez konta vai piesakieties, lai redzētu visu pasūtījumu vēsturi.'
+                    : 'Lai pabeigtu pasūtījumu, piesakieties vai izveidojiet kontu — tas aizņems 30 sekundes.'}
                 </Text>
+
+                {/* Continue as guest — primary path when available */}
+                {onGuestContact && (
+                  <TouchableOpacity
+                    onPress={() => setMode('guest')}
+                    activeOpacity={0.85}
+                    style={{
+                      backgroundColor: colors.primary,
+                      borderRadius: 14,
+                      paddingVertical: 16,
+                      paddingHorizontal: 20,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <View>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontFamily: 'Inter_600SemiBold',
+                          fontWeight: '600',
+                          color: '#fff',
+                        }}
+                      >
+                        Pasūtīt bez konta
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontFamily: 'Inter_400Regular',
+                          color: 'rgba(255,255,255,0.85)',
+                          marginTop: 2,
+                        }}
+                      >
+                        Vārds, tālrunis, e-pasts — 20 sekundes
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color="#fff" />
+                  </TouchableOpacity>
+                )}
 
                 {/* Create account → full register screen */}
                 <TouchableOpacity
                   onPress={handleGoToRegister}
                   activeOpacity={0.85}
                   style={{
-                    backgroundColor: colors.primary,
+                    backgroundColor: onGuestContact ? '#fff' : colors.primary,
                     borderRadius: 14,
                     paddingVertical: 16,
                     paddingHorizontal: 20,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    borderWidth: onGuestContact ? 1 : 0,
+                    borderColor: colors.border,
                   }}
                 >
                   <View>
@@ -233,23 +339,23 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                         fontSize: 16,
                         fontFamily: 'Inter_600SemiBold',
                         fontWeight: '600',
-                        color: '#fff',
+                        color: onGuestContact ? colors.textPrimary : '#fff',
                       }}
                     >
-                      Turpināt ar e-pastu
+                      Izveidot kontu
                     </Text>
                     <Text
                       style={{
                         fontSize: 13,
                         fontFamily: 'Inter_400Regular',
-                        color: 'rgba(255,255,255,0.8)',
+                        color: onGuestContact ? colors.textMuted : 'rgba(255,255,255,0.8)',
                         marginTop: 2,
                       }}
                     >
-                      Izveidojiet bezmaksas kontu
+                      Saglabājiet adreses un sekojiet pasūtījumiem
                     </Text>
                   </View>
-                  <ChevronRight size={20} color="#fff" />
+                  <ChevronRight size={20} color={onGuestContact ? colors.textMuted : '#fff'} />
                 </TouchableOpacity>
 
                 {/* Divider */}
@@ -306,7 +412,120 @@ export function WizardAuthGate({ visible, onAuthenticated, onDismiss }: WizardAu
                     marginTop: 8,
                   }}
                 >
-                  Reģistrējoties jūs piekrītat lietošanas noteikumiem un privātuma politikai.
+                  Turpinot jūs piekrītat lietošanas noteikumiem un privātuma politikai.
+                </Text>
+              </View>
+            )}
+
+            {/* ── GUEST FORM ── */}
+            {mode === 'guest' && (
+              <View style={{ gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setMode('choice');
+                    setError('');
+                  }}
+                  style={{ marginBottom: 4 }}
+                >
+                  <Text
+                    style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}
+                  >
+                    ← Atpakaļ
+                  </Text>
+                </TouchableOpacity>
+
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.textMuted,
+                    fontFamily: 'Inter_400Regular',
+                    marginBottom: 4,
+                  }}
+                >
+                  Vajadzīgs tikai pasūtījuma izpildei. Konts tiks piedāvāts pēc tam.
+                </Text>
+
+                <TextInput
+                  style={inputStyle}
+                  placeholder="Vārds, uzvārds *"
+                  placeholderTextColor={colors.textDisabled}
+                  value={guestName}
+                  onChangeText={setGuestName}
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  returnKeyType="next"
+                />
+
+                <TextInput
+                  style={inputStyle}
+                  placeholder="Tālrunis *"
+                  placeholderTextColor={colors.textDisabled}
+                  value={guestPhone}
+                  onChangeText={setGuestPhone}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  returnKeyType="next"
+                />
+
+                <TextInput
+                  style={inputStyle}
+                  placeholder="E-pasts (čekam, neobligāti)"
+                  placeholderTextColor={colors.textDisabled}
+                  value={guestEmail}
+                  onChangeText={setGuestEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  returnKeyType="done"
+                  onSubmitEditing={handleGuestSubmit}
+                />
+
+                {error ? (
+                  <Text
+                    style={{ fontSize: 13, color: colors.danger, fontFamily: 'Inter_400Regular' }}
+                  >
+                    {error}
+                  </Text>
+                ) : null}
+
+                <TouchableOpacity
+                  onPress={handleGuestSubmit}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                  style={{
+                    backgroundColor: colors.primary,
+                    borderRadius: 14,
+                    paddingVertical: 16,
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontFamily: 'Inter_600SemiBold',
+                        fontWeight: '600',
+                        color: '#fff',
+                      }}
+                    >
+                      Apstiprināt pasūtījumu
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: colors.textDisabled,
+                    fontFamily: 'Inter_400Regular',
+                    textAlign: 'center',
+                    marginTop: 4,
+                  }}
+                >
+                  Pasūtījuma sekošanas saiti nosūtīsim uz tālruni un e-pastu.
                 </Text>
               </View>
             )}

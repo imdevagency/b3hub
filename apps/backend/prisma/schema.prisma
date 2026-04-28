@@ -784,13 +784,36 @@ model GuestOrder {
   orderNumber String           @unique
   token       String           @unique // public tracking token — /order/[token]
 
-  // What
-  materialCategory String  // mirrors MaterialCategory enum values
-  materialName     String
-  quantity         Float
-  unit             String  // TONNE | M3 | KG | PIECE
+  // Category discriminator (MATERIAL | SKIP_HIRE | TRANSPORT | DISPOSAL)
+  category String @default("MATERIAL")
 
-  // Where
+  // ── MATERIAL specific (nullable for other categories) ──
+  materialCategory String?  // mirrors MaterialCategory enum values
+  materialName     String?
+  quantity         Float?
+  unit             String?  // TONNE | M3 | KG | PIECE
+
+  // ── SKIP_HIRE specific ──
+  skipSize          String?  // SkipSize enum value
+  skipWasteCategory String?  // SkipWasteCategory enum value
+  hireDays          Int?
+  collectionDate    DateTime?
+
+  // ── TRANSPORT specific ──
+  pickupAddress    String?
+  pickupCity       String?
+  pickupLat        Float?
+  pickupLng        Float?
+  vehicleType      String?   // TransportVehicleType enum value
+  cargoDescription String?
+  estimatedWeight  Float?
+
+  // ── DISPOSAL specific ──
+  wasteTypes     String?  // JSON string array e.g. '["CONCRETE","SOIL"]'
+  disposalVolume Float?
+  truckType      String?  // DisposalTruckType enum value
+
+  // Where (shared — delivery/placement/dropoff address)
   deliveryAddress String
   deliveryCity    String
   deliveryPostal  String?

@@ -48,15 +48,36 @@ export class GuestOrdersService {
   async create(dto: CreateGuestOrderDto) {
     const token = generateToken(); // URL-safe, collision-resistant tracking token
     const orderNumber = `G-${Date.now().toString(36).toUpperCase()}`;
+    const category = dto.category ?? 'MATERIAL';
 
     const guestOrder = await this.prisma.guestOrder.create({
       data: {
         orderNumber,
         token,
+        category,
+        // MATERIAL specific
         materialCategory: dto.materialCategory,
         materialName: dto.materialName,
         quantity: dto.quantity,
         unit: dto.unit,
+        // SKIP_HIRE specific
+        skipSize: dto.skipSize,
+        skipWasteCategory: dto.skipWasteCategory,
+        hireDays: dto.hireDays,
+        collectionDate: dto.collectionDate ? new Date(dto.collectionDate) : undefined,
+        // TRANSPORT specific
+        pickupAddress: dto.pickupAddress,
+        pickupCity: dto.pickupCity,
+        pickupLat: dto.pickupLat,
+        pickupLng: dto.pickupLng,
+        vehicleType: dto.vehicleType,
+        cargoDescription: dto.cargoDescription,
+        estimatedWeight: dto.estimatedWeight,
+        // DISPOSAL specific
+        wasteTypes: dto.wasteTypes,
+        disposalVolume: dto.disposalVolume,
+        truckType: dto.truckType,
+        // Shared location
         deliveryAddress: dto.deliveryAddress,
         deliveryCity: dto.deliveryCity,
         deliveryPostal: dto.deliveryPostal,
@@ -82,10 +103,20 @@ export class GuestOrdersService {
           dto.contactName,
           guestOrder.orderNumber,
           trackingUrl,
+          category,
           {
             materialName: dto.materialName,
             quantity: dto.quantity,
             unit: dto.unit,
+            skipSize: dto.skipSize,
+            skipWasteCategory: dto.skipWasteCategory,
+            hireDays: dto.hireDays,
+            pickupAddress: dto.pickupAddress,
+            pickupCity: dto.pickupCity,
+            vehicleType: dto.vehicleType,
+            cargoDescription: dto.cargoDescription,
+            wasteTypes: dto.wasteTypes,
+            disposalVolume: dto.disposalVolume,
             deliveryAddress: dto.deliveryAddress,
             deliveryCity: dto.deliveryCity,
             deliveryDate: dto.deliveryDate ? new Date(dto.deliveryDate) : undefined,
@@ -98,7 +129,7 @@ export class GuestOrdersService {
         });
     }
 
-    this.logger.log(`Guest order created: ${orderNumber} (token: ${token})`);
+    this.logger.log(`Guest order created: ${orderNumber} category=${category} (token: ${token})`);
 
     return {
       orderNumber: guestOrder.orderNumber,
@@ -311,10 +342,20 @@ export class GuestOrdersService {
           guestOrder.contactName,
           guestOrder.orderNumber,
           trackingUrl,
+          guestOrder.category,
           {
-            materialName: guestOrder.materialName,
-            quantity: guestOrder.quantity,
-            unit: guestOrder.unit,
+            materialName: guestOrder.materialName ?? undefined,
+            quantity: guestOrder.quantity ?? undefined,
+            unit: guestOrder.unit ?? undefined,
+            skipSize: guestOrder.skipSize ?? undefined,
+            skipWasteCategory: guestOrder.skipWasteCategory ?? undefined,
+            hireDays: guestOrder.hireDays ?? undefined,
+            pickupAddress: guestOrder.pickupAddress ?? undefined,
+            pickupCity: guestOrder.pickupCity ?? undefined,
+            vehicleType: guestOrder.vehicleType ?? undefined,
+            cargoDescription: guestOrder.cargoDescription ?? undefined,
+            wasteTypes: guestOrder.wasteTypes ?? undefined,
+            disposalVolume: guestOrder.disposalVolume ?? undefined,
             deliveryAddress: guestOrder.deliveryAddress,
             deliveryCity: guestOrder.deliveryCity,
             deliveryDate: guestOrder.deliveryDate ?? undefined,

@@ -39,6 +39,7 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { colors } from '@/lib/theme';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
+import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 
 // ── Draft persistence ────────────────────────────────────────────
 const DISPOSAL_DRAFT_KEY = '@b3hub_disposal_draft';
@@ -206,6 +207,9 @@ export default function DisposalWizard() {
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
+    null,
+  );
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -444,6 +448,44 @@ export default function DisposalWizard() {
     picked,
   ]);
 
+  // ── Guest submit handler ──────────────────────────────────────────────────
+  const handleGuestSubmit = useCallback(
+    async (contact: { name: string; phone: string; email?: string }) => {
+      if (!picked || selectedWastes.length === 0) return;
+      if (loadingRef.current) return;
+      setLoading(true);
+      loadingRef.current = true;
+      try {
+        const wasteTypesJson = JSON.stringify(selectedWastes);
+        const estimatedWeight = parseFloat(weightText);
+        const result = await api.guestOrders.create({
+          category: 'DISPOSAL',
+          wasteTypes: wasteTypesJson,
+          disposalVolume: !isNaN(estimatedWeight) ? estimatedWeight : undefined,
+          truckType: derived.truckType,
+          deliveryAddress: picked.address,
+          deliveryCity: picked.city ?? '',
+          deliveryLat: picked.lat,
+          deliveryLng: picked.lng,
+          deliveryDate: toISO(date),
+          deliveryWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+          contactEmail: contact.email,
+          notes: notes || undefined,
+        });
+        haptics.success();
+        setGuestResult({ token: result.token, orderNumber: result.orderNumber });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu.');
+      } finally {
+        setLoading(false);
+        loadingRef.current = false;
+      }
+    },
+    [picked, selectedWastes, weightText, derived, date, pickupWindow, notes],
+  );
+
   const ctaDisabled =
     (step === 1 && (selectedWastes.length === 0 || !(parseFloat(weightText) > 0))) ||
     (step === 2 && !picked) ||
@@ -522,6 +564,16 @@ export default function DisposalWizard() {
     3: 'Kad?',
     4: 'Apstiprini izvešanu',
   };
+
+  // ── Guest success screen ──────────────────────────────────────────────────
+  if (guestResult) {
+    return (
+      <GuestOrderSuccess
+        orderNumber={guestResult.orderNumber}
+        onBack={() => router.replace('/(buyer)/home' as never)}
+      />
+    );
+  }
 
   return (
     <>
@@ -836,6 +888,12 @@ export default function DisposalWizard() {
           setShowAuthGate(false);
           handleSubmit();
         }}
+        onGuestContact={(contact) => {
+          setShowAuthGate(false);
+          handleGuestSubmit(contact);
+        }}
+        prefilledName={contactName}
+        prefilledPhone={contactPhone}
         onDismiss={() => setShowAuthGate(false)}
       />
     </>

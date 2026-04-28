@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -11,29 +12,111 @@ import {
 } from 'class-validator';
 
 export class CreateGuestOrderDto {
-  // ── What ──────────────────────────────────────────────────────────────────
-  /** Mirrors MaterialCategory enum values, plus SKIP_HIRE and TRANSPORT for those wizard types */
+  // ── Category discriminator ─────────────────────────────────────────────────
+  /** MATERIAL | SKIP_HIRE | TRANSPORT | DISPOSAL — defaults to MATERIAL */
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
+  @MaxLength(20)
+  category?: string;
+
+  // ── MATERIAL fields ───────────────────────────────────────────────────────
+  @IsOptional()
+  @IsString()
   @MaxLength(50)
-  materialCategory: string;
+  materialCategory?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  materialName: string;
+  materialName?: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0.1)
   @Max(10_000)
-  quantity: number;
+  quantity?: number;
 
   /** TONNE | M3 | KG | PIECE */
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  unit: string;
+  @MaxLength(20)
+  unit?: string;
 
-  // ── Where ─────────────────────────────────────────────────────────────────
+  // ── SKIP_HIRE fields ──────────────────────────────────────────────────────
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  skipSize?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  skipWasteCategory?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  hireDays?: number;
+
+  @IsOptional()
+  @IsString()
+  collectionDate?: string; // ISO date string
+
+  // ── TRANSPORT fields ──────────────────────────────────────────────────────
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  pickupAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  pickupCity?: string;
+
+  @IsOptional()
+  @IsNumber()
+  pickupLat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pickupLng?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  vehicleType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  cargoDescription?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100_000)
+  estimatedWeight?: number;
+
+  // ── DISPOSAL fields ───────────────────────────────────────────────────────
+  /** JSON array string, e.g. '["CONCRETE","SOIL"]' */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  wasteTypes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10_000)
+  disposalVolume?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  truckType?: string;
+
+  // ── Where (delivery / dropoff / placement) ────────────────────────────────
   @IsString()
   @IsNotEmpty()
   @MaxLength(300)

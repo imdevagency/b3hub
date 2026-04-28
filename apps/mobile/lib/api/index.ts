@@ -42,6 +42,8 @@ export * from './payments';
 
 export * from './saved-addresses';
 
+export * from './guest-orders';
+
 
 
 export * from './company';
@@ -90,6 +92,8 @@ import { paymentsApi } from './payments';
 import { projectsApi } from './projects';
 
 import { savedAddressesApi } from './saved-addresses';
+
+import { guestOrdersApi } from './guest-orders';
 
 import { fieldPassesApi } from './field-passes';
 
@@ -188,6 +192,12 @@ export const api = {
   // ── Saved addresses ──────────────────────────────────────────────────
 
   savedAddresses: savedAddressesApi,
+
+
+
+  // ── Guest orders (public, no auth) ───────────────────────────────────
+
+  ...guestOrdersApi,
 
 
 

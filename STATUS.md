@@ -166,7 +166,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - api-keys
@@ -182,6 +181,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - email
 - field-passes
 - framework-contracts
+- guest-orders
 - health
 - invoices
 - maps
@@ -189,6 +189,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - notifications
 - orders
 - payments
+- payouts
+- paysera
 - projects
 - provider-applications
 - quote-requests
@@ -196,6 +198,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - reviews
 - saved-addresses
 - skip-hire
+- sms
 - support
 - tracking
 - transport-jobs
@@ -207,7 +210,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (marketing)
@@ -257,11 +259,13 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin/audit-logs
 - dashboard/admin/companies
 - dashboard/admin/disputes
+- dashboard/admin/exceptions
 - dashboard/admin/field-passes
 - dashboard/admin/jobs
 - dashboard/admin/materials
 - dashboard/admin/orders
 - dashboard/admin/payments
+- dashboard/admin/skip-hire
 - dashboard/admin/sla
 - dashboard/admin/suppliers
 - dashboard/admin/support
@@ -312,18 +316,20 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/transporter
 - dashboard/transporter/settings
 - forgot-password
+- pasutijums/[token]
 - reset-password
+- share/[token]
 - track/[token]
 <!-- END GEN -->
 
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
 - (auth)/onboarding
+- (auth)/phone-otp
 - (auth)/register
 - (auth)/welcome
 - (buyer)/(account)/analytics

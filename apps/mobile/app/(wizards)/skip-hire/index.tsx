@@ -52,6 +52,7 @@ import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { InfoSection } from '@/components/ui/InfoSection';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
+import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 
 // Module-level constant — statuses eligible to link a skip hire to
 const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
@@ -110,6 +111,9 @@ export default function OrderWizard() {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
+    null,
+  );
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
@@ -397,6 +401,55 @@ export default function OrderWizard() {
     ]);
   }, [pickUnloadingPhoto]);
 
+  // ── Guest submit handler ─────────────────────────────────────────────────
+  const handleGuestSubmit = useCallback(
+    async (contact: { name: string; phone: string; email?: string }) => {
+      if (!picked || !selectedWaste || !selectedSize) return;
+      if (submittingRef.current) return;
+      setSubmitting(true);
+      submittingRef.current = true;
+      try {
+        const result = await api.guestOrders.create({
+          category: 'SKIP_HIRE',
+          skipSize: selectedSize,
+          skipWasteCategory: selectedWaste,
+          hireDays,
+          collectionDate: collectionDay ?? undefined,
+          deliveryAddress: picked.address,
+          deliveryCity: picked.city,
+          deliveryLat: picked.lat,
+          deliveryLng: picked.lng,
+          deliveryDate: selectedDay ?? undefined,
+          deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+          contactEmail: contact.email,
+          notes: notes || undefined,
+        });
+        haptics.success();
+        setGuestResult({ token: result.token, orderNumber: result.orderNumber });
+      } catch (err) {
+        Alert.alert(
+          'Kļūda',
+          err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu.',
+        );
+      } finally {
+        setSubmitting(false);
+        submittingRef.current = false;
+      }
+    },
+    [
+      picked,
+      selectedWaste,
+      selectedSize,
+      hireDays,
+      collectionDay,
+      selectedDay,
+      deliveryWindow,
+      notes,
+    ],
+  );
+
   const STEP_TITLES: Record<Step, string> = {
     1: 'Ko?',
     2: 'Kur?',
@@ -413,6 +466,16 @@ export default function OrderWizard() {
         onConfirm={() => {}}
         onCancel={goBack}
         contextLabel="Piegādes adrese"
+      />
+    );
+  }
+
+  // ── Guest success screen ──────────────────────────────────────────────────
+  if (guestResult) {
+    return (
+      <GuestOrderSuccess
+        orderNumber={guestResult.orderNumber}
+        onBack={() => router.replace('/(buyer)/home' as never)}
       />
     );
   }
@@ -840,6 +903,12 @@ export default function OrderWizard() {
           setShowAuthGate(false);
           onCTA();
         }}
+        onGuestContact={(contact) => {
+          setShowAuthGate(false);
+          handleGuestSubmit(contact);
+        }}
+        prefilledName={contactName}
+        prefilledPhone={contactPhone}
         onDismiss={() => setShowAuthGate(false)}
       />
     </>
