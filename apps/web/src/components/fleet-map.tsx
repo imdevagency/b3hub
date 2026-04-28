@@ -101,7 +101,7 @@ export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
 
   if (!GOOGLE_KEY) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-96">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-full w-full">
         <p className="text-sm text-muted-foreground">
           Google Maps API atslēga nav konfigurēta (<code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>)
         </p>
@@ -111,7 +111,7 @@ export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
 
   if (!isLoaded) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-96">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-full w-full">
         <p className="text-sm text-muted-foreground">Karte tiek ielādēta...</p>
       </div>
     );
@@ -119,17 +119,14 @@ export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
 
   if (mappable.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-96">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-full w-full">
         <p className="text-sm text-muted-foreground">Nav darbu ar koordinātām kartē</p>
       </div>
     );
   }
 
   return (
-    <div
-      className="relative rounded-2xl overflow-hidden border border-slate-200"
-      style={{ height: 520 }}
-    >
+    <div className="relative overflow-hidden w-full h-full bg-slate-100">
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={{ lat: 56.95, lng: 24.1 }}
