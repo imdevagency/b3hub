@@ -14,12 +14,9 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { useUnreadCount } from '@/lib/use-unread-count';
 import {
   User,
   ClipboardList,
-  CalendarDays,
-  Wallet,
   Truck,
   Package,
   FileText,
@@ -107,7 +104,6 @@ function ListRow({
 export default function DriverMoreScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const unreadCount = useUnreadCount();
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
 
@@ -125,19 +121,10 @@ export default function DriverMoreScreen() {
   };
 
   const tiles: TileItem[] = [
-    { icon: User, label: 'Profils', onPress: () => router.push('/(driver)/profile') },
     { icon: ClipboardList, label: 'Darbi', onPress: () => router.push('/(driver)/jobs') },
-    { icon: CalendarDays, label: 'Grafiks', onPress: () => router.push('/(driver)/schedule') },
-    { icon: Wallet, label: 'Izpeļņa', onPress: () => router.push('/(driver)/earnings') },
     { icon: Truck, label: 'Transporti', onPress: () => router.push('/(driver)/vehicles') },
     { icon: Package, label: 'Konteineri', onPress: () => router.push('/(driver)/skips') },
     { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(driver)/documents') },
-    {
-      icon: MessageCircle,
-      label: 'Ziņojumi',
-      badge: unreadCount,
-      onPress: () => router.push('/messages'),
-    },
     { icon: Bell, label: 'Paziņojumi', onPress: () => router.push('/notifications') },
     { icon: Settings, label: 'Iestatījumi', onPress: () => router.push('/settings') },
   ];
@@ -274,7 +261,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  tileBadgeText: { color: '#fff', fontSize: 10, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  tileBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
 
   sectionLabel: {
     fontSize: 11,

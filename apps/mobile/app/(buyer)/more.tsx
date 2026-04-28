@@ -19,7 +19,6 @@ import { colors } from '@/lib/theme';
 import { getRoleName } from '@/lib/utils';
 import {
   User,
-  ClipboardList,
   MessageCircle,
   FileText,
   MapPin,
@@ -115,7 +114,7 @@ function ListRow({
 
 export default function MoreScreen() {
   const { user, isLoading, logout } = useAuth();
-  const { mode, isMultiRole, setMode, availableModes } = useMode();
+  const { mode, isMultiRole } = useMode();
   const router = useRouter();
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
@@ -146,16 +145,6 @@ export default function MoreScreen() {
   // ── Main navigation tiles (auth-required) ────────────────────
   const mainTiles: TileItem[] = user
     ? [
-        {
-          icon: User,
-          label: 'Profils',
-          onPress: requireAuth(() => router.push('/(buyer)/profile')),
-        },
-        {
-          icon: ClipboardList,
-          label: 'Pasūtījumi',
-          onPress: requireAuth(() => router.push('/(buyer)/orders')),
-        },
         {
           icon: MessageCircle,
           label: 'Ziņojumi',
@@ -209,12 +198,6 @@ export default function MoreScreen() {
           label: 'Grafiki',
           onPress: () => router.push('/(buyer)/(account)/schedules'),
         },
-        // TODO: B3 FIELDS — re-enable when physical locations are live
-        // {
-        //   icon: Ticket,
-        //   label: 'Caurlaides',
-        //   onPress: () => router.push('/(buyer)/(account)/field-passes'),
-        // },
         {
           icon: Building2,
           label: 'Uzņēmums',

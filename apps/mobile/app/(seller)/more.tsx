@@ -16,8 +16,6 @@ import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import {
   User,
-  Inbox,
-  LayoutGrid,
   Euro,
   FileText,
   Handshake,
@@ -122,9 +120,6 @@ export default function SellerMoreScreen() {
   };
 
   const tiles: TileItem[] = [
-    { icon: User, label: 'Profils', onPress: () => router.push('/(seller)/profile') },
-    { icon: Inbox, label: 'Ienākošie', onPress: () => router.push('/(seller)/incoming') },
-    { icon: LayoutGrid, label: 'Katalogs', onPress: () => router.push('/(seller)/catalog') },
     { icon: Euro, label: 'Izpeļņa', onPress: () => router.push('/(seller)/earnings') },
     { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(seller)/documents') },
     {
@@ -269,7 +264,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  tileBadgeText: { color: '#fff', fontSize: 10, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  tileBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+  },
 
   sectionLabel: {
     fontSize: 11,
