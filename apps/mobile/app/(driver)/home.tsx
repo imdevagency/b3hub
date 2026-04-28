@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -148,18 +149,31 @@ export default function DriverHomeScreen() {
   const availableCount = Array.isArray(availableJobs) ? availableJobs.length : 0;
 
   const handleToggleOnline = useCallback(async () => {
-    if (!token || togglingOnline || hasActiveJob) return;
-    const next = !isOnline;
-    setTogglingOnline(true);
-    try {
-      const res = await api.driverSchedule.toggleOnline(next, token);
-      setIsOnline(res.isOnline);
-      haptics.medium();
-    } catch {
-      // revert optimistic update not needed — just ignore
-    } finally {
-      setTogglingOnline(false);
+    if (!token || togglingOnline) return;
+    if (hasActiveJob) {
+      Alert.alert('Aktīvs darbs', 'Nevarat doties bezsaistē aktīva darba laikā.');
+      return;
     }
+    const performToggle = async (next: boolean) => {
+      setTogglingOnline(true);
+      try {
+        const res = await api.driverSchedule.toggleOnline(next, token);
+        setIsOnline(res.isOnline);
+        haptics.medium();
+      } catch {
+        // ignore — server error is transient
+      } finally {
+        setTogglingOnline(false);
+      }
+    };
+    if (isOnline) {
+      Alert.alert('Doties bezsaistē?', 'Jūs vairs nesaņemsiet jaunus darba piedāvājumus.', [
+        { text: 'Atcelt', style: 'cancel' },
+        { text: 'Doties bezsaistē', style: 'destructive', onPress: () => performToggle(false) },
+      ]);
+      return;
+    }
+    performToggle(true);
   }, [token, togglingOnline, hasActiveJob, isOnline]);
 
   // Reactively update the layout-level TopBar with the driver status pill
@@ -266,9 +280,17 @@ export default function DriverHomeScreen() {
             </View>
             <View style={s.verticalLine} />
             <View style={s.statBox}>
-              <Text style={s.statValue}>
-                {todayEarnings !== null ? `€${todayEarnings.toFixed(0)}` : '--'}
-              </Text>
+              {loadingJobs && todayEarnings === null ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.textMuted}
+                  style={{ marginBottom: 4 }}
+                />
+              ) : (
+                <Text style={s.statValue}>
+                  {todayEarnings !== null ? `€${todayEarnings.toFixed(0)}` : '--'}
+                </Text>
+              )}
               <Text style={s.statLabel}>Nopelnīts šodien</Text>
             </View>
           </View>

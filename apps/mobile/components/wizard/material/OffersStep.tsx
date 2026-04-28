@@ -7,7 +7,7 @@
  * Owns sort/filter UI state internally; all data and submit callbacks
  * come from the wizard root.
  */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -28,6 +28,7 @@ import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { s } from './_styles';
 import { WizardAuthGate, type GuestContactInfo } from '@/components/wizard/WizardAuthGate';
+import { addGuestOrder } from '@/lib/guest-token-storage';
 
 export type OffersStepProps = {
   offers: SupplierOffer[];
@@ -67,6 +68,8 @@ export type OffersStepProps = {
   prefilledContactEmail?: string;
   /** True if the success screen is for a guest order (no instant-pay path). */
   isGuestSuccess?: boolean;
+  /** Public tracking token for the guest order — used to persist it in AsyncStorage. */
+  guestToken?: string;
   onNavigateToOrder: () => void;
   onNavigateToRFQ: () => void;
 };
@@ -100,12 +103,26 @@ export function OffersStep({
   prefilledContactPhone,
   prefilledContactEmail,
   isGuestSuccess,
+  guestToken,
   onNavigateToOrder,
   onNavigateToRFQ,
 }: OffersStepProps) {
   const router = useRouter();
   // ── Internal filter/sort state ──
   const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
+
+  // Persist guest order token when the success screen is shown
+  useEffect(() => {
+    if (!isGuestSuccess || !guestToken) return;
+    // Extract raw token from 'guest:TOKEN' format if needed
+    const rawToken = guestToken.startsWith('guest:') ? guestToken.slice(6) : guestToken;
+    addGuestOrder({
+      token: rawToken,
+      orderNumber,
+      category: 'MATERIAL',
+      createdAt: Date.now(),
+    });
+  }, [isGuestSuccess, guestToken, orderNumber]);
 
   // ── Auth gate state ──
   const [authGateVisible, setAuthGateVisible] = useState(false);

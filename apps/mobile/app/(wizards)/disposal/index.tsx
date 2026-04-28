@@ -31,7 +31,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { WasteType, DisposalTruckType } from '@/lib/api';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
+import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
@@ -570,6 +570,8 @@ export default function DisposalWizard() {
     return (
       <GuestOrderSuccess
         orderNumber={guestResult.orderNumber}
+        guestToken={guestResult.token}
+        category="DISPOSAL"
         onBack={() => router.replace('/(buyer)/home' as never)}
       />
     );
@@ -660,7 +662,13 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <FlatAddressPicker picked={picked} onPick={handlePickConfirm} />
+            <View style={{ paddingHorizontal: 20 }}>
+              <AddressField
+                value={picked}
+                onPick={handlePickConfirm}
+                placeholder="Norādiet paņemšanas adresi"
+              />
+            </View>
             {picked && (
               <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
                 <TouchableOpacity

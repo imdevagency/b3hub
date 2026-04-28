@@ -20,7 +20,7 @@ import { api } from '@/lib/api';
 import type { TransportVehicleType } from '@/lib/api';
 import { useRoute } from '@/components/map';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
+import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
@@ -521,8 +521,8 @@ export default function TransportWizard() {
   const ctaLabel =
     step === 5
       ? currentVehiclePrice
-        ? `Pasūtīt${truckCount > 1 ? ` ${truckCount}×` : ''} — no €${currentVehiclePrice}`
-        : 'Pasūtīt'
+        ? `Nosūtīt pieprasījumu${truckCount > 1 ? ` ${truckCount}×` : ''} — no €${currentVehiclePrice}`
+        : 'Nosūtīt pieprasījumu'
       : 'Turpināt';
 
   const onCTA = useCallback(() => {
@@ -551,6 +551,8 @@ export default function TransportWizard() {
     return (
       <GuestOrderSuccess
         orderNumber={guestResult.orderNumber}
+        guestToken={guestResult.token}
+        category="TRANSPORT"
         onBack={() => router.replace('/(buyer)/home' as never)}
       />
     );
@@ -580,7 +582,13 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <FlatAddressPicker picked={pickupPicked} onPick={handlePickupConfirm} />
+            <View style={{ paddingHorizontal: 20 }}>
+              <AddressField
+                value={pickupPicked}
+                onPick={handlePickupConfirm}
+                placeholder="Norādiet ielādes adresi"
+              />
+            </View>
             {pickupPicked && (
               <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
                 <TouchableOpacity
@@ -624,7 +632,13 @@ export default function TransportWizard() {
                 </View>
               </View>
             )}
-            <FlatAddressPicker picked={dropoffPicked} onPick={handleDropoffConfirm} />
+            <View style={{ paddingHorizontal: 20 }}>
+              <AddressField
+                value={dropoffPicked}
+                onPick={handleDropoffConfirm}
+                placeholder="Norādiet izkraušanas adresi"
+              />
+            </View>
             {sameAddress && (
               <View
                 style={{
@@ -975,6 +989,20 @@ export default function TransportWizard() {
               )}
             </View>
             <View style={{ height: 16 }} />
+            {/* Footnote: this is a request, not an instant booking */}
+            <View style={{ paddingHorizontal: 4, paddingBottom: 8 }}>
+              <Text
+                style={{
+                  fontFamily: 'Inter_400Regular',
+                  fontSize: 13,
+                  color: colors.textMuted,
+                  textAlign: 'center',
+                  lineHeight: 18,
+                }}
+              >
+                Cenu un izbraukšanas laiku apstiprināsim pa tālruni.
+              </Text>
+            </View>
           </ScrollView>
         )}
       </WizardLayout>

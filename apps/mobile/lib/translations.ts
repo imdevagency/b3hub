@@ -642,6 +642,10 @@ export const lv = {
     deleteSaved: 'Neizdevās dzēst adresi',
     saveError: 'Neizdevās saglabāt adresi',
     defaultError: 'Neizdevās iestatīt noklusējumu',
+    setDeliveryAddress: 'Iestatīt piegādes adresi',
+    searchPlaceholder: 'Meklēt adresi…',
+    mapHintMovePin: 'Pārvietojiet karti uz savas ēkas ieeju, lai palīdzētu kurjeram jūs atrast ātrāk',
+    setAddress: 'Iestatīt adresi',
   },
 };
 
@@ -1224,6 +1228,10 @@ export const ru: Translations = {
     deleteSaved: 'Не удалось удалить адрес',
     saveError: 'Не удалось сохранить адрес',
     defaultError: 'Не удалось установить адрес по умолчанию',
+    setDeliveryAddress: 'Установить адрес доставки',
+    searchPlaceholder: 'Искать адрес…',
+    mapHintMovePin: 'Переместите карту ко входу в ваше здание, чтобы помочь курьеру найти вас быстрее',
+    setAddress: 'Установить адрес',
   },
 };
 

@@ -31,6 +31,7 @@ import { MapPin, Plus, Star, Pencil, Trash2, Check, X } from 'lucide-react-nativ
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { t } from '@/lib/translations';
+import { AddressField } from '@/components/ui/AddressField';
 
 // ── Form state ────────────────────────────────────────────────
 
@@ -38,10 +39,19 @@ interface FormState {
   label: string;
   address: string;
   city: string;
+  lat?: number;
+  lng?: number;
   isDefault: boolean;
 }
 
-const EMPTY_FORM: FormState = { label: '', address: '', city: '', isDefault: false };
+const EMPTY_FORM: FormState = {
+  label: '',
+  address: '',
+  city: '',
+  lat: undefined,
+  lng: undefined,
+  isDefault: false,
+};
 
 // ── Address Row ───────────────────────────────────────────────
 
@@ -57,7 +67,7 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
   return (
     <View style={s.row}>
       <View style={[s.rowIcon, item.isDefault && s.rowIconDefault]}>
-        <MapPin size={18} color={item.isDefault ? '#ffffff' : '#6b7280'} />
+        <MapPin size={20} color={item.isDefault ? '#1f8f53' : '#6b7280'} />
       </View>
       <View style={s.rowBody}>
         <View style={s.rowTitleRow}>
@@ -66,8 +76,8 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
           </Text>
           {item.isDefault && (
             <View style={s.defaultBadge}>
-              <Star size={9} color="#fff" fill="#fff" />
-              <Text style={s.defaultBadgeText}>{t.savedAddresses.defaultBadge}</Text>
+              <Star size={10} color="#fff" fill="#fff" />
+              <Text style={s.defaultBadgeText}>{t.savedAddresses.defaultBadge.toUpperCase()}</Text>
             </View>
           )}
         </View>
@@ -87,7 +97,7 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
             {settingDefault === item.id ? (
               <ActivityIndicator size="small" color="#6b7280" />
             ) : (
-              <Star size={15} color="#9ca3af" />
+              <Star size={16} color="#6b7280" />
             )}
           </TouchableOpacity>
         )}
@@ -95,7 +105,7 @@ function AddressRow({ item, onEdit, onDelete, onSetDefault, settingDefault }: Ad
           <Pencil size={15} color="#6b7280" />
         </TouchableOpacity>
         <TouchableOpacity style={s.actionBtn} onPress={() => onDelete(item)} activeOpacity={0.7}>
-          <Trash2 size={15} color="#ef4444" />
+          <Trash2 size={16} color="#ef4444" />
         </TouchableOpacity>
       </View>
     </View>
@@ -169,6 +179,8 @@ export default function SavedAddressesScreen() {
       label: item.label,
       address: item.address,
       city: item.city,
+      lat: item.lat,
+      lng: item.lng,
       isDefault: item.isDefault,
     });
     setModalVisible(true);
@@ -186,6 +198,8 @@ export default function SavedAddressesScreen() {
       label: data.label.trim(),
       address: data.address.trim(),
       city: data.city.trim(),
+      lat: data.lat,
+      lng: data.lng,
       isDefault: data.isDefault,
     };
     setSaving(true);
@@ -258,12 +272,12 @@ export default function SavedAddressesScreen() {
   }
 
   return (
-    <ScreenContainer bg="#f9fafb">
+    <ScreenContainer bg="#ffffff">
       <ScreenHeader
         title={t.savedAddresses.title}
         rightAction={
           <TouchableOpacity style={s.addBtn} onPress={openAdd} activeOpacity={0.8}>
-            <Plus size={18} color="#ffffff" />
+            <Plus size={20} color="#1f8f53" />
           </TouchableOpacity>
         }
       />
@@ -302,7 +316,6 @@ export default function SavedAddressesScreen() {
                   onSetDefault={handleSetDefault}
                   settingDefault={settingDefault}
                 />
-                {idx < addresses.length - 1 && <View style={s.divider} />}
               </View>
             ))}
           </View>
@@ -356,14 +369,28 @@ export default function SavedAddressesScreen() {
               control={control}
               name="address"
               rules={{ required: t.savedAddresses.requiredField }}
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={[s.input, errors.address && s.inputError]}
-                  value={value}
-                  onChangeText={onChange}
-                  placeholder={t.savedAddresses.addressPlaceholder}
-                  placeholderTextColor="#9ca3af"
-                />
+              render={({ field: { value } }) => (
+                <View style={errors.address && s.addressFieldError}>
+                  <AddressField
+                    value={
+                      value
+                        ? {
+                            address: value,
+                            city: watch('city'),
+                            lat: watch('lat') ?? 0,
+                            lng: watch('lng') ?? 0,
+                          }
+                        : null
+                    }
+                    onPick={(loc) => {
+                      setValue('address', loc.address, { shouldValidate: true });
+                      setValue('city', loc.city || '', { shouldValidate: true });
+                      if (loc.lat) setValue('lat', loc.lat);
+                      if (loc.lng) setValue('lng', loc.lng);
+                    }}
+                    placeholder={t.savedAddresses.addressPlaceholder}
+                  />
+                </View>
               )}
             />
             {errors.address && <Text style={s.fieldError}>{errors.address.message}</Text>}
@@ -423,65 +450,64 @@ export default function SavedAddressesScreen() {
 
 const s = StyleSheet.create({
   addBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   list: { flex: 1 },
-  listContent: { padding: 16 },
+  listContent: { paddingTop: 16, paddingBottom: 40 },
   listEmpty: { flexGrow: 1 },
 
   card: {
     backgroundColor: colors.bgCard,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-    overflow: 'hidden',
   },
   divider: { height: 1, backgroundColor: colors.bgMuted, marginLeft: 68 },
 
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   rowIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.bgMuted,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowIconDefault: { backgroundColor: colors.primary },
+  rowIconDefault: { backgroundColor: '#e2e8f0' },
   rowBody: { flex: 1 },
   rowTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, flex: 1 },
-  rowAddress: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  rowCity: { fontSize: 12, color: colors.textDisabled, marginTop: 1 },
+  rowLabel: { fontSize: 16, fontWeight: '600', color: '#111827', flex: 1 },
+  rowAddress: { fontSize: 14, color: '#4b5563', marginTop: 3 },
+  rowCity: { fontSize: 13, color: '#9ca3af', marginTop: 1 },
   defaultBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 7,
+    backgroundColor: '#1f8f53',
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  defaultBadgeText: { fontSize: 10, fontWeight: '600', color: colors.white },
+  defaultBadgeText: { fontSize: 10, fontWeight: '700', color: colors.white },
 
-  rowActions: { flexDirection: 'row', gap: 4 },
+  rowActions: { flexDirection: 'row', gap: 12 },
   actionBtn: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.bgSubtle,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -517,16 +543,21 @@ const s = StyleSheet.create({
 
   fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
   input: {
-    height: 48,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: colors.textPrimary,
-    backgroundColor: '#fafafa',
+    height: 52,
+    borderWidth: 0,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: '#f3f4f6',
   },
-  inputError: { borderColor: colors.danger },
+  inputError: { borderWidth: 1.5, borderColor: colors.danger },
+  addressFieldError: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+    overflow: 'hidden',
+  },
   fieldError: { fontSize: 12, color: colors.danger, marginTop: 4 },
 
   defaultToggle: {
@@ -550,20 +581,22 @@ const s = StyleSheet.create({
   defaultToggleText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
 
   saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingVertical: 15,
+    backgroundColor: '#1f8f53',
+    borderRadius: 24,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveBtnText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  saveBtnText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
 
   emptyAction: {
-    marginTop: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 14,
+    marginTop: 20,
+    backgroundColor: '#1f8f53',
+    borderRadius: 24,
+    height: 48,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  emptyActionText: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  emptyActionText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
 });

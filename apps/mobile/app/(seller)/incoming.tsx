@@ -173,7 +173,9 @@ function LoadingModal({
           </View>
 
           <View>
-            <Text className="text-gray-900 font-semibold text-sm mb-2">Faktiskais svars (tonnas)</Text>
+            <Text className="text-gray-900 font-semibold text-sm mb-2">
+              Faktiskais svars (tonnas)
+            </Text>
             <TextInput
               className="bg-gray-100 rounded-2xl px-4 text-gray-900 font-semibold"
               style={{ paddingVertical: 16, fontSize: 22 }}
@@ -235,6 +237,19 @@ function LoadingModal({
               </Text>
             )}
           </TouchableOpacity>
+          {!allChecked && !confirming && (
+            <Text
+              style={{
+                textAlign: 'center',
+                color: colors.textMuted,
+                fontSize: 13,
+                marginTop: 8,
+                fontFamily: 'Inter_400Regular',
+              }}
+            >
+              Atzīmējiet visus punktus, lai apstiprinātu
+            </Text>
+          )}
         </View>
       </KeyboardAvoidingView>
     </BottomSheet>

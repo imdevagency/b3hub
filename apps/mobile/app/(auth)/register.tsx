@@ -10,6 +10,7 @@ import {
   Animated,
   ActivityIndicator,
   Linking,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -65,7 +66,11 @@ function pwStrength(pw: string): { label: string; color: string; pct: number } {
 export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
-  const { partner, returnTo } = useLocalSearchParams<{ partner?: string; returnTo?: string }>();
+  const { partner, returnTo, guestToken } = useLocalSearchParams<{
+    partner?: string;
+    returnTo?: string;
+    guestToken?: string;
+  }>();
   const insets = useSafeAreaInsets();
   const isPartnerFlow = partner === '1';
 
@@ -151,6 +156,15 @@ export default function RegisterScreen() {
       });
       await setAuth(res.user, res.token, res.refreshToken);
       haptics.success();
+      if (guestToken) {
+        // Guest order token stays in AsyncStorage — it will appear in the orders tab.
+        // A brief notice helps the user understand their previous order is tracked.
+        Alert.alert(
+          'Pasūtījums saistīts',
+          'Jūsu iepriekšējais pasūtījums ir redzams cilnē "Aktivitāte".',
+          [{ text: 'Labi' }],
+        );
+      }
       if (returnTo) {
         router.replace(returnTo as never);
       } else {

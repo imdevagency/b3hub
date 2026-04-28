@@ -3,6 +3,8 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from './auth-context';
 import { api } from './api';
 import type { SkipHireOrder, ApiOrder, ApiTransportJob, QuoteRequest } from './api';
+import type { GuestOrderTracking } from './api/guest-orders';
+import { getStoredGuestOrders } from './guest-token-storage';
 
 // ── Types ────────────────────────────────────────────────────────────────────────────────────
 
@@ -40,7 +42,8 @@ export type UnifiedOrder =
   | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
   | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean }
   | { kind: 'disposal'; data: ApiTransportJob; sortDate: number; isActive: boolean }
-  | { kind: 'rfq'; data: QuoteRequest; sortDate: number; isActive: boolean };
+  | { kind: 'rfq'; data: QuoteRequest; sortDate: number; isActive: boolean }
+  | { kind: 'guest'; data: GuestOrderTracking; sortDate: number; isActive: boolean };
 
 // ── Bucket helpers (exported for use in card components) ──────
 
@@ -99,6 +102,7 @@ export function useOrders() {
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [reqOrders, setReqOrders] = useState<ApiTransportJob[]>([]);
   const [rfqOrders, setRfqOrders] = useState<QuoteRequest[]>([]);
+  const [guestOrders, setGuestOrders] = useState<GuestOrderTracking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterKey>('ALL');
@@ -108,6 +112,12 @@ export function useOrders() {
   const load = useCallback(
     async (showSkeleton = true) => {
       if (!token) {
+        // Even unauthenticated users can have stored guest orders
+        const storedTokens = await getStoredGuestOrders();
+        const guestResults = await Promise.allSettled(
+          storedTokens.map((o) => api.guestOrders.track(o.token)),
+        );
+        setGuestOrders(guestResults.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])));
         setLoading(false);
         return;
       }
@@ -123,6 +133,12 @@ export function useOrders() {
       setReqOrders(reqRes.status === 'fulfilled' && Array.isArray(reqRes.value) ? reqRes.value : []);
       setRfqOrders(rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value) ? rfqRes.value : []);
       setError([skipRes, matRes, reqRes, rfqRes].every((r) => r.status === 'rejected'));
+      // Also fetch any stored guest tokens (user may have placed a guest order before signing up)
+      const storedTokens = await getStoredGuestOrders();
+      const guestResults = await Promise.allSettled(
+        storedTokens.map((o) => api.guestOrders.track(o.token)),
+      );
+      setGuestOrders(guestResults.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])));
       setLoading(false);
       setRefreshing(false);
     },
@@ -175,14 +191,27 @@ export function useOrders() {
         isActive: rfqBucket(o.status) === 'ACTIVE',
       });
     });
+    guestOrders.forEach((o) => {
+      list.push({
+        kind: 'guest',
+        data: o,
+        sortDate: new Date(o.createdAt).getTime(),
+        isActive: !['CANCELLED', 'CONVERTED'].includes(o.status),
+      });
+    });
     return list.sort((a, b) => {
       if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
       return b.sortDate - a.sortDate;
     });
-  }, [skipOrders, matOrders, reqOrders, rfqOrders]);
+  }, [skipOrders, matOrders, reqOrders, rfqOrders, guestOrders]);
 
   const filtered = useMemo(() => {
     let list = filter === 'ALL' ? unified : unified.filter((item) => {
+      if (item.kind === 'guest') {
+        const isActive = !['CANCELLED', 'CONVERTED'].includes(item.data.status);
+        const bucket: FilterKey = isActive ? 'ACTIVE' : 'DONE';
+        return bucket === filter;
+      }
       const bucket =
         item.kind === 'skip'
           ? skipBucket(item.data.status)
@@ -203,14 +232,19 @@ export function useOrders() {
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = { ALL: unified.length, ACTIVE: 0, DONE: 0, CANCELLED: 0 };
     unified.forEach((item) => {
-      const b =
-        item.kind === 'skip'
-          ? skipBucket(item.data.status)
-          : item.kind === 'transport' || item.kind === 'disposal'
-            ? reqBucket(item.data.status)
-            : item.kind === 'rfq'
-              ? rfqBucket(item.data.status)
-              : matBucket(item.data.status);
+      let b: FilterKey;
+      if (item.kind === 'guest') {
+        b = !['CANCELLED', 'CONVERTED'].includes(item.data.status) ? 'ACTIVE' : 'DONE';
+      } else {
+        b =
+          item.kind === 'skip'
+            ? skipBucket(item.data.status)
+            : item.kind === 'transport' || item.kind === 'disposal'
+              ? reqBucket(item.data.status)
+              : item.kind === 'rfq'
+                ? rfqBucket(item.data.status)
+                : matBucket(item.data.status);
+      }
       c[b] = (c[b] ?? 0) + 1;
     });
     return c;

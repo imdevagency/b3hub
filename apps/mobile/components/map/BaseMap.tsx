@@ -80,6 +80,16 @@ export interface BaseMapProps {
   customMapStyle?: object[];
   /** Called once the map is ready to receive camera commands. */
   onMapReady?: () => void;
+  /** Called continuously while dragging */
+  onRegionChange?: (
+    region: { latitude: number; longitude: number },
+    details?: { isGesture: boolean },
+  ) => void;
+  /** Called when the physical drag or programmatic center change finishes. */
+  onRegionChangeComplete?: (
+    region: { latitude: number; longitude: number },
+    details?: { isGesture: boolean },
+  ) => void;
 }
 function zoomToDelta(zoom: number): number {
   return 360 / Math.pow(2, zoom);
@@ -101,6 +111,8 @@ export function BaseMap({
   mapPadding,
   customMapStyle,
   onMapReady: onMapReadyProp,
+  onRegionChange,
+  onRegionChangeComplete,
 }: BaseMapProps) {
   const mapRef = useRef<typeof MapView | null>(null);
   // Track whether Google Maps has fully initialised and is ready to receive commands.
@@ -248,6 +260,10 @@ export function BaseMap({
       moveOnMarkerPress={false}
       onMapReady={onMapReady}
       onPress={onPress ? handlePress : undefined}
+      onRegionChange={(region: any, details: any) => onRegionChange?.(region, details)}
+      onRegionChangeComplete={(region: any, details: any) =>
+        onRegionChangeComplete?.(region, details)
+      }
       mapPadding={mapPadding}
       customMapStyle={customMapStyle}
     >

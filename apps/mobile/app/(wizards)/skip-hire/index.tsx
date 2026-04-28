@@ -43,7 +43,7 @@ import { SKIP_PRICES, toISO, addDays } from '@/components/wizard/skip-hire/_type
 import { SkipWasteStep } from '@/components/wizard/skip-hire/SkipWasteStep';
 import { SkipSizeStep } from '@/components/wizard/skip-hire/SkipSizeStep';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
+import { AddressField } from '@/components/ui/AddressField';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SavedAddressPicker } from '@/components/wizard/SavedAddressPicker';
@@ -457,24 +457,13 @@ export default function OrderWizard() {
     4: 'Pārskatīt un pasūtīt',
   };
 
-  if (step === 2 && false) {
-    // InlineAddressStep kept as import for PickedAddress type; step 2 now uses FlatAddressPicker
-    return (
-      <InlineAddressStep
-        picked={picked}
-        onPick={handlePickConfirm}
-        onConfirm={() => {}}
-        onCancel={goBack}
-        contextLabel="Piegādes adrese"
-      />
-    );
-  }
-
   // ── Guest success screen ──────────────────────────────────────────────────
   if (guestResult) {
     return (
       <GuestOrderSuccess
         orderNumber={guestResult.orderNumber}
+        guestToken={guestResult.token}
+        category="SKIP_HIRE"
         onBack={() => router.replace('/(buyer)/home' as never)}
       />
     );
@@ -514,6 +503,21 @@ export default function OrderWizard() {
                 />
               </>
             )}
+            {/* Hint: waste chosen but size not yet picked */}
+            {selectedWaste && !selectedSize && (
+              <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+                <Text
+                  style={{
+                    fontFamily: 'Inter_500Medium',
+                    fontSize: 14,
+                    color: '#d97706',
+                    textAlign: 'center',
+                  }}
+                >
+                  ↑ Izvēlieties konteinera izmēru, lai turpinātu
+                </Text>
+              </View>
+            )}
             <View style={{ height: 32 }} />
           </ScrollView>
         )}
@@ -526,7 +530,13 @@ export default function OrderWizard() {
             style={{ flex: 1 }}
             contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
           >
-            <FlatAddressPicker picked={picked} onPick={handlePickConfirm} />
+            <View style={{ paddingHorizontal: 20 }}>
+              <AddressField
+                value={picked}
+                onPick={handlePickConfirm}
+                placeholder="Norādiet piegādes adresi"
+              />
+            </View>
 
             {picked && (
               <View style={{ paddingHorizontal: 20, marginTop: 20, gap: 0 }}>

@@ -291,7 +291,12 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
-              router.push('/(buyer)/profile');
+              // Phone-missing: edit profile; company-missing: apply for supplier role
+              if (!user.phone) {
+                router.push('/(buyer)/profile');
+              } else {
+                router.push('/(auth)/apply-role?type=supplier' as never);
+              }
             }}
           >
             <View
@@ -573,7 +578,9 @@ export default function HomeScreen() {
                     }}
                   >
                     <HardHat size={20} color="#111827" style={{ marginRight: 8 }} />
-                    <Text style={{ color: '#111827', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
+                    <Text
+                      style={{ color: '#111827', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                    >
                       Pasūtīt materiālus
                     </Text>
                   </TouchableOpacity>
@@ -658,6 +665,71 @@ export default function HomeScreen() {
                 );
               })}
             </View>
+          </View>
+        )}
+
+        {/* Restricted member — no order permission */}
+        {user?.companyRole && !(user?.permManageOrders ?? false) && (
+          <View
+            style={{
+              marginHorizontal: 20,
+              marginTop: 8,
+              backgroundColor: '#f9fafb',
+              borderRadius: 24,
+              padding: 24,
+              alignItems: 'center',
+            }}
+          >
+            <AlertCircle size={36} color="#9ca3af" style={{ marginBottom: 16 }} />
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                fontSize: 18,
+                color: '#111827',
+                textAlign: 'center',
+                marginBottom: 8,
+              }}
+            >
+              Pasūtīšana nav atļauta
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 15,
+                color: '#6b7280',
+                textAlign: 'center',
+                marginBottom: 20,
+                lineHeight: 22,
+              }}
+            >
+              Jūsu kontam nav tiesību veikt pasūtījumus. Sazinieties ar uzņēmuma vadītāju, lai
+              saņemtu piekļuvi.
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                haptics.light();
+                router.push('/(buyer)/orders');
+              }}
+              style={{
+                backgroundColor: '#f3f4f6',
+                paddingHorizontal: 20,
+                paddingVertical: 12,
+                borderRadius: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
+                  fontSize: 15,
+                  color: '#374151',
+                }}
+              >
+                Skatīt pasūtījumus
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>

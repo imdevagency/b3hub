@@ -25,7 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { FlatAddressPicker } from '@/components/wizard/FlatAddressPicker';
+import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SpecsStep } from '@/components/wizard/material/SpecsStep';
 import { WhenStep } from '@/components/wizard/material/WhenStep';
@@ -402,6 +402,13 @@ export default function OrderRequestWizard() {
       setSubmitError('Lūdzu, norādiet kontaktpersonu un tālruņa numuru pirms pasūtīšanas.');
       return;
     }
+    // Guard against race condition: if user just logged in via auth gate, state may not
+    // have re-synced yet — fall back to the current user object values.
+    const effectiveContactName =
+      contactName.trim() ||
+      `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() ||
+      contactName;
+    const effectiveContactPhone = contactPhone.trim() || user?.phone?.trim() || contactPhone;
     setSubmitting(true);
     setSubmitError('');
     submittingRef.current = true;
@@ -420,8 +427,8 @@ export default function OrderRequestWizard() {
           deliveryFee: offer.deliveryFee ?? undefined,
           deliveryLat: pickedAddress.lat,
           deliveryLng: pickedAddress.lng,
-          siteContactName: contactName || undefined,
-          siteContactPhone: contactPhone || undefined,
+          siteContactName: effectiveContactName || undefined,
+          siteContactPhone: effectiveContactPhone || undefined,
           notes: notes || undefined,
           bisNumber: bisNumber || undefined,
           sitePhotoUrl: sitePhotoUrl || undefined,
@@ -443,8 +450,8 @@ export default function OrderRequestWizard() {
             deliveryPostal: '',
             deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
             notes: notes || undefined,
-            siteContactName: contactName || undefined,
-            siteContactPhone: contactPhone || undefined,
+            siteContactName: effectiveContactName || undefined,
+            siteContactPhone: effectiveContactPhone || undefined,
             projectId: params.projectId || undefined,
             items: [{ materialId: offer.id, quantity, unit }],
             intervalDays: repeatInterval,
@@ -648,7 +655,13 @@ export default function OrderRequestWizard() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <FlatAddressPicker picked={pickedAddress} onPick={(p) => setPickedAddress(p)} />
+          <View style={{ paddingHorizontal: 20 }}>
+            <AddressField
+              value={pickedAddress}
+              onPick={(p) => setPickedAddress(p)}
+              placeholder="Norādiet piegādes adresi"
+            />
+          </View>
         </ScrollView>
       )}
       {step === 'specs' && (
@@ -708,6 +721,7 @@ export default function OrderRequestWizard() {
           prefilledContactPhone={contactPhone}
           prefilledContactEmail={user?.email}
           isGuestSuccess={orderId.startsWith('guest:')}
+          guestToken={orderId.startsWith('guest:') ? orderId.slice(6) : undefined}
           onNavigateToOrder={() => {
             if (!orderId) return;
             // Guest orders navigate to the public tracking screen via deep link;

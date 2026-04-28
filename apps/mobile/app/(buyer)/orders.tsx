@@ -14,11 +14,13 @@ import {
   X,
   HardHat,
   ClipboardList,
+  User,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, UnifiedOrder, orderSearchText } from '@/lib/use-orders';
 import type { ApiOrder, ApiTransportJob, SkipHireOrder, QuoteRequest } from '@/lib/api';
+import type { GuestOrderTracking } from '@/lib/api/guest-orders';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -77,6 +79,8 @@ export default function OrdersScreen() {
         return <RfqRow item={item.data} />;
       case 'skip':
         return <SkipRow item={item.data} />;
+      case 'guest':
+        return <GuestRow item={item.data} />;
       default:
         return null;
     }
@@ -179,7 +183,11 @@ export default function OrdersScreen() {
       <FlatList
         style={{ flex: 1, backgroundColor: colors.bgCard }}
         data={displayItems}
-        keyExtractor={(item) => `${item.kind}-${item.data.id}`}
+        keyExtractor={(item) =>
+          item.kind === 'guest'
+            ? `guest-${item.data.token}`
+            : `${item.kind}-${(item.data as any).id}`
+        }
         removeClippedSubviews={true}
         initialNumToRender={10}
         maxToRenderPerBatch={5}
@@ -558,6 +566,42 @@ function RfqRow({ item }: { item: QuoteRequest }) {
       statusColor={st.color}
       statusText={st.label}
       onPress={() => router.push(`/(buyer)/rfq/${item.id}`)}
+    />
+  );
+}
+
+const GUEST_CATEGORY_LABEL: Record<string, string> = {
+  MATERIAL: 'Materiāli',
+  SKIP_HIRE: 'Konteiners',
+  TRANSPORT: 'Transports',
+  DISPOSAL: 'Utilizācija',
+};
+
+const GUEST_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Gaida apstiprinājumu',
+  CONFIRMED: 'Apstiprināts',
+  PROCESSING: 'Apstrādē',
+  CANCELLED: 'Atcelts',
+  CONVERTED: 'Pārveidots',
+};
+
+function GuestRow({ item }: { item: GuestOrderTracking }) {
+  const categoryLabel = GUEST_CATEGORY_LABEL[item.category] ?? item.category;
+  const statusLabel = GUEST_STATUS_LABEL[item.status] ?? item.status;
+  const address = item.deliveryCity || item.deliveryAddress?.split(',')[0] || '';
+  const dateStr = item.createdAt ? format(new Date(item.createdAt), 'd. MMM', { locale: lv }) : '';
+
+  return (
+    <UniversalRow
+      icon={<User size={20} color="#6b7280" />}
+      title={`${categoryLabel} #${item.orderNumber}`}
+      subtitleLines={[address, dateStr, 'Viesis'].filter(Boolean)}
+      price=""
+      statusColor="#9ca3af"
+      statusText={statusLabel}
+      onPress={() => {
+        /* guest order detail not yet implemented */
+      }}
     />
   );
 }
