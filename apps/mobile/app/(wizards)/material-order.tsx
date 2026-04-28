@@ -142,6 +142,7 @@ export default function OrderRequestWizard() {
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersError, setOffersError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
   const [orderNumber, setOrderNumber] = useState('');
@@ -387,14 +388,20 @@ export default function OrderRequestWizard() {
   const handleSelectOffer = async (offer: SupplierOffer) => {
     const currentToken = tokenRef.current;
     if (!currentToken || !pickedAddress) return;
+    if (submittingRef.current) return;
     if (offer.minOrder && quantity < offer.minOrder) {
       setSubmitError(
         `Minimālais pasūtījuma daudzums šim piegādātājam ir ${offer.minOrder} ${UNIT_SHORT[unit] ?? unit}`,
       );
       return;
     }
+    if (!contactName.trim() || !contactPhone.trim()) {
+      setSubmitError('Lūdzu, norādiet kontaktpersonu un tālruņa numuru pirms pasūtīšanas.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError('');
+    submittingRef.current = true;
     try {
       const order = await api.materials.createOrder(
         {
@@ -470,6 +477,7 @@ export default function OrderRequestWizard() {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
@@ -477,8 +485,10 @@ export default function OrderRequestWizard() {
   const handleSendRFQ = async () => {
     const currentToken = tokenRef.current;
     if (!currentToken || !pickedAddress) return;
+    if (submittingRef.current) return;
     setSubmitting(true);
     setSubmitError('');
+    submittingRef.current = true;
     try {
       const result = await api.quoteRequests.create(
         {
@@ -504,6 +514,7 @@ export default function OrderRequestWizard() {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 

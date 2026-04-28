@@ -204,6 +204,7 @@ export default function DisposalWizard() {
   const [pickupWindow, setPickupWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [saveAddress, setSaveAddress] = useState(false);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
@@ -339,7 +340,9 @@ export default function DisposalWizard() {
     setTruckCount(derived.truckCount);
     setDescription(desc);
     setRequestedDate(toISO(date));
+    if (loadingRef.current) return;
     setLoading(true);
+    loadingRef.current = true;
     // Weight is required in step 1
     const parsedWeight = parseFloat(weightText);
     const estimatedWeight = !isNaN(parsedWeight) && parsedWeight > 0 ? parsedWeight : 1;
@@ -418,6 +421,7 @@ export default function DisposalWizard() {
       );
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   }, [
     state,

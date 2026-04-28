@@ -14,6 +14,7 @@ import {
   Switch,
   Linking,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -146,6 +147,7 @@ export default function SettingsScreen() {
     if (!token) return;
     try {
       await api.updateNotificationPrefs(patch, token);
+      toast.success('Saglabāts');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Neizdevās saglabāt iestatījumus');
     }
@@ -165,6 +167,8 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const [deleting, setDeleting] = useState(false);
+
   /**
    * GDPR Article 17 — Right to erasure.
    * Calls DELETE /auth/me which anonymises PII and deactivates the account.
@@ -182,12 +186,15 @@ export default function SettingsScreen() {
           text: 'Dzēst kontu',
           style: 'destructive',
           onPress: async () => {
+            setDeleting(true);
             try {
               await api.deleteAccount(token);
               haptics.success();
               await logout();
             } catch (err) {
               toast.error(err instanceof Error ? err.message : 'Neizdevās dzēst kontu');
+            } finally {
+              setDeleting(false);
             }
           },
         },
@@ -364,6 +371,9 @@ export default function SettingsScreen() {
                 label="Dzēst kontu"
                 onPress={handleDeleteAccount}
                 danger
+                rightSlot={
+                  deleting ? <ActivityIndicator size="small" color="#ef4444" /> : undefined
+                }
               />
             </View>
           </>

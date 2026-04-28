@@ -132,10 +132,16 @@ export default function ForgotPasswordScreen() {
                   <View style={s.devBox}>
                     <Text style={s.devLabel}>Dev mode · Reset link</Text>
                     <TouchableOpacity
-                      onPress={() => Linking.openURL('http://localhost:3001' + devUrl)}
+                      onPress={() =>
+                        Linking.openURL(
+                          (process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3001') + devUrl,
+                        )
+                      }
                       activeOpacity={0.7}
                     >
-                      <Text style={s.devLink}>{'http://localhost:3001' + devUrl}</Text>
+                      <Text style={s.devLink}>
+                        {(process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:3001') + devUrl}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 )}

@@ -8,7 +8,7 @@
  *   Step 4 – Date + Contact + Confirm
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -108,6 +108,7 @@ export default function OrderWizard() {
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [saveAddress, setSaveAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
@@ -222,10 +223,15 @@ export default function OrderWizard() {
         : `Pasūtīt — €${totalWithVat} (ar PVN)`
       : 'Turpināt';
 
+  const collectionAfterDelivery =
+    !selectedDay ||
+    !collectionDay ||
+    new Date(collectionDay + 'T00:00:00') > new Date(selectedDay + 'T00:00:00');
+
   const ctaDisabled =
     (step === 1 && (!selectedWaste || !selectedSize)) ||
     (step === 2 && !picked) ||
-    (step === 3 && (!selectedDay || !collectionDay)) ||
+    (step === 3 && (!selectedDay || !collectionDay || !collectionAfterDelivery)) ||
     (step === 4 && (quotesLoading || !termsAccepted)) ||
     submitting;
 
@@ -241,7 +247,9 @@ export default function OrderWizard() {
       return;
     }
     if (!state.location || !state.wasteCategory || !state.skipSize) return;
+    if (submittingRef.current) return;
     setSubmitting(true);
+    submittingRef.current = true;
     setDeliveryDate(selectedDay!);
     try {
       const order = await api.skipHire.create(
@@ -296,6 +304,7 @@ export default function OrderWizard() {
       Alert.alert(t.skipHire.errorTitle, err instanceof Error ? err.message : t.skipHire.error);
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   }, [
     step,
@@ -562,6 +571,13 @@ export default function OrderWizard() {
             </View>
 
             {/* ── Calendar — two-tap range selection ── */}
+            {selectedDay && collectionDay && !collectionAfterDelivery && (
+              <View style={s.dateError}>
+                <Text style={s.dateErrorText}>
+                  Savākšanas dienai jābūt vēlāk par piegādes dienu.
+                </Text>
+              </View>
+            )}
             <WizardCalendar
               selectedDate={selectedDay || ''}
               onDateChange={(tapped) => {
@@ -1267,5 +1283,20 @@ const s = StyleSheet.create({
     marginTop: 2,
     fontFamily: 'Inter_400Regular',
     fontWeight: '400',
+  },
+  dateError: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  dateErrorText: {
+    fontSize: 13,
+    color: '#dc2626',
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
   },
 });

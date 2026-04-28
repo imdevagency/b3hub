@@ -159,6 +159,7 @@ export default function TransportWizard() {
   const [pricePerTonneText, setPricePerTonneText] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [savePickup, setSavePickup] = useState(false);
   const [saveDropoff, setSaveDropoff] = useState(false);
@@ -316,7 +317,9 @@ export default function TransportWizard() {
 
   const handleSubmit = useCallback(async () => {
     if (!user || !token || !pickupStop || !dropoffStop || !selectedVehicle) return;
+    if (submittingRef.current) return;
     setSubmitting(true);
+    submittingRef.current = true;
     try {
       const resolvedDesc = activeDesc === 'Cits' ? otherText.trim() || 'Cits' : activeDesc;
       // quotedRate is required by the backend DTO (@IsNumber @Min(0)). Derive from
@@ -412,6 +415,7 @@ export default function TransportWizard() {
       toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot pasūtījumu');
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   }, [
     user,
@@ -442,11 +446,18 @@ export default function TransportWizard() {
 
   const step3Valid = selectedVehicle !== null;
   const step4Valid = !!selectedDay;
-  const step5Valid = !!siteContactName.trim();
+  const step5Valid = !!siteContactName.trim() && !!siteContactPhone.trim();
+
+  // Detect identical pickup/dropoff coordinates
+  const sameAddress =
+    !!pickupStop &&
+    !!dropoffStop &&
+    pickupStop.lat === dropoffStop.lat &&
+    pickupStop.lng === dropoffStop.lng;
 
   const ctaDisabled =
     (step === 1 && !pickupPicked) ||
-    (step === 2 && !dropoffPicked) ||
+    (step === 2 && (!dropoffPicked || sameAddress)) ||
     (step === 3 && !step3Valid) ||
     (step === 4 && !step4Valid) ||
     (step === 5 && !step5Valid) ||
@@ -549,6 +560,31 @@ export default function TransportWizard() {
               </View>
             )}
             <FlatAddressPicker picked={dropoffPicked} onPick={handleDropoffConfirm} />
+            {sameAddress && (
+              <View
+                style={{
+                  marginHorizontal: 20,
+                  marginTop: 10,
+                  backgroundColor: '#fef2f2',
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderWidth: 1,
+                  borderColor: '#fecaca',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: '#dc2626',
+                    fontFamily: 'Inter_500Medium',
+                    fontWeight: '500',
+                  }}
+                >
+                  Izkraušanas adresei jāatšķiras no iekraušanas adreses.
+                </Text>
+              </View>
+            )}
             {dropoffPicked && (
               <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
                 <TouchableOpacity
@@ -841,12 +877,12 @@ export default function TransportWizard() {
             <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
             <View style={{ gap: 10, marginBottom: 8 }}>
               <TextInputField
-                placeholder="Kontaktpersona"
+                placeholder="Kontaktpersona *"
                 value={siteContactName}
                 onChangeText={setSiteContactName}
               />
               <TextInputField
-                placeholder="Tālrunis"
+                placeholder="Tālrunis *"
                 keyboardType="phone-pad"
                 value={siteContactPhone}
                 onChangeText={setSiteContactPhone}
