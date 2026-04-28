@@ -350,7 +350,22 @@ export default function TransportJobTrackingScreen() {
         {/* Uber-like Bottom Sheet / Overlay */}
         <View style={[styles.overlayContainer, { bottom: insets.bottom || 24 }]}>
           {/* Offline indicator inside the overlay card area */}
-          {!jobIsTerminalForLive && <OfflinePill connected={connected} />}
+          {!jobIsTerminalForLive && !connected && (
+            <View
+              className="absolute z-20 self-center flex-row items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1 border-[1.5px] border-white"
+              style={{
+                top: -16,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+              <View className="h-2 w-2 rounded-full bg-red-500" />
+              <Text className="font-medium text-white text-xs">Tiešsaiste pārtraukta</Text>
+            </View>
+          )}
           <View style={styles.overlayCard}>
             {/* Courier Header Row */}
             <View style={styles.courierHeader}>
@@ -630,34 +645,6 @@ export default function TransportJobTrackingScreen() {
 }
 
 const ORANGE = '#4f46e5'; // Let's use Indigo for transport jobs similar to Waze driver UI
-
-// ── Offline pill (shown when WebSocket disconnects mid-tracking) ─────────────
-function OfflinePill({ connected }: { connected: boolean }) {
-  if (connected) return null;
-  return (
-    <View style={offlinePillStyle.wrap}>
-      <View style={offlinePillStyle.dot} />
-      <Text style={offlinePillStyle.text}>Tiešsaiste pārtraukta</Text>
-    </View>
-  );
-}
-const offlinePillStyle = StyleSheet.create({
-  wrap: {
-    position: 'absolute',
-    top: 0,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1F2937',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    zIndex: 20,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
-  text: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#FFFFFF' },
-});
 
 const styles = StyleSheet.create({
   mapWrapper: {

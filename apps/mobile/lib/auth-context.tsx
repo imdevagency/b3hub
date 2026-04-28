@@ -187,25 +187,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        setToken(activeToken);
-        setUser(JSON.parse(storedUser) as User);
-        if (storedRefreshToken) scheduleRefresh(activeToken, storedRefreshToken);
-
-        // Revalidate silently in background so stale data self-corrects
-        api
-          .getMe(activeToken)
-          .then((freshUser) => {
-            setUser(freshUser);
-            storage.setItem(USER_KEY, JSON.stringify(freshUser));
-          })
-          .catch((err: unknown) => {
-            // Only clear session on genuine auth failure (401/Unauthorized).
-            // Transient network errors, timeouts, etc. keep the stale session alive.
-            const msg: string = err instanceof Error ? err.message : '';
-            if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
-              clearSession();
+        // Validate the token against the backend before unblocking the app.
+        // This prevents components from firing API calls with a stale/invalid token.
+        // On 401 we force re-login; transient network errors keep the session alive.
+        try {
+          const freshUser = await api.getMe(activeToken);
+          setToken(activeToken);
+          setUser(freshUser);
+          await storage.setItem(USER_KEY, JSON.stringify(freshUser));
+          if (storedRefreshToken) scheduleRefresh(activeToken, storedRefreshToken);
+        } catch (err: unknown) {
+          const msg: string = err instanceof Error ? err.message : '';
+          const is401 = msg.includes('401') || msg.toLowerCase().includes('unauthorized');
+          if (is401) {
+            // Token is genuinely invalid — try to refresh first, then force login
+            if (storedRefreshToken) {
+              try {
+                const res = await api.refreshToken(storedRefreshToken);
+                await Promise.all([
+                  storage.setItem(TOKEN_KEY, res.token),
+                  storage.setItem(REFRESH_TOKEN_KEY, res.refreshToken),
+                ]);
+                const freshUser = await api.getMe(res.token);
+                setToken(res.token);
+                setUser(freshUser);
+                await storage.setItem(USER_KEY, JSON.stringify(freshUser));
+                scheduleRefresh(res.token, res.refreshToken);
+              } catch {
+                await clearSession();
+                return;
+              }
+            } else {
+              await clearSession();
+              return;
             }
-          });
+          } else {
+            // Network error / timeout — load from cached user data to stay offline-capable
+            setToken(activeToken);
+            setUser(JSON.parse(storedUser) as User);
+            if (storedRefreshToken) scheduleRefresh(activeToken, storedRefreshToken);
+          }
+        }
       })
       .catch(() => clearSession())
       .finally(() => setIsLoading(false));

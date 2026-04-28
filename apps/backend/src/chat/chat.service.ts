@@ -186,6 +186,9 @@ export class ChatService {
   async getMessages(jobId: string, userId: string) {
     await this.assertAccess(jobId, userId);
 
+    // Mark this chat as read for the current user
+    await this.upsertLastRead(userId, { transportJobId: jobId });
+
     return this.prisma.chatMessage.findMany({
       where: { transportJobId: jobId },
       orderBy: { createdAt: 'asc' },
@@ -241,6 +244,9 @@ export class ChatService {
   async getOrderMessages(orderId: string, userId: string) {
     await this.assertOrderAccess(orderId, userId);
 
+    // Mark this chat as read for the current user
+    await this.upsertLastRead(userId, { orderId });
+
     return this.prisma.chatMessage.findMany({
       where: { orderId },
       orderBy: { createdAt: 'asc' },
@@ -290,6 +296,74 @@ export class ChatService {
     this.gateway?.broadcastOrderMessage(orderId, message);
 
     return message;
+  }
+
+  /**
+   * Upsert the last-read timestamp for a user in a specific chat room.
+   * Called whenever a user fetches messages, so the next unread count is accurate.
+   */
+  private async upsertLastRead(
+    userId: string,
+    room: { transportJobId?: string; orderId?: string },
+  ) {
+    if (room.transportJobId) {
+      await this.prisma.chatLastRead.upsert({
+        where: { userId_transportJobId: { userId, transportJobId: room.transportJobId } },
+        create: { userId, transportJobId: room.transportJobId, lastReadAt: new Date() },
+        update: { lastReadAt: new Date() },
+      });
+    } else if (room.orderId) {
+      await this.prisma.chatLastRead.upsert({
+        where: { userId_orderId: { userId, orderId: room.orderId } },
+        create: { userId, orderId: room.orderId, lastReadAt: new Date() },
+        update: { lastReadAt: new Date() },
+      });
+    }
+  }
+
+  /**
+   * Count chat rooms where there are messages from other users
+   * sent after the current user last read that room.
+   * Rooms never opened by the user (no ChatLastRead record) are counted if they
+   * contain any message from someone else.
+   */
+  async getUnreadCount(userId: string): Promise<{ count: number }> {
+    // Fetch all rooms the user participates in
+    const rooms = await this.getMyRooms(userId);
+
+    // Fetch all last-read records for this user in one query
+    const lastReads = await this.prisma.chatLastRead.findMany({
+      where: { userId },
+      select: { transportJobId: true, orderId: true, lastReadAt: true },
+    });
+
+    const lastReadMap = new Map<string, Date>();
+    for (const lr of lastReads) {
+      const key = lr.transportJobId ?? lr.orderId ?? '';
+      if (key) lastReadMap.set(key, lr.lastReadAt);
+    }
+
+    // For each room, count messages from others after lastReadAt
+    const checks = rooms.map(async (room) => {
+      const roomKey = 'jobId' in room ? room.jobId : ('orderId' in room ? room.orderId : null);
+      if (!roomKey) return 0;
+
+      const lastReadAt = lastReadMap.get(roomKey) ?? null;
+
+      const count = await this.prisma.chatMessage.count({
+        where: {
+          ...('jobId' in room ? { transportJobId: room.jobId } : { orderId: (room as any).orderId }),
+          senderId: { not: userId },
+          ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+        },
+      });
+      return count;
+    });
+
+    const counts = await Promise.all(checks);
+    const total = counts.reduce((sum, c) => sum + c, 0);
+
+    return { count: total };
   }
 
   /**

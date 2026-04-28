@@ -25,6 +25,12 @@ export class ChatController {
     return this.service.getMyRooms(user.userId);
   }
 
+  /** GET /chat/unread-count — count unread chat messages across all rooms */
+  @Get('unread-count')
+  getUnreadCount(@CurrentUser() user: RequestingUser) {
+    return this.service.getUnreadCount(user.userId);
+  }
+
   /** GET /chat/order/:orderId — fetch all messages for an order */
   @Get('order/:orderId')
   getOrderMessages(

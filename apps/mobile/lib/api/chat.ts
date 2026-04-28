@@ -56,6 +56,12 @@ export const chatApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    /** Count unread messages across all chat rooms. */
+    unreadCount: (token: string) =>
+      apiFetch<{ count: number }>('/chat/unread-count', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     /** Fetch all messages for a transport job chat. */
     getMessages: (jobId: string, token: string) =>
       apiFetch<ApiChatMessage[]>(`/chat/${jobId}`, {

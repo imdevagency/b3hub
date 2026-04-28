@@ -466,6 +466,7 @@ model User {
   quoteRequests               QuoteRequest[]
   reviews                     Review[]
   sentMessages                ChatMessage[]
+  chatLastReads               ChatLastRead[]
   frameworkContracts          FrameworkContract[]
   projects                    Project[]
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
@@ -1753,6 +1754,24 @@ model ChatMessage {
   @@index([transportJobId, createdAt])
   @@index([orderId, createdAt])
   @@map("chat_messages")
+}
+
+/** Tracks the last time a user read a specific chat room (job or order). */
+model ChatLastRead {
+  id             String    @id @default(cuid())
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+
+  transportJobId String?
+  orderId        String?
+
+  lastReadAt     DateTime  @default(now())
+
+  @@unique([userId, transportJobId])
+  @@unique([userId, orderId])
+  @@index([userId])
+  @@map("chat_last_reads")
 }
 
 // ── Framework Contracts (blanket agreements / call-off orders) ────────────────

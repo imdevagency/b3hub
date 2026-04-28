@@ -18,6 +18,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useActiveJob } from '@/lib/use-active-job';
 import { useUnreadCount } from '@/lib/use-unread-count';
+import { useChatUnreadCount } from '@/lib/use-chat-unread-count';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
@@ -29,6 +30,7 @@ function DriverLayoutContent() {
   const insets = useSafeAreaInsets();
   const { hasActiveJob } = useActiveJob();
   const unreadCount = useUnreadCount();
+  const chatUnreadCount = useChatUnreadCount();
   const { config } = useHeaderConfig();
 
   // eslint-disable-next-line react/display-name
@@ -155,7 +157,7 @@ function DriverLayoutContent() {
           options={{
             title: 'Ziņojumi',
             tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
-            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+            tabBarBadge: chatUnreadCount > 0 ? chatUnreadCount : undefined,
           }}
         />
         <Tabs.Screen name="profile" options={{ href: null }} />
