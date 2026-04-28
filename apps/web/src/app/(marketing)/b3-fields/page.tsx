@@ -1,8 +1,3 @@
-// TODO: B3 FIELDS — FUTURE FEATURE
-// This page is hidden from public navigation until B3 Field physical locations are operational.
-// Remove the redirect below and re-enable Footer + sidebar links when ready.
-import { redirect } from 'next/navigation';
-
 import type { Metadata } from 'next';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
@@ -26,6 +21,34 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
+
+type B3FieldService = 'MATERIAL_PICKUP' | 'WASTE_DISPOSAL' | 'TRAILER_RENTAL';
+
+const SERVICE_LABELS: Record<B3FieldService, string> = {
+  MATERIAL_PICKUP: 'Paņemšana',
+  WASTE_DISPOSAL: 'Atkritumi',
+  TRAILER_RENTAL: 'Piekabe',
+};
+
+interface ApiFieldItem {
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  services: B3FieldService[];
+  active: boolean;
+}
+
+async function fetchFields(): Promise<ApiFieldItem[]> {
+  try {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+    const res = await fetch(`${base}/b3-fields`, { next: { revalidate: 300 } });
+    if (!res.ok) return [];
+    return (await res.json()) as ApiFieldItem[];
+  } catch {
+    return [];
+  }
+}
 
 const services = [
   {
@@ -51,18 +74,37 @@ const services = [
   },
 ];
 
-const locations = [
-  { city: 'Rīga', address: 'Maskavas iela 300', services: ['Paņemšana', 'Atkritumi', 'Piekabe'] },
-  { city: 'Jelgava', address: 'Rūpniecības iela 45', services: ['Paņemšana', 'Atkritumi'] },
-  { city: 'Liepāja', address: 'Klaipēdas šoseja 12', services: ['Paņemšana', 'Piekabe'] },
-  { city: 'Valmiera', address: 'Rīgas iela 78', services: ['Paņemšana', 'Atkritumi', 'Piekabe'] },
-  { city: 'Jēkabpils', address: 'Brīvības iela 34', services: ['Paņemšana'] },
-  { city: 'Daugavpils', address: 'Varoņu iela 9', services: ['Paņemšana', 'Atkritumi'] },
-];
+export default async function B3FieldsPage() {
+  const apiFields = await fetchFields();
 
-export default function B3FieldsPage() {
-  // TODO: B3 FIELDS — remove this redirect when physical locations are operational
-  redirect('/');
+  // Use API data when available; fall back to static placeholders only when the
+  // API returns nothing (e.g. during build / preview without a running backend).
+  const locations =
+    apiFields.length > 0
+      ? apiFields
+          .filter((f) => f.active)
+          .map((f) => ({
+            city: f.city,
+            address: f.address,
+            services: f.services.map((s) => SERVICE_LABELS[s] ?? s),
+          }))
+      : [
+          {
+            city: 'Rīga',
+            address: 'Maskavas iela 300',
+            services: ['Paņemšana', 'Atkritumi', 'Piekabe'],
+          },
+          { city: 'Jelgava', address: 'Rūpniecības iela 45', services: ['Paņemšana', 'Atkritumi'] },
+          { city: 'Liepāja', address: 'Klaipēdas šoseja 12', services: ['Paņemšana', 'Piekabe'] },
+          {
+            city: 'Valmiera',
+            address: 'Rīgas iela 78',
+            services: ['Paņemšana', 'Atkritumi', 'Piekabe'],
+          },
+          { city: 'Jēkabpils', address: 'Brīvības iela 34', services: ['Paņemšana'] },
+          { city: 'Daugavpils', address: 'Varoņu iela 9', services: ['Paņemšana', 'Atkritumi'] },
+          { city: 'Gulbene', address: 'Noliktavas iela 2', services: ['Paņemšana', 'Atkritumi'] },
+        ];
   return (
     <>
       <main className="bg-background text-foreground w-full overflow-hidden">

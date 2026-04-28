@@ -32,3 +32,4 @@ export * from './support';
 export * from './field-passes';
 export * from './tracking';
 export * from './guest-orders';
+export * from './b3-fields';

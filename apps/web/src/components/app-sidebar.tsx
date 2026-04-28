@@ -104,8 +104,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       items: [
         { label: 'Pasūtīt Materiālus', href: '/dashboard/catalog', icon: Package },
         { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
-        // TODO: B3 FIELDS — re-enable when physical locations are live
-        // { label: 'Caurlaides', href: '/dashboard/field-passes', icon: Ticket },
+        { label: 'Caurlaides', href: '/dashboard/field-passes', icon: Ticket },
       ],
     },
     {
@@ -822,7 +821,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {/* TODO: B3 FIELDS — restore admin/field-passes link when physical locations are live */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="B3 Fields"
+                  isActive={isRouteActive('/dashboard/admin/b3-fields')}
+                >
+                  <Link href="/dashboard/admin/b3-fields">
+                    <MapPin className="size-4 shrink-0" />
+                    <span>B3 Fields</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Field Passes"
+                  isActive={isRouteActive('/dashboard/admin/field-passes')}
+                >
+                  <Link href="/dashboard/admin/field-passes">
+                    <Ticket className="size-4 shrink-0" />
+                    <span>Field Passes</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

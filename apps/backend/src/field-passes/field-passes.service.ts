@@ -20,6 +20,7 @@ import { FieldPassStatus, FrameworkContractStatus } from '@prisma/client';
 import { CreateFieldPassDto } from './dto/create-field-pass.dto';
 import { RevokeFieldPassDto } from './dto/revoke-field-pass.dto';
 import PDFDocument from 'pdfkit';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class FieldPassesService {
@@ -310,127 +311,138 @@ export class FieldPassesService {
     _contractNumber: string,
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
-      const chunks: Buffer[] = [];
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
+      // Generate QR code first, then build PDF
+      const scanUrl = `https://b3hub.lv/gate/scan?p=${pass.passNumber}`;
+      QRCode.toBuffer(scanUrl, { type: 'png', width: 150, margin: 1 })
+        .then((qrBuffer) => {
+          const doc = new PDFDocument({ size: 'A4', margin: 50 });
+          const chunks: Buffer[] = [];
+          doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+          doc.on('end', () => resolve(Buffer.concat(chunks)));
+          doc.on('error', reject);
 
-      const fmt = (d: Date) =>
-        d.toLocaleDateString('lv-LV', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        });
+          const fmt = (d: Date) =>
+            d.toLocaleDateString('lv-LV', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            });
 
-      // ── Header ──
-      doc.fontSize(20).font('Helvetica-Bold').text('B3 LAUKUMI', 50, 50);
-      doc
-        .fontSize(12)
-        .font('Helvetica')
-        .text('Caurlaides izziņa / Site Access Pass', 50, 75);
-      doc.moveTo(50, 95).lineTo(545, 95).stroke();
+          // ── Header ──
+          doc.fontSize(20).font('Helvetica-Bold').text('B3 LAUKUMI', 50, 50);
+          doc
+            .fontSize(12)
+            .font('Helvetica')
+            .text('Caurlaides izziņa / Site Access Pass', 50, 75);
+          doc.moveTo(50, 95).lineTo(545, 95).stroke();
 
-      // ── Pass number + status ──
-      doc
-        .fontSize(28)
-        .font('Helvetica-Bold')
-        .fillColor('#0ea5e9')
-        .text(pass.passNumber, 50, 110, { align: 'center' });
-      doc.fillColor('#000000');
+          // ── Pass number + QR code ──
+          doc
+            .fontSize(28)
+            .font('Helvetica-Bold')
+            .fillColor('#0ea5e9')
+            .text(pass.passNumber, 50, 110, { width: 390, align: 'left' });
+          doc.fillColor('#000000');
 
-      // ── Company block ──
-      doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .text('Uzņēmums / Company', 50, 160);
-      doc
-        .font('Helvetica')
-        .fontSize(11)
-        .text(pass.company.legalName, 50, 175)
-        .text(
-          pass.company.registrationNum
-            ? `Reģ. Nr.: ${pass.company.registrationNum}`
-            : '',
-          50,
-          190,
-        );
+          // QR code — top-right corner of the pass
+          doc.image(qrBuffer, 430, 100, { width: 110 });
+          doc.fontSize(8).font('Helvetica').fillColor('#666666').text('Skenēt pie vārtiem', 430, 213, { width: 110, align: 'center' });
+          doc.fillColor('#000000');
 
-      // ── Vehicle ──
-      doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .text('Automašīna / Vehicle', 320, 160);
-      doc.font('Helvetica').fontSize(14).text(pass.vehiclePlate, 320, 175);
-      if (pass.driverName) {
-        doc.fontSize(11).text(`Šoferis: ${pass.driverName}`, 320, 193);
-      }
+          // ── Company block ──
+          doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Uzņēmums / Company', 50, 160);
+          doc
+            .font('Helvetica')
+            .fontSize(11)
+            .text(pass.company.legalName, 50, 175)
+            .text(
+              pass.company.registrationNum
+                ? `Reģ. Nr.: ${pass.company.registrationNum}`
+                : '',
+              50,
+              190,
+            );
 
-      // ── Validity ──
-      doc.moveTo(50, 220).lineTo(545, 220).stroke();
-      doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .text('Derīguma termiņš / Valid', 50, 232);
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text(`${fmt(pass.validFrom)}  –  ${fmt(pass.validTo)}`, 50, 248);
+          // ── Vehicle ──
+          doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Automašīna / Vehicle', 320, 160);
+          doc.font('Helvetica').fontSize(14).text(pass.vehiclePlate, 320, 175);
+          if (pass.driverName) {
+            doc.fontSize(11).text(`Šoferis: ${pass.driverName}`, 320, 193);
+          }
 
-      // ── Waste / cargo details ──
-      doc.moveTo(50, 275).lineTo(545, 275).stroke();
-      doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .text('Kravas informācija / Cargo Details', 50, 287);
+          // ── Validity ──
+          doc.moveTo(50, 230).lineTo(545, 230).stroke();
+          doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Derīguma termiņš / Valid', 50, 242);
+          doc
+            .font('Helvetica')
+            .fontSize(12)
+            .text(`${fmt(pass.validFrom)}  –  ${fmt(pass.validTo)}`, 50, 258);
 
-      const rows: [string, string][] = [];
-      if (pass.wasteClassCode)
-        rows.push(['Atkritumu kods / Waste code', pass.wasteClassCode]);
-      if (pass.wasteDescription)
-        rows.push(['Atkritumu apraksts / Description', pass.wasteDescription]);
-      if (pass.unloadingPoint)
-        rows.push(['Izkraušanas vieta / Unloading point', pass.unloadingPoint]);
-      if (pass.estimatedTonnes)
-        rows.push([
-          'Paredzamais svars / Est. weight',
-          `${pass.estimatedTonnes} t`,
-        ]);
+          // ── Waste / cargo details ──
+          doc.moveTo(50, 285).lineTo(545, 285).stroke();
+          doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Kravas informācija / Cargo Details', 50, 297);
 
-      let y = 303;
-      for (const [label, value] of rows) {
-        doc.font('Helvetica-Bold').fontSize(10).text(label, 50, y);
-        doc.font('Helvetica').fontSize(11).text(value, 200, y);
-        y += 18;
-      }
+          const rows: [string, string][] = [];
+          if (pass.wasteClassCode)
+            rows.push(['Atkritumu kods / Waste code', pass.wasteClassCode]);
+          if (pass.wasteDescription)
+            rows.push(['Atkritumu apraksts / Description', pass.wasteDescription]);
+          if (pass.unloadingPoint)
+            rows.push(['Izkraušanas vieta / Unloading point', pass.unloadingPoint]);
+          if (pass.estimatedTonnes)
+            rows.push([
+              'Paredzamais svars / Est. weight',
+              `${pass.estimatedTonnes} t`,
+            ]);
 
-      // ── Contract ref ──
-      doc
-        .moveTo(50, y + 10)
-        .lineTo(545, y + 10)
-        .stroke();
-      doc
-        .font('Helvetica')
-        .fontSize(10)
-        .fillColor('#666666')
-        .text(
-          `Līgums / Contract: ${pass.contract.contractNumber} — ${pass.contract.title}`,
-          50,
-          y + 22,
-        );
+          let y = 313;
+          for (const [label, value] of rows) {
+            doc.font('Helvetica-Bold').fontSize(10).text(label, 50, y);
+            doc.font('Helvetica').fontSize(11).text(value, 200, y);
+            y += 18;
+          }
 
-      // ── Footer warning ──
-      doc
-        .fillColor('#cc0000')
-        .fontSize(9)
-        .text(
-          'UZMANĪBU: Caurlaides derīguma termiņa pārkāpšana vai viltošana ir aizliegta.',
-          50,
-          y + 45,
-        )
-        .fillColor('#000000');
+          // ── Contract ref ──
+          doc
+            .moveTo(50, y + 10)
+            .lineTo(545, y + 10)
+            .stroke();
+          doc
+            .font('Helvetica')
+            .fontSize(10)
+            .fillColor('#666666')
+            .text(
+              `Līgums / Contract: ${pass.contract.contractNumber} — ${pass.contract.title}`,
+              50,
+              y + 22,
+            );
 
-      doc.end();
+          // ── Footer warning ──
+          doc
+            .fillColor('#cc0000')
+            .fontSize(9)
+            .text(
+              'UZMANĪBU: Caurlaides derīguma termiņa pārkāpšana vai viltošana ir aizliegta.',
+              50,
+              y + 45,
+            )
+            .fillColor('#000000');
+
+          doc.end();
+        })
+        .catch(reject);
     });
   }
 

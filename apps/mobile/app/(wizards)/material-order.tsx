@@ -30,6 +30,8 @@ import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SpecsStep } from '@/components/wizard/material/SpecsStep';
 import { WhenStep } from '@/components/wizard/material/WhenStep';
 import { OffersStep } from '@/components/wizard/material/OffersStep';
+import { FulfillmentStep } from '@/components/wizard/material/FulfillmentStep';
+import { FieldPickerStep } from '@/components/wizard/material/FieldPickerStep';
 import {
   CATEGORY_FRACTIONS,
   CATEGORY_DEFAULT_UNIT,
@@ -40,14 +42,14 @@ import {
 
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
-type Step = 'specs' | 'address' | 'when' | 'offers';
+type Step = 'specs' | 'fulfillment' | 'address' | 'field' | 'when' | 'offers';
 type SubmitResult = 'order' | 'rfq';
-
-const STEPS: Step[] = ['specs', 'address', 'when', 'offers'];
 
 const STEP_TITLES: Record<Step, string> = {
   address: 'Kur piegādāt?',
   specs: 'Ko pasūtīt?',
+  fulfillment: 'Kā saņemt?',
+  field: 'Izvēlies punktu',
   when: 'Kad piegādāt?',
   offers: 'Piedāvājumi',
 };
@@ -97,7 +99,25 @@ export default function OrderRequestWizard() {
 
   // ── Step ──
   const [step, setStep] = useState<Step>('specs');
+  const [fulfillmentType, setFulfillmentType] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
+  const [pickupFieldId, setPickupFieldId] = useState('');
+  const [pickupSlotId, setPickupSlotId] = useState('');
+  const [pickupDate, setPickupDate] = useState('');
+
+  // Computed STEPS depends on fulfillmentType
+  const STEPS: Step[] =
+    fulfillmentType === 'PICKUP'
+      ? ['specs', 'fulfillment', 'field', 'offers']
+      : ['specs', 'fulfillment', 'address', 'when', 'offers'];
+
   const stepIndex = STEPS.indexOf(step);
+
+  // When fulfillmentType changes and current step is no longer valid, snap back to fulfillment
+  useEffect(() => {
+    if (stepIndex === -1) {
+      setStep('fulfillment');
+    }
+  }, [fulfillmentType]);
 
   // ── Specs ──
   const [materialName, setMaterialName] = useState(
@@ -321,14 +341,14 @@ export default function OrderRequestWizard() {
       return;
     }
     setStep(STEPS[stepIndex - 1]);
-  }, [stepIndex, router, submitted, notes, pickedAddress, orderId]);
+  }, [stepIndex, STEPS, router, submitted, notes, pickedAddress, orderId]);
 
   const goNext = useCallback(() => {
     if (stepIndex < STEPS.length - 1) {
       haptics.medium();
       setStep(STEPS[stepIndex + 1]);
     }
-  }, [stepIndex]);
+  }, [stepIndex, STEPS]);
 
   // ── Site photo upload ──
   const handlePickSitePhoto = async () => {
@@ -420,13 +440,16 @@ export default function OrderRequestWizard() {
           quantity,
           unit,
           unitPrice: offer.basePrice,
-          deliveryAddress: pickedAddress.address,
-          deliveryCity: pickedAddress.city,
-          deliveryDate: deliveryDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          deliveryAddress: pickedAddress?.address ?? '',
+          deliveryCity: pickedAddress?.city ?? '',
+          deliveryDate:
+            pickupDate ||
+            deliveryDate ||
+            new Date(Date.now() + 86400000).toISOString().split('T')[0],
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           deliveryFee: offer.deliveryFee ?? undefined,
-          deliveryLat: pickedAddress.lat,
-          deliveryLng: pickedAddress.lng,
+          deliveryLat: pickedAddress?.lat,
+          deliveryLng: pickedAddress?.lng,
           siteContactName: effectiveContactName || undefined,
           siteContactPhone: effectiveContactPhone || undefined,
           notes: notes || undefined,
@@ -435,6 +458,9 @@ export default function OrderRequestWizard() {
           projectId: params.projectId || undefined,
           truckCount,
           truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
+          fulfillmentType,
+          pickupFieldId: pickupFieldId || undefined,
+          pickupSlotId: pickupSlotId || undefined,
         },
         currentToken,
       );
@@ -578,9 +604,13 @@ export default function OrderRequestWizard() {
       ? !!pickedAddress
       : step === 'specs'
         ? quantity > 0
-        : step === 'when'
-          ? !!deliveryDate
-          : !offersLoading && !submitting && !submitted && termsAccepted;
+        : step === 'fulfillment'
+          ? true // always can proceed (has a default)
+          : step === 'field'
+            ? !!pickupFieldId && !!pickupSlotId
+            : step === 'when'
+              ? !!deliveryDate
+              : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
     ? submitted === 'rfq'
@@ -648,6 +678,18 @@ export default function OrderRequestWizard() {
         ) : undefined
       }
     >
+      {step === 'fulfillment' && (
+        <FulfillmentStep value={fulfillmentType} onChange={setFulfillmentType} />
+      )}
+      {step === 'field' && (
+        <FieldPickerStep
+          selectedFieldId={pickupFieldId}
+          selectedSlotId={pickupSlotId}
+          onFieldChange={setPickupFieldId}
+          onSlotChange={setPickupSlotId}
+          onPickupDateChange={setPickupDate}
+        />
+      )}
       {step === 'address' && (
         <ScrollView
           style={{ flex: 1 }}

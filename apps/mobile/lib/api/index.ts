@@ -37,6 +37,7 @@ export * from './documents';
 export * from './chat';
 
 export * from './containers';
+export * from './b3-fields';
 
 export * from './payments';
 

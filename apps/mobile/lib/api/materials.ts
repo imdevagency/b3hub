@@ -165,6 +165,9 @@ export const materialsApi = {
         projectId?: string;
         truckCount?: number;
         truckIntervalMinutes?: number;
+        fulfillmentType?: 'DELIVERY' | 'PICKUP';
+        pickupFieldId?: string;
+        pickupSlotId?: string;
       },
       token: string,
     ) =>
@@ -198,6 +201,9 @@ export const materialsApi = {
           projectId: input.projectId ?? undefined,
           truckCount: input.truckCount ?? 1,
           truckIntervalMinutes: input.truckIntervalMinutes ?? undefined,
+          fulfillmentType: input.fulfillmentType ?? 'DELIVERY',
+          pickupFieldId: input.pickupFieldId ?? undefined,
+          pickupSlotId: input.pickupSlotId ?? undefined,
         }),
       }),
 

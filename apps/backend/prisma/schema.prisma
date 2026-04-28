@@ -694,6 +694,13 @@ model Order {
   deliveryDate    DateTime?
   deliveryWindow  String? // e.g., "8:00-12:00"
 
+  // Fulfillment type — DELIVERY (default) or PICKUP at a B3 Field
+  fulfillmentType OrderFulfillmentType @default(DELIVERY)
+  pickupField     B3Field?    @relation(fields: [pickupFieldId], references: [id])
+  pickupFieldId   String?
+  pickupSlot      PickupSlot? @relation(fields: [pickupSlotId], references: [id])
+  pickupSlotId    String?
+
   // Pricing
   subtotal    Float
   tax         Float
@@ -1174,6 +1181,7 @@ model RecyclingCenter {
 
   // Relations
   wasteRecords WasteRecord[]
+  b3Field      B3Field? // reverse of B3Field.recyclingCenter
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2269,4 +2277,98 @@ model WeighingSlip {
 enum WeighingPoint {
   LOADING   // Svēršana pie piegādātāja (karjers / avots)
   UNLOADING // Svēršana pie saņēmēja (būvlaukums / galamērķis)
+}
+
+// ── B3 Fields — Fulfillment type ─────────────────────────────────────────────
+enum OrderFulfillmentType {
+  DELIVERY // Standard delivery to buyer's site address
+  PICKUP   // Self-collect at a B3 Field physical location
+}
+
+// ── B3 Fields — Services offered at a physical location ──────────────────────
+enum B3FieldService {
+  MATERIAL_PICKUP  // Self-collect materials
+  WASTE_DISPOSAL   // Bring your own waste
+  TRAILER_RENTAL   // Rent a trailer
+}
+
+// ── B3 Fields — Physical fulfillment locations ───────────────────────────────
+model B3Field {
+  id   String @id @default(cuid())
+  name String // e.g. "B3 Field Gulbene"
+  slug String @unique // e.g. "gulbene" — used in URLs
+
+  // Location
+  address    String
+  city       String
+  postalCode String
+  lat        Float
+  lng        Float
+
+  // Services available at this location
+  services B3FieldService[]
+
+  // Opening hours — { monday: { open: "07:00", close: "19:00" }, ... null = closed }
+  openingHours Json
+
+  // Optional link to a RecyclingCenter (same physical site)
+  recyclingCenter   RecyclingCenter? @relation(fields: [recyclingCenterId], references: [id])
+  recyclingCenterId String?          @unique
+
+  // Operational
+  active Boolean @default(true)
+  notes  String? // internal notes for gate operators
+
+  // Relations
+  orders         Order[]
+  pickupSlots    PickupSlot[]
+  inventoryItems B3FieldInventoryItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("b3_fields")
+}
+
+// ── B3 Fields — Inventory items (materials in stock at this location) ─────────
+model B3FieldInventoryItem {
+  id      String  @id @default(cuid())
+  field   B3Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  fieldId String
+
+  name         String  // e.g. "Grants 0-32mm", "Smilts smalka"
+  unit         String  // e.g. "t", "m³", "gab."
+  pricePerUnit Float   // EUR per unit
+  stockQty     Float   @default(0)  // current quantity in stock
+  minStockQty  Float   @default(0)  // low-stock alert threshold
+  available    Boolean @default(true)
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fieldId])
+  @@map("b3_field_inventory_items")
+}
+
+// ── B3 Fields — Pickup time slots ────────────────────────────────────────────
+model PickupSlot {
+  id      String @id @default(cuid())
+  field   B3Field @relation(fields: [fieldId], references: [id])
+  fieldId String
+
+  slotStart  DateTime
+  slotEnd    DateTime
+  capacity   Int @default(4)  // max vehicles per slot
+  booked     Int @default(0)  // current bookings
+
+  // Orders booked into this slot
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fieldId, slotStart])
+  @@map("pickup_slots")
 }

@@ -42,6 +42,7 @@ import { MaterialsService } from '../materials/materials.service';
 import { DocumentsService } from '../documents/documents.service';
 import { MapsService } from '../maps/maps.service';
 import { PayoutsService } from '../payouts/payouts.service';
+import { B3FieldsService } from '../b3-fields/b3-fields.service';
 
 @Injectable()
 export class OrdersService {
@@ -74,6 +75,7 @@ export class OrdersService {
     private documents: DocumentsService,
     private maps: MapsService,
     private payoutsService: PayoutsService,
+    private b3Fields: B3FieldsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -515,6 +517,9 @@ export class OrdersService {
             projectId: orderData.projectId ?? null,
             truckCount: orderData.truckCount ?? 1,
             truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
+            fulfillmentType: orderData.fulfillmentType ?? 'DELIVERY',
+            pickupFieldId: orderData.pickupFieldId ?? null,
+            pickupSlotId: orderData.pickupSlotId ?? null,
             subtotal,
             tax,
             total,
@@ -583,6 +588,20 @@ export class OrdersService {
         this.notifyOrderSellers(order.id, order.orderNumber).catch((err) =>
           this.logger.warn('notifyOrderSellers failed', (err as Error).message),
         );
+
+        // Book the pickup slot if this is a PICKUP order (fire-and-forget)
+        if (
+          orderData.pickupSlotId &&
+          (orderData.fulfillmentType as string) === 'PICKUP'
+        ) {
+          this.b3Fields
+            .bookSlot(orderData.pickupSlotId)
+            .catch((err) =>
+              this.logger.warn(
+                `bookSlot failed for slot ${orderData.pickupSlotId} on order ${order.id}: ${(err as Error).message}`,
+              ),
+            );
+        }
 
         return order;
       } catch (err: unknown) {
@@ -1022,6 +1041,17 @@ export class OrdersService {
       });
     }
 
+    // Auto-generate a FieldPass when a PICKUP order is confirmed by the seller.
+    if (status === OrderStatus.CONFIRMED && order.fulfillmentType === 'PICKUP') {
+      this.b3Fields
+        .autoCreatePickupPass(id, order.buyerId, order.createdById)
+        .catch((err) =>
+          this.logger.warn(
+            `autoCreatePickupPass failed for order ${id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
     // Pre-generate the atkritumu pārvadājuma pavadzīme for DISPOSAL orders on CONFIRMED.
     // Required by LV Atkritumu apsaimniekošanas likums before transport can legally begin.
     if (
@@ -1250,6 +1280,17 @@ export class OrdersService {
             (err as Error).message,
           ),
         );
+
+      // Release the pickup slot if this was a PICKUP order (fire-and-forget)
+      if (order.pickupSlotId) {
+        this.b3Fields
+          .releaseSlot(order.pickupSlotId)
+          .catch((err) =>
+            this.logger.warn(
+              `releaseSlot failed for slot ${order.pickupSlotId} on cancel order ${id}: ${(err as Error).message}`,
+            ),
+          );
+      }
     }
 
     // Notify buyer of status change (fire-and-forget)
@@ -1913,6 +1954,17 @@ export class OrdersService {
           ),
         );
       }
+    }
+
+    // Release pickup slot if this was a PICKUP order (fire-and-forget)
+    if (order.pickupSlotId) {
+      this.b3Fields
+        .releaseSlot(order.pickupSlotId)
+        .catch((err) =>
+          this.logger.warn(
+            `releaseSlot failed for slot ${order.pickupSlotId} on cancel order ${id}: ${(err as Error).message}`,
+          ),
+        );
     }
 
     const updated = { ...order, status: OrderStatus.CANCELLED };

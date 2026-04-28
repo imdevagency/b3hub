@@ -252,6 +252,27 @@ export interface ApiOrder {
   scheduleIntervalMinutes?: number | null;
   statusTimestamps?: Record<string, string> | null;
   createdAt: string;
+  fulfillmentType?: 'DELIVERY' | 'PICKUP' | null;
+  pickupField?: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    lat: number;
+    lng: number;
+  } | null;
+  pickupSlot?: {
+    id: string;
+    slotStart: string;
+    slotEnd: string;
+  } | null;
+  fieldPasses?: {
+    id: string;
+    passNumber: string;
+    vehiclePlate: string;
+    status: string;
+    fileUrl?: string | null;
+  }[];
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────

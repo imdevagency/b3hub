@@ -11,6 +11,7 @@ import { DocumentsModule } from '../documents/documents.module';
 import { SupabaseModule } from '../supabase/supabase.module';
 import { MapsModule } from '../maps/maps.module';
 import { PayoutsModule } from '../payouts/payouts.module';
+import { B3FieldsModule } from '../b3-fields/b3-fields.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PayoutsModule } from '../payouts/payouts.module';
     SupabaseModule,
     MapsModule,
     PayoutsModule,
+    B3FieldsModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

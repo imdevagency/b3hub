@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2273 lines, 53 models, 44 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2353 lines, 55 models, 46 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -122,6 +122,8 @@ npm run db:seed           # reseed demo data
 | `DisputeReason` | SHORT_DELIVERY WRONG_MATERIAL DAMAGE LATE_DELIVERY NO_DELIVERY QUALITY_ISSUE OTHER |
 | `DisputeStatus` | OPEN UNDER_REVIEW RESOLVED REJECTED |
 | `WeighingPoint` | LOADING UNLOADING |
+| `OrderFulfillmentType` | DELIVERY PICKUP |
+| `B3FieldService` | MATERIAL_PICKUP WASTE_DISPOSAL TRAILER_RENTAL |
 
 ---
 
@@ -188,9 +190,9 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Order — `@@map("orders")`  
-**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `bisNumber`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `isInternational`: Boolean @default(false), `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `orderType`: OrderType, `status`: OrderStatus, `paymentStatus`: PaymentStatus, `paymentMethod`: PaymentMethod (@default(CARD))  
-**Relations:** → Company, User, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass, SupplierPayout, CarrierPayout
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `pickupFieldId`: String?, `pickupSlotId`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `bisNumber`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `isInternational`: Boolean @default(false), `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `orderType`: OrderType, `fulfillmentType`: OrderFulfillmentType (@default(DELIVERY)), `status`: OrderStatus, `paymentStatus`: PaymentStatus, `paymentMethod`: PaymentMethod (@default(CARD))  
+**Relations:** → Company, User, B3Field?, PickupSlot?, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass, SupplierPayout, CarrierPayout
 
 ---
 
@@ -244,7 +246,7 @@ npm run db:seed           # reseed demo data
 ### RecyclingCenter — `@@map("recycling_centers")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String, `state`: String, `postalCode`: String, `coordinates`: Json?, `companyId`: String, `capacity`: Float, `certifications`: String, `operatingHours`: Json, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `acceptedWasteTypes`: WasteType  
-**Relations:** → Company, WasteRecord
+**Relations:** → Company, WasteRecord, B3Field?
 
 ---
 
@@ -472,6 +474,19 @@ npm run db:seed           # reseed demo data
 **Fields:** `id`: String @id @default(cuid(), `slipNumber`: String @unique, `fieldPassId`: String, `grossTonnes`: Float, `tareTonnes`: Float, `netTonnes`: Float, `vehiclePlate`: String, `operatorName`: String?, `notes`: String?, `fileUrl`: String?, `voidedAt`: DateTime?, `voidedReason`: String?, `recordedAt`: DateTime @default(now(), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `weighingPoint`: WeighingPoint (@default(LOADING))  
 **Relations:** → FieldPass
+
+---
+
+### B3Field — `@@map("b3_fields")`  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `slug`: String @unique, `address`: String, `city`: String, `postalCode`: String, `lat`: Float, `lng`: Float, `openingHours`: Json, `recyclingCenterId`: String? @unique, `active`: Boolean @default(true), `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `services`: B3FieldService  
+**Relations:** → RecyclingCenter?, Order, PickupSlot
+
+---
+
+### PickupSlot — `@@map("pickup_slots")`  
+**Fields:** `id`: String @id @default(cuid(), `fieldId`: String, `slotStart`: DateTime, `slotEnd`: DateTime, `capacity`: Int @default(4), `booked`: Int @default(0), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → B3Field, Order
 
 ---
 

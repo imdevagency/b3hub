@@ -18,6 +18,7 @@ import {
   CheckCircle,
   CreditCard,
   AlertTriangle,
+  QrCode,
 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -281,36 +282,128 @@ export default function OrderDetailsScreen() {
           </View>
         )}
 
-        {/* ── Delivery info ── */}
-        <InfoSection
-          icon={<Package size={16} color={colors.textMuted} />}
-          title="Piegādes informācija"
-        >
-          <DetailRow label="Adrese" value={`${order.deliveryAddress}, ${order.deliveryCity}`} />
-          <DetailRow
-            label="Piegādes laiks"
-            value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
-          />
-          {order.statusTimestamps?.COMPLETED && (
+        {/* ── B3 Field Pickup Pass ── */}
+        {order.fulfillmentType === 'PICKUP' && order.pickupField && (
+          <View style={styles.pickupPassCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: '#FFFBEB',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <QrCode size={20} color="#92400E" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.pickupPassTitle}>B3 Field caurlaude</Text>
+                <Text style={styles.pickupPassSub}>
+                  {order.pickupField.name} · {order.pickupField.city}
+                </Text>
+              </View>
+            </View>
+
+            {order.pickupSlot && (
+              <View style={styles.pickupPassSlot}>
+                <Text style={styles.pickupPassSlotLabel}>Rezervētais laiks</Text>
+                <Text style={styles.pickupPassSlotTime}>
+                  {new Date(order.pickupSlot.slotStart).toLocaleDateString('lv-LV', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })}
+                  {'\n'}
+                  {new Date(order.pickupSlot.slotStart).toLocaleTimeString('lv-LV', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                  {' – '}
+                  {new Date(order.pickupSlot.slotEnd).toLocaleTimeString('lv-LV', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+            )}
+
+            {order.fieldPasses && order.fieldPasses.length > 0 ? (
+              <View style={{ gap: 8, marginTop: 8 }}>
+                {order.fieldPasses.map((pass) => (
+                  <View key={pass.id} style={styles.passRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.passNumber}>{pass.passNumber}</Text>
+                      <Text style={styles.passPlate}>{pass.vehiclePlate}</Text>
+                    </View>
+                    <View
+                      style={{
+                        backgroundColor: pass.status === 'ACTIVE' ? '#ECFDF5' : '#F3F4F6',
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 100,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontFamily: 'Inter_600SemiBold',
+                          color: pass.status === 'ACTIVE' ? '#059669' : '#6B7280',
+                        }}
+                      >
+                        {pass.status === 'ACTIVE'
+                          ? 'Aktīva'
+                          : pass.status === 'EXPIRED'
+                            ? 'Beigusies'
+                            : pass.status}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.passWaiting}>
+                <Text style={styles.passWaitingText}>
+                  Caurlaude tiks izsniegta pēc pasūtījuma apstiprināšanas
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ── Delivery info (shown only for DELIVERY orders) ── */}
+        {order.fulfillmentType !== 'PICKUP' && (
+          <InfoSection
+            icon={<Package size={16} color={colors.textMuted} />}
+            title="Piegādes informācija"
+          >
+            <DetailRow label="Adrese" value={`${order.deliveryAddress}, ${order.deliveryCity}`} />
             <DetailRow
-              label="Pabeigts"
-              value={new Date(order.statusTimestamps.COMPLETED).toLocaleDateString('lv-LV', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
+              label="Piegādes laiks"
+              value={`${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('lv-LV') : '—'}${order.deliveryWindow ? ` (${order.deliveryWindow})` : ''}`}
             />
-          )}
-          {order.project && <DetailRow label="Projekts" value={order.project.name} />}
-          <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
-          <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
-          <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
-          <DetailRow
-            label="Maksājuma veids"
-            value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
-            last
-          />
-        </InfoSection>
+            {order.statusTimestamps?.COMPLETED && (
+              <DetailRow
+                label="Pabeigts"
+                value={new Date(order.statusTimestamps.COMPLETED).toLocaleDateString('lv-LV', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              />
+            )}
+            {order.project && <DetailRow label="Projekts" value={order.project.name} />}
+            <DetailRow label="Saņēmējs" value={order.siteContactName || user?.firstName || '—'} />
+            <DetailRow label="Sazināties" value={order.siteContactPhone || user?.phone || '—'} />
+            <DetailRow label="Piezīmes šoferim" value={order.notes || '—'} />
+            <DetailRow
+              label="Maksājuma veids"
+              value={order.paymentMethod === 'INVOICE' ? 'Rēķins' : 'Karte'}
+              last
+            />
+          </InfoSection>
+        )}
 
         {/* ── Items ── */}
         {order.items && order.items.length > 0 && (
@@ -801,5 +894,80 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 16,
     backgroundColor: '#E5E7EB',
+  },
+  pickupPassCard: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 2,
+    borderColor: '#FCD34D',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  pickupPassTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  pickupPassSub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#B45309',
+    marginTop: 1,
+  },
+  pickupPassSlot: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  pickupPassSlotLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#92400E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  pickupPassSlotTime: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#78350F',
+    lineHeight: 22,
+  },
+  passRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFEF0',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  passNumber: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  passPlate: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  passWaiting: {
+    backgroundColor: '#FEF9C3',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+  },
+  passWaitingText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#92400E',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

@@ -12,7 +12,7 @@ import {
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderType, MaterialUnit, PaymentStatus } from '@prisma/client';
+import { OrderType, MaterialUnit, PaymentStatus, OrderFulfillmentType } from '@prisma/client';
 
 class OrderItemDto {
   @IsString()
@@ -130,6 +130,21 @@ export class CreateOrderDto {
   @IsInt()
   @Min(0)
   truckIntervalMinutes?: number;
+
+  /** Fulfillment type: DELIVERY (default) or self-collect PICKUP at a B3 Field */
+  @IsOptional()
+  @IsEnum(OrderFulfillmentType)
+  fulfillmentType?: OrderFulfillmentType;
+
+  /** B3 Field ID to pick up from (required when fulfillmentType === PICKUP) */
+  @IsOptional()
+  @IsString()
+  pickupFieldId?: string;
+
+  /** Pickup slot ID selected by the buyer (required when fulfillmentType === PICKUP) */
+  @IsOptional()
+  @IsString()
+  pickupSlotId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

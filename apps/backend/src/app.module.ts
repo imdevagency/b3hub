@@ -52,6 +52,7 @@ import { WeighingSlipsModule } from './weighing-slips/weighing-slips.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { GuestOrdersModule } from './guest-orders/guest-orders.module';
 import { PayoutsModule } from './payouts/payouts.module';
+import { B3FieldsModule } from './b3-fields/b3-fields.module';
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { PayoutsModule } from './payouts/payouts.module';
     TrackingModule,
     GuestOrdersModule,
     PayoutsModule,
+    B3FieldsModule,
   ],
   controllers: [AppController],
   providers: [
