@@ -44,7 +44,7 @@ const BUYER_SLIDES: Slide[] = [
     key: 'b2',
     Icon: MapPin,
     title: 'Seko piegādei reāllaikā',
-    subtitle: 'Mājas apstāk las transportu kartē — zini tieši, kur atrodas tava krava.',
+    subtitle: 'Seko transportam kartē reāllaikā — zini tieši, kur atrodas tava krava.',
     accent: '#3B82F6',
   },
   {

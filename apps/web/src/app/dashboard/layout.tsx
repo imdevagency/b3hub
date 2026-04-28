@@ -4,7 +4,7 @@
  * Guarded by DashboardGuard — redirects to /login if unauthenticated.
  */
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarSwitch } from '@/components/sidebar-switch';
 import { ModeProvider } from '@/lib/mode-context';
 import { DashboardGuard } from '@/components/dashboard-guard';
 import { NotificationBell } from '@/components/notification-bell';
@@ -16,7 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ModeProvider>
       <DashboardGuard>
         <SidebarProvider>
-          <AppSidebar />
+          <SidebarSwitch />
           <SidebarInset className="bg-white">
             {/* Top chrome */}
             <header className="flex h-14 shrink-0 items-center justify-between px-6 xl:px-8 bg-white border-b border-gray-200">

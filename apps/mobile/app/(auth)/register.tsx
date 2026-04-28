@@ -18,7 +18,7 @@ import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
-import { ChevronLeft, Eye, EyeOff } from 'lucide-react-native';
+import { ChevronLeft, Eye, EyeOff, CheckCircle } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -92,6 +92,7 @@ export default function RegisterScreen() {
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const needsCompanyInfo = isCompany;
 
@@ -113,6 +114,7 @@ export default function RegisterScreen() {
     if (step === 3) {
       if (password.length < 8) e.password = 'Parolei jābūt vismaz 8 rakstzīmēm';
       if (password !== confirmPw) e.confirmPw = 'Paroles nesakrīt';
+      if (!termsAccepted) e.terms = 'Lūdzu apstipriniet noteikumus un privātuma politiku';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -401,17 +403,30 @@ export default function RegisterScreen() {
         </View>
       )}
 
-      <Text style={s.legalText}>
-        Turpinot, jūs piekrītat mūsu{' '}
-        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/terms')}>
-          Noteikumiem
-        </Text>{' '}
-        un{' '}
-        <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/privacy')}>
-          Privātuma politikai
+      <TouchableOpacity
+        style={s.termsRow}
+        onPress={() => {
+          haptics.selection();
+          setTermsAccepted((v) => !v);
+        }}
+        activeOpacity={0.8}
+      >
+        <View style={[s.checkbox, termsAccepted && s.checkboxActive]}>
+          {termsAccepted && <CheckCircle size={14} color="#fff" />}
+        </View>
+        <Text style={[s.legalText, { marginTop: 0, flex: 1 }]}>
+          Piekrītu{' '}
+          <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/terms')}>
+            Noteikumiem
+          </Text>{' '}
+          un{' '}
+          <Text style={s.legalLink} onPress={() => Linking.openURL('https://b3hub.lv/privacy')}>
+            Privātuma politikai
+          </Text>
+          .
         </Text>
-        .
-      </Text>
+      </TouchableOpacity>
+      {errors.terms && <Text style={s.err}>{errors.terms}</Text>}
     </View>
   );
 
@@ -577,6 +592,29 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
   },
   legalLink: { color: '#000', fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
+
+  // Terms checkbox
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: 24,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    backgroundColor: '#fff',
+  },
+  checkboxActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
 
   // Footer
   footer: {

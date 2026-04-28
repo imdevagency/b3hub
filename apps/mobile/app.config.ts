@@ -95,17 +95,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       fallbackToCacheTimeout: 0,
     },
     ios: {
-      supportsTablet: true,
       bundleIdentifier: variant.bundleId,
       config: {
         googleMapsApiKey: googleMapsKeyIos,
       },
       infoPlist: {
-        // NOTE: Remove NSAllowsArbitraryLoads once the backend is on HTTPS.
-        // It is needed only while testing against a non-TLS local server.
-        // For production builds set EXPO_PUBLIC_API_URL to an https:// URL
-        // and remove this entry.
-        ...(process.env.NODE_ENV !== 'production' && {
+        // Disable ATS only for non-production builds (local dev / staging).
+        // Guard on APP_VARIANT — EAS does not guarantee NODE_ENV=production.
+        ...(APP_VARIANT !== 'production' && {
           NSAppTransportSecurity: {
             NSAllowsArbitraryLoads: true,
           },
