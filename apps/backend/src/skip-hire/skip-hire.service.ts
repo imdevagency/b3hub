@@ -21,7 +21,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
-import { CompanyType, SkipHireStatus, SkipSize, Prisma, TransportJobStatus, TransportJobType } from '@prisma/client';
+import { CompanyType, SkipHireStatus, Prisma, TransportJobStatus, TransportJobType } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 
 const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
@@ -33,7 +33,7 @@ const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
 };
 
 // Fallback prices used when no carrier is selected (direct/admin orders)
-const SKIP_PRICES: Record<SkipSize, number> = {
+const SKIP_PRICES: Record<string, number> = {
   MINI: 89,
   MIDI: 129,
   BUILDERS: 169,
@@ -95,26 +95,40 @@ export class SkipHireService {
     const carrierId: string | null = dto.carrierId ?? null;
 
     if (carrierId) {
-      // Re-derive price server-side from carrier’s own pricing (never trust client price)
-      const carrierPricing = await this.prisma.carrierPricing.findUnique({
-        where: { carrierId_skipSize: { carrierId, skipSize: dto.skipSize } },
-        include: { carrier: { include: { serviceZones: true } } },
-      });
-      if (!carrierPricing) {
-        throw new BadRequestException(
-          'Selected carrier has no pricing for this skip size',
-        );
+      // Re-derive price server-side (never trust client-submitted price).
+      // Use carrier's custom rate if set; fall back to CMS basePrice.
+      const [carrierData, customPricing, sizeDef] = await Promise.all([
+        this.prisma.company.findUnique({
+          where: { id: carrierId },
+          include: { serviceZones: true },
+        }),
+        this.prisma.carrierPricing.findUnique({
+          where: { carrierId_skipSize: { carrierId, skipSize: dto.skipSize } },
+          select: { price: true },
+        }),
+        this.prisma.skipSizeDefinition.findUnique({
+          where: { code: dto.skipSize },
+          select: { basePrice: true },
+        }),
+      ]);
+      if (!carrierData) {
+        throw new BadRequestException('Selected carrier not found');
       }
-      const locationLower = dto.location.toLowerCase().trim();
-      const zone = carrierPricing.carrier.serviceZones.find(
-        (z) =>
-          locationLower.includes(z.city.toLowerCase()) ||
-          z.city.toLowerCase().includes(locationLower) ||
-          (z.postcode && locationLower.includes(z.postcode.toLowerCase())),
+      const platformBasePrice = sizeDef?.basePrice ?? SKIP_PRICES[dto.skipSize] ?? 0;
+      const coverage = this.carrierCoverage(
+        carrierData,
+        dto.location.toLowerCase().trim(),
+        dto.lat,
+        dto.lng,
       );
-      price = carrierPricing.price + (zone?.surcharge ?? 0);
+      price = (customPricing?.price ?? platformBasePrice) + coverage.surcharge;
     } else {
-      price = SKIP_PRICES[dto.skipSize];
+      // No carrier selected — use CMS basePrice as the platform rate
+      const sizeDef = await this.prisma.skipSizeDefinition.findUnique({
+        where: { code: dto.skipSize },
+        select: { basePrice: true },
+      });
+      price = sizeDef?.basePrice ?? SKIP_PRICES[dto.skipSize] ?? 0;
     }
 
     if (new Date(dto.deliveryDate) < new Date(new Date().toDateString())) {
@@ -183,45 +197,87 @@ export class SkipHireService {
           ),
         );
     }
+
+    // When no carrier was pre-selected, broadcast the job to all eligible carriers
+    if (!carrierId) {
+      this.broadcastToEligibleCarriers(
+        order.id,
+        order.orderNumber,
+        dto.skipSize,
+        dto.location,
+        dto.lat,
+        dto.lng,
+      ).catch((err) =>
+        this.logger.warn(
+          `Skip hire broadcast failed for order ${order.orderNumber}: ${(err as Error).message}`,
+        ),
+      );
+    }
+
     return { ...order, paymentUrl };
+  }
+
+  // ── List active sizes (public) ──────────────────────────────────────
+  async listSizes() {
+    return this.prisma.skipSizeDefinition.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
   }
 
   // ── Market prices (public) ───────────────────────────────────────────
   /**
    * Returns the minimum price per skip size across all verified carriers.
-   * Falls back to the platform default prices when no carrier pricing exists.
+   * Falls back to the platform default (SkipSizeDefinition.basePrice) when no carrier pricing exists.
    */
-  async getMarketPrices(): Promise<Record<SkipSize, number>> {
-    const pricings = await this.prisma.carrierPricing.findMany({
-      where: {
-        carrier: {
-          verified: true,
-          companyType: { in: CARRIER_TYPES },
+  async getMarketPrices(): Promise<Record<string, number>> {
+    const [pricings, sizeDefs] = await Promise.all([
+      this.prisma.carrierPricing.findMany({
+        where: {
+          carrier: {
+            verified: true,
+            companyType: { in: CARRIER_TYPES },
+          },
         },
-      },
-      select: { skipSize: true, price: true },
-    });
+        select: { skipSize: true, price: true },
+      }),
+      this.prisma.skipSizeDefinition.findMany({
+        where: { isActive: true },
+        select: { code: true, basePrice: true },
+      }),
+    ]);
 
-    const mins: Partial<Record<SkipSize, number>> = {};
+    const mins: Record<string, number> = {};
     for (const p of pricings) {
-      if (mins[p.skipSize] === undefined || p.price < mins[p.skipSize]!) {
+      if (mins[p.skipSize] === undefined || p.price < mins[p.skipSize]) {
         mins[p.skipSize] = p.price;
       }
     }
 
-    return {
-      MINI: mins.MINI ?? SKIP_PRICES.MINI,
-      MIDI: mins.MIDI ?? SKIP_PRICES.MIDI,
-      BUILDERS: mins.BUILDERS ?? SKIP_PRICES.BUILDERS,
-      LARGE: mins.LARGE ?? SKIP_PRICES.LARGE,
-    };
+    // Fill in any size that has no carrier price using the definition basePrice or legacy fallback
+    for (const def of sizeDefs) {
+      if (mins[def.code] === undefined) {
+        mins[def.code] = def.basePrice ?? SKIP_PRICES[def.code] ?? 0;
+      }
+    }
+
+    return mins;
   }
 
   // ── Get quotes (public) ──────────────────────────────────────────────
+  /**
+   * Returns all verified carriers that cover the requested location for the
+   * given skip size and delivery date, sorted cheapest first.
+   *
+   * Price priority: CarrierPricing (carrier's own rate) → SkipSizeDefinition.basePrice (CMS) → SKIP_PRICES (hardcoded fallback)
+   * Coverage priority: serviceZones match → Haversine radius → national fallback (no config = covers all of Latvia)
+   */
   async getQuotes(
-    size: SkipSize,
+    size: string,
     location: string,
     date: string,
+    buyerLat?: number | null,
+    buyerLng?: number | null,
   ): Promise<SkipHireQuoteResult[]> {
     const locationLower = location.toLowerCase().trim();
     const requestedDay = new Date(date);
@@ -229,48 +285,53 @@ export class SkipHireService {
     const nextDay = new Date(requestedDay);
     nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
-    const pricings = await this.prisma.carrierPricing.findMany({
-      where: { skipSize: size },
-      include: {
-        carrier: {
-          include: {
-            serviceZones: true,
-            availabilityBlocks: {
-              where: { blockedDate: { gte: requestedDay, lt: nextDay } },
-            },
+    // Fetch all three data sources in parallel
+    const [carriers, pricings, sizeDef] = await Promise.all([
+      this.prisma.company.findMany({
+        where: { verified: true, companyType: { in: CARRIER_TYPES } },
+        include: {
+          serviceZones: true,
+          availabilityBlocks: {
+            where: { blockedDate: { gte: requestedDay, lt: nextDay } },
           },
         },
-      },
-    });
+      }),
+      this.prisma.carrierPricing.findMany({
+        where: { skipSize: size },
+        select: { carrierId: true, price: true, currency: true },
+      }),
+      this.prisma.skipSizeDefinition.findUnique({
+        where: { code: size },
+        select: { basePrice: true },
+      }),
+    ]);
+
+    // CMS base price is the platform floor when a carrier has no custom rate
+    const basePrice = sizeDef?.basePrice ?? SKIP_PRICES[size] ?? 0;
+    const pricingMap = new Map(pricings.map((p) => [p.carrierId, p]));
 
     const quotes: SkipHireQuoteResult[] = [];
 
-    for (const pricing of pricings) {
-      const { carrier } = pricing;
-
-      // Only verified CARRIER or HYBRID companies
-      if (!carrier.verified) continue;
-      if (!CARRIER_TYPES.includes(carrier.companyType)) continue;
-
-      // Must cover this location
-      const zone = carrier.serviceZones.find(
-        (z) =>
-          locationLower.includes(z.city.toLowerCase()) ||
-          z.city.toLowerCase().includes(locationLower) ||
-          (z.postcode && locationLower.includes(z.postcode.toLowerCase())),
-      );
-      if (!zone) continue;
-
+    for (const carrier of carriers) {
       // Must not be blocked on this date
       if (carrier.availabilityBlocks.length > 0) continue;
+
+      // Coverage check: zones → radius → national fallback
+      const coverage = this.carrierCoverage(carrier, locationLower, buyerLat, buyerLng);
+      if (!coverage.covered) continue;
+
+      // Price: carrier's custom rate, or CMS basePrice
+      const pricing = pricingMap.get(carrier.id);
+      const price = (pricing?.price ?? basePrice) + coverage.surcharge;
+      const currency = pricing?.currency ?? 'EUR';
 
       quotes.push({
         carrierId: carrier.id,
         carrierName: carrier.name,
         carrierLogo: carrier.logo ?? null,
         carrierRating: carrier.rating ?? null,
-        price: pricing.price + (zone.surcharge ?? 0),
-        currency: pricing.currency,
+        price,
+        currency,
       });
     }
 
@@ -870,6 +931,127 @@ export class SkipHireService {
   }
 
   // ── Helpers ───────────────────────────────────────────────────
+
+  /**
+   * Determines whether a carrier covers the given location and at what surcharge.
+   * Priority: serviceZones city/postcode match → Haversine radius check → national fallback.
+   */
+  private carrierCoverage(
+    carrier: {
+      serviceZones: { city: string; postcode: string | null; surcharge: number }[];
+      lat: number | null;
+      lng: number | null;
+      serviceRadiusKm: number | null;
+    },
+    locationLower: string,
+    buyerLat?: number | null,
+    buyerLng?: number | null,
+  ): { covered: boolean; surcharge: number } {
+    // 1. Explicit service zone match (city or postcode string)
+    const zone = carrier.serviceZones.find(
+      (z) =>
+        locationLower.includes(z.city.toLowerCase()) ||
+        z.city.toLowerCase().includes(locationLower) ||
+        (z.postcode && locationLower.includes(z.postcode.toLowerCase())),
+    );
+    if (zone) return { covered: true, surcharge: zone.surcharge };
+
+    // 2. Radius check using Haversine — requires both carrier and buyer coordinates
+    if (
+      carrier.serviceRadiusKm !== null &&
+      carrier.lat !== null &&
+      carrier.lng !== null &&
+      buyerLat != null &&
+      buyerLng != null
+    ) {
+      const distKm = this.haversineKm(carrier.lat, carrier.lng, buyerLat, buyerLng);
+      return { covered: distKm <= carrier.serviceRadiusKm, surcharge: 0 };
+    }
+
+    // 3. Radius set but no buyer coords → assume covered (carrier can decline)
+    if (carrier.serviceRadiusKm !== null && (buyerLat == null || buyerLng == null)) {
+      return { covered: true, surcharge: 0 };
+    }
+
+    // 4. No zones and no radius configured → national coverage (Latvia is small)
+    if (carrier.serviceZones.length === 0 && carrier.serviceRadiusKm === null) {
+      return { covered: true, surcharge: 0 };
+    }
+
+    return { covered: false, surcharge: 0 };
+  }
+
+  /** Haversine great-circle distance in kilometres. */
+  private haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  /**
+   * Broadcast a SKIP_JOB_AVAILABLE notification to all canSkipHire users
+   * in verified CARRIER/HYBRID companies that cover the given location.
+   * Called fire-and-forget after creating an order without a pre-selected carrier.
+   */
+  private async broadcastToEligibleCarriers(
+    orderId: string,
+    orderNumber: string,
+    size: string,
+    location: string,
+    buyerLat?: number | null,
+    buyerLng?: number | null,
+  ): Promise<void> {
+    const locationLower = location.toLowerCase().trim();
+
+    const carriers = await this.prisma.company.findMany({
+      where: { verified: true, companyType: { in: CARRIER_TYPES } },
+      select: {
+        serviceZones: { select: { city: true, postcode: true, surcharge: true } },
+        lat: true,
+        lng: true,
+        serviceRadiusKm: true,
+        users: {
+          where: { canSkipHire: true },
+          select: { id: true },
+        },
+      },
+    });
+
+    const recipientIds: string[] = [];
+    for (const carrier of carriers) {
+      const coverage = this.carrierCoverage(carrier, locationLower, buyerLat, buyerLng);
+      if (!coverage.covered) continue;
+      for (const u of carrier.users) recipientIds.push(u.id);
+    }
+
+    await Promise.all(
+      recipientIds.map((userId) =>
+        this.notifications
+          .create({
+            userId,
+            type: NotificationType.ORDER_CREATED,
+            title: 'Jauns konteinera pasūtījums',
+            message: `Konteiners ${size} — ${location}. Apstiprini, lai pieņemtu darbu.`,
+            data: { skipOrderId: orderId, orderNumber },
+          })
+          .catch((err: unknown) =>
+            this.logger.warn(
+              `Broadcast notif failed for userId ${userId}: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          ),
+      ),
+    );
+
+    this.logger.log(
+      `Skip hire order ${orderNumber} broadcast to ${recipientIds.length} eligible carrier user(s)`,
+    );
+  }
+
   private generateOrderNumber(): string {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);

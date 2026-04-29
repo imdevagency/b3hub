@@ -10,7 +10,24 @@ export type SkipWasteCategory =
   | 'METAL_SCRAP'
   | 'ELECTRONICS_WEEE';
 
-export type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
+export type SkipSize = string; // was enum; now a SkipSizeDefinition.code string
+export type SkipCategory = 'SKIP' | 'BIG_BAG' | 'CONTAINER';
+
+export interface SkipSizeDefinition {
+  id: string;
+  code: string;
+  label: string;
+  labelLv: string | null;
+  volumeM3: number;
+  category: SkipCategory;
+  description: string | null;
+  descriptionLv: string | null;
+  heightPct: number;
+  basePrice: number | null;
+  currency: string;
+  isActive: boolean;
+  sortOrder: number;
+}
 
 export type SkipHireStatus =
   | 'PENDING'
@@ -111,13 +128,19 @@ export const skipHireApi = {
 
     /** Public — returns minimum prices per skip size across verified carriers. */
     getMarketPrices: () =>
-      apiFetch<Record<SkipSize, number>>('/skip-hire/market-prices'),
+      apiFetch<Record<string, number>>('/skip-hire/market-prices'),
+
+    /** Public — returns the active size catalogue ordered by sortOrder. */
+    getSizes: () =>
+      apiFetch<SkipSizeDefinition[]>('/skip-hire/sizes'),
 
     /** Public — returns carrier quotes for given size, location and date. */
-    getQuotes: (params: { size: SkipSize; location: string; date: string }) =>
-      apiFetch<SkipHireQuote[]>(
-        `/skip-hire/quotes?size=${params.size}&location=${encodeURIComponent(params.location)}&date=${params.date}`,
-      ),
+    getQuotes: (params: { size: string; location: string; date: string; lat?: number | null; lng?: number | null }) => {
+      let url = `/skip-hire/quotes?size=${params.size}&location=${encodeURIComponent(params.location)}&date=${params.date}`;
+      if (params.lat != null) url += `&lat=${params.lat}`;
+      if (params.lng != null) url += `&lng=${params.lng}`;
+      return apiFetch<SkipHireQuote[]>(url);
+    },
 
     getById: (id: string, token: string) =>
       apiFetch<SkipHireOrder>(`/skip-hire/${id}`, {

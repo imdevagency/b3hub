@@ -9,7 +9,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { SkipWasteCategory, SkipSize, PaymentMethod } from '@prisma/client';
+import { SkipWasteCategory, PaymentMethod } from '@prisma/client';
 
 export class CreateSkipHireDto {
   /** Postal code or city entered in step 1 */
@@ -31,9 +31,10 @@ export class CreateSkipHireDto {
   @IsEnum(SkipWasteCategory)
   wasteCategory: SkipWasteCategory;
 
-  /** Skip size selected in step 3 */
-  @IsEnum(SkipSize)
-  skipSize: SkipSize;
+  /** Skip size code (references SkipSizeDefinition.code) */
+  @IsString()
+  @MinLength(2)
+  skipSize: string;
 
   /** ISO date string for desired delivery (step 4) */
   @IsDateString()

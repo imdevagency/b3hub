@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2385 lines, 57 models, 46 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2407 lines, 58 models, 46 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -96,7 +96,7 @@ npm run db:seed           # reseed demo data
 | `WastePurpose` | CONSTRUCTION_WASTE DEMOLITION_WASTE EXCAVATION_SOIL MIXED_WASTE RECYCLABLE_MATERIALS HAZARDOUS_WASTE GREEN_WASTE OTHER |
 | `WasteType` | CONCRETE BRICK WOOD METAL PLASTIC SOIL MIXED HAZARDOUS |
 | `SkipWasteCategory` | MIXED GREEN_GARDEN CONCRETE_RUBBLE WOOD METAL_SCRAP ELECTRONICS_WEEE |
-| `SkipSize` | MINI MIDI BUILDERS LARGE |
+| `SkipCategory` | SKIP BIG_BAG CONTAINER |
 | `SkipHireStatus` | PENDING CONFIRMED DELIVERED COLLECTED COMPLETED CANCELLED |
 | `ContainerOrderStatus` | SCHEDULED DELIVERED IN_USE PICKED_UP COMPLETED CANCELLED |
 | `TransportJobType` | MATERIAL_DELIVERY CONTAINER_DELIVERY CONTAINER_PICKUP WASTE_COLLECTION EQUIPMENT_TRANSPORT TRANSPORT |
@@ -298,16 +298,21 @@ npm run db:seed           # reseed demo data
 
 ---
 
+### SkipSizeDefinition — `@@map("skip_size_definitions")`  
+**Fields:** `id`: String @id @default(cuid(), `code`: String @unique, `label`: String, `labelLv`: String?, `volumeM3`: Float, `description`: String?, `descriptionLv`: String?, `heightPct`: Float @default(0.5), `basePrice`: Float?, `currency`: String @default("EUR"), `isActive`: Boolean @default(true), `sortOrder`: Int @default(0), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `category`: SkipCategory
+
+---
+
 ### SkipHireOrder — `@@map("skip_hire_orders")`  
-**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `location`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `hireDays`: Int?, `price`: Float, `currency`: String @default("EUR"), `payseraOrderId`: String?, `payseraPaymentUrl`: String?, `contactName`: String?, `contactEmail`: String?, `contactPhone`: String?, `userId`: String?, `notes`: String?, `bisNumber`: String?, `unloadingPointPhotoUrl`: String?, `carrierId`: String?, `lat`: Float?, `lng`: Float?, `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `wasteCategory`: SkipWasteCategory, `skipSize`: SkipSize, `paymentMethod`: PaymentMethod (@default(CARD)), `paymentStatus`: PaymentStatus (@default(PENDING)), `status`: SkipHireStatus (@default(PENDING))  
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `location`: String, `skipSize`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `hireDays`: Int?, `price`: Float, `currency`: String @default("EUR"), `payseraOrderId`: String?, `payseraPaymentUrl`: String?, `contactName`: String?, `contactEmail`: String?, `contactPhone`: String?, `userId`: String?, `notes`: String?, `bisNumber`: String?, `unloadingPointPhotoUrl`: String?, `carrierId`: String?, `lat`: Float?, `lng`: Float?, `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `wasteCategory`: SkipWasteCategory, `paymentMethod`: PaymentMethod (@default(CARD)), `paymentStatus`: PaymentStatus (@default(PENDING)), `status`: SkipHireStatus (@default(PENDING))  
 **Relations:** → Company?, Order?
 
 ---
 
 ### CarrierPricing — `@@map("carrier_pricing")`  
-**Fields:** `id`: String @id @default(cuid(), `carrierId`: String, `price`: Float, `currency`: String @default("EUR"), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `skipSize`: SkipSize  
+**Fields:** `id`: String @id @default(cuid(), `carrierId`: String, `skipSize`: String, `price`: Float, `currency`: String @default("EUR"), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Relations:** → Company
 
 ---

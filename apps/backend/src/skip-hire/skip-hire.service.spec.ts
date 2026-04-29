@@ -21,7 +21,7 @@ import { Test } from '@nestjs/testing';
 import { SkipHireService } from './skip-hire.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { SkipHireStatus, SkipSize } from '@prisma/client';
+import { SkipHireStatus } from '@prisma/client';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ function stubOrder(overrides: Record<string, unknown> = {}) {
     lat: null,
     lng: null,
     wasteCategory: 'MIXED',
-    skipSize: SkipSize.MIDI,
+    skipSize: 'MIDI',
     deliveryDate: new Date('2026-06-01'),
     price: 129,
     currency: 'EUR',
@@ -93,7 +93,7 @@ describe('SkipHireService', () => {
     const baseDto = {
       location: 'Riga',
       wasteCategory: 'MIXED' as const,
-      skipSize: SkipSize.MIDI,
+      skipSize: 'MIDI',
       deliveryDate: '2026-06-01',
       contactName: 'Jānis',
       contactEmail: 'janis@test.lv',
@@ -128,7 +128,7 @@ describe('SkipHireService', () => {
     it('applies carrier price + zone surcharge server-side', async () => {
       (prisma.carrierPricing.findUnique as jest.Mock<any>).mockResolvedValue({
         price: 110,
-        skipSize: SkipSize.MIDI,
+        skipSize: 'MIDI',
         carrier: {
           serviceZones: [{ city: 'Riga', postcode: null, surcharge: 15 }],
         },
@@ -154,7 +154,7 @@ describe('SkipHireService', () => {
     it('returns empty array when no carrier pricing exists', async () => {
       (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([]);
       const result = await service.getQuotes(
-        SkipSize.MIDI,
+        'MIDI',
         'Riga',
         '2026-06-01',
       );
@@ -180,7 +180,7 @@ describe('SkipHireService', () => {
       ]);
 
       const result = await service.getQuotes(
-        SkipSize.MIDI,
+        'MIDI',
         'Riga',
         '2026-06-01',
       );
@@ -206,7 +206,7 @@ describe('SkipHireService', () => {
       ]);
 
       const result = await service.getQuotes(
-        SkipSize.MIDI,
+        'MIDI',
         'Riga',
         '2026-06-01',
       );
@@ -232,7 +232,7 @@ describe('SkipHireService', () => {
       ]);
 
       const result = await service.getQuotes(
-        SkipSize.MIDI,
+        'MIDI',
         'Riga',
         '2026-06-01',
       );
@@ -272,7 +272,7 @@ describe('SkipHireService', () => {
       ]);
 
       const result = await service.getQuotes(
-        SkipSize.MIDI,
+        'MIDI',
         'Riga',
         '2026-06-01',
       );

@@ -16,7 +16,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { SkipSize } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CarrierSettingsService } from './carrier-settings.service';
@@ -54,7 +53,7 @@ export class CarrierSettingsController {
   /** PUT /api/v1/carrier-settings/pricing/:size — set/update price for a skip size */
   @Put('pricing/:size')
   setPrice(
-    @Param('size') size: SkipSize,
+    @Param('size') size: string,
     @Body() dto: SetPriceDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
@@ -66,7 +65,7 @@ export class CarrierSettingsController {
   @Delete('pricing/:size')
   @HttpCode(HttpStatus.NO_CONTENT)
   deletePrice(
-    @Param('size') size: SkipSize,
+    @Param('size') size: string,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
     assertIsCarrier(req.user);

@@ -79,9 +79,9 @@ function CompanyRow({
         </div>
       </TableCell>
       <TableCell>
-        {company.type && (
+        {company.companyType && (
           <Badge variant="outline" className="text-xs">
-            {TYPE_LABEL[company.type] ?? company.type}
+            {TYPE_LABEL[company.companyType] ?? company.companyType}
           </Badge>
         )}
       </TableCell>

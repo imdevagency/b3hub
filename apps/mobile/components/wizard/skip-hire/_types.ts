@@ -3,7 +3,7 @@
  */
 
 import { Dimensions } from 'react-native';
-import type { SkipSize, SkipWasteCategory } from '@/lib/api';
+import type { SkipSize, SkipSizeDefinition, SkipWasteCategory } from '@/lib/api';
 import type { LucideIcon } from 'lucide-react-native';
 import { Trash2, Leaf, Hammer, TreePine, Wrench, Cpu } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
@@ -45,7 +45,18 @@ export const SIZES: Array<{ id: SkipSize; price: number; color: string; heightPc
   { id: 'LARGE', price: 199, color: colors.textPrimary, heightPct: 0.88 },
 ];
 
+/** @deprecated use dynamic sizes from API. Kept temporarily for components that haven't migrated yet. */
 export const SKIP_PRICES: Record<string, number> = { MINI: 89, MIDI: 129, BUILDERS: 169, LARGE: 199 };
+
+/** Convert a SkipSizeDefinition from the API into the shape the UI expects. */
+export function sizeDefToUiSize(def: SkipSizeDefinition): { id: SkipSize; price: number; color: string; heightPct: number } {
+  return {
+    id: def.code,
+    price: def.basePrice ?? 0,
+    color: colors.textPrimary,
+    heightPct: def.heightPct,
+  };
+}
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 

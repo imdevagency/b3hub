@@ -762,3 +762,217 @@ export async function adminUpdateSettings(
     body: JSON.stringify({ settings }),
   });
 }
+
+// ── Skip size catalogue ────────────────────────────────────────────────────────
+
+export type SkipCategory = 'SKIP' | 'BIG_BAG' | 'CONTAINER';
+
+export interface SkipSizeDefinition {
+  id: string;
+  code: string;
+  label: string;
+  labelLv: string | null;
+  volumeM3: number;
+  category: SkipCategory;
+  description: string | null;
+  descriptionLv: string | null;
+  heightPct: number;
+  basePrice: number | null;
+  currency: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function adminListSkipSizes(
+  token: string,
+): Promise<SkipSizeDefinition[]> {
+  return apiFetch<SkipSizeDefinition[]>('/admin/skip-sizes', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUpsertSkipSize(
+  code: string,
+  data: Partial<Omit<SkipSizeDefinition, 'id' | 'code' | 'createdAt' | 'updatedAt'>>,
+  token: string,
+): Promise<SkipSizeDefinition> {
+  return apiFetch<SkipSizeDefinition>(`/admin/skip-sizes/${encodeURIComponent(code)}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteSkipSize(
+  code: string,
+  token: string,
+): Promise<void> {
+  return apiFetch<void>(`/admin/skip-sizes/${encodeURIComponent(code)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Marketplace engine overview ───────────────────────────────────────────────
+
+export interface MarketplaceCarrierPricing {
+  skipSize: string;
+  price: number;
+  currency: string;
+  updatedAt: string;
+}
+
+export interface MarketplaceServiceZone {
+  id: string;
+  city: string;
+  postcode: string | null;
+  surcharge: number;
+}
+
+export interface MarketplaceCarrier {
+  id: string;
+  name: string;
+  logo: string | null;
+  verified: boolean;
+  companyType: string;
+  lat: number | null;
+  lng: number | null;
+  serviceRadiusKm: number | null;
+  rating: number | null;
+  commissionRate: number;
+  carrierCommissionRate: number;
+  serviceZones: MarketplaceServiceZone[];
+  carrierPricing: MarketplaceCarrierPricing[];
+  pricingBySizeCode: Record<string, MarketplaceCarrierPricing>;
+  coverageType: 'zones' | 'radius' | 'national';
+  blockedToday: boolean;
+}
+
+export interface AdminMarketplaceData {
+  sizes: SkipSizeDefinition[];
+  carriers: MarketplaceCarrier[];
+}
+
+export async function adminGetMarketplace(
+  token: string,
+): Promise<AdminMarketplaceData> {
+  return apiFetch<AdminMarketplaceData>('/admin/marketplace', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Guest orders ─────────────────────────────────────────────────────────────
+
+export type GuestOrderStatus =
+  | 'PENDING'
+  | 'QUOTED'
+  | 'AWAITING_PAYMENT'
+  | 'PAID'
+  | 'CONVERTED'
+  | 'CANCELLED';
+
+export interface AdminGuestOrder {
+  id: string;
+  orderNumber: string;
+  token: string;
+  category: string;
+  // contact
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string | null;
+  // delivery
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryDate: string | null;
+  // pricing
+  quotedAmount: number | null;
+  quotedCurrency: string;
+  paymentStatus: string | null;
+  // lifecycle
+  status: GuestOrderStatus;
+  convertedOrderId: string | null;
+  // details
+  materialName: string | null;
+  quantity: number | null;
+  unit: string | null;
+  skipSize: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function adminGetGuestOrders(
+  token: string,
+  status?: GuestOrderStatus,
+): Promise<AdminGuestOrder[]> {
+  const qs = status ? `?status=${status}` : '';
+  return apiFetch<AdminGuestOrder[]>(`/guest-orders${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminSetGuestQuote(
+  id: string,
+  quotedAmount: number,
+  token: string,
+): Promise<AdminGuestOrder> {
+  return apiFetch<AdminGuestOrder>(`/guest-orders/${id}/quote`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ quotedAmount }),
+  });
+}
+
+export async function adminUpdateGuestStatus(
+  id: string,
+  status: GuestOrderStatus,
+  token: string,
+): Promise<AdminGuestOrder> {
+  return apiFetch<AdminGuestOrder>(`/guest-orders/${id}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status }),
+  });
+}
+
+// ── Recycling centers (admin) ─────────────────────────────────────────────────
+
+export interface AdminRecyclingCenter {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  acceptedWasteTypes: string[];
+  capacity: number;
+  certifications: string[];
+  active: boolean;
+  createdAt: string;
+  company: { id: string; name: string; logo: string | null; city: string };
+  _count: { wasteRecords: number };
+}
+
+export async function adminGetRecyclingCenters(
+  token: string,
+): Promise<AdminRecyclingCenter[]> {
+  const res = await apiFetch<{ data: AdminRecyclingCenter[] }>(
+    '/admin/recycling-centers',
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return res.data;
+}
+
+export async function adminToggleRecyclingCenter(
+  id: string,
+  active: boolean,
+  token: string,
+): Promise<{ id: string; active: boolean }> {
+  return apiFetch(`/admin/recycling-centers/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ active }),
+  });
+}

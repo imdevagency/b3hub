@@ -8,6 +8,8 @@ import {
   Get,
   Patch,
   Post,
+  Put,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -73,6 +75,20 @@ class PlatformSettingUpsertDto {
 
 class BulkSettingsDto {
   settings!: Record<string, string>;
+}
+
+class UpsertSkipSizeDto {
+  @IsOptional() @IsString() label?: string;
+  @IsOptional() @IsString() labelLv?: string;
+  @IsOptional() @IsNumber() volumeM3?: number;
+  @IsOptional() @IsString() @IsIn(['SKIP', 'BIG_BAG', 'CONTAINER']) category?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() descriptionLv?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(1) heightPct?: number;
+  @IsOptional() @IsNumber() @Min(0) basePrice?: number;
+  @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsNumber() @Min(0) sortOrder?: number;
 }
 
 class UpdateJobRateDto {
@@ -379,5 +395,63 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.updateSettings(body.settings, admin.userId);
+  }
+
+  // ── Skip size catalogue ───────────────────────────────────────────────────
+
+  /** GET /admin/skip-sizes — list all sizes (including inactive) */
+  @Get('skip-sizes')
+  listSkipSizes() {
+    return this.service.adminListSkipSizes();
+  }
+
+  /** PUT /admin/skip-sizes/:code — create or update a size by code */
+  @Put('skip-sizes/:code')
+  upsertSkipSize(
+    @Param('code') code: string,
+    @Body() dto: UpsertSkipSizeDto,
+  ) {
+    return this.service.adminUpsertSkipSize(code, dto);
+  }
+
+  /** Delete /admin/skip-sizes/:code — hard delete a size (use isActive=false to soft-hide) */
+  @Delete('skip-sizes/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteSkipSize(@Param('code') code: string) {
+    return this.service.adminDeleteSkipSize(code);
+  }
+
+  // ── Marketplace engine overview ───────────────────────────────────────────
+
+  /**
+   * GET /admin/marketplace
+   * Returns all skip size definitions (CMS floor prices) + all CARRIER/HYBRID
+   * companies with their pricing rows, service zones and today's availability.
+   * Powers the admin marketplace overview page.
+   */
+  @Get('marketplace')
+  getMarketplace() {
+    return this.service.adminGetMarketplace();
+  }
+
+  // ── Recycling centers ─────────────────────────────────────────────────────
+
+  /** GET /admin/recycling-centers?page=1&limit=50 — all centers (active + inactive) */
+  @Get('recycling-centers')
+  getRecyclingCenters(@Query() pagination: PagePaginationDto) {
+    return this.service.adminGetRecyclingCenters(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+    );
+  }
+
+  /** PATCH /admin/recycling-centers/:id — toggle active flag */
+  @Patch('recycling-centers/:id')
+  toggleRecyclingCenter(
+    @Param('id') id: string,
+    @Body() body: { active: boolean },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminToggleRecyclingCenter(id, body.active, admin.userId);
   }
 }

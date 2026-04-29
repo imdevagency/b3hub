@@ -1,9 +1,10 @@
-import { IsDateString, IsEnum, IsString, MinLength } from 'class-validator';
-import { SkipSize } from '@prisma/client';
+import { IsDateString, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class GetQuotesQueryDto {
-  @IsEnum(SkipSize)
-  size: SkipSize;
+  @IsString()
+  @MinLength(2)
+  size: string;
 
   @IsString()
   @MinLength(2)
@@ -11,4 +12,16 @@ export class GetQuotesQueryDto {
 
   @IsDateString()
   date: string;
+
+  /** Optional buyer latitude — enables radius-based coverage checks. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat?: number;
+
+  /** Optional buyer longitude — enables radius-based coverage checks. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number;
 }

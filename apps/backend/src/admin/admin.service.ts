@@ -1252,4 +1252,184 @@ export class AdminService {
     );
     return this.getSettings();
   }
+
+  // ── Skip size catalogue ───────────────────────────────────────────────────
+
+  async adminListSkipSizes() {
+    return this.prisma.skipSizeDefinition.findMany({
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  async adminUpsertSkipSize(
+    code: string,
+    data: {
+      label?: string;
+      labelLv?: string;
+      volumeM3?: number;
+      category?: string;
+      description?: string;
+      descriptionLv?: string;
+      heightPct?: number;
+      basePrice?: number;
+      currency?: string;
+      isActive?: boolean;
+      sortOrder?: number;
+    },
+  ) {
+    return this.prisma.skipSizeDefinition.upsert({
+      where: { code },
+      create: {
+        code,
+        label: data.label ?? code,
+        labelLv: data.labelLv,
+        volumeM3: data.volumeM3 ?? 0,
+        category: (data.category as any) ?? 'SKIP',
+        description: data.description,
+        descriptionLv: data.descriptionLv,
+        heightPct: data.heightPct ?? 0.5,
+        basePrice: data.basePrice,
+        currency: data.currency ?? 'EUR',
+        isActive: data.isActive ?? true,
+        sortOrder: data.sortOrder ?? 0,
+      },
+      update: {
+        ...(data.label !== undefined && { label: data.label }),
+        ...(data.labelLv !== undefined && { labelLv: data.labelLv }),
+        ...(data.volumeM3 !== undefined && { volumeM3: data.volumeM3 }),
+        ...(data.category !== undefined && { category: data.category as any }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.descriptionLv !== undefined && { descriptionLv: data.descriptionLv }),
+        ...(data.heightPct !== undefined && { heightPct: data.heightPct }),
+        ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
+        ...(data.currency !== undefined && { currency: data.currency }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+      },
+    });
+  }
+
+  async adminDeleteSkipSize(code: string) {
+    await this.prisma.skipSizeDefinition.delete({ where: { code } });
+  }
+
+  // ── Marketplace engine overview ────────────────────────────────────────────
+  /**
+   * Returns everything the comparison engine needs, aggregated for admin review:
+   * - All skip size definitions (CMS floor prices)
+   * - All verified CARRIER/HYBRID companies with:
+   *     • their CarrierPricing rows per skip size
+   *     • their service zones with surcharges
+   *     • whether they have a radius or national coverage
+   *     • today's availability status
+   */
+  async adminGetMarketplace() {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    const [sizes, carriers] = await Promise.all([
+      this.prisma.skipSizeDefinition.findMany({
+        orderBy: { sortOrder: 'asc' },
+      }),
+      this.prisma.company.findMany({
+        where: { companyType: { in: ['CARRIER', 'HYBRID'] } },
+        select: {
+          id: true,
+          name: true,
+          logo: true,
+          verified: true,
+          companyType: true,
+          lat: true,
+          lng: true,
+          serviceRadiusKm: true,
+          rating: true,
+          commissionRate: true,
+          carrierCommissionRate: true,
+          serviceZones: {
+            select: { id: true, city: true, postcode: true, surcharge: true },
+          },
+          carrierPricing: {
+            select: { skipSize: true, price: true, currency: true, updatedAt: true },
+          },
+          availabilityBlocks: {
+            where: { blockedDate: { gte: today, lt: tomorrow } },
+            select: { id: true, blockedDate: true },
+          },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    // Derive coverage type for each carrier
+    const enrichedCarriers = carriers.map((c) => {
+      let coverageType: 'zones' | 'radius' | 'national';
+      if (c.serviceZones.length > 0) coverageType = 'zones';
+      else if (c.serviceRadiusKm !== null) coverageType = 'radius';
+      else coverageType = 'national';
+
+      return {
+        ...c,
+        coverageType,
+        blockedToday: c.availabilityBlocks.length > 0,
+        // Map pricing by skipSize for quick lookup in UI
+        pricingBySizeCode: Object.fromEntries(
+          c.carrierPricing.map((p) => [p.skipSize, p]),
+        ),
+      };
+    });
+
+    return { sizes, carriers: enrichedCarriers };
+  }
+
+  // ── Recycling centers (admin view) ────────────────────────────────────────
+
+  /** GET /admin/recycling-centers — all centers (active and inactive) with waste record count */
+  async adminGetRecyclingCenters(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.recyclingCenter.findMany({
+        include: {
+          company: { select: { id: true, name: true, logo: true, city: true } },
+          _count: { select: { wasteRecords: true } },
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.recyclingCenter.count(),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /** PATCH /admin/recycling-centers/:id — toggle active flag */
+  async adminToggleRecyclingCenter(
+    id: string,
+    active: boolean,
+    adminId: string,
+  ) {
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id },
+      select: { id: true, name: true, active: true },
+    });
+    if (!center) throw new NotFoundException('Recycling center not found');
+
+    const updated = await this.prisma.recyclingCenter.update({
+      where: { id },
+      data: { active },
+      select: { id: true, name: true, active: true },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      active ? 'RECYCLING_CENTER_ACTIVATED' : 'RECYCLING_CENTER_DEACTIVATED',
+      'RecyclingCenter',
+      id,
+      { active: center.active },
+      { active: updated.active },
+    );
+
+    return updated;
+  }
 }

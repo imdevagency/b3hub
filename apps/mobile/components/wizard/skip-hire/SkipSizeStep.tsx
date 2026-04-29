@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import type { SkipSize } from '@/lib/api';
+import type { SkipSize, SkipSizeDefinition } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { SIZES } from './_types';
@@ -10,12 +10,15 @@ export function SkipSizeStep({
   selected,
   onSelect,
   prices,
+  sizeDefs,
   flat,
 }: {
   selected: SkipSize | null;
   onSelect: (v: SkipSize) => void;
   /** Live market prices per size — overrides hardcoded SIZES prices when provided */
-  prices?: Partial<Record<SkipSize, number>>;
+  prices?: Partial<Record<string, number>>;
+  /** Dynamic size catalogue from the API — when provided, renders these instead of hardcoded SIZES */
+  sizeDefs?: SkipSizeDefinition[];
   flat?: boolean;
 }) {
   const handleSelect = (id: SkipSize) => {
@@ -23,16 +26,54 @@ export function SkipSizeStep({
     onSelect(id);
   };
 
-  const content = SIZES.map((size) => {
-    const info = t.skipHire.step3.sizes[size.id];
-    const isSel = selected === size.id;
-    const boxH = Math.round(16 + size.heightPct * 26);
-    const boxW = Math.round(32 + size.heightPct * 16);
+  // Build display items — dynamic API sizes take priority over hardcoded SIZES
+  const items: Array<{
+    id: string;
+    price: number;
+    heightPct: number;
+    label: string;
+    volume: string;
+    desc: string;
+  }> =
+    sizeDefs && sizeDefs.length > 0
+      ? sizeDefs.map((def) => {
+          // Try translation entry for known legacy codes
+          const tr = (
+            t.skipHire.step3.sizes as Record<
+              string,
+              { label: string; volume: string; desc: string }
+            >
+          )[def.code];
+          return {
+            id: def.code,
+            price: prices?.[def.code] ?? def.basePrice ?? 0,
+            heightPct: def.heightPct,
+            label: tr?.label ?? def.labelLv ?? def.label,
+            volume: tr?.volume ?? `${def.volumeM3} m³`,
+            desc: tr?.desc ?? def.descriptionLv ?? def.description ?? '',
+          };
+        })
+      : SIZES.map((size) => {
+          const info = t.skipHire.step3.sizes[size.id as keyof typeof t.skipHire.step3.sizes];
+          return {
+            id: size.id,
+            price: prices?.[size.id] ?? size.price,
+            heightPct: size.heightPct,
+            label: info?.label ?? size.id,
+            volume: info?.volume ?? '',
+            desc: info?.desc ?? '',
+          };
+        });
+
+  const content = items.map((item) => {
+    const isSel = selected === item.id;
+    const boxH = Math.round(16 + item.heightPct * 26);
+    const boxW = Math.round(32 + item.heightPct * 16);
     return (
       <TouchableOpacity
-        key={size.id}
+        key={item.id}
         style={[s3.card, isSel && s3.cardSel]}
-        onPress={() => handleSelect(size.id)}
+        onPress={() => handleSelect(item.id)}
         activeOpacity={0.75}
       >
         <View style={s3.row}>
@@ -56,20 +97,20 @@ export function SkipSizeStep({
 
           <View style={{ flex: 1, paddingLeft: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-              <Text style={[s3.label, isSel && { color: '#000' }]}>{info.label}</Text>
-              {size.id === 'MIDI' && (
+              <Text style={[s3.label, isSel && { color: '#000' }]}>{item.label}</Text>
+              {item.id === 'MIDI' && (
                 <View style={s3.popular}>
                   <Text style={s3.popularTxt}>{t.skipHire.step3.popular}</Text>
                 </View>
               )}
             </View>
-            <Text style={[s3.vol, isSel && { color: '#4b5563' }]}>{info.volume}</Text>
-            <Text style={s3.desc}>{info.desc}</Text>
+            <Text style={[s3.vol, isSel && { color: '#4b5563' }]}>{item.volume}</Text>
+            <Text style={s3.desc}>{item.desc}</Text>
           </View>
 
           <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
             <Text style={[s3.price, isSel && { color: '#000' }]}>
-              {prices?.[size.id] != null ? `€${prices[size.id]}` : `€${size.price}`}
+              {item.price > 0 ? `€${item.price}` : ''}
             </Text>
           </View>
         </View>

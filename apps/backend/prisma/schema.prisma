@@ -158,11 +158,10 @@ enum SkipWasteCategory {
   ELECTRONICS_WEEE
 }
 
-enum SkipSize {
-  MINI // 2 m³
-  MIDI // 4 m³
-  BUILDERS // 6 m³
-  LARGE // 8 m³
+enum SkipCategory {
+  SKIP      // traditional open-top skip
+  BIG_BAG   // 1 m³ bulk bag
+  CONTAINER // enclosed roll-on/roll-off
 }
 
 enum SkipHireStatus {
@@ -1465,6 +1464,29 @@ model DocumentLink {
   @@map("document_links")
 }
 
+// ── CMS-managed skip/container size catalogue ──────────────────────────────
+model SkipSizeDefinition {
+  id          String      @id @default(cuid())
+  code        String      @unique // internal key used in orders, e.g. "MIDI", "BIG_BAG_1M3"
+  label       String              // display name, e.g. "Midi Skip (4 m³)"
+  labelLv     String?             // Latvian label override
+  volumeM3    Float               // volume in cubic metres
+  category    SkipCategory        // SKIP | BIG_BAG | CONTAINER
+  description String?
+  descriptionLv String?
+  heightPct   Float  @default(0.5) // 0–1 visual proportion used in mobile UI
+  basePrice   Float?               // fallback/suggested price if carrier hasn't set one
+  currency    String @default("EUR")
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, category])
+  @@map("skip_size_definitions")
+}
+
 // ── Public skip-hire orders (4-step wizard, no auth required) ──
 model SkipHireOrder {
   id          String @id @default(cuid())
@@ -1476,8 +1498,8 @@ model SkipHireOrder {
   // Step 2 — Waste type
   wasteCategory SkipWasteCategory
 
-  // Step 3 — Skip size
-  skipSize SkipSize
+  // Step 3 — Skip size (references SkipSizeDefinition.code)
+  skipSize String
 
   // Step 4 — Delivery date
   deliveryDate   DateTime
@@ -1541,7 +1563,7 @@ model CarrierPricing {
   carrier   Company @relation("CarrierPricing", fields: [carrierId], references: [id], onDelete: Cascade)
   carrierId String
 
-  skipSize SkipSize
+  skipSize String // references SkipSizeDefinition.code
   price    Float
   currency String   @default("EUR")
 

@@ -36,7 +36,13 @@ import { useOrder } from '@/lib/order-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
-import type { SkipSize, SkipWasteCategory, ApiOrder, SkipHireQuote } from '@/lib/api';
+import type {
+  SkipSize,
+  SkipSizeDefinition,
+  SkipWasteCategory,
+  ApiOrder,
+  SkipHireQuote,
+} from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { formatDate } from '@/lib/format';
 import { SKIP_PRICES, toISO, addDays } from '@/components/wizard/skip-hire/_types';
@@ -124,8 +130,11 @@ export default function OrderWizard() {
   const [unloadingPointPhotoUrl, setUnloadingPointPhotoUrl] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
+  // ── Size catalogue (fetched from backend on mount) ───────────────────
+  const [sizeDefs, setSizeDefs] = useState<SkipSizeDefinition[]>([]);
+
   // ── Market prices (fetched from backend on mount) ─────────────────────
-  const [marketPrices, setMarketPrices] = useState<Partial<Record<SkipSize, number>>>(SKIP_PRICES);
+  const [marketPrices, setMarketPrices] = useState<Partial<Record<string, number>>>(SKIP_PRICES);
   const [quotes, setQuotes] = useState<SkipHireQuote[]>([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
 
@@ -145,6 +154,14 @@ export default function OrderWizard() {
       setContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
     if (!contactPhone.trim()) setContactPhone(user.phone ?? '');
   }, [user?.id]);
+
+  // Fetch size catalogue on mount
+  useEffect(() => {
+    api.skipHire
+      .getSizes()
+      .then((defs) => setSizeDefs(defs))
+      .catch(() => {}); // fall back to hardcoded SIZES
+  }, []);
 
   // Fetch market prices once on mount
   useEffect(() => {
@@ -499,6 +516,7 @@ export default function OrderWizard() {
                   selected={selectedSize}
                   onSelect={handleSizeSelect}
                   prices={marketPrices}
+                  sizeDefs={sizeDefs.length > 0 ? sizeDefs : undefined}
                   flat
                 />
               </>

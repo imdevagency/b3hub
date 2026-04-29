@@ -10,7 +10,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CompanyType, SkipSize } from '@prisma/client';
+import { CompanyType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockDateDto } from './dto/block-date.dto';
 import { CreateZoneDto } from './dto/create-zone.dto';
@@ -52,7 +52,7 @@ export class CarrierSettingsService {
     });
   }
 
-  async setPrice(userId: string, size: SkipSize, price: number) {
+  async setPrice(userId: string, size: string, price: number) {
     const company = await this.requireCarrierCompany(userId);
     return this.prisma.carrierPricing.upsert({
       where: { carrierId_skipSize: { carrierId: company.id, skipSize: size } },
@@ -61,7 +61,7 @@ export class CarrierSettingsService {
     });
   }
 
-  async deletePrice(userId: string, size: SkipSize) {
+  async deletePrice(userId: string, size: string) {
     const company = await this.requireCarrierCompany(userId);
     await this.prisma.carrierPricing.deleteMany({
       where: { carrierId: company.id, skipSize: size },

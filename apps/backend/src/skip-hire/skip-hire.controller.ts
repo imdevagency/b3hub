@@ -46,6 +46,16 @@ export class SkipHireController {
   }
 
   /**
+   * GET /api/v1/skip-hire/sizes
+   * Public — returns the active SkipSizeDefinition catalogue, ordered by sortOrder.
+   * Mobile app uses this to render the size picker dynamically.
+   */
+  @Get('sizes')
+  listSizes() {
+    return this.skipHireService.listSizes();
+  }
+
+  /**
    * GET /api/v1/skip-hire/quotes
    * Public — returns carrier offers for the given size, location, date.
    */
@@ -55,6 +65,8 @@ export class SkipHireController {
       query.size,
       query.location,
       query.date,
+      query.lat,
+      query.lng,
     );
   }
 

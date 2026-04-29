@@ -28,7 +28,6 @@ import {
   OrderStatus,
   PaymentStatus,
   SkipHireStatus,
-  SkipSize,
   SkipWasteCategory,
   TransportJobType,
   TransportJobStatus,
@@ -130,7 +129,7 @@ async function main() {
   console.log(`  ✅  Carrier: ${carrierCompany.name}`);
 
   // ── 2. Carrier skip-hire pricing ──────────────────────────────────────────
-  const skipPrices: { skipSize: SkipSize; price: number }[] = [
+  const skipPrices: { skipSize: string; price: number }[] = [
     { skipSize: 'MINI', price: 85 },
     { skipSize: 'MIDI', price: 125 },
     { skipSize: 'BUILDERS', price: 165 },
@@ -415,7 +414,7 @@ async function main() {
 
   const skipOrders: {
     orderNumber: string;
-    skipSize: SkipSize;
+    skipSize: string;
     wasteCategory: SkipWasteCategory;
     status: SkipHireStatus;
     location: string;
