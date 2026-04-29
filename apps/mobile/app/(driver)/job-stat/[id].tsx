@@ -518,7 +518,7 @@ const s = StyleSheet.create({
   },
   fsBackdrop: {
     flex: 1,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     justifyContent: 'center',
     alignItems: 'center',
   },

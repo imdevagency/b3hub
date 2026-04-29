@@ -9,9 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-[#F9423A] active:bg-[#e03b34]',
+        default: 'bg-[#166534] active:bg-[#e03b34]',
         destructive: 'bg-red-500 active:bg-red-600',
-        outline: 'border-2 border-[#F9423A] bg-transparent active:bg-[#F9423A]/10',
+        outline: 'border-2 border-[#166534] bg-transparent active:bg-[#166534]/10',
         secondary: 'bg-gray-100 active:bg-gray-200',
         ghost: 'active:bg-gray-100',
         link: 'underline-offset-4 active:underline',

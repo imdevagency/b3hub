@@ -264,7 +264,7 @@ function DocsTab() {
             return (
               <TouchableOpacity
                 key={tb.key}
-                className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
+                className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#166534]' : 'bg-gray-100'}`}
                 onPress={() => {
                   haptics.light();
                   setFilter(tb.key);
@@ -570,7 +570,7 @@ function InvoicesTab() {
           {INV_FILTERS.map((f) => (
             <TouchableOpacity
               key={f.key}
-              className={`px-4 py-2.5 rounded-full flex-row items-center ${filter === f.key ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
+              className={`px-4 py-2.5 rounded-full flex-row items-center ${filter === f.key ? 'bg-[#166534]' : 'bg-gray-100'}`}
               onPress={() => {
                 haptics.light();
                 setFilter(f.key);

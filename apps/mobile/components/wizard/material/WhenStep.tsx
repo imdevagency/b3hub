@@ -59,7 +59,7 @@ export function WhenStep({
               <TouchableOpacity
                 key={i}
                 className={`flex-1 rounded-2xl p-4 items-center justify-center ${
-                  active ? 'bg-[#F9423A]' : 'bg-gray-50'
+                  active ? 'bg-[#166534]' : 'bg-gray-50'
                 }`}
                 onPress={() => {
                   haptics.light();

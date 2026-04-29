@@ -208,7 +208,7 @@ export default function SellerDocuments() {
         contentContainerStyle={visible.length === 0 ? s.listEmpty : s.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#166534" />
         }
       >
         {visible.length === 0 ? (

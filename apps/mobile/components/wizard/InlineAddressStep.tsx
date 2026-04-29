@@ -733,7 +733,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   confirmBtn: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     borderRadius: 8,
     alignItems: 'center',
     paddingVertical: 16,
@@ -797,9 +797,9 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     marginRight: 12,
   },
-  uberDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#F9423A' },
+  uberDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#166534' },
   uberLine: { width: 2, flex: 1, backgroundColor: '#e5e7eb', marginVertical: 4 },
-  uberSquare: { width: 10, height: 10, backgroundColor: '#F9423A' },
+  uberSquare: { width: 10, height: 10, backgroundColor: '#166534' },
   uberInputs: { flex: 1, gap: 10 },
   uberInputActiveWrap: { position: 'relative' },
   uberInputActive: {

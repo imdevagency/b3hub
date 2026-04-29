@@ -186,11 +186,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     alignItems: 'center',
   },
-  amendWindowBtnActive: { backgroundColor: '#F9423A' },
+  amendWindowBtnActive: { backgroundColor: '#166534' },
   amendWindowBtnText: { fontSize: 15, fontWeight: '600', color: '#4b5563' },
   amendWindowBtnTextActive: { color: '#fff' },
   amendSubmitBtn: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     borderRadius: 999,
     paddingVertical: 18,
     alignItems: 'center',

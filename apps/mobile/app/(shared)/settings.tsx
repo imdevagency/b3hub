@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   guestSignInBtn: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     borderRadius: 100,
     paddingVertical: 13,
     paddingHorizontal: 32,

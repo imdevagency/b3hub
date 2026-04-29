@@ -433,7 +433,7 @@ export default function EarningsScreen() {
             <TouchableOpacity
               onPress={handleSetupPayouts}
               disabled={setupLoading}
-              className="bg-[#F9423A] py-3.5 px-6 rounded-full items-center mt-4"
+              className="bg-[#166534] py-3.5 px-6 rounded-full items-center mt-4"
               activeOpacity={0.8}
             >
               {setupLoading ? (

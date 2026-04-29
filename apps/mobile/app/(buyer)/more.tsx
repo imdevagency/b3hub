@@ -449,7 +449,7 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -592,7 +592,7 @@ const s = StyleSheet.create({
     gap: 10,
   },
   guestPrimary: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',

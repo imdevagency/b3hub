@@ -348,7 +348,7 @@ export default function HomeScreen() {
             style={{
               marginHorizontal: 20,
               marginBottom: 32,
-              backgroundColor: '#F9423A',
+              backgroundColor: '#166534',
               borderRadius: 32,
               overflow: 'hidden',
               shadowColor: '#000',
@@ -549,7 +549,7 @@ export default function HomeScreen() {
                       router.push('/skip-hire');
                     }}
                     style={{
-                      backgroundColor: '#F9423A',
+                      backgroundColor: '#166534',
                       borderRadius: 16,
                       paddingVertical: 18,
                       flexDirection: 'row',

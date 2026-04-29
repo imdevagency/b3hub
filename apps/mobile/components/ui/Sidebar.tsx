@@ -275,7 +275,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
   },
   panel: {
     position: 'absolute',

@@ -263,7 +263,7 @@ export default function DriverHomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomInset + 10 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#00A878" />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#166534" />
           }
         >
           {/* Greeting / User Context */}

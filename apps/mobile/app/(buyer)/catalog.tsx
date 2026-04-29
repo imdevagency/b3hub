@@ -463,7 +463,7 @@ export default function CatalogScreen() {
         >
           <TouchableOpacity
             className={`px-4 py-2.5 rounded-full flex-row items-center ${
-              filterMode === 'ALL' ? 'bg-[#F9423A]' : 'bg-gray-100'
+              filterMode === 'ALL' ? 'bg-[#166534]' : 'bg-gray-100'
             }`}
             onPress={() => {
               haptics.light();

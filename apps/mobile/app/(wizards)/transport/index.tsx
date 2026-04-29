@@ -1124,7 +1124,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   vehicleCardSel: {
-    borderColor: '#F9423A',
+    borderColor: '#166534',
     backgroundColor: '#f8fafc',
   },
   vehicleCheckBadge: {
@@ -1173,8 +1173,8 @@ const s = StyleSheet.create({
     borderColor: 'transparent',
   },
   cargoChipSel: {
-    backgroundColor: '#F9423A',
-    borderColor: '#F9423A',
+    backgroundColor: '#166534',
+    borderColor: '#166534',
   },
   cargoText: {
     fontSize: 14,
@@ -1209,7 +1209,7 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
   },

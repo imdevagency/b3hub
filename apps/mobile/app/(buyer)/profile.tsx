@@ -328,7 +328,7 @@ export default function ProfileScreen() {
           </View>
           <View className="px-5 py-4 border-t border-gray-100 bg-white">
             <TouchableOpacity
-              className={`bg-[#F9423A] py-4 rounded-full items-center justify-center flex-row ${saving ? 'opacity-70' : ''}`}
+              className={`bg-[#166534] py-4 rounded-full items-center justify-center flex-row ${saving ? 'opacity-70' : ''}`}
               onPress={saveEdit}
               disabled={saving}
               activeOpacity={0.85}

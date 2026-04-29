@@ -773,7 +773,7 @@ export default function DisposalWizard() {
                               width: 8,
                               height: 8,
                               borderRadius: 4,
-                              backgroundColor: '#F9423A',
+                              backgroundColor: '#166534',
                             }}
                           />
                         )}

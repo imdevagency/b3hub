@@ -38,7 +38,7 @@ const BUYER_SLIDES: Slide[] = [
     title: 'Pasūtini materiālus',
     subtitle:
       'Izvēlies granulas, smiltis vai citus būvmateriālus un piesakies piegādei dažos klikšķos.',
-    accent: '#00A878',
+    accent: '#166534',
   },
   {
     key: 'b2',
@@ -62,7 +62,7 @@ const SELLER_SLIDES: Slide[] = [
     Icon: Package,
     title: 'Publicē savus materiālus',
     subtitle: 'Pievieno produktus katalogam — cenas, daudzumus un piegādes zonas vienuviet.',
-    accent: '#00A878',
+    accent: '#166534',
   },
   {
     key: 's2',
@@ -86,7 +86,7 @@ const DRIVER_SLIDES: Slide[] = [
     Icon: Truck,
     title: 'Pieņem darbus',
     subtitle: 'Redzi pieejamos transporta uzdevumus un izvēlies tos, kas tev der.',
-    accent: '#00A878',
+    accent: '#166534',
   },
   {
     key: 'd2',
@@ -245,11 +245,11 @@ const s = StyleSheet.create({
   },
   dotActive: {
     width: 24,
-    backgroundColor: '#00A878',
+    backgroundColor: '#166534',
   },
   cta: {
     width: SCREEN_W - 48,
-    backgroundColor: '#00A878',
+    backgroundColor: '#166534',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

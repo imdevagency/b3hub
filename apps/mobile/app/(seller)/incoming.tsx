@@ -213,7 +213,7 @@ function LoadingModal({
           </View>
 
           <TouchableOpacity
-            className={`rounded-full items-center justify-center py-5 ${allChecked && !confirming ? 'bg-[#F9423A]' : 'bg-gray-200'}`}
+            className={`rounded-full items-center justify-center py-5 ${allChecked && !confirming ? 'bg-[#166534]' : 'bg-gray-200'}`}
             onPress={() => {
               haptics.success();
               const parsed = parseFloat(weight.replace(',', '.'));
@@ -398,7 +398,7 @@ function OrderCard({
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            className={`flex-2 items-center justify-center rounded-full py-3.5 bg-[#F9423A] ${isBusy ? 'opacity-50' : ''}`}
+            className={`flex-2 items-center justify-center rounded-full py-3.5 bg-[#166534] ${isBusy ? 'opacity-50' : ''}`}
             style={{ flex: 2 }}
             disabled={!!isBusy}
             onPress={() => onConfirm(order.id)}
@@ -418,7 +418,7 @@ function OrderCard({
       {order.status === 'CONFIRMED' && (
         <View className="mt-4 mb-4">
           <TouchableOpacity
-            className={`items-center justify-center rounded-full py-3.5 bg-[#F9423A] ${isBusy ? 'opacity-50' : ''}`}
+            className={`items-center justify-center rounded-full py-3.5 bg-[#166534] ${isBusy ? 'opacity-50' : ''}`}
             disabled={!!isBusy}
             onPress={() => onStartLoading(order.id)}
             activeOpacity={0.7}
@@ -621,7 +621,7 @@ export default function IncomingScreen() {
               return (
                 <TouchableOpacity
                   key={f.key}
-                  className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
+                  className={`flex-row items-center px-4 py-2 rounded-full ${active ? 'bg-[#166534]' : 'bg-gray-100'}`}
                   style={{ gap: 6 }}
                   onPress={() => {
                     haptics.light();
@@ -689,7 +689,7 @@ export default function IncomingScreen() {
             action={
               orders.length === 0 ? (
                 <TouchableOpacity
-                  className="mt-3 bg-[#F9423A] rounded-full px-6 py-3"
+                  className="mt-3 bg-[#166534] rounded-full px-6 py-3"
                   onPress={() => router.push('/(seller)/catalog')}
                 >
                   <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>

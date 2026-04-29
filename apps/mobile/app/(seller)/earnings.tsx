@@ -386,7 +386,7 @@ export default function SellerEarningsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#166534" />
         }
       >
         {user?.isCompany && user.payoutEnabled === false && (

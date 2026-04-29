@@ -509,7 +509,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
   floatingTop: { position: 'absolute', width: '100%', alignItems: 'center', zIndex: 10 },
   pillHeader: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 30,
@@ -608,7 +608,7 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   navBtn: {
     flex: 1,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -625,7 +625,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
   },
   actionBtnPrimary: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

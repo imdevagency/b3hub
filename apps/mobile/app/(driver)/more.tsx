@@ -202,7 +202,7 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

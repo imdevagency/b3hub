@@ -518,7 +518,7 @@ const s = StyleSheet.create({
     padding: 20,
   },
   blockOptionActive: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
   },
   blockTitle: {
     fontSize: 18,
@@ -623,7 +623,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     height: 56,
     borderRadius: 28,
     alignItems: 'center',

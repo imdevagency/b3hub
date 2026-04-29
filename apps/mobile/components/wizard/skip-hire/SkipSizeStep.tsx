@@ -90,8 +90,8 @@ export function SkipSizeStep({
               ]}
             />
             <View style={s3.wheels}>
-              <View style={[s3.wheel, isSel && { backgroundColor: '#F9423A' }]} />
-              <View style={[s3.wheel, isSel && { backgroundColor: '#F9423A' }]} />
+              <View style={[s3.wheel, isSel && { backgroundColor: '#166534' }]} />
+              <View style={[s3.wheel, isSel && { backgroundColor: '#166534' }]} />
             </View>
           </View>
 
@@ -144,7 +144,7 @@ const s3 = StyleSheet.create({
     marginBottom: 6,
   },
   cardSel: {
-    borderColor: '#F9423A',
+    borderColor: '#166534',
     backgroundColor: '#f8fafc',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

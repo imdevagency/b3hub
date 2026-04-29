@@ -316,7 +316,7 @@ const s = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',

@@ -331,7 +331,7 @@ export default function ScheduleScreen() {
             {/* Status Hero */}
             <View className="px-5 mb-8">
               <View
-                className={`rounded-3xl p-6 items-center justify-center min-h-[220px] ${profile.isOnline ? 'bg-[#F9423A]' : 'bg-gray-100'}`}
+                className={`rounded-3xl p-6 items-center justify-center min-h-[220px] ${profile.isOnline ? 'bg-[#166534]' : 'bg-gray-100'}`}
               >
                 <View
                   className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${profile.isOnline ? 'bg-white/10' : 'bg-white'}`}
@@ -369,7 +369,7 @@ export default function ScheduleScreen() {
                 </Text>
 
                 <TouchableOpacity
-                  className={`mt-8 px-8 py-3.5 rounded-full w-full items-center justify-center ${profile.isOnline ? 'bg-white' : 'bg-[#F9423A]'}`}
+                  className={`mt-8 px-8 py-3.5 rounded-full w-full items-center justify-center ${profile.isOnline ? 'bg-white' : 'bg-[#166534]'}`}
                   onPress={() => handleToggleOnline(!profile.isOnline)}
                   activeOpacity={0.8}
                 >
@@ -556,7 +556,7 @@ export default function ScheduleScreen() {
 
             <TouchableOpacity
               onPress={handleSaveTime}
-              className="mt-6 py-4 rounded-full bg-[#F9423A] items-center justify-center"
+              className="mt-6 py-4 rounded-full bg-[#166534] items-center justify-center"
               activeOpacity={0.8}
             >
               <Text style={{ fontSize: 17, fontWeight: '600', color: colors.white }}>

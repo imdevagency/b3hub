@@ -107,8 +107,8 @@ export function OfferCard({
             <Text style={s.totalPrice}>€{offer.totalPrice?.toFixed(2) ?? '—'}</Text>
             {isSelected && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <CheckCircle size={14} color="#F9423A" strokeWidth={2.5} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#F9423A' }}>Izvēlēts</Text>
+                <CheckCircle size={14} color="#166534" strokeWidth={2.5} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#166534' }}>Izvēlēts</Text>
               </View>
             )}
           </View>
@@ -133,11 +133,11 @@ const s = StyleSheet.create({
     overflow: 'visible',
   },
   cardSelected: {
-    borderColor: '#F9423A',
+    borderColor: '#166534',
     borderWidth: 2,
     backgroundColor: '#fffdfd',
   },
-  cardBest: { borderColor: '#F9423A' },
+  cardBest: { borderColor: '#166534' },
   cardFeatured: { borderColor: '#7c3aed', borderWidth: 1.5 },
   cardShadow: {
     shadowColor: '#000',

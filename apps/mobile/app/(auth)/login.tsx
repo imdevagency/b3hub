@@ -240,7 +240,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     height: 56,
     borderRadius: 28,
     marginBottom: 20,
@@ -357,7 +357,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     height: 56,
     borderRadius: 28,
     alignItems: 'center',

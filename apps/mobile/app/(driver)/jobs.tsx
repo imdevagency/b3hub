@@ -371,11 +371,11 @@ const JobCard = React.memo(function JobCard({
       {/* ── Route Visual ── */}
       <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24 }}>
         <View style={{ alignItems: 'center', paddingTop: 6, width: 12 }}>
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#F9423A' }} />
+          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#166534' }} />
           <View
-            style={{ width: 2, flex: 1, backgroundColor: '#F9423A', marginVertical: 4, minHeight: 40 }}
+            style={{ width: 2, flex: 1, backgroundColor: '#166534', marginVertical: 4, minHeight: 40 }}
           />
-          <View style={{ width: 10, height: 10, backgroundColor: '#F9423A' }} />
+          <View style={{ width: 10, height: 10, backgroundColor: '#166534' }} />
         </View>
 
         <View style={{ flex: 1, gap: 18 }}>
@@ -1082,7 +1082,7 @@ export default function JobsScreen() {
           renderItem={renderJobItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#166534" />
           }
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
@@ -1517,7 +1517,7 @@ const styles = StyleSheet.create({
 
   // ── Tour route optimisation ────────────────────────────────────
   filterBtnActive: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
   },
   tourBar: {
     flexDirection: 'row',
@@ -1540,7 +1540,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 48,
@@ -1565,7 +1565,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1578,7 +1578,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
   },
   tourDoneBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
@@ -1601,8 +1601,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   avoidEmptyChipActive: {
-    backgroundColor: '#F9423A',
-    borderColor: '#F9423A',
+    backgroundColor: '#166534',
+    borderColor: '#166534',
   },
   avoidEmptyChipText: {
     fontSize: 13,

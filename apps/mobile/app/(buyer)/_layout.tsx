@@ -179,7 +179,7 @@ const ls = StyleSheet.create({
   adminLogout: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     borderRadius: 12,
   },
   adminLogoutText: {

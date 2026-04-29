@@ -1022,8 +1022,8 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgMuted,
   },
   periodChipActive: {
-    backgroundColor: '#F9423A',
-    borderColor: '#F9423A',
+    backgroundColor: '#166534',
+    borderColor: '#166534',
   },
   periodChipMain: {
     fontSize: 14,
@@ -1101,7 +1101,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgMuted,
     alignItems: 'center',
   },
-  windowChipActive: { backgroundColor: '#F9423A', borderColor: '#F9423A' },
+  windowChipActive: { backgroundColor: '#166534', borderColor: '#166534' },
   windowChipText: {
     fontSize: 14,
     color: colors.textSecondary,
@@ -1158,7 +1158,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveAddrCheckActive: { backgroundColor: '#F9423A', borderColor: '#F9423A' },
+  saveAddrCheckActive: { backgroundColor: '#166534', borderColor: '#166534' },
   saveAddrLabel: {
     fontSize: 15,
     fontFamily: 'Inter_600SemiBold',
@@ -1347,7 +1347,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgSubtle,
   },
   payMethodRowActive: {
-    borderColor: '#F9423A',
+    borderColor: '#166534',
     backgroundColor: '#fff',
   },
   payMethodRadio: {
@@ -1360,12 +1360,12 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  payMethodRadioActive: { borderColor: '#F9423A' },
+  payMethodRadioActive: { borderColor: '#166534' },
   payMethodRadioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
   },
   payMethodLabel: {
     fontSize: 14,

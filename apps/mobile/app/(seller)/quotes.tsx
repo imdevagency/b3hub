@@ -550,7 +550,7 @@ export default function SellerQuotesScreen() {
               myResponses.length === 0 && { flexGrow: 1, justifyContent: 'center' },
             ]}
             refreshControl={
-              <RefreshControl refreshing={myRefreshing} onRefresh={onRefresh} tintColor="#00A878" />
+              <RefreshControl refreshing={myRefreshing} onRefresh={onRefresh} tintColor="#166534" />
             }
           >
             {myResponses.length === 0 ? (
@@ -634,7 +634,7 @@ export default function SellerQuotesScreen() {
                 requests.length === 0 && { flexGrow: 1, justifyContent: 'center' },
               ]}
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00A878" />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#166534" />
               }
               keyboardShouldPersistTaps="handled"
             >

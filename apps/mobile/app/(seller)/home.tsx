@@ -162,7 +162,7 @@ export default function SellerHomeScreen() {
         <View className="px-5">
           {/* FIRST-RUN ONBOARDING */}
           {materialCount === 0 && pendingCount === 0 && (
-            <View className="bg-[#F9423A] rounded-3xl p-5 mb-6">
+            <View className="bg-[#166534] rounded-3xl p-5 mb-6">
               <Text
                 style={{
                   fontSize: 22,
@@ -234,7 +234,7 @@ export default function SellerHomeScreen() {
                 router.push('/(seller)/incoming');
               }}
               className={`rounded-3xl p-5 min-h-[160px] justify-between ${
-                pendingCount !== null && pendingCount > 0 ? 'bg-[#F9423A]' : 'bg-gray-100'
+                pendingCount !== null && pendingCount > 0 ? 'bg-[#166534]' : 'bg-gray-100'
               }`}
             >
               {pendingCount !== null ? (

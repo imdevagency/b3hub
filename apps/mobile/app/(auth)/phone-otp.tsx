@@ -440,7 +440,7 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -568,7 +568,7 @@ const s = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtn: {
-    backgroundColor: '#F9423A',
+    backgroundColor: '#166534',
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
