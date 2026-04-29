@@ -109,8 +109,8 @@ const emptyForm = (): FormState => ({
 });
 
 export default function AdminB3FieldsPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token: rawToken } = useAuth();
+  const token = rawToken ?? '';
 
   const [fields, setFields] = useState<ApiB3Field[]>([]);
   const [loading, setLoading] = useState(true);

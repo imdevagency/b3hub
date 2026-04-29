@@ -296,3 +296,36 @@ export async function scanPass(
     body: JSON.stringify({ passNumber }),
   });
 }
+
+// ─── Cameras ────────────────────────────────────────────────────────────────
+
+export interface ApiCamera {
+  id: string;
+  name: string;
+  deviceSerial: string;
+  channelNo: number;
+  fieldId: string;
+  sortOrder: number;
+}
+
+export interface ApiCameraToken {
+  viewerToken: string;
+  expiresAt: string;
+}
+
+/** Returns [] gracefully when the endpoint is not yet configured. */
+export async function getFieldCameras(token: string, fieldId: string): Promise<ApiCamera[]> {
+  return apiFetch<ApiCamera[]>(`/b3-fields/${fieldId}/cameras`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).catch(() => []);
+}
+
+export async function getCameraToken(
+  token: string,
+  fieldId: string,
+  cameraId: string,
+): Promise<ApiCameraToken> {
+  return apiFetch<ApiCameraToken>(`/b3-fields/${fieldId}/cameras/${cameraId}/token`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

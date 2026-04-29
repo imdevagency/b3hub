@@ -112,9 +112,13 @@ export async function rejectProviderApplication(
 }
 
 export async function adminGetUsers(token: string): Promise<AdminUser[]> {
-  return apiFetch<AdminUser[]>('/admin/users', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await apiFetch<{ data: AdminUser[]; total: number } | AdminUser[]>(
+    '/admin/users',
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  // Backend returns paginated { data, total } — unwrap if needed
+  if (res && !Array.isArray(res) && 'data' in res) return res.data;
+  return res as AdminUser[];
 }
 
 export async function adminUpdateUser(
@@ -582,5 +586,179 @@ export async function adminResolveException(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ resolution }),
+  });
+}
+
+// ── Admin invoices ──────────────────────────────────────────────────────────
+
+export interface AdminInvoice {
+  id: string;
+  invoiceNumber: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  currency: string;
+  paymentStatus: string;
+  dueDate: string;
+  paidDate?: string | null;
+  isCommissionInvoice: boolean;
+  isCreditNote: boolean;
+  pdfUrl?: string | null;
+  createdAt: string;
+  order?: { id: string; orderNumber: string; orderType: string } | null;
+  buyerCompany?: { id: string; name: string } | null;
+  sellerCompany?: { id: string; name: string } | null;
+}
+
+export async function adminGetAllInvoices(
+  token: string,
+  page = 1,
+  limit = 50,
+  status?: string,
+): Promise<{ data: AdminInvoice[]; total: number; page: number; limit: number; pages: number }> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status && status !== 'ALL') qs.set('status', status);
+  return apiFetch(`/admin/invoices?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Admin framework contracts ────────────────────────────────────────────────
+
+export interface AdminFrameworkContract {
+  id: string;
+  contractNumber: string;
+  title: string;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  isFieldContract: boolean;
+  prepaidBalance: number;
+  prepaidUsed: number;
+  createdAt: string;
+  buyer?: { id: string; name: string } | null;
+  supplier?: { id: string; name: string } | null;
+  positions: { id: string; agreedQty: number; unitPrice: number | null; unit: string }[];
+  _count: { callOffJobs: number };
+}
+
+export async function adminGetAllFrameworkContracts(
+  token: string,
+  page = 1,
+  limit = 50,
+  status?: string,
+): Promise<{ data: AdminFrameworkContract[]; total: number; page: number; pages: number }> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status && status !== 'ALL') qs.set('status', status);
+  return apiFetch(`/admin/framework-contracts?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Admin payouts ────────────────────────────────────────────────────────────
+
+export interface AdminPayout {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  dueDate: string;
+  paidAt?: string | null;
+  notes?: string | null;
+  payseraTransferId?: string | null;
+  createdAt: string;
+  order?: { id: string; orderNumber: string } | null;
+  // supplier payouts
+  supplier?: { id: string; name: string } | null;
+  // carrier payouts
+  carrier?: { id: string; name: string } | null;
+  driver?: { id: string; firstName: string; lastName: string } | null;
+}
+
+export interface AdminPayoutSummary {
+  supplierPending: number;
+  supplierOverdue: number;
+  carrierPending: number;
+  carrierOverdue: number;
+  totalPendingEur: number;
+}
+
+export async function adminGetPayouts(
+  token: string,
+  page = 1,
+  limit = 50,
+  status?: string,
+  type?: 'supplier' | 'carrier',
+  overdue?: boolean,
+): Promise<{ data: AdminPayout[]; total: number; page: number; pages: number }> {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status && status !== 'ALL') qs.set('status', status);
+  if (type) qs.set('type', type);
+  if (overdue) qs.set('overdue', 'true');
+  return apiFetch(`/admin/payouts?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminGetPayoutSummary(token: string): Promise<AdminPayoutSummary> {
+  return apiFetch(`/admin/payouts/summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminExecuteSupplierPayout(id: string, token: string) {
+  return apiFetch(`/admin/payouts/supplier/${id}/execute`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminExecuteCarrierPayout(id: string, token: string) {
+  return apiFetch(`/admin/payouts/carrier/${id}/execute`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminExecuteAllPayouts(token: string) {
+  return apiFetch(`/admin/payouts/execute`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Admin broadcast ──────────────────────────────────────────────────────────
+
+export async function adminBroadcastNotification(
+  title: string,
+  message: string,
+  audience: 'ALL' | 'BUYERS' | 'SELLERS' | 'CARRIERS',
+  token: string,
+): Promise<{ sent: number; audience: string }> {
+  return apiFetch(`/admin/notifications/broadcast`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ title, message, audience }),
+  });
+}
+
+// ── Platform settings ────────────────────────────────────────────────────────
+
+export async function adminGetSettings(
+  token: string,
+): Promise<Record<string, string>> {
+  return apiFetch<Record<string, string>>('/admin/settings', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUpdateSettings(
+  settings: Record<string, string>,
+  token: string,
+): Promise<Record<string, string>> {
+  return apiFetch<Record<string, string>>('/admin/settings', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ settings }),
   });
 }

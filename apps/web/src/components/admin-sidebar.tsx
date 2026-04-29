@@ -168,7 +168,7 @@ const ADMIN_NAV: NavSection[] = [
         icon: Bell,
         badgeKey: 'notifications',
       },
-      { label: 'Iestatījumi', href: '/dashboard/settings', icon: Settings },
+      { label: 'Iestatījumi', href: '/dashboard/admin/settings', icon: Settings },
     ],
   },
 ];

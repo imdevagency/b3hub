@@ -29,6 +29,8 @@ import {
   LogOut,
   MapPin,
   MessageSquare,
+  Percent,
+  Radio,
   Recycle,
   Package,
   PackagePlus,
@@ -41,6 +43,7 @@ import {
   Ticket,
   Truck,
   Users,
+  Wallet,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -866,6 +869,78 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/exceptions">
                     <AlertTriangle className="size-4 shrink-0" />
                     <span>Incidenti</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Rēķini (admin)"
+                  isActive={isRouteActive('/dashboard/admin/invoices')}
+                >
+                  <Link href="/dashboard/admin/invoices">
+                    <Receipt className="size-4 shrink-0" />
+                    <span>Rēķini</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Ietvarlīgumi (admin)"
+                  isActive={isRouteActive('/dashboard/admin/framework-contracts')}
+                >
+                  <Link href="/dashboard/admin/framework-contracts">
+                    <FolderKanban className="size-4 shrink-0" />
+                    <span>Ietvarlīgumi</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Izmaksas"
+                  isActive={isRouteActive('/dashboard/admin/payouts')}
+                >
+                  <Link href="/dashboard/admin/payouts">
+                    <Wallet className="size-4 shrink-0" />
+                    <span>Izmaksas</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Komisijas likmes"
+                  isActive={isRouteActive('/dashboard/admin/fee-config')}
+                >
+                  <Link href="/dashboard/admin/fee-config">
+                    <Percent className="size-4 shrink-0" />
+                    <span>Komisijas</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Sūtīt paziņojumu"
+                  isActive={isRouteActive('/dashboard/admin/broadcast')}
+                >
+                  <Link href="/dashboard/admin/broadcast">
+                    <Radio className="size-4 shrink-0" />
+                    <span>Broadcast</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Platformas iestatījumi"
+                  isActive={isRouteActive('/dashboard/admin/settings')}
+                >
+                  <Link href="/dashboard/admin/settings">
+                    <Settings className="size-4 shrink-0" />
+                    <span>Iestatījumi</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

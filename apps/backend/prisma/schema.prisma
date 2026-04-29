@@ -2331,6 +2331,16 @@ model B3Field {
   @@map("b3_fields")
 }
 
+// ── Platform Settings — global key/value config store ────────────────────────
+model PlatformSetting {
+  key       String   @id            // e.g. "jumis.apiUrl", "bis.enabled"
+  value     String                  // always stored as string; booleans use "true"/"false"
+  updatedAt DateTime @updatedAt
+  updatedBy String?                 // admin userId who last changed this
+
+  @@map("platform_settings")
+}
+
 // ── B3 Fields — Inventory items (materials in stock at this location) ─────────
 model B3FieldInventoryItem {
   id      String  @id @default(cuid())

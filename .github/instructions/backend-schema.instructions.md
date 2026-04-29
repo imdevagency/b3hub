@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2353 lines, 55 models, 46 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2385 lines, 57 models, 46 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -57,6 +57,7 @@ DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL`
 - `TrackingModule`
 - `GuestOrdersModule`
 - `PayoutsModule`
+- `B3FieldsModule`
 
 ---
 
@@ -480,7 +481,18 @@ npm run db:seed           # reseed demo data
 ### B3Field — `@@map("b3_fields")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `slug`: String @unique, `address`: String, `city`: String, `postalCode`: String, `lat`: Float, `lng`: Float, `openingHours`: Json, `recyclingCenterId`: String? @unique, `active`: Boolean @default(true), `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `services`: B3FieldService  
-**Relations:** → RecyclingCenter?, Order, PickupSlot
+**Relations:** → RecyclingCenter?, Order, PickupSlot, B3FieldInventoryItem
+
+---
+
+### PlatformSetting — `@@map("platform_settings")`  
+**Fields:** `key`: String @id, `value`: String, `updatedAt`: DateTime, `updatedBy`: String?
+
+---
+
+### B3FieldInventoryItem — `@@map("b3_field_inventory_items")`  
+**Fields:** `id`: String @id @default(cuid(), `fieldId`: String, `name`: String, `unit`: String, `pricePerUnit`: Float, `stockQty`: Float @default(0), `minStockQty`: Float @default(0), `available`: Boolean @default(true), `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → B3Field
 
 ---
 

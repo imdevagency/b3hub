@@ -1124,4 +1124,132 @@ export class AdminService {
 
     return updated;
   }
+
+  // ── Invoices (admin view) ─────────────────────────────────────────────────
+
+  async getAllInvoices(page = 1, limit = 50, status?: string) {
+    const skip = (page - 1) * limit;
+    const where: Record<string, unknown> = {};
+    if (status && status !== 'ALL') where['paymentStatus'] = status;
+    const [data, total] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where,
+        include: {
+          order: { select: { id: true, orderNumber: true, orderType: true } },
+          buyerCompany: { select: { id: true, name: true } },
+          sellerCompany: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.invoice.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  // ── Framework contracts (admin view) ─────────────────────────────────────
+
+  async getAllFrameworkContracts(page = 1, limit = 50, status?: string) {
+    const skip = (page - 1) * limit;
+    const where: Record<string, unknown> = {};
+    if (status && status !== 'ALL') where['status'] = status;
+    const [data, total] = await Promise.all([
+      this.prisma.frameworkContract.findMany({
+        where,
+        include: {
+          buyer: { select: { id: true, name: true } },
+          supplier: { select: { id: true, name: true } },
+          positions: { select: { id: true, agreedQty: true, unitPrice: true, unit: true } },
+          _count: { select: { callOffJobs: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.frameworkContract.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  // ── Broadcast notification ────────────────────────────────────────────────
+
+  async broadcastNotification(
+    title: string,
+    message: string,
+    audience: 'ALL' | 'BUYERS' | 'SELLERS' | 'CARRIERS',
+    adminId: string,
+  ) {
+    let where: Record<string, unknown> = {};
+    if (audience === 'BUYERS') where = { userType: 'BUYER', canSell: false, canTransport: false };
+    if (audience === 'SELLERS') where = { canSell: true };
+    if (audience === 'CARRIERS') where = { canTransport: true };
+
+    const users = await this.prisma.user.findMany({
+      where,
+      select: { id: true },
+    });
+
+    const notificationData = users.map((u) => ({
+      userId: u.id,
+      type: 'SYSTEM_ALERT' as const,
+      title,
+      message,
+    }));
+
+    await this.prisma.notification.createMany({ data: notificationData });
+
+    // Fire push notifications in background (best-effort)
+    const pushRows = await this.prisma.user.findMany({
+      where: { ...where, pushToken: { not: null } },
+      select: { pushToken: true },
+    });
+    const tokens = pushRows.map((r) => r.pushToken).filter(Boolean) as string[];
+    if (tokens.length > 0) {
+      const chunks: string[][] = [];
+      for (let i = 0; i < tokens.length; i += 100) chunks.push(tokens.slice(i, i + 100));
+      for (const chunk of chunks) {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(chunk.map((token) => ({ to: token, sound: 'default', title, body: message }))),
+        }).catch((err: Error) => this.logger.warn(`Broadcast push chunk error: ${err.message}`));
+      }
+    }
+
+    await this.logAdminAction(adminId, 'BROADCAST_NOTIFICATION', 'Notification', 'bulk', {}, {
+      title,
+      message,
+      audience,
+      recipientCount: users.length,
+    });
+
+    return { sent: users.length, audience };
+  }
+
+  // ── Platform settings ───────────────────────────────────────────────────────
+
+  /** Returns all platform settings as a plain key→value object */
+  async getSettings(): Promise<Record<string, string>> {
+    const rows = await this.prisma.platformSetting.findMany();
+    return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  }
+
+  /** Bulk-upsert settings. Each key/value pair is upserted atomically. */
+  async updateSettings(
+    settings: Record<string, string>,
+    adminId: string,
+  ): Promise<Record<string, string>> {
+    const entries = Object.entries(settings);
+    await Promise.all(
+      entries.map(([key, value]) =>
+        this.prisma.platformSetting.upsert({
+          where: { key },
+          create: { key, value, updatedBy: adminId },
+          update: { value, updatedBy: adminId },
+        }),
+      ),
+    );
+    return this.getSettings();
+  }
 }

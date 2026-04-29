@@ -218,7 +218,7 @@ export default function NotificationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { token } = useAuth();
-  const { mode } = useMode();
+  const { mode, setMode, availableModes } = useMode();
 
   // Read from store (set by NotifCard before navigating)
   const notif = notifStore.get();
@@ -239,17 +239,12 @@ export default function NotificationDetailScreen() {
       <ScreenContainer standalone bg="#ffffff">
         <ScreenHeader
           title="Paziņojums"
-          onBack={() =>
-            router.canGoBack() ? router.back() : router.replace('/notifications')
-          }
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/notifications'))}
         />
         <View style={s.center}>
           <Bell size={40} color="#d1d5db" strokeWidth={1.5} />
           <Text style={s.emptyText}>Paziņojums nav pieejams</Text>
-          <TouchableOpacity
-            style={s.backBtn}
-            onPress={() => router.replace('/notifications')}
-          >
+          <TouchableOpacity style={s.backBtn} onPress={() => router.replace('/notifications')}>
             <Text style={s.backBtnText}>Uz paziņojumiem</Text>
           </TouchableOpacity>
         </View>
@@ -263,16 +258,23 @@ export default function NotificationDetailScreen() {
   const message = stripEmojis(notif.message);
 
   const handleAction = () => {
-    if (deepLink) router.replace(deepLink);
+    if (!deepLink) return;
+    // Sync ModeContext so the TopBar role pill and back-navigation home match the destination.
+    if (deepLink.startsWith('/(seller)/') && availableModes.includes('SUPPLIER')) {
+      setMode('SUPPLIER');
+    } else if (deepLink.startsWith('/(driver)/') && availableModes.includes('CARRIER')) {
+      setMode('CARRIER');
+    } else if (deepLink.startsWith('/(buyer)/')) {
+      setMode('BUYER');
+    }
+    router.replace(deepLink);
   };
 
   return (
     <ScreenContainer standalone bg="#ffffff">
       <ScreenHeader
         title="Paziņojums"
-        onBack={() =>
-          router.canGoBack() ? router.back() : router.replace('/notifications')
-        }
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/notifications'))}
       />
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Icon + type label */}

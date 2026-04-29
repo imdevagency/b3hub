@@ -27,6 +27,17 @@ export class WeighingSlipsController {
   constructor(private readonly service: WeighingSlipsService) {}
 
   /**
+   * GET /weighing-slips/admin — all slips across all passes (admin only)
+   */
+  @Get('admin')
+  findAll(@CurrentUser() user: RequestingUser) {
+    if (user.userType !== 'ADMIN') {
+      throw new ForbiddenException('Admin access required');
+    }
+    return this.service.findAll();
+  }
+
+  /**
    * GET /weighing-slips?passId=xxx
    * Buyer sees weighing slips for their own passes; admins see all.
    */

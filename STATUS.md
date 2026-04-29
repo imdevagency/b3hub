@@ -192,11 +192,11 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - api-keys
 - auth
+- b3-fields
 - carrier-settings
 - chat
 - company
@@ -237,7 +237,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (marketing)
@@ -285,14 +284,21 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin
 - dashboard/admin/applications
 - dashboard/admin/audit-logs
+- dashboard/admin/b3-fields
+- dashboard/admin/b3-fields/[id]
+- dashboard/admin/broadcast
 - dashboard/admin/companies
 - dashboard/admin/disputes
 - dashboard/admin/exceptions
+- dashboard/admin/fee-config
 - dashboard/admin/field-passes
+- dashboard/admin/framework-contracts
+- dashboard/admin/invoices
 - dashboard/admin/jobs
 - dashboard/admin/materials
 - dashboard/admin/orders
 - dashboard/admin/payments
+- dashboard/admin/payouts
 - dashboard/admin/skip-hire
 - dashboard/admin/sla
 - dashboard/admin/suppliers
@@ -344,6 +350,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/transporter
 - dashboard/transporter/settings
 - forgot-password
+- gate
 - pasutijums/[token]
 - reset-password
 - share/[token]
@@ -353,7 +360,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -395,6 +401,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/schedule
 - (driver)/skips
 - (driver)/vehicles
+- (gate)/fields
 - (seller)/catalog
 - (seller)/documents
 - (seller)/earnings
@@ -409,6 +416,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (shared)/change-password
 - (shared)/chat/[jobId]
 - (shared)/delivery-proof
+- (shared)/gate-scan
 - (shared)/help
 - (shared)/messages
 - (shared)/notification/[id]

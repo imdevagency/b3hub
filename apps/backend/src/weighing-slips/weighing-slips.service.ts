@@ -24,6 +24,23 @@ export class WeighingSlipsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  // ── List all slips (admin) ──────────────────────────────────────────────────
+
+  async findAll() {
+    return this.prisma.weighingSlip.findMany({
+      orderBy: { recordedAt: 'desc' },
+      include: {
+        fieldPass: {
+          select: {
+            passNumber: true,
+            vehiclePlate: true,
+            driverName: true,
+          },
+        },
+      },
+    });
+  }
+
   // ── List slips for a field pass ─────────────────────────────────────────────
 
   async findByPass(fieldPassId: string, requestingCompanyId?: string) {

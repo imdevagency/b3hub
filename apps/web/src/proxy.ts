@@ -2,6 +2,10 @@
  * Next.js proxy (previously: middleware).
  * Runs on every request — checks for a valid JWT cookie/header and redirects
  * unauthenticated users away from protected /dashboard/* routes.
+ *
+ * APP_MODE controls which Vercel deployment this is:
+ *   'admin'       → admin.b3hub.lv  — only /dashboard/admin/* is accessible
+ *   'marketplace' → b3hub.lv        — /dashboard/admin/* is blocked (default)
  */
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -10,6 +14,7 @@ import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 const ADMIN_PATH_PREFIX = '/dashboard/admin';
+const IS_ADMIN_APP = process.env.NEXT_PUBLIC_APP_MODE === 'admin';
 
 // ── JWT payload decoder (no signature verification — Edge Runtime lacks Node crypto)
 // Trade-off: this only checks the unverified payload for routing decisions (e.g.
@@ -33,6 +38,39 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── APP_MODE: admin deployment route guard ────────────────────────────────
+  if (IS_ADMIN_APP) {
+    if (pathname === '/' || pathname === '/dashboard') {
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+    }
+    if (pathname.startsWith('/register')) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    const isPermitted =
+      pathname.startsWith('/dashboard/admin') ||
+      pathname.startsWith('/dashboard/settings') ||
+      pathname.startsWith('/dashboard/notifications') ||
+      pathname.startsWith('/dashboard/chat') ||
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/forgot-password') ||
+      pathname.startsWith('/reset-password') ||
+      pathname.startsWith('/api/');
+    if (pathname.startsWith('/dashboard') && !isPermitted) {
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+    }
+  } else {
+    // ── APP_MODE: marketplace deployment — block admin routes for non-admins
+    // Only redirect non-admins away from /dashboard/admin. Admins can still
+    // access it so local dev (no APP_MODE set) doesn't create a redirect loop.
+    if (pathname.startsWith(ADMIN_PATH_PREFIX)) {
+      const token = request.cookies.get('b3hub_token')?.value;
+      const payload = token ? decodeJwtPayload(token) : null;
+      if (!payload || payload.userType !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+  }
 
   // Allow public paths and Next.js internals
   if (

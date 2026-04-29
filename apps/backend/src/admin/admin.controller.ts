@@ -24,6 +24,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsIn,
   Max,
   Min,
 } from 'class-validator';
@@ -52,10 +53,26 @@ class ResolveExceptionDto {
   @IsString() resolution!: string;
 }
 
+class BroadcastNotificationDto {
+  @IsString() title!: string;
+  @IsString() message!: string;
+  @IsIn(['ALL', 'BUYERS', 'SELLERS', 'CARRIERS'])
+  audience!: 'ALL' | 'BUYERS' | 'SELLERS' | 'CARRIERS';
+}
+
 class UpdateCompanyDto {
   @IsOptional() @IsBoolean() verified?: boolean;
   @IsOptional() @IsBoolean() payoutEnabled?: boolean;
   @IsOptional() @IsNumber() @Min(0) @Max(100) commissionRate?: number;
+}
+
+class PlatformSettingUpsertDto {
+  @IsString() key!: string;
+  @IsString() value!: string;
+}
+
+class BulkSettingsDto {
+  settings!: Record<string, string>;
 }
 
 class UpdateJobRateDto {
@@ -298,5 +315,69 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.resolveException(id, body.resolution, admin.userId);
+  }
+
+  // ── Invoices admin view ───────────────────────────────────────────────────
+
+  /** GET /admin/invoices?page=1&limit=50&status=PENDING */
+  @Get('invoices')
+  getAllInvoices(
+    @Query() pagination: PagePaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.service.getAllInvoices(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+      status,
+    );
+  }
+
+  // ── Framework contracts admin view ────────────────────────────────────────
+
+  /** GET /admin/framework-contracts?page=1&limit=50&status=ACTIVE */
+  @Get('framework-contracts')
+  getAllFrameworkContracts(
+    @Query() pagination: PagePaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.service.getAllFrameworkContracts(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+      status,
+    );
+  }
+
+  // ── Broadcast notification ────────────────────────────────────────────────
+
+  /** POST /admin/notifications/broadcast */
+  @Post('notifications/broadcast')
+  @HttpCode(HttpStatus.OK)
+  broadcastNotification(
+    @Body() body: BroadcastNotificationDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.broadcastNotification(
+      body.title,
+      body.message,
+      body.audience,
+      admin.userId,
+    );
+  }
+
+  // ── Platform settings ─────────────────────────────────────────────────────
+
+  /** GET /admin/settings — all platform settings as key→value map */
+  @Get('settings')
+  getSettings() {
+    return this.service.getSettings();
+  }
+
+  /** PATCH /admin/settings — bulk upsert settings */
+  @Patch('settings')
+  updateSettings(
+    @Body() body: BulkSettingsDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.updateSettings(body.settings, admin.userId);
   }
 }

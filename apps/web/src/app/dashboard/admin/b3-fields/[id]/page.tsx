@@ -21,11 +21,15 @@ import {
   getTodayArrivals,
   bulkCreateSlots,
   scanPass,
+  getFieldCameras,
+  getCameraToken,
   type ApiB3Field,
   type ApiInventoryItem,
   type ApiPickupSlot,
   type ApiTodayArrivals,
   type ApiPassScanResult,
+  type ApiCamera,
+  type ApiCameraToken,
   type B3FieldService,
   type InventoryItemInput,
 } from '@/lib/api';
@@ -58,6 +62,8 @@ import {
   RefreshCw,
   DoorOpen,
   ScanLine,
+  VideoOff,
+  LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -88,12 +94,13 @@ const SERVICE_META: Record<B3FieldService, { label: string; icon: React.ElementT
   TRAILER_RENTAL: { label: 'Piekabe īrei', icon: Truck },
 };
 
-const TABS = ['inventory', 'slots', 'gate', 'settings'] as const;
+const TABS = ['inventory', 'slots', 'gate', 'cameras', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABELS: Record<Tab, string> = {
   inventory: 'Inventārs',
   slots: 'Laika sloti',
   gate: 'Vārti',
+  cameras: 'Kameras',
   settings: 'Iestatījumi',
 };
 
@@ -1038,6 +1045,272 @@ function GateTab({ fieldId, token }: { fieldId: string; token: string }) {
   );
 }
 
+// ─── Cameras tab ─────────────────────────────────────────────────────────────
+
+type GridMode = '1x1' | '2x2' | '3col';
+
+function CameraTile({
+  camera,
+  viewerToken,
+  loading,
+}: {
+  camera: ApiCamera;
+  viewerToken: string | null;
+  loading: boolean;
+}) {
+  return (
+    <div className="rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 flex flex-col">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800 bg-zinc-900">
+        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+        <span className="text-xs font-medium text-zinc-300 truncate">{camera.name}</span>
+      </div>
+      <div className="aspect-video bg-zinc-950 flex items-center justify-center">
+        {loading ? (
+          <Loader2 className="h-5 w-5 text-zinc-600 animate-spin" />
+        ) : viewerToken ? (
+          <iframe
+            src={`https://open.ezvizlife.com/player/index.html?accessToken=${viewerToken}&deviceSerial=${encodeURIComponent(camera.deviceSerial)}&channelNo=${camera.channelNo}`}
+            className="w-full h-full border-0"
+            allowFullScreen
+            title={camera.name}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <VideoOff className="h-7 w-7 text-zinc-600" />
+            <p className="text-xs text-zinc-500">Nav savienojuma</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CamerasTab({ fieldId, token }: { fieldId: string; token: string }) {
+  const [cameras, setCameras] = useState<ApiCamera[]>([]);
+  const [viewerTokens, setViewerTokens] = useState<Record<string, string>>({});
+  const [tokenLoading, setTokenLoading] = useState<Record<string, boolean>>({});
+  const [camLoading, setCamLoading] = useState(true);
+  const [arrivals, setArrivals] = useState<ApiTodayArrivals | null>(null);
+  const [arrLoading, setArrLoading] = useState(true);
+  const [gridMode, setGridMode] = useState<GridMode | null>(null);
+
+  const loadCameras = useCallback(async () => {
+    setCamLoading(true);
+    try {
+      const cams = await getFieldCameras(token, fieldId);
+      setCameras(cams);
+      if (cams.length > 0) {
+        setTokenLoading(Object.fromEntries(cams.map((c) => [c.id, true])));
+        await Promise.allSettled(
+          cams.map(async (cam) => {
+            try {
+              const res = await getCameraToken(token, fieldId, cam.id);
+              setViewerTokens((prev) => ({ ...prev, [cam.id]: res.viewerToken }));
+            } catch {
+              // no token — tile shows placeholder
+            } finally {
+              setTokenLoading((prev) => ({ ...prev, [cam.id]: false }));
+            }
+          }),
+        );
+      }
+    } finally {
+      setCamLoading(false);
+    }
+  }, [token, fieldId]);
+
+  const loadArrivals = useCallback(async () => {
+    try {
+      setArrivals(await getTodayArrivals(token, fieldId));
+    } finally {
+      setArrLoading(false);
+    }
+  }, [token, fieldId]);
+
+  useEffect(() => {
+    loadCameras();
+    loadArrivals();
+    const interval = setInterval(loadArrivals, 30_000);
+    return () => clearInterval(interval);
+  }, [loadCameras, loadArrivals]);
+
+  const effectiveGrid: GridMode =
+    gridMode ?? (cameras.length <= 1 ? '1x1' : cameras.length <= 4 ? '2x2' : '3col');
+  const gridClass =
+    effectiveGrid === '1x1'
+      ? 'grid-cols-1 max-w-2xl'
+      : effectiveGrid === '2x2'
+        ? 'grid-cols-1 sm:grid-cols-2'
+        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+
+  const todayEntries = arrivals?.passes.filter((p) => p.weighingSlips.length > 0).length ?? 0;
+  const onSite = arrivals?.passes.filter((p) => p.status === 'ACTIVE').length ?? 0;
+  const openPasses = arrivals?.passes.length ?? 0;
+  const todayOrders = arrivals?.orders.length ?? 0;
+
+  const events = arrivals
+    ? [...arrivals.passes]
+        .sort((a, b) => new Date(b.validFrom).getTime() - new Date(a.validFrom).getTime())
+        .slice(0, 25)
+    : [];
+
+  const STAT_ITEMS = [
+    { label: 'Iebraukumi šodien', value: arrLoading ? '—' : todayEntries, icon: DoorOpen },
+    { label: 'Uz vietas', value: arrLoading ? '—' : onSite, icon: Users },
+    { label: 'Caurlaidēs', value: arrLoading ? '—' : openPasses, icon: LayoutGrid },
+    { label: 'Pasūtījumi', value: arrLoading ? '—' : todayOrders, icon: Package },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {STAT_ITEMS.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Camera grid */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold">
+            Kameras{cameras.length > 0 ? ` (${cameras.length})` : ''}
+          </p>
+          {cameras.length > 1 && (
+            <div className="flex items-center gap-0.5 border rounded-lg p-1">
+              {(['1x1', '2x2', '3col'] as GridMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setGridMode(gridMode === m ? null : m)}
+                  className={cn(
+                    'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                    effectiveGrid === m
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {camLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[...Array(2)].map((_, i) => (
+              <Skeleton key={i} className="aspect-video rounded-xl" />
+            ))}
+          </div>
+        ) : cameras.length === 0 ? (
+          <EmptyState
+            icon={VideoOff}
+            title="Nav konfigurētu kameru"
+            description="Kameras tiek pievienotas caur Ezviz Open Platform. Sazinieties ar sistēmas administratoru, lai konfigurētu kameras šim laukumam."
+          />
+        ) : (
+          <div className={cn('grid gap-4', gridClass)}>
+            {cameras.map((cam) => (
+              <CameraTile
+                key={cam.id}
+                camera={cam}
+                viewerToken={viewerTokens[cam.id] ?? null}
+                loading={tokenLoading[cam.id] ?? false}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Live event log */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Notikumi šodien
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadArrivals}
+              disabled={arrLoading}
+              className="h-7 text-xs gap-1.5"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', arrLoading && 'animate-spin')} />
+              Atjaunot
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {arrLoading && !arrivals ? (
+            <div className="space-y-2">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : events.length === 0 ? (
+            <EmptyState icon={Clock} title="Nav notikumu šodienai" />
+          ) : (
+            <div className="divide-y divide-border">
+              {events.map((pass) => {
+                const weighedTonnes = pass.weighingSlips.reduce((s, w) => s + w.netTonnes, 0);
+                const isActive = pass.status === 'ACTIVE';
+                return (
+                  <div
+                    key={pass.id}
+                    className="flex items-center gap-3 px-1 py-2.5 hover:bg-muted/40 transition-colors"
+                  >
+                    <span className="text-xs text-muted-foreground w-11 shrink-0 tabular-nums">
+                      {new Date(pass.validFrom).toLocaleTimeString('lv-LV', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <span className="font-mono text-xs font-medium text-foreground w-28 shrink-0 truncate">
+                      {pass.passNumber}
+                    </span>
+                    <span className="text-xs font-semibold w-20 shrink-0">{pass.vehiclePlate}</span>
+                    <span className="text-xs text-muted-foreground flex-1 min-w-0 truncate">
+                      {pass.company.name}
+                      {weighedTonnes > 0 && (
+                        <span className="ml-2 text-emerald-600 font-medium">
+                          {weighedTonnes.toFixed(1)} t
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-xs font-medium px-2 py-0.5 rounded-md shrink-0',
+                        isActive
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                          : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {isActive ? 'Aktīvs' : pass.status === 'EXPIRED' ? 'Beidzies' : 'Atsaukts'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Settings tab ─────────────────────────────────────────────────────────────
 
 function SettingsTab({
@@ -1309,8 +1582,8 @@ function SettingsTab({
 export default function AdminB3FieldDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { session, user, isLoading } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token: rawToken, user, isLoading } = useAuth();
+  const token = rawToken ?? '';
 
   const [field, setField] = useState<ApiB3Field | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1412,6 +1685,7 @@ export default function AdminB3FieldDetailPage() {
         {tab === 'inventory' && <InventoryTab fieldId={field.id} token={token} />}
         {tab === 'slots' && <SlotsTab fieldId={field.id} token={token} />}
         {tab === 'gate' && <GateTab fieldId={field.id} token={token} />}
+        {tab === 'cameras' && <CamerasTab fieldId={field.id} token={token} />}
         {tab === 'settings' && <SettingsTab field={field} token={token} onSaved={load} />}
       </div>
     </div>
