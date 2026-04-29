@@ -281,6 +281,10 @@ export interface ApiPassScanResult {
     weighingSlips: { id: string; slipNumber: string; netTonnes?: number | null; createdAt: string }[];
   };
   isValid: boolean;
+  /** false when pass.wasteClassCode is not in the field's acceptedWasteTypes list */
+  wasteAccepted: boolean;
+  /** accepted waste types configured on this field's recycling center */
+  acceptedWasteTypes: string[];
   field: { id: string; name: string };
   scannedAt: string;
 }

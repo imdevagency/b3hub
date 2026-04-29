@@ -38,6 +38,7 @@ import {
   UserCheck,
   Weight,
   Zap,
+  FileQuestion,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
@@ -95,6 +96,7 @@ const ADMIN_NAV: NavSection[] = [
     label: 'Darbības',
     items: [
       { label: 'Pasūtījumi', href: '/dashboard/admin/orders', icon: ClipboardList },
+      { label: 'RFQ / Cenu pieprasījumi', href: '/dashboard/admin/rfqs', icon: FileQuestion },
       { label: 'Viesa pieprasījumi', href: '/dashboard/admin/guest-orders', icon: UserCheck },
       {
         label: 'Transporta darbi',

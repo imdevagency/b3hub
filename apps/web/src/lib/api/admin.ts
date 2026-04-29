@@ -976,3 +976,48 @@ export async function adminToggleRecyclingCenter(
     body: JSON.stringify({ active }),
   });
 }
+
+// ── RFQ / Quote Requests (admin) ──────────────────────────────────────────────
+
+export type AdminQuoteRequestStatus = 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'CANCELLED' | 'EXPIRED';
+export type AdminQuoteResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+
+export interface AdminQuoteResponse {
+  id: string;
+  pricePerUnit: number;
+  totalPrice: number;
+  unit: string;
+  status: AdminQuoteResponseStatus;
+  createdAt: string;
+  supplier: { id: string; name: string };
+}
+
+export interface AdminQuoteRequest {
+  id: string;
+  requestNumber: string;
+  materialCategory: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  status: AdminQuoteRequestStatus;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  buyer: { id: string; firstName: string; lastName: string; email: string };
+  responses: AdminQuoteResponse[];
+}
+
+export async function adminGetQuoteRequests(
+  token: string,
+  page = 1,
+  limit = 50,
+  status?: AdminQuoteRequestStatus,
+): Promise<{ data: AdminQuoteRequest[]; total: number; page: number; pages: number }> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status) params.set('status', status);
+  return apiFetch(`/admin/quote-requests?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

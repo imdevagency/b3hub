@@ -887,6 +887,15 @@ function GateTab({ fieldId, token }: { fieldId: string; token: string }) {
                 {!scanResult.isValid && scanResult.pass.revokedReason && (
                   <div className="col-span-2 text-destructive">{scanResult.pass.revokedReason}</div>
                 )}
+                {scanResult.pass.wasteClassCode && !scanResult.wasteAccepted && (
+                  <div className="col-span-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-amber-800 text-xs font-semibold">
+                    ⚠️ Atkritumu veids &quot;{scanResult.pass.wasteClassCode}&quot; nav pieņemts
+                    šajā laukā.
+                    {scanResult.acceptedWasteTypes.length > 0 && (
+                      <> Pieņemtie: {scanResult.acceptedWasteTypes.join(', ')}.</>
+                    )}
+                  </div>
+                )}
               </div>
               {scanResult.pass.weighingSlips.length > 0 && (
                 <p className="text-xs text-emerald-600 font-medium">

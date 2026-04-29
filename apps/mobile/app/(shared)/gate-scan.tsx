@@ -292,6 +292,15 @@ export default function GateScanScreen() {
               {result.pass.wasteDescription ? (
                 <Detail label="Krava" value={result.pass.wasteDescription} wide />
               ) : null}
+              {/* Waste type acceptance warning */}
+              {result.pass.wasteClassCode && !result.wasteAccepted ? (
+                <Detail
+                  label="⚠️ Atkritumu veids"
+                  value={`"${result.pass.wasteClassCode}" — NAV PIEŅEMTS šajā laukā`}
+                  wide
+                  danger
+                />
+              ) : null}
               {!result.isValid && result.pass.revokedReason ? (
                 <Detail label="Iemesls" value={result.pass.revokedReason} wide danger />
               ) : null}

@@ -437,7 +437,11 @@ export class B3FieldsService {
   async scanPass(fieldId: string, passNumber: string) {
     const field = await this.prisma.b3Field.findUnique({
       where: { id: fieldId },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        recyclingCenter: { select: { acceptedWasteTypes: true } },
+      },
     });
     if (!field) throw new NotFoundException('B3 Field not found');
 
@@ -463,10 +467,31 @@ export class B3FieldsService {
       new Date(pass.validFrom) <= now &&
       new Date(pass.validTo) >= now;
 
+    // Check whether the declared waste class is accepted by this field's recycling center.
+    // wasteClassCode on the pass uses EWC format (e.g. "17 05 04") or a WasteType enum value.
+    // We do a case-insensitive substring match so both conventions work.
+    const acceptedWasteTypes: string[] =
+      field.recyclingCenter?.acceptedWasteTypes ?? [];
+    const wasteCode = pass.wasteClassCode?.toUpperCase().trim() ?? null;
+    const wasteAccepted: boolean =
+      acceptedWasteTypes.length === 0 // no restriction configured → accept all
+        ? true
+        : wasteCode !== null &&
+          acceptedWasteTypes.some(
+            (wt) =>
+              wt.toUpperCase() === wasteCode ||
+              wasteCode.includes(wt.toUpperCase()) ||
+              wt.toUpperCase().includes(wasteCode),
+          );
+
     return {
       pass,
       isValid,
-      field,
+      /** false when the pass's wasteClassCode is not in the field's acceptedWasteTypes list */
+      wasteAccepted,
+      /** convenience list so the gate UI can display what IS accepted */
+      acceptedWasteTypes,
+      field: { id: field.id, name: field.name },
       scannedAt: now.toISOString(),
     };
   }

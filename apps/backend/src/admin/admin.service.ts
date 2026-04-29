@@ -1383,6 +1383,38 @@ export class AdminService {
     return { sizes, carriers: enrichedCarriers };
   }
 
+  // ── RFQ / Quote Requests (admin view) ────────────────────────────────────
+
+  /** All quote requests across all buyers, newest first */
+  async adminGetQuoteRequests(page = 1, limit = 50, status?: string) {
+    const skip = (page - 1) * limit;
+    const where = status ? { status: status as never } : undefined;
+    const [data, total] = await Promise.all([
+      this.prisma.quoteRequest.findMany({
+        where,
+        include: {
+          buyer: { select: { id: true, firstName: true, lastName: true, email: true } },
+          responses: {
+            select: {
+              id: true,
+              pricePerUnit: true,
+              totalPrice: true,
+              unit: true,
+              status: true,
+              createdAt: true,
+              supplier: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.quoteRequest.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
   // ── Recycling centers (admin view) ────────────────────────────────────────
 
   /** GET /admin/recycling-centers — all centers (active and inactive) with waste record count */

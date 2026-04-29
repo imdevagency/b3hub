@@ -363,6 +363,21 @@ export class AdminController {
     );
   }
 
+  // ── RFQ / Quote Requests ──────────────────────────────────────────────────
+
+  /** GET /admin/quote-requests?page=1&limit=50&status=PENDING */
+  @Get('quote-requests')
+  getQuoteRequests(
+    @Query() pagination: PagePaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.service.adminGetQuoteRequests(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+      status,
+    );
+  }
+
   // ── Broadcast notification ────────────────────────────────────────────────
 
   /** POST /admin/notifications/broadcast */
