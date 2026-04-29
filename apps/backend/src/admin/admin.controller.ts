@@ -469,4 +469,44 @@ export class AdminController {
   ) {
     return this.service.adminToggleRecyclingCenter(id, body.active, admin.userId);
   }
+
+  // ── Documents ─────────────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/documents?page=1&limit=50&type=...&status=...&search=...&isGenerated=true|false
+   * Platform-wide document listing — all users, no ownerId filter.
+   */
+  @Get('documents')
+  getDocuments(
+    @Query() pagination: PagePaginationDto,
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('isGenerated') isGenerated?: string,
+  ) {
+    const gen =
+      isGenerated === 'true' ? true : isGenerated === 'false' ? false : undefined;
+    return this.service.getDocuments(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+      type,
+      status,
+      search,
+      gen,
+    );
+  }
+
+  /**
+   * PATCH /admin/documents/:id/status
+   * Update document status (e.g. ISSUED → ARCHIVED to void it).
+   * Audit-logged.
+   */
+  @Patch('documents/:id/status')
+  updateDocumentStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; note?: string },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.updateDocumentStatus(id, body.status, admin.userId, body.note);
+  }
 }

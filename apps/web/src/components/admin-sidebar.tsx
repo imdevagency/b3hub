@@ -19,6 +19,7 @@ import {
   Building2,
   ClipboardList,
   Clock,
+  FileText,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -143,6 +144,7 @@ const ADMIN_NAV: NavSection[] = [
       { label: 'Utilizācijas centri', href: '/dashboard/admin/recycling-centers', icon: Recycle },
       { label: 'Field Passes', href: '/dashboard/admin/field-passes', icon: Ticket },
       { label: 'Svēršanas taloni', href: '/dashboard/admin/weighing-slips', icon: Weight },
+      { label: 'Dokumenti', href: '/dashboard/admin/documents', icon: FileText },
     ],
   },
   {

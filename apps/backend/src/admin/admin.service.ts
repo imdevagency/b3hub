@@ -1464,4 +1464,100 @@ export class AdminService {
 
     return updated;
   }
+
+  // ── Documents (admin view) ────────────────────────────────────────────────
+
+  /**
+   * GET /admin/documents
+   * Platform-wide document listing, bypassing ownerId scoping.
+   */
+  async getDocuments(
+    page = 1,
+    limit = 50,
+    type?: string,
+    status?: string,
+    search?: string,
+    isGenerated?: boolean,
+  ) {
+    const skip = (page - 1) * limit;
+    const where: Record<string, unknown> = {};
+
+    if (type) where.type = type;
+    if (status) where.status = status;
+    if (isGenerated !== undefined) where.isGenerated = isGenerated;
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { issuedBy: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [docs, total] = await Promise.all([
+      this.prisma.document.findMany({
+        where,
+        include: { links: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.document.count({ where }),
+    ]);
+
+    // Enrich with owner info (no Prisma relation on Document.ownerId)
+    const ownerIds = [...new Set(docs.map((d) => d.ownerId))];
+    const owners = ownerIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: ownerIds } },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+      : [];
+    const ownerMap = Object.fromEntries(owners.map((u) => [u.id, u]));
+
+    const data = docs.map((d) => ({ ...d, owner: ownerMap[d.ownerId] ?? null }));
+
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * PATCH /admin/documents/:id/status
+   * Change document status. System-generated docs can only be ARCHIVED.
+   */
+  async updateDocumentStatus(
+    id: string,
+    status: string,
+    adminId: string,
+    note?: string,
+  ) {
+    const doc = await this.prisma.document.findUnique({
+      where: { id },
+      select: { id: true, title: true, type: true, status: true, isGenerated: true },
+    });
+    if (!doc) throw new NotFoundException('Document not found');
+
+    const updated = await this.prisma.document.update({
+      where: { id },
+      data: { status: status as never, ...(note ? { notes: note } : {}) },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        isGenerated: true,
+        updatedAt: true,
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'DOCUMENT_STATUS_CHANGED',
+      'Document',
+      id,
+      { status: doc.status },
+      { status: updated.status },
+      note,
+    );
+
+    return updated;
+  }
 }

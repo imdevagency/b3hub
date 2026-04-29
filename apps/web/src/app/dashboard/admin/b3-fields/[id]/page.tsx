@@ -5,7 +5,7 @@
  * Tabs: Inventory | Pickup Slots | Settings
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -66,6 +66,11 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Autocomplete, GoogleMap, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+
+const MAPS_KEY = getGoogleMapsPublicKey();
+const MAPS_LIBRARIES: 'places'[] = ['places'];
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -1347,6 +1352,52 @@ function SettingsTab({
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
+  // ── Google Maps / Places ──────────────────────────────────────────────────
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const { isLoaded: mapsLoaded } = useJsApiLoader({
+    googleMapsApiKey: MAPS_KEY,
+    libraries: MAPS_LIBRARIES,
+  });
+
+  const onAutocompleteLoad = (ac: google.maps.places.Autocomplete) => {
+    autocompleteRef.current = ac;
+  };
+
+  const onPlaceChanged = () => {
+    const place = autocompleteRef.current?.getPlace();
+    if (!place?.geometry?.location) return;
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    const comps = place.address_components ?? [];
+    const get = (t: string) => comps.find((c) => c.types.includes(t))?.long_name ?? '';
+    const getShort = (t: string) => comps.find((c) => c.types.includes(t))?.short_name ?? '';
+    const streetNum = get('street_number');
+    const route = get('route');
+    const addressStr =
+      [route, streetNum].filter(Boolean).join(' ') || place.formatted_address || '';
+    const city =
+      get('locality') ||
+      get('postal_town') ||
+      get('administrative_area_level_2') ||
+      get('administrative_area_level_1');
+    const postalCode = getShort('postal_code');
+    setForm((p) => ({
+      ...p,
+      address: addressStr || p.address,
+      city: city || p.city,
+      postalCode: postalCode || p.postalCode,
+      lat: String(lat),
+      lng: String(lng),
+    }));
+  };
+
+  const mapCenter = useMemo(() => {
+    const lat = parseFloat(form.lat);
+    const lng = parseFloat(form.lng);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return { lat, lng };
+  }, [form.lat, form.lng]);
+
   const toggleService = (svc: B3FieldService) => {
     setForm((p) => ({
       ...p,
@@ -1428,38 +1479,50 @@ function SettingsTab({
           </div>
           <div className="space-y-1.5">
             <Label>Adrese</Label>
+            {mapsLoaded ? (
+              <Autocomplete
+                onLoad={onAutocompleteLoad}
+                onPlaceChanged={onPlaceChanged}
+                restrictions={{ country: 'lv' }}
+                fields={['address_components', 'geometry', 'formatted_address']}
+              >
+                <Input
+                  placeholder="Sāc rakstīt adresi..."
+                  value={form.address}
+                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                />
+              </Autocomplete>
+            ) : (
+              <Input
+                value={form.address}
+                onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+              />
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Pasta indekss</Label>
             <Input
-              value={form.address}
-              onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+              value={form.postalCode}
+              onChange={(e) => setForm((p) => ({ ...p, postalCode: e.target.value }))}
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label>Pasta indekss</Label>
-              <Input
-                value={form.postalCode}
-                onChange={(e) => setForm((p) => ({ ...p, postalCode: e.target.value }))}
-              />
+          {/* Map pin preview */}
+          {mapsLoaded && mapCenter && (
+            <div className="rounded-xl overflow-hidden border border-border h-44">
+              <GoogleMap
+                mapContainerStyle={{ width: '100%', height: '100%' }}
+                center={mapCenter}
+                zoom={15}
+                options={{
+                  disableDefaultUI: true,
+                  gestureHandling: 'none',
+                  clickableIcons: false,
+                }}
+              >
+                <MarkerF position={mapCenter} />
+              </GoogleMap>
             </div>
-            <div className="space-y-1.5">
-              <Label>Lat</Label>
-              <Input
-                type="number"
-                step="any"
-                value={form.lat}
-                onChange={(e) => setForm((p) => ({ ...p, lat: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Lng</Label>
-              <Input
-                type="number"
-                step="any"
-                value={form.lng}
-                onChange={(e) => setForm((p) => ({ ...p, lng: e.target.value }))}
-              />
-            </div>
-          </div>
+          )}
           <div className="space-y-1.5">
             <Label>Iekšējas piezīmes</Label>
             <Textarea

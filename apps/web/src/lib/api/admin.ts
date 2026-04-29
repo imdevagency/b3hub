@@ -1021,3 +1021,85 @@ export async function adminGetQuoteRequests(
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Documents (admin) ─────────────────────────────────────────────────────────
+
+export type AdminDocumentType =
+  | 'INVOICE'
+  | 'WEIGHING_SLIP'
+  | 'DELIVERY_PROOF'
+  | 'WASTE_CERTIFICATE'
+  | 'DELIVERY_NOTE'
+  | 'WASTE_TRANSPORT_NOTE'
+  | 'CONTRACT'
+  | 'OTHER';
+
+export type AdminDocumentStatus = 'DRAFT' | 'ISSUED' | 'SIGNED' | 'ARCHIVED';
+
+export interface AdminDocumentLink {
+  id: string;
+  entityType: string;
+  entityId: string;
+  role: string;
+}
+
+export interface AdminDocument {
+  id: string;
+  title: string;
+  type: AdminDocumentType;
+  status: AdminDocumentStatus;
+  fileUrl: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  orderId: string | null;
+  invoiceId: string | null;
+  transportJobId: string | null;
+  wasteRecordId: string | null;
+  skipHireId: string | null;
+  ownerId: string;
+  issuedBy: string | null;
+  isGenerated: boolean;
+  notes: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  links: AdminDocumentLink[];
+  owner: { id: string; firstName: string; lastName: string; email: string };
+}
+
+export async function adminGetDocuments(
+  token: string,
+  params?: {
+    page?: number;
+    limit?: number;
+    type?: AdminDocumentType | 'ALL';
+    status?: AdminDocumentStatus | 'ALL';
+    search?: string;
+    isGenerated?: boolean;
+  },
+): Promise<{ data: AdminDocument[]; total: number; page: number; limit: number; pages: number }> {
+  const qs = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    limit: String(params?.limit ?? 50),
+  });
+  if (params?.type && params.type !== 'ALL') qs.set('type', params.type);
+  if (params?.status && params.status !== 'ALL') qs.set('status', params.status);
+  if (params?.search) qs.set('search', params.search);
+  if (params?.isGenerated !== undefined) qs.set('isGenerated', String(params.isGenerated));
+  return apiFetch(`/admin/documents?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminUpdateDocumentStatus(
+  id: string,
+  status: AdminDocumentStatus,
+  note: string | undefined,
+  token: string,
+): Promise<{ id: string; title: string; status: AdminDocumentStatus; updatedAt: string }> {
+  return apiFetch(`/admin/documents/${id}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status, note }),
+  });
+}
