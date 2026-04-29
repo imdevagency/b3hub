@@ -147,6 +147,17 @@ export interface AdminMonthlyTrend {
   gmv: number;
 }
 
+export interface AdminTodayDelivery {
+  id: string;
+  orderNumber: string;
+  status: string;
+  deliveryDate: string;
+  deliveryAddress: string;
+  buyerName: string;
+  driverName: string | null;
+  jobStatus: string | null;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalOrders: number;
@@ -158,6 +169,13 @@ export interface AdminStats {
   commissionEst30d: number;
   openDisputes: number;
   monthlyTrends: AdminMonthlyTrend[];
+  // New dashboard widgets
+  orderPipeline: Record<string, number>;
+  todayDeliveries: AdminTodayDelivery[];
+  openSupport: number;
+  pendingPayoutsCount: number;
+  pendingPayoutsTotal: number;
+  expiringDocumentsCount: number;
 }
 
 export async function getAdminStats(token: string): Promise<AdminStats> {

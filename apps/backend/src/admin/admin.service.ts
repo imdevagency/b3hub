@@ -290,6 +290,16 @@ export class AdminService {
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
+    // Today's date range (midnight-to-midnight)
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // 30 days from now for expiry window
+    const day30ahead = new Date(now);
+    day30ahead.setDate(day30ahead.getDate() + 30);
+
     const [
       totalUsers,
       totalOrders,
@@ -300,6 +310,12 @@ export class AdminService {
       gmv30dResult,
       recentOrders,
       openDisputes,
+      pipelineCounts,
+      todayOrders,
+      openSupport,
+      pendingSupplierPayouts,
+      pendingCarrierPayouts,
+      expiringDocumentsCount,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.order.count(),
@@ -338,6 +354,58 @@ export class AdminService {
       this.prisma.dispute.count({
         where: { status: { in: ['OPEN', 'UNDER_REVIEW'] } },
       }),
+      // Order pipeline: counts per active status
+      this.prisma.order.groupBy({
+        by: ['status'],
+        where: { status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'DELIVERED'] } },
+        _count: { id: true },
+      }),
+      // Today's scheduled deliveries
+      this.prisma.order.findMany({
+        where: {
+          deliveryDate: { gte: todayStart, lte: todayEnd },
+          status: { notIn: ['CANCELLED', 'COMPLETED'] },
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          deliveryDate: true,
+          deliveryAddress: true,
+          deliveryCity: true,
+          buyer: { select: { name: true } },
+          transportJobs: {
+            where: { status: { not: 'CANCELLED' } },
+            take: 1,
+            select: {
+              driver: { select: { firstName: true, lastName: true } },
+              status: true,
+            },
+          },
+        },
+        orderBy: { deliveryDate: 'asc' },
+        take: 50,
+      }),
+      // Open support threads
+      this.prisma.supportThread.count({ where: { status: 'OPEN' } }),
+      // Pending payouts
+      this.prisma.supplierPayout.aggregate({
+        _count: { id: true },
+        _sum: { amount: true },
+        where: { status: 'PENDING' },
+      }),
+      this.prisma.carrierPayout.aggregate({
+        _count: { id: true },
+        _sum: { amount: true },
+        where: { status: 'PENDING' },
+      }),
+      // Documents expiring in next 30 days
+      this.prisma.document.count({
+        where: {
+          expiresAt: { gte: now, lte: day30ahead },
+          status: { not: 'ARCHIVED' },
+        },
+      }),
     ]);
 
     // Build last-6-month GMV + order count trend
@@ -368,6 +436,34 @@ export class AdminService {
     // Platform commission estimate at default 6% supplier + 8% carrier blended rate (approximation)
     const commissionEst30d = Math.round(gmv30d * 0.06 * 100) / 100;
 
+    // Build order pipeline map
+    const pipelineMap: Record<string, number> = {
+      PENDING: 0, CONFIRMED: 0, IN_PROGRESS: 0, DELIVERED: 0,
+    };
+    for (const row of pipelineCounts) {
+      pipelineMap[row.status] = row._count.id;
+    }
+
+    // Flatten today's deliveries
+    const todayDeliveries = todayOrders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      deliveryDate: o.deliveryDate,
+      deliveryAddress: `${o.deliveryAddress}, ${o.deliveryCity}`,
+      buyerName: o.buyer.name,
+      driverName: o.transportJobs[0]?.driver
+        ? `${o.transportJobs[0].driver.firstName} ${o.transportJobs[0].driver.lastName}`
+        : null,
+      jobStatus: o.transportJobs[0]?.status ?? null,
+    }));
+
+    const pendingPayoutsCount =
+      (pendingSupplierPayouts._count.id ?? 0) + (pendingCarrierPayouts._count.id ?? 0);
+    const pendingPayoutsTotal = Math.round(
+      ((pendingSupplierPayouts._sum.amount ?? 0) + (pendingCarrierPayouts._sum.amount ?? 0)) * 100,
+    ) / 100;
+
     return {
       totalUsers,
       totalOrders,
@@ -379,6 +475,12 @@ export class AdminService {
       commissionEst30d,
       openDisputes,
       monthlyTrends,
+      orderPipeline: pipelineMap,
+      todayDeliveries,
+      openSupport,
+      pendingPayoutsCount,
+      pendingPayoutsTotal,
+      expiringDocumentsCount,
     };
   }
 

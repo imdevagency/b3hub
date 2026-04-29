@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, RefreshControl, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, SectionList, RefreshControl, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -8,15 +8,16 @@ import {
   Package,
   Truck,
   FileText,
-  ChevronRight,
+  RotateCcw,
   Trash2,
   Search,
   X,
   HardHat,
   ClipboardList,
   User,
+  ChevronRight,
 } from 'lucide-react-native';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, UnifiedOrder, orderSearchText } from '@/lib/use-orders';
 import type { ApiOrder, ApiTransportJob, SkipHireOrder, QuoteRequest } from '@/lib/api';
@@ -52,13 +53,28 @@ export default function OrdersScreen() {
     [unified, activeTab],
   );
 
-  const displayItems = React.useMemo(() => {
+  const displaySections = React.useMemo(() => {
     let base = tabFiltered;
     if (query.trim().length >= 2) {
       const q = query.trim().toLowerCase();
       base = base.filter((i) => orderSearchText(i).includes(q));
     }
-    return base;
+
+    const groups: Record<string, UnifiedOrder[]> = {};
+    base.forEach((item) => {
+      const it = item.data as any;
+      const dStr = it.createdAt || it.deliveryDate || it.pickupDate || new Date().toISOString();
+      const monthYear = format(new Date(dStr), 'LLLL yyyy', { locale: lv });
+      const capMonthYear = monthYear.charAt(0).toUpperCase() + monthYear.slice(1);
+
+      if (!groups[capMonthYear]) groups[capMonthYear] = [];
+      groups[capMonthYear].push(item);
+    });
+
+    return Object.keys(groups).map((title) => ({
+      title,
+      data: groups[title],
+    }));
   }, [tabFiltered, query]);
 
   const handleTabChange = (tab: 'active' | 'done') => {
@@ -156,33 +172,33 @@ export default function OrdersScreen() {
       )}
 
       {/* ── Segmented Control (Minimal) ───────────────────────── */}
-      <View className="flex-row px-4 border-b border-gray-100">
+      <View className="flex-row px-4 border-b border-gray-100 pt-2 bg-white">
         <TouchableOpacity
-          onPress={() => handleTabChange('active')}
-          className={`mr-6 py-3 border-b-2 ${activeTab === 'active' ? 'border-gray-900' : 'border-transparent'}`}
+          onPress={() => handleTabChange('done')}
+          className={`mr-6 py-3 border-b-2 ${activeTab === 'done' ? 'border-[#00A878]' : 'border-transparent'}`}
         >
           <Text
-            className={`font-semibold ${activeTab === 'active' ? 'text-gray-900' : 'text-gray-400'}`}
+            className={`font-semibold ${activeTab === 'done' ? 'text-gray-900' : 'text-gray-500'}`}
           >
-            Aktīvie
+            Vēsture
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => handleTabChange('done')}
-          className={`py-3 border-b-2 ${activeTab === 'done' ? 'border-gray-900' : 'border-transparent'}`}
+          onPress={() => handleTabChange('active')}
+          className={`py-3 border-b-2 ${activeTab === 'active' ? 'border-[#00A878]' : 'border-transparent'}`}
         >
           <Text
-            className={`font-semibold ${activeTab === 'done' ? 'text-gray-900' : 'text-gray-400'}`}
+            className={`font-semibold ${activeTab === 'active' ? 'text-gray-900' : 'text-gray-500'}`}
           >
-            Vēsture
+            Aktīvie
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* ── List ─────────────────────────────────────────────── */}
-      <FlatList
-        style={{ flex: 1, backgroundColor: colors.bgCard }}
-        data={displayItems}
+      <SectionList
+        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        sections={displaySections}
         keyExtractor={(item) =>
           item.kind === 'guest'
             ? `guest-${item.data.token}`
@@ -192,8 +208,13 @@ export default function OrdersScreen() {
         initialNumToRender={10}
         maxToRenderPerBatch={5}
         renderItem={renderItem}
+        renderSectionHeader={({ section: { title } }) => (
+          <View className="px-5 pt-8 pb-3 bg-white">
+            <Text className="font-bold text-gray-900 text-[19px]">{title}</Text>
+          </View>
+        )}
         ItemSeparatorComponent={() => (
-          <View className="h-[1px] bg-gray-100" style={{ marginLeft: 76 }} />
+          <View className="h-[1px] bg-gray-100" style={{ marginLeft: 64 }} />
         )}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
@@ -370,44 +391,54 @@ function UniversalRow({
 }) {
   return (
     <TouchableOpacity
-      className="flex-row items-center py-4 pr-5 pl-4 active:bg-gray-50 bg-white"
+      className="flex-row items-start py-5 pr-5 pl-5 active:bg-gray-50 bg-white"
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View className="w-12 h-12 rounded-xl bg-gray-100 items-center justify-center mr-4">
-        {icon}
-      </View>
+      <View className="w-8 items-center pt-0.5 mr-3">{icon}</View>
 
-      <View className="flex-1 justify-center py-1">
+      <View className="flex-1 justify-center">
+        {/* Top small gray text containing Date & Status */}
         <Text
-          className="font-semibold text-gray-900 mb-1"
-          style={{ fontSize: 16 }}
+          className="text-gray-500 mb-1"
+          style={{ fontSize: 13, fontFamily: 'Inter_400Regular' }}
           numberOfLines={1}
+        >
+          {subtitleLines[0]} {statusText ? `·  ${statusText}` : ''}
+        </Text>
+
+        {/* Primary text (Title/Address) */}
+        <Text
+          className="text-gray-900 mb-1"
+          style={{ fontSize: 16, fontFamily: 'Inter_400Regular', lineHeight: 22 }}
+          numberOfLines={2}
         >
           {title}
         </Text>
 
-        {subtitleLines.map((line: string, i: number) => (
-          <Text key={i} className="text-gray-500 mb-0.5" style={{ fontSize: 14 }} numberOfLines={1}>
-            {line}
+        {/* Bottom small gray/black text containing Distance/Price or details */}
+        {subtitleLines[1] ? (
+          <Text
+            className="text-gray-900 mt-1"
+            style={{ fontSize: 14, fontFamily: 'Inter_500Medium' }}
+            numberOfLines={1}
+          >
+            {subtitleLines[1]}
           </Text>
-        ))}
-
-        {statusText && (
-          <Text className="font-medium" style={{ fontSize: 14, color: statusColor }}>
-            {statusText}
-          </Text>
-        )}
-      </View>
-
-      <View className="items-end justify-center ml-3">
-        {price ? (
-          <Text className="font-semibold text-gray-900 mb-1" style={{ fontSize: 15 }}>
+        ) : price ? (
+          <Text
+            className="text-gray-900 mt-1"
+            style={{ fontSize: 14, fontFamily: 'Inter_500Medium' }}
+            numberOfLines={1}
+          >
             {price}
           </Text>
         ) : null}
-        <View className="w-6 h-6 items-end justify-center">
-          <ChevronRight size={18} color="#d1d5db" />
+      </View>
+
+      <View className="items-end justify-start pt-1 ml-3">
+        <View className="w-8 h-8 rounded-full border border-gray-300 items-center justify-center active:bg-gray-100">
+          <RotateCcw size={16} color="#6b7280" />
         </View>
       </View>
     </TouchableOpacity>
@@ -442,31 +473,37 @@ function MaterialRow({ item }: { item: ApiOrder }) {
 
   const itemsCount = item.items?.length || 0;
   const firstItemName = item.items?.[0]?.material?.name || 'Materiāli';
-  const title = itemsCount > 1 ? `${firstItemName} +${itemsCount - 1}` : firstItemName;
-
   const address = item.deliveryAddress?.split(',')[0] || 'Nav adreses';
-  const dateStr = item.deliveryDate
-    ? format(new Date(item.deliveryDate), 'd. MMM', { locale: lv })
-    : '';
-  const price = item.total != null ? `€${item.total}` : '';
 
-  // Aggregate total quantity across all line items
-  const totalQty = item.items?.reduce((sum: number, it: any) => sum + (it.quantity ?? 0), 0) ?? 0;
-  const qtyAddr = totalQty > 0 ? `${totalQty} t · ${address}` : address;
+  // Title becomes the address (or item name if simple)
+  const title =
+    itemsCount > 1
+      ? `${firstItemName} +${itemsCount - 1} · ${address}`
+      : `${firstItemName} · ${address}`;
+
+  const dateObject = item.deliveryDate ? new Date(item.deliveryDate) : new Date();
+  const dateStr = format(dateObject, 'd MMM', { locale: lv });
+  const timeStr = format(dateObject, 'HH:mm');
+
+  const price = item.total != null ? `€${item.total.toFixed(2)}` : '';
 
   // Show specific driver progress label instead of generic "Ceļā"
   const activeJob = item.transportJobs?.find((j) => DRIVER_TRANSIT_STATUSES.has(j.status));
   const statusText = activeJob ? (DRIVER_STATUS_LABELS[activeJob.status] ?? 'Ceļā') : st.label;
   const statusColor = activeJob ? '#059669' : st.color;
 
+  // Use Status for the top line if not complete, else use time
+  const isComplete = item.status === 'DELIVERED' || item.status === 'CANCELLED';
+  const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
+
   return (
     <UniversalRow
-      icon={<Package size={20} color="#374151" />}
+      icon={<Package size={24} color="#374151" strokeWidth={1.5} />}
       title={title}
-      subtitleLines={[qtyAddr, dateStr].filter(Boolean)}
-      price={price}
+      subtitleLines={[displayTopLine, price]} // We pass price as the subtitleLines[1] to render it correctly
+      price=""
       statusColor={statusColor}
-      statusText={statusText}
+      statusText={!isComplete ? statusText : ''}
       onPress={() => router.push(`/(buyer)/order/${item.id}`)}
     />
   );
@@ -480,19 +517,23 @@ function TransportRow({ item }: { item: ApiTransportJob }) {
     (item.pickupAddress?.split(',')[0] || 'Iekraušana') +
     ' → ' +
     (item.deliveryAddress?.split(',')[0] || 'Piegāde');
-  const dateStr = item.pickupDate
-    ? format(new Date(item.pickupDate), 'd. MMM HH:mm', { locale: lv })
-    : '';
-  const price = item.rate != null ? `€${item.rate}` : '';
+
+  const dateObject = item.pickupDate ? new Date(item.pickupDate) : new Date();
+  const dateStr = format(dateObject, 'd MMM', { locale: lv });
+  const timeStr = format(dateObject, 'HH:mm');
+  const price = item.rate != null ? `€${item.rate.toFixed(2)}` : '';
+
+  const isComplete = item.status === 'DELIVERED' || item.status === 'CANCELLED';
+  const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
 
   return (
     <UniversalRow
-      icon={<Truck size={20} color="#374151" />}
+      icon={<Truck size={24} color="#374151" strokeWidth={1.5} />}
       title={title}
-      subtitleLines={[dateStr].filter(Boolean)}
-      price={price}
+      subtitleLines={[displayTopLine, price]}
+      price=""
       statusColor={st.color}
-      statusText={st.label}
+      statusText={!isComplete ? st.label : ''}
       onPress={() => router.push(`/(buyer)/transport-job/${item.id}`)}
     />
   );
@@ -502,21 +543,25 @@ function DisposalRow({ item }: { item: ApiTransportJob }) {
   const router = useRouter();
   const st = getOrderStatus(item.status);
 
-  const title = 'Atkritumu izvešana';
-  const address = item.pickupAddress?.split(',')[0] || '';
-  const dateStr = item.pickupDate
-    ? format(new Date(item.pickupDate), 'd. MMM', { locale: lv })
-    : '';
-  const price = item.rate != null ? `€${item.rate}` : '';
+  const address = item.pickupAddress?.split(',')[0] || 'Adrese nav norādīta';
+  const title = `Atkritumu izvešana · ${address}`;
+
+  const dateObject = item.pickupDate ? new Date(item.pickupDate) : new Date();
+  const dateStr = format(dateObject, 'd MMM', { locale: lv });
+  const timeStr = format(dateObject, 'HH:mm');
+  const price = item.rate != null ? `€${item.rate.toFixed(2)}` : '';
+
+  const isComplete = item.status === 'DELIVERED' || item.status === 'CANCELLED';
+  const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
 
   return (
     <UniversalRow
-      icon={<Trash2 size={20} color="#374151" />}
+      icon={<Trash2 size={24} color="#374151" strokeWidth={1.5} />}
       title={title}
-      subtitleLines={[address, dateStr].filter(Boolean)}
-      price={price}
+      subtitleLines={[displayTopLine, price]}
+      price=""
       statusColor={st.color}
-      statusText={st.label}
+      statusText={!isComplete ? st.label : ''}
       onPress={() => router.push(`/(buyer)/transport-job/${item.id}`)}
     />
   );
@@ -527,21 +572,26 @@ function SkipRow({ item }: { item: SkipHireOrder }) {
   const st = getOrderStatus(item.status);
 
   const size = SIZE_LABEL[item.skipSize as string] ?? item.skipSize;
-  const title = `Konteiners ${size}`;
-  const address = item.location?.split(',')[0] || '';
-  const dateStr = item.deliveryDate
-    ? format(new Date(item.deliveryDate), 'd. MMM', { locale: lv })
-    : '';
+  const address = item.location?.split(',')[0] || 'Adrese nav norādīta';
+  const title = `Konteiners ${size} · ${address}`;
+
+  const dateObject = item.deliveryDate ? new Date(item.deliveryDate) : new Date();
+  const dateStr = format(dateObject, 'd MMM', { locale: lv });
+  const timeStr = format(dateObject, 'HH:mm');
   const price = item.price != null ? `€${item.price.toFixed(2)}` : '';
+
+  const isComplete =
+    item.status === 'DELIVERED' || item.status === 'CANCELLED' || item.status === 'COMPLETED';
+  const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
 
   return (
     <UniversalRow
-      icon={<HardHat size={20} color="#374151" />}
+      icon={<HardHat size={24} color="#374151" strokeWidth={1.5} />}
       title={title}
-      subtitleLines={[address, dateStr].filter(Boolean)}
-      price={price}
+      subtitleLines={[displayTopLine, price]}
+      price=""
       statusColor={st.color}
-      statusText={st.label}
+      statusText={!isComplete ? st.label : ''}
       onPress={() => router.push(`/(buyer)/skip-order/${item.id}`)}
     />
   );
@@ -553,18 +603,21 @@ function RfqRow({ item }: { item: QuoteRequest }) {
 
   const title = item.materialName || 'Cenu aptauja';
   const quotes = `${item.responses?.length || 0} piedāvājumi`;
-  const dateStr = item.createdAt
-    ? `Izveidots: ${format(new Date(item.createdAt), 'd. MMM', { locale: lv })}`
-    : '';
+
+  const dateObject = item.createdAt ? new Date(item.createdAt) : new Date();
+  const dateStr = format(dateObject, 'd MMM', { locale: lv });
+  const timeStr = format(dateObject, 'HH:mm');
+
+  const displayTopLine = `${dateStr} · ${st.label}`;
 
   return (
     <UniversalRow
-      icon={<FileText size={20} color="#374151" />}
+      icon={<FileText size={24} color="#374151" strokeWidth={1.5} />}
       title={title}
-      subtitleLines={[quotes, dateStr].filter(Boolean)}
+      subtitleLines={[displayTopLine, quotes]}
       price=""
       statusColor={st.color}
-      statusText={st.label}
+      statusText=""
       onPress={() => router.push(`/(buyer)/rfq/${item.id}`)}
     />
   );

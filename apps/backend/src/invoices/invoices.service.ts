@@ -867,39 +867,53 @@ export class InvoicesService {
     // One invoice per supplier that has accepted the billing agent agreement.
     // Buyer sees separate invoices per supplier — each with the supplier's VAT
     // number as issuer (B3Hub generated on their behalf).
-    for (const sup of agentSuppliers) {
+    // Prepare all payloads first, then create in parallel (avoids N sequential round-trips).
+    const agentPayloads = agentSuppliers.map((sup) => {
       const subtotal = Math.round(sup.subtotalNet * 100) / 100;
       const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
       const total = Math.round((subtotal + tax) * 100) / 100;
-      const invoiceNumber = this.generateInvoiceNumber();
-      const taxPeriod = new Date().toLocaleDateString('lv-LV', {
-        month: 'long',
-        year: 'numeric',
-      });
+      return {
+        sup,
+        invoiceNumber: this.generateInvoiceNumber(),
+        subtotal,
+        tax,
+        total,
+        taxPeriod: new Date().toLocaleDateString('lv-LV', {
+          month: 'long',
+          year: 'numeric',
+        }),
+      };
+    });
 
-      const inv = await this.prisma.invoice.create({
-        data: {
-          invoiceNumber,
-          orderId: order.id,
-          sellerCompanyId: sup.supplierId,
-          subtotal,
-          tax,
-          total,
-          currency: order.currency,
-          dueDate,
-          paymentStatus: PaymentStatus.PENDING,
-          supplierVatNumber: sup.supplierVat,
-          buyerVatNumber,
-          taxPeriod,
-        },
-        select: { id: true },
-      });
+    const agentResults = await Promise.all(
+      agentPayloads.map(({ sup, invoiceNumber, subtotal, tax, total, taxPeriod }) =>
+        this.prisma.invoice.create({
+          data: {
+            invoiceNumber,
+            orderId: order.id,
+            sellerCompanyId: sup.supplierId,
+            subtotal,
+            tax,
+            total,
+            currency: order.currency,
+            dueDate,
+            paymentStatus: PaymentStatus.PENDING,
+            supplierVatNumber: sup.supplierVat,
+            buyerVatNumber,
+            taxPeriod,
+          },
+          select: { id: true },
+        }),
+      ),
+    );
 
+    for (let i = 0; i < agentPayloads.length; i++) {
+      const { sup, invoiceNumber, total } = agentPayloads[i];
+      const inv = agentResults[i];
       createdInvoiceIds.push(inv.id);
       this.logger.log(
         `Invoice ${invoiceNumber} (supplier ${sup.supplierId}) created for order ${order.id}`,
       );
-
       if (paymentMethod === PaymentMethod.INVOICE) {
         this.generatePayseraPaymentLink(inv.id, {
           id: order.id,

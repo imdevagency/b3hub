@@ -896,7 +896,12 @@ export class PaymentsService {
                 where: { companyId: confirmedSkip.carrierId },
                 select: { id: true },
               })
-              .catch(() => [] as { id: string }[]);
+              .catch((err: unknown) => {
+                this.logger.warn(
+                  `Webhook: failed to fetch carrier users for skip order ${confirmedSkip.id}: ${(err as Error).message}`,
+                );
+                return [] as { id: string }[];
+              });
 
             if (carrierUsers.length > 0) {
               const deliveryDay = confirmedSkip.deliveryDate
@@ -1609,23 +1614,23 @@ export class PaymentsService {
       await this.prisma.order.findUnique({ where: { id: orderId }, select: { currency: true } })
     )?.currency ?? 'EUR';
 
+    // Batch idempotency check — one query instead of N individual findFirst calls.
+    const existingCommissions = await this.prisma.invoice.findMany({
+      where: { isCommissionInvoice: true, orderId, buyerCompanyId: { in: supplierIds } },
+      select: { buyerCompanyId: true },
+    });
+    const alreadyProcessed = new Set(
+      existingCommissions.map((e) => e.buyerCompanyId).filter(Boolean) as string[],
+    );
+
     for (const supplierId of supplierIds) {
+      // Idempotency: skip if commission invoice already created for this supplier+order.
+      if (alreadyProcessed.has(supplierId)) continue;
+
       // Find the matching supplier-issued invoice to link against
       const supplierInvoice = supplierInvoices.find(
         (inv) => inv.sellerCompanyId === supplierId,
       );
-
-      // Idempotency: skip if commission invoice already exists for this pair
-      const alreadyExists = await this.prisma.invoice.findFirst({
-        where: {
-          isCommissionInvoice: true,
-          buyerCompanyId: supplierId,
-          commissionForInvoiceId: supplierInvoice?.id ?? undefined,
-          orderId,
-        },
-        select: { id: true },
-      });
-      if (alreadyExists) continue;
 
       // Gross payout = subtotal of supplier invoice (before our commission)
       const grossCents =
