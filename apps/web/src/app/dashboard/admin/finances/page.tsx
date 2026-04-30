@@ -36,8 +36,10 @@ import {
   adminReleasePayment,
   adminRefundPayment,
   adminGetAllInvoices,
+  adminGetFinanceStats,
   type AdminPayment,
   type AdminInvoice,
+  type AdminFinanceStats,
 } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -1126,6 +1128,304 @@ function InvoicesTab({ token }: { token: string }) {
   );
 }
 
+// ─── Overview tab ─────────────────────────────────────────────────────────────
+
+const ORDER_TYPE_LABEL: Record<string, string> = {
+  MATERIAL: 'Materiāli',
+  TRANSPORT: 'Transports',
+  COMBINED: 'Kombinēts',
+  DISPOSAL: 'Atkritumi',
+  CONTAINER: 'Konteiners',
+};
+
+function pct(current: number, previous: number) {
+  if (previous === 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function TrendBadge({ current, previous }: { current: number; previous: number }) {
+  const p = pct(current, previous);
+  if (p === null) return null;
+  const up = p >= 0;
+  return (
+    <span className={`text-xs font-medium ${up ? 'text-emerald-600' : 'text-red-600'}`}>
+      {up ? '▲' : '▼'} {Math.abs(p)}% vs iepr.
+    </span>
+  );
+}
+
+function MiniBar({
+  value,
+  max,
+  color = 'bg-blue-500',
+}: {
+  value: number;
+  max: number;
+  color?: string;
+}) {
+  const w = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${w}%` }} />
+    </div>
+  );
+}
+
+function OverviewTab({ token }: { token: string }) {
+  const [stats, setStats] = useState<AdminFinanceStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    adminGetFinanceStats(token)
+      .then(setStats)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Kļūda'))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="space-y-4 pt-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="pt-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        {error ?? 'Nav datu'}
+      </div>
+    );
+  }
+
+  const maxGmv = Math.max(...stats.monthlyTrend.map((m) => m.gmv), 1);
+  const maxCommission = Math.max(...stats.monthlyTrend.map((m) => m.commission), 1);
+  const totalOrderGmv = stats.byOrderType.reduce((s, t) => s + t.gmv, 0);
+
+  const commissionRateThisMonth =
+    stats.gmv.thisMonth > 0
+      ? ((stats.commission.thisMonth / stats.gmv.thisMonth) * 100).toFixed(1)
+      : '0.0';
+
+  return (
+    <div className="space-y-6 pt-4">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-5 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              GMV šomēnes
+            </p>
+            <p className="text-2xl font-bold tabular-nums text-blue-700">
+              {fmt(stats.gmv.thisMonth)}
+            </p>
+            <div className="flex items-center gap-2">
+              <TrendBadge current={stats.gmv.thisMonth} previous={stats.gmv.lastMonth} />
+            </div>
+            <p className="text-xs text-muted-foreground">{stats.orders.thisMonth} pasūtījumi</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Komisija šomēnes
+            </p>
+            <p className="text-2xl font-bold tabular-nums text-emerald-700">
+              {fmt(stats.commission.thisMonth)}
+            </p>
+            <div className="flex items-center gap-2">
+              <TrendBadge
+                current={stats.commission.thisMonth}
+                previous={stats.commission.lastMonth}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{commissionRateThisMonth}% no GMV</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Gaida izmaksas
+            </p>
+            <p className="text-2xl font-bold tabular-nums text-amber-600">
+              {fmt(stats.pendingPayouts.total)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendingPayouts.totalCount} ieraksti
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Pieg. {fmt(stats.pendingPayouts.supplierAmount)} · Pārvad.{' '}
+              {fmt(stats.pendingPayouts.carrierAmount)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              GMV kopā
+            </p>
+            <p className="text-2xl font-bold tabular-nums">{fmt(stats.gmv.allTime)}</p>
+            <p className="text-xs text-muted-foreground">
+              Komisija kopā: {fmt(stats.commission.allTime)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Skip hire šomēnes: {fmt(stats.gmv.skipThisMonth)} ({stats.gmv.skipCountThisMonth})
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monthly trend chart */}
+      <Card>
+        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+          <p className="text-sm font-semibold">GMV un komisija — pēdējie 12 mēneši</p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500" />
+              GMV
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500" />
+              Komisija
+            </span>
+          </div>
+        </div>
+        <CardContent className="pb-4">
+          <div className="overflow-x-auto">
+            <div className="flex items-end gap-2 min-w-[600px] h-44">
+              {stats.monthlyTrend.map((m) => {
+                const gmvH = maxGmv > 0 ? Math.round((m.gmv / maxGmv) * 148) : 2;
+                const comH = maxGmv > 0 ? Math.round((m.commission / maxGmv) * 148) : 2;
+                const label = m.month.slice(0, 7); // YYYY-MM
+                const [yr, mo] = label.split('-');
+                const shortLabel = `${mo}/${yr.slice(2)}`;
+                return (
+                  <div key={m.month} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className="w-full flex items-end gap-0.5 justify-center">
+                      <div
+                        title={`GMV: ${fmt(m.gmv)}`}
+                        className="flex-1 bg-blue-400 rounded-t-sm cursor-default transition-all group-hover:bg-blue-500"
+                        style={{ height: `${Math.max(gmvH, 2)}px` }}
+                      />
+                      <div
+                        title={`Komisija: ${fmt(m.commission)}`}
+                        className="flex-1 bg-emerald-400 rounded-t-sm cursor-default transition-all group-hover:bg-emerald-500"
+                        style={{ height: `${Math.max(comH, 2)}px` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {shortLabel}
+                    </span>
+                    <span className="text-[9px] text-blue-600 tabular-nums opacity-0 group-hover:opacity-100">
+                      {m.orders}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Breakdown by order type + pending payouts split */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="px-5 pt-4 pb-1">
+            <p className="text-sm font-semibold">GMV pēc pasūtījuma veida</p>
+          </div>
+          <CardContent className="space-y-3 pt-2">
+            {stats.byOrderType
+              .sort((a, b) => b.gmv - a.gmv)
+              .map((row) => (
+                <div key={row.type} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{ORDER_TYPE_LABEL[row.type] ?? row.type}</span>
+                    <span className="tabular-nums font-medium">{fmt(row.gmv)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MiniBar value={row.gmv} max={totalOrderGmv} color="bg-blue-400" />
+                    <span className="text-xs text-muted-foreground w-16 text-right tabular-nums">
+                      {totalOrderGmv > 0 ? Math.round((row.gmv / totalOrderGmv) * 100) : 0}% ·{' '}
+                      {row.count}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            {stats.byOrderType.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">Nav datu</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <div className="px-5 pt-4 pb-1">
+            <p className="text-sm font-semibold">Gaida izmaksas sadalījums</p>
+          </div>
+          <CardContent className="pt-2">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-2 border-b">
+                <div>
+                  <p className="text-sm font-medium">Piegādātāji</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.pendingPayouts.supplierCount} izmaksas
+                  </p>
+                </div>
+                <p className="text-lg font-bold tabular-nums text-amber-600">
+                  {fmt(stats.pendingPayouts.supplierAmount)}
+                </p>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b">
+                <div>
+                  <p className="text-sm font-medium">Pārvadātāji / Šoferi</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.pendingPayouts.carrierCount} izmaksas
+                  </p>
+                </div>
+                <p className="text-lg font-bold tabular-nums text-amber-600">
+                  {fmt(stats.pendingPayouts.carrierAmount)}
+                </p>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <p className="text-sm font-semibold">Kopā</p>
+                <p className="text-xl font-bold tabular-nums text-amber-700">
+                  {fmt(stats.pendingPayouts.total)}
+                </p>
+              </div>
+              <MiniBar
+                value={stats.pendingPayouts.supplierAmount}
+                max={stats.pendingPayouts.total}
+                color="bg-amber-400"
+              />
+              <p className="text-xs text-muted-foreground">
+                Piegādātāji{' '}
+                {stats.pendingPayouts.total > 0
+                  ? Math.round(
+                      (stats.pendingPayouts.supplierAmount / stats.pendingPayouts.total) * 100,
+                    )
+                  : 0}
+                % · Pārvadātāji{' '}
+                {stats.pendingPayouts.total > 0
+                  ? Math.round(
+                      (stats.pendingPayouts.carrierAmount / stats.pendingPayouts.total) * 100,
+                    )
+                  : 0}
+                %
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // ─── Hub page ─────────────────────────────────────────────────────────────────
 
 function FinancesHubContent() {
@@ -1133,19 +1433,23 @@ function FinancesHubContent() {
   const router = useRouter();
   const { token: rawToken, isLoading } = useAuth();
   const token = rawToken ?? '';
-  const tab = searchParams.get('tab') ?? 'payouts';
+  const tab = searchParams.get('tab') ?? 'overview';
 
   if (isLoading) return null;
 
   return (
     <div className="space-y-2">
-      <PageHeader title="Finanses" description="Izmaksas, maksājumi un rēķini vienuviet" />
+      <PageHeader title="Finanses" description="Platformas ieņēmumi, izmaksas un rēķini" />
       <Tabs value={tab} onValueChange={(t) => router.push(`?tab=${t}`)}>
         <TabsList>
+          <TabsTrigger value="overview">Pārskats</TabsTrigger>
           <TabsTrigger value="payouts">Izmaksas</TabsTrigger>
           <TabsTrigger value="payments">Maksājumi</TabsTrigger>
           <TabsTrigger value="invoices">Rēķini</TabsTrigger>
         </TabsList>
+        <TabsContent value="overview">
+          <OverviewTab token={token} />
+        </TabsContent>
         <TabsContent value="payouts">
           <PayoutsTab token={token} />
         </TabsContent>

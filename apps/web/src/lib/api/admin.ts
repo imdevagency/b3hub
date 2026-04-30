@@ -2449,3 +2449,40 @@ export async function adminDeleteClientInvoice(token: string, id: string): Promi
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── B3Hub Platform Finance Stats ────────────────────────────────────────────
+
+export interface AdminFinanceStats {
+  gmv: {
+    allTime: number;
+    thisMonth: number;
+    lastMonth: number;
+    skipThisMonth: number;
+    skipCountThisMonth: number;
+  };
+  commission: {
+    allTime: number;
+    thisMonth: number;
+    lastMonth: number;
+  };
+  orders: {
+    thisMonth: number;
+    lastMonth: number;
+  };
+  pendingPayouts: {
+    supplierAmount: number;
+    supplierCount: number;
+    carrierAmount: number;
+    carrierCount: number;
+    total: number;
+    totalCount: number;
+  };
+  byOrderType: Array<{ type: string; gmv: number; count: number }>;
+  monthlyTrend: Array<{ month: string; gmv: number; commission: number; orders: number }>;
+}
+
+export async function adminGetFinanceStats(token: string): Promise<AdminFinanceStats> {
+  return apiFetch('/admin/finance-stats', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

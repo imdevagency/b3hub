@@ -116,6 +116,12 @@ export class AdminController {
     return this.service.getStats();
   }
 
+  /** GET /admin/finance-stats — GMV, commission, payout summary, monthly trend */
+  @Get('finance-stats')
+  getFinanceStats() {
+    return this.service.adminGetFinanceStats();
+  }
+
   /** GET /admin/users — all users list */
   @Get('users')
   getUsers(@Query() pagination: PagePaginationDto) {

@@ -3603,5 +3603,188 @@ export class AdminService {
   async adminDeleteClientInvoice(id: string) {
     return this.prisma.constructionClientInvoice.delete({ where: { id } });
   }
+
+  // ─── B3Hub Platform Finance Stats ─────────────────────────────────────────
+
+  async adminGetFinanceStats() {
+    const now = new Date();
+
+    // Month boundaries
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+
+    const nonCancelled = { status: { notIn: ['CANCELLED', 'DRAFT'] as any[] } };
+
+    const [
+      gmvAllTime,
+      gmvThisMonth,
+      gmvLastMonth,
+      commissionAllTime,
+      commissionThisMonth,
+      commissionLastMonth,
+      orderCountThisMonth,
+      orderCountLastMonth,
+      byTypeRaw,
+      monthlyRaw,
+      pendingSupplier,
+      pendingCarrier,
+      skipGmvThisMonth,
+      monthlyPaymentsRaw,
+    ] = await Promise.all([
+      // GMV all-time
+      this.prisma.order.aggregate({
+        _sum: { total: true },
+        where: nonCancelled,
+      }),
+      // GMV this month
+      this.prisma.order.aggregate({
+        _sum: { total: true },
+        where: { ...nonCancelled, createdAt: { gte: thisMonthStart } },
+      }),
+      // GMV last month
+      this.prisma.order.aggregate({
+        _sum: { total: true },
+        where: { ...nonCancelled, createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+      }),
+      // Commission all-time (sum of platformFee on payments)
+      this.prisma.payment.aggregate({
+        _sum: { platformFee: true },
+        where: { status: { in: ['RELEASED', 'PAID', 'CAPTURED'] } },
+      }),
+      // Commission this month
+      this.prisma.payment.aggregate({
+        _sum: { platformFee: true },
+        where: {
+          status: { in: ['RELEASED', 'PAID', 'CAPTURED'] },
+          createdAt: { gte: thisMonthStart },
+        },
+      }),
+      // Commission last month
+      this.prisma.payment.aggregate({
+        _sum: { platformFee: true },
+        where: {
+          status: { in: ['RELEASED', 'PAID', 'CAPTURED'] },
+          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+        },
+      }),
+      // Order count this month
+      this.prisma.order.count({
+        where: { ...nonCancelled, createdAt: { gte: thisMonthStart } },
+      }),
+      // Order count last month
+      this.prisma.order.count({
+        where: { ...nonCancelled, createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+      }),
+      // GMV by order type (all-time)
+      this.prisma.order.groupBy({
+        by: ['orderType'],
+        where: nonCancelled,
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+      // Last 12 months of raw orders for GMV trend
+      this.prisma.order.findMany({
+        where: { ...nonCancelled, createdAt: { gte: twelveMonthsAgo } },
+        select: { createdAt: true, total: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      // Pending supplier payouts
+      this.prisma.supplierPayout.aggregate({
+        _sum: { amount: true },
+        _count: { id: true },
+        where: { status: 'PENDING' },
+      }),
+      // Pending carrier payouts
+      this.prisma.carrierPayout.aggregate({
+        _sum: { amount: true },
+        _count: { id: true },
+        where: { status: 'PENDING' },
+      }),
+      // Skip hire GMV this month
+      this.prisma.skipHireOrder.aggregate({
+        _sum: { price: true },
+        _count: { id: true },
+        where: {
+          status: { not: 'CANCELLED' as any },
+          createdAt: { gte: thisMonthStart },
+        },
+      }),
+      // Last 12 months of payments for commission trend
+      this.prisma.payment.findMany({
+        where: {
+          status: { in: ['RELEASED', 'PAID', 'CAPTURED'] },
+          createdAt: { gte: twelveMonthsAgo },
+        },
+        select: { createdAt: true, platformFee: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+
+    // Build 12-month trend
+    const monthMap: Record<string, { gmv: number; commission: number; orders: number }> = {};
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthMap[key] = { gmv: 0, commission: 0, orders: 0 };
+    }
+    for (const order of monthlyRaw) {
+      const d = new Date(order.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (monthMap[key]) {
+        monthMap[key].gmv += order.total;
+        monthMap[key].orders++;
+      }
+    }
+    for (const payment of monthlyPaymentsRaw) {
+      const d = new Date(payment.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (monthMap[key]) {
+        monthMap[key].commission += payment.platformFee ?? 0;
+      }
+    }
+    const monthlyTrend = Object.entries(monthMap).map(([month, v]) => ({
+      month,
+      gmv: Math.round(v.gmv * 100) / 100,
+      commission: Math.round(v.commission * 100) / 100,
+      orders: v.orders,
+    }));
+
+    const r = (n: number | null | undefined) => Math.round((n ?? 0) * 100) / 100;
+
+    return {
+      gmv: {
+        allTime: r(gmvAllTime._sum.total),
+        thisMonth: r(gmvThisMonth._sum.total),
+        lastMonth: r(gmvLastMonth._sum.total),
+        skipThisMonth: r(skipGmvThisMonth._sum.price),
+        skipCountThisMonth: skipGmvThisMonth._count.id,
+      },
+      commission: {
+        allTime: r(commissionAllTime._sum.platformFee),
+        thisMonth: r(commissionThisMonth._sum.platformFee),
+        lastMonth: r(commissionLastMonth._sum.platformFee),
+      },
+      orders: {
+        thisMonth: orderCountThisMonth,
+        lastMonth: orderCountLastMonth,
+      },
+      pendingPayouts: {
+        supplierAmount: r(pendingSupplier._sum.amount),
+        supplierCount: pendingSupplier._count.id,
+        carrierAmount: r(pendingCarrier._sum.amount),
+        carrierCount: pendingCarrier._count.id,
+        total: r((pendingSupplier._sum.amount ?? 0) + (pendingCarrier._sum.amount ?? 0)),
+        totalCount: pendingSupplier._count.id + pendingCarrier._count.id,
+      },
+      byOrderType: byTypeRaw.map((row) => ({
+        type: row.orderType,
+        gmv: r(row._sum.total),
+        count: row._count.id,
+      })),
+      monthlyTrend,
+    };
+  }
 }
 
