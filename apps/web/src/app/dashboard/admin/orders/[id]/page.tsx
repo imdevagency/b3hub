@@ -9,7 +9,12 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, RefreshCw, ExternalLink, AlertTriangle, FileText, Truck } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetOrderById, adminCancelOrder, type AdminOrderDetail } from '@/lib/api/admin';
+import {
+  adminGetOrderById,
+  adminCancelOrder,
+  adminForceOrderStatus,
+  type AdminOrderDetail,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +30,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { fmtDate } from '@/lib/format';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -66,6 +78,12 @@ export default function AdminOrderDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+
+  // Force status dialog
+  const [forceStatusOpen, setForceStatusOpen] = useState(false);
+  const [forceStatus, setForceStatus] = useState('');
+  const [forceStatusReason, setForceStatusReason] = useState('');
+  const [forcingStatus, setForcingStatus] = useState(false);
 
   const load = useCallback(async () => {
     if (!token || !id) return;
@@ -119,7 +137,28 @@ export default function AdminOrderDetailPage() {
       </div>
     );
 
-  const isCancellable = !['CANCELLED', 'DELIVERED'].includes(order.status);
+  const isCancellable = !['CANCELLED', 'DELIVERED', 'COMPLETED'].includes(order.status);
+
+  async function handleForceStatus() {
+    if (!token || !order || !forceStatus) return;
+    setForcingStatus(true);
+    try {
+      await adminForceOrderStatus(
+        order.id,
+        forceStatus,
+        forceStatusReason || 'Admin override',
+        token,
+      );
+      setForceStatusOpen(false);
+      setForceStatus('');
+      setForceStatusReason('');
+      await load();
+    } catch {
+      setError('Neizdevās mainīt statusu.');
+    } finally {
+      setForcingStatus(false);
+    }
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -353,19 +392,93 @@ export default function AdminOrderDetailPage() {
       )}
 
       {/* Actions */}
-      {isCancellable && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Darbības</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Darbības</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-orange-600 border-orange-200 hover:bg-orange-50"
+            onClick={() => {
+              setForceStatus(order.status);
+              setForceStatusOpen(true);
+            }}
+          >
+            Mainīt statusu
+          </Button>
+          {isCancellable && (
             <Button variant="destructive" size="sm" onClick={() => setCancelOpen(true)}>
               <AlertTriangle className="h-4 w-4 mr-1.5" />
               Atcelt pasūtījumu
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Force Status dialog */}
+      <Dialog open={forceStatusOpen} onOpenChange={setForceStatusOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mainīt pasūtījuma statusu</DialogTitle>
+            <DialogDescription>
+              {order.orderNumber} · Pašreizējais statuss: <strong>{order.status}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Jaunais statuss</Label>
+              <Select value={forceStatus} onValueChange={setForceStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Izvēlēties statusu..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    'DRAFT',
+                    'PENDING',
+                    'CONFIRMED',
+                    'IN_PROGRESS',
+                    'DELIVERED',
+                    'COMPLETED',
+                    'CANCELLED',
+                  ].map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="force-order-reason">Iemesls</Label>
+              <Textarea
+                id="force-order-reason"
+                value={forceStatusReason}
+                onChange={(e) => setForceStatusReason(e.target.value)}
+                rows={3}
+                placeholder="Admin piezīme par statusa maiņas iemeslu..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setForceStatusOpen(false)}
+              disabled={forcingStatus}
+            >
+              Atcelt
+            </Button>
+            <Button
+              onClick={handleForceStatus}
+              disabled={forcingStatus || !forceStatus}
+              variant="destructive"
+            >
+              Apstiprināt maiņu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Cancel dialog */}
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>

@@ -13,6 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   BarChart3,
+  Box,
   Building2,
   ClipboardList,
   FileText,
@@ -22,10 +23,13 @@ import {
   LogOut,
   MapPin,
   Megaphone,
+  Navigation,
   Package,
   Recycle,
   ScrollText,
+  Settings2,
   ShieldCheck,
+  ShoppingBag,
   Sliders,
   Truck,
   Users,
@@ -34,7 +38,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
 import { adminListSupportThreads } from '@/lib/api/support';
-import { adminGetExceptions } from '@/lib/api/admin';
+import { adminGetExceptions, adminGetGuestOrders } from '@/lib/api/admin';
 import { Badge } from '@/components/ui/badge';
 import {
   Sidebar,
@@ -73,6 +77,7 @@ type AdminBadges = {
   openExceptions: number;
   activeJobs: number;
   triageAlerts: number;
+  pendingGuestOrders: number;
 };
 
 // ─── Navigation structure ─────────────────────────────────────────────────────
@@ -96,6 +101,7 @@ const ADMIN_NAV: NavSection[] = [
     items: [
       { label: 'Katalogs', href: '/dashboard/admin/catalog', icon: Package },
       { label: 'Konfigurācija', href: '/dashboard/admin/config', icon: Sliders },
+      { label: 'Sistēmas iestatījumi', href: '/dashboard/admin/settings', icon: Settings2 },
     ],
   },
   {
@@ -130,6 +136,12 @@ const ADMIN_NAV: NavSection[] = [
         href: '/dashboard/admin/documents',
         icon: FileText,
       },
+      {
+        label: 'Viesa pasūtījumi',
+        href: '/dashboard/admin/guest-orders',
+        icon: ShoppingBag,
+        badgeKey: 'pendingGuestOrders' as keyof AdminBadges,
+      },
       { label: 'Paziņojumu izsūtīšana', href: '/dashboard/admin/broadcast', icon: Megaphone },
     ],
   },
@@ -142,8 +154,10 @@ const ADMIN_NAV: NavSection[] = [
     id: 'observability',
     label: 'Pārraudzība',
     items: [
+      { label: 'Dispečerizācija', href: '/dashboard/admin/dispatch', icon: Navigation },
       { label: 'Visi pasūtījumi', href: '/dashboard/admin/orders', icon: BarChart3 },
       { label: 'Transporta darbi', href: '/dashboard/admin/jobs', icon: Truck },
+      { label: 'Skip Hire', href: '/dashboard/admin/skip-hire', icon: Box },
       { label: 'Tirgus piedāvājumi', href: '/dashboard/admin/marketplace', icon: ListChecks },
       { label: 'RFQ pieprasījumi', href: '/dashboard/admin/rfqs', icon: ClipboardList },
       { label: 'Pamatlīgumi', href: '/dashboard/admin/framework-contracts', icon: ScrollText },
@@ -167,6 +181,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     openExceptions: 0,
     activeJobs: 0,
     triageAlerts: 0,
+    pendingGuestOrders: 0,
   });
 
   const isActive = React.useCallback(
@@ -184,12 +199,14 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     let cancelled = false;
 
     const load = async () => {
-      const [statsRes, notifRes, supportRes, exceptionsRes] = await Promise.allSettled([
-        getAdminStats(token),
-        getUnreadNotificationCount(token),
-        adminListSupportThreads(token),
-        adminGetExceptions(token, 'OPEN'),
-      ]);
+      const [statsRes, notifRes, supportRes, exceptionsRes, guestOrdersRes] =
+        await Promise.allSettled([
+          getAdminStats(token),
+          getUnreadNotificationCount(token),
+          adminListSupportThreads(token),
+          adminGetExceptions(token, 'OPEN'),
+          adminGetGuestOrders(token, 'PENDING'),
+        ]);
 
       if (cancelled) return;
 
@@ -197,6 +214,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       const notif = notifRes.status === 'fulfilled' ? notifRes.value : null;
       const support = supportRes.status === 'fulfilled' ? supportRes.value : [];
       const exceptions = exceptionsRes.status === 'fulfilled' ? exceptionsRes.value : [];
+      const guestOrders = guestOrdersRes.status === 'fulfilled' ? guestOrdersRes.value : [];
 
       const d = Math.max(0, stats?.openDisputes ?? 0);
       const s = Math.max(0, support.filter((t) => t.status === 'OPEN').length);
@@ -209,6 +227,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         openExceptions: x,
         activeJobs: Math.max(0, stats?.activeJobs ?? 0),
         triageAlerts: d + s + x,
+        pendingGuestOrders: Math.max(0, guestOrders.length),
       });
     };
 

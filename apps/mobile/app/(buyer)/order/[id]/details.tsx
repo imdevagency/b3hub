@@ -462,6 +462,14 @@ export default function OrderDetailsScreen() {
                 <Text style={styles.payAmount}>€{order.deliveryFee.toFixed(2)}</Text>
               </View>
             )}
+            {order.surcharges
+              ?.filter((s) => s.approvalStatus === 'APPROVED')
+              .map((s) => (
+                <View key={s.id} style={styles.payRow}>
+                  <Text style={styles.payLabel}>{s.label}</Text>
+                  <Text style={styles.payAmount}>€{s.amount.toFixed(2)}</Text>
+                </View>
+              ))}
             <View style={styles.payHairline} />
             <View style={styles.payRow}>
               <Text style={styles.payTotalLabel}>Kopā</Text>

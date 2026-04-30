@@ -1195,3 +1195,109 @@ export async function adminGetTransportJobById(id: string, token: string): Promi
   });
 }
 
+
+// ─── Force status overrides ───────────────────────────────────────────────────
+
+export async function adminForceJobStatus(
+  id: string,
+  status: string,
+  reason: string,
+  token: string,
+): Promise<{ id: string; jobNumber: string; status: string; statusUpdatedAt: string }> {
+  return apiFetch(`/admin/jobs/${id}/force-status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+export async function adminForceOrderStatus(
+  id: string,
+  status: string,
+  reason: string,
+  token: string,
+): Promise<{ id: string; orderNumber: string; status: string; updatedAt: string }> {
+  return apiFetch(`/admin/orders/${id}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+// ─── Live Dispatch ─────────────────────────────────────────────────────────
+
+export interface AdminDispatchJob {
+  id: string;
+  jobNumber: string;
+  jobType: string;
+  status: string;
+  cargoType: string;
+  cargoWeight: number | null;
+  rate: number;
+  currency: string;
+  pickupCity: string;
+  deliveryCity: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  pickupDate: string;
+  deliveryDate: string;
+  order: { id: string; orderNumber: string } | null;
+  carrier: { id: string; name: string } | null;
+  driver: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    driverProfile: {
+      isOnline: boolean;
+      currentLocation: { lat: number; lng: number } | null;
+      rating: number | null;
+    } | null;
+  } | null;
+  vehicle: { id: string; make: string; model: string; licensePlate: string } | null;
+  exceptions: { id: string }[];
+}
+
+export interface AdminDispatchOnlineDriver {
+  id: string;
+  isOnline: boolean;
+  currentLocation: { lat: number; lng: number } | null;
+  rating: number | null;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    company: { id: string; name: string } | null;
+  };
+}
+
+export interface AdminDispatchCarrier {
+  id: string;
+  name: string;
+  companyType: string;
+  city: string;
+  activeJobs: number;
+  onlineDrivers: number;
+  _count: { users: number };
+}
+
+export interface AdminDispatchData {
+  jobs: AdminDispatchJob[];
+  onlineDrivers: AdminDispatchOnlineDriver[];
+  carriers: AdminDispatchCarrier[];
+  summary: {
+    totalActiveJobs: number;
+    totalOnlineDrivers: number;
+    totalCarriers: number;
+    jobsByStatus: Record<string, number>;
+  };
+}
+
+export async function adminGetDispatch(token: string): Promise<AdminDispatchData> {
+  return apiFetch<AdminDispatchData>('/admin/dispatch', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

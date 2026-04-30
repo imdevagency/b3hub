@@ -322,6 +322,42 @@ export class AdminController {
     return this.service.reassignJob(id, body.driverId, admin.userId, body.note);
   }
 
+  /**
+   * PATCH /admin/jobs/:id/force-status
+   * Override a transport job's status — for stuck jobs or dispute resolution.
+   */
+  @Patch('jobs/:id/force-status')
+  forceJobStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; reason?: string },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.forceJobStatus(
+      id,
+      body.status,
+      body.reason ?? 'Admin force status override',
+      admin.userId,
+    );
+  }
+
+  /**
+   * PATCH /admin/orders/:id/status
+   * Force an order into a specific status — resolving stuck or disputed orders.
+   */
+  @Patch('orders/:id/status')
+  forceOrderStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; reason?: string },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.forceOrderStatus(
+      id,
+      body.status,
+      body.reason ?? 'Admin force status override',
+      admin.userId,
+    );
+  }
+
   /** GET /admin/skip-hire — all skip hire orders (paginated) */
   @Get('skip-hire')
   getSkipHireOrders(@Query() pagination: PagePaginationDto) {
@@ -532,5 +568,15 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.updateDocumentStatus(id, body.status, admin.userId, body.note);
+  }
+
+  /**
+   * GET /admin/dispatch
+   * Live dispatcher snapshot — active jobs with coords, online drivers, carrier fleet stats.
+   * Used by the admin live dispatch map view. Intended to be polled every 30s.
+   */
+  @Get('dispatch')
+  getLiveDispatch() {
+    return this.service.getLiveDispatch();
   }
 }

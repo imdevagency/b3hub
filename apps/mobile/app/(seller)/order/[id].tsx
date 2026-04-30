@@ -16,6 +16,7 @@ import {
   MapPin,
   CalendarDays,
   Package,
+  Receipt,
   Truck,
   User,
   Phone,
@@ -292,6 +293,26 @@ export default function SellerOrderDetailScreen() {
         <InfoSection icon={<CalendarDays size={14} color="#6b7280" />} title="Laika zīmogi">
           <DetailRow label="Izveidots" value={formatDate(order.createdAt)} last />
         </InfoSection>
+
+        {/* Surcharges */}
+        {order.surcharges && order.surcharges.length > 0 && (
+          <InfoSection icon={<Receipt size={14} color="#6b7280" />} title="Piemaksas">
+            {order.surcharges.map((s: any, i: number) => (
+              <DetailRow
+                key={s.id}
+                label={s.label}
+                value={`€${Number(s.amount).toFixed(2)} · ${
+                  s.approvalStatus === 'APPROVED'
+                    ? 'Apstiprināta'
+                    : s.approvalStatus === 'REJECTED'
+                      ? 'Noraidīta'
+                      : 'Gaida'
+                }`}
+                last={i === (order.surcharges?.length ?? 0) - 1}
+              />
+            ))}
+          </InfoSection>
+        )}
 
         {/* Actions */}
         {order.status === 'PENDING' && (

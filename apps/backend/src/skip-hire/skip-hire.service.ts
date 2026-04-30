@@ -306,8 +306,7 @@ export class SkipHireService {
       }),
     ]);
 
-    // CMS base price is the platform floor when a carrier has no custom rate
-    const basePrice = sizeDef?.basePrice ?? SKIP_PRICES[size] ?? 0;
+    // CMS base price is still used for min-price display (getMinPrices), not for quoting
     const pricingMap = new Map(pricings.map((p) => [p.carrierId, p]));
 
     const quotes: SkipHireQuoteResult[] = [];
@@ -316,14 +315,16 @@ export class SkipHireService {
       // Must not be blocked on this date
       if (carrier.availabilityBlocks.length > 0) continue;
 
+      // Carrier must have explicitly configured a price for this skip size
+      const pricing = pricingMap.get(carrier.id);
+      if (!pricing) continue;
+
       // Coverage check: zones → radius → national fallback
       const coverage = this.carrierCoverage(carrier, locationLower, buyerLat, buyerLng);
       if (!coverage.covered) continue;
 
-      // Price: carrier's custom rate, or CMS basePrice
-      const pricing = pricingMap.get(carrier.id);
-      const price = (pricing?.price ?? basePrice) + coverage.surcharge;
-      const currency = pricing?.currency ?? 'EUR';
+      const price = pricing.price + coverage.surcharge;
+      const currency = pricing.currency;
 
       quotes.push({
         carrierId: carrier.id,

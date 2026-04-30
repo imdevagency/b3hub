@@ -13,7 +13,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card, CardContent } from '@/components/ui/card';
-import { RefreshCw, ChevronDown, ChevronRight, ScrollText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RefreshCw, ChevronDown, ChevronRight, ScrollText, Search } from 'lucide-react';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -36,6 +45,8 @@ const ACTION_LABELS: Record<string, string> = {
   APPROVE_APPLICATION: 'Pieteikums apstiprināts',
   REJECT_APPLICATION: 'Pieteikums noraidīts',
   FORCE_ASSIGN_JOB: 'Piespiedu darba piešķiršana',
+  FORCE_JOB_STATUS: 'Piespiedu darba statuss',
+  FORCE_ORDER_STATUS: 'Piespiedu pasūtījuma statuss',
 };
 
 const ACTION_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -45,6 +56,8 @@ const ACTION_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   APPROVE_APPLICATION: 'default',
   REJECT_APPLICATION: 'destructive',
   FORCE_ASSIGN_JOB: 'outline',
+  FORCE_JOB_STATUS: 'destructive',
+  FORCE_ORDER_STATUS: 'destructive',
 };
 
 const ENTITY_COLORS: Record<string, string> = {
@@ -85,15 +98,15 @@ function DiffView({
             key={key}
             className={`grid grid-cols-[1fr_1fr] divide-x divide-border border-t border-border ${changed ? 'bg-amber-50/50' : ''}`}
           >
-            <div className="px-3 py-1 truncate text-muted-foreground">
+            <div className="px-3 py-1.5 truncate text-muted-foreground">
               <span className="text-foreground/60 mr-1">{key}:</span>
               {bv === undefined ? (
                 <span className="italic text-muted-foreground/50">—</span>
               ) : (
-                <span className={changed ? 'text-red-600' : ''}>{String(bv)}</span>
+                <span className={changed ? 'text-red-700' : ''}>{String(bv)}</span>
               )}
             </div>
-            <div className="px-3 py-1 truncate">
+            <div className="px-3 py-1.5 truncate">
               <span className="text-foreground/60 mr-1">{key}:</span>
               {av === undefined ? (
                 <span className="italic text-muted-foreground/50">—</span>
@@ -117,31 +130,34 @@ function LogRow({ log }: { log: AdminAuditLog }) {
   const hasDiff = !!(log.before || log.after);
 
   return (
-    <div className="border-b border-border last:border-0">
+    <div className="border-b border-border last:border-0 hover:bg-muted/10 transition-colors">
       <button
         onClick={() => hasDiff && setExpanded((p) => !p)}
-        className={`w-full text-left px-4 py-3 flex items-start gap-3 ${hasDiff ? 'hover:bg-muted/30 cursor-pointer' : 'cursor-default'} transition-colors`}
+        className={`w-full text-left px-4 py-3 flex items-start gap-3 ${hasDiff ? 'cursor-pointer' : 'cursor-default'}`}
       >
         {/* expand toggle */}
-        <div className="mt-0.5 w-4 shrink-0">
+        <div className="mt-1 w-4 shrink-0 flex justify-center">
           {hasDiff ? (
             expanded ? (
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )
           ) : null}
         </div>
 
         {/* action badge */}
-        <div className="shrink-0 pt-0.5">
-          <Badge variant={ACTION_VARIANT[log.action] ?? 'outline'} className="text-xs">
+        <div className="shrink-0 pt-0.5 w-40">
+          <Badge
+            variant={ACTION_VARIANT[log.action] ?? 'outline'}
+            className="text-[11px] truncate max-w-full"
+          >
             {ACTION_LABELS[log.action] ?? log.action}
           </Badge>
         </div>
 
         {/* entity */}
-        <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-semibold ${ENTITY_COLORS[log.entityType] ?? 'text-foreground bg-muted'}`}
@@ -151,23 +167,21 @@ function LogRow({ log }: { log: AdminAuditLog }) {
             <span className="text-xs text-muted-foreground font-mono truncate">{log.entityId}</span>
           </div>
           {log.note && (
-            <p className="text-xs text-muted-foreground italic truncate">
-              &ldquo;{log.note}&rdquo;
-            </p>
+            <p className="text-xs text-foreground italic line-clamp-2">&ldquo;{log.note}&rdquo;</p>
           )}
         </div>
 
         {/* admin + time */}
-        <div className="shrink-0 text-right space-y-0.5">
-          <p className="text-xs font-medium text-foreground">
+        <div className="shrink-0 text-right space-y-0.5 min-w-30">
+          <p className="text-xs font-semibold text-foreground">
             {log.admin.firstName} {log.admin.lastName}
           </p>
-          <p className="text-[11px] text-muted-foreground">{formatTime(log.createdAt)}</p>
+          <p className="text-[11px] text-muted-foreground font-mono">{formatTime(log.createdAt)}</p>
         </div>
       </button>
 
       {expanded && hasDiff && (
-        <div className="px-4 pb-4">
+        <div className="pl-9 pr-4 pb-4">
           <DiffView before={log.before} after={log.after} />
         </div>
       )}
@@ -186,6 +200,9 @@ export default function AuditLogsPage() {
   const router = useRouter();
   const [logs, setLogs] = useState<AdminAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters state
+  const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<string>(ALL);
   const [entityFilter, setEntityFilter] = useState<string>(ALL);
 
@@ -217,75 +234,100 @@ export default function AuditLogsPage() {
   const filtered = logs.filter((l) => {
     if (actionFilter !== ALL && l.action !== actionFilter) return false;
     if (entityFilter !== ALL && l.entityType !== entityFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (
+        !l.entityId.toLowerCase().includes(q) &&
+        !l.action.toLowerCase().includes(q) &&
+        !(l.note && l.note.toLowerCase().includes(q)) &&
+        !l.admin.firstName.toLowerCase().includes(q) &&
+        !l.admin.lastName.toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+    }
     return true;
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <PageHeader
         title="Audita žurnāls"
         description="Visu administratora darbību nemainīgais ieraksts"
         action={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            Atjaunot
+            Atjaunināt
           </Button>
         }
       />
 
       {/* filters */}
-      <div className="flex flex-wrap gap-3">
-        <div>
-          <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold block mb-1">
-            Darbība
-          </label>
-          <select
-            value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
-            className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value={ALL}>Visas</option>
-            {allActions.map((a) => (
-              <option key={a} value={a}>
-                {ACTION_LABELS[a] ?? a}
-              </option>
-            ))}
-          </select>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-55 max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Meklēt pēc ID, admina, piezīmes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground uppercase tracking-wide font-semibold block mb-1">
-            Entitāte
-          </label>
-          <select
-            value={entityFilter}
-            onChange={(e) => setEntityFilter(e.target.value)}
-            className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value={ALL}>Visas</option>
-            {allEntities.map((e) => (
-              <option key={e} value={e}>
-                {e}
-              </option>
-            ))}
-          </select>
+        <div className="w-45">
+          <Select value={actionFilter} onValueChange={setActionFilter}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Darbība" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Visas darbības</SelectItem>
+              {allActions.map((a) => (
+                <SelectItem key={a} value={a}>
+                  {ACTION_LABELS[a] ?? a}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex items-end">
-          <span className="text-sm text-muted-foreground pb-1">{filtered.length} ieraksti</span>
+        <div className="w-45">
+          <Select value={entityFilter} onValueChange={setEntityFilter}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Entitāte" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Visas entitātes</SelectItem>
+              {allEntities.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {e}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+        <span className="text-xs text-muted-foreground ml-auto">
+          Caurlaikojumā {filtered.length} no {logs.length} ierakstiem
+        </span>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground border-r-transparent" />
+        <div className="space-y-4 mt-6">
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <Skeleton className="h-16 w-full rounded-lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={ScrollText}
-          title="Nav ierakstu"
-          description="Neviens administratora ieraksts netika atrasts ar šiem filtriem."
-        />
+        <Card className="mt-6 border-dashed">
+          <CardContent className="p-12">
+            <EmptyState
+              icon={ScrollText}
+              title="Nav ierakstu"
+              description="Izvēlētajiem filtriem atbilstoši administratora ieraksti netika atrasti."
+            />
+          </CardContent>
+        </Card>
       ) : (
-        <Card>
+        <Card className="mt-6">
           <CardContent className="p-0">
             {filtered.map((log) => (
               <LogRow key={log.id} log={log} />

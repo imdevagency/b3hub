@@ -1,18 +1,16 @@
 /**
- * Admin Marketplace Engine Overview — /dashboard/admin/marketplace
+ * Admin Marketplace Engine — /dashboard/admin/marketplace
  *
- * Centralised view of the skip hire comparison engine:
- *   - CMS floor prices per skip size (set by admin via /admin/skip-sizes)
- *   - Each verified carrier's custom rate per size (or "floor" if none set)
- *   - Coverage type: service zones / radius / national
- *   - Today's availability status
- *
- * This page is read-only — prices are edited in /admin/skip-sizes (floor)
- * or by the carrier in their own seller portal (custom rates).
+ * Tabbed overview of the skip hire comparison engine:
+ *   Tab 1 "matrix"     — carrier × size pricing grid with filters
+ *   Tab 2 "floor"      — CMS platform floor prices per skip size
+ *   Tab 3 "commission" — carrier commission rates
  */
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   adminGetMarketplace,
@@ -23,7 +21,11 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -32,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   RefreshCw,
@@ -41,9 +44,13 @@ import {
   Globe,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Info,
   Star,
+  ExternalLink,
+  Search,
+  TrendingDown,
+  TrendingUp,
+  Minus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -78,7 +85,7 @@ function CoverageBadge({ carrier }: { carrier: MarketplaceCarrier }) {
               {carrier.serviceZones.length} zona{carrier.serviceZones.length !== 1 ? 's' : ''}
             </span>
           </TooltipTrigger>
-          <TooltipContent side="right" className="max-w-[220px]">
+          <TooltipContent side="right" className="max-w-55">
             <p className="font-semibold mb-1">Apkalpojamās zonas</p>
             <ul className="text-xs space-y-0.5">
               {carrier.serviceZones.map((z) => (
@@ -126,19 +133,17 @@ function PriceCell({
   const custom = carrier.pricingBySizeCode[sizeCode];
 
   if (!custom) {
-    if (floorPrice == null) {
-      return <span className="text-muted-foreground text-xs italic">Nav cenas</span>;
-    }
+    if (floorPrice == null) return <span className="text-muted-foreground text-xs">—</span>;
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex items-center gap-1 text-amber-700 text-xs cursor-default">
+            <span className="inline-flex items-center gap-1 text-amber-600 text-xs cursor-default">
               <Info className="h-3 w-3 shrink-0" />
               {euro(floorPrice)}
             </span>
           </TooltipTrigger>
-          <TooltipContent>Izmanto CMS pamata cenu — nav individuālas cenas</TooltipContent>
+          <TooltipContent>CMS pamata cena — nav individuālas cenas</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
@@ -153,22 +158,27 @@ function PriceCell({
         <TooltipTrigger asChild>
           <span
             className={cn(
-              'font-semibold text-sm cursor-default',
+              'inline-flex items-center gap-1 font-semibold text-sm cursor-default',
               isBelowFloor && 'text-emerald-700',
               isAboveFloor && 'text-rose-700',
               !isAboveFloor && !isBelowFloor && 'text-foreground',
             )}
           >
+            {isBelowFloor && <TrendingDown className="h-3 w-3 shrink-0" />}
+            {isAboveFloor && <TrendingUp className="h-3 w-3 shrink-0" />}
+            {!isAboveFloor && !isBelowFloor && (
+              <Minus className="h-3 w-3 shrink-0 text-muted-foreground" />
+            )}
             {euro(custom.price)}
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Individuāla cena · atjaunots {fmtDate(custom.updatedAt)}</p>
+          <p>Individuāla cena · {fmtDate(custom.updatedAt)}</p>
           {floorPrice != null && (
             <p className="text-xs mt-0.5 text-muted-foreground">
               CMS pamata: {euro(floorPrice)}
-              {isBelowFloor && ' · zemāka'}
-              {isAboveFloor && ' · augstāka'}
+              {isBelowFloor && ' · zemāka par CMS'}
+              {isAboveFloor && ' · augstāka par CMS'}
             </p>
           )}
         </TooltipContent>
@@ -186,18 +196,25 @@ function StatsRow({ data }: { data: AdminMarketplaceData }) {
   const withCustomPricing = data.carriers.filter((c) => c.carrierPricing.length > 0).length;
   const national = data.carriers.filter((c) => c.coverageType === 'national').length;
 
+  const stats = [
+    { label: 'Pārvadātāji', value: total, sub: 'reģistrēti' },
+    { label: 'Verificēti', value: verified, sub: `no ${total}`, color: 'text-emerald-700' },
+    {
+      label: 'Bloķēti šodien',
+      value: blocked,
+      sub: 'nav pieejami',
+      color: blocked > 0 ? 'text-rose-600' : undefined,
+    },
+    { label: 'Ar individuālām cenām', value: withCustomPricing, sub: 'pārvadātāji' },
+    { label: 'Nacionālie', value: national, sub: 'visa Latvija' },
+  ] as const;
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-      {[
-        { label: 'Pārvadātāji', value: total, sub: 'kopā' },
-        { label: 'Verificēti', value: verified, sub: `no ${total}` },
-        { label: 'Bloķēti šodien', value: blocked, sub: 'nav pieejami' },
-        { label: 'Ar individuālām cenām', value: withCustomPricing, sub: 'pārvadātāji' },
-        { label: 'Nacionālie', value: national, sub: 'visas Latvijas' },
-      ].map((s) => (
-        <Card key={s.label} className="p-3">
-          <p className="text-2xl font-bold">{s.value}</p>
-          <p className="text-xs font-medium mt-0.5">{s.label}</p>
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {stats.map((s) => (
+        <Card key={s.label} className="p-4">
+          <p className={cn('text-2xl font-bold tabular-nums', s.color)}>{s.value}</p>
+          <p className="text-xs font-semibold mt-0.5">{s.label}</p>
           <p className="text-xs text-muted-foreground">{s.sub}</p>
         </Card>
       ))}
@@ -205,28 +222,399 @@ function StatsRow({ data }: { data: AdminMarketplaceData }) {
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
+// ─── Legend strip ──────────────────────────────────────────────────────────────
 
-export default function MarketplacePage() {
+function LegendStrip() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground py-2.5 px-1 border-y border-border">
+      <span className="inline-flex items-center gap-1.5">
+        <Info className="h-3.5 w-3.5 text-amber-500" />
+        CMS pamata cena
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <TrendingDown className="h-3.5 w-3.5 text-emerald-600" />
+        Zemāka par CMS
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <TrendingUp className="h-3.5 w-3.5 text-rose-500" />
+        Augstāka par CMS
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+        Vienāda ar CMS
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <MapPin className="h-3.5 w-3.5 text-blue-600" />
+        Zonas
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Radius className="h-3.5 w-3.5 text-violet-600" />
+        Rādiuss
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Globe className="h-3.5 w-3.5 text-emerald-600" />
+        Nacionāls
+      </span>
+    </div>
+  );
+}
+
+// ─── Tab: Pricing matrix ───────────────────────────────────────────────────────
+
+function PricingMatrixTab({ data }: { data: AdminMarketplaceData }) {
+  const [showUnverified, setShowUnverified] = useState(false);
+  const [hideBlocked, setHideBlocked] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const activeSizes = data.sizes.filter((s) => s.isActive);
+  const visible = data.carriers.filter((c) => {
+    if (!showUnverified && !c.verified) return false;
+    if (hideBlocked && c.blockedToday) return false;
+    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="relative flex-1 min-w-45 max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Meklēt pārvadātāju..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="show-unverified"
+            checked={showUnverified}
+            onCheckedChange={setShowUnverified}
+          />
+          <Label htmlFor="show-unverified" className="text-sm cursor-pointer">
+            Neverificētie
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch id="hide-blocked" checked={hideBlocked} onCheckedChange={setHideBlocked} />
+          <Label htmlFor="hide-blocked" className="text-sm cursor-pointer">
+            Slēpt bloķētos
+          </Label>
+        </div>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {visible.length} / {data.carriers.length} pārvadātāji
+        </span>
+      </div>
+
+      <LegendStrip />
+
+      {visible.length === 0 ? (
+        <EmptyState
+          icon={Store}
+          title="Nav pārvadātāju"
+          description="Pielāgojiet filtrus, lai redzētu pārvadātājus"
+        />
+      ) : (
+        <div className="rounded-lg border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead className="min-w-50 sticky left-0 bg-muted/40 z-10">
+                  Pārvadātājs
+                </TableHead>
+                <TableHead className="w-28">Pārklājums</TableHead>
+                <TableHead className="w-24">Statuss</TableHead>
+                {activeSizes.map((size) => (
+                  <TableHead key={size.code} className="text-center min-w-27.5">
+                    <div className="font-semibold">{size.labelLv ?? size.label}</div>
+                    <div className="text-[11px] font-normal text-muted-foreground">
+                      {size.volumeM3} m³
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.map((carrier) => (
+                <TableRow
+                  key={carrier.id}
+                  className={cn(
+                    !carrier.verified && 'opacity-50',
+                    carrier.blockedToday && 'bg-rose-50/50',
+                  )}
+                >
+                  <TableCell className="sticky left-0 bg-background z-10">
+                    <div className="flex items-start gap-2.5">
+                      {carrier.logo ? (
+                        <img
+                          src={carrier.logo}
+                          alt={carrier.name}
+                          className="h-8 w-8 rounded object-contain shrink-0 border"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                          <Store className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <Link
+                          href={`/dashboard/admin/companies/${carrier.id}`}
+                          className="font-medium text-sm hover:underline flex items-center gap-1 leading-tight"
+                        >
+                          {carrier.name}
+                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                        </Link>
+                        <p className="text-xs text-muted-foreground">{carrier.companyType}</p>
+                        {carrier.rating != null && (
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-amber-600">
+                            <Star className="h-2.5 w-2.5 fill-amber-500 stroke-none" />
+                            {carrier.rating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <CoverageBadge carrier={carrier} />
+                  </TableCell>
+                  <TableCell>
+                    {!carrier.verified ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <XCircle className="h-3.5 w-3.5" />
+                        Nav verif.
+                      </span>
+                    ) : carrier.blockedToday ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-rose-600">
+                        <XCircle className="h-3.5 w-3.5" />
+                        Bloķēts
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Pieejams
+                      </span>
+                    )}
+                  </TableCell>
+                  {activeSizes.map((size) => (
+                    <TableCell key={size.code} className="text-center">
+                      <PriceCell
+                        carrier={carrier}
+                        sizeCode={size.code}
+                        floorPrice={size.basePrice}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Tab: Platform floor prices ────────────────────────────────────────────────
+
+function FloorPricesTab({ data }: { data: AdminMarketplaceData }) {
+  const active = data.sizes.filter((s) => s.isActive);
+  const inactive = data.sizes.filter((s) => !s.isActive);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground max-w-prose">
+          Platformas grīdas cenas — pārvadātāji var uzstādīt savas individuālās cenas, bet nevar iet
+          zemāk par šīm.
+        </p>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard/admin/catalog?tab=skip-sizes">
+            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            Rediģēt izmērus
+          </Link>
+        </Button>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold mb-3">Aktīvie izmēri ({active.length})</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {active.map((size) => (
+            <Card key={size.code} className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <Badge variant="secondary" className="text-xs font-mono">
+                  {size.code}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-[10px] text-emerald-700 border-emerald-200 bg-emerald-50"
+                >
+                  Aktīvs
+                </Badge>
+              </div>
+              <p className="font-semibold text-base leading-tight">{size.labelLv ?? size.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{size.volumeM3} m³</p>
+              <p className="text-2xl font-bold mt-3 tabular-nums">
+                {size.basePrice != null ? (
+                  euro(size.basePrice)
+                ) : (
+                  <span className="text-sm font-normal text-muted-foreground italic">
+                    Nav iestatīta
+                  </span>
+                )}
+              </p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {inactive.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
+            Neaktīvie izmēri ({inactive.length})
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {inactive.map((size) => (
+              <Card key={size.code} className="p-4 opacity-50">
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant="secondary" className="text-xs font-mono">
+                    {size.code}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Neaktīvs
+                  </Badge>
+                </div>
+                <p className="font-semibold text-base leading-tight">
+                  {size.labelLv ?? size.label}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{size.volumeM3} m³</p>
+                <p className="text-2xl font-bold mt-3 tabular-nums">
+                  {size.basePrice != null ? (
+                    euro(size.basePrice)
+                  ) : (
+                    <span className="text-sm font-normal text-muted-foreground italic">
+                      Nav iestatīta
+                    </span>
+                  )}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Tab: Commission rates ─────────────────────────────────────────────────────
+
+function CommissionsTab({ data }: { data: AdminMarketplaceData }) {
+  const [search, setSearch] = useState('');
+  const visible = data.carriers.filter(
+    (c) => !search || c.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 min-w-45 max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Meklēt pārvadātāju..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <span className="text-xs text-muted-foreground ml-auto">{visible.length} pārvadātāji</span>
+      </div>
+
+      <div className="rounded-lg border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40">
+              <TableHead className="min-w-50">Pārvadātājs</TableHead>
+              <TableHead>Tips</TableHead>
+              <TableHead>Statuss</TableHead>
+              <TableHead className="text-right">Piegādātāja komisija</TableHead>
+              <TableHead className="text-right">Pārvadātāja komisija</TableHead>
+              <TableHead className="text-right">Individuālas cenas</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.map((carrier) => (
+              <TableRow key={carrier.id} className={cn(!carrier.verified && 'opacity-50')}>
+                <TableCell>
+                  <Link
+                    href={`/dashboard/admin/companies/${carrier.id}`}
+                    className="font-medium text-sm hover:underline flex items-center gap-1"
+                  >
+                    {carrier.name}
+                    <ExternalLink className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                  </Link>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {carrier.companyType}
+                </TableCell>
+                <TableCell>
+                  {carrier.verified ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Verificēts
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <XCircle className="h-3 w-3" />
+                      Nepieteikts
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="font-mono text-sm">{carrier.commissionRate}%</span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="font-mono text-sm font-semibold">
+                    {carrier.carrierCommissionRate}%
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  {carrier.carrierPricing.length > 0 ? (
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      {carrier.carrierPricing.length} izmēri
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inner page (needs useSearchParams → Suspense boundary) ───────────────────
+
+function MarketplaceContent() {
   const { token: rawToken, isLoading: authLoading } = useAuth();
   const token = rawToken ?? '';
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const tab = (searchParams.get('tab') ?? 'matrix') as 'matrix' | 'floor' | 'commission';
 
   const [data, setData] = useState<AdminMarketplaceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Filter: verified only toggle
-  const [showUnverified, setShowUnverified] = useState(false);
-  // Filter: show blocked
-  const [hideBlocked, setHideBlocked] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     setError(null);
     try {
-      const result = await adminGetMarketplace(token);
-      setData(result);
+      setData(await adminGetMarketplace(token));
     } catch {
       setError('Neizdevās ielādēt tirgus datus');
     } finally {
@@ -240,19 +628,24 @@ export default function MarketplacePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="space-y-4 p-4">
+      <div className="p-6 space-y-6">
         <PageHeader title="Tirgus dzinējs" description="Cenu salīdzināšanas motora pārskats" />
-        <div className="h-64 rounded-lg bg-muted animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="p-4">
+      <div className="p-6 space-y-4">
         <PageHeader title="Tirgus dzinējs" />
         <EmptyState
-          icon={AlertTriangle}
+          icon={Store}
           title="Kļūda"
           description={error ?? 'Nav datu'}
           action={
@@ -266,20 +659,14 @@ export default function MarketplacePage() {
     );
   }
 
-  const visibleCarriers = data.carriers.filter((c) => {
-    if (!showUnverified && !c.verified) return false;
-    if (hideBlocked && c.blockedToday) return false;
-    return true;
-  });
-
   return (
-    <div className="space-y-6 p-4">
+    <div className="p-6 space-y-6">
       <PageHeader
         title="Tirgus dzinējs"
-        description="Cenu salīdzināšanas motora pilnais pārskats — CMS pamata cenas, pārvadātāju individuālās cenas un pārklājums"
+        description={`${data.carriers.filter((c) => c.verified).length} verificēti pārvadātāji · ${data.sizes.filter((s) => s.isActive).length} aktīvi izmēri`}
         action={
-          <Button variant="outline" size="sm" onClick={load}>
-            <RefreshCw className="h-4 w-4 mr-1.5" />
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', loading && 'animate-spin')} />
             Atjaunināt
           </Button>
         }
@@ -287,253 +674,33 @@ export default function MarketplacePage() {
 
       <StatsRow data={data} />
 
-      {/* Legend */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Leģenda</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Info className="h-3.5 w-3.5 text-amber-600" />
-            Izmanto CMS pamata cenu
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="font-semibold text-emerald-700">€x.xx</span>
-            Individuāla cena zemāka par CMS pamatu
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="font-semibold text-rose-700">€x.xx</span>
-            Individuāla cena augstāka par CMS pamatu
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-blue-600" />
-            Pārklājums ar zonām
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Radius className="h-3.5 w-3.5 text-violet-600" />
-            Pārklājums ar rādiusu
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Globe className="h-3.5 w-3.5 text-emerald-600" />
-            Nacionāls pārklājums
-          </span>
-        </CardContent>
-      </Card>
+      <Tabs value={tab} onValueChange={(t) => router.push(`?tab=${t}`)}>
+        <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsTrigger value="matrix">Cenu matrica</TabsTrigger>
+          <TabsTrigger value="floor">Platformas cenas</TabsTrigger>
+          <TabsTrigger value="commission">Komisijas</TabsTrigger>
+        </TabsList>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <button
-          onClick={() => setShowUnverified((v) => !v)}
-          className={cn(
-            'text-xs px-3 py-1.5 rounded-full border transition-colors',
-            showUnverified
-              ? 'bg-primary text-primary-foreground border-primary'
-              : 'bg-background border-border text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {showUnverified ? 'Rādīt visus' : 'Tikai verificētie'}
-        </button>
-        <button
-          onClick={() => setHideBlocked((v) => !v)}
-          className={cn(
-            'text-xs px-3 py-1.5 rounded-full border transition-colors',
-            hideBlocked
-              ? 'bg-primary text-primary-foreground border-primary'
-              : 'bg-background border-border text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {hideBlocked ? 'Rādīt bloķētos' : 'Slēpt šodienas bloķētos'}
-        </button>
-        <span className="text-xs text-muted-foreground ml-auto">
-          {visibleCarriers.length} pārvadātāj{visibleCarriers.length === 1 ? 's' : 'i'} redzami
-        </span>
-      </div>
-
-      {/* CMS floor prices summary */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Store className="h-4 w-4" />
-            CMS pamata cenas (platformas grīda)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {data.sizes.map((size) => (
-              <div
-                key={size.code}
-                className={cn(
-                  'border rounded-lg px-3 py-2 text-sm',
-                  !size.isActive && 'opacity-40',
-                )}
-              >
-                <p className="font-semibold">{size.labelLv ?? size.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {size.code} · {size.volumeM3} m³
-                </p>
-                <p className="text-base font-bold mt-1">
-                  {size.basePrice != null ? (
-                    euro(size.basePrice)
-                  ) : (
-                    <span className="text-muted-foreground italic text-xs">Nav iestatīta</span>
-                  )}
-                </p>
-                {!size.isActive && (
-                  <Badge variant="outline" className="text-xs mt-1">
-                    Neaktīvs
-                  </Badge>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main pricing matrix */}
-      {visibleCarriers.length === 0 ? (
-        <EmptyState
-          icon={Store}
-          title="Nav pārvadātāju"
-          description="Pielāgojiet filtrus, lai redzētu pārvadātājus"
-        />
-      ) : (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Cenu matrica — pārvadātāji × izmēri</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[200px] sticky left-0 bg-background z-10">
-                    Pārvadātājs
-                  </TableHead>
-                  <TableHead className="w-28">Pārklājums</TableHead>
-                  <TableHead className="w-24">Statuss</TableHead>
-                  {data.sizes
-                    .filter((s) => s.isActive)
-                    .map((size) => (
-                      <TableHead key={size.code} className="text-center min-w-[110px]">
-                        <div className="font-semibold">{size.labelLv ?? size.label}</div>
-                        <div className="text-xs font-normal text-muted-foreground">
-                          {size.volumeM3} m³
-                        </div>
-                      </TableHead>
-                    ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleCarriers.map((carrier) => (
-                  <TableRow
-                    key={carrier.id}
-                    className={cn(
-                      !carrier.verified && 'opacity-50',
-                      carrier.blockedToday && 'bg-rose-50/40',
-                    )}
-                  >
-                    {/* Carrier name */}
-                    <TableCell className="sticky left-0 bg-background z-10">
-                      <div className="flex items-start gap-2">
-                        {carrier.logo ? (
-                          <img
-                            src={carrier.logo}
-                            alt={carrier.name}
-                            className="h-8 w-8 rounded object-contain shrink-0"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
-                            <Store className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-medium text-sm leading-tight">{carrier.name}</p>
-                          <p className="text-xs text-muted-foreground">{carrier.companyType}</p>
-                          {carrier.rating != null && (
-                            <span className="inline-flex items-center gap-0.5 text-xs text-amber-600">
-                              <Star className="h-3 w-3 fill-amber-500 stroke-none" />
-                              {carrier.rating.toFixed(1)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Coverage */}
-                    <TableCell>
-                      <CoverageBadge carrier={carrier} />
-                    </TableCell>
-
-                    {/* Availability */}
-                    <TableCell>
-                      {!carrier.verified ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <XCircle className="h-3.5 w-3.5" />
-                          Nepieteikt
-                        </span>
-                      ) : carrier.blockedToday ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-rose-600">
-                          <XCircle className="h-3.5 w-3.5" />
-                          Bloķēts
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Pieejams
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Price per active size */}
-                    {data.sizes
-                      .filter((s) => s.isActive)
-                      .map((size) => (
-                        <TableCell key={size.code} className="text-center">
-                          <PriceCell
-                            carrier={carrier}
-                            sizeCode={size.code}
-                            floorPrice={size.basePrice}
-                          />
-                        </TableCell>
-                      ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Commission rates summary */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Info className="h-4 w-4" />
-            Komisijas likmes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pārvadātājs</TableHead>
-                <TableHead className="text-right">Piegādātāja komisija %</TableHead>
-                <TableHead className="text-right">Pārvadātāja komisija %</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleCarriers.map((carrier) => (
-                <TableRow key={carrier.id}>
-                  <TableCell className="font-medium text-sm">{carrier.name}</TableCell>
-                  <TableCell className="text-right text-sm">{carrier.commissionRate}%</TableCell>
-                  <TableCell className="text-right text-sm font-semibold">
-                    {carrier.carrierCommissionRate}%
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <TabsContent value="matrix" className="mt-4">
+          <PricingMatrixTab data={data} />
+        </TabsContent>
+        <TabsContent value="floor" className="mt-4">
+          <FloorPricesTab data={data} />
+        </TabsContent>
+        <TabsContent value="commission" className="mt-4">
+          <CommissionsTab data={data} />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+// ─── Page (Suspense required for useSearchParams) ─────────────────────────────
+
+export default function MarketplacePage() {
+  return (
+    <Suspense>
+      <MarketplaceContent />
+    </Suspense>
   );
 }

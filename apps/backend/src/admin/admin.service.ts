@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { TransportJobStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaymentsService } from '../payments/payments.service';
@@ -68,7 +69,7 @@ export class AdminService {
             verified: true, payoutEnabled: true, commissionRate: true,
           },
         },
-        orders: {
+        ordersCreated: {
           select: { id: true, orderNumber: true, status: true, total: true, currency: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
           take: 20,
@@ -84,8 +85,8 @@ export class AdminService {
       where: { id },
       select: {
         id: true, name: true, legalName: true, companyType: true,
-        email: true, phone: true, city: true, country: true, address: true,
-        registrationNumber: true, vatNumber: true,
+        email: true, phone: true, city: true, country: true, street: true,
+        registrationNum: true, taxId: true,
         verified: true, payoutEnabled: true, commissionRate: true,
         createdAt: true,
         users: {
@@ -127,10 +128,6 @@ export class AdminService {
             carrier: { select: { id: true, name: true } },
           },
         },
-        documents: {
-          select: { id: true, documentType: true, fileUrl: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
-        },
       },
     });
     if (!order) throw new NotFoundException('Order not found');
@@ -145,18 +142,14 @@ export class AdminService {
         cargoType: true, cargoWeight: true, rate: true, pricePerTonne: true,
         currency: true, pickupAddress: true, pickupCity: true,
         deliveryAddress: true, deliveryCity: true,
-        pickupDate: true, deliveryDate: true, notes: true,
+        pickupDate: true, deliveryDate: true, specialRequirements: true,
         createdAt: true, updatedAt: true,
         order: { select: { id: true, orderNumber: true, status: true } },
         carrier: { select: { id: true, name: true } },
         driver: { select: { id: true, firstName: true, lastName: true, phone: true } },
         vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
         exceptions: {
-          select: { id: true, type: true, status: true, description: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
-        },
-        documents: {
-          select: { id: true, documentType: true, fileUrl: true, createdAt: true },
+          select: { id: true, type: true, status: true, notes: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -1034,6 +1027,110 @@ export class AdminService {
    * Triggers voidOrRefund so the buyer is never left charged for a cancelled order.
    * Audit-logged.
    */
+  /**
+   * PATCH /admin/jobs/:id/force-status
+   * Override a transport job's status — for stuck jobs or dispute resolution.
+   * Audit-logged. Does NOT trigger any payout.
+   */
+  async forceJobStatus(
+    jobId: string,
+    status: string,
+    reason: string,
+    adminId: string,
+  ) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, jobNumber: true, status: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+
+    const VALID_STATUSES = [
+      'AVAILABLE',
+      'ASSIGNED',
+      'ACCEPTED',
+      'EN_ROUTE_PICKUP',
+      'AT_PICKUP',
+      'LOADED',
+      'EN_ROUTE_DELIVERY',
+      'AT_DELIVERY',
+      'DELIVERED',
+      'CANCELLED',
+    ];
+    if (!VALID_STATUSES.includes(status)) {
+      throw new BadRequestException(`Invalid status: ${status}`);
+    }
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: {
+        status: status as never,
+        statusUpdatedAt: new Date(),
+      },
+      select: { id: true, jobNumber: true, status: true, statusUpdatedAt: true },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'FORCE_JOB_STATUS',
+      'TransportJob',
+      jobId,
+      { status: job.status },
+      { status: updated.status },
+      reason,
+    );
+
+    return updated;
+  }
+
+  /**
+   * PATCH /admin/orders/:id/status
+   * Force an order into a specific status — for resolving stuck or disputed orders.
+   * Audit-logged.
+   */
+  async forceOrderStatus(
+    orderId: string,
+    status: string,
+    reason: string,
+    adminId: string,
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, orderNumber: true, status: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const VALID_STATUSES = [
+      'DRAFT',
+      'PENDING',
+      'CONFIRMED',
+      'IN_PROGRESS',
+      'DELIVERED',
+      'COMPLETED',
+      'CANCELLED',
+    ];
+    if (!VALID_STATUSES.includes(status)) {
+      throw new BadRequestException(`Invalid status: ${status}`);
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: status as never },
+      select: { id: true, orderNumber: true, status: true, updatedAt: true },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'FORCE_ORDER_STATUS',
+      'Order',
+      orderId,
+      { status: order.status },
+      { status: updated.status },
+      reason,
+    );
+
+    return updated;
+  }
+
   async cancelOrder(orderId: string, reason: string, adminId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -1769,5 +1866,137 @@ export class AdminService {
     );
 
     return updated;
+  }
+
+  // ─── Live Dispatch View ────────────────────────────────────────────────────
+
+  /**
+   * Returns a snapshot of the live fleet for the admin dispatcher view:
+   *  - All active transport jobs (not COMPLETED / CANCELLED) with coords
+   *  - All drivers that are currently online, grouped by carrier
+   */
+  async getLiveDispatch() {
+    const ACTIVE_STATUSES: TransportJobStatus[] = [
+      TransportJobStatus.ASSIGNED,
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+      TransportJobStatus.LOADED,
+      TransportJobStatus.EN_ROUTE_DELIVERY,
+      TransportJobStatus.AT_DELIVERY,
+    ];
+
+    const [jobs, onlineDrivers, carriers] = await Promise.all([
+      // Active jobs with geo coords + driver/carrier/vehicle
+      this.prisma.transportJob.findMany({
+        where: { status: { in: ACTIVE_STATUSES } },
+        select: {
+          id: true,
+          jobNumber: true,
+          jobType: true,
+          status: true,
+          cargoType: true,
+          cargoWeight: true,
+          rate: true,
+          currency: true,
+          pickupCity: true,
+          deliveryCity: true,
+          pickupLat: true,
+          pickupLng: true,
+          deliveryLat: true,
+          deliveryLng: true,
+          pickupDate: true,
+          deliveryDate: true,
+          order: { select: { id: true, orderNumber: true } },
+          carrier: { select: { id: true, name: true } },
+          driver: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              driverProfile: { select: { isOnline: true, currentLocation: true, rating: true } },
+            },
+          },
+          vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+          exceptions: { where: { status: 'OPEN' }, select: { id: true } },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+
+      // All online drivers
+      this.prisma.driverProfile.findMany({
+        where: { isOnline: true },
+        select: {
+          id: true,
+          isOnline: true,
+          currentLocation: true,
+          rating: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              company: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+
+      // All carrier companies with basic fleet stats
+      this.prisma.company.findMany({
+        where: { companyType: { in: ['CARRIER', 'HYBRID'] }, verified: true },
+        select: {
+          id: true,
+          name: true,
+          companyType: true,
+          city: true,
+          _count: {
+            select: {
+              users: { where: { canTransport: true } },
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    // Enrich carriers with online driver count + active job count
+    const carrierJobMap = new Map<string, number>();
+    const carrierOnlineMap = new Map<string, number>();
+    for (const j of jobs) {
+      if (j.carrier?.id) {
+        carrierJobMap.set(j.carrier.id, (carrierJobMap.get(j.carrier.id) ?? 0) + 1);
+      }
+    }
+    for (const d of onlineDrivers) {
+      const companyId = d.user.company?.id;
+      if (companyId) {
+        carrierOnlineMap.set(companyId, (carrierOnlineMap.get(companyId) ?? 0) + 1);
+      }
+    }
+
+    return {
+      jobs,
+      onlineDrivers,
+      carriers: carriers.map((c) => ({
+        ...c,
+        activeJobs: carrierJobMap.get(c.id) ?? 0,
+        onlineDrivers: carrierOnlineMap.get(c.id) ?? 0,
+      })),
+      summary: {
+        totalActiveJobs: jobs.length,
+        totalOnlineDrivers: onlineDrivers.length,
+        totalCarriers: carriers.length,
+        jobsByStatus: ACTIVE_STATUSES.reduce(
+          (acc, s) => {
+            acc[s] = jobs.filter((j) => j.status === s).length;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+      },
+    };
   }
 }
