@@ -1649,3 +1649,446 @@ export async function adminCreateWasteRecord(
     body: JSON.stringify(data),
   });
 }
+
+// ── B3 Construction — Rate Library ────────────────────────────────────────────
+
+export type CostCode = 'LABOUR' | 'EQUIPMENT' | 'MATERIAL' | 'TRANSPORT' | 'SUBCONTRACTOR' | 'OTHER';
+export type DailyReportStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED';
+export type UnitOfMeasure = 'T' | 'M3' | 'M2' | 'M' | 'H' | 'DAY' | 'KM' | 'LOAD' | 'PC';
+export type RateCategory = 'MATERIAL' | 'TRANSPORT' | 'LABOUR' | 'EQUIPMENT' | 'SUBCONTRACTOR' | 'OTHER';
+
+export interface MaterialRateEntry {
+  id: string;
+  name: string;
+  unit: UnitOfMeasure;
+  category: RateCategory;
+  supplierName: string;
+  supplierNote: string | null;
+  pricePerUnit: number;
+  deliveryFee: number;
+  selfCostPerUnit: number | null;
+  densityCoeff: number | null;
+  truckConfig: string | null;
+  zone: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRateEntryPayload {
+  name: string;
+  unit: UnitOfMeasure;
+  category: RateCategory;
+  supplierName: string;
+  supplierNote?: string;
+  pricePerUnit: number;
+  deliveryFee?: number;
+  selfCostPerUnit?: number;
+  densityCoeff?: number;
+  truckConfig?: string;
+  zone?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  notes?: string;
+}
+
+export async function adminGetRateEntries(
+  token: string,
+  params?: { category?: RateCategory; activeOnly?: boolean; page?: number; limit?: number },
+): Promise<PaginatedResponse<MaterialRateEntry>> {
+  const qs = new URLSearchParams();
+  if (params?.category) qs.set('category', params.category);
+  if (params?.activeOnly) qs.set('activeOnly', 'true');
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  const q = qs.toString();
+  return apiFetch<PaginatedResponse<MaterialRateEntry>>(
+    `/admin/b3-construction/rates${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminCreateRateEntry(
+  data: CreateRateEntryPayload,
+  token: string,
+): Promise<MaterialRateEntry> {
+  return apiFetch<MaterialRateEntry>('/admin/b3-construction/rates', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateRateEntry(
+  id: string,
+  data: Partial<CreateRateEntryPayload> & { effectiveTo?: string | null },
+  token: string,
+): Promise<MaterialRateEntry> {
+  return apiFetch<MaterialRateEntry>(`/admin/b3-construction/rates/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteRateEntry(id: string, token: string): Promise<void> {
+  return apiFetch(`/admin/b3-construction/rates/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── B3 Construction — Daily Production Reports ────────────────────────────────
+
+export interface DailyReportLine {
+  id: string;
+  reportId: string;
+  costCode: CostCode;
+  description: string;
+  personName: string | null;
+  quantity: number;
+  unit: UnitOfMeasure;
+  unitRate: number;
+  total: number;
+  rateEntryId: string | null;
+  notes: string | null;
+  rateEntry?: { id: string; name: string; supplierName: string } | null;
+}
+
+export interface DailyReport {
+  id: string;
+  projectId: string;
+  createdById: string;
+  approvedById: string | null;
+  reportDate: string;
+  siteLabel: string | null;
+  weatherNote: string | null;
+  notes: string | null;
+  status: DailyReportStatus;
+  totalCost?: number;
+  project?: { id: string; name: string };
+  createdBy?: { id: string; firstName: string; lastName: string };
+  approvedBy?: { id: string; firstName: string; lastName: string } | null;
+  lines?: DailyReportLine[];
+  _count?: { lines: number };
+}
+
+export interface CreateDailyReportPayload {
+  projectId: string;
+  reportDate: string;
+  siteLabel?: string;
+  weatherNote?: string;
+  notes?: string;
+  lines: {
+    costCode: CostCode;
+    description: string;
+    personName?: string;
+    quantity: number;
+    unit: UnitOfMeasure;
+    unitRate: number;
+    rateEntryId?: string;
+    employeeId?: string;
+    notes?: string;
+  }[];
+}
+
+export async function adminGetDailyReports(
+  token: string,
+  params?: { projectId?: string; status?: string; page?: number; limit?: number },
+): Promise<PaginatedResponse<DailyReport>> {
+  const qs = new URLSearchParams();
+  if (params?.projectId) qs.set('projectId', params.projectId);
+  if (params?.status) qs.set('status', params.status);
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  const q = qs.toString();
+  return apiFetch<PaginatedResponse<DailyReport>>(
+    `/admin/b3-construction/daily-reports${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminGetDailyReportById(id: string, token: string): Promise<DailyReport> {
+  return apiFetch<DailyReport>(`/admin/b3-construction/daily-reports/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminCreateDailyReport(
+  data: CreateDailyReportPayload,
+  token: string,
+): Promise<DailyReport> {
+  return apiFetch<DailyReport>('/admin/b3-construction/daily-reports', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateDailyReport(
+  id: string,
+  data: { siteLabel?: string; weatherNote?: string; notes?: string; status?: DailyReportStatus },
+  token: string,
+): Promise<DailyReport> {
+  return apiFetch<DailyReport>(`/admin/b3-construction/daily-reports/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteDailyReport(id: string, token: string): Promise<void> {
+  return apiFetch(`/admin/b3-construction/daily-reports/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── B3 Construction — Employee Roster ─────────────────────────────────────────
+
+export interface ConstructionEmployee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  personalCode: string | null;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  defaultRateEntryId: string | null;
+  defaultRateEntry?: { id: string; name: string; unit: UnitOfMeasure; pricePerUnit: number } | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEmployeePayload {
+  firstName: string;
+  lastName: string;
+  role: string;
+  personalCode?: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  defaultRateEntryId?: string;
+}
+
+export async function adminGetEmployees(
+  token: string,
+  params?: { activeOnly?: boolean; page?: number; limit?: number },
+): Promise<PaginatedResponse<ConstructionEmployee>> {
+  const qs = new URLSearchParams();
+  if (params?.activeOnly) qs.set('activeOnly', 'true');
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  const q = qs.toString();
+  return apiFetch<PaginatedResponse<ConstructionEmployee>>(
+    `/admin/b3-construction/employees${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminCreateEmployee(
+  data: CreateEmployeePayload,
+  token: string,
+): Promise<ConstructionEmployee> {
+  return apiFetch<ConstructionEmployee>('/admin/b3-construction/employees', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateEmployee(
+  id: string,
+  data: Partial<CreateEmployeePayload> & { defaultRateEntryId?: string | null; active?: boolean },
+  token: string,
+): Promise<ConstructionEmployee> {
+  return apiFetch<ConstructionEmployee>(`/admin/b3-construction/employees/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeactivateEmployee(id: string, token: string): Promise<ConstructionEmployee> {
+  return apiFetch<ConstructionEmployee>(`/admin/b3-construction/employees/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── B3 Construction — Profitability ───────────────────────────────────────────
+
+export interface ProjectProfitabilitySummary {
+  id: string;
+  name: string;
+  clientName: string | null;
+  status: ConstructionProjectStatus;
+  contractValue: number;
+  budgetAmount: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  dprCost: number;
+  grossMargin: number;
+  marginPct: number;
+  budgetUsedPct: number | null;
+  costByCode: Partial<Record<CostCode, number>>;
+  budgetByCode: Partial<Record<CostCode, number>>;
+}
+
+export interface ConstructionProfitabilityResponse {
+  projects: ProjectProfitabilitySummary[];
+  totals: {
+    contractValue: number;
+    dprCost: number;
+    grossMargin: number;
+    marginPct: number;
+  };
+  costBreakdown: Partial<Record<CostCode, number>>;
+  monthlyCosts: { month: string; cost: number }[];
+}
+
+export async function adminGetConstructionProfitability(
+  token: string,
+  params?: { projectId?: string; from?: string; to?: string },
+): Promise<ConstructionProfitabilityResponse> {
+  const qs = new URLSearchParams();
+  if (params?.projectId) qs.set('projectId', params.projectId);
+  if (params?.from) qs.set('from', params.from);
+  if (params?.to) qs.set('to', params.to);
+  const q = qs.toString();
+  return apiFetch<ConstructionProfitabilityResponse>(
+    `/admin/b3-construction/profitability${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+
+// ── DPR Templates ─────────────────────────────────────────────────────────────
+
+export interface DprTemplateLine {
+  id: string;
+  templateId: string;
+  costCode: CostCode;
+  description: string;
+  quantity: number;
+  unit: UnitOfMeasure;
+  unitRate: number;
+  rateEntryId?: string | null;
+  rateEntry?: { id: string; name: string; unit: UnitOfMeasure; pricePerUnit: number } | null;
+  employeeId?: string | null;
+  employee?: { id: string; firstName: string; lastName: string; role: string } | null;
+  notes?: string | null;
+  sortOrder: number;
+}
+
+export interface DprTemplate {
+  id: string;
+  name: string;
+  description?: string | null;
+  projectId?: string | null;
+  project?: { id: string; name: string } | null;
+  active: boolean;
+  lines: DprTemplateLine[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDprTemplatePayload {
+  name: string;
+  description?: string;
+  projectId?: string;
+  lines: Array<{
+    costCode: CostCode;
+    description: string;
+    quantity: number;
+    unit: UnitOfMeasure;
+    unitRate: number;
+    rateEntryId?: string;
+    employeeId?: string;
+    notes?: string;
+    sortOrder?: number;
+  }>;
+}
+
+export async function adminGetDprTemplates(
+  token: string,
+  params?: { projectId?: string; includeGlobal?: boolean },
+): Promise<DprTemplate[]> {
+  const qs = new URLSearchParams();
+  if (params?.projectId) qs.set('projectId', params.projectId);
+  if (params?.includeGlobal === false) qs.set('includeGlobal', 'false');
+  const q = qs.toString();
+  return apiFetch<DprTemplate[]>(
+    `/admin/b3-construction/dpr-templates${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminCreateDprTemplate(
+  token: string,
+  payload: CreateDprTemplatePayload,
+): Promise<DprTemplate> {
+  return apiFetch<DprTemplate>('/admin/b3-construction/dpr-templates', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminUpdateDprTemplate(
+  token: string,
+  id: string,
+  payload: Partial<CreateDprTemplatePayload>,
+): Promise<DprTemplate> {
+  return apiFetch<DprTemplate>(`/admin/b3-construction/dpr-templates/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDeleteDprTemplate(token: string, id: string): Promise<void> {
+  return apiFetch<void>(`/admin/b3-construction/dpr-templates/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Project Sub-Budgets ───────────────────────────────────────────────────────
+
+export interface ProjectBudgetLine {
+  id: string;
+  projectId: string;
+  costCode: CostCode;
+  budgetAmount: number;
+  notes?: string | null;
+}
+
+export async function adminGetProjectBudgetLines(
+  token: string,
+  projectId: string,
+): Promise<ProjectBudgetLine[]> {
+  return apiFetch<ProjectBudgetLine[]>(
+    `/admin/b3-construction/projects/${projectId}/budget-lines`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminSetProjectBudgetLines(
+  token: string,
+  projectId: string,
+  lines: Array<{ costCode: CostCode; budgetAmount: number; notes?: string }>,
+): Promise<ProjectBudgetLine[]> {
+  return apiFetch<ProjectBudgetLine[]>(
+    `/admin/b3-construction/projects/${projectId}/budget-lines`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lines }),
+    },
+  );
+}

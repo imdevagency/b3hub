@@ -763,4 +763,316 @@ export class AdminController {
   ) {
     return this.service.adminCreateWasteRecord(body);
   }
+
+  // ── B3 Construction — Rate Library ─────────────────────────────────────────
+
+  /**
+   * GET /admin/b3-construction/rates
+   * Paginated list of material rate entries (price catalogue).
+   */
+  @Get('b3-construction/rates')
+  getRateEntries(
+    @Query('category') category?: string,
+    @Query('activeOnly') activeOnly?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.adminGetRateEntries({
+      category: category as import('@prisma/client').RateCategory | undefined,
+      activeOnly: activeOnly === 'true',
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 200,
+    });
+  }
+
+  /**
+   * POST /admin/b3-construction/rates
+   * Create a new rate entry.
+   */
+  @Post('b3-construction/rates')
+  createRateEntry(
+    @Body() body: {
+      name: string;
+      unit: import('@prisma/client').UnitOfMeasure;
+      category: import('@prisma/client').RateCategory;
+      supplierName: string;
+      supplierNote?: string;
+      pricePerUnit: number;
+      deliveryFee?: number;
+      selfCostPerUnit?: number;
+      densityCoeff?: number;
+      truckConfig?: string;
+      zone?: string;
+      effectiveFrom?: string;
+      effectiveTo?: string;
+      notes?: string;
+    },
+  ) {
+    return this.service.adminCreateRateEntry(body);
+  }
+
+  /**
+   * PATCH /admin/b3-construction/rates/:id
+   * Update an existing rate entry.
+   */
+  @Patch('b3-construction/rates/:id')
+  updateRateEntry(
+    @Param('id') id: string,
+    @Body() body: {
+      name?: string;
+      unit?: import('@prisma/client').UnitOfMeasure;
+      category?: import('@prisma/client').RateCategory;
+      supplierName?: string;
+      supplierNote?: string;
+      pricePerUnit?: number;
+      deliveryFee?: number;
+      selfCostPerUnit?: number;
+      densityCoeff?: number;
+      truckConfig?: string;
+      zone?: string;
+      effectiveTo?: string | null;
+      notes?: string;
+    },
+  ) {
+    return this.service.adminUpdateRateEntry(id, body);
+  }
+
+  /**
+   * DELETE /admin/b3-construction/rates/:id
+   * Remove a rate entry.
+   */
+  @Delete('b3-construction/rates/:id')
+  deleteRateEntry(@Param('id') id: string) {
+    return this.service.adminDeleteRateEntry(id);
+  }
+
+  // ── B3 Construction — Daily Production Reports ─────────────────────────────
+
+  /**
+   * GET /admin/b3-construction/daily-reports
+   * Paginated list of daily reports across all projects.
+   */
+  @Get('b3-construction/daily-reports')
+  getDailyReports(
+    @Query('projectId') projectId?: string,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.adminGetDailyReports({
+      projectId,
+      status,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 100,
+    });
+  }
+
+  /**
+   * GET /admin/b3-construction/daily-reports/:id
+   * Single daily report with all lines.
+   */
+  @Get('b3-construction/daily-reports/:id')
+  getDailyReportById(@Param('id') id: string) {
+    return this.service.adminGetDailyReportById(id);
+  }
+
+  /**
+   * POST /admin/b3-construction/daily-reports
+   * Create a new daily report with line items.
+   */
+  @Post('b3-construction/daily-reports')
+  createDailyReport(
+    @CurrentUser() user: RequestingUser,
+    @Body() body: {
+      projectId: string;
+      reportDate: string;
+      siteLabel?: string;
+      weatherNote?: string;
+      notes?: string;
+      lines: {
+        costCode: string;
+        description: string;
+        personName?: string;
+        quantity: number;
+        unit: import('@prisma/client').UnitOfMeasure;
+        unitRate: number;
+        rateEntryId?: string;
+        employeeId?: string;
+        notes?: string;
+      }[];
+    },
+  ) {
+    return this.service.adminCreateDailyReport(user.id, body);
+  }
+
+  /**
+   * PATCH /admin/b3-construction/daily-reports/:id
+   * Update report metadata or change status (DRAFT → SUBMITTED → APPROVED).
+   */
+  @Patch('b3-construction/daily-reports/:id')
+  updateDailyReport(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: {
+      siteLabel?: string;
+      weatherNote?: string;
+      notes?: string;
+      status?: string;
+    },
+  ) {
+    return this.service.adminUpdateDailyReport(id, user.id, body);
+  }
+
+  /**
+   * DELETE /admin/b3-construction/daily-reports/:id
+   * Delete a DRAFT report.
+   */
+  @Delete('b3-construction/daily-reports/:id')
+  deleteDailyReport(@Param('id') id: string) {
+    return this.service.adminDeleteDailyReport(id);
+  }
+
+  // ── B3 Construction — Employee Roster ──────────────────────────────────────
+
+  /**
+   * GET /admin/b3-construction/employees
+   * Paginated employee roster. Pass ?activeOnly=true for active-only.
+   */
+  @Get('b3-construction/employees')
+  getEmployees(
+    @Query('activeOnly') activeOnly?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.adminGetEmployees({
+      activeOnly: activeOnly === 'true',
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 200,
+    });
+  }
+
+  /**
+   * POST /admin/b3-construction/employees
+   * Create a new employee.
+   */
+  @Post('b3-construction/employees')
+  createEmployee(
+    @Body() body: {
+      firstName: string;
+      lastName: string;
+      role: string;
+      personalCode?: string;
+      phone?: string;
+      email?: string;
+      notes?: string;
+      defaultRateEntryId?: string;
+    },
+  ) {
+    return this.service.adminCreateEmployee(body);
+  }
+
+  /**
+   * PATCH /admin/b3-construction/employees/:id
+   * Update employee data or toggle active status.
+   */
+  @Patch('b3-construction/employees/:id')
+  updateEmployee(
+    @Param('id') id: string,
+    @Body() body: {
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+      personalCode?: string;
+      phone?: string;
+      email?: string;
+      notes?: string;
+      defaultRateEntryId?: string | null;
+      active?: boolean;
+    },
+  ) {
+    return this.service.adminUpdateEmployee(id, body);
+  }
+
+  /**
+   * DELETE /admin/b3-construction/employees/:id
+   * Soft-delete (deactivates) an employee — preserves DPR history.
+   */
+  @Delete('b3-construction/employees/:id')
+  deleteEmployee(@Param('id') id: string) {
+    return this.service.adminDeleteEmployee(id);
+  }
+
+  /**
+   * GET /admin/b3-construction/employees/:id/hours
+   * All DPR lines for this employee + total quantity.
+   */
+  @Get('b3-construction/employees/:id/hours')
+  getEmployeeHours(@Param('id') id: string) {
+    return this.service.adminGetEmployeeHours(id);
+  }
+
+  /**
+   * GET /admin/b3-construction/profitability
+   * Per-project profitability: contractValue vs DPR self-cost, monthly breakdown, cost code split.
+   */
+  @Get('b3-construction/profitability')
+  getConstructionProfitability(
+    @Query('projectId') projectId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.service.adminGetConstructionProfitability({ projectId, from, to });
+  }
+
+  // ── DPR Templates ──────────────────────────────────────────────────────────
+
+  /** GET /admin/b3-construction/dpr-templates */
+  @Get('b3-construction/dpr-templates')
+  getDprTemplates(
+    @Query('projectId') projectId?: string,
+    @Query('includeGlobal') includeGlobal?: string,
+  ) {
+    return this.service.adminGetDprTemplates({
+      projectId,
+      includeGlobal: includeGlobal !== 'false',
+    });
+  }
+
+  /** POST /admin/b3-construction/dpr-templates */
+  @Post('b3-construction/dpr-templates')
+  createDprTemplate(@Body() body: any) {
+    return this.service.adminCreateDprTemplate(body);
+  }
+
+  /** PATCH /admin/b3-construction/dpr-templates/:id */
+  @Patch('b3-construction/dpr-templates/:id')
+  updateDprTemplate(@Param('id') id: string, @Body() body: any) {
+    return this.service.adminUpdateDprTemplate(id, body);
+  }
+
+  /** DELETE /admin/b3-construction/dpr-templates/:id */
+  @Delete('b3-construction/dpr-templates/:id')
+  deleteDprTemplate(@Param('id') id: string) {
+    return this.service.adminDeleteDprTemplate(id);
+  }
+
+  // ── Project Sub-Budgets ────────────────────────────────────────────────────
+
+  /** GET /admin/b3-construction/projects/:id/budget-lines */
+  @Get('b3-construction/projects/:id/budget-lines')
+  getProjectBudgetLines(@Param('id') id: string) {
+    return this.service.adminGetProjectBudgetLines(id);
+  }
+
+  /** PUT /admin/b3-construction/projects/:id/budget-lines
+   *  Replaces all budget lines for the project.
+   */
+  @Put('b3-construction/projects/:id/budget-lines')
+  setProjectBudgetLines(
+    @Param('id') id: string,
+    @Body() body: { lines: Array<{ costCode: string; budgetAmount: number; notes?: string }> },
+  ) {
+    return this.service.adminSetProjectBudgetLines(id, body.lines);
+  }
 }
+

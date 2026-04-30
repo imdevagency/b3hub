@@ -482,6 +482,10 @@ Wrap page sections that may throw.
 
 ---
 
+#### `progress` — `@/components/ui/progress`
+
+---
+
 #### `select` — `@/components/ui/select`
 
 ---
@@ -503,6 +507,10 @@ Wrap page sections that may throw.
 ---
 
 #### `switch` — `@/components/ui/switch`
+
+---
+
+#### `table` — `@/components/ui/table`
 
 ---
 

@@ -2534,4 +2534,726 @@ export class AdminService {
       },
     });
   }
+
+  // ── Material Rate Library ──────────────────────────────────────────────────
+
+  async adminGetRateEntries(params: {
+    category?: import('@prisma/client').RateCategory;
+    activeOnly?: boolean;
+    page?: number;
+    limit?: number;
+  }) {
+    const { category, activeOnly = false, page = 1, limit = 200 } = params;
+    const skip = (page - 1) * limit;
+    const where: import('@prisma/client').Prisma.MaterialRateEntryWhereInput = {
+      ...(category ? { category } : {}),
+      ...(activeOnly ? { effectiveTo: null } : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.materialRateEntry.findMany({
+        where,
+        orderBy: [{ category: 'asc' }, { name: 'asc' }, { effectiveFrom: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.materialRateEntry.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  async adminCreateRateEntry(data: {
+    name: string;
+    unit: import('@prisma/client').UnitOfMeasure;
+    category: import('@prisma/client').RateCategory;
+    supplierName: string;
+    supplierNote?: string;
+    pricePerUnit: number;
+    deliveryFee?: number;
+    selfCostPerUnit?: number;
+    densityCoeff?: number;
+    truckConfig?: string;
+    zone?: string;
+    effectiveFrom?: string;
+    effectiveTo?: string;
+    notes?: string;
+  }) {
+    return this.prisma.materialRateEntry.create({
+      data: {
+        name: data.name,
+        unit: data.unit,
+        category: data.category,
+        supplierName: data.supplierName,
+        supplierNote: data.supplierNote,
+        pricePerUnit: data.pricePerUnit,
+        deliveryFee: data.deliveryFee ?? 0,
+        selfCostPerUnit: data.selfCostPerUnit,
+        densityCoeff: data.densityCoeff,
+        truckConfig: data.truckConfig,
+        zone: data.zone,
+        effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : new Date(),
+        effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : null,
+        notes: data.notes,
+      },
+    });
+  }
+
+  async adminUpdateRateEntry(
+    id: string,
+    data: {
+      name?: string;
+      unit?: import('@prisma/client').UnitOfMeasure;
+      category?: import('@prisma/client').RateCategory;
+      supplierName?: string;
+      supplierNote?: string;
+      pricePerUnit?: number;
+      deliveryFee?: number;
+      selfCostPerUnit?: number;
+      densityCoeff?: number;
+      truckConfig?: string;
+      zone?: string;
+      effectiveTo?: string | null;
+      notes?: string;
+    },
+  ) {
+    const existing = await this.prisma.materialRateEntry.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Rate entry not found');
+    return this.prisma.materialRateEntry.update({
+      where: { id },
+      data: {
+        ...data,
+        effectiveTo: data.effectiveTo === null ? null : data.effectiveTo ? new Date(data.effectiveTo) : undefined,
+      },
+    });
+  }
+
+  async adminDeleteRateEntry(id: string) {
+    const existing = await this.prisma.materialRateEntry.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Rate entry not found');
+    await this.prisma.materialRateEntry.delete({ where: { id } });
+  }
+
+  // ── Daily Production Reports ───────────────────────────────────────────────
+
+  async adminGetDailyReports(params: {
+    projectId?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { projectId, status, page = 1, limit = 100 } = params;
+    const skip = (page - 1) * limit;
+    const where: import('@prisma/client').Prisma.DailyReportWhereInput = {
+      ...(projectId ? { projectId } : {}),
+      ...(status ? { status: status as import('@prisma/client').DailyReportStatus } : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.dailyReport.findMany({
+        where,
+        include: {
+          project: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, firstName: true, lastName: true } },
+          _count: { select: { lines: true } },
+        },
+        orderBy: { reportDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.dailyReport.count({ where }),
+    ]);
+    // Compute totals per report
+    const withTotals = await Promise.all(
+      data.map(async (r) => {
+        const agg = await this.prisma.dailyReportLine.aggregate({
+          where: { reportId: r.id },
+          _sum: { total: true },
+        });
+        return { ...r, totalCost: agg._sum.total ?? 0 };
+      }),
+    );
+    return { data: withTotals, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  async adminGetDailyReportById(id: string) {
+    const report = await this.prisma.dailyReport.findUnique({
+      where: { id },
+      include: {
+        project: { select: { id: true, name: true, contractValue: true } },
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+        approvedBy: { select: { id: true, firstName: true, lastName: true } },
+        lines: {
+          include: { rateEntry: { select: { id: true, name: true, supplierName: true } } },
+          orderBy: [{ costCode: 'asc' }, { createdAt: 'asc' }],
+        },
+      },
+    });
+    if (!report) throw new NotFoundException('Daily report not found');
+    return report;
+  }
+
+  async adminCreateDailyReport(
+    adminId: string,
+    data: {
+      projectId: string;
+      reportDate: string;
+      siteLabel?: string;
+      weatherNote?: string;
+      notes?: string;
+      lines: {
+        costCode: string;
+        description: string;
+        personName?: string;
+        quantity: number;
+        unit: import('@prisma/client').UnitOfMeasure;
+        unitRate: number;
+        rateEntryId?: string;
+        employeeId?: string;
+        notes?: string;
+      }[];
+    },
+  ) {
+    const project = await this.prisma.project.findUnique({ where: { id: data.projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+
+    return this.prisma.dailyReport.create({
+      data: {
+        projectId: data.projectId,
+        createdById: adminId,
+        reportDate: new Date(data.reportDate),
+        siteLabel: data.siteLabel,
+        weatherNote: data.weatherNote,
+        notes: data.notes,
+        status: 'DRAFT',
+        lines: {
+          create: data.lines.map((l) => ({
+            costCode: l.costCode as import('@prisma/client').CostCode,
+            description: l.description,
+            personName: l.personName,
+            quantity: l.quantity,
+            unit: l.unit,
+            unitRate: l.unitRate,
+            total: l.quantity * l.unitRate,
+            rateEntryId: l.rateEntryId ?? null,
+            employeeId: l.employeeId ?? null,
+            notes: l.notes,
+          })),
+        },
+      },
+      include: {
+        lines: true,
+        project: { select: { id: true, name: true } },
+      },
+    });
+  }
+
+  async adminUpdateDailyReport(
+    id: string,
+    adminId: string,
+    data: {
+      siteLabel?: string;
+      weatherNote?: string;
+      notes?: string;
+      status?: string;
+    },
+  ) {
+    const existing = await this.prisma.dailyReport.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Daily report not found');
+
+    const { status, ...rest } = data;
+    const updateData: import('@prisma/client').Prisma.DailyReportUpdateInput = {
+      ...rest,
+      ...(status ? { status: status as import('@prisma/client').DailyReportStatus } : {}),
+    };
+    if (status === 'APPROVED') {
+      updateData.approvedBy = { connect: { id: adminId } };
+    }
+
+    return this.prisma.dailyReport.update({
+      where: { id },
+      data: updateData,
+      include: { lines: true, project: { select: { id: true, name: true } } },
+    });
+  }
+
+  async adminDeleteDailyReport(id: string) {
+    const existing = await this.prisma.dailyReport.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Daily report not found');
+    await this.prisma.dailyReport.delete({ where: { id } });
+  }
+
+  // ── Construction Employee Roster ────────────────────────────────────────────
+
+  async adminGetEmployees(params: { activeOnly?: boolean; page?: number; limit?: number }) {
+    const { activeOnly = false, page = 1, limit = 200 } = params;
+    const skip = (page - 1) * limit;
+    const where: import('@prisma/client').Prisma.ConstructionEmployeeWhereInput = activeOnly
+      ? { active: true }
+      : {};
+    const [data, total] = await Promise.all([
+      this.prisma.constructionEmployee.findMany({
+        where,
+        include: { defaultRateEntry: { select: { id: true, name: true, unit: true, pricePerUnit: true } } },
+        orderBy: [{ active: 'desc' }, { lastName: 'asc' }, { firstName: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.constructionEmployee.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  async adminCreateEmployee(data: {
+    firstName: string;
+    lastName: string;
+    role: string;
+    personalCode?: string;
+    phone?: string;
+    email?: string;
+    notes?: string;
+    defaultRateEntryId?: string;
+  }) {
+    return this.prisma.constructionEmployee.create({ data });
+  }
+
+  async adminUpdateEmployee(
+    id: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+      personalCode?: string;
+      phone?: string;
+      email?: string;
+      notes?: string;
+      defaultRateEntryId?: string | null;
+      active?: boolean;
+    },
+  ) {
+    const existing = await this.prisma.constructionEmployee.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Employee not found');
+    return this.prisma.constructionEmployee.update({ where: { id }, data });
+  }
+
+  async adminDeleteEmployee(id: string) {
+    const existing = await this.prisma.constructionEmployee.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Employee not found');
+    // Soft-delete: keep record for DPR history integrity
+    return this.prisma.constructionEmployee.update({ where: { id }, data: { active: false } });
+  }
+
+  async adminGetEmployeeHours(id: string) {
+    const employee = await this.prisma.constructionEmployee.findUnique({ where: { id } });
+    if (!employee) throw new NotFoundException('Employee not found');
+    const lines = await this.prisma.dailyReportLine.findMany({
+      where: { employeeId: id },
+      include: {
+        report: { select: { id: true, reportDate: true, project: { select: { id: true, name: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    const totalQuantity = lines.reduce((s, l) => s + l.quantity, 0);
+    return { employee, lines, totalQuantity };
+  }
+
+  /**
+   * GET /admin/b3-construction/profitability
+   *
+   * Per-project profitability summary using DPR line totals as self-cost.
+   * contractValue = what the client pays (invoiced revenue)
+   * dprCost       = sum of all APPROVED DPR line totals (actual self-cost)
+   * grossMargin   = contractValue - dprCost
+   *
+   * Optional filters: projectId, from (YYYY-MM-DD), to (YYYY-MM-DD)
+   */
+  async adminGetConstructionProfitability(params: {
+    projectId?: string;
+    from?: string;
+    to?: string;
+  }) {
+    const { projectId, from, to } = params;
+
+    // Build date filter for DPR lines (via report.reportDate)
+    const dateFilter =
+      from || to
+        ? {
+            report: {
+              reportDate: {
+                ...(from ? { gte: new Date(from) } : {}),
+                ...(to ? { lte: new Date(to) } : {}),
+              },
+            },
+          }
+        : {};
+
+    // Aggregate DPR totals per project × costCode
+    const lineAggs = await this.prisma.dailyReportLine.groupBy({
+      by: ['costCode'],
+      where: {
+        ...(projectId ? { report: { projectId } } : {}),
+        ...dateFilter,
+        report: {
+          ...(projectId ? { projectId } : {}),
+          ...(from || to
+            ? {
+                reportDate: {
+                  ...(from ? { gte: new Date(from) } : {}),
+                  ...(to ? { lte: new Date(to) } : {}),
+                },
+              }
+            : {}),
+        },
+      },
+      _sum: { total: true },
+    });
+
+    // Per-project aggregation
+    const projectAggs = await this.prisma.dailyReportLine.groupBy({
+      by: ['reportId'],
+      where: {
+        ...(from || to
+          ? {
+              report: {
+                ...(projectId ? { projectId } : {}),
+                reportDate: {
+                  ...(from ? { gte: new Date(from) } : {}),
+                  ...(to ? { lte: new Date(to) } : {}),
+                },
+              },
+            }
+          : projectId
+            ? { report: { projectId } }
+            : {}),
+      },
+      _sum: { total: true },
+    });
+
+    // Get all reports to resolve projectIds
+    const reportIds = projectAggs.map((a) => a.reportId);
+    const reports = await this.prisma.dailyReport.findMany({
+      where: { id: { in: reportIds } },
+      select: { id: true, projectId: true },
+    });
+    const reportProjectMap = new Map(reports.map((r) => [r.id, r.projectId]));
+
+    // Sum DPR cost per project
+    const dprCostByProject = new Map<string, number>();
+    for (const agg of projectAggs) {
+      const pid = reportProjectMap.get(agg.reportId);
+      if (!pid) continue;
+      dprCostByProject.set(pid, (dprCostByProject.get(pid) ?? 0) + (agg._sum.total ?? 0));
+    }
+
+    // Monthly breakdown (last 12 months)
+    const monthlyLines = await this.prisma.dailyReportLine.findMany({
+      where: {
+        ...(from || to
+          ? {
+              report: {
+                ...(projectId ? { projectId } : {}),
+                reportDate: {
+                  ...(from ? { gte: new Date(from) } : {}),
+                  ...(to ? { lte: new Date(to) } : {}),
+                },
+              },
+            }
+          : projectId
+            ? { report: { projectId } }
+            : { report: { reportDate: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000) } } }),
+      },
+      select: {
+        total: true,
+        costCode: true,
+        report: { select: { reportDate: true } },
+      },
+    });
+
+    // Group by YYYY-MM
+    const monthMap = new Map<string, number>();
+    for (const l of monthlyLines) {
+      const month = l.report.reportDate.toISOString().slice(0, 7);
+      monthMap.set(month, (monthMap.get(month) ?? 0) + (l.total ?? 0));
+    }
+    const monthlyCosts = Array.from(monthMap.entries())
+      .map(([month, cost]) => ({ month, cost }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    // Fetch relevant projects
+    const projectIds = projectId ? [projectId] : Array.from(dprCostByProject.keys());
+    const projects = await this.prisma.project.findMany({
+      where: projectIds.length ? { id: { in: projectIds } } : undefined,
+      select: {
+        id: true,
+        name: true,
+        clientName: true,
+        status: true,
+        contractValue: true,
+        budgetAmount: true,
+        startDate: true,
+        endDate: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Fetch per-cost-code budget lines for all relevant projects
+    const allBudgetLines = await this.prisma.projectBudgetLine.findMany({
+      where: projectIds.length ? { projectId: { in: projectIds } } : {},
+      select: { projectId: true, costCode: true, budgetAmount: true },
+    });
+    const budgetLinesByProject = new Map<string, Record<string, number>>();
+    for (const bl of allBudgetLines) {
+      if (!budgetLinesByProject.has(bl.projectId)) budgetLinesByProject.set(bl.projectId, {});
+      budgetLinesByProject.get(bl.projectId)![bl.costCode] = bl.budgetAmount;
+    }
+
+    // Per-project cost breakdown (DPR totals by cost code)
+    const perProjectCostBreakdown = new Map<string, Record<string, number>>();
+
+    // We need per-project × costCode breakdown
+    const lineAggsPerProject = await this.prisma.dailyReportLine.groupBy({
+      by: ['costCode', 'reportId'],
+      where: {
+        ...(from || to
+          ? {
+              report: {
+                ...(projectId ? { projectId } : {}),
+                reportDate: {
+                  ...(from ? { gte: new Date(from) } : {}),
+                  ...(to ? { lte: new Date(to) } : {}),
+                },
+              },
+            }
+          : projectId
+            ? { report: { projectId } }
+            : {}),
+      },
+      _sum: { total: true },
+    });
+
+    for (const agg of lineAggsPerProject) {
+      const pid = reportProjectMap.get(agg.reportId);
+      if (!pid) continue;
+      if (!perProjectCostBreakdown.has(pid)) perProjectCostBreakdown.set(pid, {});
+      const entry = perProjectCostBreakdown.get(pid)!;
+      entry[agg.costCode] = (entry[agg.costCode] ?? 0) + (agg._sum.total ?? 0);
+    }
+
+    // Cost breakdown by costCode (totals across filter)
+    const costBreakdown: Record<string, number> = {};
+    for (const agg of lineAggs) {
+      costBreakdown[agg.costCode] = agg._sum.total ?? 0;
+    }
+    const totalDprCost = Object.values(costBreakdown).reduce((s, v) => s + v, 0);
+
+    // Per-project summary
+    const projectSummaries = projects.map((p) => {
+      const dprCost = dprCostByProject.get(p.id) ?? 0;
+      const grossMargin = p.contractValue - dprCost;
+      const marginPct = p.contractValue > 0 ? (grossMargin / p.contractValue) * 100 : 0;
+      const budgetUsedPct =
+        p.budgetAmount && p.budgetAmount > 0 ? (dprCost / p.budgetAmount) * 100 : null;
+      const costByCode = perProjectCostBreakdown.get(p.id) ?? {};
+      const budgetByCode = budgetLinesByProject.get(p.id) ?? {};
+      return {
+        id: p.id,
+        name: p.name,
+        clientName: p.clientName,
+        status: p.status,
+        contractValue: p.contractValue,
+        budgetAmount: p.budgetAmount,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        dprCost,
+        grossMargin,
+        marginPct,
+        budgetUsedPct,
+        costByCode,
+        budgetByCode,
+      };
+    });
+
+    const totalContractValue = projectSummaries.reduce((s, p) => s + p.contractValue, 0);
+
+    return {
+      projects: projectSummaries,
+      totals: {
+        contractValue: totalContractValue,
+        dprCost: totalDprCost,
+        grossMargin: totalContractValue - totalDprCost,
+        marginPct:
+          totalContractValue > 0
+            ? ((totalContractValue - totalDprCost) / totalContractValue) * 100
+            : 0,
+      },
+      costBreakdown,
+      monthlyCosts,
+    };
+  }
+
+  // ── DPR Templates ─────────────────────────────────────────────────────────
+
+  async adminGetDprTemplates(params: { projectId?: string; includeGlobal?: boolean } = {}) {
+    const { projectId, includeGlobal = true } = params;
+
+    const where: any = { active: true };
+    if (projectId && includeGlobal) {
+      where.OR = [{ projectId }, { projectId: null }];
+    } else if (projectId) {
+      where.projectId = projectId;
+    }
+    // if neither, return all active templates
+
+    return this.prisma.dprTemplate.findMany({
+      where,
+      include: {
+        project: { select: { id: true, name: true } },
+        lines: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            rateEntry: { select: { id: true, name: true, unit: true, pricePerUnit: true } },
+            employee: { select: { id: true, firstName: true, lastName: true, role: true } },
+          },
+        },
+      },
+      orderBy: [{ projectId: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  async adminCreateDprTemplate(data: {
+    name: string;
+    description?: string;
+    projectId?: string;
+    lines: Array<{
+      costCode: string;
+      description: string;
+      quantity: number;
+      unit: string;
+      unitRate: number;
+      rateEntryId?: string;
+      employeeId?: string;
+      notes?: string;
+      sortOrder?: number;
+    }>;
+  }) {
+    const { lines, ...header } = data;
+    return this.prisma.dprTemplate.create({
+      data: {
+        ...header,
+        lines: {
+          create: lines.map((l, idx) => ({
+            costCode: l.costCode as any,
+            description: l.description,
+            quantity: l.quantity,
+            unit: l.unit as any,
+            unitRate: l.unitRate,
+            rateEntryId: l.rateEntryId || null,
+            employeeId: l.employeeId || null,
+            notes: l.notes || null,
+            sortOrder: l.sortOrder ?? idx,
+          })),
+        },
+      },
+      include: {
+        project: { select: { id: true, name: true } },
+        lines: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+  }
+
+  async adminUpdateDprTemplate(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      projectId?: string | null;
+      lines?: Array<{
+        costCode: string;
+        description: string;
+        quantity: number;
+        unit: string;
+        unitRate: number;
+        rateEntryId?: string;
+        employeeId?: string;
+        notes?: string;
+        sortOrder?: number;
+      }>;
+    },
+  ) {
+    const { lines, ...header } = data;
+
+    // Rebuild lines if provided (delete + recreate is the simplest approach)
+    if (lines !== undefined) {
+      await this.prisma.dprTemplateLine.deleteMany({ where: { templateId: id } });
+      await this.prisma.dprTemplateLine.createMany({
+        data: lines.map((l, idx) => ({
+          templateId: id,
+          costCode: l.costCode as any,
+          description: l.description,
+          quantity: l.quantity,
+          unit: l.unit as any,
+          unitRate: l.unitRate,
+          rateEntryId: l.rateEntryId || null,
+          employeeId: l.employeeId || null,
+          notes: l.notes || null,
+          sortOrder: l.sortOrder ?? idx,
+        })),
+      });
+    }
+
+    return this.prisma.dprTemplate.update({
+      where: { id },
+      data: header,
+      include: {
+        project: { select: { id: true, name: true } },
+        lines: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+  }
+
+  async adminDeleteDprTemplate(id: string) {
+    // Soft-delete
+    return this.prisma.dprTemplate.update({ where: { id }, data: { active: false } });
+  }
+
+  // ── Project Sub-Budgets ───────────────────────────────────────────────────
+
+  async adminGetProjectBudgetLines(projectId: string) {
+    return this.prisma.projectBudgetLine.findMany({
+      where: { projectId },
+      orderBy: { costCode: 'asc' },
+    });
+  }
+
+  async adminSetProjectBudgetLines(
+    projectId: string,
+    lines: Array<{ costCode: string; budgetAmount: number; notes?: string }>,
+  ) {
+    // Upsert each cost-code line; remove any not in the new set
+    await this.prisma.$transaction(async (tx) => {
+      const costCodes = lines.map((l) => l.costCode as any);
+
+      // Delete removed cost codes
+      await tx.projectBudgetLine.deleteMany({
+        where: { projectId, costCode: { notIn: costCodes } },
+      });
+
+      // Upsert each line
+      for (const line of lines) {
+        await tx.projectBudgetLine.upsert({
+          where: { projectId_costCode: { projectId, costCode: line.costCode as any } },
+          create: {
+            projectId,
+            costCode: line.costCode as any,
+            budgetAmount: line.budgetAmount,
+            notes: line.notes ?? null,
+          },
+          update: {
+            budgetAmount: line.budgetAmount,
+            notes: line.notes ?? null,
+          },
+        });
+      }
+    });
+
+    return this.adminGetProjectBudgetLines(projectId);
+  }
 }
+

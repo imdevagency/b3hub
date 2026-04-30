@@ -207,7 +207,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - api-keys
@@ -253,7 +252,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (marketing)
@@ -304,19 +302,32 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin/b3-fields
 - dashboard/admin/b3-fields/[id]
 - dashboard/admin/broadcast
+- dashboard/admin/catalog
 - dashboard/admin/companies
+- dashboard/admin/companies/[id]
+- dashboard/admin/config
+- dashboard/admin/dispatch
 - dashboard/admin/disputes
+- dashboard/admin/documents
 - dashboard/admin/exceptions
 - dashboard/admin/feature-flags
 - dashboard/admin/fee-config
+- dashboard/admin/field-ops
 - dashboard/admin/field-passes
+- dashboard/admin/finances
 - dashboard/admin/framework-contracts
+- dashboard/admin/guest-orders
 - dashboard/admin/invoices
 - dashboard/admin/jobs
+- dashboard/admin/jobs/[id]
+- dashboard/admin/marketplace
 - dashboard/admin/materials
 - dashboard/admin/orders
+- dashboard/admin/orders/[id]
 - dashboard/admin/payments
 - dashboard/admin/payouts
+- dashboard/admin/recycling-centers
+- dashboard/admin/rfqs
 - dashboard/admin/settings
 - dashboard/admin/skip-hire
 - dashboard/admin/skip-sizes
@@ -324,9 +335,24 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/admin/suppliers
 - dashboard/admin/support
 - dashboard/admin/surcharges
+- dashboard/admin/triage
 - dashboard/admin/users
+- dashboard/admin/users/[id]
 - dashboard/admin/weighing-slips
 - dashboard/analytics
+- dashboard/b3-construction
+- dashboard/b3-construction/clients
+- dashboard/b3-construction/daily-reports
+- dashboard/b3-construction/disposal
+- dashboard/b3-construction/employees
+- dashboard/b3-construction/profitability
+- dashboard/b3-construction/projects
+- dashboard/b3-construction/projects/[id]
+- dashboard/b3-construction/rates
+- dashboard/b3-recycling
+- dashboard/b3-recycling/certificates
+- dashboard/b3-recycling/jobs
+- dashboard/b3-recycling/waste-log
 - dashboard/buyer
 - dashboard/catalog
 - dashboard/chat
@@ -380,7 +406,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login

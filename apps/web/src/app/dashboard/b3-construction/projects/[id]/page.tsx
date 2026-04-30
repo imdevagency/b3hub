@@ -13,8 +13,12 @@ import { useAuth } from '@/lib/auth-context';
 import {
   adminGetConstructionProjectById,
   adminUpdateConstructionProject,
+  adminGetProjectBudgetLines,
+  adminSetProjectBudgetLines,
   type AdminConstructionProjectDetail,
   type ConstructionProjectStatus,
+  type ProjectBudgetLine,
+  type CostCode,
 } from '@/lib/api/admin';
 import { Progress } from '@/components/ui/progress';
 import { PageHeader } from '@/components/ui/page-header';
@@ -47,6 +51,7 @@ import {
   FolderKanban,
   MapPin,
   Package,
+  Pencil,
   TrendingUp,
   Truck,
   FileText,
@@ -220,12 +225,24 @@ export default function ConstructionProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Budget lines state
+  const [budgetLines, setBudgetLines] = useState<ProjectBudgetLine[]>([]);
+  const [budgetEditOpen, setBudgetEditOpen] = useState(false);
+  const [budgetDraft, setBudgetDraft] = useState<
+    { costCode: CostCode; budgetAmount: string; notes: string }[]
+  >([]);
+  const [savingBudget, setSavingBudget] = useState(false);
+
   const load = useCallback(async () => {
     if (!token || !id) return;
     setLoading(true);
     try {
-      const data = await adminGetConstructionProjectById(id, token);
+      const [data, lines] = await Promise.all([
+        adminGetConstructionProjectById(id, token),
+        adminGetProjectBudgetLines(token, id),
+      ]);
       setProject(data);
+      setBudgetLines(lines);
     } catch {
       setProject(null);
     } finally {
@@ -255,6 +272,57 @@ export default function ConstructionProjectDetailPage() {
       setUpdatingStatus(false);
     }
   };
+
+  const COST_CODES: CostCode[] = [
+    'LABOUR',
+    'EQUIPMENT',
+    'MATERIAL',
+    'TRANSPORT',
+    'SUBCONTRACTOR',
+    'OTHER',
+  ];
+  const COST_CODE_LABELS: Record<CostCode, string> = {
+    LABOUR: 'Darbaspēks',
+    EQUIPMENT: 'Tehnika',
+    MATERIAL: 'Materiāls',
+    TRANSPORT: 'Transports',
+    SUBCONTRACTOR: 'Apakšuzņēmējs',
+    OTHER: 'Cits',
+  };
+
+  function openBudgetEdit() {
+    // Pre-fill all cost codes; use existing values where available
+    setBudgetDraft(
+      COST_CODES.map((cc) => {
+        const existing = budgetLines.find((l) => l.costCode === cc);
+        return {
+          costCode: cc,
+          budgetAmount: existing ? String(existing.budgetAmount) : '',
+          notes: existing?.notes ?? '',
+        };
+      }),
+    );
+    setBudgetEditOpen(true);
+  }
+
+  async function saveBudgetLines() {
+    if (!token) return;
+    setSavingBudget(true);
+    try {
+      const lines = budgetDraft
+        .filter((d) => d.budgetAmount.trim() !== '')
+        .map((d) => ({
+          costCode: d.costCode,
+          budgetAmount: parseFloat(d.budgetAmount) || 0,
+          notes: d.notes || undefined,
+        }));
+      const updated = await adminSetProjectBudgetLines(token, id, lines);
+      setBudgetLines(updated);
+      setBudgetEditOpen(false);
+    } finally {
+      setSavingBudget(false);
+    }
+  }
 
   if (loading) return <PageSpinner />;
 
@@ -389,6 +457,94 @@ export default function ConstructionProjectDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sub-budgets by cost code */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Euro className="h-4 w-4 text-muted-foreground" />
+            Budžets pa izmaksu kodiem
+            <Button size="sm" variant="outline" className="ml-auto gap-1" onClick={openBudgetEdit}>
+              <Pencil className="h-3.5 w-3.5" />
+              Rediģēt
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {budgetLines.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              Budžeta sadalījums nav norādīts.{' '}
+              <button className="underline text-foreground" onClick={openBudgetEdit}>
+                Pievienot
+              </button>
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {budgetLines.map((bl) => {
+                const label = COST_CODE_LABELS[bl.costCode] ?? bl.costCode;
+                return (
+                  <div key={bl.id} className="flex items-center justify-between py-1">
+                    <span className="text-sm">{label}</span>
+                    <span className="text-sm font-medium tabular-nums">
+                      {formatEur(bl.budgetAmount)}
+                    </span>
+                  </div>
+                );
+              })}
+              <Separator className="my-1" />
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Kopā</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {formatEur(budgetLines.reduce((s, l) => s + l.budgetAmount, 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Budget edit dialog */}
+      {budgetEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h2 className="text-lg font-semibold">Budžets pa izmaksu kodiem</h2>
+            <p className="text-sm text-muted-foreground">
+              Atstājiet tukšu, lai izmaksu kods netiktu izsekots.
+            </p>
+            <div className="space-y-3">
+              {budgetDraft.map((d, idx) => (
+                <div key={d.costCode} className="flex items-center gap-3">
+                  <span className="text-sm w-36 shrink-0">{COST_CODE_LABELS[d.costCode]}</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      €
+                    </span>
+                    <input
+                      type="number"
+                      className="flex h-9 w-full rounded-md border border-input bg-background pl-6 pr-3 py-2 text-sm"
+                      placeholder="Nav norādīts"
+                      value={d.budgetAmount}
+                      onChange={(e) => {
+                        const next = [...budgetDraft];
+                        next[idx] = { ...d, budgetAmount: e.target.value };
+                        setBudgetDraft(next);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setBudgetEditOpen(false)}>
+                Atcelt
+              </Button>
+              <Button onClick={saveBudgetLines} disabled={savingBudget}>
+                {savingBudget ? 'Saglabā...' : 'Saglabāt'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Material orders */}
       <Card>

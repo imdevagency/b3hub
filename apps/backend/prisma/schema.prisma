@@ -480,6 +480,8 @@ model User {
   driverRatingsGiven          DriverRating[]          @relation("DriverRatingsGiven")
   driverRatingsReceived       DriverRating[]          @relation("BuyerRatingsReceived")
   driverPayouts               CarrierPayout[]         @relation("DriverPayouts")
+  dailyReportsCreated         DailyReport[]           @relation("DprCreatedBy")
+  dailyReportsApproved        DailyReport[]           @relation("DprApprovedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1927,6 +1929,15 @@ model Project {
   // Delivery / loading sites
   sites ProjectSite[]
 
+  // Daily production reports
+  dailyReports DailyReport[]
+
+  // DPR templates pinned to this project
+  dprTemplates DprTemplate[]
+
+  // Per-cost-code budget allocations
+  budgetLines ProjectBudgetLine[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2403,4 +2414,271 @@ model PickupSlot {
 
   @@index([fieldId, slotStart])
   @@map("pickup_slots")
+}
+
+// ── B3 Construction — Digitisation layer ─────────────────────────────────────
+
+// Cost-code categories (WBS level 1) — same across every project so costs are comparable.
+enum CostCode {
+  LABOUR        // Workers / operators (h)
+  EQUIPMENT     // Machines / plant hired in (h or day)
+  MATERIAL      // Sand, gravel, concrete, etc. (t or m3)
+  TRANSPORT     // Trucks, freight (km or load)
+  SUBCONTRACTOR // External trade contractors (lump or h)
+  OTHER
+}
+
+enum DailyReportStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+}
+
+// Controlled unit-of-measure vocabulary — prevents "m3" vs "m³" vs "kubikmetri" divergence.
+// Used on MaterialRateEntry.unit and DailyReportLine.unit so aggregations are always consistent.
+enum UnitOfMeasure {
+  T       // tonne
+  M3      // cubic metre
+  M2      // square metre
+  M       // linear metre
+  H       // hour
+  DAY     // shift / working day
+  KM      // kilometre
+  LOAD    // truck load
+  PC      // piece / gab
+}
+
+// Grouping for the rate library — mirrors CostCode but is independent so rates can span codes.
+enum RateCategory {
+  MATERIAL      // Sand, gravel, concrete, aggregates
+  TRANSPORT     // Trucks, freight, haulage
+  LABOUR        // Workers, operators, foremen
+  EQUIPMENT     // Plant, machinery, tools
+  SUBCONTRACTOR // External trade contractors
+  OTHER
+}
+
+// ─── Material Rate Library ────────────────────────────────────────────────────
+// Versioned, effective-dated rates — one row per material × supplier × truck config × zone.
+// Replaces the annual price spreadsheet.  Admin creates/updates rows; DPR lines reference them.
+model MaterialRateEntry {
+  id String @id @default(cuid())
+
+  // What
+  name        String        // e.g. "FR Šķemba 20-40"
+  unit        UnitOfMeasure // controlled vocabulary — no free-text drift
+  category    RateCategory  // controlled grouping — mirrors CostCode
+
+  // Who supplies it
+  supplierName String
+  supplierNote String? // e.g. "DSG karjeri Saikava"
+
+  // Rates
+  pricePerUnit      Float   // ex-works / base price
+  deliveryFee       Float   @default(0)   // per unit delivery surcharge
+  selfCostPerUnit   Float?  // pašizmaksa (optional — hides from foreman view)
+
+  // Density / conversion
+  densityCoeff      Float?  // tonne→m3 multiplier (e.g. 1.45 for gravel)
+
+  // Truck configuration context (optional — documents which truck config this applies to)
+  truckConfig       String? // e.g. "Vanna 27t", "KG7797+Piekabe 34.5t"
+
+  // Delivery zone
+  zone              String? // e.g. "Viestura iela 2, Gulbene"
+
+  // Versioning
+  effectiveFrom     DateTime @default(now())
+  effectiveTo       DateTime? // null = currently active
+  notes             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Back-references
+  reportLines    DailyReportLine[]
+  templateLines  DprTemplateLine[]
+  employees      ConstructionEmployee[]
+
+  @@index([category])
+  @@index([effectiveFrom])
+  @@map("material_rate_entries")
+}
+
+// ─── Daily Production Report (DPR) ───────────────────────────────────────────
+// One header per site-day.  Foreman logs what happened; admin approves.
+model DailyReport {
+  id          String @id @default(cuid())
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+
+  createdBy   User    @relation("DprCreatedBy", fields: [createdById], references: [id])
+  createdById String
+
+  approvedBy    User?   @relation("DprApprovedBy", fields: [approvedById], references: [id])
+  approvedById  String?
+
+  // When / where
+  reportDate  DateTime
+  siteLabel   String?   // e.g. "Daugmale" — free text, matches ProjectSite.label
+
+  // Narrative
+  weatherNote String?
+  notes       String?
+
+  status DailyReportStatus @default(DRAFT)
+
+  // Lines
+  lines DailyReportLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, reportDate])
+  @@map("daily_reports")
+}
+
+// ─── Daily Report Line ────────────────────────────────────────────────────────
+// One line per resource entry on a DPR.
+model DailyReportLine {
+  id String @id @default(cuid())
+
+  report    DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String
+
+  // Cost classification
+  costCode  CostCode
+
+  // Resource description
+  description String  // e.g. "Jānis Kusiņš", "CAT 317", "FR Šķemba 20-40"
+  personName  String? // for LABOUR lines — name of worker/driver
+
+  // Quantity × rate → total
+  quantity    Float
+  unit        UnitOfMeasure // controlled vocabulary — must match rate entry
+  unitRate    Float
+  total       Float   // stored denormalised for fast reporting
+
+  // Optional link to the rate library (so future rate changes don't corrupt history)
+  rateEntryId String?
+  rateEntry   MaterialRateEntry? @relation(fields: [rateEntryId], references: [id])
+
+  // Optional link to the employee roster (define once, pick in DPR)
+  employeeId String?
+  employee   ConstructionEmployee? @relation(fields: [employeeId], references: [id])
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reportId])
+  @@index([costCode])
+  @@map("daily_report_lines")
+}
+
+// ─── Construction Employee Roster ─────────────────────────────────────────────
+// Internal B3 Construction staff — defined once, picked in DPR lines.
+// These are workers who may not have a platform login.
+// Foremen and office staff who use the app are Users (ADMIN); field workers are here.
+model ConstructionEmployee {
+  id           String  @id @default(cuid())
+  firstName    String
+  lastName     String
+  role         String  // e.g. "Ekskavātora operators", "Strādnieks", "Šoferis"
+  personalCode String? // Latvian personal ID (personas kods) — optional, for HR/contracts
+  phone        String?
+  email        String?
+  notes        String?
+
+  // Default hourly / unit rate — pulled from the rate library when picked in DPR
+  defaultRateEntryId String?
+  defaultRateEntry   MaterialRateEntry? @relation(fields: [defaultRateEntryId], references: [id])
+
+  active Boolean @default(true)
+
+  // Back-ref: every DPR line that references this person
+  reportLines   DailyReportLine[]
+  templateLines DprTemplateLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("construction_employees")
+}
+
+// ─── DPR Template ─────────────────────────────────────────────────────────────
+// Recurring daily cost templates — foreman picks a template, all lines are
+// pre-populated into the DPR.  Replaces entering the same 5-6 rows every day.
+// Templates are global (shared across projects) or pinned to a project.
+model DprTemplate {
+  id          String  @id @default(cuid())
+  name        String  // e.g. "Daugmale — standarta diena", "Gulbene rīti"
+  description String?
+
+  // Optional: pin to a specific project (null = global template)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  active Boolean @default(true)
+
+  lines DprTemplateLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("dpr_templates")
+}
+
+model DprTemplateLine {
+  id         String @id @default(cuid())
+  template   DprTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+
+  costCode    CostCode
+  description String
+  quantity    Float
+  unit        UnitOfMeasure
+  unitRate    Float
+
+  // Optional links to rate library / employee roster (auto-fill)
+  rateEntryId String?
+  rateEntry   MaterialRateEntry? @relation(fields: [rateEntryId], references: [id])
+
+  employeeId String?
+  employee   ConstructionEmployee? @relation(fields: [employeeId], references: [id])
+
+  notes       String?
+  sortOrder   Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([templateId])
+  @@map("dpr_template_lines")
+}
+
+// ─── Project Sub-Budget (per cost code) ──────────────────────────────────────
+// Breaks the single budgetAmount into per-cost-code allocations.
+// e.g. Labour €8,000 | Equipment €12,000 | Transport €3,000 | Materials €5,000
+// Enables burn % per category in the profitability view.
+model ProjectBudgetLine {
+  id        String   @id @default(cuid())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  costCode     CostCode
+  budgetAmount Float
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, costCode])
+  @@index([projectId])
+  @@map("project_budget_lines")
 }

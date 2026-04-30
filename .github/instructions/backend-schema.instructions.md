@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2407 lines, 58 models, 46 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2685 lines, 65 models, 50 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -125,6 +125,10 @@ npm run db:seed           # reseed demo data
 | `WeighingPoint` | LOADING UNLOADING |
 | `OrderFulfillmentType` | DELIVERY PICKUP |
 | `B3FieldService` | MATERIAL_PICKUP WASTE_DISPOSAL TRAILER_RENTAL |
+| `CostCode` | LABOUR EQUIPMENT MATERIAL TRANSPORT SUBCONTRACTOR OTHER |
+| `DailyReportStatus` | DRAFT SUBMITTED APPROVED |
+| `UnitOfMeasure` | T M3 M2 M H DAY KM LOAD PC |
+| `RateCategory` | MATERIAL TRANSPORT LABOUR EQUIPMENT SUBCONTRACTOR OTHER |
 
 ---
 
@@ -154,7 +158,7 @@ npm run db:seed           # reseed demo data
 ### User — `@@map("users")`  
 **Fields:** `id`: String @id @default(cuid(), `email`: String? @unique, `phone`: String? @unique, `password`: String?, `firstName`: String, `lastName`: String, `avatar`: String?, `isCompany`: Boolean @default(false), `personalCode`: String? @unique, `canSell`: Boolean @default(false), `canTransport`: Boolean @default(false), `canSkipHire`: Boolean @default(false), `emailVerified`: Boolean @default(false), `phoneVerified`: Boolean @default(false), `pushToken`: String?, `resetToken`: String?, `resetTokenExpiry`: DateTime?, `refreshToken`: String?, `refreshTokenExpiry`: DateTime?, `emailVerifyToken`: String?, `emailVerifyExpiry`: DateTime?, `failedLoginAttempts`: Int @default(0), `lockedUntil`: DateTime?, `termsAcceptedAt`: DateTime?, `tokenVersion`: Int @default(0), `notifPush`: Boolean @default(true), `notifOrderUpdates`: Boolean @default(true), `notifJobAlerts`: Boolean @default(true), `notifMarketing`: Boolean @default(false), `permCreateContracts`: Boolean @default(false), `permReleaseCallOffs`: Boolean @default(false), `permManageOrders`: Boolean @default(false), `permViewFinancials`: Boolean @default(false), `permManageTeam`: Boolean @default(false), `companyId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `userType`: UserType (@default(BUYER)), `companyRole`?: CompanyRole, `status`: UserStatus (@default(ACTIVE))  
-**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, ChatLastRead, FrameworkContract, Project, TransportJobException, TransportJobException, SavedAddress, AdminAuditLog, OrderSchedule, Dispute, SupportThread?, SupportMessage, FieldPass, DriverRating, DriverRating, CarrierPayout
+**Relations:** → Company?, DriverProfile?, BuyerProfile?, Order, TransportJob, TransportJob, Notification, Vehicle, QuoteRequest, Review, ChatMessage, ChatLastRead, FrameworkContract, Project, TransportJobException, TransportJobException, SavedAddress, AdminAuditLog, OrderSchedule, Dispute, SupportThread?, SupportMessage, FieldPass, DriverRating, DriverRating, CarrierPayout, DailyReport, DailyReport
 
 ---
 
@@ -402,7 +406,7 @@ npm run db:seed           # reseed demo data
 ### Project — `@@map("projects")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `clientName`: String?, `siteAddress`: String?, `contractValue`: Float, `budgetAmount`: Float?, `startDate`: DateTime?, `endDate`: DateTime?, `companyId`: String, `createdById`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `status`: ProjectStatus (@default(PLANNING))  
-**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite
+**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite, DailyReport, DprTemplate, ProjectBudgetLine
 
 ---
 
@@ -504,6 +508,53 @@ npm run db:seed           # reseed demo data
 ### PickupSlot — `@@map("pickup_slots")`  
 **Fields:** `id`: String @id @default(cuid(), `fieldId`: String, `slotStart`: DateTime, `slotEnd`: DateTime, `capacity`: Int @default(4), `booked`: Int @default(0), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Relations:** → B3Field, Order
+
+---
+
+### MaterialRateEntry — `@@map("material_rate_entries")`  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `supplierName`: String, `supplierNote`: String?, `pricePerUnit`: Float, `deliveryFee`: Float @default(0), `selfCostPerUnit`: Float?, `densityCoeff`: Float?, `truckConfig`: String?, `zone`: String?, `effectiveFrom`: DateTime @default(now(), `effectiveTo`: DateTime?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `unit`: UnitOfMeasure, `category`: RateCategory  
+**Relations:** → DailyReportLine, DprTemplateLine, ConstructionEmployee
+
+---
+
+### DailyReport — `@@map("daily_reports")`  
+**Fields:** `id`: String @id @default(cuid(), `projectId`: String, `createdById`: String, `approvedById`: String?, `reportDate`: DateTime, `siteLabel`: String?, `weatherNote`: String?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `status`: DailyReportStatus (@default(DRAFT))  
+**Relations:** → Project, User, User?, DailyReportLine
+
+---
+
+### DailyReportLine — `@@map("daily_report_lines")`  
+**Fields:** `id`: String @id @default(cuid(), `reportId`: String, `description`: String, `personName`: String?, `quantity`: Float, `unitRate`: Float, `total`: Float, `rateEntryId`: String?, `employeeId`: String?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `costCode`: CostCode, `unit`: UnitOfMeasure  
+**Relations:** → DailyReport, MaterialRateEntry?, ConstructionEmployee?
+
+---
+
+### ConstructionEmployee — `@@map("construction_employees")`  
+**Fields:** `id`: String @id @default(cuid(), `firstName`: String, `lastName`: String, `role`: String, `personalCode`: String?, `phone`: String?, `email`: String?, `notes`: String?, `defaultRateEntryId`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → MaterialRateEntry?, DailyReportLine, DprTemplateLine
+
+---
+
+### DprTemplate — `@@map("dpr_templates")`  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `projectId`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → Project?, DprTemplateLine
+
+---
+
+### DprTemplateLine — `@@map("dpr_template_lines")`  
+**Fields:** `id`: String @id @default(cuid(), `templateId`: String, `description`: String, `quantity`: Float, `unitRate`: Float, `rateEntryId`: String?, `employeeId`: String?, `notes`: String?, `sortOrder`: Int @default(0), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `costCode`: CostCode, `unit`: UnitOfMeasure  
+**Relations:** → DprTemplate, MaterialRateEntry?, ConstructionEmployee?
+
+---
+
+### ProjectBudgetLine — `@@map("project_budget_lines")`  
+**Fields:** `id`: String @id @default(cuid(), `projectId`: String, `budgetAmount`: Float, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `costCode`: CostCode  
+**Relations:** → Project
 
 ---
 

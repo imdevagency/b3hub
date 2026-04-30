@@ -8,7 +8,17 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FolderKanban, TrendingDown, Truck, FileText, Users } from 'lucide-react';
+import {
+  FolderKanban,
+  TrendingDown,
+  Truck,
+  FileText,
+  Users,
+  BookOpen,
+  ClipboardList,
+  BarChart2,
+  LayoutTemplate,
+} from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -55,6 +65,51 @@ const SECTIONS = [
     href: '/dashboard/b3-construction/projects',
     color: 'text-green-600',
     bg: 'bg-green-50',
+  },
+  {
+    title: 'Cenu katalogs',
+    description:
+      'Materiālu, transporta un darbu cenu katalogs ar piegādātāju informāciju un spēkā esošajiem tarifiem.',
+    icon: BookOpen,
+    href: '/dashboard/b3-construction/rates',
+    color: 'text-teal-600',
+    bg: 'bg-teal-50',
+  },
+  {
+    title: 'Dienas atskaites',
+    description:
+      'Ikdienas ražošanas atskaites pa projektiem — darbs, tehnika, materiāli un izmaksu kopsavilkums.',
+    icon: ClipboardList,
+    href: '/dashboard/b3-construction/daily-reports',
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+  },
+  {
+    title: 'Darbinieki',
+    description:
+      'Darbinieku saraksts — vārds, amats, kontakti un noklusējuma tarifs. Izvēlies DPR rindās.',
+    icon: Users,
+    href: '/dashboard/b3-construction/employees',
+    color: 'text-violet-600',
+    bg: 'bg-violet-50',
+  },
+  {
+    title: 'Rentabilitāte',
+    description:
+      'Līguma vērtība vs DPR pašizmaksa — bruto peļņa, marža un izmaksu struktūra pa projektiem un mēnešiem.',
+    icon: BarChart2,
+    href: '/dashboard/b3-construction/profitability',
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+  },
+  {
+    title: 'DPR Veidnes',
+    description:
+      'Ikdienas izmaksu veidnes — sagatavotas rindas ātrai DPR aizpildīšanai pa projektiem vai universālas.',
+    icon: LayoutTemplate,
+    href: '/dashboard/b3-construction/dpr-templates',
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
   },
 ];
 
