@@ -57,6 +57,114 @@ export class AdminService {
     return { data, total, page, limit };
   }
 
+  async getUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        ...this.userSelect,
+        company: {
+          select: {
+            id: true, name: true, legalName: true, companyType: true,
+            verified: true, payoutEnabled: true, commissionRate: true,
+          },
+        },
+        orders: {
+          select: { id: true, orderNumber: true, status: true, total: true, currency: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async getCompanyById(id: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+      select: {
+        id: true, name: true, legalName: true, companyType: true,
+        email: true, phone: true, city: true, country: true, address: true,
+        registrationNumber: true, vatNumber: true,
+        verified: true, payoutEnabled: true, commissionRate: true,
+        createdAt: true,
+        users: {
+          select: { id: true, firstName: true, lastName: true, email: true, companyRole: true, status: true, canSell: true, canTransport: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        orders: {
+          select: { id: true, orderNumber: true, status: true, total: true, currency: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+        _count: { select: { users: true, orders: true } },
+      },
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
+  async getOrderById(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      select: {
+        id: true, orderNumber: true, orderType: true, status: true,
+        paymentStatus: true, total: true, currency: true,
+        deliveryAddress: true, deliveryCity: true, deliveryDate: true,
+        notes: true, createdAt: true, updatedAt: true,
+        buyer: { select: { id: true, name: true, email: true } },
+        items: {
+          select: {
+            id: true, quantity: true, unitPrice: true, total: true, unit: true,
+            material: { select: { id: true, name: true, category: true } },
+          },
+        },
+        transportJobs: {
+          select: {
+            id: true, jobNumber: true, status: true, jobType: true,
+            pickupDate: true, deliveryDate: true, rate: true, currency: true,
+            driver: { select: { id: true, firstName: true, lastName: true } },
+            carrier: { select: { id: true, name: true } },
+          },
+        },
+        documents: {
+          select: { id: true, documentType: true, fileUrl: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    return order;
+  }
+
+  async getTransportJobById(id: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id },
+      select: {
+        id: true, jobNumber: true, jobType: true, status: true,
+        cargoType: true, cargoWeight: true, rate: true, pricePerTonne: true,
+        currency: true, pickupAddress: true, pickupCity: true,
+        deliveryAddress: true, deliveryCity: true,
+        pickupDate: true, deliveryDate: true, notes: true,
+        createdAt: true, updatedAt: true,
+        order: { select: { id: true, orderNumber: true, status: true } },
+        carrier: { select: { id: true, name: true } },
+        driver: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+        exceptions: {
+          select: { id: true, type: true, status: true, description: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        documents: {
+          select: { id: true, documentType: true, fileUrl: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    return job;
+  }
+
   async updateUser(id: string, data: UpdateUserDto, adminId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },

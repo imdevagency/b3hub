@@ -176,6 +176,10 @@ export interface AdminStats {
   pendingPayoutsCount: number;
   pendingPayoutsTotal: number;
   expiringDocumentsCount: number;
+  activeSuppliers?: number;
+  activeCarriers?: number;
+  ordersToday?: number;
+  gmvToday?: number;
 }
 
 export async function getAdminStats(token: string): Promise<AdminStats> {
@@ -1121,3 +1125,73 @@ export async function adminUpdateDocumentStatus(
     body: JSON.stringify({ status, note }),
   });
 }
+
+// ── Detail views (GET by ID) ──────────────────────────────────────────────────
+
+export interface AdminUserDetail extends AdminUser {
+  company: {
+    id: string; name: string; legalName: string; companyType: string;
+    verified: boolean; payoutEnabled: boolean; commissionRate: number;
+  } | null;
+  orders: { id: string; orderNumber: string; status: string; total: number; currency: string; createdAt: string }[];
+}
+
+export async function adminGetUserById(id: string, token: string): Promise<AdminUserDetail> {
+  return apiFetch<AdminUserDetail>(`/admin/users/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export interface AdminCompanyDetail extends AdminCompany {
+  address: string | null;
+  registrationNumber: string | null;
+  vatNumber: string | null;
+  users: { id: string; firstName: string; lastName: string; email?: string; companyRole: string | null; status: string; canSell: boolean; canTransport: boolean }[];
+  orders: { id: string; orderNumber: string; status: string; total: number; currency: string; createdAt: string }[];
+}
+
+export async function adminGetCompanyById(id: string, token: string): Promise<AdminCompanyDetail> {
+  return apiFetch<AdminCompanyDetail>(`/admin/companies/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export interface AdminOrderDetail extends AdminOrder {
+  deliveryAddress: string | null;
+  notes: string | null;
+  updatedAt: string;
+  items: {
+    id: string; quantity: number; unitPrice: number; total: number; unit: string;
+    material: { id: string; name: string; category: string } | null;
+  }[];
+  transportJobs: {
+    id: string; jobNumber: string; status: string; jobType: string;
+    pickupDate: string; deliveryDate: string; rate: number; currency: string;
+    driver: { id: string; firstName: string; lastName: string } | null;
+    carrier: { id: string; name: string } | null;
+  }[];
+  documents: { id: string; documentType: string; fileUrl: string | null; createdAt: string }[];
+}
+
+export async function adminGetOrderById(id: string, token: string): Promise<AdminOrderDetail> {
+  return apiFetch<AdminOrderDetail>(`/admin/orders/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export interface AdminTransportJobDetail extends AdminTransportJob {
+  pickupAddress: string | null;
+  deliveryAddress: string | null;
+  notes: string | null;
+  updatedAt: string;
+  exceptions: { id: string; type: string; status: string; description: string; createdAt: string }[];
+  documents: { id: string; documentType: string; fileUrl: string | null; createdAt: string }[];
+  driver: { id: string; firstName: string; lastName: string; phone?: string | null } | null;
+}
+
+export async function adminGetTransportJobById(id: string, token: string): Promise<AdminTransportJobDetail> {
+  return apiFetch<AdminTransportJobDetail>(`/admin/jobs/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+

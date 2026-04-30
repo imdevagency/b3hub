@@ -592,6 +592,7 @@ export default function DisposalWizard() {
         onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={loading}
+        stepKey={step}
       >
         {/* ── Step 1: Waste type ── */}
         {step === 1 && (

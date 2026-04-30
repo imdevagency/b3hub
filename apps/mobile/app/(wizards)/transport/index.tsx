@@ -573,6 +573,7 @@ export default function TransportWizard() {
         onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
+        stepKey={step}
       >
         {/* ── Step 1: Pickup address ── */}
         {step === 1 && (

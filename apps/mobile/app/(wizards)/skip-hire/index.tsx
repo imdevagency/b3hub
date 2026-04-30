@@ -501,6 +501,7 @@ export default function OrderWizard() {
         onCTA={onCTA}
         ctaDisabled={ctaDisabled}
         ctaLoading={submitting}
+        stepKey={step}
       >
         {/* ── Step 1 (Ko?): Waste type + Container size ── */}
         {step === 1 && (

@@ -121,6 +121,12 @@ export class AdminController {
     return this.service.getUsers(pagination.page ?? 1, pagination.limit ?? 50);
   }
 
+  /** GET /admin/users/:id — user detail */
+  @Get('users/:id')
+  getUserById(@Param('id') id: string) {
+    return this.service.getUserById(id);
+  }
+
   /** PATCH /admin/users/:id — toggle flags / status */
   @Patch('users/:id')
   updateUser(
@@ -137,6 +143,12 @@ export class AdminController {
     return this.service.getOrders(pagination.page ?? 1, pagination.limit ?? 50);
   }
 
+  /** GET /admin/orders/:id — order detail */
+  @Get('orders/:id')
+  getOrderById(@Param('id') id: string) {
+    return this.service.getOrderById(id);
+  }
+
   /** GET /admin/jobs — all transport jobs (paginated) */
   @Get('jobs')
   getTransportJobs(@Query() pagination: PagePaginationDto) {
@@ -146,10 +158,22 @@ export class AdminController {
     );
   }
 
+  /** GET /admin/jobs/:id — transport job detail */
+  @Get('jobs/:id')
+  getTransportJobById(@Param('id') id: string) {
+    return this.service.getTransportJobById(id);
+  }
+
   /** GET /admin/companies — all companies */
   @Get('companies')
   getCompanies() {
     return this.service.getCompanies();
+  }
+
+  /** GET /admin/companies/:id — company detail */
+  @Get('companies/:id')
+  getCompanyById(@Param('id') id: string) {
+    return this.service.getCompanyById(id);
   }
 
   /** PATCH /admin/companies/:id — update company flags */

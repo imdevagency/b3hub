@@ -13,33 +13,23 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   BarChart3,
-  Banknote,
-  Bell,
-  Box,
   Building2,
   ClipboardList,
-  Clock,
   FileText,
   LayoutDashboard,
+  Layers,
+  ListChecks,
   LogOut,
   MapPin,
-  MessageSquare,
+  Megaphone,
   Package,
-  Percent,
-  Receipt,
   Recycle,
   ScrollText,
-  Settings,
   ShieldCheck,
-  Store,
-  Ticket,
-  ToggleLeft,
+  Sliders,
   Truck,
   Users,
-  UserCheck,
-  Weight,
-  Zap,
-  FileQuestion,
+  Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
@@ -82,9 +72,17 @@ type AdminBadges = {
   openSupport: number;
   openExceptions: number;
   activeJobs: number;
+  triageAlerts: number;
 };
 
 // ─── Navigation structure ─────────────────────────────────────────────────────
+// Mirrors the 5 semantic groups on /dashboard/admin:
+// 1. Overview
+// 2. Platformas noteikumi  — rules of the game (config, catalog)
+// 3. Dalībnieku pārvaldība — who is allowed to play
+// 4. Operacionālā triāža   — needs human action today
+// 5. Finanses              — money flows
+// 6. Pārraudzība           — read-only observability
 
 const ADMIN_NAV: NavSection[] = [
   {
@@ -93,97 +91,63 @@ const ADMIN_NAV: NavSection[] = [
     items: [{ label: 'Vadības panelis', href: '/dashboard/admin', icon: LayoutDashboard }],
   },
   {
-    id: 'operations',
-    label: 'Darbības',
+    id: 'rules',
+    label: 'Platformas noteikumi',
     items: [
-      { label: 'Pasūtījumi', href: '/dashboard/admin/orders', icon: ClipboardList },
-      { label: 'RFQ / Cenu pieprasījumi', href: '/dashboard/admin/rfqs', icon: FileQuestion },
-      { label: 'Viesa pieprasījumi', href: '/dashboard/admin/guest-orders', icon: UserCheck },
-      {
-        label: 'Transporta darbi',
-        href: '/dashboard/admin/jobs',
-        icon: Truck,
-        badgeKey: 'activeJobs',
-      },
-      { label: 'Skip Noma', href: '/dashboard/admin/skip-hire', icon: Box },
+      { label: 'Katalogs', href: '/dashboard/admin/catalog', icon: Package },
+      { label: 'Konfigurācija', href: '/dashboard/admin/config', icon: Sliders },
     ],
   },
   {
-    id: 'people',
-    label: 'Lietotāji un Uzņēmumi',
+    id: 'governance',
+    label: 'Dalībnieku pārvaldība',
     items: [
-      { label: 'Lietotāji', href: '/dashboard/admin/users', icon: Users },
-      { label: 'Uzņēmumi', href: '/dashboard/admin/companies', icon: Building2 },
       {
         label: 'Pieteikumi',
         href: '/dashboard/admin/applications',
         icon: ShieldCheck,
         badgeKey: 'pendingApplications',
       },
-      { label: 'Piegādātāji', href: '/dashboard/admin/suppliers', icon: BarChart3 },
+      { label: 'Lietotāji', href: '/dashboard/admin/users', icon: Users },
+      { label: 'Uzņēmumi', href: '/dashboard/admin/companies', icon: Building2 },
+      { label: 'Piegādātāji', href: '/dashboard/admin/suppliers', icon: Layers },
+      { label: 'Pārstrādes centri', href: '/dashboard/admin/recycling-centers', icon: Recycle },
+      { label: 'Lauka operācijas', href: '/dashboard/admin/field-ops', icon: MapPin },
+    ],
+  },
+  {
+    id: 'triage',
+    label: 'Operacionālā triāža',
+    items: [
+      {
+        label: 'Triāža',
+        href: '/dashboard/admin/triage',
+        icon: AlertTriangle,
+        badgeKey: 'triageAlerts',
+      },
+      {
+        label: 'Dokumenti',
+        href: '/dashboard/admin/documents',
+        icon: FileText,
+      },
+      { label: 'Paziņojumu izsūtīšana', href: '/dashboard/admin/broadcast', icon: Megaphone },
     ],
   },
   {
     id: 'finance',
     label: 'Finanses',
-    items: [
-      { label: 'Maksājumi', href: '/dashboard/admin/payments', icon: Banknote },
-      { label: 'Komisijas likmes', href: '/dashboard/admin/fee-config', icon: Percent },
-      { label: 'Piemaksas', href: '/dashboard/admin/surcharges', icon: Receipt },
-      { label: 'SLA monitors', href: '/dashboard/admin/sla', icon: Clock },
-    ],
+    items: [{ label: 'Finanses', href: '/dashboard/admin/finances', icon: Wallet }],
   },
   {
-    id: 'platform',
-    label: 'Platforma',
+    id: 'observability',
+    label: 'Pārraudzība',
     items: [
-      { label: 'Tirgus dzinējs', href: '/dashboard/admin/marketplace', icon: Store },
-      { label: 'Materiāli', href: '/dashboard/admin/materials', icon: Package },
-      { label: 'Konteineru izmēri', href: '/dashboard/admin/skip-sizes', icon: Box },
-      { label: 'B3 Fields', href: '/dashboard/admin/b3-fields', icon: MapPin },
-      { label: 'Utilizācijas centri', href: '/dashboard/admin/recycling-centers', icon: Recycle },
-      { label: 'Field Passes', href: '/dashboard/admin/field-passes', icon: Ticket },
-      { label: 'Svēršanas taloni', href: '/dashboard/admin/weighing-slips', icon: Weight },
-      { label: 'Dokumenti', href: '/dashboard/admin/documents', icon: FileText },
-    ],
-  },
-  {
-    id: 'quality',
-    label: 'Kvalitāte un Atbalsts',
-    items: [
-      {
-        label: 'Sūdzības',
-        href: '/dashboard/admin/disputes',
-        icon: AlertTriangle,
-        badgeKey: 'openDisputes',
-      },
-      {
-        label: 'Incidenti',
-        href: '/dashboard/admin/exceptions',
-        icon: Zap,
-        badgeKey: 'openExceptions',
-      },
-      {
-        label: 'Atbalsts',
-        href: '/dashboard/admin/support',
-        icon: MessageSquare,
-        badgeKey: 'openSupport',
-      },
-    ],
-  },
-  {
-    id: 'system',
-    label: 'Sistēma',
-    items: [
+      { label: 'Visi pasūtījumi', href: '/dashboard/admin/orders', icon: BarChart3 },
+      { label: 'Transporta darbi', href: '/dashboard/admin/jobs', icon: Truck },
+      { label: 'Tirgus piedāvājumi', href: '/dashboard/admin/marketplace', icon: ListChecks },
+      { label: 'RFQ pieprasījumi', href: '/dashboard/admin/rfqs', icon: ClipboardList },
+      { label: 'Pamatlīgumi', href: '/dashboard/admin/framework-contracts', icon: ScrollText },
       { label: 'Audita žurnāls', href: '/dashboard/admin/audit-logs', icon: ScrollText },
-      {
-        label: 'Paziņojumi',
-        href: '/dashboard/notifications',
-        icon: Bell,
-        badgeKey: 'notifications',
-      },
-      { label: 'Funkciju karodziņi', href: '/dashboard/admin/feature-flags', icon: ToggleLeft },
-      { label: 'Iestatījumi', href: '/dashboard/admin/settings', icon: Settings },
     ],
   },
 ];
@@ -202,6 +166,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     openSupport: 0,
     openExceptions: 0,
     activeJobs: 0,
+    triageAlerts: 0,
   });
 
   const isActive = React.useCallback(
@@ -233,13 +198,17 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       const support = supportRes.status === 'fulfilled' ? supportRes.value : [];
       const exceptions = exceptionsRes.status === 'fulfilled' ? exceptionsRes.value : [];
 
+      const d = Math.max(0, stats?.openDisputes ?? 0);
+      const s = Math.max(0, support.filter((t) => t.status === 'OPEN').length);
+      const x = Math.max(0, exceptions.length);
       setBadges({
         notifications: Math.max(0, notif?.count ?? 0),
         pendingApplications: Math.max(0, stats?.pendingApplications ?? 0),
-        openDisputes: Math.max(0, stats?.openDisputes ?? 0),
-        openSupport: Math.max(0, support.filter((t) => t.status === 'OPEN').length),
-        openExceptions: Math.max(0, exceptions.length),
+        openDisputes: d,
+        openSupport: s,
+        openExceptions: x,
         activeJobs: Math.max(0, stats?.activeJobs ?? 0),
+        triageAlerts: d + s + x,
       });
     };
 

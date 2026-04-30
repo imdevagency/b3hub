@@ -188,23 +188,25 @@ export default Sentry.wrap(function RootLayout() {
         <StatusBar style="dark" translucent backgroundColor="transparent" />
         <ErrorBoundary>
           <MaybeStripe>
+            {/* All screens inherit STACK_SCREEN_OPTIONS → SCREEN.push (slide_from_right).
+                Only (auth) is explicitly overridden to fade. */}
             <Stack screenOptions={STACK_SCREEN_OPTIONS}>
-              {/* Wizard flows — full-screen modal, housed in (wizards)/ route group */}
-              <Stack.Screen name="(wizards)/material-order" options={SCREEN.modal} />
-              <Stack.Screen name="(wizards)/skip-hire" options={SCREEN.modal} />
-              <Stack.Screen name="(wizards)/disposal" options={SCREEN.modal} />
-              <Stack.Screen name="(wizards)/transport" options={SCREEN.modal} />
-              {/* Shared cross-role screens — housed in (shared)/ route group */}
-              <Stack.Screen name="(shared)/notifications" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/messages" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/settings" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/change-password" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/help" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/support-chat" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/delivery-proof" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/chat/[jobId]" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/notification/[id]" options={SCREEN.modal} />
-              <Stack.Screen name="(shared)/review/[orderId]" options={SCREEN.modal} />
+              {/* Wizard flows */}
+              <Stack.Screen name="(wizards)/material-order" />
+              <Stack.Screen name="(wizards)/skip-hire" />
+              <Stack.Screen name="(wizards)/disposal" />
+              <Stack.Screen name="(wizards)/transport" />
+              {/* Shared cross-role screens */}
+              <Stack.Screen name="(shared)/notifications" />
+              <Stack.Screen name="(shared)/messages" />
+              <Stack.Screen name="(shared)/settings" />
+              <Stack.Screen name="(shared)/change-password" />
+              <Stack.Screen name="(shared)/help" />
+              <Stack.Screen name="(shared)/support-chat" />
+              <Stack.Screen name="(shared)/delivery-proof" />
+              <Stack.Screen name="(shared)/chat/[jobId]" />
+              <Stack.Screen name="(shared)/notification/[id]" />
+              <Stack.Screen name="(shared)/review/[orderId]" />
               {/* Auth — instant fade, no back gesture */}
               <Stack.Screen name="(auth)" options={SCREEN.fade} />
             </Stack>

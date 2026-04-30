@@ -656,6 +656,7 @@ export default function OrderRequestWizard() {
       ctaDisabled={!canProceed || submitting}
       ctaLoading={submitting && step !== 'offers'}
       hideFooter={step === 'offers'}
+      stepKey={step}
       footerLeft={
         step === 'specs' ? (
           <View>

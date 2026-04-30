@@ -27,6 +27,7 @@ import {
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
+import Animated, { SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, X } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
@@ -50,6 +51,11 @@ export type WizardLayoutProps = {
   footerLeft?: React.ReactNode;
   /** Hide the bottom bar completely */
   hideFooter?: boolean;
+  /**
+   * Changing this value triggers the slide-from-right entrance animation for
+   * the content area. Pass the current step index or step name.
+   */
+  stepKey?: string | number;
 };
 
 export function WizardLayout({
@@ -65,6 +71,7 @@ export function WizardLayout({
   ctaLoading,
   footerLeft,
   hideFooter,
+  stepKey,
 }: WizardLayoutProps) {
   const insets = useSafeAreaInsets();
   const progressPct = `${Math.round((step / totalSteps) * 100)}%`;
@@ -106,7 +113,9 @@ export function WizardLayout({
       </View>
 
       {/* ── Content ── */}
-      <View style={wl.content}>{children}</View>
+      <Animated.View key={stepKey ?? 0} entering={SlideInRight.duration(280)} style={wl.content}>
+        {children}
+      </Animated.View>
 
       {/* ── Footer CTA ── */}
       {!hideFooter && (
