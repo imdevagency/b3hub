@@ -1938,6 +1938,12 @@ model Project {
   // Per-cost-code budget allocations
   budgetLines ProjectBudgetLine[]
 
+  // Subcontractor engagements on this project
+  subcontractorEngagements SubcontractorEngagement[]
+
+  // Client invoices issued for this project
+  clientInvoices ConstructionClientInvoice[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2681,4 +2687,94 @@ model ProjectBudgetLine {
   @@unique([projectId, costCode])
   @@index([projectId])
   @@map("project_budget_lines")
+}
+
+// ─── Construction Subcontractor ───────────────────────────────────────────────
+// External companies or sole traders that B3 Construction hires to assist with
+// specific tasks (excavation, concrete, electrical, etc.).
+// Each subcontractor can have multiple engagements (contracts) per project.
+model ConstructionSubcontractor {
+  id              String  @id @default(cuid())
+  name            String                 // Company name or sole trader name
+  registrationNo  String?                // LV company reg no (optional)
+  contactPerson   String?
+  phone           String?
+  email           String?
+  speciality      String?                // e.g. "Ekskavācija", "Betonēšana"
+  notes           String?
+  active          Boolean @default(true)
+
+  engagements SubcontractorEngagement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("construction_subcontractors")
+}
+
+// One engagement = one sub-contract within a project
+model SubcontractorEngagement {
+  id             String                     @id @default(cuid())
+  subcontractor  ConstructionSubcontractor  @relation(fields: [subcontractorId], references: [id])
+  subcontractorId String
+  project        Project                    @relation(fields: [projectId], references: [id])
+  projectId      String
+
+  description    String                     // What work was agreed
+  agreedAmount   Float                      // Contract price
+  invoicedAmount Float?                     // What they actually invoiced
+  paidAmount     Float?                     // What we've paid
+  startDate      DateTime?
+  endDate        DateTime?
+  status         SubEngagementStatus        @default(ACTIVE)
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([subcontractorId])
+  @@map("subcontractor_engagements")
+}
+
+enum SubEngagementStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// ─── Construction Client Invoice ──────────────────────────────────────────────
+// Invoices issued BY B3 Construction TO their clients.
+// Tracks what has been billed and what has been paid, per project.
+model ConstructionClientInvoice {
+  id          String  @id @default(cuid())
+  project     Project @relation(fields: [projectId], references: [id])
+  projectId   String
+
+  invoiceNo   String                        // B3 Construction's own invoice number
+  issueDate   DateTime
+  dueDate     DateTime?
+  amount      Float                         // Invoice amount incl. VAT
+  vatAmount   Float?                        // VAT portion
+  description String?                       // What work this covers
+  status      ClientInvoiceStatus           @default(ISSUED)
+  paidAt      DateTime?
+  paidAmount  Float?                        // Can be partial
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("construction_client_invoices")
+}
+
+enum ClientInvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
 }

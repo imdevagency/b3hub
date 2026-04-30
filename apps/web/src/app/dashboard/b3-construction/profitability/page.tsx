@@ -10,7 +10,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { TrendingUp, TrendingDown, Minus, Filter } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Filter, Download } from 'lucide-react';
+import { PageHelp } from '@/components/ui/page-help';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -145,11 +146,84 @@ export default function ProfitabilityPage() {
   const monthlyCosts = data?.monthlyCosts ?? [];
   const maxMonthCost = Math.max(...monthlyCosts.map((m) => m.cost), 1);
 
+  function exportCsv() {
+    if (!data) return;
+    const rows: string[][] = [
+      [
+        'Projekts',
+        'Klients',
+        'Statuss',
+        'Līguma vērtība (€)',
+        'DPR izmaksas (€)',
+        'Bruto peļņa (€)',
+        'Marža (%)',
+      ],
+    ];
+    for (const p of data.projects) {
+      rows.push([
+        p.name,
+        p.clientName ?? '',
+        p.status,
+        p.contractValue.toFixed(2),
+        p.dprCost.toFixed(2),
+        p.grossMargin.toFixed(2),
+        p.marginPct.toFixed(2),
+      ]);
+    }
+    if (totals) {
+      rows.push([
+        'KOPĀ',
+        '',
+        '',
+        totals.contractValue.toFixed(2),
+        totals.dprCost.toFixed(2),
+        totals.grossMargin.toFixed(2),
+        totals.marginPct.toFixed(2),
+      ]);
+    }
+    const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rentabilitate_${filterFrom}_${filterTo}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Rentabilitāte"
         description="Līguma vērtība (ienākumi) vs DPR pašizmaksa (faktiskās izmaksas)"
+        action={
+          <PageHelp
+            title="Rentabilitāte — mēneša finanšu pārskats"
+            sections={[
+              {
+                heading: 'Ko rāda šī lapa?',
+                body: 'Katram projektam redza t: cik tas izmaksāja (DPR pašizmaksa) un cik jūs saņemat (līguma vērtība). Starpbība ir peļņa — manuālo Excel tabulu aizvieto šī skatījums.',
+              },
+              {
+                heading: 'DPR pašizmaksa',
+                body: 'DPR pašizmaksa ir faktiskā nauda, ko meistari reģistrēja ikdienas atskaitēs (darbs + tehnika + materiāli + transports). Tā ir precīzāka par jebkuru aplēsi, jo nāk no reāliem datiem.',
+              },
+              {
+                heading: 'Marža',
+                body: 'Marža = (Līguma vērtība − DPR pašizmaksa) ÷ Līguma vērtība × 100%. Normāla zemdarbu apakšuzņēmēja marža: 15–30%. Zemāk par 5% — projekts strādā gandrīz bez peļņas. Augstāk par 35% — vai līgums bija novērtēts pilnbīgi?',
+              },
+              {
+                heading: 'Izmaksu koda sadalījums',
+                body: 'Ikviena projekta sadaļā redza t izmaksu sadalījumu pa kategorijām. Tas rāda, kur nauda aiziet. Ja Tehnikas izmaksas ir neproporcionāli augstas — iekārtas, iespējams, tiek izmantotas neefektīvi.',
+                tip: 'Pēc 3–6 mēnešiem var salīdz ināt līdzīg us projektus un noteikt sava uzņēmuma vidējo izmaksu profilu.',
+              },
+              {
+                heading: 'Datumu filtrs',
+                body: 'Pēc noklusējuma tiek rādīts aktūālais mēnesis. Iestatiet „No“ un „Līdz“ datumu, lai redzetu vēsturiskos datus vai salīdzinātu perioduss.',
+              },
+            ]}
+          />
+        }
       />
 
       {error && (
@@ -196,6 +270,10 @@ export default function ProfitabilityPage() {
         <Button variant="outline" className="h-9 gap-1.5" onClick={load}>
           <Filter className="h-3.5 w-3.5" />
           Filtrēt
+        </Button>
+        <Button variant="outline" className="h-9 gap-1.5" onClick={exportCsv} disabled={!data}>
+          <Download className="h-3.5 w-3.5" />
+          CSV
         </Button>
       </div>
 

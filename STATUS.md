@@ -344,7 +344,9 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/b3-construction/clients
 - dashboard/b3-construction/daily-reports
 - dashboard/b3-construction/disposal
+- dashboard/b3-construction/dpr-templates
 - dashboard/b3-construction/employees
+- dashboard/b3-construction/labour-hours
 - dashboard/b3-construction/profitability
 - dashboard/b3-construction/projects
 - dashboard/b3-construction/projects/[id]

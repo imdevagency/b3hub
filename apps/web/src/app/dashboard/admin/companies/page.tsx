@@ -12,27 +12,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Building2, Search, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
-
-// ── Company type badge ────────────────────────────────────────────────────────
-
-const TYPE_COLORS: Record<string, string> = {
-  SUPPLIER: 'bg-blue-50 text-blue-700',
-  CARRIER: 'bg-purple-50 text-purple-700',
-  CONSTRUCTION: 'bg-amber-50 text-amber-700',
-  RECYCLER: 'bg-green-50 text-green-700',
-  HYBRID: 'bg-pink-50 text-pink-700',
-};
-
-function TypeBadge({ type }: { type: string }) {
-  const cls = TYPE_COLORS[type] ?? 'bg-gray-100 text-gray-500';
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}
-    >
-      {type}
-    </span>
-  );
-}
+import { COMPANY_TYPE_CONFIG, StatusBadgeTw } from '@/lib/status-config';
 
 // ── Toggle button ─────────────────────────────────────────────────────────────
 
@@ -284,7 +264,7 @@ export default function AdminCompaniesPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <TypeBadge type={c.companyType} />
+                        <StatusBadgeTw cfg={COMPANY_TYPE_CONFIG[c.companyType]} />
                       </td>
                       <td className="px-4 py-3 text-gray-700">{c.city}</td>
                       <td className="px-4 py-3 text-center text-gray-700 font-semibold">

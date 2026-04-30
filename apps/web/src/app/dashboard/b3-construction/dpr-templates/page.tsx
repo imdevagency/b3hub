@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PageHelp } from '@/components/ui/page-help';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -337,10 +338,37 @@ export default function DprTemplatesPage() {
         title="DPR Veidnes"
         description="Ikdienas izmaksu veidnes — formanis izvēlas veidni un visas rindas tiek automātiski aizpildītas"
         action={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Jauna veidne
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Jauna veidne
+            </Button>
+            <PageHelp
+              title="DPR Veidnes — standarta dienas konfigurācija"
+              sections={[
+                {
+                  heading: 'Kas ir DPR veidne?',
+                  body: 'DPR veidne ir „standarta dienas“ konfigurācija — tipiskais brigādes sastāvs un izmaksu rindas konkrētam objektam. Piemēram: „1 ekskavātors 8h + 2 strādnieki 8h + degaļviela 40L“.',
+                },
+                {
+                  heading: 'Kāpēc to izmantot?',
+                  steps: [
+                    'Ātrāka DPR aizpildīšana: formanis izvēlas veidni un visi pamatie raksti parādās uzreiz. Maina tikai reālos daudzumus.',
+                    'Tāmes kalkulators: projektu Budžeta cilnē var izvēlēties veidni un dienu skaitu — sistēma aprēķina projekta pašizmaksu un maržu.',
+                  ],
+                  tip: 'Izveidojiet vismaz vienu veidni pirms pirmās DPR — tā ievērojami paātrinās ikdienas darbu.',
+                },
+                {
+                  heading: 'Globālas vs projekta veidnes',
+                  body: 'Veidne var būt globāla (pieejama visiem projektiem) vai piesa istīta konkrētam projektam (rāda ✦ simbolu sarakstā). Globālās ir ērtākais sākums.',
+                },
+                {
+                  heading: 'Kā izstrādāt labu veidni?',
+                  body: 'Iekļaujiet visas rindas, kas parādās gandrīz katru dienu: galvenie darbinieki, galvenā tehnika, degaļviela. Retāk izmantotos elementus (piem., betonu) pievienojiet manuāli izpildes laikā.',
+                },
+              ]}
+            />
+          </div>
         }
       />
 

@@ -16,6 +16,7 @@ import {
   SKIP_SIZE_LABEL,
   StatusBadgeHex,
 } from '@/lib/status-config';
+import { QuickStat } from '@/components/ui/quick-stat';
 import {
   confirmOrder,
   cancelOrder,
@@ -66,23 +67,6 @@ function wasteCategoryToWizardId(cat: string): string {
     ELECTRONICS_WEEE: 'electronics',
   };
   return map[cat] ?? 'mixed';
-}
-
-function QuickStat({ value, label, alert }: { value: string; label: string; alert?: boolean }) {
-  return (
-    <div
-      className={`p-4 rounded-xl ${alert ? 'bg-red-50 text-red-900 border border-red-200' : 'bg-white border border-gray-200'} flex flex-col justify-center`}
-    >
-      <span
-        className={`text-xs font-semibold uppercase tracking-wider mb-1 ${alert ? 'text-red-700' : 'text-muted-foreground'}`}
-      >
-        {label}
-      </span>
-      <span className={`text-2xl font-bold tracking-tight ${alert ? '' : 'text-foreground'}`}>
-        {value}
-      </span>
-    </div>
-  );
 }
 
 // ── Carrier history ───────────────────────────────────────────────────────────

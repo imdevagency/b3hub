@@ -9,6 +9,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Pencil, Trash2, Search, ChevronDown } from 'lucide-react';
+import { PageHelp } from '@/components/ui/page-help';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -227,8 +228,38 @@ export default function RatesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Cenu katalogs"
-        description={`${total} ieraksti — materiālu, darbu un transporta tarifi`}
+        title="Izmaksu likmes"
+        description={`${total} ieraksti — atsauces likmes DPR izmaksu rindām (materiāli, darbs, transports, tehnika)`}
+        action={
+          <PageHelp
+            title="Izmaksu likmes — kopīgā cenu bibliotēka"
+            sections={[
+              {
+                heading: 'Kāpēc to vajag?',
+                body: 'Katram darbiniekam, mašīnai un materiālam ir likme (cena par vienību). Norādot to šeit — vienu reizi visai sistēmai — DPR aizpildīšanas laikā cena parādās automātiski. Nav jāatceras vai jāmeklē aktuālie tarifi.',
+              },
+              {
+                heading: 'Kategorijas',
+                steps: [
+                  'Darbs — darbinieku un operātoru stundas tarifi.',
+                  'Tehnika — mašīnu un iekārtu stundas tarifi.',
+                  'Materiāls — smilšu, granta, betona cenas par tonnu vai m³.',
+                  'Transports — piegādes izmaksas par km vai kravu.',
+                  'Cits — jebkuri citi atkārtojošie izmaksu elementi.',
+                ],
+              },
+              {
+                heading: 'Kad mainīt?',
+                body: 'Ja degaļviela sadārdzinās, atjauniniet cenu šeit. Vecie DPR netiks ietekmēti — tur cena ir „iesaldēta“ izpildes briždī. Jauniem DPR tiks lietota jaunā cena.',
+              },
+              {
+                heading: 'Savienojums ar darbiniekiem',
+                body: 'Katram darbiniekam (Darbinieki sadaļā) var piesa istīt noklusējuma likmi. DPR izvēloties darbinieku — stundas tarifs aizpildās automātiski.',
+                tip: 'Pievienojiet likmes pirms darbiniekiem — tad piesaistīšana būs ātrāka.',
+              },
+            ]}
+          />
+        }
       />
 
       {/* Toolbar */}

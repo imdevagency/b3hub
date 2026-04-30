@@ -24,6 +24,7 @@ import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import { ActionListItem } from '@/components/ui/action-list-item';
 import { PageSpinner } from '@/components/ui/page-spinner';
+import { QuickStat } from '@/components/ui/quick-stat';
 
 type Action = {
   label: string;
@@ -34,19 +35,6 @@ type Action = {
 };
 
 const n = (v?: number) => (v !== undefined ? String(v) : '0');
-
-function QuickStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-        {value}
-      </span>
-      <span className="text-[11px] sm:text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">
-        {label}
-      </span>
-    </div>
-  );
-}
 
 export default function BuyerDashboardPage() {
   const { user, token, isLoading } = useAuth();
@@ -143,13 +131,17 @@ export default function BuyerDashboardPage() {
         {/* QUICK STATS STRIP */}
         <div className="grid grid-cols-3 border border-gray-200 rounded-xl bg-white divide-x divide-gray-200 overflow-hidden">
           <div className="px-5 py-4">
-            <QuickStat value={n(data?.activeOrders)} label="Procesā" />
+            <QuickStat value={n(data?.activeOrders)} label="Procesā" variant="minimal" />
           </div>
           <div className="px-5 py-4">
-            <QuickStat value={n(data?.awaitingDelivery)} label="Gaidāmās Piegādes" />
+            <QuickStat
+              value={n(data?.awaitingDelivery)}
+              label="Gaidāmās Piegādes"
+              variant="minimal"
+            />
           </div>
           <div className="px-5 py-4">
-            <QuickStat value={n(data?.myOrders)} label="Pasūtījumi" />
+            <QuickStat value={n(data?.myOrders)} label="Pasūtījumi" variant="minimal" />
           </div>
         </div>
       </div>

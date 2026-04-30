@@ -134,3 +134,84 @@ export function InvoiceStatusBadge({ status }: { status: PaymentStatus }) {
     </span>
   );
 }
+
+/**
+ * Generic Tailwind-class badge.
+ * Pass a `TwBadgeCfg` (from any of the status maps below) directly.
+ *
+ * @example
+ *   <StatusBadgeTw cfg={CONSTRUCTION_PROJECT_STATUS[project.status]} />
+ *   <StatusBadgeTw cfg={COMPANY_TYPE_CONFIG[company.companyType]} />
+ */
+export function StatusBadgeTw({ cfg }: { cfg: TwBadgeCfg | undefined }) {
+  const resolved = cfg ?? { label: '—', className: 'bg-gray-100 text-gray-500' };
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${resolved.className}`}
+    >
+      {resolved.label}
+    </span>
+  );
+}
+
+// ── Construction project statuses ─────────────────────────────────────────────
+
+export const CONSTRUCTION_PROJECT_STATUS: Record<string, TwBadgeCfg> = {
+  PLANNING: { label: 'Plānošana', className: 'bg-gray-100 text-gray-600' },
+  ACTIVE: { label: 'Aktīvs', className: 'bg-blue-100 text-blue-700' },
+  COMPLETED: { label: 'Pabeigts', className: 'bg-green-100 text-green-700' },
+  ON_HOLD: { label: 'Apturēts', className: 'bg-amber-100 text-amber-700' },
+};
+
+// ── Daily-report (DPR) statuses ───────────────────────────────────────────────
+
+export const DPR_STATUS: Record<string, TwBadgeCfg> = {
+  DRAFT: { label: 'Melnraksts', className: 'bg-gray-100 text-gray-600' },
+  SUBMITTED: { label: 'Iesniegts', className: 'bg-blue-100 text-blue-700' },
+  APPROVED: { label: 'Apstiprināts', className: 'bg-green-100 text-green-700' },
+};
+
+// ── Skip-hire order statuses (Tailwind) ───────────────────────────────────────
+// (SKIP_STATUS above uses hex colours for the mobile app; this set uses Tailwind for web tables)
+
+export const SKIP_HIRE_STATUS: Record<string, TwBadgeCfg> = {
+  PENDING: { label: 'Gaidā', className: 'bg-yellow-100 text-yellow-700' },
+  CONFIRMED: { label: 'Apstiprināts', className: 'bg-blue-100 text-blue-700' },
+  DELIVERED: { label: 'Piegādāts', className: 'bg-teal-100 text-teal-700' },
+  IN_USE: { label: 'Izmantošanā', className: 'bg-purple-100 text-purple-700' },
+  AWAITING_COLLECTION: { label: 'Gaida savākšanu', className: 'bg-orange-100 text-orange-700' },
+  COLLECTED: { label: 'Savākts', className: 'bg-green-100 text-green-700' },
+  COMPLETED: { label: 'Pabeigts', className: 'bg-green-100 text-green-700' },
+  CANCELLED: { label: 'Atcelts', className: 'bg-red-100 text-red-500' },
+};
+
+// ── Skip-hire payment statuses ────────────────────────────────────────────────
+
+export const SKIP_PAYMENT_STATUS: Record<string, TwBadgeCfg> = {
+  PENDING: { label: 'Gaida', className: 'bg-gray-100 text-gray-500' },
+  AUTHORIZED: { label: 'Autorizēts', className: 'bg-yellow-100 text-yellow-700' },
+  CAPTURED: { label: 'Iekasēts', className: 'bg-blue-100 text-blue-700' },
+  PAID: { label: 'Apmaksāts', className: 'bg-green-100 text-green-700' },
+  REFUNDED: { label: 'Atmaksāts', className: 'bg-orange-100 text-orange-700' },
+  FAILED: { label: 'Kļūda', className: 'bg-red-100 text-red-600' },
+};
+
+// ── Payout processing statuses ────────────────────────────────────────────────
+
+export const PAYOUT_STATUS: Record<string, TwBadgeCfg> = {
+  PENDING: { label: 'Gaida', className: 'bg-yellow-100 text-yellow-800' },
+  PROCESSING: { label: 'Apstrādā', className: 'bg-blue-100 text-blue-800' },
+  PAID: { label: 'Izmaksāts', className: 'bg-emerald-100 text-emerald-800' },
+  FAILED: { label: 'Kļūda', className: 'bg-red-100 text-red-800' },
+  CANCELLED: { label: 'Atcelts', className: 'bg-gray-100 text-gray-600' },
+};
+
+// ── Company types ─────────────────────────────────────────────────────────────
+
+export const COMPANY_TYPE_CONFIG: Record<string, TwBadgeCfg> = {
+  SUPPLIER: { label: 'Piegādātājs', className: 'bg-blue-50 text-blue-700' },
+  CARRIER: { label: 'Pārvadātājs', className: 'bg-purple-50 text-purple-700' },
+  CONSTRUCTION: { label: 'Celtniecība', className: 'bg-amber-50 text-amber-700' },
+  RECYCLER: { label: 'Pārstrāde', className: 'bg-green-50 text-green-700' },
+  HYBRID: { label: 'Jaukts', className: 'bg-pink-50 text-pink-700' },
+};

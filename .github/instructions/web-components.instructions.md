@@ -429,6 +429,17 @@ Wrap page sections that may throw.
 
 ---
 
+#### `info-tooltip` — `@/components/ui/info-tooltip`
+
+| Prop | Type | |
+|------|------|---|
+| `term` | `string` | **required** |
+| `children` | `React.ReactNode` | **required** |
+
+**Exports:** `InfoTooltip`
+
+---
+
 #### `input` — `@/components/ui/input`
 
 ---
@@ -472,6 +483,17 @@ Wrap page sections that may throw.
 
 ---
 
+#### `page-help` — `@/components/ui/page-help`
+
+| Prop | Type | |
+|------|------|---|
+| `title` | `string` | **required** |
+| `sections` | `HelpSection[]` | **required** |
+
+**Exports:** `PageHelp`
+
+---
+
 #### `page-spinner` — `@/components/ui/page-spinner`
 
 | Prop | Type | |
@@ -483,6 +505,19 @@ Wrap page sections that may throw.
 ---
 
 #### `progress` — `@/components/ui/progress`
+
+---
+
+#### `quick-stat` — `@/components/ui/quick-stat`
+
+| Prop | Type | |
+|------|------|---|
+| `value` | `string` | **required** |
+| `label` | `string` | **required** |
+| `alert` | `boolean` | optional |
+| `variant` | `'card' | 'minimal'` | optional |
+
+**Exports:** `QuickStat`
 
 ---
 
@@ -503,6 +538,22 @@ Wrap page sections that may throw.
 ---
 
 #### `skeleton` — `@/components/ui/skeleton`
+
+---
+
+#### `stat-card` — `@/components/ui/stat-card`
+
+| Prop | Type | |
+|------|------|---|
+| `icon` | `React.ElementType` | **required** |
+| `label` | `string` | **required** |
+| `value` | `string` | **required** |
+| `sub` | `string` | optional |
+| `accent` | `string` | optional |
+| `iconBg` | `string` | optional |
+| `iconColor` | `string` | optional |
+
+**Exports:** `StatCard`
 
 ---
 

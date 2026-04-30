@@ -39,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Users, Plus, RefreshCw, Building2 } from 'lucide-react';
+import { PageHelp } from '@/components/ui/page-help';
 import { format } from 'date-fns';
 
 // ─── Row skeleton ─────────────────────────────────────────────────────────────
@@ -286,6 +287,27 @@ export default function ConstructionClientsPage() {
                 <Plus className="mr-2 h-4 w-4" />
                 Jauns klients
               </Button>
+              <PageHelp
+                title="Klienti — B3 Construction pasūtītāji"
+                sections={[
+                  {
+                    heading: 'Kas ir klients B3 Construction kontekstā?',
+                    body: 'B3 Construction klients ir uzņēmums vai persona, kas uzaicina B3 Construction veikt zemdarbus. Parak ti tas ir ģenerāluzņēmējs vai investors. B3 Construction ir apakšuzņēmējs šajā ķēdē.',
+                  },
+                  {
+                    heading: 'Kāpēc pievienot klientu pirms projekta?',
+                    body: 'Veidojot projektu, tam jāpiesa istā klients no šī saraksta. Tā sistēma var apvienot vairākus projektus no viena klienta un sniegt kopsavilkumu.',
+                  },
+                  {
+                    heading: 'Uzņēmuma dati',
+                    body: 'Latvijas uzņēmuma reģistrācijas numurs (11 cipari) ir svarīgs dokumentiem un rēķiniem. E-pasts un telefons atvieglo sazināšanos ar projektu vadītāju.',
+                  },
+                  {
+                    heading: 'Piezīme',
+                    body: 'Šajā sarakstā ir tikai B3 Construction pakalpojumu klienti. B3Hub platform as materiālu pircēji ir atse višķā sistēmā un šeit neparādās.',
+                  },
+                ]}
+              />
             </div>
           ) : undefined
         }

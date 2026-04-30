@@ -9,7 +9,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Eye, Trash2, Search, ChevronDown, X, LayoutTemplate } from 'lucide-react';
+import { Plus, Eye, Trash2, Search, ChevronDown, X, LayoutTemplate, Download } from 'lucide-react';
+import { PageHelp } from '@/components/ui/page-help';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -359,6 +360,38 @@ export default function DailyReportsPage() {
       <PageHeader
         title="Dienas atskaites"
         description={`${total} atskaites — ikdienas izmaksu uzskaite pa projektiem`}
+        action={
+          <PageHelp
+            title="DPR — Dienas ražošanas atskaites"
+            sections={[
+              {
+                heading: 'Kas ir DPR?',
+                body: 'DPR (Dienas ražošanas atskaite) ir katras darba dienas žurnāls. Meistars ievada: kuri darbinieki strādāja un cik stundas, kāda tehnika strādāja un cik stundas, cik materiāla izlietots. Sistēma automātiski aprēķina dienas izmaksas pēc likmju bibliotēkas.',
+              },
+              {
+                heading: 'Kāpēc tas svarīgi?',
+                body: 'Apstiprinātās DPR veido projekta faktisko pašizmaksu. Tās ir rentabilitātes aprēķinu pamats. Bez regulārām DPR ierakstiem — nav precīzas finanšu ainas.',
+              },
+              {
+                heading: 'DPR statusi',
+                steps: [
+                  'Melnraksts — DPR sākts, bet vēl nav nosūtīts.',
+                  'Iesniegts — meistars ir nosūtījis apstiprināšanai.',
+                  'Apstiprināts — administrators apstiprinājis. Tikai šis statuss ietekmē rentabilitāti.',
+                ],
+                tip: 'Apstipriniet DPR ik dienas — tad Rentabilitātes sadaļa rāda aktuālus skaitļus.',
+              },
+              {
+                heading: 'Izmaksu kodi',
+                body: 'Katra DPR rinda pieder kategorijai: Darbs (cilvēki), Tehnika (mašīnas), Materiāls, Transports, Apakšuzņēmējs. Daudzums × Likme = Summa. Likmes nāk no Izmaksu likmju bibliotēkas.',
+              },
+              {
+                heading: 'Veidnes ietaupīs laiku',
+                body: 'Izveidojiet DPR veidni (Iestatījumi → DPR Veidnes) ar standarta rindām. Izveidojot jaunu DPR, izvēlieties veidni un rindas aizpildīsēs automātiski — meistars maina tikai daudzumus.',
+              },
+            ]}
+          />
+        }
       />
 
       {/* Toolbar */}
@@ -411,6 +444,38 @@ export default function DailyReportsPage() {
 
         <Button onClick={() => setCreateOpen(true)} className="gap-1 ml-auto">
           <Plus className="h-4 w-4" /> Jauna atskaite
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-1.5"
+          disabled={reports.length === 0}
+          onClick={() => {
+            const rows: string[][] = [
+              ['Datums', 'Projekts', 'Objekts', 'Statuss', 'Rindas', 'Kopsumma (€)'],
+            ];
+            for (const r of reports) {
+              rows.push([
+                r.reportDate.slice(0, 10),
+                r.project?.name ?? '',
+                r.siteLabel ?? '',
+                STATUS_LABELS[r.status],
+                String(r._count?.lines ?? r.lines?.length ?? ''),
+                r.totalCost != null ? r.totalCost.toFixed(2) : '',
+              ]);
+            }
+            const csv = rows
+              .map((row) => row.map((c) => `"${c.replace(/"/g, '""')}"`).join(','))
+              .join('\n');
+            const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dpr_atskaites.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          <Download className="h-4 w-4" /> CSV
         </Button>
       </div>
 

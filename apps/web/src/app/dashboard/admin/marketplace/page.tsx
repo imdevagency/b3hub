@@ -196,7 +196,7 @@ function StatsRow({ data }: { data: AdminMarketplaceData }) {
   const withCustomPricing = data.carriers.filter((c) => c.carrierPricing.length > 0).length;
   const national = data.carriers.filter((c) => c.coverageType === 'national').length;
 
-  const stats = [
+  const stats: { label: string; value: number; sub: string; color?: string }[] = [
     { label: 'Pārvadātāji', value: total, sub: 'reģistrēti' },
     { label: 'Verificēti', value: verified, sub: `no ${total}`, color: 'text-emerald-700' },
     {
@@ -207,7 +207,7 @@ function StatsRow({ data }: { data: AdminMarketplaceData }) {
     },
     { label: 'Ar individuālām cenām', value: withCustomPricing, sub: 'pārvadātāji' },
     { label: 'Nacionālie', value: national, sub: 'visa Latvija' },
-  ] as const;
+  ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

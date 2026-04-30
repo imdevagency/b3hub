@@ -1920,6 +1920,33 @@ export async function adminDeactivateEmployee(id: string, token: string): Promis
   });
 }
 
+export interface EmployeeHoursLine {
+  id: string;
+  costCode: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitRate: number;
+  totalCost: number;
+  report: {
+    id: string;
+    reportDate: string;
+    project: { id: string; name: string };
+  };
+}
+
+export interface EmployeeHoursResponse {
+  employee: ConstructionEmployee;
+  lines: EmployeeHoursLine[];
+  totalQuantity: number;
+}
+
+export async function adminGetEmployeeHours(id: string, token: string): Promise<EmployeeHoursResponse> {
+  return apiFetch<EmployeeHoursResponse>(`/admin/b3-construction/employees/${id}/hours`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // ── B3 Construction — Profitability ───────────────────────────────────────────
 
 export interface ProjectProfitabilitySummary {
@@ -2091,4 +2118,334 @@ export async function adminSetProjectBudgetLines(
       body: JSON.stringify({ lines }),
     },
   );
+}
+
+// ── B3 Construction — Project Documents ──────────────────────────────────────
+
+export type ProjectDocumentType =
+  | 'CONTRACT'
+  | 'INVOICE'
+  | 'WASTE_CERTIFICATE'
+  | 'DELIVERY_NOTE'
+  | 'WASTE_TRANSPORT_NOTE'
+  | 'DELIVERY_PROOF'
+  | 'WEIGHING_SLIP'
+  | 'OTHER';
+
+export type ProjectDocumentStatus = 'DRAFT' | 'ISSUED' | 'SIGNED' | 'ARCHIVED';
+
+export interface ProjectDocument {
+  id: string;
+  title: string;
+  type: ProjectDocumentType;
+  status: ProjectDocumentStatus;
+  fileUrl: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  notes: string | null;
+  expiresAt: string | null;
+  issuedBy: string | null;
+  isGenerated: boolean;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+  owner: { id: string; firstName: string; lastName: string; email: string } | null;
+}
+
+export async function adminGetProjectDocuments(
+  token: string,
+  projectId: string,
+): Promise<ProjectDocument[]> {
+  return apiFetch<ProjectDocument[]>(
+    `/admin/b3-construction/projects/${projectId}/documents`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export interface CreateProjectDocumentPayload {
+  title: string;
+  type: ProjectDocumentType;
+  status?: ProjectDocumentStatus;
+  fileUrl?: string;
+  notes?: string;
+  expiresAt?: string;
+  issuedBy?: string;
+}
+
+export async function adminCreateProjectDocument(
+  token: string,
+  projectId: string,
+  data: CreateProjectDocumentPayload,
+): Promise<Pick<ProjectDocument, 'id' | 'title' | 'type' | 'status' | 'fileUrl' | 'createdAt'>> {
+  return apiFetch(
+    `/admin/b3-construction/projects/${projectId}/documents`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export async function adminDeleteProjectDocument(
+  token: string,
+  projectId: string,
+  documentId: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch(
+    `/admin/b3-construction/projects/${projectId}/documents/${documentId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+}
+
+// ── B3 Construction — Subcontractor Spend ─────────────────────────────────────
+
+export interface SubcontractorSpendEntry {
+  name: string;
+  totalCost: number;
+  lineCount: number;
+  projectCount: number;
+  projects: string[];
+  lastSeen: string;
+}
+
+export interface SubcontractorSpendResponse {
+  summary: SubcontractorSpendEntry[];
+  totalSpend: number;
+  lineCount: number;
+}
+
+export async function adminGetSubcontractorSpend(
+  token: string,
+  params?: { projectId?: string; from?: string; to?: string },
+): Promise<SubcontractorSpendResponse> {
+  const qs = new URLSearchParams();
+  if (params?.projectId) qs.set('projectId', params.projectId);
+  if (params?.from) qs.set('from', params.from);
+  if (params?.to) qs.set('to', params.to);
+  const q = qs.toString();
+  return apiFetch<SubcontractorSpendResponse>(
+    `/admin/b3-construction/subcontractors${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+// ── B3 Construction — Subcontractor Register ──────────────────────────────────
+
+export interface ConstructionSubcontractor {
+  id: string;
+  name: string;
+  registrationNo?: string | null;
+  contactPerson?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  speciality?: string | null;
+  notes?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  engagements?: SubcontractorEngagement[];
+}
+
+export interface SubcontractorEngagement {
+  id: string;
+  subcontractorId: string;
+  projectId: string;
+  description: string;
+  agreedAmount: number;
+  invoicedAmount?: number | null;
+  paidAmount?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  subcontractor?: ConstructionSubcontractor;
+  project?: { id: string; name: string };
+}
+
+export async function adminGetSubcontractorRegister(
+  token: string,
+  params?: { active?: boolean; limit?: number; skip?: number },
+): Promise<{ data: ConstructionSubcontractor[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.active != null) qs.set('active', String(params.active));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.skip) qs.set('skip', String(params.skip));
+  const q = qs.toString();
+  return apiFetch(`/admin/b3-construction/subcontractor-register${q ? `?${q}` : ''}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminCreateSubcontractorRecord(
+  token: string,
+  data: {
+    name: string;
+    registrationNo?: string;
+    contactPerson?: string;
+    phone?: string;
+    email?: string;
+    speciality?: string;
+    notes?: string;
+  },
+): Promise<ConstructionSubcontractor> {
+  return apiFetch('/admin/b3-construction/subcontractor-register', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateSubcontractorRecord(
+  token: string,
+  id: string,
+  data: Partial<Omit<ConstructionSubcontractor, 'id' | 'createdAt' | 'updatedAt' | 'engagements'>>,
+): Promise<ConstructionSubcontractor> {
+  return apiFetch(`/admin/b3-construction/subcontractor-register/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteSubcontractorRecord(
+  token: string,
+  id: string,
+): Promise<ConstructionSubcontractor> {
+  return apiFetch(`/admin/b3-construction/subcontractor-register/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// Engagements (project-level)
+export async function adminGetProjectEngagements(
+  token: string,
+  projectId: string,
+): Promise<SubcontractorEngagement[]> {
+  return apiFetch(`/admin/b3-construction/projects/${projectId}/subcontractor-engagements`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminCreateEngagement(
+  token: string,
+  projectId: string,
+  data: {
+    subcontractorId: string;
+    description: string;
+    agreedAmount: number;
+    invoicedAmount?: number;
+    paidAmount?: number;
+    startDate?: string;
+    endDate?: string;
+    notes?: string;
+  },
+): Promise<SubcontractorEngagement> {
+  return apiFetch(`/admin/b3-construction/projects/${projectId}/subcontractor-engagements`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateEngagement(
+  token: string,
+  id: string,
+  data: Partial<Omit<SubcontractorEngagement, 'id' | 'subcontractorId' | 'projectId' | 'createdAt' | 'updatedAt' | 'subcontractor' | 'project'>>,
+): Promise<SubcontractorEngagement> {
+  return apiFetch(`/admin/b3-construction/subcontractor-engagements/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteEngagement(token: string, id: string): Promise<{ id: string }> {
+  return apiFetch(`/admin/b3-construction/subcontractor-engagements/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── B3 Construction — Client Invoices ─────────────────────────────────────────
+
+export type ClientInvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export interface ConstructionClientInvoice {
+  id: string;
+  projectId: string;
+  invoiceNo: string;
+  issueDate: string;
+  dueDate?: string | null;
+  amount: number;
+  vatAmount?: number | null;
+  description?: string | null;
+  status: ClientInvoiceStatus;
+  paidAt?: string | null;
+  paidAmount?: number | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  project?: { id: string; name: string; clientName?: string | null };
+}
+
+export async function adminGetClientInvoices(
+  token: string,
+  params?: { projectId?: string; status?: string; limit?: number; skip?: number },
+): Promise<{ data: ConstructionClientInvoice[]; total: number }> {
+  const qs = new URLSearchParams();
+  if (params?.projectId) qs.set('projectId', params.projectId);
+  if (params?.status) qs.set('status', params.status);
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.skip) qs.set('skip', String(params.skip));
+  const q = qs.toString();
+  return apiFetch(`/admin/b3-construction/client-invoices${q ? `?${q}` : ''}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminCreateClientInvoice(
+  token: string,
+  projectId: string,
+  data: {
+    invoiceNo: string;
+    issueDate: string;
+    dueDate?: string;
+    amount: number;
+    vatAmount?: number;
+    description?: string;
+    status?: ClientInvoiceStatus;
+    notes?: string;
+  },
+): Promise<ConstructionClientInvoice> {
+  return apiFetch(`/admin/b3-construction/projects/${projectId}/client-invoices`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateClientInvoice(
+  token: string,
+  id: string,
+  data: Partial<Omit<ConstructionClientInvoice, 'id' | 'projectId' | 'createdAt' | 'updatedAt' | 'project'>>,
+): Promise<ConstructionClientInvoice> {
+  return apiFetch(`/admin/b3-construction/client-invoices/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteClientInvoice(token: string, id: string): Promise<{ id: string }> {
+  return apiFetch(`/admin/b3-construction/client-invoices/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }

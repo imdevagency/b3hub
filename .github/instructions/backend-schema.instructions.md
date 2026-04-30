@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2685 lines, 65 models, 50 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2781 lines, 68 models, 52 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -129,6 +129,8 @@ npm run db:seed           # reseed demo data
 | `DailyReportStatus` | DRAFT SUBMITTED APPROVED |
 | `UnitOfMeasure` | T M3 M2 M H DAY KM LOAD PC |
 | `RateCategory` | MATERIAL TRANSPORT LABOUR EQUIPMENT SUBCONTRACTOR OTHER |
+| `SubEngagementStatus` | ACTIVE COMPLETED CANCELLED |
+| `ClientInvoiceStatus` | DRAFT ISSUED PARTIALLY_PAID PAID OVERDUE CANCELLED |
 
 ---
 
@@ -406,7 +408,7 @@ npm run db:seed           # reseed demo data
 ### Project — `@@map("projects")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `clientName`: String?, `siteAddress`: String?, `contractValue`: Float, `budgetAmount`: Float?, `startDate`: DateTime?, `endDate`: DateTime?, `companyId`: String, `createdById`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `status`: ProjectStatus (@default(PLANNING))  
-**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite, DailyReport, DprTemplate, ProjectBudgetLine
+**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite, DailyReport, DprTemplate, ProjectBudgetLine, SubcontractorEngagement, ConstructionClientInvoice
 
 ---
 
@@ -554,6 +556,26 @@ npm run db:seed           # reseed demo data
 ### ProjectBudgetLine — `@@map("project_budget_lines")`  
 **Fields:** `id`: String @id @default(cuid(), `projectId`: String, `budgetAmount`: Float, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `costCode`: CostCode  
+**Relations:** → Project
+
+---
+
+### ConstructionSubcontractor — `@@map("construction_subcontractors")`  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `registrationNo`: String?, `contactPerson`: String?, `phone`: String?, `email`: String?, `speciality`: String?, `notes`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → SubcontractorEngagement
+
+---
+
+### SubcontractorEngagement — `@@map("subcontractor_engagements")`  
+**Fields:** `id`: String @id @default(cuid(), `subcontractorId`: String, `projectId`: String, `description`: String, `agreedAmount`: Float, `invoicedAmount`: Float?, `paidAmount`: Float?, `startDate`: DateTime?, `endDate`: DateTime?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `status`: SubEngagementStatus (@default(ACTIVE))  
+**Relations:** → ConstructionSubcontractor, Project
+
+---
+
+### ConstructionClientInvoice — `@@map("construction_client_invoices")`  
+**Fields:** `id`: String @id @default(cuid(), `projectId`: String, `invoiceNo`: String, `issueDate`: DateTime, `dueDate`: DateTime?, `amount`: Float, `vatAmount`: Float?, `description`: String?, `paidAt`: DateTime?, `paidAmount`: Float?, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `status`: ClientInvoiceStatus (@default(ISSUED))  
 **Relations:** → Project
 
 ---

@@ -9,6 +9,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Pencil, UserX, UserCheck, Search, Phone, Mail } from 'lucide-react';
+import { PageHelp } from '@/components/ui/page-help';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -195,10 +196,34 @@ export default function EmployeesPage() {
         title="Darbinieki"
         description={`${activeCount} aktīvi darbinieki`}
         action={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            Pievienot darbinieku
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-1" />
+              Pievienot darbinieku
+            </Button>
+            <PageHelp
+              title="Darbinieki — lauka darba brigāde"
+              sections={[
+                {
+                  heading: 'Kas šeit ir?',
+                  body: 'B3 Construction lauka darbinieki — ekskavātora operātori, šoferi, strādnieki, meistari. Tie nav platform as lietotāji (viņiem nav konta). Administrators šos darbiniekus ievada un uztur.',
+                },
+                {
+                  heading: 'Kāpēc to vajag?',
+                  body: 'DPR aizpildīšanas laikā formanis vai administrators izvēlas darbībīnieka vārdu no šī saraksta. Sistēma automātiski pievieno viņa stundu tarifu. Nav jāatceras cenas vai jāmeklē dokumentos.',
+                },
+                {
+                  heading: 'Noklusējuma likme',
+                  body: 'Katram darbiniekam piesa istā likme no Izmaksu likmju bibliotēkas. Kad darbinieks tiek izvēlēts DPR rindā — tarifs aizpildās pats.',
+                  tip: 'Ja darbiniekam mainās alga — mainiet likmi bibliotēkā. Vecie DPR tiks iesaldēti ar veco cenu.',
+                },
+                {
+                  heading: 'Aktīvs / Neaktīvs',
+                  body: 'Darbinieks, kurš vairs nestrādā, tiek iestatīts kā Neaktīvs (ne izdzests). Tā veco DPR dati pal iek korekti un vēsture saglabājas.',
+                },
+              ]}
+            />
+          </div>
         }
       />
 

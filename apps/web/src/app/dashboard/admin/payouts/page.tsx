@@ -33,6 +33,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StatCard } from '@/components/ui/stat-card';
+import { PAYOUT_STATUS, StatusBadgeTw } from '@/lib/status-config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -103,58 +105,9 @@ function fmtDate(s: string | null | undefined) {
   }).format(new Date(s));
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Gaida',
-  PROCESSING: 'Apstrādā',
-  PAID: 'Izmaksāts',
-  FAILED: 'Kļūda',
-  CANCELLED: 'Atcelts',
-};
+// ─── Supplier payout row ──────────────────────────────────────────────────────
 
-const STATUS_STYLE: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  PROCESSING: 'bg-blue-100 text-blue-800',
-  PAID: 'bg-emerald-100 text-emerald-800',
-  FAILED: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-gray-100 text-gray-600',
-};
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  accent,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: React.ElementType;
-  accent?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
-              {label}
-            </p>
-            <p className={`mt-1 text-2xl font-bold tabular-nums ${accent ?? 'text-foreground'}`}>
-              {value}
-            </p>
-            {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
-          </div>
-          <div className="rounded-xl bg-muted p-2.5 shrink-0">
-            <Icon className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+// (StatCard imported from @/components/ui/stat-card)
 
 // ─── Supplier payout row ──────────────────────────────────────────────────────
 
@@ -194,11 +147,9 @@ function SupplierRow({
         {fmt(payout.amount, payout.currency)}
       </TableCell>
       <TableCell>
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[payout.status] ?? 'bg-gray-100 text-gray-600'}`}
-        >
-          {isOverdue && <AlertTriangle className="h-3 w-3" />}
-          {STATUS_LABEL[payout.status] ?? payout.status}
+        <span className="inline-flex items-center gap-1">
+          {isOverdue && <AlertTriangle className="h-3 w-3 text-red-500" />}
+          <StatusBadgeTw cfg={PAYOUT_STATUS[payout.status]} />
         </span>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">
@@ -266,11 +217,9 @@ function CarrierRow({
         {fmt(payout.amount, payout.currency)}
       </TableCell>
       <TableCell>
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLE[payout.status] ?? 'bg-gray-100 text-gray-600'}`}
-        >
-          {isOverdue && <AlertTriangle className="h-3 w-3" />}
-          {STATUS_LABEL[payout.status] ?? payout.status}
+        <span className="inline-flex items-center gap-1">
+          {isOverdue && <AlertTriangle className="h-3 w-3 text-red-500" />}
+          <StatusBadgeTw cfg={PAYOUT_STATUS[payout.status]} />
         </span>
       </TableCell>
       <TableCell className="text-sm text-muted-foreground">

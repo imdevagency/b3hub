@@ -12,39 +12,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Box, Search } from 'lucide-react';
-
-// ── Status colours ────────────────────────────────────────────────────────────
-
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  CONFIRMED: 'bg-blue-100 text-blue-700',
-  DELIVERED: 'bg-teal-100 text-teal-700',
-  IN_USE: 'bg-purple-100 text-purple-700',
-  AWAITING_COLLECTION: 'bg-orange-100 text-orange-700',
-  COLLECTED: 'bg-green-100 text-green-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-500',
-};
-
-const PAYMENT_COLORS: Record<string, string> = {
-  PENDING: 'bg-gray-100 text-gray-500',
-  AUTHORIZED: 'bg-yellow-100 text-yellow-700',
-  CAPTURED: 'bg-blue-100 text-blue-700',
-  PAID: 'bg-green-100 text-green-700',
-  REFUNDED: 'bg-orange-100 text-orange-700',
-  FAILED: 'bg-red-100 text-red-600',
-};
-
-function StatusBadge({ value, colorMap }: { value: string; colorMap: Record<string, string> }) {
-  const cls = colorMap[value] ?? 'bg-gray-100 text-gray-500';
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}
-    >
-      {value.replace(/_/g, ' ')}
-    </span>
-  );
-}
+import { SKIP_HIRE_STATUS, SKIP_PAYMENT_STATUS, StatusBadgeTw } from '@/lib/status-config';
 
 // ── Filters ────────────────────────────────────────────────────────────────────
 
@@ -229,10 +197,10 @@ export default function AdminSkipHirePage() {
                       {o.carrier?.name ?? <span className="text-gray-300">Nav piešķirts</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge value={o.status} colorMap={STATUS_COLORS} />
+                      <StatusBadgeTw cfg={SKIP_HIRE_STATUS[o.status]} />
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge value={o.paymentStatus} colorMap={PAYMENT_COLORS} />
+                      <StatusBadgeTw cfg={SKIP_PAYMENT_STATUS[o.paymentStatus]} />
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 text-xs">
                       {o.price.toLocaleString('lv-LV', { style: 'currency', currency: o.currency })}

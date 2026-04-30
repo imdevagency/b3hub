@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -162,32 +163,6 @@ function computeStats(
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  color: string;
-}) {
-  return (
-    <div className="rounded-2xl bg-muted/40 p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-full bg-background shadow-sm ${color}`}
-        >
-          <Icon className="h-4 w-4" />
-        </div>
-      </div>
-      <p className="text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
-    </div>
-  );
-}
 
 const HISTORY_STATUS_CONFIG = {
   paid: { label: 'Pabeigts', variant: 'default' as const },
@@ -341,35 +316,15 @@ export default function EarningsPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <StatCard
-          label="Šodien"
-          value={euro(stats.todayAmount)}
-          icon={Banknote}
-          color="text-zinc-900"
-        />
-        <StatCard
-          label="Šonedēļ"
-          value={euro(stats.weekAmount)}
-          icon={TrendingUp}
-          color="text-zinc-900"
-        />
-        <StatCard
-          label="Šomēnes"
-          value={euro(stats.monthAmount)}
-          icon={BarChart3}
-          color="text-zinc-900"
-        />
-        <StatCard
-          label={countLabel}
-          value={String(stats.completedCount)}
-          icon={CheckCircle}
-          color="text-zinc-900"
-        />
+        <StatCard label="Šodien" value={euro(stats.todayAmount)} icon={Banknote} />
+        <StatCard label="Šonedēļ" value={euro(stats.weekAmount)} icon={TrendingUp} />
+        <StatCard label="Šomēnes" value={euro(stats.monthAmount)} icon={BarChart3} />
+        <StatCard label={countLabel} value={String(stats.completedCount)} icon={CheckCircle} />
         <StatCard
           label="Gaidāmie"
           value={euro(stats.pendingPayout)}
           icon={Clock}
-          color="text-amber-600"
+          accent="text-amber-600"
         />
       </div>
 

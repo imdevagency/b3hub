@@ -2471,6 +2471,172 @@ export class AdminService {
     });
   }
 
+  // ── B3 Construction — Project Documents ──────────────────────────────────
+
+  async adminGetProjectDocuments(projectId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const links = await this.prisma.documentLink.findMany({
+      where: { entityId: projectId, entityType: 'PROJECT' },
+      select: { documentId: true, role: true },
+    });
+    if (links.length === 0) return [];
+
+    const docIds = links.map((l) => l.documentId);
+    const roleMap = Object.fromEntries(links.map((l) => [l.documentId, l.role]));
+
+    const docs = await this.prisma.document.findMany({
+      where: { id: { in: docIds } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const ownerIds = [...new Set(docs.map((d) => d.ownerId))];
+    const owners = ownerIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: ownerIds } },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+      : [];
+    const ownerMap = Object.fromEntries(owners.map((u) => [u.id, u]));
+
+    return docs.map((d) => ({
+      ...d,
+      role: roleMap[d.id] ?? 'RELATED',
+      owner: ownerMap[d.ownerId] ?? null,
+    }));
+  }
+
+  async adminCreateProjectDocument(
+    projectId: string,
+    adminUserId: string,
+    data: {
+      title: string;
+      type: string;
+      status?: string;
+      fileUrl?: string;
+      notes?: string;
+      expiresAt?: string;
+      issuedBy?: string;
+    },
+  ) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId }, select: { id: true } });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const doc = await this.prisma.document.create({
+      data: {
+        title: data.title,
+        type: data.type as never,
+        status: (data.status ?? 'DRAFT') as never,
+        fileUrl: data.fileUrl ?? null,
+        ownerId: adminUserId,
+        issuedBy: data.issuedBy ?? null,
+        notes: data.notes ?? null,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+        isGenerated: false,
+      },
+      select: { id: true, title: true, type: true, status: true, fileUrl: true, createdAt: true },
+    });
+
+    await this.prisma.documentLink.create({
+      data: {
+        documentId: doc.id,
+        entityId: projectId,
+        entityType: 'PROJECT',
+        role: 'PRIMARY',
+      },
+    });
+
+    return doc;
+  }
+
+  async adminDeleteProjectDocument(projectId: string, documentId: string) {
+    const link = await this.prisma.documentLink.findFirst({
+      where: { documentId, entityId: projectId, entityType: 'PROJECT' },
+    });
+    if (!link) throw new NotFoundException('Document not linked to this project');
+
+    await this.prisma.documentLink.delete({ where: { id: link.id } });
+    await this.prisma.document.delete({ where: { id: documentId } });
+    return { ok: true };
+  }
+
+  // ── B3 Construction — Subcontractor Spend ────────────────────────────────
+
+  async adminGetSubcontractorSpend(params: { projectId?: string; from?: string; to?: string }) {
+    const where: Record<string, unknown> = { costCode: 'SUBCONTRACTOR' };
+
+    if (params.projectId) {
+      where.report = { projectId: params.projectId };
+    }
+
+    const lines = await this.prisma.dailyReportLine.findMany({
+      where: where as never,
+      select: {
+        id: true,
+        description: true,
+        quantity: true,
+        unitRate: true,
+        totalCost: true,
+        costCode: true,
+        report: {
+          select: {
+            id: true,
+            reportDate: true,
+            status: true,
+            project: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { report: { reportDate: 'desc' } },
+    });
+
+    // Aggregate by subcontractor name (description)
+    const byName: Record<
+      string,
+      {
+        name: string;
+        totalCost: number;
+        lineCount: number;
+        projects: Set<string>;
+        lastSeen: string;
+      }
+    > = {};
+
+    for (const line of lines) {
+      const name = line.description.trim() || 'Nezināms';
+      if (!byName[name]) {
+        byName[name] = {
+          name,
+          totalCost: 0,
+          lineCount: 0,
+          projects: new Set(),
+          lastSeen: line.report.reportDate.toISOString(),
+        };
+      }
+      byName[name].totalCost += line.totalCost;
+      byName[name].lineCount += 1;
+      if (line.report.project?.name) byName[name].projects.add(line.report.project.name);
+      if (line.report.reportDate.toISOString() > byName[name].lastSeen) {
+        byName[name].lastSeen = line.report.reportDate.toISOString();
+      }
+    }
+
+    const summary = Object.values(byName)
+      .map((s) => ({
+        name: s.name,
+        totalCost: s.totalCost,
+        lineCount: s.lineCount,
+        projectCount: s.projects.size,
+        projects: [...s.projects],
+        lastSeen: s.lastSeen,
+      }))
+      .sort((a, b) => b.totalCost - a.totalCost);
+
+    const totalSpend = summary.reduce((s, r) => s + r.totalCost, 0);
+    return { summary, totalSpend, lineCount: lines.length };
+  }
+
   // ── B3 Construction — Clients ─────────────────────────────────────────────
 
   async adminGetConstructionClients() {
@@ -3254,6 +3420,188 @@ export class AdminService {
     });
 
     return this.adminGetProjectBudgetLines(projectId);
+  }
+
+  // ── Subcontractor Register ─────────────────────────────────────────────────
+
+  async adminGetSubcontractors(params: { active?: boolean; limit?: number; skip?: number }) {
+    const { active, limit = 100, skip = 0 } = params;
+    const where = active != null ? { active } : {};
+    const [data, total] = await Promise.all([
+      this.prisma.constructionSubcontractor.findMany({
+        where,
+        include: { engagements: { include: { project: { select: { id: true, name: true } } } } },
+        orderBy: { name: 'asc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.constructionSubcontractor.count({ where }),
+    ]);
+    return { data, total };
+  }
+
+  async adminCreateSubcontractor(body: {
+    name: string;
+    registrationNo?: string;
+    contactPerson?: string;
+    phone?: string;
+    email?: string;
+    speciality?: string;
+    notes?: string;
+  }) {
+    return this.prisma.constructionSubcontractor.create({ data: body });
+  }
+
+  async adminUpdateSubcontractor(id: string, body: Partial<{
+    name: string;
+    registrationNo: string | null;
+    contactPerson: string | null;
+    phone: string | null;
+    email: string | null;
+    speciality: string | null;
+    notes: string | null;
+    active: boolean;
+  }>) {
+    return this.prisma.constructionSubcontractor.update({ where: { id }, data: body });
+  }
+
+  async adminDeleteSubcontractor(id: string) {
+    return this.prisma.constructionSubcontractor.update({ where: { id }, data: { active: false } });
+  }
+
+  async adminGetSubcontractorEngagements(projectId?: string) {
+    return this.prisma.subcontractorEngagement.findMany({
+      where: projectId ? { projectId } : {},
+      include: {
+        subcontractor: true,
+        project: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminCreateEngagement(body: {
+    subcontractorId: string;
+    projectId: string;
+    description: string;
+    agreedAmount: number;
+    invoicedAmount?: number;
+    paidAmount?: number;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+    notes?: string;
+  }) {
+    const { startDate, endDate, status, ...rest } = body;
+    return this.prisma.subcontractorEngagement.create({
+      data: {
+        ...rest,
+        ...(startDate ? { startDate: new Date(startDate) } : {}),
+        ...(endDate ? { endDate: new Date(endDate) } : {}),
+        ...(status ? { status: status as any } : {}),
+      },
+      include: { subcontractor: true, project: { select: { id: true, name: true } } },
+    });
+  }
+
+  async adminUpdateEngagement(id: string, body: Partial<{
+    description: string;
+    agreedAmount: number;
+    invoicedAmount: number | null;
+    paidAmount: number | null;
+    startDate: string | null;
+    endDate: string | null;
+    status: string;
+    notes: string | null;
+  }>) {
+    const { startDate, endDate, status, ...rest } = body;
+    return this.prisma.subcontractorEngagement.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(startDate !== undefined ? { startDate: startDate ? new Date(startDate) : null } : {}),
+        ...(endDate !== undefined ? { endDate: endDate ? new Date(endDate) : null } : {}),
+        ...(status ? { status: status as any } : {}),
+      },
+      include: { subcontractor: true, project: { select: { id: true, name: true } } },
+    });
+  }
+
+  async adminDeleteEngagement(id: string) {
+    return this.prisma.subcontractorEngagement.delete({ where: { id } });
+  }
+
+  // ── Construction Client Invoices ───────────────────────────────────────────
+
+  async adminGetClientInvoices(params: { projectId?: string; status?: string; limit?: number; skip?: number }) {
+    const { projectId, status, limit = 100, skip = 0 } = params;
+    const where: any = {};
+    if (projectId) where.projectId = projectId;
+    if (status) where.status = status;
+    const [data, total] = await Promise.all([
+      this.prisma.constructionClientInvoice.findMany({
+        where,
+        include: { project: { select: { id: true, name: true, clientName: true } } },
+        orderBy: { issueDate: 'desc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.constructionClientInvoice.count({ where }),
+    ]);
+    return { data, total };
+  }
+
+  async adminCreateClientInvoice(body: {
+    projectId: string;
+    invoiceNo: string;
+    issueDate: string;
+    dueDate?: string;
+    amount: number;
+    vatAmount?: number;
+    description?: string;
+    status?: string;
+    notes?: string;
+  }) {
+    const { issueDate, dueDate, status, ...rest } = body;
+    return this.prisma.constructionClientInvoice.create({
+      data: {
+        ...rest,
+        issueDate: new Date(issueDate),
+        ...(dueDate ? { dueDate: new Date(dueDate) } : {}),
+        ...(status ? { status: status as any } : {}),
+      },
+      include: { project: { select: { id: true, name: true } } },
+    });
+  }
+
+  async adminUpdateClientInvoice(id: string, body: Partial<{
+    invoiceNo: string;
+    issueDate: string;
+    dueDate: string | null;
+    amount: number;
+    vatAmount: number | null;
+    description: string | null;
+    status: string;
+    paidAt: string | null;
+    paidAmount: number | null;
+    notes: string | null;
+  }>) {
+    const { issueDate, dueDate, paidAt, status, ...rest } = body;
+    return this.prisma.constructionClientInvoice.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(issueDate ? { issueDate: new Date(issueDate) } : {}),
+        ...(dueDate !== undefined ? { dueDate: dueDate ? new Date(dueDate) : null } : {}),
+        ...(paidAt !== undefined ? { paidAt: paidAt ? new Date(paidAt) : null } : {}),
+        ...(status ? { status: status as any } : {}),
+      },
+      include: { project: { select: { id: true, name: true } } },
+    });
+  }
+
+  async adminDeleteClientInvoice(id: string) {
+    return this.prisma.constructionClientInvoice.delete({ where: { id } });
   }
 }
 

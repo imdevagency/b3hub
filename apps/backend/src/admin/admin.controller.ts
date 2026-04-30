@@ -710,6 +710,50 @@ export class AdminController {
   }
 
   /**
+   * GET /admin/b3-construction/projects/:id/documents
+   * Documents linked to a construction project.
+   */
+  @Get('b3-construction/projects/:id/documents')
+  getProjectDocuments(@Param('id') id: string) {
+    return this.service.adminGetProjectDocuments(id);
+  }
+
+  /**
+   * POST /admin/b3-construction/projects/:id/documents
+   * Link a new document to a construction project.
+   */
+  @Post('b3-construction/projects/:id/documents')
+  createProjectDocument(
+    @Param('id') id: string,
+    @Body() body: { title: string; type: string; status?: string; fileUrl?: string; notes?: string; expiresAt?: string; issuedBy?: string },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminCreateProjectDocument(id, admin.id, body);
+  }
+
+  /**
+   * DELETE /admin/b3-construction/projects/:id/documents/:docId
+   * Unlink and delete a document from a project.
+   */
+  @Delete('b3-construction/projects/:id/documents/:docId')
+  deleteProjectDocument(@Param('id') id: string, @Param('docId') docId: string) {
+    return this.service.adminDeleteProjectDocument(id, docId);
+  }
+
+  /**
+   * GET /admin/b3-construction/subcontractors
+   * Aggregated subcontractor spend from DPR lines.
+   */
+  @Get('b3-construction/subcontractors')
+  getSubcontractorSpend(
+    @Query('projectId') projectId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.service.adminGetSubcontractorSpend({ projectId, from, to });
+  }
+
+  /**
    * PATCH /admin/b3-construction/projects/:id
    * Update project status or basic fields.
    */
@@ -1073,6 +1117,102 @@ export class AdminController {
     @Body() body: { lines: Array<{ costCode: string; budgetAmount: number; notes?: string }> },
   ) {
     return this.service.adminSetProjectBudgetLines(id, body.lines);
+  }
+
+  // ── Subcontractor Register ─────────────────────────────────────────────────
+
+  /** GET /admin/b3-construction/subcontractor-register */
+  @Get('b3-construction/subcontractor-register')
+  getSubcontractors(@Query('active') active?: string, @Query('limit') limit?: string, @Query('skip') skip?: string) {
+    return this.service.adminGetSubcontractors({
+      active: active != null ? active === 'true' : undefined,
+      limit: limit ? Number(limit) : undefined,
+      skip: skip ? Number(skip) : undefined,
+    });
+  }
+
+  /** POST /admin/b3-construction/subcontractor-register */
+  @Post('b3-construction/subcontractor-register')
+  createSubcontractor(@Body() body: any) {
+    return this.service.adminCreateSubcontractor(body);
+  }
+
+  /** PATCH /admin/b3-construction/subcontractor-register/:id */
+  @Patch('b3-construction/subcontractor-register/:id')
+  updateSubcontractor(@Param('id') id: string, @Body() body: any) {
+    return this.service.adminUpdateSubcontractor(id, body);
+  }
+
+  /** DELETE /admin/b3-construction/subcontractor-register/:id (soft-delete / deactivate) */
+  @Delete('b3-construction/subcontractor-register/:id')
+  deleteSubcontractor(@Param('id') id: string) {
+    return this.service.adminDeleteSubcontractor(id);
+  }
+
+  /** GET /admin/b3-construction/projects/:id/subcontractor-engagements */
+  @Get('b3-construction/projects/:id/subcontractor-engagements')
+  getProjectEngagements(@Param('id') id: string) {
+    return this.service.adminGetSubcontractorEngagements(id);
+  }
+
+  /** POST /admin/b3-construction/projects/:id/subcontractor-engagements */
+  @Post('b3-construction/projects/:id/subcontractor-engagements')
+  createEngagement(@Param('id') projectId: string, @Body() body: any) {
+    return this.service.adminCreateEngagement({ ...body, projectId });
+  }
+
+  /** PATCH /admin/b3-construction/subcontractor-engagements/:id */
+  @Patch('b3-construction/subcontractor-engagements/:id')
+  updateEngagement(@Param('id') id: string, @Body() body: any) {
+    return this.service.adminUpdateEngagement(id, body);
+  }
+
+  /** DELETE /admin/b3-construction/subcontractor-engagements/:id */
+  @Delete('b3-construction/subcontractor-engagements/:id')
+  deleteEngagement(@Param('id') id: string) {
+    return this.service.adminDeleteEngagement(id);
+  }
+
+  // ── Client Invoices ────────────────────────────────────────────────────────
+
+  /** GET /admin/b3-construction/client-invoices */
+  @Get('b3-construction/client-invoices')
+  getClientInvoices(
+    @Query('projectId') projectId?: string,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.service.adminGetClientInvoices({
+      projectId,
+      status,
+      limit: limit ? Number(limit) : undefined,
+      skip: skip ? Number(skip) : undefined,
+    });
+  }
+
+  /** GET /admin/b3-construction/projects/:id/client-invoices */
+  @Get('b3-construction/projects/:id/client-invoices')
+  getProjectClientInvoices(@Param('id') id: string) {
+    return this.service.adminGetClientInvoices({ projectId: id });
+  }
+
+  /** POST /admin/b3-construction/projects/:id/client-invoices */
+  @Post('b3-construction/projects/:id/client-invoices')
+  createClientInvoice(@Param('id') projectId: string, @Body() body: any) {
+    return this.service.adminCreateClientInvoice({ ...body, projectId });
+  }
+
+  /** PATCH /admin/b3-construction/client-invoices/:id */
+  @Patch('b3-construction/client-invoices/:id')
+  updateClientInvoice(@Param('id') id: string, @Body() body: any) {
+    return this.service.adminUpdateClientInvoice(id, body);
+  }
+
+  /** DELETE /admin/b3-construction/client-invoices/:id */
+  @Delete('b3-construction/client-invoices/:id')
+  deleteClientInvoice(@Param('id') id: string) {
+    return this.service.adminDeleteClientInvoice(id);
   }
 }
 

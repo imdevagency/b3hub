@@ -52,6 +52,7 @@ import {
 } from '@/components/ui/table';
 import { FolderKanban, RefreshCw, TrendingUp, Euro, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { PageHelp } from '@/components/ui/page-help';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -376,6 +377,36 @@ export default function ConstructionProjectsPage() {
             <Button variant="outline" size="icon" onClick={load} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
+            <PageHelp
+              title="Projektu saraksts — ceļvedis"
+              sections={[
+                {
+                  heading: 'Kas ir projekts?',
+                  body: 'Katrs aktīvs būvdarbu objekts — ceļš, ēkas pagrabs, inženiertīkli. Viens projekts = viens līgums ar vienu pasūtītāju. Projektā tiek reģistrēti visi DPR, budžets un dokumenti.',
+                },
+                {
+                  heading: 'Tabulas kolonnas',
+                  body: 'Pasūtītājs — uzņēmums vai persona, kas uzaicināja B3 Construction (jūsu klients). Pasūtījumu izmaksas — tikai B3Hub platformas pasūtījumi; pilnā DPR marža ir Rentabilitātes sadaļā.',
+                },
+                {
+                  heading: 'Projekta statusi',
+                  steps: [
+                    'PLĀNOŠANA — gatavošanās, vēl nav sākti darbi.',
+                    'AKTĪVS — darbi notiek.',
+                    'APTURĒTS — pagaidu pauze.',
+                    'PABEIGTS — objekts nodots.',
+                  ],
+                },
+                {
+                  heading: 'Uzreiz pēc projekta izveidošanas',
+                  steps: [
+                    'Atveriet projektu → Budžets → izmantojiet Tāmes kalkulatoru, lai iestatītu budžetu.',
+                    'Atveriet projektu → DPR → sāciet veidot ikdienas atskaites.',
+                  ],
+                  tip: 'Izveidojiet DPR veidni pirms pirmās atskaites — tā ietaupīs laiku katru dienu.',
+                },
+              ]}
+            />
           </div>
         }
       />
@@ -415,7 +446,7 @@ export default function ConstructionProjectsPage() {
                 <TrendingUp className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Materiālu izmaksas</p>
+                <p className="text-xs text-muted-foreground">Pasūtījumu izmaksas</p>
                 <p className="text-2xl font-semibold">{formatEur(totalMaterialCosts)}</p>
               </div>
             </div>
@@ -447,11 +478,11 @@ export default function ConstructionProjectsPage() {
               <TableRow>
                 <TableHead>Projekts</TableHead>
                 <TableHead>Klients</TableHead>
-                <TableHead>Uzņēmums</TableHead>
+                <TableHead>Pasūtītājs</TableHead>
                 <TableHead>Statuss</TableHead>
                 <TableHead className="text-right">Līg. vērtība</TableHead>
                 <TableHead className="text-right">Materiāli</TableHead>
-                <TableHead>Peļņas robeža</TableHead>
+                <TableHead>Pasūt. marža</TableHead>
                 <TableHead>Sākums</TableHead>
               </TableRow>
             </TableHeader>
