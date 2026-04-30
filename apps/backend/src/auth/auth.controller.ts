@@ -134,6 +134,15 @@ export class AuthController {
     return this.authService.updateProfile(user.userId, dto);
   }
 
+  @Post('me/avatar')
+  @UseGuards(JwtAuthGuard)
+  async uploadAvatar(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: { base64: string; mimeType: string },
+  ) {
+    return this.authService.uploadAvatar(user.userId, dto.base64, dto.mimeType);
+  }
+
   @Patch('push-token')
   @UseGuards(JwtAuthGuard)
   async updatePushToken(

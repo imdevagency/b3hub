@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { AvatarImage } from '@/components/ui/AvatarImage';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import {
-  User,
   Euro,
   FileText,
   Handshake,
@@ -102,8 +103,17 @@ function ListRow({
 }
 
 export default function SellerMoreScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? null);
+
+  const { pick: pickAvatar, uploading: avatarUploading } = useAvatarUpload({
+    type: 'user',
+    onSuccess: (url) => {
+      setAvatarUrl(url);
+      if (user) updateUser({ ...user, avatar: url });
+    },
+  });
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
 
@@ -139,29 +149,36 @@ export default function SellerMoreScreen() {
       <ScreenHeader title="Vairāk" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* Identity card */}
-        <TouchableOpacity
-          style={s.identityCard}
-          activeOpacity={0.82}
-          onPress={() => {
-            haptics.light();
-            router.push('/(seller)/profile');
-          }}
-        >
-          <View style={s.avatar}>
-            {initials ? (
-              <Text style={s.avatarText}>{initials}</Text>
-            ) : (
-              <User size={22} color="#fff" strokeWidth={2} />
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
+        <View style={s.identityCard}>
+          <AvatarImage
+            url={avatarUrl}
+            initials={initials}
+            size={52}
+            onPress={pickAvatar}
+            loading={avatarUploading}
+          />
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={0.82}
+            onPress={() => {
+              haptics.light();
+              router.push('/(seller)/profile');
+            }}
+          >
             <Text style={s.identityName} numberOfLines={1}>
               {user?.firstName} {user?.lastName}
             </Text>
             <Text style={s.identityRole}>Piegādātājs</Text>
-          </View>
-          <ChevronRight size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              haptics.light();
+              router.push('/(seller)/profile');
+            }}
+          >
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
 
         {/* Main tiles */}
         <TileGrid tiles={tiles} />
@@ -202,22 +219,6 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 12,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#166534',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    letterSpacing: 0.5,
   },
   identityName: {
     fontSize: 17,

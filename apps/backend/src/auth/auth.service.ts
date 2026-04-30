@@ -16,6 +16,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { RegisterDto } from './dto/register.dto';
@@ -43,6 +44,7 @@ export class AuthService {
     private jwtService: JwtService,
     private email: EmailService,
     private sms: SmsService,
+    private supabase: SupabaseService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -1050,5 +1052,27 @@ export class AuthService {
       tokenVersion: tokenVersion ?? 0,
     };
     return this.jwtService.sign(payload);
+  }
+
+  async uploadAvatar(
+    userId: string,
+    base64: string,
+    mimeType: string,
+  ): Promise<{ avatarUrl: string }> {
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const buffer = Buffer.from(raw, 'base64');
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `avatars/${userId}.${ext}`;
+    await this.supabase.uploadFile('avatars', path, buffer);
+    const avatarUrl = this.supabase.getPublicUrl('avatars', path);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarUrl },
+    });
+    this.logger.log(`User ${userId} avatar uploaded: ${avatarUrl}`);
+    return { avatarUrl };
   }
 }

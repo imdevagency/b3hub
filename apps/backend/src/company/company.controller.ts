@@ -15,6 +15,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { UpdateCompanyDto } from './dto/update-company.dto';
@@ -63,6 +64,22 @@ export class CompanyController {
     @Body() dto: UpdateCompanyDto,
   ) {
     return this.companyService.updateMyCompany(user, dto);
+  }
+
+  @Post('me/logo')
+  uploadLogo(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: { base64: string; mimeType: string },
+  ) {
+    if (!user.companyId) {
+      throw new ForbiddenException('You are not associated with a company');
+    }
+    return this.companyService.uploadLogo(
+      user.companyId,
+      dto.base64,
+      dto.mimeType,
+      user,
+    );
   }
 
   // ── Team members ───────────────────────────────────────────────────────────

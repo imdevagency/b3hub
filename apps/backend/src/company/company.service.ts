@@ -13,6 +13,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MapsService } from '../maps/maps.service';
+import { SupabaseService } from '../supabase/supabase.service';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
@@ -65,6 +66,7 @@ export class CompanyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly maps: MapsService,
+    private readonly supabase: SupabaseService,
   ) {}
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -386,5 +388,31 @@ export class CompanyService {
       { length: 10 },
       () => chars[Math.floor(Math.random() * chars.length)],
     ).join('');
+  }
+
+  async uploadLogo(
+    companyId: string,
+    base64: string,
+    mimeType: string,
+    currentUser: RequestingUser,
+  ): Promise<{ logoUrl: string }> {
+    if (currentUser.companyId !== companyId && currentUser.userType !== 'ADMIN') {
+      throw new ForbiddenException('You do not have access to this company');
+    }
+    if (!this.supabase) {
+      throw new BadRequestException('File storage is not configured');
+    }
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const buffer = Buffer.from(raw, 'base64');
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `company-logos/${companyId}.${ext}`;
+    await this.supabase.uploadFile('company-logos', path, buffer);
+    const logoUrl = this.supabase.getPublicUrl('company-logos', path);
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: { logo: logoUrl },
+    });
+    this.logger.log(`Company ${companyId} logo uploaded: ${logoUrl}`);
+    return { logoUrl };
   }
 }

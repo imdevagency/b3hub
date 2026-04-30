@@ -277,4 +277,12 @@ export const companyApi = {
       registered?: string | null;
       active?: boolean;
     }>(`/company/lookup/ur?regcode=${encodeURIComponent(regcode)}`),
+
+  /** Upload a company logo (base64) to Supabase Storage and save to Company.logo */
+  uploadLogo: (token: string, base64: string, mimeType: string) =>
+    apiFetch<{ logoUrl: string }>('/company/me/logo', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ base64, mimeType }),
+    }),
 };

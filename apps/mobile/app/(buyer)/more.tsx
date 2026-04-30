@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { AvatarImage } from '@/components/ui/AvatarImage';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { getRoleName } from '@/lib/utils';
+import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import {
   User,
   MessageCircle,
@@ -113,9 +115,18 @@ function ListRow({
 }
 
 export default function MoreScreen() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, updateUser } = useAuth();
   const { mode, isMultiRole } = useMode();
   const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? null);
+
+  const { pick: pickAvatar, uploading: avatarUploading } = useAvatarUpload({
+    type: 'user',
+    onSuccess: (url) => {
+      setAvatarUrl(url);
+      if (user) updateUser({ ...user, avatar: url });
+    },
+  });
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
   const accountLabel = user ? getRoleName(user) : 'Viesis';
@@ -286,26 +297,30 @@ export default function MoreScreen() {
       <ScreenHeader title="Vairāk" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* ── Identity card ──────────────────────────────────── */}
-        <TouchableOpacity
-          style={s.identityCard}
-          activeOpacity={0.82}
-          onPress={() => {
-            haptics.light();
-            if (!user) {
-              router.push('/(auth)/register' as never);
-            } else {
-              router.push('/(buyer)/profile');
-            }
-          }}
-        >
-          <View style={s.avatar}>
-            {initials ? (
-              <Text style={s.avatarText}>{initials}</Text>
-            ) : (
-              <User size={22} color="#fff" strokeWidth={2} />
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
+        <View style={s.identityCard}>
+          {user ? (
+            <AvatarImage
+              url={avatarUrl}
+              initials={initials}
+              size={52}
+              onPress={pickAvatar}
+              loading={avatarUploading}
+            />
+          ) : (
+            <AvatarImage url={null} initials="" size={52} />
+          )}
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={0.82}
+            onPress={() => {
+              haptics.light();
+              if (!user) {
+                router.push('/(auth)/register' as never);
+              } else {
+                router.push('/(buyer)/profile');
+              }
+            }}
+          >
             {user ? (
               <>
                 <Text style={s.identityName} numberOfLines={1}>
@@ -319,9 +334,9 @@ export default function MoreScreen() {
                 <Text style={s.identityRole}>Pierakstieties vai reģistrējieties</Text>
               </>
             )}
-          </View>
+          </TouchableOpacity>
           <ChevronRight size={18} color={colors.textMuted} />
-        </TouchableOpacity>
+        </View>
 
         {/* ── Main tiles (auth-required) ─────────────────────── */}
         {!isLoading && !user && (
@@ -444,22 +459,6 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 12,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#166534',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    letterSpacing: 0.5,
   },
   identityName: {
     fontSize: 17,

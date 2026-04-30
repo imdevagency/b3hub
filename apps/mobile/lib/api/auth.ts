@@ -219,4 +219,12 @@ export const authApi = {
         body: JSON.stringify(data),
       }),
   },
+
+  /** Upload a profile photo (base64) to Supabase Storage and save to User.avatar */
+  uploadAvatar: (token: string, base64: string, mimeType: string) =>
+    apiFetch<{ avatarUrl: string }>('/auth/me/avatar', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ base64, mimeType }),
+    }),
 };
