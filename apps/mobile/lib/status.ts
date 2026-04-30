@@ -26,6 +26,7 @@ export interface StatusEntry {
 // ─── Order status ─────────────────────────────────────────────────────────────
 
 export const ORDER_STATUS_MAP: Record<string, StatusEntry> = {
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: '#6b7280' },
   PENDING: { label: 'Gaida', bg: '#fffbeb', color: '#92400e' },
   SUBMITTED: { label: 'Iesniegts', bg: '#fffbeb', color: '#92400e' },
   CONFIRMED: { label: 'Apstiprināts', bg: '#eff6ff', color: '#1d4ed8' },

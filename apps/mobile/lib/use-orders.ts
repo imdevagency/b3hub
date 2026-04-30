@@ -52,12 +52,10 @@ const SKIP_DONE = new Set(['COLLECTED', 'COMPLETED']);
 const MAT_ACTIVE = new Set([
   'PENDING',
   'CONFIRMED',
-  'PROCESSING',
+  'IN_PROGRESS',
   'LOADING',
-  'DISPATCHED',
-  'DELIVERING',
-  'SHIPPED',
 ]);
+const MAT_DONE = new Set(['DELIVERED', 'COMPLETED']);
 const TJB_ACTIVE = new Set([
   'AVAILABLE',
   'ASSIGNED',
@@ -77,7 +75,7 @@ export function skipBucket(status: string): FilterKey {
 
 export function matBucket(status: string): FilterKey {
   if (MAT_ACTIVE.has(status)) return 'ACTIVE';
-  if (status === 'DELIVERED') return 'DONE';
+  if (MAT_DONE.has(status)) return 'DONE';
   return 'CANCELLED';
 }
 

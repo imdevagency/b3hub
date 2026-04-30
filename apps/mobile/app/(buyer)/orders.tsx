@@ -493,7 +493,7 @@ function MaterialRow({ item }: { item: ApiOrder }) {
   const statusColor = activeJob ? '#059669' : st.color;
 
   // Use Status for the top line if not complete, else use time
-  const isComplete = item.status === 'DELIVERED' || item.status === 'CANCELLED';
+  const isComplete = ['DELIVERED', 'COMPLETED', 'CANCELLED', 'REJECTED'].includes(item.status);
   const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
 
   return (
@@ -523,7 +523,7 @@ function TransportRow({ item }: { item: ApiTransportJob }) {
   const timeStr = format(dateObject, 'HH:mm');
   const price = item.rate != null ? `€${item.rate.toFixed(2)}` : '';
 
-  const isComplete = item.status === 'DELIVERED' || item.status === 'CANCELLED';
+  const isComplete = ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(item.status);
   const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
 
   return (
@@ -551,7 +551,7 @@ function DisposalRow({ item }: { item: ApiTransportJob }) {
   const timeStr = format(dateObject, 'HH:mm');
   const price = item.rate != null ? `€${item.rate.toFixed(2)}` : '';
 
-  const isComplete = item.status === 'DELIVERED' || item.status === 'CANCELLED';
+  const isComplete = ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(item.status);
   const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
 
   return (

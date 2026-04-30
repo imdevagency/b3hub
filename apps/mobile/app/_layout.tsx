@@ -153,7 +153,7 @@ export default Sentry.wrap(function RootLayout() {
 
           if (data.orderId) {
             // Surcharge approval, order status changes, disputes → buyer order detail
-            router.push(`/(buyer)/order/${data.orderId}`);
+            router.push(`/(buyer)/order/${data.orderId}/details`);
           } else if (data.jobId && type === 'JOB_ALERT') {
             // New job available → driver job board
             router.push('/(driver)/jobs');
