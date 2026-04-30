@@ -2,22 +2,34 @@
  * AuthContext & AuthProvider.
  * Global React context holding the current user, JWT token, and auth actions
  * (login, logout, register). Persists the token in localStorage.
+ *
+ * Session management:
+ * - Access token (JWT): 15-minute expiry, stored in localStorage as b3hub_token
+ * - Refresh token: 90-day rolling window, stored as b3hub_refresh_token
+ * - On any 401, apiFetch calls the registered refresh handler, which exchanges
+ *   the refresh token for a new pair and retries the original request.
+ * - If refresh fails, the session is cleared and the user is sent to /login.
  */
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { User, getMe } from '@/lib/api';
+import { refreshTokens } from '@/lib/api/auth';
+import { registerRefreshHandler } from '@/lib/api/common';
 
 interface AuthContextValue {
   user: User | null;
   token: string | null;
-  setAuth: (user: User, token: string) => void;
+  setAuth: (user: User, token: string, refreshToken?: string) => void;
   logout: () => void;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+const TOKEN_KEY = 'b3hub_token';
+const REFRESH_KEY = 'b3hub_refresh_token';
 
 function normalizeUserModes(user: User): User {
   // Admins have no buyer/supplier/carrier roles — they operate exclusively in the admin panel.
@@ -49,14 +61,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  // Keep a ref so the refresh handler closure always reads the latest token
+  const tokenRef = useRef<string | null>(null);
+
+  // Register the 401 refresh handler once on mount so apiFetch can use it
+  useEffect(() => {
+    registerRefreshHandler(async (): Promise<string | null> => {
+      const storedRefresh = localStorage.getItem(REFRESH_KEY);
+      if (!storedRefresh) {
+        clearSession();
+        router.replace('/login');
+        return null;
+      }
+      try {
+        const result = await refreshTokens(storedRefresh);
+        // Persist new token pair
+        localStorage.setItem(TOKEN_KEY, result.token);
+        localStorage.setItem(REFRESH_KEY, result.refreshToken);
+        tokenRef.current = result.token;
+        setToken(result.token);
+        // Sync cookie for middleware
+        fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: result.token }),
+        }).catch(() => null);
+        return result.token;
+      } catch {
+        clearSession();
+        router.replace('/login');
+        return null;
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function clearSession() {
+    setUser(null);
+    setToken(null);
+    tokenRef.current = null;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => null);
+  }
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('b3hub_token');
+    const storedToken = localStorage.getItem(TOKEN_KEY);
     if (storedToken) {
       getMe(storedToken)
         .then((u) => {
           setUser(normalizeUserModes(u));
           setToken(storedToken);
+          tokenRef.current = storedToken;
           // Ensure HttpOnly cookie is synced for middleware on every page load
           fetch('/api/auth/session', {
             method: 'POST',
@@ -65,9 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }).catch(() => null);
         })
         .catch(() => {
-          localStorage.removeItem('b3hub_token');
-          fetch('/api/auth/session', { method: 'DELETE' }).catch(() => null);
-          // Redirect to login if the user was on a protected route
+          // getMe returned 401 — refresh handler will have already tried or failed
+          // Only remove if still the same token (not already replaced by refresh)
+          if (localStorage.getItem(TOKEN_KEY) === storedToken) {
+            clearSession();
+          }
           if (pathname.startsWith('/dashboard')) {
             router.replace('/login');
           }
@@ -79,10 +137,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setAuth = (user: User, token: string) => {
+  const setAuth = (user: User, token: string, refreshToken?: string) => {
     setUser(normalizeUserModes(user));
     setToken(token);
-    localStorage.setItem('b3hub_token', token);
+    tokenRef.current = token;
+    localStorage.setItem(TOKEN_KEY, token);
+    if (refreshToken) {
+      localStorage.setItem(REFRESH_KEY, refreshToken);
+    }
     // Set HttpOnly cookie via server route so middleware can gate dashboard routes
     fetch('/api/auth/session', {
       method: 'POST',
@@ -98,10 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('b3hub_token');
-    fetch('/api/auth/session', { method: 'DELETE' }).catch(() => null);
+    clearSession();
   };
 
   return (

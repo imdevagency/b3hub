@@ -110,7 +110,7 @@ export default function GuestOrderTrackingPage() {
         email: claimEmail.trim().toLowerCase(),
         password: claimPassword,
       });
-      setAuth(res.user, res.token);
+      setAuth(res.user, res.token, res.refreshToken);
       setClaimDone(true);
       // Brief success flash, then forward to dashboard
       setTimeout(() => router.push('/dashboard'), 800);

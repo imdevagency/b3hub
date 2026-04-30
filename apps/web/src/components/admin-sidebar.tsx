@@ -2,8 +2,9 @@
  * AdminSidebar — dedicated sidebar for ADMIN users.
  *
  * Shown instead of AppSidebar when user.userType === 'ADMIN'.
- * Organised into logical ERP sections with live badge counts.
- * Refreshes badge counts every 30 s.
+ * Three top-level scopes: B3Hub (marketplace), B3 Recycling, B3 Construction.
+ * Scope is detected from the current URL pathname.
+ * B3Hub sections have live badge counts refreshed every 30 s.
  */
 'use client';
 
@@ -17,6 +18,8 @@ import {
   Building2,
   ClipboardList,
   FileText,
+  FolderKanban,
+  HardHat,
   LayoutDashboard,
   Layers,
   ListChecks,
@@ -35,6 +38,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
 import { adminListSupportThreads } from '@/lib/api/support';
@@ -80,16 +84,19 @@ type AdminBadges = {
   pendingGuestOrders: number;
 };
 
-// ─── Navigation structure ─────────────────────────────────────────────────────
-// Mirrors the 5 semantic groups on /dashboard/admin:
-// 1. Overview
-// 2. Platformas noteikumi  — rules of the game (config, catalog)
-// 3. Dalībnieku pārvaldība — who is allowed to play
-// 4. Operacionālā triāža   — needs human action today
-// 5. Finanses              — money flows
-// 6. Pārraudzība           — read-only observability
+// ─── Business unit definitions ────────────────────────────────────────────────
 
-const ADMIN_NAV: NavSection[] = [
+type Scope = 'b3hub' | 'recycling' | 'construction';
+
+const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
+  { id: 'b3hub', label: 'B3Hub', href: '/dashboard/admin' },
+  { id: 'recycling', label: 'Recycling', href: '/dashboard/b3-recycling' },
+  { id: 'construction', label: 'Construction', href: '/dashboard/b3-construction' },
+];
+
+// ─── B3Hub navigation (marketplace admin) ────────────────────────────────────
+
+const B3HUB_NAV: NavSection[] = [
   {
     id: 'overview',
     label: 'Pārskats',
@@ -118,7 +125,7 @@ const ADMIN_NAV: NavSection[] = [
       { label: 'Uzņēmumi', href: '/dashboard/admin/companies', icon: Building2 },
       { label: 'Piegādātāji', href: '/dashboard/admin/suppliers', icon: Layers },
       { label: 'Pārstrādes centri', href: '/dashboard/admin/recycling-centers', icon: Recycle },
-      { label: 'Lauka operācijas', href: '/dashboard/admin/field-ops', icon: MapPin },
+      { label: 'B3 Lauki', href: '/dashboard/admin/b3-fields', icon: MapPin },
     ],
   },
   {
@@ -131,16 +138,12 @@ const ADMIN_NAV: NavSection[] = [
         icon: AlertTriangle,
         badgeKey: 'triageAlerts',
       },
-      {
-        label: 'Dokumenti',
-        href: '/dashboard/admin/documents',
-        icon: FileText,
-      },
+      { label: 'Dokumenti', href: '/dashboard/admin/documents', icon: FileText },
       {
         label: 'Viesa pasūtījumi',
         href: '/dashboard/admin/guest-orders',
         icon: ShoppingBag,
-        badgeKey: 'pendingGuestOrders' as keyof AdminBadges,
+        badgeKey: 'pendingGuestOrders',
       },
       { label: 'Paziņojumu izsūtīšana', href: '/dashboard/admin/broadcast', icon: Megaphone },
     ],
@@ -166,12 +169,109 @@ const ADMIN_NAV: NavSection[] = [
   },
 ];
 
+// ─── B3 Recycling navigation ──────────────────────────────────────────────────
+
+const RECYCLING_NAV: NavSection[] = [
+  {
+    id: 'overview',
+    label: 'Pārskats',
+    items: [{ label: 'Vadības panelis', href: '/dashboard/b3-recycling', icon: LayoutDashboard }],
+  },
+  {
+    id: 'jobs',
+    label: 'Darbi',
+    items: [
+      { label: 'Ienākošie darbi', href: '/dashboard/b3-recycling/jobs', icon: Truck },
+      {
+        label: 'Atkritumu žurnāls',
+        href: '/dashboard/b3-recycling/waste-log',
+        icon: ClipboardList,
+      },
+    ],
+  },
+  {
+    id: 'docs',
+    label: 'Dokumenti',
+    items: [
+      {
+        label: 'Sertifikāti',
+        href: '/dashboard/b3-recycling/certificates',
+        icon: FileText,
+      },
+    ],
+  },
+  {
+    id: 'settings',
+    label: 'Iestatījumi',
+    items: [
+      {
+        label: 'Gulbenes lauks',
+        href: '/dashboard/admin/b3-fields',
+        icon: MapPin,
+      },
+    ],
+  },
+];
+
+// ─── B3 Construction navigation ───────────────────────────────────────────────
+
+const CONSTRUCTION_NAV: NavSection[] = [
+  {
+    id: 'overview',
+    label: 'Pārskats',
+    items: [
+      { label: 'Vadības panelis', href: '/dashboard/b3-construction', icon: LayoutDashboard },
+    ],
+  },
+  {
+    id: 'projects',
+    label: 'Projekti',
+    items: [
+      {
+        label: 'Aktīvie projekti',
+        href: '/dashboard/b3-construction/projects',
+        icon: FolderKanban,
+      },
+    ],
+  },
+];
+
+// ─── Scope icon map ───────────────────────────────────────────────────────────
+
+const SCOPE_ICON: Record<Scope, React.ElementType> = {
+  b3hub: ShieldCheck,
+  recycling: Recycle,
+  construction: HardHat,
+};
+
+const SCOPE_SUBTITLE: Record<Scope, string> = {
+  b3hub: 'Platformas pārvaldība',
+  recycling: 'Pārstrādes centrs',
+  construction: 'Būvdarbu projekti',
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, token, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+
+  // Detect active scope from URL
+  const activeScope: Scope = pathname.startsWith('/dashboard/b3-recycling')
+    ? 'recycling'
+    : pathname.startsWith('/dashboard/b3-construction')
+      ? 'construction'
+      : 'b3hub';
+
+  const activeNav =
+    activeScope === 'recycling'
+      ? RECYCLING_NAV
+      : activeScope === 'construction'
+        ? CONSTRUCTION_NAV
+        : B3HUB_NAV;
+
+  const ScopeIcon = SCOPE_ICON[activeScope];
 
   const [badges, setBadges] = React.useState<AdminBadges>({
     notifications: 0,
@@ -186,13 +286,19 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
 
   const isActive = React.useCallback(
     (href: string) => {
-      if (href === '/dashboard/admin') return pathname === href;
+      if (
+        href === '/dashboard/admin' ||
+        href === '/dashboard/b3-recycling' ||
+        href === '/dashboard/b3-construction'
+      ) {
+        return pathname === href;
+      }
       return pathname === href || pathname.startsWith(`${href}/`);
     },
     [pathname],
   );
 
-  // Live badge refresh
+  // Live badge refresh — only runs for B3Hub scope (where badges are meaningful)
   React.useEffect(() => {
     if (!token) return;
 
@@ -261,33 +367,55 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      {/* Brand */}
+      {/* Brand + scope icon */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="Admin">
-              <Link href="/dashboard/admin">
+              <Link href={BUSINESS_UNITS.find((u) => u.id === activeScope)!.href}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-900 text-white shrink-0 relative">
-                  <ShieldCheck className="size-4" />
-                  {totalAlerts > 0 && (
+                  <ScopeIcon className="size-4" />
+                  {activeScope === 'b3hub' && totalAlerts > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] text-white font-bold group-data-[collapsible=icon]:flex">
                       {totalAlerts > 9 ? '!' : totalAlerts}
                     </span>
                   )}
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">B3Hub Admin</span>
-                  <span className="truncate text-xs text-gray-500">Platformas pārvaldība</span>
+                  <span className="truncate font-semibold">B3 Group Admin</span>
+                  <span className="truncate text-xs text-gray-500">
+                    {SCOPE_SUBTITLE[activeScope]}
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+        {/* Business unit switcher — hidden when sidebar is collapsed to icon */}
+        <div className="px-2 pb-1 group-data-[collapsible=icon]:hidden">
+          <div className="flex rounded-lg bg-gray-100 p-0.5 gap-0.5">
+            {BUSINESS_UNITS.map((unit) => (
+              <Link
+                key={unit.id}
+                href={unit.href}
+                className={cn(
+                  'flex-1 text-center rounded-md px-1.5 py-1.5 text-[11px] font-semibold transition-all leading-none',
+                  activeScope === unit.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700',
+                )}
+              >
+                {unit.label}
+              </Link>
+            ))}
+          </div>
+        </div>
       </SidebarHeader>
 
-      {/* Nav sections */}
+      {/* Nav sections — scoped per business unit */}
       <SidebarContent>
-        {ADMIN_NAV.map((section) => (
+        {activeNav.map((section) => (
           <SidebarGroup key={section.id} className="pt-2">
             <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
               {section.label}

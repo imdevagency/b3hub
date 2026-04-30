@@ -8,10 +8,10 @@ import type { ExpoConfig, ConfigContext } from 'expo/config';
  * In EAS builds, add them as EAS environment secrets.
  *
  * APP_VARIANT controls which build flavour is produced:
- *   development  → bundle ID lv.b3hub.app.dev,     name "B3Hub Dev"     (dev client)
- *   staging      → bundle ID lv.b3hub.app.staging,  name "B3Hub Staging" (preview/TestFlight internal)
- *   production   → bundle ID lv.b3hub.app,           name "B3Hub"         (App Store)
- *   gate         → bundle ID lv.b3hub.app.gate,      name "B3Hub Gate"    (internal — gate operators, no store)
+ *   development  → bundle ID lv.b3hub.app.dev,     name "B3 APP Dev"     (dev client)
+ *   staging      → bundle ID lv.b3hub.app.staging,  name "B3 APP Staging" (preview/TestFlight internal)
+ *   production   → bundle ID lv.b3hub.app,           name "B3 APP"         (App Store)
+ *   gate         → bundle ID lv.b3hub.app.gate,      name "B3 APP Gate"    (internal — gate operators, no store)
  *
  * Required for production builds:
  *   EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_ANDROID — Android Maps SDK key (Android apps restriction)
@@ -30,23 +30,23 @@ const APP_VARIANT = (process.env.APP_VARIANT ?? 'production') as
 
 const variants = {
   development: {
-    name: 'B3Hub Dev',
+    name: 'B3 APP Dev',
     bundleId: 'lv.b3hub.app.dev',
     androidPackage: 'lv.b3hub.app.dev',
   },
   staging: {
-    name: 'B3Hub Staging',
+    name: 'B3 APP Staging',
     bundleId: 'lv.b3hub.app.staging',
     androidPackage: 'lv.b3hub.app.staging',
   },
   production: {
-    name: 'B3Hub',
+    name: 'B3 APP',
     bundleId: 'lv.b3hub.app',
     androidPackage: 'lv.b3hub.app',
   },
   // Internal build for quarry gate operators — distributed via APK link, no store
   gate: {
-    name: 'B3Hub Gate',
+    name: 'B3 APP Gate',
     bundleId: 'lv.b3hub.app.gate',
     androidPackage: 'lv.b3hub.app.gate',
   },
@@ -108,15 +108,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           },
         }),
         NSLocationAlwaysAndWhenInUseUsageDescription:
-          'B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.',
+          'B3 APP nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.',
         NSLocationAlwaysUsageDescription:
-          'B3Hub nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.',
+          'B3 APP nepārtraukti izseko jūsu atrašanās vietu aktīvu piegāžu laikā, arī fonā.',
         NSLocationWhenInUseUsageDescription:
-          'B3Hub izmanto jūsu atrašanās vietu navigācijai un piegāžu izsekošanai.',
+          'B3 APP izmanto jūsu atrašanās vietu navigācijai un piegāžu izsekošanai.',
         NSCameraUsageDescription:
-          'B3Hub izmanto kameru, lai uzņemtu piegādes apstiprinājuma fotoattēlus.',
+          'B3 APP izmanto kameru, lai uzņemtu piegādes apstiprinājuma fotoattēlus.',
         NSPhotoLibraryUsageDescription:
-          'B3Hub var piekļūt jūsu foto bibliotēkai, lai atlasītu piegādes pierādījuma attēlus.',
+          'B3 APP var piekļūt jūsu foto bibliotēkai, lai atlasītu piegādes pierādījuma attēlus.',
         UIBackgroundModes: ['location', 'fetch'],
         // Required for Linking.canOpenURL() to work with third-party navigation apps.
         // Without this, iOS always returns false and navigation falls back to web URLs.
@@ -178,9 +178,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-location',
         {
           locationWhenInUsePermission:
-            'Allow B3Hub to access your location for real-time navigation and delivery tracking.',
+            'Allow B3 APP to access your location for real-time navigation and delivery tracking.',
           locationAlwaysAndWhenInUsePermission:
-            'Allow B3Hub to access your location in the background to track active deliveries.',
+            'Allow B3 APP to access your location in the background to track active deliveries.',
           isIosBackgroundLocationEnabled: true,
           isAndroidBackgroundLocationEnabled: true,
         },

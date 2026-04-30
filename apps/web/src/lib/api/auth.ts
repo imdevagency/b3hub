@@ -54,6 +54,8 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+  /** Opaque 30-day rolling refresh token. Store securely and use to obtain new access tokens. */
+  refreshToken?: string;
 }
 
 export interface RegisterInput {
@@ -183,5 +185,15 @@ export async function updateNotificationPrefs(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(prefs),
+  });
+}
+
+/** Exchange a refresh token for a new access + refresh token pair. */
+export async function refreshTokens(
+  refreshToken: string,
+): Promise<{ token: string; refreshToken: string }> {
+  return apiFetch<{ token: string; refreshToken: string }>('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
   });
 }

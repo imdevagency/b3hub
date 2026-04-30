@@ -1301,3 +1301,78 @@ export async function adminGetDispatch(token: string): Promise<AdminDispatchData
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── B3 Recycling ─────────────────────────────────────────────────────────────
+
+export interface RecyclingInboundJob {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  wasteTypes: string | null;
+  disposalVolume: number | null;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryDate: string | null;
+  total: number;
+  currency: string;
+  createdAt: string;
+  buyer: { id: string; name: string; email: string; phone: string | null } | null;
+  b3Field: { id: string; name: string; city: string } | null;
+  transportJobs: { id: string; status: string }[];
+}
+
+export interface RecyclingWasteRecord {
+  id: string;
+  wasteType: string;
+  weight: number;
+  volume: number | null;
+  processedDate: string | null;
+  recyclableWeight: number | null;
+  recyclingRate: number | null;
+  certificateUrl: string | null;
+  createdAt: string;
+  recyclingCenter: { id: string; name: string; city: string };
+  containerOrder: {
+    id: string;
+    order: { id: string; orderNumber: string; buyer: { id: string; name: string } | null } | null;
+  } | null;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export async function adminGetRecyclingJobs(
+  token: string,
+  params?: { page?: number; limit?: number; centerId?: string },
+): Promise<PaginatedResponse<RecyclingInboundJob>> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.centerId) qs.set('centerId', params.centerId);
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return apiFetch<PaginatedResponse<RecyclingInboundJob>>(
+    `/admin/b3-recycling/jobs${query}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminGetRecyclingWasteRecords(
+  token: string,
+  params?: { page?: number; limit?: number; centerId?: string },
+): Promise<PaginatedResponse<RecyclingWasteRecord>> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.centerId) qs.set('centerId', params.centerId);
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return apiFetch<PaginatedResponse<RecyclingWasteRecord>>(
+    `/admin/b3-recycling/waste-records${query}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}

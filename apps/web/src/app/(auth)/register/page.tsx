@@ -117,7 +117,7 @@ function RegisterPageInner() {
         termsAccepted: true,
       };
       const res = await registerUser(payload);
-      setAuth(res.user, res.token);
+      setAuth(res.user, res.token, res.refreshToken);
       router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Reģistrācija neizdevās');

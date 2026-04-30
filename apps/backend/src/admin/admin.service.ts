@@ -1772,6 +1772,91 @@ export class AdminService {
     return updated;
   }
 
+  // ── B3 Recycling — inbound jobs & waste records (admin view) ─────────────
+
+  /**
+   * GET /admin/b3-recycling/jobs
+   * All DISPOSAL orders, optionally scoped to a specific recycling center's B3 Field.
+   * Used by the B3 Recycling admin section.
+   */
+  async adminGetRecyclingInboundJobs(page = 1, limit = 50, centerId?: string) {
+    const skip = (page - 1) * limit;
+
+    const where: import('@prisma/client').Prisma.OrderWhereInput = {
+      category: 'DISPOSAL',
+      ...(centerId
+        ? {
+            b3Field: {
+              recyclingCenterId: centerId,
+            },
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          paymentStatus: true,
+          wasteTypes: true,
+          disposalVolume: true,
+          deliveryAddress: true,
+          deliveryCity: true,
+          deliveryDate: true,
+          total: true,
+          currency: true,
+          createdAt: true,
+          buyer: { select: { id: true, name: true, email: true, phone: true } },
+          b3Field: { select: { id: true, name: true, city: true } },
+          transportJobs: { select: { id: true, status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * GET /admin/b3-recycling/waste-records
+   * All WasteRecord entries, optionally scoped to a specific recycling center.
+   * Used by the B3 Recycling waste log and certificates sections.
+   */
+  async adminGetRecyclingWasteRecords(page = 1, limit = 50, centerId?: string) {
+    const skip = (page - 1) * limit;
+
+    const where: import('@prisma/client').Prisma.WasteRecordWhereInput = centerId
+      ? { recyclingCenterId: centerId }
+      : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.wasteRecord.findMany({
+        where,
+        include: {
+          recyclingCenter: { select: { id: true, name: true, city: true } },
+          containerOrder: {
+            select: {
+              id: true,
+              order: { select: { id: true, orderNumber: true, buyer: { select: { id: true, name: true } } } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.wasteRecord.count({ where }),
+    ]);
+
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
   // ── Documents (admin view) ────────────────────────────────────────────────
 
   /**

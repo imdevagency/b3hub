@@ -47,7 +47,7 @@ export default function GateFieldsScreen() {
   useFocusEffect(
     React.useCallback(() => {
       load();
-    }, [load])
+    }, [load]),
   );
 
   const handleLogout = () => {
@@ -60,7 +60,7 @@ export default function GateFieldsScreen() {
       {/* Header */}
       <View style={s.header}>
         <View>
-          <Text style={s.title}>B3Hub Gate</Text>
+          <Text style={s.title}>B3 APP Gate</Text>
           {user?.email ? <Text style={s.subtitle}>{user.email}</Text> : null}
         </View>
         <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>

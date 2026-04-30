@@ -579,4 +579,42 @@ export class AdminController {
   getLiveDispatch() {
     return this.service.getLiveDispatch();
   }
+
+  // ── B3 Recycling ──────────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/b3-recycling/jobs
+   * All DISPOSAL orders (inbound jobs for the Gulbene recycling facility).
+   * Optionally filter by centerId query param.
+   */
+  @Get('b3-recycling/jobs')
+  getRecyclingInboundJobs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('centerId') centerId?: string,
+  ) {
+    return this.service.adminGetRecyclingInboundJobs(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+      centerId,
+    );
+  }
+
+  /**
+   * GET /admin/b3-recycling/waste-records
+   * All WasteRecord entries (the processed waste log).
+   * Optionally filter by centerId query param.
+   */
+  @Get('b3-recycling/waste-records')
+  getRecyclingWasteRecords(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('centerId') centerId?: string,
+  ) {
+    return this.service.adminGetRecyclingWasteRecords(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+      centerId,
+    );
+  }
 }

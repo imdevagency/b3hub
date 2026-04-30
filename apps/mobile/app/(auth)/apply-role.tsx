@@ -219,7 +219,7 @@ export default function ApplyRoleScreen() {
               </View>
               <View style={s.termsList}>
                 <Text style={s.termsItem}>
-                  • B3Hub darībojas kā logistics starpnieks — jūsu līgums ir ar platformu, ne
+                  • B3 APP darībojas kā logistics starpnieks — jūsu līgums ir ar platformu, ne
                   pasūtītāju.
                 </Text>
                 <Text style={s.termsItem}>
@@ -245,7 +245,7 @@ export default function ApplyRoleScreen() {
                   {termsAccepted && <CheckCircle size={14} color="#fff" />}
                 </View>
                 <Text style={s.termsCheckLabel}>
-                  Es esmu izlasījis un piekrītu B3Hub pārvadātāja noteikumiem
+                  Es esmu izlasījis un piekrītu B3 APP pārvadātāja noteikumiem
                 </Text>
               </TouchableOpacity>
               {errors.terms && <Text style={s.err}>{errors.terms}</Text>}

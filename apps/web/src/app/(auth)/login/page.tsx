@@ -62,7 +62,7 @@ function LoginPageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: res.token }),
       }).catch(() => null);
-      setAuth(res.user, res.token);
+      setAuth(res.user, res.token, res.refreshToken);
       router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Pieteikšanās neizdevās');
