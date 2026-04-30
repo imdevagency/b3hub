@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2781 lines, 68 models, 52 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2805 lines, 68 models, 53 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -94,6 +94,7 @@ npm run db:seed           # reseed demo data
 | `PaymentStatus` | PENDING AUTHORIZED CAPTURED RELEASED PAID PARTIALLY_PAID REFUNDED FAILED |
 | `PaymentMethod` | CARD INVOICE SEPA |
 | `WastePurpose` | CONSTRUCTION_WASTE DEMOLITION_WASTE EXCAVATION_SOIL MIXED_WASTE RECYCLABLE_MATERIALS HAZARDOUS_WASTE GREEN_WASTE OTHER |
+| `ApusStatus` | NOT_REQUIRED PENDING SUBMITTED ACCEPTED REJECTED |
 | `WasteType` | CONCRETE BRICK WOOD METAL PLASTIC SOIL MIXED HAZARDOUS |
 | `SkipWasteCategory` | MIXED GREEN_GARDEN CONCRETE_RUBBLE WOOD METAL_SCRAP ELECTRONICS_WEEE |
 | `SkipCategory` | SKIP BIG_BAG CONTAINER |
@@ -199,7 +200,7 @@ npm run db:seed           # reseed demo data
 ### Order — `@@map("orders")`  
 **Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `pickupFieldId`: String?, `pickupSlotId`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `bisNumber`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `isInternational`: Boolean @default(false), `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `orderType`: OrderType, `fulfillmentType`: OrderFulfillmentType (@default(DELIVERY)), `status`: OrderStatus, `paymentStatus`: PaymentStatus, `paymentMethod`: PaymentMethod (@default(CARD))  
-**Relations:** → Company, User, B3Field?, PickupSlot?, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass, SupplierPayout, CarrierPayout
+**Relations:** → Company, User, B3Field?, PickupSlot?, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass, SupplierPayout, CarrierPayout, WasteRecord
 
 ---
 
@@ -251,16 +252,16 @@ npm run db:seed           # reseed demo data
 ---
 
 ### RecyclingCenter — `@@map("recycling_centers")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String, `state`: String, `postalCode`: String, `coordinates`: Json?, `companyId`: String, `capacity`: Float, `certifications`: String, `operatingHours`: Json, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String, `state`: String, `postalCode`: String, `coordinates`: Json?, `companyId`: String, `capacity`: Float, `certifications`: String, `operatingHours`: Json, `licensed`: Boolean @default(false), `apusRegistrationId`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `acceptedWasteTypes`: WasteType  
 **Relations:** → Company, WasteRecord, B3Field?
 
 ---
 
 ### WasteRecord — `@@map("waste_records")`  
-**Fields:** `id`: String @id @default(cuid(), `containerOrderId`: String?, `recyclingCenterId`: String, `weight`: Float, `volume`: Float?, `processedDate`: DateTime?, `recyclableWeight`: Float?, `recyclingRate`: Float?, `producedMaterialId`: String?, `certificateUrl`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `wasteType`: WasteType  
-**Relations:** → ContainerOrder?, RecyclingCenter
+**Fields:** `id`: String @id @default(cuid(), `containerOrderId`: String?, `recyclingCenterId`: String, `weight`: Float, `volume`: Float?, `processedDate`: DateTime?, `recyclableWeight`: Float?, `recyclingRate`: Float?, `producedMaterialId`: String?, `certificateUrl`: String?, `apusSubmissionId`: String?, `apusSubmittedAt`: DateTime?, `apusNote`: String?, `bisNumber`: String?, `orderId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `wasteType`: WasteType, `apusStatus`: ApusStatus (@default(PENDING))  
+**Relations:** → ContainerOrder?, RecyclingCenter, Order?
 
 ---
 

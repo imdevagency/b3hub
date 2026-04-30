@@ -625,6 +625,59 @@ export class AdminController {
     );
   }
 
+  // ── B3 Recycling — APUS ───────────────────────────────────────────────────
+
+  /** GET /admin/b3-recycling/apus-stats */
+  @Get('b3-recycling/apus-stats')
+  getApusStats(@Query('centerId') centerId?: string) {
+    return this.service.adminGetApusStats(centerId);
+  }
+
+  /** GET /admin/b3-recycling/apus-records */
+  @Get('b3-recycling/apus-records')
+  getApusRecords(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('centerId') centerId?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.service.adminGetApusRecords(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+      centerId,
+      status,
+    );
+  }
+
+  /** POST /admin/b3-recycling/waste-records/:id/apus-submit */
+  @Post('b3-recycling/waste-records/:id/apus-submit')
+  apusSubmitRecord(
+    @Param('id') id: string,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminApusSubmitRecord(id, admin.userId);
+  }
+
+  /** POST /admin/b3-recycling/apus-bulk-submit */
+  @Post('b3-recycling/apus-bulk-submit')
+  apusBulkSubmit(
+    @Body('centerId') centerId: string,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminApusBulkSubmit(centerId, admin.userId);
+  }
+
+  /** PATCH /admin/b3-recycling/waste-records/:id/apus-status */
+  @Patch('b3-recycling/waste-records/:id/apus-status')
+  apusSetStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+    @Body('note') note: string | undefined,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminApusSetStatus(id, status, note, admin.userId);
+  }
+
   // ── B3 Construction ───────────────────────────────────────────────────────
 
   /**

@@ -3786,5 +3786,160 @@ export class AdminService {
       monthlyTrend,
     };
   }
+
+  // ── APUS (Atkritumu plūsmu uzskaites sistēma) ─────────────────────────────
+
+  /**
+   * GET /admin/b3-recycling/apus-stats
+   * Dashboard stats: pending/submitted/accepted/rejected counts per center.
+   */
+  async adminGetApusStats(centerId?: string) {
+    const where = centerId ? { recyclingCenterId: centerId } : {};
+    const [pending, submitted, accepted, rejected, notRequired] = await Promise.all([
+      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'PENDING' } }),
+      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'SUBMITTED' } }),
+      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'ACCEPTED' } }),
+      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'REJECTED' } }),
+      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'NOT_REQUIRED' } }),
+    ]);
+    return { pending, submitted, accepted, rejected, notRequired, total: pending + submitted + accepted + rejected + notRequired };
+  }
+
+  /**
+   * GET /admin/b3-recycling/apus-records
+   * Paginated WasteRecord list with APUS status fields.
+   */
+  async adminGetApusRecords(
+    page = 1,
+    limit = 50,
+    centerId?: string,
+    status?: string,
+  ) {
+    const where: Record<string, unknown> = {};
+    if (centerId) where.recyclingCenterId = centerId;
+    if (status) where.apusStatus = status;
+    const skip = (page - 1) * limit;
+    const [records, total] = await Promise.all([
+      this.prisma.wasteRecord.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          wasteType: true,
+          weight: true,
+          volume: true,
+          processedDate: true,
+          apusStatus: true,
+          apusSubmissionId: true,
+          apusSubmittedAt: true,
+          apusNote: true,
+          bisNumber: true,
+          certificateUrl: true,
+          createdAt: true,
+          recyclingCenter: { select: { id: true, name: true, city: true, licensed: true } },
+          order: { select: { id: true, orderNumber: true } },
+          containerOrder: {
+            select: {
+              id: true,
+              order: { select: { id: true, orderNumber: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.wasteRecord.count({ where }),
+    ]);
+    return {
+      data: records,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * POST /admin/b3-recycling/waste-records/:id/apus-submit
+   * Manually submit a single WasteRecord to APUS.
+   * Actual VVD API call is stubbed — replace with real HTTP call once API access is obtained.
+   */
+  async adminApusSubmitRecord(wasteRecordId: string, adminId: string) {
+    const record = await this.prisma.wasteRecord.findUniqueOrThrow({
+      where: { id: wasteRecordId },
+      include: { recyclingCenter: true },
+    });
+    if (!record.recyclingCenter.licensed) {
+      // Non-licensed facility — mark as NOT_REQUIRED
+      return this.prisma.wasteRecord.update({
+        where: { id: wasteRecordId },
+        data: { apusStatus: 'NOT_REQUIRED' },
+      });
+    }
+    if (record.apusStatus === 'ACCEPTED') {
+      return { message: 'Already accepted', record };
+    }
+
+    // ── APUS API stub ──────────────────────────────────────────────────────
+    // TODO: Replace this block with the real VVD APUS REST call once API
+    // credentials and spec are obtained from the State Environmental Service.
+    //
+    // Expected request:
+    //   POST https://apus.vvd.gov.lv/api/v1/waste-movements
+    //   Authorization: Bearer ${process.env.APUS_API_KEY}
+    //   Body: { facilityId, wasteCode, weightKg, date, bisNumber }
+    //
+    // Expected response:
+    //   { submissionId: string, status: 'ACCEPTED' | 'PENDING_REVIEW' }
+    const stubSubmissionId = `APUS-STUB-${Date.now()}`;
+    // ── end stub ──────────────────────────────────────────────────────────
+
+    return this.prisma.wasteRecord.update({
+      where: { id: wasteRecordId },
+      data: {
+        apusStatus: 'SUBMITTED',
+        apusSubmissionId: stubSubmissionId,
+        apusSubmittedAt: new Date(),
+        apusNote: null,
+      },
+    });
+  }
+
+  /**
+   * POST /admin/b3-recycling/apus-bulk-submit
+   * Submit all PENDING records for a given recycling center.
+   */
+  async adminApusBulkSubmit(centerId: string, adminId: string) {
+    const pending = await this.prisma.wasteRecord.findMany({
+      where: { recyclingCenterId: centerId, apusStatus: 'PENDING' },
+      select: { id: true },
+    });
+    const results = await Promise.allSettled(
+      pending.map((r) => this.adminApusSubmitRecord(r.id, adminId)),
+    );
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    return { submitted: succeeded, failed, total: pending.length };
+  }
+
+  /**
+   * PATCH /admin/b3-recycling/waste-records/:id/apus-status
+   * Manually override APUS status (e.g. mark as ACCEPTED after manual VVD portal check,
+   * or REJECTED with a reason note).
+   */
+  async adminApusSetStatus(
+    wasteRecordId: string,
+    status: string,
+    note: string | undefined,
+    adminId: string,
+  ) {
+    return this.prisma.wasteRecord.update({
+      where: { id: wasteRecordId },
+      data: {
+        apusStatus: status as any,
+        apusNote: note ?? null,
+      },
+    });
+  }
 }
 

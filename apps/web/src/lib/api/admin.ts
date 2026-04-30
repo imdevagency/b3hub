@@ -2486,3 +2486,93 @@ export async function adminGetFinanceStats(token: string): Promise<AdminFinanceS
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── APUS ──────────────────────────────────────────────────────────────────────
+
+export type ApusStatus = 'NOT_REQUIRED' | 'PENDING' | 'SUBMITTED' | 'ACCEPTED' | 'REJECTED';
+
+export interface ApusStats {
+  pending: number;
+  submitted: number;
+  accepted: number;
+  rejected: number;
+  notRequired: number;
+  total: number;
+}
+
+export interface ApusWasteRecord {
+  id: string;
+  wasteType: string;
+  weight: number;
+  volume: number | null;
+  processedDate: string | null;
+  apusStatus: ApusStatus;
+  apusSubmissionId: string | null;
+  apusSubmittedAt: string | null;
+  apusNote: string | null;
+  bisNumber: string | null;
+  certificateUrl: string | null;
+  createdAt: string;
+  recyclingCenter: { id: string; name: string; city: string; licensed: boolean };
+  order: { id: string; orderNumber: string } | null;
+  containerOrder: {
+    id: string;
+    order: { id: string; orderNumber: string } | null;
+  } | null;
+}
+
+export async function adminGetApusStats(token: string, centerId?: string): Promise<ApusStats> {
+  const qs = centerId ? `?centerId=${centerId}` : '';
+  return apiFetch(`/admin/b3-recycling/apus-stats${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminGetApusRecords(
+  token: string,
+  params?: { page?: number; limit?: number; centerId?: string; status?: string },
+): Promise<PaginatedResponse<ApusWasteRecord>> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.centerId) qs.set('centerId', params.centerId);
+  if (params?.status) qs.set('status', params.status);
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return apiFetch(`/admin/b3-recycling/apus-records${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminApusSubmitRecord(
+  token: string,
+  wasteRecordId: string,
+): Promise<ApusWasteRecord> {
+  return apiFetch(`/admin/b3-recycling/waste-records/${wasteRecordId}/apus-submit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminApusBulkSubmit(
+  token: string,
+  centerId: string,
+): Promise<{ submitted: number; failed: number; total: number }> {
+  return apiFetch('/admin/b3-recycling/apus-bulk-submit', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ centerId }),
+  });
+}
+
+export async function adminApusSetStatus(
+  token: string,
+  wasteRecordId: string,
+  status: ApusStatus,
+  note?: string,
+): Promise<ApusWasteRecord> {
+  return apiFetch(`/admin/b3-recycling/waste-records/${wasteRecordId}/apus-status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, note }),
+  });
+}

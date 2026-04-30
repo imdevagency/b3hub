@@ -9,7 +9,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ClipboardList, FileText, MapPin, Recycle, Truck } from 'lucide-react';
+import { ClipboardList, FileText, MapPin, Recycle, Truck, BarChart3 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -45,6 +45,15 @@ const SECTIONS = [
     href: '/dashboard/admin/b3-fields',
     color: 'text-purple-600',
     bg: 'bg-purple-50',
+  },
+  {
+    title: 'APUS ziņojumi',
+    description:
+      'VVD obligātā atkritumu plūsmu ziņošana. Izsekojiet iesniegto, apstiprināto un gaida ierakstu statusu.',
+    icon: BarChart3,
+    href: '/dashboard/b3-recycling/apus',
+    color: 'text-teal-600',
+    bg: 'bg-teal-50',
   },
 ];
 

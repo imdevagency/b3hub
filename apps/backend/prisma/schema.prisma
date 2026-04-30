@@ -137,6 +137,14 @@ enum WastePurpose {
   OTHER
 }
 
+enum ApusStatus {
+  NOT_REQUIRED  // non-licensed field or waste type outside APUS scope
+  PENDING       // awaiting submission to VVD APUS
+  SUBMITTED     // submitted to VVD APUS, awaiting acceptance
+  ACCEPTED      // VVD confirmed the movement
+  REJECTED      // VVD rejected — see apusNote
+}
+
 enum WasteType {
   CONCRETE
   BRICK
@@ -768,6 +776,7 @@ model Order {
   fieldPasses     FieldPass[]
   supplierPayouts SupplierPayout[] @relation("OrderSupplierPayouts")
   carrierPayouts  CarrierPayout[]  @relation("OrderCarrierPayouts")
+  wasteRecords    WasteRecord[]    @relation("DisposalWasteRecord")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1177,6 +1186,10 @@ model RecyclingCenter {
   // Operating hours
   operatingHours Json // {monday: {open, close}, ...}
 
+  // APUS / licensing
+  licensed           Boolean @default(false) // true = VVD-licensed recycling facility (Gulbene)
+  apusRegistrationId String? // VVD-issued APUS facility registration number
+
   // Status
   active Boolean @default(true)
 
@@ -1216,6 +1229,17 @@ model WasteRecord {
 
   // Compliance
   certificateUrl String?
+
+  // APUS (Atkritumu plūsmu uzskaites sistēma) — VVD mandatory reporting
+  apusStatus       ApusStatus @default(PENDING)
+  apusSubmissionId String?    // reference ID returned by APUS after submission
+  apusSubmittedAt  DateTime?
+  apusNote         String?    // rejection reason or manual staff note
+  bisNumber        String?    // BIS case reference from source Order (for construction waste)
+
+  // Source Order link (disposal orders that created this record)
+  order   Order?  @relation("DisposalWasteRecord", fields: [orderId], references: [id])
+  orderId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

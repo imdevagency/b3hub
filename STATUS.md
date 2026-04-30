@@ -346,11 +346,13 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/b3-construction/disposal
 - dashboard/b3-construction/dpr-templates
 - dashboard/b3-construction/employees
+- dashboard/b3-construction/invoices
 - dashboard/b3-construction/labour-hours
 - dashboard/b3-construction/profitability
 - dashboard/b3-construction/projects
 - dashboard/b3-construction/projects/[id]
 - dashboard/b3-construction/rates
+- dashboard/b3-construction/subcontractors
 - dashboard/b3-recycling
 - dashboard/b3-recycling/certificates
 - dashboard/b3-recycling/jobs
