@@ -89,7 +89,7 @@ type AdminBadges = {
 type Scope = 'b3hub' | 'recycling' | 'construction';
 
 const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
-  { id: 'b3hub', label: 'B3Hub', href: '/dashboard/admin' },
+  { id: 'b3hub', label: 'B3 APP', href: '/dashboard/admin' },
   { id: 'recycling', label: 'Recycling', href: '/dashboard/b3-recycling' },
   { id: 'construction', label: 'Construction', href: '/dashboard/b3-construction' },
 ];

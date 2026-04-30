@@ -23,7 +23,7 @@ import {
 } from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
-import { PagePaginationDto } from '../common/dto/pagination.dto';
+import { InvoiceQueryDto } from './dto/invoice-query.dto';
 
 function canViewFinancials(user: RequestingUser): boolean {
   // Company OWNERs and MANAGERs always have financial access.
@@ -49,10 +49,7 @@ export class InvoicesController {
   @RequireScope('invoices:read')
   getMyInvoices(
     @CurrentUser() user: RequestingUser,
-    @Query() pagination: PagePaginationDto,
-    @Query('updatedSince') updatedSince?: string,
-    @Query('status') status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
-    @Query('projectId') projectId?: string,
+    @Query() query: InvoiceQueryDto,
   ) {
     if (!canViewFinancials(user)) {
       throw new ForbiddenException(
@@ -63,11 +60,11 @@ export class InvoicesController {
     return this.invoicesService.getMyInvoices(
       user.userId,
       user.companyId,
-      pagination.page ?? 1,
-      pagination.limit ?? 20,
-      updatedSince,
-      status,
-      projectId,
+      query.page ?? 1,
+      query.limit ?? 20,
+      query.updatedSince,
+      query.status,
+      query.projectId,
     );
   }
 

@@ -1783,10 +1783,10 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const where: import('@prisma/client').Prisma.OrderWhereInput = {
-      category: 'DISPOSAL',
+      orderType: 'DISPOSAL',
       ...(centerId
         ? {
-            b3Field: {
+            pickupField: {
               recyclingCenterId: centerId,
             },
           }
@@ -1801,8 +1801,6 @@ export class AdminService {
           orderNumber: true,
           status: true,
           paymentStatus: true,
-          wasteTypes: true,
-          disposalVolume: true,
           deliveryAddress: true,
           deliveryCity: true,
           deliveryDate: true,
@@ -1810,7 +1808,7 @@ export class AdminService {
           currency: true,
           createdAt: true,
           buyer: { select: { id: true, name: true, email: true, phone: true } },
-          b3Field: { select: { id: true, name: true, city: true } },
+          pickupField: { select: { id: true, name: true, city: true } },
           transportJobs: { select: { id: true, status: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -1820,7 +1818,16 @@ export class AdminService {
       this.prisma.order.count({ where }),
     ]);
 
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+    // Normalise shape: expose pickupField as b3Field and add null stubs for
+    // DISPOSAL-specific fields that exist only on GuestOrder schema.
+    const normalised = data.map(({ pickupField, ...rest }) => ({
+      ...rest,
+      wasteTypes: null as string | null,
+      disposalVolume: null as number | null,
+      b3Field: pickupField ?? null,
+    }));
+
+    return { data: normalised, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
   /**
@@ -1855,6 +1862,76 @@ export class AdminService {
     ]);
 
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * PATCH /admin/b3-recycling/jobs/:id
+   * Update the status of a DISPOSAL order (inbound recycling job).
+   * Valid transitions: PENDING → CONFIRMED → IN_PROGRESS → COMPLETED | CANCELLED
+   */
+  async adminUpdateRecyclingJob(
+    id: string,
+    data: { status?: string; notes?: string },
+  ) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      select: { id: true, orderType: true, status: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.orderType !== 'DISPOSAL') throw new NotFoundException('Order is not a disposal job');
+
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: {
+        ...(data.status ? { status: data.status as import('@prisma/client').OrderStatus } : {}),
+        ...(data.notes ? { internalNotes: data.notes } : {}),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * POST /admin/b3-recycling/waste-records
+   * Manually log a waste record (e.g., walk-in vehicle arriving without online booking).
+   */
+  async adminCreateWasteRecord(data: {
+    recyclingCenterId: string;
+    wasteType: string;
+    weight: number;
+    volume?: number;
+    processedDate?: string;
+    recyclableWeight?: number;
+    recyclingRate?: number;
+  }) {
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: data.recyclingCenterId },
+      select: { id: true },
+    });
+    if (!center) throw new NotFoundException('Recycling center not found');
+
+    const record = await this.prisma.wasteRecord.create({
+      data: {
+        recyclingCenterId: data.recyclingCenterId,
+        wasteType: data.wasteType as import('@prisma/client').WasteType,
+        weight: data.weight,
+        volume: data.volume,
+        processedDate: data.processedDate ? new Date(data.processedDate) : new Date(),
+        recyclableWeight: data.recyclableWeight,
+        recyclingRate: data.recyclingRate,
+      },
+      include: {
+        recyclingCenter: { select: { id: true, name: true, city: true } },
+      },
+    });
+
+    return record;
   }
 
   // ── Documents (admin view) ────────────────────────────────────────────────
@@ -2083,5 +2160,378 @@ export class AdminService {
         ),
       },
     };
+  }
+
+  // ── B3 Construction ───────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/b3-construction/projects
+   * All projects across the platform (admin view, not company-scoped).
+   * Includes per-project order count, material costs, contract value, and status.
+   */
+  async adminGetConstructionProjects(
+    page = 1,
+    limit = 50,
+    status?: string,
+    companyId?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const where: import('@prisma/client').Prisma.ProjectWhereInput = {
+      ...(status ? { status: status as import('@prisma/client').ProjectStatus } : {}),
+      ...(companyId ? { companyId } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.project.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          clientName: true,
+          siteAddress: true,
+          status: true,
+          contractValue: true,
+          budgetAmount: true,
+          startDate: true,
+          endDate: true,
+          createdAt: true,
+          updatedAt: true,
+          company: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, firstName: true, lastName: true } },
+          _count: { select: { orders: true, transportJobs: true } },
+          orders: {
+            select: {
+              total: true,
+              status: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.project.count({ where }),
+    ]);
+
+    const enriched = data.map((p) => {
+      const committedOrders = p.orders.filter((o) =>
+        ['CONFIRMED', 'IN_PROGRESS', 'DELIVERED', 'COMPLETED'].includes(o.status),
+      );
+      const materialCosts = committedOrders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+      const grossMargin = p.contractValue - materialCosts;
+      const marginPct = p.contractValue > 0 ? (grossMargin / p.contractValue) * 100 : 0;
+      const budgetUsedPct =
+        p.budgetAmount && p.budgetAmount > 0
+          ? (materialCosts / p.budgetAmount) * 100
+          : null;
+
+      return {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        clientName: p.clientName,
+        siteAddress: p.siteAddress,
+        status: p.status,
+        contractValue: p.contractValue,
+        budgetAmount: p.budgetAmount,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        company: p.company,
+        createdBy: p.createdBy,
+        orderCount: p._count.orders,
+        transportJobCount: p._count.transportJobs,
+        materialCosts,
+        grossMargin,
+        marginPct,
+        budgetUsedPct,
+      };
+    });
+
+    return { data: enriched, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * GET /admin/b3-construction/disposal
+   * All disposal (waste) orders tagged to a project, across the platform.
+   */
+  async adminGetConstructionDisposalOrders(page = 1, limit = 100, projectId?: string, status?: string) {
+    const skip = (page - 1) * limit;
+    const where: import('@prisma/client').Prisma.OrderWhereInput = {
+      orderType: 'DISPOSAL',
+      projectId: { not: null },
+      ...(projectId ? { projectId } : {}),
+      ...(status ? { status: status as import('@prisma/client').OrderStatus } : {}),
+    };
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          deliveryDate: true,
+          deliveryAddress: true,
+          deliveryCity: true,
+          createdAt: true,
+          project: { select: { id: true, name: true } },
+          buyer: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { data: orders, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * GET /admin/b3-construction/projects/:id
+   * Single project detail — orders, sites, and framework contracts.
+   */
+  async adminGetConstructionProjectById(id: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+      include: {
+        company: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+        orders: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            orderType: true,
+            total: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            deliveryDate: true,
+            createdAt: true,
+            items: {
+              select: {
+                material: { select: { name: true, category: true } },
+                quantity: true,
+                unit: true,
+                unitPrice: true,
+                total: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        sites: {
+          orderBy: { createdAt: 'asc' },
+        },
+        frameworkContracts: {
+          select: {
+            id: true,
+            contractNumber: true,
+            title: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            supplier: { select: { id: true, name: true } },
+          },
+        },
+        transportJobs: {
+          select: {
+            id: true,
+            jobNumber: true,
+            status: true,
+            cargoType: true,
+            cargoWeight: true,
+            pickupAddress: true,
+            pickupCity: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            pickupDate: true,
+            deliveryDate: true,
+            rate: true,
+            driver: { select: { id: true, firstName: true, lastName: true } },
+          },
+          orderBy: { pickupDate: 'desc' as const },
+        },
+        _count: { select: { orders: true, transportJobs: true } },
+      },
+    });
+
+    if (!project) throw new NotFoundException('Project not found');
+
+    const committedOrders = project.orders.filter((o) =>
+      ['CONFIRMED', 'IN_PROGRESS', 'DELIVERED', 'COMPLETED'].includes(o.status),
+    );
+    const materialCosts = committedOrders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+    const pendingCosts = project.orders
+      .filter((o) => o.status === 'PENDING')
+      .reduce((sum, o) => sum + (o.total ?? 0), 0);
+    const grossMargin = project.contractValue - materialCosts;
+    const marginPct = project.contractValue > 0 ? (grossMargin / project.contractValue) * 100 : 0;
+    const budgetUsedPct =
+      project.budgetAmount && project.budgetAmount > 0
+        ? (materialCosts / project.budgetAmount) * 100
+        : null;
+
+    return {
+      ...project,
+      orderCount: project._count.orders,
+      transportJobCount: project._count.transportJobs,
+      materialCosts,
+      pendingCosts,
+      grossMargin,
+      marginPct,
+      budgetUsedPct,
+    };
+  }
+
+  /**
+   * PATCH /admin/b3-construction/projects/:id
+   * Update project status or basic fields.
+   */
+  async adminCreateConstructionProject(
+    adminUserId: string,
+    data: {
+      name: string;
+      companyId: string;
+      contractValue: number;
+      clientName?: string;
+      description?: string;
+      siteAddress?: string;
+      budgetAmount?: number;
+      startDate?: string;
+      endDate?: string;
+      status?: import('@prisma/client').ProjectStatus;
+    },
+  ) {
+    const company = await this.prisma.company.findUnique({ where: { id: data.companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    return this.prisma.project.create({
+      data: {
+        name: data.name,
+        companyId: data.companyId,
+        createdById: adminUserId,
+        contractValue: data.contractValue,
+        clientName: data.clientName,
+        description: data.description,
+        siteAddress: data.siteAddress,
+        budgetAmount: data.budgetAmount,
+        status: data.status ?? 'PLANNING',
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        companyId: true,
+        contractValue: true,
+        clientName: true,
+        startDate: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async adminUpdateConstructionProject(
+    id: string,
+    data: {
+      status?: import('@prisma/client').ProjectStatus;
+      name?: string;
+      description?: string;
+      clientName?: string;
+      siteAddress?: string;
+      contractValue?: number;
+      budgetAmount?: number;
+      startDate?: string | null;
+      endDate?: string | null;
+    },
+  ) {
+    const existing = await this.prisma.project.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Project not found');
+
+    return this.prisma.project.update({
+      where: { id },
+      data: {
+        ...data,
+        startDate: data.startDate ? new Date(data.startDate) : data.startDate === null ? null : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : data.endDate === null ? null : undefined,
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  // ── B3 Construction — Clients ─────────────────────────────────────────────
+
+  async adminGetConstructionClients() {
+    return this.prisma.company.findMany({
+      where: { companyType: 'CONSTRUCTION' },
+      select: {
+        id: true,
+        name: true,
+        legalName: true,
+        registrationNum: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        verified: true,
+        createdAt: true,
+        _count: { select: { users: true, orders: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async adminCreateConstructionClient(data: {
+    name: string;
+    legalName: string;
+    registrationNum?: string;
+    taxId?: string;
+    email: string;
+    phone: string;
+    city?: string;
+    street?: string;
+    postalCode?: string;
+  }) {
+    return this.prisma.company.create({
+      data: {
+        name: data.name,
+        legalName: data.legalName,
+        registrationNum: data.registrationNum ?? null,
+        taxId: data.taxId ?? null,
+        companyType: 'CONSTRUCTION',
+        email: data.email,
+        phone: data.phone,
+        street: data.street ?? '',
+        city: data.city ?? '',
+        state: '',
+        postalCode: data.postalCode ?? '',
+        country: 'LV',
+      },
+      select: {
+        id: true,
+        name: true,
+        legalName: true,
+        registrationNum: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        verified: true,
+        createdAt: true,
+        _count: { select: { users: true, orders: true } },
+      },
+    });
   }
 }

@@ -3,18 +3,30 @@
  * /dashboard/b3-recycling/jobs
  *
  * Lists all DISPOSAL orders targeting the Gulbene recycling facility.
+ * Admins can confirm, start processing, complete, or cancel each job.
  */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetRecyclingJobs, type RecyclingInboundJob } from '@/lib/api/admin';
+import {
+  adminGetRecyclingJobs,
+  adminUpdateRecyclingJob,
+  type RecyclingInboundJob,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -23,7 +35,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { RefreshCw, Truck, Package, Calendar } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  RefreshCw,
+  Truck,
+  Package,
+  Calendar,
+  ChevronDown,
+  CheckCircle2,
+  XCircle,
+  PlayCircle,
+} from 'lucide-react';
 import { format } from 'date-fns';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -52,6 +80,25 @@ const TRANSPORT_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Atcelts',
 };
 
+type NextAction = {
+  label: string;
+  icon: React.ElementType;
+  status: string;
+  variant?: 'destructive';
+};
+
+const NEXT_ACTIONS: Record<string, NextAction[]> = {
+  PENDING: [
+    { label: 'Apstiprināt', icon: CheckCircle2, status: 'CONFIRMED' },
+    { label: 'Atcelt', icon: XCircle, status: 'CANCELLED', variant: 'destructive' },
+  ],
+  CONFIRMED: [
+    { label: 'Sākt apstrādi', icon: PlayCircle, status: 'IN_PROGRESS' },
+    { label: 'Atcelt', icon: XCircle, status: 'CANCELLED', variant: 'destructive' },
+  ],
+  IN_PROGRESS: [{ label: 'Pabeigt', icon: CheckCircle2, status: 'COMPLETED' }],
+};
+
 function parseWasteTypes(raw: string | null): string {
   if (!raw) return '—';
   try {
@@ -74,8 +121,30 @@ function parseWasteTypes(raw: string | null): string {
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
-function JobRow({ job }: { job: RecyclingInboundJob }) {
+function JobRow({
+  job,
+  token,
+  onUpdated,
+}: {
+  job: RecyclingInboundJob;
+  token: string;
+  onUpdated: (id: string, newStatus: string) => void;
+}) {
   const transportStatus = job.transportJobs[0]?.status;
+  const [updating, setUpdating] = useState(false);
+  const actions = NEXT_ACTIONS[job.status] ?? [];
+
+  const handleAction = async (status: string) => {
+    setUpdating(true);
+    try {
+      await adminUpdateRecyclingJob(job.id, { status }, token);
+      onUpdated(job.id, status);
+    } catch {
+      // silently fail
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   return (
     <TableRow>
@@ -85,7 +154,7 @@ function JobRow({ job }: { job: RecyclingInboundJob }) {
         {job.buyer?.phone && <div className="text-xs text-muted-foreground">{job.buyer.phone}</div>}
       </TableCell>
       <TableCell className="text-sm">{parseWasteTypes(job.wasteTypes)}</TableCell>
-      <TableCell className="text-sm">
+      <TableCell className="text-right tabular-nums text-sm">
         {job.disposalVolume ? `${job.disposalVolume} m³` : '—'}
       </TableCell>
       <TableCell>
@@ -108,6 +177,37 @@ function JobRow({ job }: { job: RecyclingInboundJob }) {
       <TableCell className="text-sm text-muted-foreground">
         {format(new Date(job.createdAt), 'dd.MM.yyyy')}
       </TableCell>
+      <TableCell>
+        {actions.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={updating} className="h-7 px-2 text-xs">
+                Darbības <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {actions.map((action, i) => {
+                const Icon = action.icon;
+                const isDestructive = action.variant === 'destructive';
+                return (
+                  <div key={action.status}>
+                    {i > 0 && isDestructive && <DropdownMenuSeparator />}
+                    <DropdownMenuItem
+                      onClick={() => void handleAction(action.status)}
+                      className={isDestructive ? 'text-destructive focus:text-destructive' : ''}
+                    >
+                      <Icon className="mr-2 h-4 w-4" />
+                      {action.label}
+                    </DropdownMenuItem>
+                  </div>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
     </TableRow>
   );
 }
@@ -119,6 +219,7 @@ export default function RecyclingJobsPage() {
   const [jobs, setJobs] = useState<RecyclingInboundJob[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -136,17 +237,66 @@ export default function RecyclingJobsPage() {
     void load();
   }, [load]);
 
+  const handleUpdated = (id: string, newStatus: string) => {
+    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: newStatus } : j)));
+  };
+
+  const filtered = statusFilter === 'ALL' ? jobs : jobs.filter((j) => j.status === statusFilter);
+
+  const pendingCount = jobs.filter((j) => j.status === 'PENDING').length;
+  const inProgressCount = jobs.filter((j) => j.status === 'IN_PROGRESS').length;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Ienākošie darbi"
-        description={`Gulbenes atkritumu šķirošanas centrs — ${total} DISPOSAL pasūtījumi`}
+        description={`Gulbenes atkritumu šķirošanas centrs — ${total} pasūtījumi`}
         action={
           <Button variant="outline" size="icon" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         }
       />
+
+      {/* Attention banners */}
+      {!loading && (pendingCount > 0 || inProgressCount > 0) && (
+        <div className="flex flex-wrap gap-3">
+          {pendingCount > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <Package className="h-4 w-4" />
+              <span>
+                <strong>{pendingCount}</strong> gaida apstiprinājumu
+              </span>
+            </div>
+          )}
+          {inProgressCount > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+              <PlayCircle className="h-4 w-4" />
+              <span>
+                <strong>{inProgressCount}</strong> tiek apstrādāti
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Filter bar */}
+      <div className="flex items-center gap-3">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Statuss" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Visi statusi</SelectItem>
+            <SelectItem value="PENDING">Gaida</SelectItem>
+            <SelectItem value="CONFIRMED">Apstiprināts</SelectItem>
+            <SelectItem value="IN_PROGRESS">Procesā</SelectItem>
+            <SelectItem value="COMPLETED">Pabeigts</SelectItem>
+            <SelectItem value="CANCELLED">Atcelts</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground">{filtered.length} rezultāti</span>
+      </div>
 
       <Card>
         <CardContent className="p-0">
@@ -156,11 +306,11 @@ export default function RecyclingJobsPage() {
                 <Skeleton key={i} className="h-12 w-full rounded" />
               ))}
             </div>
-          ) : jobs.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <EmptyState
-              icon={<Package className="h-8 w-8 text-muted-foreground" />}
+              icon={Package}
               title="Nav darbu"
-              description="Gulbenes objektam vēl nav neviena DISPOSAL pasūtījuma."
+              description="Gulbenes objektam nav neviena atbilstoša DISPOSAL pasūtījuma."
             />
           ) : (
             <Table>
@@ -169,7 +319,7 @@ export default function RecyclingJobsPage() {
                   <TableHead>Pasūtījums</TableHead>
                   <TableHead>Klients</TableHead>
                   <TableHead>Atkritumu veids</TableHead>
-                  <TableHead>Apjoms</TableHead>
+                  <TableHead className="text-right">Apjoms</TableHead>
                   <TableHead>Statuss</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1">
@@ -182,11 +332,12 @@ export default function RecyclingJobsPage() {
                     </div>
                   </TableHead>
                   <TableHead>Izveidots</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {jobs.map((job) => (
-                  <JobRow key={job.id} job={job} />
+                {filtered.map((job) => (
+                  <JobRow key={job.id} job={job} token={token!} onUpdated={handleUpdated} />
                 ))}
               </TableBody>
             </Table>

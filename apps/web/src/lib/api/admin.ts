@@ -1376,3 +1376,276 @@ export async function adminGetRecyclingWasteRecords(
     { headers: { Authorization: `Bearer ${token}` } },
   );
 }
+
+// ── B3 Construction ────────────────────────────────────────────────────────
+
+export type ConstructionProjectStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED' | 'ON_HOLD';
+
+export interface AdminConstructionProject {
+  id: string;
+  name: string;
+  description: string | null;
+  clientName: string | null;
+  siteAddress: string | null;
+  status: ConstructionProjectStatus;
+  contractValue: number;
+  budgetAmount: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  company: { id: string; name: string };
+  createdBy: { id: string; firstName: string; lastName: string };
+  orderCount: number;
+  transportJobCount: number;
+  materialCosts: number;
+  grossMargin: number;
+  marginPct: number;
+  budgetUsedPct: number | null;
+}
+
+export interface AdminConstructionProjectOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  orderType: string;
+  category: string | null;
+  total: number;
+  deliveryAddress: string | null;
+  deliveryCity: string | null;
+  deliveryDate: string | null;
+  wasteTypes: string | null;
+  disposalVolume: number | null;
+  createdAt: string;
+  items: {
+    material: { name: string; category: string } | null;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+  }[];
+}
+
+export interface AdminConstructionProjectDetail extends AdminConstructionProject {
+  pendingCosts: number;
+  orders: AdminConstructionProjectOrder[];
+  sites: {
+    id: string;
+    label: string;
+    address: string;
+    lat: number | null;
+    lng: number | null;
+    type: string;
+    isDefault: boolean;
+  }[];
+  frameworkContracts: {
+    id: string;
+    contractNumber: string;
+    title: string;
+    status: string;
+    startDate: string;
+    endDate: string | null;
+    totalValue: number | null;
+    supplier: { id: string; name: string } | null;
+  }[];
+  transportJobs: {
+    id: string;
+    jobNumber: string;
+    status: string;
+    cargoType: string;
+    cargoWeight: number | null;
+    pickupAddress: string;
+    pickupCity: string;
+    deliveryAddress: string;
+    deliveryCity: string;
+    pickupDate: string;
+    deliveryDate: string;
+    rate: number;
+    driver: { id: string; firstName: string; lastName: string } | null;
+  }[];
+  createdBy: { id: string; firstName: string; lastName: string; email: string | null };
+}
+
+export interface AdminConstructionDisposalOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  total: number;
+  deliveryDate: string | null;
+  deliveryAddress: string | null;
+  deliveryCity: string | null;
+  wasteTypes: string | null;
+  disposalVolume: number | null;
+  createdAt: string;
+  project: { id: string; name: string } | null;
+  buyer: { id: string; firstName: string; lastName: string } | null;
+  buyerCompany: { id: string; name: string } | null;
+}
+
+export async function adminGetConstructionProjects(
+  token: string,
+  params?: { page?: number; limit?: number; status?: string; companyId?: string },
+): Promise<PaginatedResponse<AdminConstructionProject>> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.status) qs.set('status', params.status);
+  if (params?.companyId) qs.set('companyId', params.companyId);
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return apiFetch<PaginatedResponse<AdminConstructionProject>>(
+    `/admin/b3-construction/projects${query}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminGetConstructionProjectById(
+  id: string,
+  token: string,
+): Promise<AdminConstructionProjectDetail> {
+  return apiFetch<AdminConstructionProjectDetail>(
+    `/admin/b3-construction/projects/${id}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminUpdateConstructionProject(
+  id: string,
+  data: {
+    status?: ConstructionProjectStatus;
+    name?: string;
+    description?: string;
+    clientName?: string;
+    siteAddress?: string;
+    contractValue?: number;
+    budgetAmount?: number;
+    startDate?: string | null;
+    endDate?: string | null;
+  },
+  token: string,
+): Promise<{ id: string; name: string; status: ConstructionProjectStatus; updatedAt: string }> {
+  return apiFetch(`/admin/b3-construction/projects/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export interface CreateConstructionProjectPayload {
+  name: string;
+  companyId: string;
+  contractValue: number;
+  clientName?: string;
+  description?: string;
+  siteAddress?: string;
+  budgetAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  status?: ConstructionProjectStatus;
+}
+
+export async function adminCreateConstructionProject(
+  data: CreateConstructionProjectPayload,
+  token: string,
+): Promise<{ id: string; name: string; status: ConstructionProjectStatus; contractValue: number; createdAt: string }> {
+  return apiFetch('/admin/b3-construction/projects', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminGetConstructionDisposalOrders(
+  token: string,
+  params?: { page?: number; limit?: number; projectId?: string; status?: string },
+): Promise<PaginatedResponse<AdminConstructionDisposalOrder>> {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.projectId) qs.set('projectId', params.projectId);
+  if (params?.status) qs.set('status', params.status);
+  const q = qs.toString();
+  return apiFetch<PaginatedResponse<AdminConstructionDisposalOrder>>(
+    `/admin/b3-construction/disposal${q ? `?${q}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+// ── B3 Construction — Clients ─────────────────────────────────────────────────
+
+export interface AdminConstructionClient {
+  id: string;
+  name: string;
+  legalName: string;
+  registrationNum: string | null;
+  email: string;
+  phone: string;
+  city: string;
+  country: string;
+  verified: boolean;
+  createdAt: string;
+  _count: { users: number; orders: number };
+}
+
+export interface CreateConstructionClientPayload {
+  name: string;
+  legalName: string;
+  registrationNum?: string;
+  taxId?: string;
+  email: string;
+  phone: string;
+  city?: string;
+  street?: string;
+  postalCode?: string;
+}
+
+export async function adminGetConstructionClients(
+  token: string,
+): Promise<AdminConstructionClient[]> {
+  return apiFetch<AdminConstructionClient[]>('/admin/b3-construction/clients', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function adminCreateConstructionClient(
+  data: CreateConstructionClientPayload,
+  token: string,
+): Promise<AdminConstructionClient> {
+  return apiFetch<AdminConstructionClient>('/admin/b3-construction/clients', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+// ── B3 Recycling — job actions ────────────────────────────────────────────────
+
+export async function adminUpdateRecyclingJob(
+  id: string,
+  data: { status?: string; notes?: string },
+  token: string,
+): Promise<{ id: string; orderNumber: string; status: string; updatedAt: string }> {
+  return apiFetch(`/admin/b3-recycling/jobs/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminCreateWasteRecord(
+  data: {
+    recyclingCenterId: string;
+    wasteType: string;
+    weight: number;
+    volume?: number;
+    processedDate?: string;
+    recyclableWeight?: number;
+    recyclingRate?: number;
+  },
+  token: string,
+): Promise<RecyclingWasteRecord> {
+  return apiFetch<RecyclingWasteRecord>('/admin/b3-recycling/waste-records', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}

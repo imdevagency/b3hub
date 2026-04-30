@@ -4,23 +4,57 @@
  *
  * Hub page for the B3 groundworks subcontracting business.
  * Internal project tracker — no client-facing portal.
- * Priority P1 (B3 Recycling is P0).
  */
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FolderKanban, HardHat } from 'lucide-react';
+import { FolderKanban, TrendingDown, Truck, FileText, Users } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const SECTIONS = [
   {
-    title: 'Aktīvie projekti',
-    description: 'Aktīvo zemdarbu projektu saraksts ar statusu, objektu un klientu informāciju.',
+    title: 'Projekti',
+    description:
+      'Visi zemdarbu projekti ar izmaksu izsekošanu, bruto peļņas aprēķinu un pasūtījumu saistīšanu.',
     icon: FolderKanban,
     href: '/dashboard/b3-construction/projects',
     color: 'text-orange-600',
     bg: 'bg-orange-50',
+  },
+  {
+    title: 'Klienti',
+    description:
+      'Pasūtītāji — uzņēmumi, kuri pieprasa zemdarbu pakalpojumus. Jaunus klientus var pievienot šeit.',
+    icon: Users,
+    href: '/dashboard/b3-construction/clients',
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+  },
+  {
+    title: 'Atkritumu izvešana',
+    description:
+      'Projektu atkritumu izvešanas pasūtījumi, apjomi pa atkritumu veidiem un B3 Recycling nodošana.',
+    icon: Truck,
+    href: '/dashboard/b3-construction/disposal',
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+  },
+  {
+    title: 'Izdevumi',
+    description: 'Materiālu izmaksu dinamika pa projektiem un mēnešiem.',
+    icon: TrendingDown,
+    href: '/dashboard/b3-construction/projects',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+  },
+  {
+    title: 'Dokumenti',
+    description: 'Darbu izpildes akti, piegādes čeki un ietvarlīgumi.',
+    icon: FileText,
+    href: '/dashboard/b3-construction/projects',
+    color: 'text-green-600',
+    bg: 'bg-green-50',
   },
 ];
 
@@ -34,19 +68,13 @@ export default function B3ConstructionPage() {
         description="Zemdarbu apakšuzņēmēja projektu pārvaldība — iekšēja lietošana"
       />
 
-      {/* Status banner */}
-      <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <HardHat className="h-4 w-4 shrink-0" />
-        <span>Šī sadaļa tiek veidota. Projektu izsekošana būs pieejama drīzumā.</span>
-      </div>
-
       {/* Quick-access section cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {SECTIONS.map((section) => {
           const Icon = section.icon;
           return (
             <Card
-              key={section.href}
+              key={section.title}
               className="cursor-pointer transition-shadow hover:shadow-md"
               onClick={() => router.push(section.href)}
             >

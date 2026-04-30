@@ -14,6 +14,11 @@ import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 const ADMIN_PATH_PREFIX = '/dashboard/admin';
+const ADMIN_ALLOWED_PREFIXES = [
+  '/dashboard/admin',
+  '/dashboard/b3-recycling',
+  '/dashboard/b3-construction',
+];
 const IS_ADMIN_APP = process.env.NEXT_PUBLIC_APP_MODE === 'admin';
 
 // ── JWT payload decoder (no signature verification — Edge Runtime lacks Node crypto)
@@ -49,6 +54,8 @@ export function proxy(request: NextRequest) {
     }
     const isPermitted =
       pathname.startsWith('/dashboard/admin') ||
+      pathname.startsWith('/dashboard/b3-recycling') ||
+      pathname.startsWith('/dashboard/b3-construction') ||
       pathname.startsWith('/dashboard/settings') ||
       pathname.startsWith('/dashboard/notifications') ||
       pathname.startsWith('/dashboard/chat') ||
@@ -107,8 +114,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Admin users → only allowed in /dashboard/admin; redirect everything else
-  if (!pathname.startsWith(ADMIN_PATH_PREFIX)) {
+  // Admin users → only allowed in admin dashboard sections; redirect everything else
+  if (!ADMIN_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))) {
     const payload = decodeJwtPayload(token);
     if (payload?.userType === 'ADMIN') {
       const url = request.nextUrl.clone();

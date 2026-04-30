@@ -123,7 +123,7 @@ export default function CertificatesPage() {
             </div>
           ) : certs.length === 0 ? (
             <EmptyState
-              icon={<FileCheck2 className="h-8 w-8 text-muted-foreground" />}
+              icon={FileCheck2}
               title="Nav sertifikātu"
               description="Vēl nav izdots neviens atkritumu pārstrādes sertifikāts."
             />

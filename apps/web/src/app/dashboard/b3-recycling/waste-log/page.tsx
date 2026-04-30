@@ -4,18 +4,41 @@
  *
  * Lists all WasteRecord entries processed at the Gulbene recycling facility.
  * Shows waste type, weight, recycling rate, and certificate availability.
+ * Staff can manually log walk-in weigh-ins via the "Reģistrēt" dialog.
  */
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetRecyclingWasteRecords, type RecyclingWasteRecord } from '@/lib/api/admin';
+import {
+  adminGetRecyclingWasteRecords,
+  adminCreateWasteRecord,
+  adminGetRecyclingCenters,
+  type RecyclingWasteRecord,
+  type AdminRecyclingCenter,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -24,21 +47,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { RefreshCw, FileText, Recycle } from 'lucide-react';
+import { RefreshCw, FileText, Recycle, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const WASTE_TYPE_LABELS: Record<string, string> = {
-  CONCRETE: 'Betons',
-  BRICK: 'Ķieģeļi',
-  WOOD: 'Koksne',
-  METAL: 'Metāls',
-  PLASTIC: 'Plastmasa',
-  SOIL: 'Grunts',
-  MIXED: 'Jaukti',
-  HAZARDOUS: 'Bīstami',
-};
+const WASTE_TYPE_OPTIONS = [
+  { value: 'CONCRETE', label: 'Betons' },
+  { value: 'BRICK', label: 'Ķieģeļi' },
+  { value: 'WOOD', label: 'Koksne' },
+  { value: 'METAL', label: 'Metāls' },
+  { value: 'PLASTIC', label: 'Plastmasa' },
+  { value: 'SOIL', label: 'Grunts' },
+  { value: 'MIXED', label: 'Jaukti' },
+  { value: 'HAZARDOUS', label: 'Bīstami' },
+];
+
+const WASTE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  WASTE_TYPE_OPTIONS.map((o) => [o.value, o.label]),
+);
 
 function formatTonnes(kg: number | null): string {
   if (kg === null) return '—';
@@ -55,12 +82,10 @@ function formatRate(rate: number | null): string {
 function SummaryBar({ records }: { records: RecyclingWasteRecord[] }) {
   const totalWeight = records.reduce((sum, r) => sum + (r.weight ?? 0), 0);
   const totalRecyclable = records.reduce((sum, r) => sum + (r.recyclableWeight ?? 0), 0);
+  const ratedRecords = records.filter((r) => r.recyclingRate !== null);
   const avgRate =
-    records.filter((r) => r.recyclingRate !== null).length > 0
-      ? records
-          .filter((r) => r.recyclingRate !== null)
-          .reduce((sum, r) => sum + (r.recyclingRate ?? 0), 0) /
-        records.filter((r) => r.recyclingRate !== null).length
+    ratedRecords.length > 0
+      ? ratedRecords.reduce((sum, r) => sum + (r.recyclingRate ?? 0), 0) / ratedRecords.length
       : null;
 
   return (
@@ -84,6 +109,181 @@ function SummaryBar({ records }: { records: RecyclingWasteRecord[] }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ─── Log Walk-in Dialog ───────────────────────────────────────────────────────
+
+function LogWalkInDialog({
+  open,
+  onClose,
+  centers,
+  token,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  centers: AdminRecyclingCenter[];
+  token: string;
+  onCreated: (record: RecyclingWasteRecord) => void;
+}) {
+  const [centerId, setCenterId] = useState(centers[0]?.id ?? '');
+  const [wasteType, setWasteType] = useState('');
+  const [weight, setWeight] = useState('');
+  const [volume, setVolume] = useState('');
+  const [recyclableWeight, setRecyclableWeight] = useState('');
+  const [recyclingRate, setRecyclingRate] = useState('');
+  const [processedDate, setProcessedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const isValid = centerId && wasteType && weight && parseFloat(weight) > 0;
+
+  const handleSubmit = async () => {
+    if (!isValid) return;
+    setSaving(true);
+    setError('');
+    try {
+      const record = await adminCreateWasteRecord(
+        {
+          recyclingCenterId: centerId,
+          wasteType,
+          weight: parseFloat(weight),
+          volume: volume ? parseFloat(volume) : undefined,
+          recyclableWeight: recyclableWeight ? parseFloat(recyclableWeight) : undefined,
+          recyclingRate: recyclingRate ? parseFloat(recyclingRate) : undefined,
+          processedDate: processedDate || undefined,
+        },
+        token,
+      );
+      onCreated(record);
+      onClose();
+    } catch {
+      setError('Neizdevās saglabāt ierakstu. Pārbaudiet ievadītos datus.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Reģistrēt svēršanu</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-2">
+          {centers.length > 1 && (
+            <div className="grid gap-1.5">
+              <Label>Pārstrādes centrs</Label>
+              <Select value={centerId} onValueChange={setCenterId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Izvēlieties centru" />
+                </SelectTrigger>
+                <SelectContent>
+                  {centers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} — {c.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="grid gap-1.5">
+            <Label>
+              Atkritumu veids <span className="text-destructive">*</span>
+            </Label>
+            <Select value={wasteType} onValueChange={setWasteType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Izvēlieties veidu" />
+              </SelectTrigger>
+              <SelectContent>
+                {WASTE_TYPE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>
+                Svars (t) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Tilpums (m³)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.1"
+                placeholder="0.0"
+                value={volume}
+                onChange={(e) => setVolume(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Pārstrādājamais (t)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={recyclableWeight}
+                onChange={(e) => setRecyclableWeight(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Pārstrādes % </Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="0.0"
+                value={recyclingRate}
+                onChange={(e) => setRecyclingRate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label>Apstrādes datums</Label>
+            <Input
+              type="date"
+              value={processedDate}
+              onChange={(e) => setProcessedDate(e.target.value)}
+            />
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Atcelt
+          </Button>
+          <Button onClick={handleSubmit} disabled={!isValid || saving}>
+            {saving ? 'Saglabā...' : 'Saglabāt'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -133,16 +333,22 @@ function WasteRecordRow({ record }: { record: RecyclingWasteRecord }) {
 export default function WasteLogPage() {
   const { token } = useAuth();
   const [records, setRecords] = useState<RecyclingWasteRecord[]>([]);
+  const [centers, setCenters] = useState<AdminRecyclingCenter[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await adminGetRecyclingWasteRecords(token, { limit: 200 });
+      const [res, centersData] = await Promise.all([
+        adminGetRecyclingWasteRecords(token, { limit: 200 }),
+        adminGetRecyclingCenters(token),
+      ]);
       setRecords(res.data);
       setTotal(res.total);
+      setCenters(centersData.filter((c) => c.active));
     } finally {
       setLoading(false);
     }
@@ -152,15 +358,26 @@ export default function WasteLogPage() {
     void load();
   }, [load]);
 
+  const handleCreated = (record: RecyclingWasteRecord) => {
+    setRecords((prev) => [record, ...prev]);
+    setTotal((prev) => prev + 1);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Atkritumu žurnāls"
         description={`Gulbenes šķirošanas centrs — ${total} ieraksti`}
         action={
-          <Button variant="outline" size="icon" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setDialogOpen(true)} disabled={centers.length === 0}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Reģistrēt svēršanu
+            </Button>
+            <Button variant="outline" size="icon" onClick={load} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         }
       />
 
@@ -176,7 +393,7 @@ export default function WasteLogPage() {
             </div>
           ) : records.length === 0 ? (
             <EmptyState
-              icon={<Recycle className="h-8 w-8 text-muted-foreground" />}
+              icon={Recycle}
               title="Nav ierakstu"
               description="Vēl nav reģistrēts neviens atkritumu apstrādes ieraksts."
             />
@@ -203,6 +420,16 @@ export default function WasteLogPage() {
           )}
         </CardContent>
       </Card>
+
+      {token && centers.length > 0 && (
+        <LogWalkInDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          centers={centers}
+          token={token}
+          onCreated={handleCreated}
+        />
+      )}
     </div>
   );
 }

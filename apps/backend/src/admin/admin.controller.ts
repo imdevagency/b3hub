@@ -21,6 +21,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateConstructionClientDto } from './dto/create-construction-client.dto';
 import {
   IsBoolean,
   IsNumber,
@@ -616,5 +617,150 @@ export class AdminController {
       limit ? parseInt(limit, 10) : 50,
       centerId,
     );
+  }
+
+  // ── B3 Construction ───────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/b3-construction/clients
+   * All CONSTRUCTION-type companies (B3 Construction's client portfolio).
+   */
+  @Get('b3-construction/clients')
+  getConstructionClients() {
+    return this.service.adminGetConstructionClients();
+  }
+
+  /**
+   * POST /admin/b3-construction/clients
+   * Admin registers a new construction client company.
+   */
+  @Post('b3-construction/clients')
+  createConstructionClient(@Body() body: CreateConstructionClientDto) {
+    return this.service.adminCreateConstructionClient(body);
+  }
+
+  /**
+   * POST /admin/b3-construction/projects
+   * Admin manually creates a construction project on behalf of a company.
+   */
+  @Post('b3-construction/projects')
+  createConstructionProject(
+    @CurrentUser() user: RequestingUser,
+    @Body() body: {
+      name: string;
+      companyId: string;
+      contractValue: number;
+      clientName?: string;
+      description?: string;
+      siteAddress?: string;
+      budgetAmount?: number;
+      startDate?: string;
+      endDate?: string;
+      status?: string;
+    },
+  ) {
+    return this.service.adminCreateConstructionProject(user.id, body as Parameters<typeof this.service.adminCreateConstructionProject>[1]);
+  }
+
+  /**
+   * GET /admin/b3-construction/disposal
+   * All disposal orders tagged to a project (cross-project platform view).
+   */
+  @Get('b3-construction/disposal')
+  getConstructionDisposalOrders(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('projectId') projectId?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.service.adminGetConstructionDisposalOrders(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 100,
+      projectId,
+      status,
+    );
+  }
+
+  /**
+   * GET /admin/b3-construction/projects
+   * All construction projects (platform-wide, not company-scoped).
+   */
+  @Get('b3-construction/projects')
+  getConstructionProjects(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('companyId') companyId?: string,
+  ) {
+    return this.service.adminGetConstructionProjects(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+      status,
+      companyId,
+    );
+  }
+
+  /**
+   * GET /admin/b3-construction/projects/:id
+   * Single project detail with orders, sites, and framework contracts.
+   */
+  @Get('b3-construction/projects/:id')
+  getConstructionProjectById(@Param('id') id: string) {
+    return this.service.adminGetConstructionProjectById(id);
+  }
+
+  /**
+   * PATCH /admin/b3-construction/projects/:id
+   * Update project status or basic fields.
+   */
+  @Patch('b3-construction/projects/:id')
+  updateConstructionProject(
+    @Param('id') id: string,
+    @Body() body: {
+      status?: string;
+      name?: string;
+      description?: string;
+      clientName?: string;
+      siteAddress?: string;
+      contractValue?: number;
+      budgetAmount?: number;
+      startDate?: string | null;
+      endDate?: string | null;
+    },
+  ) {
+    return this.service.adminUpdateConstructionProject(id, body as Parameters<typeof this.service.adminUpdateConstructionProject>[1]);
+  }
+
+  // ── B3 Recycling — job actions ─────────────────────────────────────────────
+
+  /**
+   * PATCH /admin/b3-recycling/jobs/:id
+   * Update status of a DISPOSAL order (confirm, start, complete, cancel).
+   */
+  @Patch('b3-recycling/jobs/:id')
+  updateRecyclingJob(
+    @Param('id') id: string,
+    @Body() body: { status?: string; notes?: string },
+  ) {
+    return this.service.adminUpdateRecyclingJob(id, body);
+  }
+
+  /**
+   * POST /admin/b3-recycling/waste-records
+   * Manually log a weigh-in record (walk-in vehicle, no online booking).
+   */
+  @Post('b3-recycling/waste-records')
+  createWasteRecord(
+    @Body() body: {
+      recyclingCenterId: string;
+      wasteType: string;
+      weight: number;
+      volume?: number;
+      processedDate?: string;
+      recyclableWeight?: number;
+      recyclingRate?: number;
+    },
+  ) {
+    return this.service.adminCreateWasteRecord(body);
   }
 }

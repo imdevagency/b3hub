@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="-ml-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full" />
                 <span className="text-sm font-semibold tracking-tight text-gray-800 md:hidden block">
-                  B3Hub
+                  B3 APP
                 </span>
                 <DashboardBreadcrumb />
               </div>
