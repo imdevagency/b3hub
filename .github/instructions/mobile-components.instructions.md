@@ -520,6 +520,21 @@ _No props interface — check source file._
 
 ---
 
+#### `AvatarImage` — `@/components/ui/AvatarImage`
+
+| Prop | Type | |
+|------|------|---|
+| `url` | `string | null` | optional |
+| `initials` | `string` | **required** |
+| `size` | `number` | optional |
+| `fallbackBg` | `string` | optional |
+| `onPress` | `() => void` | optional |
+| `loading` | `boolean` | optional |
+
+**Exports:** `AvatarImage`
+
+---
+
 #### `BottomSheet` — `@/components/ui/BottomSheet`
 
 | Prop | Type | |

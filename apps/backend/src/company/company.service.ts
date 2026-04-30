@@ -40,6 +40,8 @@ const COMPANY_SELECT = {
   country: true,
   lat: true,
   lng: true,
+  ibanNumber: true,
+  paymentTermsDays: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -229,6 +231,8 @@ export class CompanyService {
         ...(dto.logo !== undefined && { logo: dto.logo }),
         ...(resolvedLat !== undefined && { lat: resolvedLat }),
         ...(resolvedLng !== undefined && { lng: resolvedLng }),
+        ...(dto.paymentTermsDays !== undefined && { paymentTermsDays: dto.paymentTermsDays }),
+        ...(dto.ibanNumber !== undefined && { ibanNumber: dto.ibanNumber }),
       },
       select: COMPANY_SELECT,
     });

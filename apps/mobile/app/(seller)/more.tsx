@@ -27,6 +27,7 @@ import {
   HelpCircle,
   ChevronRight,
   LogOut,
+  Building2,
 } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -179,12 +180,20 @@ export default function SellerMoreScreen() {
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
-
         {/* Main tiles */}
         <TileGrid tiles={tiles} />
-
+        {/* Company */}
+        <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
+        <View style={s.listCard}>
+          <ListRow
+            icon={Building2}
+            label="Norēķinu iestatījumi"
+            last
+            onPress={() => router.push('/(seller)/billing-settings')}
+          />
+        </View>
         {/* Help */}
-        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
+        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>{' '}
         <View style={s.listCard}>
           <ListRow icon={HelpCircle} label="Palīdzība / BUJ" onPress={() => router.push('/help')} />
           <ListRow
@@ -194,12 +203,10 @@ export default function SellerMoreScreen() {
             onPress={() => router.push('/support-chat' as never)}
           />
         </View>
-
         {/* Sign out */}
         <View style={s.listCard}>
           <ListRow icon={LogOut} label="Iziet" isDestructive last onPress={handleLogout} />
         </View>
-
         <View style={{ height: 32 }} />
       </ScrollView>
     </ScreenContainer>

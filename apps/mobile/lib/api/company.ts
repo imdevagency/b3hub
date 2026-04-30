@@ -285,4 +285,28 @@ export const companyApi = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ base64, mimeType }),
     }),
+
+  /** Fetch the current user's company profile (includes ibanNumber, paymentTermsDays) */
+  getMyCompany: (token: string) =>
+    apiFetch<{
+      id: string;
+      name: string;
+      legalName: string;
+      ibanNumber: string | null;
+      paymentTermsDays: number | null;
+      [key: string]: unknown;
+    }>('/company/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  /** Update the current user's company profile (billing settings etc.) */
+  updateMyCompany: (
+    token: string,
+    data: { ibanNumber?: string; paymentTermsDays?: number },
+  ) =>
+    apiFetch<{ id: string; ibanNumber: string | null; paymentTermsDays: number | null }>('/company/me', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
 };

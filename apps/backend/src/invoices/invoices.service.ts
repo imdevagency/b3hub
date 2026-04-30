@@ -824,6 +824,8 @@ export class InvoicesService {
                     taxId: true,
                     legalName: true,
                     billingAgentAgreedAt: true,
+                    ibanNumber: true,
+                    paymentTermsDays: true,
                   },
                 },
               },
@@ -837,6 +839,8 @@ export class InvoicesService {
     type SupplierGroup = {
       supplierId: string;
       supplierVat: string | null;
+      supplierIban: string | null;
+      paymentTermsDays: number | null;
       subtotalNet: number;
       agentAgreed: boolean;
     };
@@ -851,6 +855,8 @@ export class InvoicesService {
         supplierMap.set(sup.id, {
           supplierId: sup.id,
           supplierVat: sup.taxId ?? null,
+          supplierIban: sup.ibanNumber ?? null,
+          paymentTermsDays: sup.paymentTermsDays ?? null,
           subtotalNet: Number(item.total),
           agentAgreed: sup.billingAgentAgreedAt != null,
         });
@@ -872,12 +878,20 @@ export class InvoicesService {
       const subtotal = Math.round(sup.subtotalNet * 100) / 100;
       const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
       const total = Math.round((subtotal + tax) * 100) / 100;
+      // Per-supplier due date: buyer's explicit terms take precedence; fall back
+      // to the supplier's preferred payment period, then the platform default (14 days).
+      const supplierDueDate = buyerProfile?.paymentTerms
+        ? dueDate
+        : sup.paymentTermsDays
+          ? new Date(Date.now() + sup.paymentTermsDays * 86_400_000)
+          : new Date(Date.now() + 14 * 86_400_000);
       return {
         sup,
         invoiceNumber: this.generateInvoiceNumber(),
         subtotal,
         tax,
         total,
+        dueDate: supplierDueDate,
         taxPeriod: new Date().toLocaleDateString('lv-LV', {
           month: 'long',
           year: 'numeric',
@@ -886,7 +900,7 @@ export class InvoicesService {
     });
 
     const agentResults = await Promise.all(
-      agentPayloads.map(({ sup, invoiceNumber, subtotal, tax, total, taxPeriod }) =>
+      agentPayloads.map(({ sup, invoiceNumber, subtotal, tax, total, taxPeriod, dueDate: supDueDate }) =>
         this.prisma.invoice.create({
           data: {
             invoiceNumber,
@@ -896,11 +910,12 @@ export class InvoicesService {
             tax,
             total,
             currency: order.currency,
-            dueDate,
+            dueDate: supDueDate,
             paymentStatus: PaymentStatus.PENDING,
             supplierVatNumber: sup.supplierVat,
             buyerVatNumber,
             taxPeriod,
+            supplierBankAccount: sup.supplierIban,
           },
           select: { id: true },
         }),

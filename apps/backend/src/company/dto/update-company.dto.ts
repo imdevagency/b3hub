@@ -60,4 +60,12 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsNumber()
   lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  paymentTermsDays?: number;
+
+  @IsOptional()
+  @IsString()
+  ibanNumber?: string;
 }

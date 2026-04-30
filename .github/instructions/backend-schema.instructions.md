@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (2805 lines, 68 models, 53 enums).
+Schema: `apps/backend/prisma/schema.prisma` (2808 lines, 68 models, 53 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -171,7 +171,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Company — `@@map("companies")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `paymentTermsDays`: Int?, `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType  
 **Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout
 

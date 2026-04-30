@@ -354,6 +354,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/b3-construction/rates
 - dashboard/b3-construction/subcontractors
 - dashboard/b3-recycling
+- dashboard/b3-recycling/apus
 - dashboard/b3-recycling/certificates
 - dashboard/b3-recycling/jobs
 - dashboard/b3-recycling/waste-log

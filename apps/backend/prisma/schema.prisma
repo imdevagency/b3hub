@@ -545,6 +545,9 @@ model Company {
   carrierCommissionRate Float   @default(8.0) // Carrier platform fee % (applied to deliveryFee)
   payoutEnabled         Boolean @default(false) // true once IBAN is verified
 
+  // Billing settings — used on supplier-issued invoices
+  paymentTermsDays Int?    // Default payment period in days (e.g. 14, 30). Falls back to 14 if null.
+
   // Marketplace billing agent agreement — supplier accepts that B3Hub generates
   // invoices on their behalf (required for Path 1 / disclosed agent model).
   billingAgentAgreedAt DateTime? // null = not yet accepted; non-null = accepted
