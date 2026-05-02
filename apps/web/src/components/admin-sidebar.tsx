@@ -22,6 +22,7 @@ import {
   Clock,
   FileText,
   FolderKanban,
+  Globe2,
   HardHat,
   LayoutDashboard,
   LayoutTemplate,
@@ -91,12 +92,23 @@ type AdminBadges = {
 
 // ─── Business unit definitions ────────────────────────────────────────────────
 
-type Scope = 'b3hub' | 'recycling' | 'construction';
+type Scope = 'group' | 'b3hub' | 'recycling' | 'construction';
 
 const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
-  { id: 'b3hub', label: 'B3 APP', href: '/dashboard/admin' },
-  { id: 'recycling', label: 'Recycling', href: '/dashboard/b3-recycling' },
-  { id: 'construction', label: 'Construction', href: '/dashboard/b3-construction' },
+  { id: 'group', label: 'Grupa', href: '/dashboard/group' },
+  { id: 'b3hub', label: 'APP', href: '/dashboard/admin' },
+  { id: 'recycling', label: 'Recycle', href: '/dashboard/b3-recycling' },
+  { id: 'construction', label: 'Būve', href: '/dashboard/b3-construction' },
+];
+
+// ─── B3 Group navigation (cross-BU overview) ────────────────────────────────
+
+const GROUP_NAV: NavSection[] = [
+  {
+    id: 'overview',
+    label: 'Pārskats',
+    items: [{ label: 'Grupas pārskats', href: '/dashboard/group', icon: Globe2 }],
+  },
 ];
 
 // ─── B3Hub navigation (marketplace admin) ────────────────────────────────────
@@ -270,12 +282,14 @@ const CONSTRUCTION_NAV: NavSection[] = [
 // ─── Scope icon map ───────────────────────────────────────────────────────────
 
 const SCOPE_ICON: Record<Scope, React.ElementType> = {
+  group: Globe2,
   b3hub: ShieldCheck,
   recycling: Recycle,
   construction: HardHat,
 };
 
 const SCOPE_SUBTITLE: Record<Scope, string> = {
+  group: 'B3 Grupas pārskats',
   b3hub: 'Platformas pārvaldība',
   recycling: 'Pārstrādes centrs',
   construction: 'Būvdarbu projekti',
@@ -293,14 +307,18 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     ? 'recycling'
     : pathname.startsWith('/dashboard/b3-construction')
       ? 'construction'
-      : 'b3hub';
+      : pathname === '/dashboard/group' || pathname.startsWith('/dashboard/group/')
+        ? 'group'
+        : 'b3hub';
 
   const activeNav =
     activeScope === 'recycling'
       ? RECYCLING_NAV
       : activeScope === 'construction'
         ? CONSTRUCTION_NAV
-        : B3HUB_NAV;
+        : activeScope === 'group'
+          ? GROUP_NAV
+          : B3HUB_NAV;
 
   const ScopeIcon = SCOPE_ICON[activeScope];
 
@@ -320,7 +338,8 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       if (
         href === '/dashboard/admin' ||
         href === '/dashboard/b3-recycling' ||
-        href === '/dashboard/b3-construction'
+        href === '/dashboard/b3-construction' ||
+        href === '/dashboard/group'
       ) {
         return pathname === href;
       }
@@ -431,7 +450,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
                 key={unit.id}
                 href={unit.href}
                 className={cn(
-                  'flex-1 text-center rounded-md px-1.5 py-1.5 text-[11px] font-semibold transition-all leading-none',
+                  'flex-1 text-center rounded-md px-1 py-1.5 text-[10px] font-semibold transition-all leading-none',
                   activeScope === unit.id
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700',

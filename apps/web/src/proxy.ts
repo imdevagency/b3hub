@@ -18,6 +18,7 @@ const ADMIN_ALLOWED_PREFIXES = [
   '/dashboard/admin',
   '/dashboard/b3-recycling',
   '/dashboard/b3-construction',
+  '/dashboard/group',
 ];
 const IS_ADMIN_APP = process.env.NEXT_PUBLIC_APP_MODE === 'admin';
 
@@ -56,6 +57,7 @@ export function proxy(request: NextRequest) {
       pathname.startsWith('/dashboard/admin') ||
       pathname.startsWith('/dashboard/b3-recycling') ||
       pathname.startsWith('/dashboard/b3-construction') ||
+      pathname.startsWith('/dashboard/group') ||
       pathname.startsWith('/dashboard/settings') ||
       pathname.startsWith('/dashboard/notifications') ||
       pathname.startsWith('/dashboard/chat') ||
