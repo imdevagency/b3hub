@@ -39,6 +39,7 @@ import {
   Euro,
   Handshake,
   FileCheck,
+  FolderKanban,
 } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -197,6 +198,16 @@ export default function MoreScreen() {
   // ── Company-only tiles ────────────────────────────────────────
   const companyTiles: TileItem[] = user?.isCompany
     ? [
+        ...(user.company?.companyType === 'CONSTRUCTION'
+          ? [
+              {
+                icon: FolderKanban,
+                label: 'Projekti',
+                onPress: () =>
+                  Linking.openURL('https://b3hub.lv/dashboard/projects').catch(() => null),
+              },
+            ]
+          : []),
         {
           icon: BarChart2,
           label: 'Analītika',

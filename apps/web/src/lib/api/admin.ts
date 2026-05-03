@@ -2085,14 +2085,40 @@ export async function adminDeleteDprTemplate(token: string, id: string): Promise
   });
 }
 
-// ── Project Sub-Budgets ───────────────────────────────────────────────────────
+// ── Project Budget Lines (Estimator) ─────────────────────────────────────────
 
 export interface ProjectBudgetLine {
   id: string;
   projectId: string;
   costCode: CostCode;
-  budgetAmount: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitRate: number;
+  amount: number;
+  rateEntryId?: string | null;
+  sortOrder: number;
   notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  rateEntry?: {
+    id: string;
+    name: string;
+    supplierName: string;
+    unit: string;
+    pricePerUnit: number;
+  } | null;
+}
+
+export interface CreateBudgetLinePayload {
+  costCode: CostCode;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitRate: number;
+  rateEntryId?: string;
+  sortOrder?: number;
+  notes?: string;
 }
 
 export async function adminGetProjectBudgetLines(
@@ -2105,10 +2131,53 @@ export async function adminGetProjectBudgetLines(
   );
 }
 
+export async function adminCreateBudgetLine(
+  token: string,
+  projectId: string,
+  data: CreateBudgetLinePayload,
+): Promise<ProjectBudgetLine> {
+  return apiFetch<ProjectBudgetLine>(
+    `/admin/b3-construction/projects/${projectId}/budget-lines`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export async function adminUpdateBudgetLine(
+  token: string,
+  lineId: string,
+  data: Partial<CreateBudgetLinePayload> & { rateEntryId?: string | null },
+): Promise<ProjectBudgetLine> {
+  return apiFetch<ProjectBudgetLine>(
+    `/admin/b3-construction/budget-lines/${lineId}`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export async function adminDeleteBudgetLine(
+  token: string,
+  lineId: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(
+    `/admin/b3-construction/budget-lines/${lineId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+}
+
 export async function adminSetProjectBudgetLines(
   token: string,
   projectId: string,
-  lines: Array<{ costCode: CostCode; budgetAmount: number; notes?: string }>,
+  lines: CreateBudgetLinePayload[],
 ): Promise<ProjectBudgetLine[]> {
   return apiFetch<ProjectBudgetLine[]>(
     `/admin/b3-construction/projects/${projectId}/budget-lines`,

@@ -39,6 +39,13 @@ class RejectSurchargeDto {
   @IsOptional() @IsString() note?: string;
 }
 
+class GetExceptionsQueryDto extends PagePaginationDto {
+  @IsOptional()
+  @IsString()
+  @IsIn(['OPEN', 'RESOLVED', 'ALL'])
+  status?: string;
+}
+
 class CancelOrderDto {
   @IsOptional() @IsString() reason?: string;
 }
@@ -376,14 +383,11 @@ export class AdminController {
    * Query param: ?status=OPEN|RESOLVED|ALL
    */
   @Get('exceptions')
-  getExceptions(
-    @Query() pagination: PagePaginationDto,
-    @Query('status') status?: string,
-  ) {
+  getExceptions(@Query() query: GetExceptionsQueryDto) {
     return this.service.getExceptions(
-      pagination.page ?? 1,
-      pagination.limit ?? 50,
-      status,
+      query.page ?? 1,
+      query.limit ?? 50,
+      query.status,
     );
   }
 
@@ -1159,7 +1163,7 @@ export class AdminController {
     return this.service.adminDeleteDprTemplate(id);
   }
 
-  // ── Project Sub-Budgets ────────────────────────────────────────────────────
+  // ── Project Budget Lines (Estimator) ─────────────────────────────────────
 
   /** GET /admin/b3-construction/projects/:id/budget-lines */
   @Get('b3-construction/projects/:id/budget-lines')
@@ -1167,15 +1171,69 @@ export class AdminController {
     return this.service.adminGetProjectBudgetLines(id);
   }
 
-  /** PUT /admin/b3-construction/projects/:id/budget-lines
-   *  Replaces all budget lines for the project.
-   */
+  /** POST /admin/b3-construction/projects/:id/budget-lines — add single line */
+  @Post('b3-construction/projects/:id/budget-lines')
+  createBudgetLine(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      costCode: string;
+      description: string;
+      quantity: number;
+      unit: string;
+      unitRate: number;
+      rateEntryId?: string;
+      sortOrder?: number;
+      notes?: string;
+    },
+  ) {
+    return this.service.adminCreateBudgetLine(id, body);
+  }
+
+  /** PUT /admin/b3-construction/projects/:id/budget-lines — bulk replace */
   @Put('b3-construction/projects/:id/budget-lines')
   setProjectBudgetLines(
     @Param('id') id: string,
-    @Body() body: { lines: Array<{ costCode: string; budgetAmount: number; notes?: string }> },
+    @Body()
+    body: {
+      lines: Array<{
+        costCode: string;
+        description: string;
+        quantity: number;
+        unit: string;
+        unitRate: number;
+        rateEntryId?: string;
+        sortOrder?: number;
+        notes?: string;
+      }>;
+    },
   ) {
     return this.service.adminSetProjectBudgetLines(id, body.lines);
+  }
+
+  /** PATCH /admin/b3-construction/budget-lines/:lineId — update single line */
+  @Patch('b3-construction/budget-lines/:lineId')
+  updateBudgetLine(
+    @Param('lineId') lineId: string,
+    @Body()
+    body: {
+      costCode?: string;
+      description?: string;
+      quantity?: number;
+      unit?: string;
+      unitRate?: number;
+      rateEntryId?: string | null;
+      sortOrder?: number;
+      notes?: string;
+    },
+  ) {
+    return this.service.adminUpdateBudgetLine(lineId, body);
+  }
+
+  /** DELETE /admin/b3-construction/budget-lines/:lineId */
+  @Delete('b3-construction/budget-lines/:lineId')
+  deleteBudgetLine(@Param('lineId') lineId: string) {
+    return this.service.adminDeleteBudgetLine(lineId);
   }
 
   // ── Subcontractor Register ─────────────────────────────────────────────────

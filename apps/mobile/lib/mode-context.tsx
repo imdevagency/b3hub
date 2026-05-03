@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { useAuth } from './auth-context';
 
-export type AppMode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
+export type AppMode = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER';
 
 export const MODE_HOME: Record<AppMode, string> = {
   BUYER: '/(buyer)/home',
   SUPPLIER: '/(seller)/home',
   CARRIER: '/(driver)/home',
+  RECYCLER: '/(recycler)/home',
 };
 
 /** Derive the best default mode from the user's role flags. */
@@ -14,11 +15,12 @@ function defaultModeForUser(
   user: {
     canSell: boolean;
     canTransport: boolean;
+    canRecycle?: boolean;
     isCompany: boolean;
   } | null,
 ): AppMode {
   if (!user) return 'BUYER';
-  // Capability flags are canonical for seller/driver access.
+  if (user.canRecycle && !user.canSell && !user.canTransport) return 'RECYCLER';
   if (user.canTransport && !user.canSell) return 'CARRIER';
   if (user.canSell && !user.canTransport) return 'SUPPLIER';
   return 'BUYER';
@@ -38,15 +40,14 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const availableModes = useMemo<AppMode[]>(() => {
     const modes: AppMode[] = [];
-    // Mirror backend logic: only a solo individual driver (canTransport, !canSell, !isCompany)
-    // should skip buyer mode. Suppliers and carrier-company owners keep buyer access.
     const isPureTransportIndividual = !!(user?.canTransport && !user?.canSell && !user?.isCompany);
     if (!isPureTransportIndividual) modes.push('BUYER');
     if (user?.canSell) modes.push('SUPPLIER');
     if (user?.canTransport) modes.push('CARRIER');
+    if ((user as any)?.canRecycle) modes.push('RECYCLER');
     if (modes.length === 0) modes.push('BUYER'); // fallback
     return modes;
-  }, [user?.canSell, user?.canTransport, user?.isCompany]);
+  }, [user?.canSell, user?.canTransport, (user as any)?.canRecycle, user?.isCompany]);
 
   const [mode, setModeState] = useState<AppMode>(() => defaultModeForUser(user));
 
@@ -55,7 +56,12 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     setModeState(
       defaultModeForUser(
         user
-          ? { canSell: user.canSell, canTransport: user.canTransport, isCompany: user.isCompany }
+          ? {
+              canSell: user.canSell,
+              canTransport: user.canTransport,
+              canRecycle: (user as any).canRecycle,
+              isCompany: user.isCompany,
+            }
           : null,
       ),
     );

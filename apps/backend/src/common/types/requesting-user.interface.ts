@@ -9,6 +9,7 @@ export interface RequestingUser {
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
   canSkipHire: boolean; // approved to manage skip hire fleet
+  canRecycle: boolean; // approved to operate a recycling/waste center
   companyId?: string; // linked Company id, if any
   companyRole?: string; // 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER'
   // Fine-grained company member permissions
@@ -19,4 +20,5 @@ export interface RequestingUser {
   permManageTeam: boolean;
   payoutEnabled?: boolean;
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
+  companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }

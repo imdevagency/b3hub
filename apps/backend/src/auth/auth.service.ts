@@ -113,6 +113,7 @@ export class AuthService {
         canSell: true,
         canTransport: true,
         canSkipHire: true,
+        canRecycle: true,
         companyRole: true,
         permCreateContracts: true,
         permReleaseCallOffs: true,
@@ -126,6 +127,7 @@ export class AuthService {
             id: true,
             name: true,
             payoutEnabled: true,
+            features: true,
           },
         },
       },
@@ -159,6 +161,7 @@ export class AuthService {
       user.canSell,
       user.canTransport,
       user.canSkipHire,
+      user.canRecycle ?? false,
       user.company?.id,
       user.companyRole ?? undefined,
       {
@@ -170,6 +173,7 @@ export class AuthService {
       },
       user.company?.payoutEnabled ?? false,
       user.tokenVersion ?? 0,
+      user.company?.features ?? [],
     );
 
     // Send welcome + verification emails (non-blocking)
@@ -210,6 +214,7 @@ export class AuthService {
             name: true,
             companyType: true,
             payoutEnabled: true,
+            features: true,
           },
         },
       },
@@ -289,6 +294,7 @@ export class AuthService {
       user.canSell,
       user.canTransport,
       user.canSkipHire,
+      user.canRecycle ?? false,
       user.company?.id,
       user.companyRole ?? undefined,
       {
@@ -300,6 +306,7 @@ export class AuthService {
       },
       user.company?.payoutEnabled ?? false,
       user.tokenVersion ?? 0,
+      user.company?.features ?? [],
     );
 
     // Remove password from response
@@ -345,11 +352,13 @@ export class AuthService {
         permManageOrders: true,
         permViewFinancials: true,
         permManageTeam: true,
+        canRecycle: true,
         company: {
           select: {
             id: true,
             name: true,
             companyType: true,
+            features: true,
           },
         },
         buyerProfile: {
@@ -374,6 +383,9 @@ export class AuthService {
 
     const modes: string[] = [];
     const isTransport = user.canTransport;
+    const companyType = (user as any).company?.companyType as string | undefined;
+    const companyFeatures: string[] = (user as any).company?.features ?? [];
+
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
     const isPureTransportIndividual =
       isTransport && !user.canSell && !user.isCompany;
@@ -381,6 +393,12 @@ export class AuthService {
       modes.push('BUYER');
     if (user.canSell) modes.push('SUPPLIER');
     if (isTransport) modes.push('CARRIER');
+    // Construction company members get the CONSTRUCTION portal mode
+    if (companyType === 'CONSTRUCTION' && companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
+      modes.push('CONSTRUCTION');
+    // Recycler company members get the RECYCLER portal mode
+    if ((user as any).canRecycle || companyType === 'RECYCLER')
+      modes.push('RECYCLER');
 
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }
@@ -688,6 +706,7 @@ export class AuthService {
         canSell: boolean;
         canTransport: boolean;
         canSkipHire: boolean;
+        canRecycle: boolean;
         companyId: string | null;
         companyRole: string | null;
         permCreateContracts: boolean;
@@ -698,13 +717,14 @@ export class AuthService {
         refreshTokenExpiry: Date | null;
         tokenVersion: number;
         payoutEnabled: boolean | null;
+        features: string[] | null;
       }[]
     >`
-      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canSell", u."canTransport", u."canSkipHire",
+      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canSell", u."canTransport", u."canSkipHire", u."canRecycle",
              u."companyId", u."companyRole",
              u."permCreateContracts", u."permReleaseCallOffs", u."permManageOrders",
              u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry", u."tokenVersion",
-             c."payoutEnabled"
+             c."payoutEnabled", c."features"
       FROM users u
       LEFT JOIN companies c ON u."companyId" = c.id
       WHERE u."refreshToken" = ${hashed}
@@ -731,6 +751,7 @@ export class AuthService {
       user.canSell,
       user.canTransport,
       user.canSkipHire,
+      user.canRecycle ?? false,
       user.companyId ?? undefined,
       user.companyRole ?? undefined,
       {
@@ -742,6 +763,7 @@ export class AuthService {
       },
       user.payoutEnabled ?? false,
       user.tokenVersion ?? 0,
+      user.features ?? [],
     );
 
     return { token, refreshToken: newRefreshToken };
@@ -891,7 +913,7 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { phone },
       include: {
-        company: { select: { id: true, name: true, companyType: true, payoutEnabled: true } },
+        company: { select: { id: true, name: true, companyType: true, payoutEnabled: true, features: true } },
       },
     });
 
@@ -920,6 +942,7 @@ export class AuthService {
         existingUser.canSell,
         existingUser.canTransport,
         existingUser.canSkipHire,
+        existingUser.canRecycle ?? false,
         existingUser.company?.id,
         existingUser.companyRole ?? undefined,
         {
@@ -931,6 +954,7 @@ export class AuthService {
         },
         existingUser.company?.payoutEnabled ?? false,
         existingUser.tokenVersion ?? 0,
+        existingUser.company?.features ?? [],
       );
 
       const { password: _pw, ...userWithoutPassword } = existingUser;
@@ -974,6 +998,7 @@ export class AuthService {
         canSell: true,
         canTransport: true,
         canSkipHire: true,
+        canRecycle: true,
         companyRole: true,
         permCreateContracts: true,
         permReleaseCallOffs: true,
@@ -982,7 +1007,7 @@ export class AuthService {
         permManageTeam: true,
         tokenVersion: true,
         status: true,
-        company: { select: { id: true, name: true, payoutEnabled: true } },
+        company: { select: { id: true, name: true, payoutEnabled: true, features: true } },
       },
     });
 
@@ -994,6 +1019,7 @@ export class AuthService {
       newUser.canSell,
       newUser.canTransport,
       newUser.canSkipHire,
+      newUser.canRecycle ?? false,
       newUser.company?.id,
       newUser.companyRole ?? undefined,
       {
@@ -1005,6 +1031,7 @@ export class AuthService {
       },
       newUser.company?.payoutEnabled ?? false,
       newUser.tokenVersion ?? 0,
+      newUser.company?.features ?? [],
     );
 
     const { rawToken: refreshToken } = await this.issueRefreshToken(newUser.id);
@@ -1021,6 +1048,7 @@ export class AuthService {
     canSell: boolean,
     canTransport: boolean,
     canSkipHire: boolean,
+    canRecycle: boolean,
     companyId?: string,
     companyRole?: string,
     permissions?: {
@@ -1032,6 +1060,7 @@ export class AuthService {
     },
     payoutEnabled?: boolean,
     tokenVersion?: number,
+    companyFeatures?: string[],
   ): string {
     const payload = {
       sub: userId,
@@ -1041,6 +1070,7 @@ export class AuthService {
       canSell,
       canTransport,
       canSkipHire,
+      canRecycle,
       companyId,
       companyRole,
       permCreateContracts: permissions?.permCreateContracts ?? false,
@@ -1050,6 +1080,7 @@ export class AuthService {
       permManageTeam: permissions?.permManageTeam ?? false,
       payoutEnabled: payoutEnabled ?? false,
       tokenVersion: tokenVersion ?? 0,
+      companyFeatures: companyFeatures ?? [],
     };
     return this.jwtService.sign(payload);
   }

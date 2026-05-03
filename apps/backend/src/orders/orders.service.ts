@@ -90,6 +90,23 @@ export class OrdersService {
       );
     }
 
+    // Company role checks — drivers are field-execution only, members need explicit permission
+    if (currentUser.userType !== 'ADMIN') {
+      if (currentUser.companyRole === 'DRIVER') {
+        throw new ForbiddenException(
+          'Driver accounts cannot place material orders',
+        );
+      }
+      if (
+        currentUser.companyRole === 'MEMBER' &&
+        !currentUser.permManageOrders
+      ) {
+        throw new ForbiddenException(
+          'Your account does not have permission to place orders. Ask your company owner or manager.',
+        );
+      }
+    }
+
     const userId = currentUser.userId;
     const { items, ...orderData } = createOrderDto;
     const buyerCompanyId =
@@ -3196,6 +3213,7 @@ export class OrdersService {
               canSell: schedule.createdBy.canSell,
               canTransport: schedule.createdBy.canTransport,
               canSkipHire: schedule.createdBy.canSkipHire,
+              canRecycle: false,
               companyId: schedule.createdBy.companyId ?? undefined,
               permCreateContracts: schedule.createdBy.permCreateContracts,
               permReleaseCallOffs: schedule.createdBy.permReleaseCallOffs,

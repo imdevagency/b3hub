@@ -20,6 +20,7 @@ interface JwtPayload {
   canSell?: boolean;
   canTransport?: boolean;
   canSkipHire?: boolean;
+  canRecycle?: boolean;
   companyId?: string;
   companyRole?: string;
   permCreateContracts?: boolean;
@@ -29,6 +30,7 @@ interface JwtPayload {
   permManageTeam?: boolean;
   payoutEnabled?: boolean;
   tokenVersion?: number;
+  companyFeatures?: string[];
 }
 
 @Injectable()
@@ -71,6 +73,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       canSell: payload.canSell ?? false,
       canTransport: payload.canTransport ?? false,
       canSkipHire: payload.canSkipHire ?? false,
+      canRecycle: payload.canRecycle ?? false,
       companyId: payload.companyId,
       companyRole: payload.companyRole,
       permCreateContracts: payload.permCreateContracts ?? false,
@@ -80,6 +83,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       permManageTeam: payload.permManageTeam ?? false,
       payoutEnabled: payload.payoutEnabled ?? false,
       tokenVersion: tokenVer,
+      companyFeatures: payload.companyFeatures ?? [],
     };
   }
 }

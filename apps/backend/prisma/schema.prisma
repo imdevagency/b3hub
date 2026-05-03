@@ -37,7 +37,11 @@ enum CompanyType {
   SUPPLIER // Material supplier
   RECYCLER // Waste management
   CARRIER // Transport company
-  HYBRID // Multiple services
+}
+
+enum CompanyFeature {
+  CONSTRUCTION_MANAGEMENT // Project management, budgets, DPRs, estimating (B3 Construction SaaS)
+  RECYCLING_MANAGEMENT // Facility intake, APUS submissions, waste certificates (B3 Recycling SaaS)
 }
 
 enum CompanyRole {
@@ -427,6 +431,7 @@ model User {
   canSell            Boolean      @default(false) // approved to list & sell materials
   canTransport       Boolean      @default(false) // approved to offer transport services
   canSkipHire        Boolean      @default(false) // approved to manage skip hire fleet
+  canRecycle         Boolean      @default(false) // approved to operate a recycling/waste center
   companyRole        CompanyRole? // role within their company; null for solo accounts
   status             UserStatus   @default(ACTIVE) // buyers are auto-activated
   emailVerified      Boolean      @default(false)
@@ -520,6 +525,7 @@ model Company {
   registrationNum String?     @unique
   taxId           String?
   companyType     CompanyType
+  features        CompanyFeature[] // Enabled SaaS feature modules for this company
 
   // Contact
   email   String
@@ -1014,6 +1020,10 @@ model TransportJob {
   requester     User?   @relation("RequestedJobs", fields: [requestedById], references: [id])
   requestedById String? @map("requested_by_id")
 
+  // Recycling center destination (set for WASTE_COLLECTION jobs)
+  recyclingCenter   RecyclingCenter? @relation(fields: [recyclingCenterId], references: [id])
+  recyclingCenterId String?
+
   // Status
   status TransportJobStatus
 
@@ -1197,8 +1207,9 @@ model RecyclingCenter {
   active Boolean @default(true)
 
   // Relations
-  wasteRecords WasteRecord[]
-  b3Field      B3Field? // reverse of B3Field.recyclingCenter
+  wasteRecords  WasteRecord[]
+  incomingJobs  TransportJob[] // WASTE_COLLECTION jobs destined for this center
+  b3Field       B3Field? // reverse of B3Field.recyclingCenter
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2532,6 +2543,7 @@ model MaterialRateEntry {
   reportLines    DailyReportLine[]
   templateLines  DprTemplateLine[]
   employees      ConstructionEmployee[]
+  budgetLines    ProjectBudgetLine[]
 
   @@index([category])
   @@index([effectiveFrom])
@@ -2703,16 +2715,26 @@ model ProjectBudgetLine {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
 
-  costCode     CostCode
-  budgetAmount Float
+  costCode    CostCode
+  description String        @default("")
+  quantity    Float         @default(1)
+  unit        UnitOfMeasure @default(H)
+  unitRate    Float         @default(0)
+  amount      Float         @default(0) // stored = quantity × unitRate
 
-  notes String?
+  // Optional link to rate library entry (for B3Hub price lookup)
+  rateEntryId String?
+  rateEntry   MaterialRateEntry? @relation(fields: [rateEntryId], references: [id])
+
+  sortOrder Int     @default(0)
+  notes     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([projectId, costCode])
+  // No unique constraint — multiple lines per cost code are allowed
   @@index([projectId])
+  @@index([projectId, costCode])
   @@map("project_budget_lines")
 }
 

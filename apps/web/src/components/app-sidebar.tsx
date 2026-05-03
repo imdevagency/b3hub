@@ -177,12 +177,72 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       ],
     },
   ],
+  CONSTRUCTION: [
+    {
+      id: 'construction-main',
+      label: 'Galvenā',
+      icon: LayoutDashboard,
+      items: [{ label: 'Sākumlapa', href: '/dashboard/construction', icon: LayoutDashboard }],
+    },
+    {
+      id: 'construction-projects',
+      label: 'Projekti',
+      icon: FolderKanban,
+      items: [
+        { label: 'Mani Projekti', href: '/dashboard/projects', icon: FolderKanban },
+        { label: 'Materiālu Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
+        { label: 'Katalogs', href: '/dashboard/catalog', icon: Package },
+      ],
+    },
+    {
+      id: 'construction-finance',
+      label: 'Finanses un Dokumenti',
+      icon: Receipt,
+      items: [
+        { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
+        { label: 'Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
+      ],
+    },
+  ],
+  RECYCLER: [
+    {
+      id: 'recycler-main',
+      label: 'Galvenā',
+      icon: LayoutDashboard,
+      items: [{ label: 'Sākumlapa', href: '/dashboard/recycling', icon: LayoutDashboard }],
+    },
+    {
+      id: 'recycler-jobs',
+      label: 'Ienākošie darbi',
+      icon: Recycle,
+      items: [
+        { label: 'Ienākošie darbi', href: '/dashboard/recycling/jobs', icon: Truck },
+        {
+          label: 'Atkritumu žurnāls',
+          href: '/dashboard/recycling/waste-records',
+          icon: ClipboardList,
+        },
+      ],
+    },
+    {
+      id: 'recycler-docs',
+      label: 'Dokumenti',
+      icon: FolderOpen,
+      items: [
+        { label: 'Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
+      ],
+    },
+  ],
 };
 
 const ROLE_HOME: Record<Mode, string> = {
   BUYER: '/dashboard/buyer',
   SUPPLIER: '/dashboard/supplier',
   CARRIER: '/dashboard/transporter',
+  CONSTRUCTION: '/dashboard/construction',
+  RECYCLER: '/dashboard/recycling',
 };
 
 // Routes that are parents of other nav routes — use exact match only to avoid
@@ -200,6 +260,8 @@ const MODE_LABEL: Record<Mode, string> = {
   BUYER: 'Pasūtītājs',
   SUPPLIER: 'Piegādātājs',
   CARRIER: 'Pārvadātājs',
+  CONSTRUCTION: 'Celtniecība',
+  RECYCLER: 'Pārstrāde',
 };
 
 const ACTIVE_JOB_STATUSES = new Set([

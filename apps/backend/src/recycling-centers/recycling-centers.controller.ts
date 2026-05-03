@@ -24,11 +24,20 @@ import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
 import { CreateWasteRecordDto } from './dto/create-waste-record.dto';
 import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
 
-/** Asserts caller is an approved carrier operator (canSkipHire or canTransport). */
+/** Asserts caller is an approved carrier or recycler operator. */
 function assertIsCarrierOp(user: RequestingUser): void {
-  if (!user.canSkipHire && !user.canTransport) {
+  if (!user.canSkipHire && !user.canTransport && !user.canRecycle) {
     throw new ForbiddenException(
-      'Only approved carriers can manage recycling centers',
+      'Only approved carriers or recycling operators can manage recycling centers',
+    );
+  }
+}
+
+/** Asserts caller is an approved recycling operator. */
+function assertIsRecycler(user: RequestingUser): void {
+  if (!user.canRecycle) {
+    throw new ForbiddenException(
+      'Only approved recycling operators can access this endpoint',
     );
   }
 }
@@ -78,6 +87,24 @@ export class RecyclingCentersController {
   @Get('disposal/mine')
   getMyDisposalRecords(@CurrentUser() user: RequestingUser) {
     return this.service.getMyDisposalRecords(user.userId);
+  }
+
+  /** GET /recycling-centers/mine-incoming-jobs — disposal transport jobs heading to this operator's centers */
+  @Get('mine-incoming-jobs')
+  getIncomingJobs(@CurrentUser() user: RequestingUser) {
+    assertIsRecycler(user);
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
+    return this.service.getIncomingJobs(user.companyId);
+  }
+
+  /** GET /recycling-centers/waste-records/mine — all waste records for this operator */
+  @Get('waste-records/mine')
+  getMyWasteRecords(@CurrentUser() user: RequestingUser) {
+    assertIsRecycler(user);
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
+    return this.service.getMyWasteRecords(user.companyId);
   }
 
   /** GET /recycling-centers/:id — center detail */

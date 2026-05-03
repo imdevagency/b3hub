@@ -40,7 +40,7 @@ const SKIP_PRICES: Record<string, number> = {
   LARGE: 199,
 };
 
-const CARRIER_TYPES: CompanyType[] = ['CARRIER', 'HYBRID'];
+const CARRIER_TYPES: CompanyType[] = ['CARRIER'];
 
 /** Platform-standard daily rate charged for overdue skip hire (EUR/day). */
 const OVERDUE_DAILY_RATE_EUR = 20;

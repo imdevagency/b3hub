@@ -238,7 +238,7 @@ async function main() {
     create: {
       name: 'BaltBūve SIA',
       legalName: 'BaltBūve SIA',
-      companyType: 'HYBRID',
+      companyType: 'SUPPLIER',
       email: 'info@baltbuve.lv',
       phone: '+371 67 999 000',
       registrationNum: 'LV40009999999',

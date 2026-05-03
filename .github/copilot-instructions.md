@@ -102,6 +102,7 @@ export interface RequestingUser {
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
   canSkipHire: boolean; // approved to manage skip hire fleet
+  canRecycle: boolean; // approved to operate a recycling/waste center
   companyId?: string; // linked Company id, if any
   companyRole?: string; // 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER'
   // Fine-grained company member permissions
@@ -112,6 +113,7 @@ export interface RequestingUser {
   permManageTeam: boolean;
   payoutEnabled?: boolean;
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
+  companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }
 ```
 <!-- END GEN -->
@@ -176,7 +178,8 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 - `(buyer)` — (account)/, catalog, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, vehicles
 - `(gate)` — fields
-- `(seller)` — catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
+- `(recycler)` — home, incoming, more, records
+- `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
 - `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, messages, notification/, notifications, review/, settings, support-chat
 - `(wizards)` — disposal/, material-order, skip-hire/, transport/
 <!-- END GEN -->

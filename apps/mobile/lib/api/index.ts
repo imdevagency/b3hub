@@ -55,6 +55,7 @@ export * from './field-passes';
 
 export * from './analytics';
 
+export * from './recycler';
 
 // Re-export the helper and error class for consumers that need them directly
 

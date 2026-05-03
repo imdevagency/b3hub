@@ -13,19 +13,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
-  BarChart2,
   BarChart3,
-  BookOpen,
   Box,
   Building2,
   ClipboardList,
-  Clock,
   FileText,
-  FolderKanban,
   Globe2,
-  HardHat,
   LayoutDashboard,
-  LayoutTemplate,
   Layers,
   ListChecks,
   LogOut,
@@ -33,7 +27,6 @@ import {
   Megaphone,
   Navigation,
   Package,
-  Receipt,
   Recycle,
   ScrollText,
   Settings2,
@@ -92,13 +85,11 @@ type AdminBadges = {
 
 // ─── Business unit definitions ────────────────────────────────────────────────
 
-type Scope = 'group' | 'b3hub' | 'recycling' | 'construction';
+type Scope = 'group' | 'b3hub';
 
 const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
   { id: 'group', label: 'Grupa', href: '/dashboard/group' },
   { id: 'b3hub', label: 'APP', href: '/dashboard/admin' },
-  { id: 'recycling', label: 'Recycle', href: '/dashboard/b3-recycling' },
-  { id: 'construction', label: 'Būve', href: '/dashboard/b3-construction' },
 ];
 
 // ─── B3 Group navigation (cross-BU overview) ────────────────────────────────
@@ -188,111 +179,16 @@ const B3HUB_NAV: NavSection[] = [
 
 // ─── B3 Recycling navigation ──────────────────────────────────────────────────
 
-const RECYCLING_NAV: NavSection[] = [
-  {
-    id: 'overview',
-    label: 'Pārskats',
-    items: [{ label: 'Vadības panelis', href: '/dashboard/b3-recycling', icon: LayoutDashboard }],
-  },
-  {
-    id: 'jobs',
-    label: 'Darbi',
-    items: [
-      { label: 'Ienākošie darbi', href: '/dashboard/b3-recycling/jobs', icon: Truck },
-      {
-        label: 'Atkritumu žurnāls',
-        href: '/dashboard/b3-recycling/waste-log',
-        icon: ClipboardList,
-      },
-    ],
-  },
-  {
-    id: 'docs',
-    label: 'Dokumenti',
-    items: [
-      {
-        label: 'Sertifikāti',
-        href: '/dashboard/b3-recycling/certificates',
-        icon: FileText,
-      },
-    ],
-  },
-  {
-    id: 'settings',
-    label: 'Iestatījumi',
-    items: [
-      {
-        label: 'Gulbenes lauks',
-        href: '/dashboard/admin/b3-fields',
-        icon: MapPin,
-      },
-    ],
-  },
-];
-
-// ─── B3 Construction navigation ───────────────────────────────────────────────
-
-const CONSTRUCTION_NAV: NavSection[] = [
-  {
-    id: 'overview',
-    label: 'Pārskats',
-    items: [
-      { label: 'Vadības panelis', href: '/dashboard/b3-construction', icon: LayoutDashboard },
-    ],
-  },
-  {
-    id: 'projects',
-    label: 'Projekti',
-    items: [
-      { label: 'Visi projekti', href: '/dashboard/b3-construction/projects', icon: FolderKanban },
-      {
-        label: 'Dienas atskaites',
-        href: '/dashboard/b3-construction/daily-reports',
-        icon: ClipboardList,
-      },
-    ],
-  },
-  {
-    id: 'finance',
-    label: 'Finanses',
-    items: [
-      { label: 'Rentabilitāte', href: '/dashboard/b3-construction/profitability', icon: BarChart2 },
-      { label: 'Darba laiks', href: '/dashboard/b3-construction/labour-hours', icon: Clock },
-      { label: 'Nosūtītie rēķini', href: '/dashboard/b3-construction/invoices', icon: Receipt },
-      { label: 'Apakšuzņēmēji', href: '/dashboard/b3-construction/subcontractors', icon: HardHat },
-      { label: 'Atkritumu izvešana', href: '/dashboard/b3-construction/disposal', icon: Truck },
-    ],
-  },
-  {
-    id: 'config',
-    label: 'Iestatījumi',
-    items: [
-      { label: 'Klienti', href: '/dashboard/b3-construction/clients', icon: Building2 },
-      { label: 'Darbinieki', href: '/dashboard/b3-construction/employees', icon: Users },
-      { label: 'Izmaksu likmes', href: '/dashboard/b3-construction/rates', icon: BookOpen },
-      {
-        label: 'DPR Veidnes',
-        href: '/dashboard/b3-construction/dpr-templates',
-        icon: LayoutTemplate,
-      },
-    ],
-  },
-];
-
 // ─── Scope icon map ───────────────────────────────────────────────────────────
 
 const SCOPE_ICON: Record<Scope, React.ElementType> = {
   group: Globe2,
   b3hub: ShieldCheck,
-  recycling: Recycle,
-  construction: HardHat,
 };
 
 const SCOPE_SUBTITLE: Record<Scope, string> = {
   group: 'B3 Grupas pārskats',
   b3hub: 'Platformas pārvaldība',
-  recycling: 'Pārstrādes centrs',
-  construction: 'Būvdarbu projekti',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -303,22 +199,10 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   const router = useRouter();
 
   // Detect active scope from URL
-  const activeScope: Scope = pathname.startsWith('/dashboard/b3-recycling')
-    ? 'recycling'
-    : pathname.startsWith('/dashboard/b3-construction')
-      ? 'construction'
-      : pathname === '/dashboard/group' || pathname.startsWith('/dashboard/group/')
-        ? 'group'
-        : 'b3hub';
+  const activeScope: Scope =
+    pathname === '/dashboard/group' || pathname.startsWith('/dashboard/group/') ? 'group' : 'b3hub';
 
-  const activeNav =
-    activeScope === 'recycling'
-      ? RECYCLING_NAV
-      : activeScope === 'construction'
-        ? CONSTRUCTION_NAV
-        : activeScope === 'group'
-          ? GROUP_NAV
-          : B3HUB_NAV;
+  const activeNav = activeScope === 'group' ? GROUP_NAV : B3HUB_NAV;
 
   const ScopeIcon = SCOPE_ICON[activeScope];
 
@@ -335,12 +219,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
 
   const isActive = React.useCallback(
     (href: string) => {
-      if (
-        href === '/dashboard/admin' ||
-        href === '/dashboard/b3-recycling' ||
-        href === '/dashboard/b3-construction' ||
-        href === '/dashboard/group'
-      ) {
+      if (href === '/dashboard/admin' || href === '/dashboard/group') {
         return pathname === href;
       }
       return pathname === href || pathname.startsWith(`${href}/`);

@@ -9,7 +9,7 @@ import { apiFetch } from './common';
 
 export type UserType = 'BUYER' | 'ADMIN';
 export type RegistrationRole = 'BUYER' | 'SUPPLIER' | 'CARRIER';
-export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER';
+export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'CONSTRUCTION' | 'RECYCLER';
 export type CompanyRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER';
 
 export interface User {
@@ -22,6 +22,7 @@ export interface User {
   canSell: boolean;
   canTransport: boolean;
   canSkipHire: boolean;
+  canRecycle: boolean;
   payoutEnabled?: boolean;
   status: string;
   phone?: string;

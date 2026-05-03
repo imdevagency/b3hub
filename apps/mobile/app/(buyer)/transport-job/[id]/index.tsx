@@ -431,18 +431,32 @@ export default function TransportJobTrackingScreen() {
               </View>
             ) : (
               <View style={styles.statusSection}>
-                {job.sla?.isOverdue && (
+                {/* Only show overdue banner when a driver is actively working the job */}
+                {job.sla?.isOverdue && !isSearching && (
                   <View style={styles.overdueBanner}>
                     <Text style={styles.overdueText}>⚠ Kavējas {job.sla.overdueMinutes} min</Text>
                   </View>
                 )}
-                {isSearching && (
-                  <Text style={styles.searchingHint}>
-                    {job.status === 'ASSIGNED'
-                      ? 'Gaida šofera apstiprinājumu. Parasti tas aizņem dažas minūtes.'
-                      : 'Meklējam brīvu šoferi jūsu maršrutam. Parasti tas aizņem 5–15 minūtes.'}
-                  </Text>
-                )}
+                {isSearching &&
+                  (() => {
+                    const pickupPassed = job.pickupDate && new Date(job.pickupDate) < new Date();
+                    return (
+                      <View style={styles.searchingCard}>
+                        <Text style={styles.searchingCardTitle}>
+                          {job.status === 'ASSIGNED'
+                            ? 'Gaida šofera apstiprinājumu'
+                            : 'Meklējam šoferi...'}
+                        </Text>
+                        <Text style={styles.searchingCardBody}>
+                          {job.status === 'ASSIGNED'
+                            ? 'Piedāvājums nosūtīts. Parasti tas aizņem dažas minūtes.'
+                            : pickupPassed
+                              ? 'Plānotais laiks ir pagājis. Turpinām meklēt brīvu šoferi — jūs saņemsit paziņojumu, tiklīdz šoferis tiks apstiprināts.'
+                              : 'Meklējam brīvu šoferi jūsu maršrutam. Parasti tas aizņem 5–15 minūtes.'}
+                        </Text>
+                      </View>
+                    );
+                  })()}
 
                 <View style={styles.timelineContainer}>
                   {JOB_STEPS.map((step, index) => {
@@ -467,12 +481,12 @@ export default function TransportJobTrackingScreen() {
                       dateStr = `~${etaMin} min`;
                     } else if (isDone && !isCurrent && ts[actualTsKey[step.key]]) {
                       dateStr = fmtTs(ts[actualTsKey[step.key]]);
-                    } else if (step.key === 'pickup') {
+                    } else if (!isSearching && step.key === 'pickup') {
                       dateStr = new Date(job.pickupDate).toLocaleTimeString('lv-LV', {
                         hour: '2-digit',
                         minute: '2-digit',
                       });
-                    } else if (step.key === 'delivered') {
+                    } else if (!isSearching && step.key === 'delivered') {
                       dateStr = new Date(job.deliveryDate).toLocaleTimeString('lv-LV', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -857,6 +871,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
+  },
+  searchingCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    gap: 4,
+  },
+  searchingCardTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#111827',
+  },
+  searchingCardBody: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6B7280',
+    lineHeight: 20,
   },
   overdueBanner: {
     backgroundColor: '#FEF2F2',

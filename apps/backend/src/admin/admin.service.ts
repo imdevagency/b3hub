@@ -861,7 +861,7 @@ export class AdminService {
    */
   async getSupplierPerformance() {
     const suppliers = await this.prisma.company.findMany({
-      where: { companyType: { in: ['SUPPLIER', 'HYBRID', 'RECYCLER'] } },
+      where: { companyType: { in: ['SUPPLIER', 'RECYCLER'] } },
       select: {
         id: true,
         name: true,
@@ -1641,7 +1641,7 @@ export class AdminService {
         orderBy: { sortOrder: 'asc' },
       }),
       this.prisma.company.findMany({
-        where: { companyType: { in: ['CARRIER', 'HYBRID'] } },
+        where: { companyType: 'CARRIER' },
         select: {
           id: true,
           name: true,
@@ -2108,7 +2108,7 @@ export class AdminService {
 
       // All carrier companies with basic fleet stats
       this.prisma.company.findMany({
-        where: { companyType: { in: ['CARRIER', 'HYBRID'] }, verified: true },
+        where: { companyType: 'CARRIER', verified: true },
         select: {
           id: true,
           name: true,
@@ -2577,7 +2577,7 @@ export class AdminService {
         description: true,
         quantity: true,
         unitRate: true,
-        totalCost: true,
+        total: true,
         costCode: true,
         report: {
           select: {
@@ -2614,7 +2614,7 @@ export class AdminService {
           lastSeen: line.report.reportDate.toISOString(),
         };
       }
-      byName[name].totalCost += line.totalCost;
+      byName[name].totalCost += line.total;
       byName[name].lineCount += 1;
       if (line.report.project?.name) byName[name].projects.add(line.report.project.name);
       if (line.report.reportDate.toISOString() > byName[name].lastSeen) {
@@ -3162,12 +3162,12 @@ export class AdminService {
     // Fetch per-cost-code budget lines for all relevant projects
     const allBudgetLines = await this.prisma.projectBudgetLine.findMany({
       where: projectIds.length ? { projectId: { in: projectIds } } : {},
-      select: { projectId: true, costCode: true, budgetAmount: true },
+      select: { projectId: true, costCode: true, amount: true },
     });
     const budgetLinesByProject = new Map<string, Record<string, number>>();
     for (const bl of allBudgetLines) {
       if (!budgetLinesByProject.has(bl.projectId)) budgetLinesByProject.set(bl.projectId, {});
-      budgetLinesByProject.get(bl.projectId)![bl.costCode] = bl.budgetAmount;
+      budgetLinesByProject.get(bl.projectId)![bl.costCode] = bl.amount;
     }
 
     // Per-project cost breakdown (DPR totals by cost code)
@@ -3379,46 +3379,173 @@ export class AdminService {
     return this.prisma.dprTemplate.update({ where: { id }, data: { active: false } });
   }
 
-  // ── Project Sub-Budgets ───────────────────────────────────────────────────
+  // ── Project Budget Lines (Estimator) ─────────────────────────────────────
+
+  private budgetLineSelect = {
+    id: true,
+    projectId: true,
+    costCode: true,
+    description: true,
+    quantity: true,
+    unit: true,
+    unitRate: true,
+    amount: true,
+    rateEntryId: true,
+    sortOrder: true,
+    notes: true,
+    createdAt: true,
+    updatedAt: true,
+    rateEntry: {
+      select: { id: true, name: true, supplierName: true, unit: true, pricePerUnit: true },
+    },
+  } as const;
 
   async adminGetProjectBudgetLines(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
     return this.prisma.projectBudgetLine.findMany({
       where: { projectId },
-      orderBy: { costCode: 'asc' },
+      select: this.budgetLineSelect,
+      orderBy: [{ sortOrder: 'asc' }, { costCode: 'asc' }, { createdAt: 'asc' }],
     });
   }
 
+  async adminCreateBudgetLine(
+    projectId: string,
+    data: {
+      costCode: string;
+      description: string;
+      quantity: number;
+      unit: string;
+      unitRate: number;
+      rateEntryId?: string;
+      sortOrder?: number;
+      notes?: string;
+    },
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, status: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    if (project.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot add budget lines to a completed project');
+    }
+    const amount = data.quantity * data.unitRate;
+    return this.prisma.projectBudgetLine.create({
+      data: {
+        projectId,
+        costCode: data.costCode as import('@prisma/client').CostCode,
+        description: data.description,
+        quantity: data.quantity,
+        unit: data.unit as import('@prisma/client').UnitOfMeasure,
+        unitRate: data.unitRate,
+        amount,
+        rateEntryId: data.rateEntryId ?? null,
+        sortOrder: data.sortOrder ?? 0,
+        notes: data.notes ?? null,
+      },
+      select: this.budgetLineSelect,
+    });
+  }
+
+  async adminUpdateBudgetLine(
+    lineId: string,
+    data: {
+      costCode?: string;
+      description?: string;
+      quantity?: number;
+      unit?: string;
+      unitRate?: number;
+      rateEntryId?: string | null;
+      sortOrder?: number;
+      notes?: string;
+    },
+  ) {
+    const existing = await this.prisma.projectBudgetLine.findUnique({
+      where: { id: lineId },
+      select: { id: true, quantity: true, unitRate: true, project: { select: { status: true } } },
+    });
+    if (!existing) throw new NotFoundException('Budget line not found');
+    if (existing.project.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot edit budget lines on a completed project');
+    }
+    const newQty = data.quantity ?? existing.quantity;
+    const newRate = data.unitRate ?? existing.unitRate;
+    return this.prisma.projectBudgetLine.update({
+      where: { id: lineId },
+      data: {
+        ...(data.costCode !== undefined && { costCode: data.costCode as import('@prisma/client').CostCode }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.quantity !== undefined && { quantity: data.quantity }),
+        ...(data.unit !== undefined && { unit: data.unit as import('@prisma/client').UnitOfMeasure }),
+        ...(data.unitRate !== undefined && { unitRate: data.unitRate }),
+        amount: newQty * newRate,
+        ...(data.rateEntryId !== undefined && { rateEntryId: data.rateEntryId }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+      },
+      select: this.budgetLineSelect,
+    });
+  }
+
+  async adminDeleteBudgetLine(lineId: string) {
+    const existing = await this.prisma.projectBudgetLine.findUnique({
+      where: { id: lineId },
+      select: { id: true, project: { select: { status: true } } },
+    });
+    if (!existing) throw new NotFoundException('Budget line not found');
+    if (existing.project.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot delete budget lines on a completed project');
+    }
+    await this.prisma.projectBudgetLine.delete({ where: { id: lineId } });
+    return { ok: true };
+  }
+
+  /** Bulk-replace all lines for a project (used by the estimator "Apply template" flow) */
   async adminSetProjectBudgetLines(
     projectId: string,
-    lines: Array<{ costCode: string; budgetAmount: number; notes?: string }>,
+    lines: Array<{
+      costCode: string;
+      description: string;
+      quantity: number;
+      unit: string;
+      unitRate: number;
+      rateEntryId?: string;
+      sortOrder?: number;
+      notes?: string;
+    }>,
   ) {
-    // Upsert each cost-code line; remove any not in the new set
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, status: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    if (project.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot replace budget lines on a completed project');
+    }
     await this.prisma.$transaction(async (tx) => {
-      const costCodes = lines.map((l) => l.costCode as any);
-
-      // Delete removed cost codes
-      await tx.projectBudgetLine.deleteMany({
-        where: { projectId, costCode: { notIn: costCodes } },
-      });
-
-      // Upsert each line
-      for (const line of lines) {
-        await tx.projectBudgetLine.upsert({
-          where: { projectId_costCode: { projectId, costCode: line.costCode as any } },
-          create: {
+      await tx.projectBudgetLine.deleteMany({ where: { projectId } });
+      if (lines.length > 0) {
+        await tx.projectBudgetLine.createMany({
+          data: lines.map((l, i) => ({
             projectId,
-            costCode: line.costCode as any,
-            budgetAmount: line.budgetAmount,
-            notes: line.notes ?? null,
-          },
-          update: {
-            budgetAmount: line.budgetAmount,
-            notes: line.notes ?? null,
-          },
+            costCode: l.costCode as import('@prisma/client').CostCode,
+            description: l.description,
+            quantity: l.quantity,
+            unit: l.unit as import('@prisma/client').UnitOfMeasure,
+            unitRate: l.unitRate,
+            amount: l.quantity * l.unitRate,
+            rateEntryId: l.rateEntryId ?? null,
+            sortOrder: l.sortOrder ?? i,
+            notes: l.notes ?? null,
+          })),
         });
       }
     });
-
     return this.adminGetProjectBudgetLines(projectId);
   }
 

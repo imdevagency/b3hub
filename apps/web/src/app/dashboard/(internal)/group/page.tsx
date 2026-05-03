@@ -2,44 +2,19 @@
  * B3 Group — Central Hub Overview
  * /dashboard/group
  *
- * Single command centre showing live KPIs from all three business units:
- * B3 Hub (marketplace), B3 Recycling (Gulbene), B3 Construction (groundworks).
- * Each BU card links through to its dedicated dashboard.
+ * Platform overview showing B3 App (marketplace) KPIs.
+ * B3 Recycling and B3 Construction use the same platform portal as external operators.
  */
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowRight,
-  AlertTriangle,
-  BarChart3,
-  Building2,
-  Euro,
-  FolderKanban,
-  HardHat,
-  Loader2,
-  Recycle,
-  ShieldCheck,
-  Truck,
-  Weight,
-  FileCheck2,
-  ShoppingBag,
-  TrendingUp,
-} from 'lucide-react';
+import { Loader2, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
-import {
-  getAdminStats,
-  adminGetConstructionProfitability,
-  adminGetConstructionProjects,
-  adminGetRecyclingJobs,
-  adminGetRecyclingWasteRecords,
-  type AdminStats,
-  type ConstructionProfitabilityResponse,
-} from '@/lib/api/admin';
+import { getAdminStats, type AdminStats } from '@/lib/api/admin';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -143,11 +118,6 @@ function GroupKpi({ label, value }: { label: string; value: string }) {
 
 interface GroupData {
   hub: AdminStats;
-  construction: ConstructionProfitabilityResponse;
-  activeProjects: number;
-  recyclingJobsTotal: number;
-  recyclingWasteTotal: number; // kg total weight
-  recyclingCertsTotal: number;
 }
 
 export default function GroupOverviewPage() {
@@ -166,36 +136,9 @@ export default function GroupOverviewPage() {
     if (isLoading || !token) return;
 
     const load = async () => {
-      const [hubRes, constructionRes, activeProjectsRes, recyclingJobsRes, recyclingWasteRes] =
-        await Promise.allSettled([
-          getAdminStats(token),
-          adminGetConstructionProfitability(token),
-          adminGetConstructionProjects(token, { status: 'ACTIVE', limit: 1 }),
-          adminGetRecyclingJobs(token, { limit: 1 }),
-          adminGetRecyclingWasteRecords(token, { limit: 200 }),
-        ]);
-
-      const hub = hubRes.status === 'fulfilled' ? hubRes.value : null;
-      const construction = constructionRes.status === 'fulfilled' ? constructionRes.value : null;
-      const activeProjects =
-        activeProjectsRes.status === 'fulfilled' ? activeProjectsRes.value.total : 0;
-      const recyclingJobsTotal =
-        recyclingJobsRes.status === 'fulfilled' ? recyclingJobsRes.value.total : 0;
-      const wasteRecords =
-        recyclingWasteRes.status === 'fulfilled' ? recyclingWasteRes.value.data : [];
-      const recyclingWasteTotal = wasteRecords.reduce((acc, r) => acc + (r.weight ?? 0), 0);
-      const recyclingCertsTotal = wasteRecords.filter((r) => r.certificateUrl).length;
-
-      if (hub && construction) {
-        setData({
-          hub,
-          construction,
-          activeProjects,
-          recyclingJobsTotal,
-          recyclingWasteTotal,
-          recyclingCertsTotal,
-        });
-      }
+      const hubRes = await Promise.allSettled([getAdminStats(token)]);
+      const hub = hubRes[0].status === 'fulfilled' ? hubRes[0].value : null;
+      if (hub) setData({ hub });
       setLoading(false);
     };
 
@@ -218,13 +161,12 @@ export default function GroupOverviewPage() {
     );
   }
 
-  const { hub, construction, activeProjects } = data;
+  const { hub } = data;
 
   const hubAlerts =
     (hub.pendingApplications ?? 0) + (hub.openDisputes ?? 0) + (hub.openSupport ?? 0);
 
-  // Group-level aggregated GMV = marketplace GMV + construction contract value
-  const groupRevenue = (hub.gmvAllTime ?? 0) + (construction.totals.contractValue ?? 0);
+  const groupRevenue = hub.gmvAllTime ?? 0;
   const groupRevenue30d = hub.gmv30d ?? 0;
 
   return (
@@ -234,14 +176,12 @@ export default function GroupOverviewPage() {
         description="Grupas operāciju pārskats un biznesu vienību KPI."
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
-        <GroupKpi label="Grupas kopapgrozījums" value={eur(groupRevenue)} />
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <GroupKpi label="Platformas GMV kopā" value={eur(groupRevenue)} />
         <GroupKpi label="Platformas GMV (30 d.)" value={eur(groupRevenue30d)} />
-        <GroupKpi label="Aktīvie būvprojekti" value={num(activeProjects)} />
-        <GroupKpi label="Pieņemtie atkritumi (kg)" value={num(data.recyclingWasteTotal)} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <BuCard
           title="B3 App"
           subtitle="Tirdzniecības un loģistikas platforma"
@@ -262,41 +202,6 @@ export default function GroupOverviewPage() {
               value: hubAlerts > 0 ? `${hubAlerts} ⚠` : '—',
               accent: hubAlerts > 0 ? 'text-red-600' : 'text-gray-400',
             },
-          ]}
-        />
-
-        <BuCard
-          title="B3 Recycling"
-          subtitle="Licencēts pārstrādes centrs"
-          href="/dashboard/b3-recycling"
-          icon={Recycle}
-          iconColor="text-green-600"
-          stats={[
-            { label: 'Ienākošie darbi', value: num(data.recyclingJobsTotal) },
-            { label: 'Apjoms (kg)', value: num(data.recyclingWasteTotal) },
-            { label: 'Sertifikāti', value: num(data.recyclingCertsTotal) },
-          ]}
-        />
-
-        <BuCard
-          title="B3 Construction"
-          subtitle="Zemes darbu un būvniecības nodaļa"
-          href="/dashboard/b3-construction"
-          icon={HardHat}
-          iconColor="text-amber-600"
-          stats={[
-            { label: 'Līgumu vērtība', value: eur(construction.totals.contractValue ?? 0) },
-            { label: 'Bruto peļņa', value: eur(construction.totals.grossMargin ?? 0) },
-            {
-              label: 'Peļņas norma',
-              value:
-                construction.totals.marginPct != null
-                  ? `${construction.totals.marginPct.toFixed(1)}%`
-                  : '—',
-            },
-            { label: 'DPR izmaksas', value: eur(construction.totals.dprCost ?? 0) },
-            { label: 'Aktīvi projekti', value: num(activeProjects) },
-            { label: 'Visi projekti', value: num(construction.projects?.length ?? 0) },
           ]}
         />
       </div>

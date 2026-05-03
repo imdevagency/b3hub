@@ -301,4 +301,51 @@ export class RecyclingCentersService {
 
     return this.prisma.wasteRecord.update({ where: { id: recordId }, data });
   }
+
+  /** Recycler: get incoming disposal transport jobs for their centers */
+  async getIncomingJobs(companyId: string) {
+    const centers = await this.prisma.recyclingCenter.findMany({
+      where: { companyId, active: true },
+      select: { id: true },
+    });
+    const centerIds = centers.map((c) => c.id);
+
+    return this.prisma.transportJob.findMany({
+      where: {
+        recyclingCenterId: { in: centerIds },
+        jobType: 'WASTE_COLLECTION',
+      },
+      include: {
+        recyclingCenter: { select: { id: true, name: true, address: true } },
+        requester: {
+          select: { id: true, firstName: true, lastName: true, phone: true },
+        },
+        vehicle: { select: { id: true, licensePlate: true, vehicleType: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /** Recycler: get all waste records for their centers */
+  async getMyWasteRecords(companyId: string) {
+    const centers = await this.prisma.recyclingCenter.findMany({
+      where: { companyId, active: true },
+      select: { id: true },
+    });
+    const centerIds = centers.map((c) => c.id);
+
+    return this.prisma.wasteRecord.findMany({
+      where: { recyclingCenterId: { in: centerIds } },
+      include: {
+        recyclingCenter: { select: { id: true, name: true } },
+        containerOrder: {
+          select: {
+            id: true,
+            order: { select: { id: true, createdAt: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

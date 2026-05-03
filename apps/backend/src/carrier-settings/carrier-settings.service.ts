@@ -15,7 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BlockDateDto } from './dto/block-date.dto';
 import { CreateZoneDto } from './dto/create-zone.dto';
 
-const ALLOWED_TYPES: CompanyType[] = ['CARRIER', 'HYBRID'];
+const ALLOWED_TYPES: CompanyType[] = ['CARRIER'];
 
 @Injectable()
 export class CarrierSettingsService {
@@ -36,7 +36,7 @@ export class CarrierSettingsService {
     }
     if (!ALLOWED_TYPES.includes(user.company.companyType)) {
       throw new ForbiddenException(
-        'Your company must be type CARRIER or HYBRID to manage carrier settings',
+        'Your company must be type CARRIER to manage carrier settings',
       );
     }
     return user.company;
