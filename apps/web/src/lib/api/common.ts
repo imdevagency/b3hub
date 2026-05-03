@@ -53,8 +53,11 @@ export async function apiFetch<T>(
     },
   });
 
-  // On 401: try to silently refresh, then retry once
-  if (res.status === 401) {
+  // On 401: try to silently refresh, then retry once.
+  // Auth endpoints (/auth/login, /auth/register, /auth/refresh) must bypass
+  // this — a 401 from them is a credential error, not an expired session.
+  const isAuthEndpoint = endpoint.startsWith('/auth/');
+  if (res.status === 401 && !isAuthEndpoint) {
     const newToken = await attemptRefresh();
     if (newToken) {
       // Rebuild headers with new token
