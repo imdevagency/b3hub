@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, type Mode } from '@/lib/mode-context';
@@ -22,17 +22,24 @@ export default function DashboardRedirectPage() {
   const { user, isLoading } = useAuth();
   const { activeMode } = useMode();
   const router = useRouter();
+  // Prevent double-navigation when getMe resolves and updates availableModes
+  // while we're still mid-transition from the initial redirect.
+  const redirected = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
+    if (redirected.current) return;
     if (!user) {
+      redirected.current = true;
       router.replace('/login');
       return;
     }
     if (user.userType === 'ADMIN') {
+      redirected.current = true;
       router.replace('/dashboard/admin');
       return;
     }
+    redirected.current = true;
     router.replace(ROLE_HOME[activeMode]);
   }, [user, isLoading, activeMode, router]);
 

@@ -10,6 +10,14 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
+/** Thrown by apiFetch when the server returns 401/403 (authentication failure). */
+export class AuthError extends Error {
+  constructor(message = 'Session expired') {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 // ─── Refresh handler (set by AuthProvider on mount) ───────────────────────
 
 /** Registered by AuthProvider. Returns a new access token, or null if refresh failed. */
@@ -65,21 +73,15 @@ export async function apiFetch<T>(
       }
       // Retry also 401 — session truly expired
       if (retryRes.status === 401) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-        throw new Error('Session expired');
+        throw new AuthError();
       }
       const text = await retryRes.text().catch(() => '');
       let error: { message?: string } = { message: 'Request failed' };
       try { error = text ? JSON.parse(text) : error; } catch { /* keep default */ }
       throw new Error(error.message || `HTTP ${retryRes.status}`);
     } else {
-      // No refresh handler or refresh failed — redirect to login
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw new Error('Session expired');
+      // No refresh handler or refresh failed
+      throw new AuthError();
     }
   }
 

@@ -16,7 +16,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { usePathname, useRouter } from 'next/navigation';
 import { User, getMe } from '@/lib/api';
 import { refreshTokens } from '@/lib/api/auth';
-import { registerRefreshHandler } from '@/lib/api/common';
+import { registerRefreshHandler, AuthError } from '@/lib/api/common';
 
 interface AuthContextValue {
   user: User | null;
@@ -42,9 +42,11 @@ function normalizeUserModes(user: User): User {
     return user;
   }
 
-  const modes: Array<'BUYER' | 'SUPPLIER' | 'CARRIER'> = [];
+  const modes: Array<'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER'> = [];
   const isPureTransportIndividual = !!user.canTransport && !user.canSell && !user.isCompany;
 
+  // Specialised modes first so the default active mode is the user's primary portal
+  if (!!(user as any).canRecycle) modes.push('RECYCLER');
   if (!isPureTransportIndividual) modes.push('BUYER');
   if (!!user.canSell) modes.push('SUPPLIER');
   if (!!user.canTransport) modes.push('CARRIER');
@@ -69,8 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerRefreshHandler(async (): Promise<string | null> => {
       const storedRefresh = localStorage.getItem(REFRESH_KEY);
       if (!storedRefresh) {
+        // No refresh token — session is definitively gone. Clear state so
+        // DashboardGuard detects the null user and redirects to /login.
         clearSession();
-        router.replace('/login');
         return null;
       }
       try {
@@ -87,9 +90,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ token: result.token }),
         }).catch(() => null);
         return result.token;
-      } catch {
-        clearSession();
-        router.replace('/login');
+      } catch (err) {
+        // Only clear the session on a definitive auth rejection (401/403).
+        // Network errors (ECONNRESET, timeout) must not wipe a valid session.
+        if (err instanceof AuthError) {
+          clearSession();
+          // Don't call router.replace here — clearing user state is enough.
+          // DashboardGuard watches for user===null and handles the redirect,
+          // avoiding a double-navigation race that causes the ECONNRESET loop.
+        }
         return null;
       }
     });
@@ -120,15 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ token: storedToken }),
           }).catch(() => null);
         })
-        .catch(() => {
-          // getMe returned 401 — refresh handler will have already tried or failed
-          // Only remove if still the same token (not already replaced by refresh)
-          if (localStorage.getItem(TOKEN_KEY) === storedToken) {
-            clearSession();
+        .catch((err) => {
+          // Only clear the session on definitive auth failures (401/403).
+          // Network errors (ECONNRESET, fetch failed) must NOT wipe localStorage —
+          // the token is still valid and will work once connectivity is restored.
+          if (err instanceof AuthError) {
+            if (localStorage.getItem(TOKEN_KEY) === storedToken) {
+              clearSession();
+            }
+            if (pathname.startsWith('/dashboard')) {
+              router.replace('/login');
+            }
           }
-          if (pathname.startsWith('/dashboard')) {
-            router.replace('/login');
-          }
+          // For network errors: keep the stored token, just finish loading.
+          // The user can retry or the background getMe in setAuth will self-heal.
         })
         .finally(() => setIsLoading(false));
     } else {

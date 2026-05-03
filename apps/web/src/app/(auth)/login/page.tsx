@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -37,14 +37,34 @@ export default function LoginPage() {
 function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setAuth } = useAuth();
+  const { setAuth, user, token, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  // Tracks whether the form has been submitted so the auto-redirect
+  // useEffect below doesn't double-navigate after setAuth updates user/token.
+  const hasSubmitted = useRef(false);
 
   // Where to land after successful login.
   // Admin app always lands on /dashboard/admin; marketplace uses redirect param.
   const redirectTo = IS_ADMIN_APP
     ? '/dashboard/admin'
     : searchParams.get('redirect') || '/dashboard';
+
+  // If the user arrives on the login page with an existing valid session (e.g.
+  // cookie expired but localStorage token is still good), re-sync the middleware
+  // cookie and bounce them home. The hasSubmitted guard prevents this from firing
+  // after a just-completed form submission (which already calls router.push).
+  useEffect(() => {
+    if (isLoading || !user || !token) return;
+    if (hasSubmitted.current) return;
+    fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .catch(() => null)
+      .finally(() => router.replace(redirectTo));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, user, token]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -53,6 +73,7 @@ function LoginPageInner() {
 
   const onSubmit = async (data: FormData) => {
     setError(null);
+    hasSubmitted.current = true;
     try {
       const res = await loginUser(data);
       // Set the HttpOnly cookie BEFORE navigating so the middleware

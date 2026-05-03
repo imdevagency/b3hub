@@ -389,16 +389,17 @@ export class AuthService {
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
     const isPureTransportIndividual =
       isTransport && !user.canSell && !user.isCompany;
+
+    // Specialised portal modes come first so the user's primary portal is the default.
+    // Generic BUYER mode follows as a secondary access level.
+    if (companyType === 'RECYCLER' || (user as any).canRecycle)
+      modes.push('RECYCLER');
+    if (companyType === 'CONSTRUCTION' && companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
+      modes.push('CONSTRUCTION');
     if (user.userType === 'BUYER' && !isPureTransportIndividual)
       modes.push('BUYER');
     if (user.canSell) modes.push('SUPPLIER');
     if (isTransport) modes.push('CARRIER');
-    // Construction company members get the CONSTRUCTION portal mode
-    if (companyType === 'CONSTRUCTION' && companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
-      modes.push('CONSTRUCTION');
-    // Recycler company members get the RECYCLER portal mode
-    if ((user as any).canRecycle || companyType === 'RECYCLER')
-      modes.push('RECYCLER');
 
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }

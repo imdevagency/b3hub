@@ -2,7 +2,7 @@
  * Recycler role API — operators of recycling/waste-processing centers.
  * All endpoints require a valid JWT with canRecycle: true.
  */
-import { API_BASE } from './config';
+import { API_URL as API_BASE } from './common';
 
 export interface RecyclerCenter {
   id: string;
