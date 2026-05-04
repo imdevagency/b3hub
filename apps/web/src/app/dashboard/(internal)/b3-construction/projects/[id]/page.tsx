@@ -14,9 +14,6 @@ import {
   adminGetConstructionProjectById,
   adminUpdateConstructionProject,
   adminGetProjectBudgetLines,
-  adminCreateBudgetLine,
-  adminUpdateBudgetLine,
-  adminDeleteBudgetLine,
   adminSetProjectBudgetLines,
   adminGetDailyReports,
   adminGetConstructionProfitability,
@@ -32,7 +29,6 @@ import {
   type DprTemplate,
   type ConstructionProjectStatus,
   type ProjectBudgetLine,
-  type CreateBudgetLinePayload,
   type CostCode,
   type DailyReport,
   type ProjectProfitabilitySummary,
@@ -87,7 +83,6 @@ import {
   MapPin,
   Package,
   Pencil,
-  Plus,
   Receipt,
   TrendingUp,
   Truck,
@@ -281,19 +276,11 @@ export default function ConstructionProjectDetailPage() {
 
   // Budget lines
   const [budgetLines, setBudgetLines] = useState<ProjectBudgetLine[]>([]);
-  // Line add / edit dialog
-  const [lineFormOpen, setLineFormOpen] = useState(false);
-  const [lineEditTarget, setLineEditTarget] = useState<ProjectBudgetLine | null>(null);
-  const [lineForm, setLineForm] = useState<{
-    costCode: CostCode;
-    description: string;
-    quantity: string;
-    unit: string;
-    unitRate: string;
-    notes: string;
-  }>({ costCode: 'LABOUR', description: '', quantity: '1', unit: 'H', unitRate: '', notes: '' });
-  const [savingLine, setSavingLine] = useState(false);
-  const [deletingLineId, setDeletingLineId] = useState<string | null>(null);
+  const [budgetEditOpen, setBudgetEditOpen] = useState(false);
+  const [budgetDraft, setBudgetDraft] = useState<
+    { costCode: CostCode; budgetAmount: string; notes: string }[]
+  >([]);
+  const [savingBudget, setSavingBudget] = useState(false);
 
   // Edit project
   const [editOpen, setEditOpen] = useState(false);
@@ -410,65 +397,36 @@ export default function ConstructionProjectDetailPage() {
     }
   };
 
-  function openLineAdd() {
-    setLineEditTarget(null);
-    setLineForm({
-      costCode: 'LABOUR',
-      description: '',
-      quantity: '1',
-      unit: 'H',
-      unitRate: '',
-      notes: '',
-    });
-    setLineFormOpen(true);
+  function openBudgetEdit() {
+    setBudgetDraft(
+      COST_CODES.map((cc) => {
+        const existing = budgetLines.find((l) => l.costCode === cc);
+        return {
+          costCode: cc,
+          budgetAmount: existing ? String(existing.budgetAmount) : '',
+          notes: existing?.notes ?? '',
+        };
+      }),
+    );
+    setBudgetEditOpen(true);
   }
 
-  function openLineEdit(line: ProjectBudgetLine) {
-    setLineEditTarget(line);
-    setLineForm({
-      costCode: line.costCode,
-      description: line.description,
-      quantity: String(line.quantity),
-      unit: line.unit,
-      unitRate: String(line.unitRate),
-      notes: line.notes ?? '',
-    });
-    setLineFormOpen(true);
-  }
-
-  async function saveLine() {
-    if (!token || !lineForm.description.trim() || !lineForm.unitRate) return;
-    setSavingLine(true);
-    try {
-      const payload: CreateBudgetLinePayload = {
-        costCode: lineForm.costCode,
-        description: lineForm.description.trim(),
-        quantity: parseFloat(lineForm.quantity) || 1,
-        unit: lineForm.unit,
-        unitRate: parseFloat(lineForm.unitRate) || 0,
-        notes: lineForm.notes.trim() || undefined,
-      };
-      if (lineEditTarget) {
-        const updated = await adminUpdateBudgetLine(token, lineEditTarget.id, payload);
-        setBudgetLines((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
-      } else {
-        const created = await adminCreateBudgetLine(token, id, payload);
-        setBudgetLines((prev) => [...prev, created]);
-      }
-      setLineFormOpen(false);
-    } finally {
-      setSavingLine(false);
-    }
-  }
-
-  async function deleteLine(lineId: string) {
+  async function saveBudgetLines() {
     if (!token) return;
-    setDeletingLineId(lineId);
+    setSavingBudget(true);
     try {
-      await adminDeleteBudgetLine(token, lineId);
-      setBudgetLines((prev) => prev.filter((l) => l.id !== lineId));
+      const lines = budgetDraft
+        .filter((d) => d.budgetAmount.trim() !== '')
+        .map((d) => ({
+          costCode: d.costCode,
+          budgetAmount: parseFloat(d.budgetAmount) || 0,
+          notes: d.notes || undefined,
+        }));
+      const updated = await adminSetProjectBudgetLines(token, id, lines);
+      setBudgetLines(updated);
+      setBudgetEditOpen(false);
     } finally {
-      setDeletingLineId(null);
+      setSavingBudget(false);
     }
   }
 
@@ -660,20 +618,19 @@ export default function ConstructionProjectDetailPage() {
       ? ((project.contractValue - estimatedTotal) / project.contractValue) * 100
       : 0;
 
-  async function applyEstimateToBudget() {
-    if (!token || !selectedTemplate || estimateDaysNum <= 0) return;
-    const lines: CreateBudgetLinePayload[] = COST_CODES.filter(
-      (cc) => (estimatedCostByCode[cc] ?? 0) > 0,
-    ).map((cc) => ({
-      costCode: cc,
-      description: `${selectedTemplate.name} × ${estimateDaysNum}d`,
-      quantity: estimateDaysNum,
-      unit: 'DAY',
-      unitRate: Math.round((templateDailyCost[cc] ?? 0) * 100) / 100,
-      notes: 'Ģenerēts no brigādes veidnes',
-    }));
-    const updated = await adminSetProjectBudgetLines(token, id, lines);
-    setBudgetLines(updated);
+  function applyEstimateToBudget() {
+    setBudgetDraft(
+      COST_CODES.map((cc) => ({
+        costCode: cc,
+        budgetAmount:
+          estimatedCostByCode[cc] != null ? Math.round(estimatedCostByCode[cc]!).toString() : '',
+        notes:
+          selectedTemplate && estimateDaysNum > 0
+            ? `Tāme: ${selectedTemplate.name} × ${estimateDaysNum}d`
+            : '',
+      })),
+    );
+    setBudgetEditOpen(true);
   }
 
   return (
@@ -890,45 +847,48 @@ export default function ConstructionProjectDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Budget summary (links to costs tab) */}
+          {/* Budget by cost code */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Euro className="h-4 w-4 text-muted-foreground" />
-                Tāmes budžets
-                <Button size="sm" variant="outline" className="ml-auto gap-1" onClick={openLineAdd}>
-                  <Plus className="h-3.5 w-3.5" />
-                  Pievienot
+                Budžets pa izmaksu kodiem
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto gap-1"
+                  onClick={openBudgetEdit}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Rediģēt
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {budgetLines.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-2">
-                  Tāme nav ievadīta.{' '}
-                  <button className="underline text-foreground" onClick={openLineAdd}>
-                    Pievienot rindu
+                  Budžeta sadalījums nav norādīts.{' '}
+                  <button className="underline text-foreground" onClick={openBudgetEdit}>
+                    Pievienot
                   </button>
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {COST_CODES.map((cc) => {
-                    const total = budgetLines
-                      .filter((l) => l.costCode === cc)
-                      .reduce((s, l) => s + l.amount, 0);
-                    if (total === 0) return null;
-                    return (
-                      <div key={cc} className="flex items-center justify-between py-1">
-                        <span className="text-sm">{COST_CODE_LABELS[cc]}</span>
-                        <span className="text-sm font-medium tabular-nums">{formatEur(total)}</span>
-                      </div>
-                    );
-                  })}
+                  {budgetLines.map((bl) => (
+                    <div key={bl.id} className="flex items-center justify-between py-1">
+                      <span className="text-sm">
+                        {COST_CODE_LABELS[bl.costCode] ?? bl.costCode}
+                      </span>
+                      <span className="text-sm font-medium tabular-nums">
+                        {formatEur(bl.budgetAmount)}
+                      </span>
+                    </div>
+                  ))}
                   <Separator className="my-1" />
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Kopā</span>
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatEur(budgetLines.reduce((s, l) => s + l.amount, 0))}
+                      {formatEur(budgetLines.reduce((s, l) => s + l.budgetAmount, 0))}
                     </span>
                   </div>
                 </div>
@@ -988,8 +948,8 @@ export default function ConstructionProjectDetailPage() {
                 Tāmes kalkulators
               </CardTitle>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Izvēlieties brigādes veidni un plānoto dienu skaitu — pašizmaksa aprēķinās
-                automātiski. Nospiediet &quot;Piemērot kā budžetu&quot;, lai aizstātu tāmes rindas.
+                Izvēlieties brigādes veidni un plānoto dienu skaitu — pašizmaksa un marža aprēķinās
+                automātiski.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1093,175 +1053,10 @@ export default function ConstructionProjectDetailPage() {
             </CardContent>
           </Card>
 
-          {/* ── Tāmes rindas ──────────────────────────────────────────── */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Euro className="h-4 w-4 text-muted-foreground" />
-                Tāmes rindas
-                {project.status !== 'COMPLETED' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-auto gap-1"
-                    onClick={openLineAdd}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Pievienot rindu
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {budgetLines.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  Nav tāmes rindu.{' '}
-                  {project.status !== 'COMPLETED' && (
-                    <button className="underline text-foreground" onClick={openLineAdd}>
-                      Pievienot pirmo rindu
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Kategorija</TableHead>
-                        <TableHead>Apraksts</TableHead>
-                        <TableHead className="text-right">Daudzums</TableHead>
-                        <TableHead>Vienība</TableHead>
-                        <TableHead className="text-right">Likme (€)</TableHead>
-                        <TableHead className="text-right">Summa</TableHead>
-                        {project.status !== 'COMPLETED' && <TableHead className="w-16" />}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {COST_CODES.flatMap((cc) => {
-                        const lines = budgetLines.filter((l) => l.costCode === cc);
-                        return lines.map((line, idx) => (
-                          <TableRow key={line.id}>
-                            {idx === 0 && (
-                              <TableCell
-                                className="text-sm font-medium align-top"
-                                rowSpan={lines.length}
-                              >
-                                {COST_CODE_LABELS[cc]}
-                              </TableCell>
-                            )}
-                            <TableCell className="text-sm">
-                              {line.description}
-                              {line.notes && (
-                                <span className="ml-1 text-xs text-muted-foreground">
-                                  ({line.notes})
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm">
-                              {line.quantity}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {line.unit}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm">
-                              {formatEur(line.unitRate)}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm font-medium">
-                              {formatEur(line.amount)}
-                            </TableCell>
-                            {project.status !== 'COMPLETED' && (
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0"
-                                    onClick={() => openLineEdit(line)}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                    onClick={() => deleteLine(line.id)}
-                                    disabled={deletingLineId === line.id}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            )}
-                          </TableRow>
-                        ));
-                      })}
-                    </TableBody>
-                  </Table>
-                  {/* Subtotals per code + grand total */}
-                  <div className="border-t px-4 py-3 space-y-1">
-                    {COST_CODES.map((cc) => {
-                      const subtotal = budgetLines
-                        .filter((l) => l.costCode === cc)
-                        .reduce((s, l) => s + l.amount, 0);
-                      if (subtotal === 0) return null;
-                      return (
-                        <div
-                          key={cc}
-                          className="flex items-center justify-between text-sm text-muted-foreground"
-                        >
-                          <span>{COST_CODE_LABELS[cc]}</span>
-                          <span className="tabular-nums">{formatEur(subtotal)}</span>
-                        </div>
-                      );
-                    })}
-                    <Separator className="my-1.5" />
-                    <div className="flex items-center justify-between text-sm font-semibold">
-                      <span>Tāmes kopsumma</span>
-                      <span className="tabular-nums">
-                        {formatEur(budgetLines.reduce((s, l) => s + l.amount, 0))}
-                      </span>
-                    </div>
-                    {project.contractValue > 0 && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Plānotā marža</span>
-                        <span
-                          className={`tabular-nums font-medium ${(() => {
-                            const budgetTotal = budgetLines.reduce((s, l) => s + l.amount, 0);
-                            const margin =
-                              project.contractValue > 0
-                                ? ((project.contractValue - budgetTotal) / project.contractValue) *
-                                  100
-                                : 0;
-                            return margin >= 15
-                              ? 'text-green-600'
-                              : margin >= 5
-                                ? 'text-amber-600'
-                                : 'text-red-600';
-                          })()}`}
-                        >
-                          {(() => {
-                            const budgetTotal = budgetLines.reduce((s, l) => s + l.amount, 0);
-                            const margin =
-                              project.contractValue > 0
-                                ? ((project.contractValue - budgetTotal) / project.contractValue) *
-                                  100
-                                : 0;
-                            return `${margin >= 0 ? '+' : ''}${margin.toFixed(1)}%`;
-                          })()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── Budget vs Actual ────────────────────────────────────────── */}
           {profitability == null ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                Nav DPR datu. Pievienojiet dienas atskaites, lai redzētu faktu vs budžetu.
+                Nav DPR datu aprēķiniem. Pievienojiet dienas atskaites, lai redzētu izmaksu analīzi.
               </CardContent>
             </Card>
           ) : (
@@ -1292,66 +1087,52 @@ export default function ConstructionProjectDetailPage() {
                 />
                 <StatCard
                   icon={FolderKanban}
-                  label="Tāmes izlietojums"
+                  label="Budžeta izlietojums"
                   value={
-                    budgetLines.length > 0
-                      ? `${Math.round((profitability.dprCost / budgetLines.reduce((s, l) => s + l.amount, 0)) * 100)}%`
+                    profitability.budgetUsedPct != null
+                      ? `${profitability.budgetUsedPct.toFixed(0)}%`
                       : '—'
                   }
                   sub={
-                    budgetLines.length > 0
-                      ? `Tāme: ${formatEur(budgetLines.reduce((s, l) => s + l.amount, 0))}`
-                      : 'Tāme nav ievadīta'
+                    profitability.budgetAmount != null
+                      ? `Budžets: ${formatEur(profitability.budgetAmount)}`
+                      : 'Budžets nav norādīts'
                   }
                   iconBg="bg-purple-50"
                   iconColor="text-purple-600"
                 />
               </div>
 
-              {/* Cost vs budget per code with variance alerts */}
+              {/* Cost vs budget per code */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Fakts vs tāme pa izmaksu kodiem</CardTitle>
+                  <CardTitle className="text-base">Izmaksu kodi (fakts vs budžets)</CardTitle>
                 </CardHeader>
                 <CardContent className="divide-y">
-                  {COST_CODES.filter((cc) => {
-                    const budgetForCode = budgetLines
-                      .filter((l) => l.costCode === cc)
-                      .reduce((s, l) => s + l.amount, 0);
-                    return (profitability.costByCode[cc] ?? 0) > 0 || budgetForCode > 0;
-                  }).length === 0 ? (
+                  {COST_CODES.filter(
+                    (cc) =>
+                      (profitability.costByCode[cc] ?? 0) > 0 ||
+                      (profitability.budgetByCode[cc] ?? 0) > 0,
+                  ).length === 0 ? (
                     <p className="py-4 text-sm text-muted-foreground">
-                      Nav DPR datu vai tāmes rindu.
+                      Nav detalizētu izmaksu datu.
                     </p>
                   ) : (
                     COST_CODES.map((cc) => {
                       const spent = profitability.costByCode[cc] ?? 0;
-                      const budgetForCode = budgetLines
-                        .filter((l) => l.costCode === cc)
-                        .reduce((s, l) => s + l.amount, 0);
-                      if (spent === 0 && budgetForCode === 0) return null;
-                      const variance =
-                        budgetForCode > 0 ? ((spent - budgetForCode) / budgetForCode) * 100 : null;
+                      const budget = profitability.budgetByCode[cc];
+                      if (spent === 0 && !budget) return null;
                       return (
-                        <div key={cc}>
-                          <BudgetCodeBar
-                            label={COST_CODE_LABELS[cc]}
-                            spent={spent}
-                            budget={budgetForCode > 0 ? budgetForCode : undefined}
-                          />
-                          {variance !== null && Math.abs(variance) >= 10 && (
-                            <p
-                              className={`text-xs font-medium mb-1 ${variance > 0 ? 'text-red-600' : 'text-green-600'}`}
-                            >
-                              {variance > 0
-                                ? `⚠ Pārtērēts par ${variance.toFixed(0)}% (${formatEur(spent - budgetForCode)})`
-                                : `✓ Ietaupīts ${Math.abs(variance).toFixed(0)}%`}
-                            </p>
-                          )}
-                        </div>
+                        <BudgetCodeBar
+                          key={cc}
+                          label={COST_CODE_LABELS[cc]}
+                          spent={spent}
+                          budget={budget}
+                        />
                       );
                     })
                   )}
+                  {/* Total row */}
                   {profitability.dprCost > 0 && (
                     <>
                       <Separator className="my-1" />
@@ -1365,41 +1146,37 @@ export default function ConstructionProjectDetailPage() {
               </Card>
 
               {/* Overall budget bar */}
-              {budgetLines.length > 0 &&
-                (() => {
-                  const budgetTotal = budgetLines.reduce((s, l) => s + l.amount, 0);
-                  const usedPct = budgetTotal > 0 ? (profitability.dprCost / budgetTotal) * 100 : 0;
-                  return (
-                    <Card>
-                      <CardContent className="pt-5">
-                        <div className="flex items-center justify-between text-sm font-medium mb-2">
-                          <span>Kopējais budžets</span>
-                          <span className="tabular-nums">
-                            {formatEur(profitability.dprCost)} / {formatEur(budgetTotal)}
-                            <span className="ml-2 text-muted-foreground text-xs">
-                              ({usedPct.toFixed(0)}%)
-                            </span>
-                          </span>
-                        </div>
-                        <Progress
-                          value={Math.min(usedPct, 100)}
-                          className={`h-2 ${
-                            usedPct > 100
-                              ? '[&>div]:bg-red-500'
-                              : usedPct > 80
-                                ? '[&>div]:bg-amber-500'
-                                : '[&>div]:bg-emerald-500'
-                          }`}
-                        />
-                        {usedPct > 100 && (
-                          <p className="mt-1 text-xs font-medium text-red-600">
-                            ⚠ Tāme pārtērēta par {formatEur(profitability.dprCost - budgetTotal)}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
+              {profitability.budgetUsedPct != null && profitability.budgetAmount != null && (
+                <Card>
+                  <CardContent className="pt-5">
+                    <div className="flex items-center justify-between text-sm font-medium mb-2">
+                      <span>Kopējais budžets</span>
+                      <span className="tabular-nums">
+                        {formatEur(profitability.dprCost)} / {formatEur(profitability.budgetAmount)}
+                        <span className="ml-2 text-muted-foreground text-xs">
+                          ({profitability.budgetUsedPct.toFixed(0)}%)
+                        </span>
+                      </span>
+                    </div>
+                    <Progress
+                      value={Math.min(profitability.budgetUsedPct, 100)}
+                      className={`h-2 ${
+                        profitability.budgetUsedPct > 100
+                          ? '[&>div]:bg-red-500'
+                          : profitability.budgetUsedPct > 80
+                            ? '[&>div]:bg-amber-500'
+                            : '[&>div]:bg-emerald-500'
+                      }`}
+                    />
+                    {profitability.budgetUsedPct > 100 && (
+                      <p className="mt-1 text-xs font-medium text-red-600">
+                        ⚠ Budžets pārtērēts par{' '}
+                        {formatEur(profitability.dprCost - profitability.budgetAmount)}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </TabsContent>
@@ -2282,130 +2059,48 @@ export default function ConstructionProjectDetailPage() {
         </div>
       )}
 
-      {/* ── Budget line add / edit dialog ────────────────────────── */}
-      <Dialog open={lineFormOpen} onOpenChange={setLineFormOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {lineEditTarget ? 'Rediģēt tāmes rindu' : 'Pievienot tāmes rindu'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {/* Cost code */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Izmaksu kategorija</label>
-              <Select
-                value={lineForm.costCode}
-                onValueChange={(v) => setLineForm((f) => ({ ...f, costCode: v as CostCode }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {COST_CODES.map((cc) => (
-                    <SelectItem key={cc} value={cc}>
-                      {COST_CODE_LABELS[cc]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* ── Budget edit modal ────────────────────────────────────────── */}
+      {budgetEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h2 className="text-lg font-semibold">Budžets pa izmaksu kodiem</h2>
+            <p className="text-sm text-muted-foreground">
+              Atstājiet tukšu, lai izmaksu kods netiktu izsekots.
+            </p>
+            <div className="space-y-3">
+              {budgetDraft.map((d, idx) => (
+                <div key={d.costCode} className="flex items-center gap-3">
+                  <span className="text-sm w-36 shrink-0">{COST_CODE_LABELS[d.costCode]}</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      €
+                    </span>
+                    <input
+                      type="number"
+                      className="flex h-9 w-full rounded-md border border-input bg-background pl-6 pr-3 py-2 text-sm"
+                      placeholder="Nav norādīts"
+                      value={d.budgetAmount}
+                      onChange={(e) => {
+                        const next = [...budgetDraft];
+                        next[idx] = { ...d, budgetAmount: e.target.value };
+                        setBudgetDraft(next);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-            {/* Description */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Apraksts</label>
-              <input
-                type="text"
-                placeholder="piem. Iekravējs"
-                value={lineForm.description}
-                onChange={(e) => setLineForm((f) => ({ ...f, description: e.target.value }))}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
-            {/* Quantity + unit + unit rate */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Daudzums</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="1"
-                  value={lineForm.quantity}
-                  onChange={(e) => setLineForm((f) => ({ ...f, quantity: e.target.value }))}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Vienība</label>
-                <Select
-                  value={lineForm.unit}
-                  onValueChange={(v) => setLineForm((f) => ({ ...f, unit: v }))}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="H">h (stunda)</SelectItem>
-                    <SelectItem value="DAY">diena</SelectItem>
-                    <SelectItem value="M3">m³</SelectItem>
-                    <SelectItem value="M2">m²</SelectItem>
-                    <SelectItem value="M">m</SelectItem>
-                    <SelectItem value="T">t (tonne)</SelectItem>
-                    <SelectItem value="PC">gab.</SelectItem>
-                    <SelectItem value="LOAD">kraušana</SelectItem>
-                    <SelectItem value="KM">km</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Likme (€)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  placeholder="0.00"
-                  value={lineForm.unitRate}
-                  onChange={(e) => setLineForm((f) => ({ ...f, unitRate: e.target.value }))}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              </div>
-            </div>
-            {/* Calculated total */}
-            {lineForm.quantity && lineForm.unitRate && (
-              <p className="text-sm text-muted-foreground">
-                Summa:{' '}
-                <span className="font-medium text-foreground">
-                  {formatEur(
-                    (parseFloat(lineForm.quantity) || 0) * (parseFloat(lineForm.unitRate) || 0),
-                  )}
-                </span>
-              </p>
-            )}
-            {/* Notes */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Piezīmes (neobligāti)</label>
-              <input
-                type="text"
-                placeholder="piem. Subuzņēmējs X"
-                value={lineForm.notes}
-                onChange={(e) => setLineForm((f) => ({ ...f, notes: e.target.value }))}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setBudgetEditOpen(false)}>
+                Atcelt
+              </Button>
+              <Button onClick={saveBudgetLines} disabled={savingBudget}>
+                {savingBudget ? 'Saglabā...' : 'Saglabāt'}
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLineFormOpen(false)}>
-              Atcelt
-            </Button>
-            <Button
-              onClick={saveLine}
-              disabled={savingLine || !lineForm.description.trim() || !lineForm.unitRate}
-            >
-              {savingLine ? 'Saglabā...' : 'Saglabāt'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,13 +3,19 @@
 
 ## What this product is
 
-**B3Hub** is a **neutral construction logistics marketplace** for the Latvian/Baltic market, owned and operated by B3 Group.
+**B3 Group** is the parent company. Three business units share a unified admin dashboard:
 
-**B3 Group does not have internal admin portals on this platform.** B3 Recycling (licensed waste facility in Gulbene) and B3 Construction (groundworks company) are separate business units that **use B3Hub as external operators** — their staff log in with regular accounts, the same portals as any other recycler or construction company on the platform. There is no BU-specific admin section.
+| Business unit | What it is | Admin scope |
+|---|---|---|
+| **B3Hub** | Construction logistics marketplace (this platform) | `/dashboard/admin/*` — marketplace ERP |
+| **B3 Recycling** | Licensed construction waste recycling facility in Gulbene | `/dashboard/b3-recycling` — ✅ built |
+| **B3 Construction** | Groundworks subcontracting company | `/dashboard/b3-construction` — ✅ built |
 
-The **admin dashboard** (`/dashboard/admin/*`) covers **platform management only**: users, orders, listings, disputes, platform config.
+The three scopes are separate operations (different customers, staff, finances) but share the same platform infrastructure. The admin dashboard has a **4-tab scope switcher** in the sidebar header: **Grupa | APP | Recycle | Būve**. "Grupa" (`/dashboard/group`) is a cross-BU overview. Each tab shows its own nav sections. Active scope is auto-detected from the URL pathname.
 
-The platform connects three sides:
+**B3Hub** is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
+
+It connects three sides:
 - **Buyers** — ranges from homeowners ordering a skip for a garden project (B2C, guest checkout) to construction companies running 50 deliveries across multiple sites (B2B, full account with contracts and team management)
 - **Sellers/Suppliers** — quarries and material suppliers listing gravel, sand, concrete, soil
 - **Transport providers** — trucking companies and independent drivers executing deliveries
@@ -20,6 +26,10 @@ Full order flow: buyer places order → seller confirms loading → driver deliv
 **B2B segment**: construction companies, contractors, project managers. Account required. Framework contracts, project cost tracking, invoicing, team/permissions management.
 
 Both segments share the same backend and mobile app. The web portal serves sellers and admins primarily.
+
+**B3 Fields** are physical sites operated by B3 Group — two types:
+- **Standard fields**: materials pickup + waste drop-off (no recycling licence). Modelled as `RecyclingCenter` with `licensed: false`.
+- **B3 Recycling (Gulbene)**: licensed recycling facility. Accepts, processes, and certifies construction waste (concrete, soil, rubble, metals, wood). Modelled as `RecyclingCenter` with `licensed: true`. Customers book online via B3Hub disposal wizard.
 
 ---
 
@@ -53,9 +63,7 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
-
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
-
 <!-- END GEN -->
 
 ### Module anatomy
@@ -83,7 +91,6 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
-
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -95,7 +102,6 @@ export interface RequestingUser {
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
   canSkipHire: boolean; // approved to manage skip hire fleet
-  canRecycle: boolean; // approved to operate a recycling/waste center
   companyId?: string; // linked Company id, if any
   companyRole?: string; // 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER'
   // Fine-grained company member permissions
@@ -106,10 +112,8 @@ export interface RequestingUser {
   permManageTeam: boolean;
   payoutEnabled?: boolean;
   tokenVersion?: number; // incremented on capability/role changes; stale JWTs are rejected
-  companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }
 ```
-
 <!-- END GEN -->
 
 ### User roles
@@ -168,13 +172,11 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
-
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, vehicles
 - `(gate)` — fields
-- `(recycler)` — home, incoming, more, records
-- `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
+- `(seller)` — catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
 - `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, messages, notification/, notifications, review/, settings, support-chat
 - `(wizards)` — disposal/, material-order, skip-hire/, transport/
 <!-- END GEN -->
@@ -268,6 +270,9 @@ Key rules:
 | `STATUS.md`                                                  | **Feature status matrix** — what is built, connected, or missing across all three apps  |
 | `ARCHITECTURE.md`                                            | System architecture overview — ⚠️ partially stale, see stale notice at file top         |
 | `PRODUCT.md`                                                 | Product description, user personas, and full order flow                                 |
+| `apps/web/src/components/admin-sidebar.tsx`                  | 4-scope admin sidebar with BU tab switcher (Grupa / APP / Recycle / Būve)               |
+| `apps/web/src/components/sidebar-switch.tsx`                 | Picks AdminSidebar vs AppSidebar based on `user.userType`                               |
+| `apps/web/src/proxy.ts`                                      | Next.js middleware — route guards for admin and marketplace deployments                 |
 | `.github/instructions/backend-schema.instructions.md`        | All 30 DB models, enums, Prisma workflow, migration checklist                           |
 | `.github/instructions/web-components.instructions.md`        | Web UI component catalog + usage                                                        |
 | `.github/instructions/mobile-components.instructions.md`     | Mobile UI component catalog + usage                                                     |

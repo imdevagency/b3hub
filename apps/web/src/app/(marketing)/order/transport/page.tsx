@@ -1,5 +1,5 @@
-import { TransportWizard } from '@/components/order/wizards/TransportWizard';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <TransportWizard mode="public" />;
+  redirect('/dashboard/order/transport');
 }

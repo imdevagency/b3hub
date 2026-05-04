@@ -48,11 +48,11 @@ const SERVICES: ServiceDef[] = [
   },
   {
     id: 'transport',
-    href: '/order/transport',
+    href: '/dashboard/order/transport',
     icon: Truck,
     title: 'Transports',
     description: 'Jebkuras kravas pārvadāšana visā Latvijas teritorijā.',
-    badge: 'Ātrs piedāvājums',
+    badge: 'B2B',
   },
 ];
 
