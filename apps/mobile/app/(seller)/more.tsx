@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { AvatarImage } from '@/components/ui/AvatarImage';
@@ -15,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import { haptics } from '@/lib/haptics';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { colors } from '@/lib/theme';
 import {
   Euro,
@@ -104,7 +97,7 @@ function ListRow({
 }
 
 export default function SellerMoreScreen() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? null);
 
@@ -118,18 +111,7 @@ export default function SellerMoreScreen() {
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
 
-  const handleLogout = () => {
-    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Iziet',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
-  };
+  const handleLogout = useLogoutConfirm();
 
   const tiles: TileItem[] = [
     { icon: Euro, label: 'Izpeļņa', onPress: () => router.push('/(seller)/earnings') },

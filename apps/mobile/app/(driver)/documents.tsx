@@ -30,6 +30,7 @@ import {
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
+import { getDocumentStatusLabel } from '@/lib/status';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -51,14 +52,6 @@ const TYPE_META: Partial<
   DELIVERY_PROOF: { label: 'Piegādes apstiprinājums', icon: FileText },
   CONTRACT: { label: 'Līgums', icon: ScrollText },
   OTHER: { label: 'Cits dokuments', icon: FileText },
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Melnraksts',
-  ISSUED: 'Izdots',
-  SIGNED: 'Parakstīts',
-  ARCHIVED: 'Arhivēts',
-  EXPIRED: 'Beidzies',
 };
 
 function fmtDate(iso: string) {
@@ -113,7 +106,7 @@ function DocRow({ doc, job }: { doc: ApiDocument; job: ApiTransportJob | null })
           </Text>
         )}
         <Text style={s.rowDate}>
-          {fmtDate(doc.createdAt)} • {STATUS_LABEL[doc.status] ?? doc.status}
+          {fmtDate(doc.createdAt)} • {getDocumentStatusLabel(doc.status)}
           {!hasFile ? ' · Fails nav pieejams' : ''}
         </Text>
         {doc.notes ? (

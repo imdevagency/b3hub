@@ -30,7 +30,7 @@ import { haptics } from '@/lib/haptics';
 import { Divider } from '@/components/ui/Divider';
 import { SIZE_LABEL } from '@/lib/materials';
 import { colors } from '@/lib/theme';
-import { getOrderStatus } from '@/lib/status';
+import { getOrderStatus, DRIVER_JOB_BUYER_LABELS } from '@/lib/status';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -456,15 +456,6 @@ const DRIVER_TRANSIT_STATUSES = new Set([
   'AT_DELIVERY',
 ]);
 
-const DRIVER_STATUS_LABELS: Record<string, string> = {
-  ACCEPTED: 'Šoferis apstiprināja',
-  EN_ROUTE_PICKUP: 'Uz iekraušanu',
-  AT_PICKUP: 'Iekraujas',
-  LOADED: 'Krava iekrauta',
-  EN_ROUTE_DELIVERY: 'Piegādē',
-  AT_DELIVERY: 'Šoferis uz vietas',
-};
-
 // ── Specialized Rows ──────────────────────────────────────────
 
 function MaterialRow({ item }: { item: ApiOrder }) {
@@ -489,7 +480,7 @@ function MaterialRow({ item }: { item: ApiOrder }) {
 
   // Show specific driver progress label instead of generic "Ceļā"
   const activeJob = item.transportJobs?.find((j) => DRIVER_TRANSIT_STATUSES.has(j.status));
-  const statusText = activeJob ? (DRIVER_STATUS_LABELS[activeJob.status] ?? 'Ceļā') : st.label;
+  const statusText = activeJob ? (DRIVER_JOB_BUYER_LABELS[activeJob.status] ?? 'Ceļā') : st.label;
   const statusColor = activeJob ? '#059669' : st.color;
 
   // Use Status for the top line if not complete, else use time

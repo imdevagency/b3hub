@@ -20,14 +20,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/text';
 import { colors } from '@/lib/theme';
-
-const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
-  ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#10b981' },
-  COMPLETED: { label: 'Pabeigts', bg: '#f8fafc', color: '#64748b' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textDisabled },
-  CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#ef4444' },
-};
+import { getFrameworkContractStatus } from '@/lib/status';
 
 function getProgressColor(pct: number) {
   if (pct >= 90) return '#ef4444';
@@ -50,7 +43,7 @@ export default function SellerFrameworkContractsScreen() {
   const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const renderItem = ({ item: contract }: { item: ApiFrameworkContract }) => {
-    const status = STATUS[contract.status] ?? STATUS.ACTIVE;
+    const status = getFrameworkContractStatus(contract.status);
     const pct = Math.min(100, contract.totalProgressPct);
     const progColor = getProgressColor(pct);
 

@@ -206,6 +206,16 @@ export const PAYOUT_STATUS: Record<string, TwBadgeCfg> = {
   CANCELLED: { label: 'Atcelts', className: 'bg-gray-100 text-gray-600' },
 };
 
+// ── Framework-contract statuses ───────────────────────────────────────────────
+
+export const FRAMEWORK_CONTRACT_STATUS: Record<string, TwBadgeCfg> = {
+  DRAFT: { label: 'Melnraksts', className: 'bg-gray-100 text-gray-600' },
+  ACTIVE: { label: 'Aktīvs', className: 'bg-green-100 text-green-700' },
+  COMPLETED: { label: 'Pabeigts', className: 'bg-slate-100 text-slate-600' },
+  EXPIRED: { label: 'Beidzies', className: 'bg-gray-100 text-gray-400' },
+  CANCELLED: { label: 'Atcelts', className: 'bg-red-100 text-red-600' },
+};
+
 // ── Company types ─────────────────────────────────────────────────────────────
 
 export const COMPANY_TYPE_CONFIG: Record<string, TwBadgeCfg> = {

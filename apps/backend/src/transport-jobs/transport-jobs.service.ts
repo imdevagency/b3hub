@@ -43,6 +43,7 @@ import { UpdatesGateway } from '../updates/updates.gateway';
 import { EmailService } from '../email/email.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { PaymentsService } from '../payments/payments.service';
+import { OrdersService } from '../orders/orders.service';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -68,6 +69,7 @@ export class TransportJobsService {
     private readonly updates: UpdatesGateway,
     private readonly email: EmailService,
     private readonly payments: PaymentsService,
+    private readonly orders: OrdersService,
   ) {}
 
   private isDispatcher(user: RequestingUser): boolean {
@@ -2737,11 +2739,8 @@ export class TransportJobsService {
           });
 
           if (remainingJobs === 0) {
-            await this.prisma.order
-              .update({
-                where: { id: job.orderId },
-                data: { status: OrderStatus.DELIVERED },
-              })
+            await this.orders
+              .advanceOrderStatus(job.orderId, OrderStatus.DELIVERED)
               .catch((err) =>
                 this.logger.error(
                   `Failed to auto-advance order ${job.orderId} to DELIVERED after delivery proof`,

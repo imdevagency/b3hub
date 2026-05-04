@@ -474,6 +474,13 @@ export class InvoicesService {
       },
     });
     if (invoice.orderId) {
+      // NOTE: InvoicesModule cannot import OrdersModule (OrdersModule already
+      // imports InvoicesModule for invoice generation — importing in both
+      // directions would create a circular dependency). The write here is
+      // intentionally scoped to `paymentStatus` only (a financial field, not
+      // the order lifecycle `status`), so it does NOT bypass OrdersService's
+      // TRANSITION_MAP guard. If you ever need to advance the order lifecycle
+      // status from here, introduce an EventEmitter2 event instead.
       await this.prisma.order.update({
         where: { id: invoice.orderId },
         data: { paymentStatus: PaymentStatus.PAID },

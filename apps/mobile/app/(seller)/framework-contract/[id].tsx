@@ -30,15 +30,8 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/Toast';
 import { colors } from '@/lib/theme';
+import { getFrameworkContractStatus } from '@/lib/status';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-
-const STATUS: Record<FrameworkContractStatus, { label: string; bg: string; color: string }> = {
-  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
-  ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#10b981' },
-  COMPLETED: { label: 'Pabeigts', bg: '#f8fafc', color: '#64748b' },
-  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textDisabled },
-  CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#ef4444' },
-};
 
 const POS_TYPE_LABEL: Record<FrameworkPositionType, string> = {
   MATERIAL_DELIVERY: 'Materiāli',
@@ -146,7 +139,7 @@ export default function SellerFrameworkContractDetailScreen() {
 
   if (!contract) return null;
 
-  const status = STATUS[contract.status] ?? STATUS.ACTIVE;
+  const status = getFrameworkContractStatus(contract.status);
   const pct = Math.min(100, contract.totalProgressPct);
   const progColor = getProgressColor(pct);
 

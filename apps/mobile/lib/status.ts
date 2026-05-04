@@ -76,3 +76,71 @@ export function getJobStatus(status: string): StatusEntry {
     }
   );
 }
+
+// ─── Framework contract status ────────────────────────────────────────────────
+
+export const FRAMEWORK_CONTRACT_STATUS_MAP: Record<string, StatusEntry> = {
+  DRAFT: { label: 'Melnraksts', bg: '#f3f4f6', color: colors.textMuted },
+  ACTIVE: { label: 'Aktīvs', bg: '#ecfdf5', color: '#10b981' },
+  COMPLETED: { label: 'Pabeigts', bg: '#f8fafc', color: '#64748b' },
+  EXPIRED: { label: 'Beidzies', bg: '#f3f4f6', color: colors.textDisabled },
+  CANCELLED: { label: 'Atcelts', bg: '#fef2f2', color: '#ef4444' },
+};
+
+export function getFrameworkContractStatus(status: string): StatusEntry {
+  return FRAMEWORK_CONTRACT_STATUS_MAP[status] ?? { label: status, bg: '#f3f4f6', color: colors.textMuted };
+}
+
+// ─── Quote response status ────────────────────────────────────────────────────
+
+export const QUOTE_RESPONSE_STATUS_MAP: Record<string, StatusEntry> = {
+  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: colors.textMuted },
+  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#16a34a' },
+  REJECTED: { label: 'Noraidīts', bg: '#fee2e2', color: colors.danger },
+  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: colors.textDisabled },
+};
+
+export function getQuoteResponseStatus(status: string): StatusEntry {
+  return QUOTE_RESPONSE_STATUS_MAP[status] ?? QUOTE_RESPONSE_STATUS_MAP.PENDING;
+}
+
+// ─── Document status (driver/documents) ──────────────────────────────────────
+
+export const DOCUMENT_STATUS_MAP: Record<string, string> = {
+  DRAFT: 'Melnraksts',
+  ISSUED: 'Izdots',
+  SIGNED: 'Parakstīts',
+  ARCHIVED: 'Arhivēts',
+  EXPIRED: 'Beidzies',
+};
+
+export function getDocumentStatusLabel(status: string): string {
+  return DOCUMENT_STATUS_MAP[status] ?? status;
+}
+
+// ─── Recycler job status (recycler/incoming) ──────────────────────────────────
+
+export const RECYCLER_JOB_STATUS_MAP: Record<string, StatusEntry> = {
+  AVAILABLE: { label: 'Gaida', bg: '#fef3c7', color: '#92400e' },
+  ASSIGNED: { label: 'Piešķirts', bg: '#dbeafe', color: '#1d4ed8' },
+  IN_PROGRESS: { label: 'Ceļā', bg: '#e0f2fe', color: '#0369a1' },
+  DELIVERED: { label: 'Piegādāts', bg: '#dcfce7', color: '#166534' },
+  COMPLETED: { label: 'Pabeigts', bg: '#dcfce7', color: '#166534' },
+  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', color: colors.danger },
+};
+
+export function getRecyclerJobStatus(status: string): StatusEntry {
+  return RECYCLER_JOB_STATUS_MAP[status] ?? { label: status, bg: '#f3f4f6', color: colors.textMuted };
+}
+
+// ─── Driver job labels (buyer/orders — shown to buyer about their driver) ─────
+// These override the generic JOB_STATUS_MAP labels with buyer-facing phrasing.
+
+export const DRIVER_JOB_BUYER_LABELS: Record<string, string> = {
+  ACCEPTED: 'Šoferis apstiprināja',
+  EN_ROUTE_PICKUP: 'Uz iekraušanu',
+  AT_PICKUP: 'Iekraujas',
+  LOADED: 'Krava iekrauta',
+  EN_ROUTE_DELIVERY: 'Piegādē',
+  AT_DELIVERY: 'Šoferis uz vietas',
+};

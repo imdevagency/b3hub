@@ -49,6 +49,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { useMode, type Mode } from '@/lib/mode-context';
 import { PORTAL_NAV_GROUPS, getGroupPaths } from '@/lib/portal-nav-groups';
+import { makeIsRouteActive } from '@/lib/is-route-active';
 import {
   getAllTransportJobs,
   getMyOrders,
@@ -285,24 +286,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
 
   const isRouteActive = React.useCallback(
-    (item: NavItem) => {
-      const { href } = item;
-      // Exact match for home/root pages
-      if (
-        href === '/dashboard/buyer' ||
-        href === '/dashboard/supplier' ||
-        href === '/dashboard/transporter' ||
-        href === '/dashboard/construction' ||
-        href === '/dashboard/recycling'
-      ) {
-        return pathname === href;
-      }
-      // Group-aware: highlight when on any tab within the domain
-      if (item.groupPaths && item.groupPaths.length > 0) {
-        return item.groupPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
-      }
-      return pathname === href || pathname.startsWith(`${href}/`);
-    },
+    makeIsRouteActive(pathname, [
+      '/dashboard/buyer',
+      '/dashboard/supplier',
+      '/dashboard/transporter',
+      '/dashboard/construction',
+      '/dashboard/recycling',
+    ]),
     [pathname],
   );
 

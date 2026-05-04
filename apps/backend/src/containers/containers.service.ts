@@ -36,6 +36,7 @@ import { QueryContainersDto } from './dto/query-containers.dto';
 import { CreateContainerOrderDto } from './dto/create-container-order.dto';
 import { UpdateContainerOrderStatusDto } from './dto/update-container-order-status.dto';
 import { VAT_RATE } from '../common/constants/tax';
+import { OrdersService } from '../orders/orders.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,10 @@ import { VAT_RATE } from '../common/constants/tax';
 export class ContainersService {
   private readonly logger = new Logger(ContainersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ordersService: OrdersService,
+  ) {}
 
   // ── Container Fleet (carrier) ─────────────────────────────────────────────
 
@@ -340,16 +344,16 @@ export class ContainersService {
           }),
         },
       }),
-      // Sync parent Order.status so dashboards and queries reflect the current rental state
-      ...(parentOrderStatus
-        ? [
-            this.prisma.order.update({
-              where: { id: containerOrder.orderId },
-              data: { status: parentOrderStatus },
-            }),
-          ]
-        : []),
     ]);
+
+    // Sync parent Order.status via the state machine (validates transition, updates timestamps)
+    if (parentOrderStatus) {
+      await this.ordersService
+        .advanceOrderStatus(containerOrder.orderId, parentOrderStatus)
+        .catch(() => {
+          // Non-fatal: container order is already updated; order may already be in target state
+        });
+    }
 
     // Free up the container when the rental ends
     if (terminalStatuses.includes(dto.status)) {

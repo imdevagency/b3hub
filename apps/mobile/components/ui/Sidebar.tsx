@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -28,6 +27,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { getRoleName } from '@/lib/utils';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { colors } from '@/lib/theme';
 
 const SIDEBAR_WIDTH = 300;
@@ -207,7 +207,8 @@ function buildSections(role: Role, user: BuildItemsUser | null | undefined): Men
 }
 
 export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const confirmLogout = useLogoutConfirm();
   const router = useRouter();
 
   const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
@@ -261,18 +262,9 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
   };
 
   const handleLogout = () => {
-    haptics.warning();
-    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Iziet',
-        style: 'destructive',
-        onPress: async () => {
-          onClose();
-          await logout();
-        },
-      },
-    ]);
+    onClose();
+    // Small delay so the sidebar animation settles before the alert appears
+    setTimeout(confirmLogout, 200);
   };
 
   return (

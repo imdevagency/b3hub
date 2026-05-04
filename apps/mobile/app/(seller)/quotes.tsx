@@ -40,6 +40,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
+import { getQuoteResponseStatus } from '@/lib/status';
 
 const sq = t.sellerQuotes;
 
@@ -336,15 +337,8 @@ function RequestCard({ request, myCompanyId, onRespond, autoExpand = false }: Re
 
 // ── My Response Row ───────────────────────────────────────────────────────────
 
-const RESP_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING: { label: 'Gaida', bg: '#f3f4f6', color: colors.textMuted },
-  ACCEPTED: { label: 'Pieņemts', bg: '#dcfce7', color: '#16a34a' },
-  REJECTED: { label: 'Noraidīts', bg: '#fee2e2', color: colors.danger },
-  EXPIRED: { label: 'Beidzies', bg: '#f9fafb', color: colors.textDisabled },
-};
-
 function MyResponseRow({ item }: { item: MyQuoteResponse }) {
-  const st = RESP_STATUS[item.status] ?? RESP_STATUS.PENDING;
+  const st = getQuoteResponseStatus(item.status);
   const unitLabel = sq.units[item.request.unit] ?? item.request.unit;
   const catLabel = sq.categories[item.request.materialCategory] ?? item.request.materialCategory;
   return (

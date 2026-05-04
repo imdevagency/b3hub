@@ -16,13 +16,13 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { AvatarImage } from '@/components/ui/AvatarImage';
-import { LogOut, Trash2, ChevronRight, AlertCircle, ArrowUpDown, Globe } from 'lucide-react-native';
+import { LogOut, Trash2, ChevronRight, AlertCircle, ArrowUpDown } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
-import { useLanguage } from '@/lib/language-context';
 import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
 import { useAvatarUpload } from '@/lib/use-avatar-upload';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { getRoleName } from '@/lib/utils';
@@ -37,7 +37,7 @@ function SectionHeader({ label }: { label: string }) {
 }
 
 export default function ProfileScreen() {
-  const { user, token, updateUser, logout } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const { mode, isMultiRole } = useMode();
   const [editOpen, setEditOpen] = useState(false);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
@@ -68,44 +68,8 @@ export default function ProfileScreen() {
   };
 
   const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
-  const { language, setLanguage } = useLanguage();
 
-  const handleLogout = () => {
-    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Iziet',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Dzēst kontu',
-      'Vai tiešām vēlaties neatgriezeniski dzēst savu kontu? Visi jūsu personas dati tiks dzēsti. Šo darbību nevar atsaukt.',
-      [
-        { text: 'Atcelt', style: 'cancel' },
-        {
-          text: 'Dzēst kontu',
-          style: 'destructive',
-          onPress: async () => {
-            if (!token) return;
-            try {
-              await api.deleteAccount(token);
-              await logout();
-            } catch {
-              haptics.error();
-              toast.error('Neizdevās dzēst kontu. Lūdzu, mēģiniet vēlreiz.');
-            }
-          },
-        },
-      ],
-    );
-  };
+  const handleLogout = useLogoutConfirm();
 
   const openEdit = () => {
     if (!user) return;
@@ -268,33 +232,6 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* Language Toggle */}
-        <SectionHeader label="VALODA" />
-        <View style={styles.cardGroup}>
-          <TouchableOpacity
-            style={styles.cardItem}
-            onPress={() => {
-              haptics.light();
-              setLanguage(language === 'lv' ? 'ru' : 'lv');
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.row]}>
-              <View style={styles.rowIcon}>
-                <Globe size={20} color="#6b7280" />
-              </View>
-              <View style={styles.rowBody}>
-                <Text style={styles.rowLabel}>Valoda / Язык</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.langOpt, language === 'lv' && styles.langOptActive]}>LV</Text>
-                <Text style={{ color: '#d1d5db' }}>|</Text>
-                <Text style={[styles.langOpt, language === 'ru' && styles.langOptActive]}>RU</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-
         {/* Destructive Actions */}
         <SectionHeader label="KONTA DARBĪBAS" />
         <View style={styles.cardGroup}>
@@ -302,7 +239,10 @@ export default function ProfileScreen() {
           <MenuItem
             icon={Trash2}
             label="Dzēst kontu"
-            onPress={handleDeleteAccount}
+            onPress={() => {
+              haptics.light();
+              router.push('/(shared)/settings');
+            }}
             isDestructive
             hideBorder
           />

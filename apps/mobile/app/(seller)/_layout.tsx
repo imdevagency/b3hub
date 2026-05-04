@@ -8,7 +8,7 @@ import { Inbox, User, Home, LayoutGrid, MoreHorizontal } from 'lucide-react-nati
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
-import { useUnreadCount } from '@/lib/use-unread-count';
+import { useNotifications } from '@/lib/notifications-context';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
@@ -18,7 +18,7 @@ function SellerLayoutContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const unreadCount = useUnreadCount();
+  const { unreadCount } = useNotifications();
   const { config } = useHeaderConfig();
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);

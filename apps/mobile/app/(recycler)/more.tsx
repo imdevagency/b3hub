@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { colors } from '@/lib/theme';
 import {
   User,
@@ -49,22 +50,10 @@ function ListRow({
 }
 
 export default function RecyclerMoreScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    Alert.alert('Iziet', 'Vai tiešām vēlaties iziet?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Iziet',
-        style: 'destructive',
-        onPress: () => {
-          haptics.medium();
-          logout();
-        },
-      },
-    ]);
-  };
+  const handleLogout = useLogoutConfirm();
 
   return (
     <ScreenContainer>

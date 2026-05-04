@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
-  Alert,
   Linking,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -15,6 +14,8 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
+import { useRequireAuth } from '@/lib/use-require-auth';
 import { colors } from '@/lib/theme';
 
 import {
@@ -125,31 +126,13 @@ function ListRow({
 }
 
 export default function MoreScreen() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
   const { mode, isMultiRole } = useMode();
   const router = useRouter();
 
-  /** Redirect guests to register instead of navigating to a protected screen. */
-  const requireAuth = (action: () => void) => () => {
-    if (!user) {
-      router.push('/(auth)/register' as never);
-      return;
-    }
-    action();
-  };
+  const requireAuth = useRequireAuth();
 
-  const handleLogout = () => {
-    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Iziet',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
-  };
+  const handleLogout = useLogoutConfirm();
 
   // ── Main navigation tiles (auth-required) ────────────────────
   const mainTiles: TileItem[] = user

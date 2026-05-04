@@ -9,29 +9,11 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderConfig } from '@/lib/header-context';
 import { colors } from '@/lib/theme';
+import { getRecyclerJobStatus } from '@/lib/status';
 import { Truck, Calendar } from 'lucide-react-native';
 
-function jobStatusLabel(status: string): { text: string; color: string; bg: string } {
-  switch (status) {
-    case 'AVAILABLE':
-      return { text: 'Gaida', color: '#92400e', bg: '#fef3c7' };
-    case 'ASSIGNED':
-      return { text: 'Piešķirts', color: '#1d4ed8', bg: '#dbeafe' };
-    case 'IN_PROGRESS':
-      return { text: 'Ceļā', color: '#0369a1', bg: '#e0f2fe' };
-    case 'DELIVERED':
-      return { text: 'Piegādāts', color: '#166534', bg: '#dcfce7' };
-    case 'COMPLETED':
-      return { text: 'Pabeigts', color: '#166534', bg: '#dcfce7' };
-    case 'CANCELLED':
-      return { text: 'Atcelts', color: '#991b1b', bg: '#fef2f2' };
-    default:
-      return { text: status, color: colors.textMuted, bg: '#F3F4F6' };
-  }
-}
-
 function JobCard({ job }: { job: IncomingJob }) {
-  const statusMeta = jobStatusLabel(job.status);
+  const statusMeta = getRecyclerJobStatus(job.status);
   const pickupDate = job.scheduledPickupAt
     ? new Date(job.scheduledPickupAt).toLocaleDateString('lv-LV', {
         day: 'numeric',
@@ -46,7 +28,7 @@ function JobCard({ job }: { job: IncomingJob }) {
       <View style={ls.cardTop}>
         <Text style={ls.cardId}>#{job.id.slice(-6).toUpperCase()}</Text>
         <View style={[ls.badge, { backgroundColor: statusMeta.bg }]}>
-          <Text style={[ls.badgeText, { color: statusMeta.color }]}>{statusMeta.text}</Text>
+          <Text style={[ls.badgeText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
         </View>
       </View>
 

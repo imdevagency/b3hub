@@ -28,11 +28,12 @@ import {
   Calendar,
   Volume2,
   User,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { useLanguage } from '@/lib/language-context';
 import Constants from 'expo-constants';
 import { colors } from '@/lib/theme';
@@ -49,7 +50,7 @@ function LinkRow({
   onPress,
   danger,
   rightSlot,
-  hideDivider
+  hideDivider,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -88,19 +89,7 @@ export default function SettingsScreen() {
   const toast = useToast();
   const insets = useSafeAreaInsets();
 
-  const handleLogout = () => {
-    haptics.warning();
-    Alert.alert('Iziet', 'Vai tiešām vēlaties izrakstīties?', [
-      { text: 'Atcelt', style: 'cancel' },
-      {
-        text: 'Iziet',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
-  };
+  const handleLogout = useLogoutConfirm();
 
   const [deleting, setDeleting] = useState(false);
 
@@ -155,14 +144,14 @@ export default function SettingsScreen() {
             label="Paziņojumi"
             onPress={() => {}}
           />
-          
+
           <LinkRow
             icon={<Calendar size={24} color="#4b5563" />}
             label="Kalendārs"
             description="Pārvaldiet savu grafiku"
             onPress={() => {}}
           />
-          
+
           <LinkRow
             icon={<Globe size={24} color="#4b5563" />}
             label="Valoda / Язык"
@@ -179,14 +168,14 @@ export default function SettingsScreen() {
               </View>
             }
           />
-          
+
           <LinkRow
             icon={<User size={24} color="#4b5563" />}
             label="Privātums"
             description="Pārvaldiet savus datus un atļaujas"
             onPress={() => Linking.openURL('https://b3hub.lv/privacy')}
           />
-          
+
           <LinkRow
             icon={<Lock size={24} color="#4b5563" />}
             label="Drošība"
@@ -199,7 +188,7 @@ export default function SettingsScreen() {
               }
             }}
           />
-          
+
           <LinkRow
             icon={<Shield size={24} color="#4b5563" />}
             label="Juridiskā informācija"
@@ -208,28 +197,26 @@ export default function SettingsScreen() {
           />
         </View>
         <View style={styles.logoutCard}>
-            <LinkRow
-              icon={<LogOut size={24} color="#4b5563" />}
-              label="Izrakstīties"
-              onPress={handleLogout}
-              hideDivider
-              rightSlot={<View />}
-            />
-            {user && (
-              <>
-                 <View style={styles.divider} />
-                 <LinkRow
-                  icon={<Trash2 size={24} color="#ef4444" />}
-                  label="Dzēst kontu"
-                  onPress={handleDeleteAccount}
-                  danger
-                  hideDivider
-                  rightSlot={
-                    deleting ? <ActivityIndicator size="small" color="#ef4444" /> : <View />
-                  }
-                />
-              </>
-            )}
+          <LinkRow
+            icon={<LogOut size={24} color="#4b5563" />}
+            label="Izrakstīties"
+            onPress={handleLogout}
+            hideDivider
+            rightSlot={<View />}
+          />
+          {user && (
+            <>
+              <View style={styles.divider} />
+              <LinkRow
+                icon={<Trash2 size={24} color="#ef4444" />}
+                label="Dzēst kontu"
+                onPress={handleDeleteAccount}
+                danger
+                hideDivider
+                rightSlot={deleting ? <ActivityIndicator size="small" color="#ef4444" /> : <View />}
+              />
+            </>
+          )}
         </View>
 
         {!user && (
@@ -248,9 +235,8 @@ export default function SettingsScreen() {
         )}
 
         <View style={{ alignItems: 'center', marginTop: 24, paddingBottom: 40 }}>
-            <Text style={{ color: '#9ca3af', fontSize: 13 }}>Versija {APP_VERSION}</Text>
+          <Text style={{ color: '#9ca3af', fontSize: 13 }}>Versija {APP_VERSION}</Text>
         </View>
-
       </ScrollView>
     </View>
   );
@@ -276,8 +262,7 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  scrollContent: {
-  },
+  scrollContent: {},
   cardGroup: {
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
@@ -349,5 +334,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-  }
+  },
 });

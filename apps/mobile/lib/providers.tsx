@@ -11,6 +11,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ModeProvider } from '@/lib/mode-context';
 import { ToastProvider } from '@/components/ui/Toast';
 import { LanguageProvider } from '@/lib/language-context';
+import { NotificationsProvider } from '@/lib/notifications-context';
 
 interface Props {
   children: React.ReactNode;
@@ -22,7 +23,9 @@ export function AppProviders({ children }: Props) {
       <ToastProvider>
         <AuthProvider>
           <LanguageProvider>
-            <ModeProvider>{children}</ModeProvider>
+            <ModeProvider>
+              <NotificationsProvider>{children}</NotificationsProvider>
+            </ModeProvider>
           </LanguageProvider>
         </AuthProvider>
       </ToastProvider>

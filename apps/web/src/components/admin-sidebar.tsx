@@ -61,6 +61,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ADMIN_NAV_GROUPS } from '@/lib/admin-nav-groups';
 import { useAuth } from '@/lib/auth-context';
+import { makeIsRouteActive } from '@/lib/is-route-active';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
 import { adminListSupportThreads } from '@/lib/api/support';
 import { adminGetExceptions, adminGetGuestOrders } from '@/lib/api/admin';
@@ -340,22 +341,12 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   });
 
   const isActive = React.useCallback(
-    (item: NavItem) => {
-      const href = item.href;
-      if (
-        href === '/dashboard/admin' ||
-        href === '/dashboard/b3-recycling' ||
-        href === '/dashboard/b3-construction' ||
-        href === '/dashboard/group'
-      ) {
-        return pathname === href;
-      }
-      // Group-aware: active on any page in the group
-      if (item.groupPaths && item.groupPaths.length > 0) {
-        return item.groupPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
-      }
-      return pathname === href || pathname.startsWith(`${href}/`);
-    },
+    makeIsRouteActive(pathname, [
+      '/dashboard/admin',
+      '/dashboard/b3-recycling',
+      '/dashboard/b3-construction',
+      '/dashboard/group',
+    ]),
     [pathname],
   );
 

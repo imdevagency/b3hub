@@ -1088,6 +1088,50 @@ export class OrdersService {
     });
   }
 
+  /**
+   * Lightweight status transition for internal cross-service use.
+   * Validates the transition against `allowedStatusTransitions` and writes the
+   * new status + timestamp — but does NOT trigger invoicing, transport-job
+   * spawning, or payment capture (those are handled by the calling service or
+   * by the scheduler). Use this from transport-jobs, containers, etc. instead
+   * of calling `prisma.order.update` directly so the state machine is always
+   * respected.
+   *
+   * If the order is already in the target status, returns silently (idempotent).
+   * Throws BadRequestException for invalid transitions.
+   */
+  async advanceOrderStatus(orderId: string, newStatus: OrderStatus): Promise<void> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { status: true },
+    });
+    if (!order) throw new NotFoundException(`Order ${orderId} not found`);
+    if (order.status === newStatus) return;
+
+    const allowed = this.allowedStatusTransitions[order.status] ?? [];
+    if (!allowed.includes(newStatus)) {
+      throw new BadRequestException(
+        `Invalid order status transition: ${order.status} -> ${newStatus}`,
+      );
+    }
+
+    const prevTs =
+      ((
+        await this.prisma.order.findUnique({
+          where: { id: orderId },
+          select: { statusTimestamps: true },
+        })
+      )?.statusTimestamps as Record<string, string> | null) ?? {};
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: newStatus,
+        statusTimestamps: { ...prevTs, [newStatus]: new Date().toISOString() },
+      },
+    });
+  }
+
   async updateStatus(id: string, status: OrderStatus) {
     const order = await this.prisma.order.findUnique({
       where: { id },
