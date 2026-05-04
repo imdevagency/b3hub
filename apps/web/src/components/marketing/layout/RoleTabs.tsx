@@ -1,20 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Home, Building2, Truck, Pickaxe, Check, ArrowRight } from 'lucide-react';
+import { HardHat, Truck, Pickaxe, Recycle, Check, ArrowRight } from 'lucide-react';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 import Link from 'next/link';
 
-type Role = 'b2c' | 'b2b' | 'driver' | 'supplier';
+type Role = 'constructor' | 'driver' | 'supplier' | 'recycler';
 
 export function RoleTabs() {
-  const [activeRole, setActiveRole] = useState<Role>('b2c');
+  const [activeRole, setActiveRole] = useState<Role>('constructor');
 
   const roles = [
-    { id: 'b2c', label: 'Privātpersona', icon: Home },
-    { id: 'b2b', label: 'Uzņēmums', icon: Building2 },
+    { id: 'constructor', label: 'Būvnieks', icon: HardHat },
     { id: 'driver', label: 'Šoferis', icon: Truck },
-    { id: 'supplier', label: 'Karjers', icon: Pickaxe },
+    { id: 'supplier', label: 'Piegādātājs', icon: Pickaxe },
+    { id: 'recycler', label: 'Pārstrādātājs', icon: Recycle },
   ] as const;
 
   return (
@@ -43,57 +43,22 @@ export function RoleTabs() {
 
       {/* Content Area */}
       <div className="w-full">
-        {/* B2C */}
-        {activeRole === 'b2c' && (
-          <div className="bg-secondary/30 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+        {/* Constructor */}
+        {activeRole === 'constructor' && (
+          <div className="bg-foreground text-background rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
-              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                Privātpersona vai mazais pasūtītājs
+              <p className="text-sm font-bold tracking-widest uppercase text-background/50">
+                Privātpersona, kontraktors vai būvniecības uzņēmums
               </p>
-              <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight">
-                Grants vai smiltis
+              <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight text-background">
+                Pasūti materiālus
                 <br />
                 bez zvaniem un e-pastiem.
               </h3>
               <ul className="flex flex-col gap-4">
                 {[
                   'Cenas no reģionālajiem karjeriem — redzamas uzreiz',
-                  'GPS izsekošana — zini minūtē, kad auto pie tevis būs',
-                  'Maksā ar karti, saņem rēķinu automātiski',
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-3 text-lg text-muted-foreground">
-                    <div className="p-1 bg-background rounded-full shrink-0 shadow-xs">
-                      <Check className="w-4 h-4 text-foreground" strokeWidth={3} />
-                    </div>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4">
-                <CTAButton href={'/order'} variant="primary" size="lg" className="w-fit text-base">
-                  Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-1.5" />
-                </CTAButton>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* B2B */}
-        {activeRole === 'b2b' && (
-          <div className="bg-foreground text-background rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
-              <p className="text-sm font-bold tracking-widest uppercase text-background/50">
-                Būvniecības uzņēmums vai kontraktors
-              </p>
-              <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight text-background">
-                Centralizē visu
-                <br />
-                celtniecības loģistiku.
-              </h3>
-              <ul className="flex flex-col gap-4">
-                {[
                   'Ietvara līgumi un projektu apjoma kontrole',
-                  'Komantas konti ar lomām un atļau pārvaldību',
                   'Automātiskie PVN rēķini un ikmēneša kopsavilkumi',
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-3 text-lg text-background/80">
@@ -105,13 +70,8 @@ export function RoleTabs() {
                 ))}
               </ul>
               <div className="mt-4 flex flex-wrap gap-4 items-center">
-                <CTAButton
-                  href={'/register'}
-                  variant="inverted"
-                  size="lg"
-                  className="w-fit text-base"
-                >
-                  Reģistrēt uzņēmumu <ArrowRight className="w-5 h-5 ml-1.5" />
+                <CTAButton href={'/order'} variant="inverted" size="lg" className="w-fit text-base">
+                  Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-1.5" />
                 </CTAButton>
                 <Link
                   href="/buvniekiem"
@@ -198,6 +158,46 @@ export function RoleTabs() {
                   className="w-fit text-base"
                 >
                   Pievienoties tīklam <ArrowRight className="w-5 h-5 ml-1.5" />
+                </CTAButton>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recycler */}
+        {activeRole === 'recycler' && (
+          <div className="bg-secondary/30 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+            <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
+              <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+                Būvgružu un atkritumu pārstrādes uzņēmums
+              </p>
+              <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight">
+                Pieņem būvgružus.
+                <br />
+                Izstādi cenas. Saņem pasūtījumus.
+              </h3>
+              <ul className="flex flex-col gap-4">
+                {[
+                  'Tiešsaistes rezervācija — klienti pierakstās paši bez zvaniem',
+                  'Automātiskie pieņemšanas akti un nodošanas sertifikāti',
+                  'Svara uzskaite un atkritumu žurnāls digitāli',
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-3 text-lg text-muted-foreground">
+                    <div className="p-1 bg-background rounded-full shrink-0 shadow-xs">
+                      <Check className="w-4 h-4 text-foreground" strokeWidth={3} />
+                    </div>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 flex flex-wrap gap-4 items-center">
+                <CTAButton
+                  href={'/register'}
+                  variant="primary"
+                  size="lg"
+                  className="w-fit text-base"
+                >
+                  Reģistrēt uzņēmumu <ArrowRight className="w-5 h-5 ml-1.5" />
                 </CTAButton>
               </div>
             </div>
