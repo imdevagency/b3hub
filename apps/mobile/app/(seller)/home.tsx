@@ -8,7 +8,15 @@ import type { ApiOrder } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
-import { Inbox, ArrowRight, Plus, CheckCircle, Wallet, ChevronRight } from 'lucide-react-native';
+import {
+  Inbox,
+  ArrowRight,
+  Plus,
+  CheckCircle,
+  Wallet,
+  ChevronRight,
+  AlertTriangle,
+} from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useHeaderConfig } from '@/lib/header-context';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -160,6 +168,64 @@ export default function SellerHomeScreen() {
         }
       >
         <View className="px-5">
+          {/* IBAN NUDGE — shown when seller has not configured payout details */}
+          {user && user.payoutEnabled === false && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                haptics.light();
+                router.push('/(seller)/profile');
+              }}
+              style={{
+                backgroundColor: '#fffbeb',
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#fde68a',
+                gap: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: '#fef3c7',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <AlertTriangle size={20} color="#d97706" strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    color: '#92400e',
+                    marginBottom: 2,
+                  }}
+                >
+                  Pievienojiet IBAN, lai saņemtu maksājumus
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontFamily: 'Inter_400Regular',
+                    color: '#b45309',
+                  }}
+                >
+                  Bez IBAN konta jūs nevarat saņemt izmaksas
+                </Text>
+              </View>
+              <ChevronRight size={16} color="#d97706" />
+            </TouchableOpacity>
+          )}
+
           {/* FIRST-RUN ONBOARDING */}
           {materialCount === 0 && pendingCount === 0 && (
             <View className="bg-[#166534] rounded-3xl p-5 mb-6">

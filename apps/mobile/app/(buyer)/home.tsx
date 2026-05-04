@@ -12,6 +12,7 @@ import {
   ChevronRight,
   AlertCircle,
   ArrowRight,
+  MailCheck,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -339,6 +340,65 @@ export default function HomeScreen() {
               </Text>
             </View>
             <ChevronRight size={24} color="#d97706" />
+          </TouchableOpacity>
+        )}
+
+        {/* Email Verification Nudge */}
+        {user && !user.emailVerified && (
+          <TouchableOpacity
+            style={{
+              marginHorizontal: 20,
+              marginBottom: 20,
+              backgroundColor: '#eff6ff',
+              padding: 16,
+              borderRadius: 20,
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#bfdbfe',
+              gap: 12,
+            }}
+            activeOpacity={0.8}
+            onPress={() => {
+              haptics.light();
+              router.push('/(buyer)/profile');
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#dbeafe',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <MailCheck size={20} color="#2563eb" strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text
+                style={{
+                  color: '#1e3a5f',
+                  fontSize: 14,
+                  fontFamily: 'Inter_600SemiBold',
+                  fontWeight: '600',
+                  marginBottom: 2,
+                }}
+              >
+                Apstipriniet e-pastu
+              </Text>
+              <Text
+                style={{
+                  color: '#1d4ed8',
+                  fontSize: 12,
+                  fontFamily: 'Inter_400Regular',
+                }}
+              >
+                Apstipriniet kontu, lai saņemtu rēķinus un atjauninājumus
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#2563eb" />
           </TouchableOpacity>
         )}
 

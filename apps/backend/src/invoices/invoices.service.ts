@@ -361,6 +361,12 @@ export class InvoicesService {
                 taxId: true,
               },
             },
+            createdBy: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
         },
         buyerCompany: {
@@ -394,7 +400,9 @@ export class InvoicesService {
         const buyerName =
           inv.buyerCompany?.legalName ??
           inv.order?.buyer?.legalName ??
-          '';
+          ([inv.order?.createdBy?.firstName, inv.order?.createdBy?.lastName]
+            .filter(Boolean)
+            .join(' ') || '');
         const buyerReg =
           inv.buyerCompany?.registrationNum ??
           inv.order?.buyer?.registrationNum ??

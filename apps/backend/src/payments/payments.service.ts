@@ -424,6 +424,17 @@ export class PaymentsService {
     for (const supplierId of supplierIds) {
       const amountCents = supplierPayoutMap.get(supplierId) ?? 0;
       if (amountCents <= 0) continue;
+      const supplierItem = order.items.find(
+        (i) => i.material.supplier.id === supplierId,
+      );
+      const supplier = supplierItem?.material?.supplier as
+        | { id: string; ibanNumber?: string | null; name?: string | null }
+        | undefined;
+      if (!supplier?.ibanNumber) {
+        this.logger.warn(
+          `releaseFunds: supplier ${supplierId} (${supplier?.name ?? 'unknown'}) has no IBAN — payout obligation recorded but transfer will be blocked until IBAN is set`,
+        );
+      }
       await this.prisma.supplierPayout.create({
         data: {
           orderId,
@@ -437,6 +448,28 @@ export class PaymentsService {
 
     // ── Record CarrierPayout obligation ──────────────────────────────────────
     if (driverCents > 0 && deliveredJob) {
+      const driverCompanyId = deliveredJob.driver?.companyId;
+      if (driverCompanyId) {
+        const driverCompany = await this.prisma.company.findUnique({
+          where: { id: driverCompanyId },
+          select: { ibanNumber: true, name: true },
+        });
+        if (!driverCompany?.ibanNumber) {
+          this.logger.warn(
+            `releaseFunds: carrier company ${driverCompanyId} (${driverCompany?.name ?? 'unknown'}) has no IBAN — carrier payout obligation recorded but transfer will be blocked until IBAN is set`,
+          );
+        }
+      } else if (deliveredJob.driverId) {
+        const driverProfile = await this.prisma.driverProfile.findUnique({
+          where: { userId: deliveredJob.driverId },
+          select: { ibanNumber: true },
+        });
+        if (!driverProfile?.ibanNumber) {
+          this.logger.warn(
+            `releaseFunds: driver ${deliveredJob.driverId} has no IBAN — payout obligation recorded but transfer will be blocked until IBAN is set`,
+          );
+        }
+      }
       await this.prisma.carrierPayout.create({
         data: {
           orderId,

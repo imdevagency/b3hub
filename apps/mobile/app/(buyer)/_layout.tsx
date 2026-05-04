@@ -128,6 +128,7 @@ function BuyerLayoutContent() {
         <Tabs.Screen name="(account)/certificates" options={{ href: null }} />
         <Tabs.Screen name="(account)/documents" options={{ href: null }} />
         <Tabs.Screen name="(account)/saved-addresses" options={{ href: null }} />
+        <Tabs.Screen name="(account)/payment-methods" options={{ href: null }} />
         <Tabs.Screen name="(account)/disputes" options={{ href: null }} />
         <Tabs.Screen name="(account)/schedules" options={{ href: null }} />
         <Tabs.Screen name="(account)/field-passes" options={{ href: null }} />

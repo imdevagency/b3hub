@@ -44,6 +44,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { UpdatesModule } from './updates/updates.module';
 import { HealthModule } from './health/health.module';
 import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
+import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { SupportModule } from './support/support.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
@@ -102,6 +103,7 @@ import { B3FieldsModule } from './b3-fields/b3-fields.module';
     UpdatesModule,
     HealthModule,
     SavedAddressesModule,
+    PaymentMethodsModule,
     DisputesModule,
     SupportModule,
     ApiKeysModule,

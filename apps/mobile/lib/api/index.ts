@@ -43,6 +43,8 @@ export * from './payments';
 
 export * from './saved-addresses';
 
+export * from './payment-methods';
+
 export * from './guest-orders';
 
 
@@ -94,6 +96,8 @@ import { paymentsApi } from './payments';
 import { projectsApi } from './projects';
 
 import { savedAddressesApi } from './saved-addresses';
+
+import { paymentMethodsApi } from './payment-methods';
 
 import { guestOrdersApi } from './guest-orders';
 
@@ -194,6 +198,9 @@ export const api = {
   // ── Saved addresses ──────────────────────────────────────────────────
 
   savedAddresses: savedAddressesApi,
+
+  // Payment methods
+  paymentMethods: paymentMethodsApi,
 
 
 

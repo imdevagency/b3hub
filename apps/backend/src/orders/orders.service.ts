@@ -28,6 +28,7 @@ import {
   PaymentMethod,
   TransportJobStatus,
   TransportJobType,
+  CompanyType,
   Prisma,
 } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
@@ -109,15 +110,89 @@ export class OrdersService {
 
     const userId = currentUser.userId;
     const { items, ...orderData } = createOrderDto;
-    const buyerCompanyId =
+    let buyerCompanyId: string | null | undefined =
       currentUser.userType === 'ADMIN'
         ? orderData.buyerId
         : currentUser.companyId;
 
+    if (!buyerCompanyId && currentUser.userType !== 'ADMIN') {
+      // Personal buyer — auto-create a lightweight company record on first order
+      // so individual consumers (B2C homeowners, sole traders) can place orders
+      // without going through the full company onboarding flow.
+      const userRecord = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          companyId: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
+      });
+      // Re-check in case the JWT is stale and companyId was set after login
+      if (userRecord?.companyId) {
+        buyerCompanyId = userRecord.companyId;
+      } else {
+        const personalName =
+          [userRecord?.firstName, userRecord?.lastName]
+            .filter(Boolean)
+            .join(' ') ||
+          userRecord?.email ||
+          'Personal Account';
+        const newCompany = await this.prisma.$transaction(async (tx) => {
+          const co = await tx.company.create({
+            data: {
+              name: personalName,
+              legalName: personalName,
+              companyType: CompanyType.CONSTRUCTION,
+              email: userRecord?.email ?? '',
+              phone: userRecord?.phone ?? '',
+              street: '',
+              city: '',
+              state: '',
+              postalCode: '',
+            },
+            select: { id: true },
+          });
+          await tx.user.update({
+            where: { id: userId },
+            data: { companyId: co.id },
+          });
+          return co;
+        });
+        buyerCompanyId = newCompany.id;
+        this.logger.log(
+          `Auto-created personal company ${newCompany.id} for user ${userId}`,
+        );
+      }
+    }
+
     if (!buyerCompanyId) {
       throw new BadRequestException(
-        'Material orders require a buyer company linked to the authenticated user',
+        'Could not resolve buyer account. Please complete your profile.',
       );
+    }
+
+    // Email verification soft gate — buyers who registered via email but have not
+    // verified it yet can still place orders (B2C UX), but we log a warning so
+    // the support team can follow up. Phone-verified accounts are exempt.
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      !currentUser.isCompany // personal accounts only
+    ) {
+      const freshUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { emailVerified: true, phoneVerified: true, email: true },
+      });
+      if (
+        freshUser?.email &&
+        !freshUser.emailVerified &&
+        !freshUser.phoneVerified
+      ) {
+        this.logger.warn(
+          `Order placed by unverified buyer userId=${userId} — email not verified`,
+        );
+      }
     }
 
     // Delivery date must not be in the past
@@ -165,6 +240,18 @@ export class OrdersService {
         throw new ConflictException(
           `Possible duplicate order: order ${recentDuplicate.orderNumber} was placed for the same project and delivery address ${minutesAgo} minute(s) ago. If intentional, wait 10 minutes or contact your team.`,
         );
+      }
+    }
+
+    // Phone fallback: if the order DTO did not include a site contact phone,
+    // auto-populate from the buyer's account phone so drivers always have a contact.
+    if (!orderData.siteContactPhone) {
+      const accountUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { phone: true },
+      });
+      if (accountUser?.phone) {
+        orderData.siteContactPhone = accountUser.phone;
       }
     }
 

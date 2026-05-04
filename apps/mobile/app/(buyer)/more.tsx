@@ -42,6 +42,7 @@ import {
   FolderKanban,
   HardHat,
   Recycle,
+  CreditCard,
 } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -182,6 +183,11 @@ export default function MoreScreen() {
           icon: MapPin,
           label: 'Adreses',
           onPress: requireAuth(() => router.push('/(buyer)/(account)/saved-addresses')),
+        },
+        {
+          icon: CreditCard,
+          label: 'Maksājumi',
+          onPress: requireAuth(() => router.push('/(buyer)/(account)/payment-methods')),
         },
         {
           icon: Bell,

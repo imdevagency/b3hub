@@ -484,6 +484,7 @@ model User {
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
   savedAddresses              SavedAddress[]
+  savedPaymentMethods         SavedPaymentMethod[]
   adminAuditLogs              AdminAuditLog[]
   orderSchedules              OrderSchedule[]
   raisedDisputes              Dispute[]               @relation("UserDisputes")
@@ -2065,6 +2066,34 @@ model SavedAddress {
 
   @@index([userId])
   @@map("saved_addresses")
+}
+
+/**
+ * Saved payment method — stores a tokenised card reference from Paysera.
+ * The `payseraToken` is returned by Paysera after a successful payment when
+ * recurring-payment consent is enabled on the checkout. It can then be
+ * passed back to Paysera to pre-fill or auto-charge on future checkouts.
+ *
+ * Security: we never store raw card numbers. Only Paysera-issued opaque tokens.
+ */
+model SavedPaymentMethod {
+  id           String  @id @default(cuid())
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+
+  label        String          // e.g. "Visa •••• 4242"
+  cardType     String          // "VISA" | "MASTERCARD" | "MAESTRO" | "OTHER"
+  last4        String          // Last 4 digits of card number (display only)
+  expiryMonth  Int             // 1–12
+  expiryYear   Int             // full year e.g. 2027
+  payseraToken String          // Opaque token returned by Paysera for recurring use
+  isDefault    Boolean         @default(false)
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId])
+  @@map("saved_payment_methods")
 }
 
 // ── Admin audit log ──────────────────────────────────────────────────────────
