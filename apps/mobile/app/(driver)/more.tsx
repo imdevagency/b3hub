@@ -17,7 +17,7 @@ import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import {
-  ClipboardList,
+  CalendarDays,
   Truck,
   Package,
   FileText,
@@ -131,10 +131,19 @@ export default function DriverMoreScreen() {
   };
 
   const tiles: TileItem[] = [
-    { icon: ClipboardList, label: 'Darbi', onPress: () => router.push('/(driver)/jobs') },
     { icon: Truck, label: 'Transporti', onPress: () => router.push('/(driver)/vehicles') },
-    { icon: Package, label: 'Konteineri', onPress: () => router.push('/(driver)/skips') },
+    ...(user?.canSkipHire
+      ? [
+          {
+            icon: Package,
+            label: 'Konteineri',
+            onPress: () => router.push('/(driver)/skips'),
+          } as TileItem,
+        ]
+      : []),
     { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(driver)/documents') },
+    { icon: CalendarDays, label: 'Grafiks', onPress: () => router.push('/(driver)/schedule') },
+    { icon: MessageCircle, label: 'Ziņojumi', onPress: () => router.push('/messages') },
     { icon: Bell, label: 'Paziņojumi', onPress: () => router.push('/notifications') },
     { icon: Settings, label: 'Iestatījumi', onPress: () => router.push('/settings') },
   ];

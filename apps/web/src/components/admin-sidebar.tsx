@@ -13,17 +13,25 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
+  Banknote,
   BarChart2,
   BarChart3,
   BookOpen,
   Box,
+  Boxes,
   Building2,
   ClipboardList,
   Clock,
+  CreditCard,
+  DollarSign,
   FileText,
+  Flag,
   FolderKanban,
+  Gavel,
   Globe2,
   HardHat,
+  History,
+  KeyRound,
   LayoutDashboard,
   LayoutTemplate,
   Layers,
@@ -31,20 +39,27 @@ import {
   LogOut,
   MapPin,
   Megaphone,
+  MessageSquare,
   Navigation,
   Package,
+  Percent,
   Receipt,
   Recycle,
+  Scale,
   ScrollText,
   Settings2,
+  ShieldAlert,
   ShieldCheck,
   ShoppingBag,
   Sliders,
+  Timer,
   Truck,
   Users,
   Wallet,
+  Wrench,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ADMIN_NAV_GROUPS } from '@/lib/admin-nav-groups';
 import { useAuth } from '@/lib/auth-context';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
 import { adminListSupportThreads } from '@/lib/api/support';
@@ -71,6 +86,10 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   badgeKey?: keyof AdminBadges;
+  /** Sum multiple badge keys onto a single group sidebar item */
+  badgeKeys?: Array<keyof AdminBadges>;
+  /** All paths in this group — makes the sidebar item active on any of them */
+  groupPaths?: string[];
 };
 
 type NavSection = {
@@ -112,76 +131,58 @@ const GROUP_NAV: NavSection[] = [
 ];
 
 // ─── B3Hub navigation (marketplace admin) ────────────────────────────────────
+// 7 items max — one per business domain. Tabs within each domain live
+// in AdminSectionTabs (rendered by the admin layout), not here.
 
 const B3HUB_NAV: NavSection[] = [
   {
-    id: 'overview',
-    label: 'Pārskats',
-    items: [{ label: 'Vadības panelis', href: '/dashboard/admin', icon: LayoutDashboard }],
-  },
-  {
-    id: 'rules',
-    label: 'Platformas noteikumi',
-    items: [
-      { label: 'Katalogs', href: '/dashboard/admin/catalog', icon: Package },
-      { label: 'Konfigurācija', href: '/dashboard/admin/config', icon: Sliders },
-      { label: 'Sistēmas iestatījumi', href: '/dashboard/admin/settings', icon: Settings2 },
-    ],
-  },
-  {
-    id: 'governance',
-    label: 'Dalībnieku pārvaldība',
+    id: 'main',
+    label: '',
     items: [
       {
-        label: 'Pieteikumi',
-        href: '/dashboard/admin/applications',
-        icon: ShieldCheck,
-        badgeKey: 'pendingApplications',
+        label: 'Vadības panelis',
+        href: '/dashboard/admin',
+        icon: LayoutDashboard,
       },
-      { label: 'Lietotāji', href: '/dashboard/admin/users', icon: Users },
-      { label: 'Uzņēmumi', href: '/dashboard/admin/companies', icon: Building2 },
-      { label: 'Piegādātāji', href: '/dashboard/admin/suppliers', icon: Layers },
-      { label: 'Pārstrādes centri', href: '/dashboard/admin/recycling-centers', icon: Recycle },
-      { label: 'B3 Lauki', href: '/dashboard/admin/b3-fields', icon: MapPin },
-    ],
-  },
-  {
-    id: 'triage',
-    label: 'Operacionālā triāža',
-    items: [
       {
-        label: 'Triāža',
+        label: 'Operācijas',
         href: '/dashboard/admin/triage',
         icon: AlertTriangle,
-        badgeKey: 'triageAlerts',
+        badgeKeys: ['triageAlerts', 'openExceptions', 'openSupport', 'openDisputes'],
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'operations')?.tabs.map((t) => t.href),
       },
-      { label: 'Dokumenti', href: '/dashboard/admin/documents', icon: FileText },
       {
-        label: 'Viesa pasūtījumi',
-        href: '/dashboard/admin/guest-orders',
+        label: 'Pasūtījumi',
+        href: '/dashboard/admin/orders',
         icon: ShoppingBag,
         badgeKey: 'pendingGuestOrders',
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'orders')?.tabs.map((t) => t.href),
       },
-      { label: 'Paziņojumu izsūtīšana', href: '/dashboard/admin/broadcast', icon: Megaphone },
-    ],
-  },
-  {
-    id: 'finance',
-    label: 'Finanses',
-    items: [{ label: 'Finanses', href: '/dashboard/admin/finances', icon: Wallet }],
-  },
-  {
-    id: 'observability',
-    label: 'Pārraudzība',
-    items: [
-      { label: 'Dispečerizācija', href: '/dashboard/admin/dispatch', icon: Navigation },
-      { label: 'Visi pasūtījumi', href: '/dashboard/admin/orders', icon: BarChart3 },
-      { label: 'Transporta darbi', href: '/dashboard/admin/jobs', icon: Truck },
-      { label: 'Skip Hire', href: '/dashboard/admin/skip-hire', icon: Box },
-      { label: 'Tirgus piedāvājumi', href: '/dashboard/admin/marketplace', icon: ListChecks },
-      { label: 'RFQ pieprasījumi', href: '/dashboard/admin/rfqs', icon: ClipboardList },
-      { label: 'Pamatlīgumi', href: '/dashboard/admin/framework-contracts', icon: ScrollText },
-      { label: 'Audita žurnāls', href: '/dashboard/admin/audit-logs', icon: ScrollText },
+      {
+        label: 'Finanses',
+        href: '/dashboard/admin/finances',
+        icon: Wallet,
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'finance')?.tabs.map((t) => t.href),
+      },
+      {
+        label: 'Dalībnieki',
+        href: '/dashboard/admin/users',
+        icon: Users,
+        badgeKey: 'pendingApplications',
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'people')?.tabs.map((t) => t.href),
+      },
+      {
+        label: 'Katalogs',
+        href: '/dashboard/admin/catalog',
+        icon: Package,
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'catalog')?.tabs.map((t) => t.href),
+      },
+      {
+        label: 'Konfigurācija',
+        href: '/dashboard/admin/config',
+        icon: Settings2,
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'config')?.tabs.map((t) => t.href),
+      },
     ],
   },
 ];
@@ -203,6 +204,11 @@ const RECYCLING_NAV: NavSection[] = [
         label: 'Atkritumu žurnāls',
         href: '/dashboard/b3-recycling/waste-log',
         icon: ClipboardList,
+      },
+      {
+        label: 'APUS',
+        href: '/dashboard/b3-recycling/apus',
+        icon: FileText,
       },
     ],
   },
@@ -334,7 +340,8 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   });
 
   const isActive = React.useCallback(
-    (href: string) => {
+    (item: NavItem) => {
+      const href = item.href;
       if (
         href === '/dashboard/admin' ||
         href === '/dashboard/b3-recycling' ||
@@ -342,6 +349,10 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         href === '/dashboard/group'
       ) {
         return pathname === href;
+      }
+      // Group-aware: active on any page in the group
+      if (item.groupPaths && item.groupPaths.length > 0) {
+        return item.groupPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
       }
       return pathname === href || pathname.startsWith(`${href}/`);
     },
@@ -467,13 +478,19 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       <SidebarContent>
         {activeNav.map((section) => (
           <SidebarGroup key={section.id} className="pt-2">
-            <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
-              {section.label}
-            </SidebarGroupLabel>
+            {section.label && (
+              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
+                {section.label}
+              </SidebarGroupLabel>
+            )}
             <SidebarMenu>
               {section.items.map((item) => {
-                const active = isActive(item.href);
-                const count = item.badgeKey ? badges[item.badgeKey] : 0;
+                const active = isActive(item);
+                const count = item.badgeKeys
+                  ? item.badgeKeys.reduce((sum, k) => sum + badges[k], 0)
+                  : item.badgeKey
+                    ? badges[item.badgeKey]
+                    : 0;
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

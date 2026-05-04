@@ -1,5 +1,5 @@
 // apps/web/src/lib/api/payments.ts
-import { API_URL as API_BASE } from './common';
+import { apiFetch } from './common';
 
 export interface PaymentOnboardResponse {
   type: 'COMPANY' | 'DRIVER';
@@ -36,44 +36,24 @@ export interface EarningsResponse {
 }
 
 export async function setupPayouts(token: string): Promise<PaymentOnboardResponse> {
-  const res = await fetch(`${API_BASE}/payments/onboard`, {
+  return apiFetch<PaymentOnboardResponse>('/payments/onboard', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
-
-  if (!res.ok) {
-    throw new Error('Failed to initiate payout setup');
-  }
-
-  return res.json();
 }
 
 export async function createPaymentIntent(
   orderId: string,
   token: string,
 ): Promise<PaymentIntentResponse> {
-  const res = await fetch(`${API_BASE}/payments/create-intent/${orderId}`, {
+  return apiFetch<PaymentIntentResponse>(`/payments/create-intent/${orderId}`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${token}` },
   });
-
-  if (!res.ok) {
-    throw new Error('Failed to initialize payment');
-  }
-
-  return res.json();
 }
 
 export async function getEarnings(token: string): Promise<EarningsResponse> {
-  const res = await fetch(`${API_BASE}/payments/earnings`, {
+  return apiFetch<EarningsResponse>('/payments/earnings', {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error('Failed to fetch earnings');
-  return res.json();
 }

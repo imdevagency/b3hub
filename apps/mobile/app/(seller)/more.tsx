@@ -133,7 +133,7 @@ export default function SellerMoreScreen() {
 
   const tiles: TileItem[] = [
     { icon: Euro, label: 'Izpeļņa', onPress: () => router.push('/(seller)/earnings') },
-    { icon: Tag, label: 'Cenas', onPress: () => router.push('/(seller)/quotes') },
+    { icon: Tag, label: 'Piedāvājumi', onPress: () => router.push('/(seller)/quotes') },
     { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(seller)/documents') },
     {
       icon: Handshake,

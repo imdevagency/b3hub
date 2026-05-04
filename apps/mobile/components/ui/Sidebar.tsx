@@ -12,17 +12,18 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
+  AlertCircle,
+  Bell,
   Box,
   CalendarDays,
+  Euro,
   FileText,
+  Handshake,
   LogOut,
   MessageCircle,
-  Receipt,
   Settings,
-  ShieldCheck,
   Trash2,
   Truck,
-  Users,
 } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
@@ -54,9 +55,6 @@ interface MenuItem {
 
 interface BuildItemsUser {
   isCompany?: boolean;
-  companyRole?: string | null;
-  permCreateContracts?: boolean;
-  permReleaseCallOffs?: boolean;
   canSkipHire?: boolean;
 }
 
@@ -69,6 +67,26 @@ function buildItems(role: Role, user: BuildItemsUser | null | undefined): MenuIt
       icon: (c) => <FileText size={20} color={c} />,
       label: 'Piedāvājumi',
       route: '/(seller)/quotes',
+    });
+    items.push({
+      icon: (c) => <Euro size={20} color={c} />,
+      label: 'Izpeļņa',
+      route: '/(seller)/earnings',
+    });
+    items.push({
+      icon: (c) => <Box size={20} color={c} />,
+      label: 'Dokumenti',
+      route: '/(seller)/documents',
+    });
+    items.push({
+      icon: (c) => <Handshake size={20} color={c} />,
+      label: 'Līgumi',
+      route: '/(seller)/framework-contracts',
+    });
+    items.push({
+      icon: (c) => <Bell size={20} color={c} />,
+      label: 'Paziņojumi',
+      route: '/notifications',
     });
   }
 
@@ -90,42 +108,34 @@ function buildItems(role: Role, user: BuildItemsUser | null | undefined): MenuIt
       label: 'Grafiks',
       route: '/(driver)/schedule',
     });
-  }
-  if (role === 'buyer') {
-    if (isCompany) {
-      items.push({
-        icon: (c) => <Users size={20} color={c} />,
-        label: 'Komanda',
-        route: '/(buyer)/team',
-      });
-    }
-    // Framework contracts: company members with contract management access
-    const canViewContracts =
-      isCompany &&
-      (user?.companyRole === 'OWNER' ||
-        user?.companyRole === 'MANAGER' ||
-        !!user?.permCreateContracts ||
-        !!user?.permReleaseCallOffs);
-    if (canViewContracts) {
-      items.push({
-        icon: (c) => <FileText size={20} color={c} />,
-        label: 'Projekti',
-        route: '/(buyer)/framework-contracts',
-      });
-    }
     items.push({
-      icon: (c) => <Receipt size={20} color={c} />,
-      label: 'Rēķini',
-      route: '/(buyer)/invoices',
+      icon: (c) => <Box size={20} color={c} />,
+      label: 'Dokumenti',
+      route: '/(driver)/documents',
     });
-    // Certificates: only for skip-hire operators
-    if (user?.canSkipHire) {
-      items.push({
-        icon: (c) => <ShieldCheck size={20} color={c} />,
-        label: 'Sertifikāti',
-        route: '/(buyer)/certificates',
-      });
-    }
+    items.push({
+      icon: (c) => <Bell size={20} color={c} />,
+      label: 'Paziņojumi',
+      route: '/notifications',
+    });
+  }
+
+  if (role === 'buyer') {
+    items.push({
+      icon: (c) => <FileText size={20} color={c} />,
+      label: 'Dokumenti',
+      route: '/(buyer)/(account)/documents',
+    });
+    items.push({
+      icon: (c) => <AlertCircle size={20} color={c} />,
+      label: 'Strīdi',
+      route: '/(buyer)/(account)/disputes',
+    });
+    items.push({
+      icon: (c) => <Bell size={20} color={c} />,
+      label: 'Paziņojumi',
+      route: '/notifications',
+    });
   }
 
   items.push({
