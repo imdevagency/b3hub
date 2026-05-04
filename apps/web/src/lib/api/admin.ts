@@ -217,6 +217,21 @@ export async function adminGetOrders(token: string): Promise<AdminOrder[]> {
   return res.data;
 }
 
+// ─── Transport Drivers (dispatcher view) ────────────────────────────────────
+
+export interface TransportDriver {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+}
+
+export async function adminGetDrivers(token: string): Promise<TransportDriver[]> {
+  return apiFetch<TransportDriver[]>('/transport-jobs/drivers', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // ─── Admin Transport Jobs ───────────────────────────────────────────────────
 
 export interface AdminTransportJob {

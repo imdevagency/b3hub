@@ -51,7 +51,7 @@ export default function proxy(request: NextRequest) {
   // ── APP_MODE: admin deployment route guard ────────────────────────────────
   if (IS_ADMIN_APP) {
     if (pathname === '/' || pathname === '/dashboard') {
-      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+      return NextResponse.redirect(new URL('/dashboard/group', request.url));
     }
     if (pathname.startsWith('/register')) {
       return NextResponse.redirect(new URL('/login', request.url));
@@ -69,7 +69,7 @@ export default function proxy(request: NextRequest) {
       pathname.startsWith('/reset-password') ||
       pathname.startsWith('/api/');
     if (pathname.startsWith('/dashboard') && !isPermitted) {
-      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+      return NextResponse.redirect(new URL('/dashboard/group', request.url));
     }
   } else {
     // ── APP_MODE: marketplace deployment — block admin routes for non-admins
@@ -124,7 +124,7 @@ export default function proxy(request: NextRequest) {
     const payload = decodeJwtPayload(token);
     if (payload?.userType === 'ADMIN') {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard/admin';
+      url.pathname = '/dashboard/group';
       return NextResponse.redirect(url);
     }
   }

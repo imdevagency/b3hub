@@ -153,7 +153,10 @@ export default function DeliveriesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     getDeliveryCalendar(token)
       .then(setEntries)
       .catch((e: Error) => setError(e.message))

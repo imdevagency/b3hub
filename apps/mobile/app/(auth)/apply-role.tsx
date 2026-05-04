@@ -51,7 +51,7 @@ export default function ApplyRoleScreen() {
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (companyName.trim().length < 2) e.companyName = 'Ievadiet uzņēmuma nosaukumu';
+    if (companyName.trim().length < 2) e.companyName = 'Ievadiet uzņēmuma nosaukumu vai vārdu';
     if (phone.trim().length < 6) e.phone = 'Ievadiet tālruņa numuru';
     if (roleType === 'carrier' && !termsAccepted) e.terms = 'Jums jāpiekrīt nosacījumiem';
     setErrors(e);
@@ -147,12 +147,14 @@ export default function ApplyRoleScreen() {
             Aizpildiet veidlapu un mūsu komanda apstiprināa jūsu kontu 1–2 darba dienu laikā.
           </Text>
 
-          {/* Company name */}
+          {/* Company / personal name */}
           <View style={s.field}>
-            <Text style={s.label}>Uzņēmuma nosaukums</Text>
+            <Text style={s.label}>Uzņēmuma vai vārds</Text>
             <TextInput
               style={[s.input, errors.companyName && s.inputErr]}
-              placeholder="SIA Jūsu Uzņēmums"
+              placeholder={
+                roleType === 'carrier' ? 'SIA Transports vai Jānis Bērziņš' : 'SIA Jūsu Uzņēmums'
+              }
               placeholderTextColor="#9ca3af"
               value={companyName}
               onChangeText={setCompanyName}

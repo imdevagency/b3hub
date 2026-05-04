@@ -829,7 +829,12 @@ export class TransportJobsService {
     await Promise.all(jobs.map((j) => this.evaluateAndEscalateSla(j.id)));
     return jobs
       .map((j) => this.mapWithSla(j))
-      .filter((j) => j.sla.isOverdue)
+      .filter((j) => {
+        // Exclude AVAILABLE jobs with no driver — these are dispatch failures,
+        // not driver delays. They are tracked separately by alertJobsWithNoDriver.
+        if (j.status === TransportJobStatus.AVAILABLE && !j.driverId) return false;
+        return j.sla.isOverdue;
+      })
       .sort((a, b) => b.sla.overdueMinutes - a.sla.overdueMinutes);
   }
 
@@ -3833,6 +3838,65 @@ export class TransportJobsService {
               `alertJobsWithNoDriver: job ${job.jobNumber} (${job.id}) — ${hoursOpen}h AVAILABLE with no driver`,
             );
           }
+        }
+      },
+      this.logger,
+    );
+  }
+
+  /**
+   * Every 6 hours: clear `declinedDriverIds` (and any expired offer) for
+   * AVAILABLE jobs that have been waiting > 48 h with no driver assigned.
+   *
+   * Why: once all nearby drivers have declined, `runAutoDispatch` will never
+   * re-offer the job because `declinedDriverIds` is never cleared. Wiping the
+   * list gives the whole driver pool a fresh chance without any manual
+   * intervention.  A WARN is logged each time a reset is applied so the
+   * operations team can monitor it.
+   */
+  @Cron('0 */6 * * *')
+  async resetStuckJobDeclines(): Promise<void> {
+    await withCronLock(
+      this.prisma,
+      'resetStuckJobDeclines',
+      async () => {
+        const now = new Date();
+        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+        const stuck = await this.prisma.transportJob.findMany({
+          where: {
+            status: TransportJobStatus.AVAILABLE,
+            driverId: null,
+            createdAt: { lte: fortyEightHoursAgo },
+          },
+          select: { id: true, jobNumber: true, declinedDriverIds: true },
+        });
+
+        for (const job of stuck) {
+          if (job.declinedDriverIds.length === 0) continue;
+
+          await this.prisma.transportJob.update({
+            where: { id: job.id },
+            data: {
+              // Clear the declined list so auto-dispatch can offer the job
+              // to any driver again (including those who declined earlier).
+              declinedDriverIds: [],
+              // Also clear any pending offer so the job is immediately
+              // eligible for the next runAutoDispatch tick.
+              offeredToDriverId: null,
+              offerExpiresAt: null,
+            },
+          });
+
+          this.logger.warn(
+            `resetStuckJobDeclines: cleared ${job.declinedDriverIds.length} declined driver(s) for job ${job.jobNumber} (${job.id}) — re-broadcasting to all drivers`,
+          );
+        }
+
+        if (stuck.length > 0) {
+          this.logger.warn(
+            `resetStuckJobDeclines: reset ${stuck.length} stuck job(s) for re-broadcast`,
+          );
         }
       },
       this.logger,

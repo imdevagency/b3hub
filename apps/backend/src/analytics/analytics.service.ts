@@ -501,10 +501,13 @@ export class AnalyticsService {
           })
         : Promise.resolve([]),
       // Carrier: their upcoming transport jobs
-      canTransport && companyId
+      canTransport
         ? this.prisma.transportJob.findMany({
             where: {
-              carrierId: companyId,
+              OR: [
+                ...(companyId ? [{ carrierId: companyId }] : []),
+                { driverId: userId },
+              ],
               status: {
                 in: [
                   'AVAILABLE',

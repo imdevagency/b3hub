@@ -30,7 +30,7 @@ export default function DashboardRedirectPage() {
       return;
     }
     if (user.userType === 'ADMIN') {
-      router.replace('/dashboard/admin');
+      router.replace('/dashboard/group');
       return;
     }
     router.replace(ROLE_HOME[activeMode]);

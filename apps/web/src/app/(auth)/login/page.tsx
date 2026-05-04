@@ -44,9 +44,9 @@ function LoginPageInner() {
   const hasSubmitted = useRef(false);
 
   // Where to land after successful login.
-  // Admin app always lands on /dashboard/admin; marketplace uses redirect param.
+  // Admin app always lands on /dashboard/group; marketplace uses redirect param.
   const redirectTo = IS_ADMIN_APP
-    ? '/dashboard/admin'
+    ? '/dashboard/group'
     : searchParams.get('redirect') || '/dashboard';
 
   // If the user arrives on the login page with an existing valid session (e.g.

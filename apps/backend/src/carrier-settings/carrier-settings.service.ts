@@ -10,12 +10,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CompanyType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockDateDto } from './dto/block-date.dto';
 import { CreateZoneDto } from './dto/create-zone.dto';
-
-const ALLOWED_TYPES: CompanyType[] = ['CARRIER'];
 
 @Injectable()
 export class CarrierSettingsService {
@@ -34,9 +31,11 @@ export class CarrierSettingsService {
         'No company is associated with your account',
       );
     }
-    if (!ALLOWED_TYPES.includes(user.company.companyType)) {
+    // Gate on the canSkipHire capability flag — consistent with the frontend guard.
+    // Any company type can receive skip-hire approval, not just CARRIER.
+    if (!user.canSkipHire) {
       throw new ForbiddenException(
-        'Your company must be type CARRIER to manage carrier settings',
+        'Your account does not have skip-hire management approval',
       );
     }
     return user.company;

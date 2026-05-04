@@ -164,19 +164,58 @@ export class ProviderApplicationsService {
         // Fetch user to check if they already have a companyId
         const linkedUser = await tx.user.findUnique({
           where: { id: app.userId },
-          select: { companyId: true },
+          select: { companyId: true, firstName: true, lastName: true },
         });
+
+        let targetCompanyId = linkedUser?.companyId ?? null;
+
+        // Solo carrier/supplier applicants have no company yet.
+        // Auto-create a sole-trader company so every downstream query
+        // (earnings analytics, carrier settings, delivery calendar, etc.)
+        // works uniformly via companyId — no special-case solo paths needed.
+        if (!targetCompanyId && app.companyName) {
+          const companyType = app.appliesForTransport
+            ? ('CARRIER' as const)
+            : ('SUPPLIER' as const);
+          const newCompany = await tx.company.create({
+            data: {
+              name: app.companyName,
+              legalName: app.companyName,
+              companyType,
+              ...(app.regNumber && { registrationNum: app.regNumber }),
+              ...(app.taxId && { taxId: app.taxId }),
+              ...(app.website && { website: app.website }),
+              // Use application email/phone as company contact defaults
+              email: app.email,
+              phone: app.phone,
+              // Address defaults — admin can update via company settings
+              street: '',
+              city: '',
+              state: '',
+              postalCode: '',
+              country: 'LV',
+              verified: true, // already vetted as part of this approval
+            },
+          });
+          targetCompanyId = newCompany.id;
+          this.logger.log(
+            `Auto-created ${companyType} company "${app.companyName}" (${newCompany.id}) for sole-trader applicant ${app.userId}`,
+          );
+        }
 
         await tx.user.update({
           where: { id: app.userId },
           data: {
             ...(app.appliesForSell && { canSell: true }),
             ...(app.appliesForTransport && { canTransport: true }),
-            // Only promote to OWNER when the user is already tied to a company.
-            // Without a companyId, setting companyRole produces an inconsistent state
-            // (OWNER with no company). The admin onboarding flow should create the
-            // Company record separately and link it before or after approval.
-            ...(linkedUser?.companyId && { companyRole: 'OWNER' }),
+            // Link to the company (new or pre-existing) and set OWNER role.
+            // Also mark isCompany=true so the user sees company-level tools
+            // (analytics, schedules, company settings) on their next login.
+            ...(targetCompanyId && {
+              companyId: targetCompanyId,
+              companyRole: 'OWNER',
+              isCompany: true,
+            }),
             // Bump tokenVersion so any in-flight JWT is invalidated on next request.
             tokenVersion: { increment: 1 },
           },

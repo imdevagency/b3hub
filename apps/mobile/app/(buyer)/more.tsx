@@ -205,8 +205,9 @@ export default function MoreScreen() {
     },
   ];
 
-  // ── Company-only tiles ────────────────────────────────────────
-  const companyTiles: TileItem[] = user?.isCompany
+  // ── Company-only tiles (company members + sole traders with a linked company) ──
+  const isBusinessUser = !!(user?.isCompany || user?.company?.id);
+  const companyTiles: TileItem[] = isBusinessUser
     ? [
         ...(user.company?.companyType === 'CONSTRUCTION'
           ? [
@@ -288,9 +289,10 @@ export default function MoreScreen() {
           ]
         : [];
 
-  // ── Become-a-partner tiles — only for company accounts ───────
-  // B2C (isCompany: false) homeowners have no interest in becoming suppliers/carriers
-  const becomeTiles: TileItem[] = user?.isCompany
+  // ── Become-a-partner tiles — any authenticated user can apply ─
+  // A homeowner who buys a truck should be able to apply as a carrier.
+  // Sole traders who applied and were approved get isCompany=true set server-side.
+  const becomeTiles: TileItem[] = user
     ? [
         ...(!user.canSell
           ? [

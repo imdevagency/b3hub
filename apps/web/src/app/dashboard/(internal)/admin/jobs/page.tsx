@@ -12,7 +12,9 @@ import {
   adminGetTransportJobs,
   adminUpdateJobRate,
   adminReassignJob,
+  adminGetDrivers,
   type AdminTransportJob,
+  type TransportDriver,
 } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -27,7 +29,16 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { RefreshCw, Truck, Search, AlertTriangle, Pencil, X, UserRoundCog } from 'lucide-react';
+import {
+  RefreshCw,
+  Truck,
+  Search,
+  AlertTriangle,
+  Pencil,
+  X,
+  UserRoundCog,
+  Clock,
+} from 'lucide-react';
 
 // ── Rate override panel ───────────────────────────────────────────────────────
 
@@ -247,6 +258,7 @@ export default function AdminJobsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
   const [jobs, setJobs] = useState<AdminTransportJob[]>([]);
+  const [drivers, setDrivers] = useState<TransportDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<JobFilter>('ALL');
@@ -266,8 +278,12 @@ export default function AdminJobsPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await adminGetTransportJobs(token);
+      const [data, driverList] = await Promise.all([
+        adminGetTransportJobs(token),
+        adminGetDrivers(token),
+      ]);
       setJobs(data);
+      setDrivers(driverList);
     } finally {
       setLoading(false);
     }
@@ -296,6 +312,12 @@ export default function AdminJobsPage() {
   });
 
   const openExceptionCount = jobs.filter((j) => j.exceptions.length > 0).length;
+  const stuckCount = jobs.filter(
+    (j) =>
+      j.status === 'AVAILABLE' &&
+      !j.driver &&
+      Date.now() - new Date(j.createdAt).getTime() > 24 * 3600 * 1000,
+  ).length;
 
   function handleRateSaved(jobId: string, rate: number, pricePerTonne: number | null) {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, rate, pricePerTonne } : j)));
@@ -373,6 +395,24 @@ export default function AdminJobsPage() {
         </div>
       )}
 
+      {/* Stuck jobs alert — AVAILABLE > 24h with no driver */}
+      {stuckCount > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="font-semibold">
+            {stuckCount} darb{stuckCount === 1 ? 's' : 'i'} bez šofera vairāk nekā 24 stundas.{' '}
+            Sistēma nevar atrast brīvu vadītāju — nepieciešama manuāla piešķiršana.
+          </span>
+          <button
+            type="button"
+            className="ml-auto text-xs underline underline-offset-2"
+            onClick={() => setFilter('AVAILABLE')}
+          >
+            Skatīt
+          </button>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -444,7 +484,7 @@ export default function AdminJobsPage() {
                     ⚠
                   </th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
-                    Datums
+                    Datums / Vecums
                   </th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -551,7 +591,21 @@ export default function AdminJobsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-muted-foreground">
-                      {new Date(j.createdAt).toLocaleDateString('lv-LV')}
+                      <div>{new Date(j.createdAt).toLocaleDateString('lv-LV')}</div>
+                      {j.status === 'AVAILABLE' &&
+                        !j.driver &&
+                        (() => {
+                          const hrs = Math.floor(
+                            (Date.now() - new Date(j.createdAt).getTime()) / 3600000,
+                          );
+                          return hrs > 0 ? (
+                            <div
+                              className={`font-semibold ${hrs >= 48 ? 'text-red-600' : hrs >= 24 ? 'text-amber-600' : 'text-gray-400'}`}
+                            >
+                              {hrs}h gaidīts
+                            </div>
+                          ) : null;
+                        })()}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {!['COMPLETED', 'CANCELLED'].includes(j.status) && (
@@ -585,23 +639,34 @@ export default function AdminJobsPage() {
           <DialogHeader>
             <DialogTitle>Pārsūtīt darbu {reassignJob?.jobNumber} citam šoferim</DialogTitle>
             <DialogDescription>
-              Ievadiet jaunā šofera lietotāja ID. Darbam tiks piešķirts statuss ASSIGNED.
+              Izvēlieties šoferi no saraksta. Darbam tiks piešķirts statuss ASSIGNED.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Šofera lietotāja ID *
+                Šoferis *
               </label>
-              <Input
-                placeholder="cuid šoferim (no Admin → Lietotāji)..."
-                value={reassignDriverId}
-                onChange={(e) => setReassignDriverId(e.target.value)}
-              />
+              {drivers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nav reģistrētu šoferu.</p>
+              ) : (
+                <select
+                  value={reassignDriverId}
+                  onChange={(e) => setReassignDriverId(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  <option value="">— Izvēlēties šoferi —</option>
+                  {drivers.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.firstName} {d.lastName}
+                      {d.phone ? ` · ${d.phone}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
               {reassignJob?.driver && (
                 <p className="text-xs text-muted-foreground">
-                  Pašreizējais: {reassignJob.driver.firstName} {reassignJob.driver.lastName} (
-                  {reassignJob.driver.id})
+                  Pašreizējais: {reassignJob.driver.firstName} {reassignJob.driver.lastName}
                 </p>
               )}
             </div>

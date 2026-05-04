@@ -352,7 +352,17 @@ export default function TransporterDashboardPage() {
                   <CalendarClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
                     <span className="text-sm font-semibold text-amber-900">
-                      SLA Kavējums • {job.sla?.overdueMinutes ?? 0} min
+                      SLA Kavējums •{' '}
+                      {(() => {
+                        const m = job.sla?.overdueMinutes ?? 0;
+                        if (m < 60) return `${m} min`;
+                        const h = Math.floor(m / 60);
+                        const rem = m % 60;
+                        if (h < 24) return rem > 0 ? `${h} h ${rem} min` : `${h} h`;
+                        const d = Math.floor(h / 24);
+                        const remH = h % 24;
+                        return remH > 0 ? `${d} d ${remH} h` : `${d} d`;
+                      })()}
                     </span>
                     <p className="text-xs text-amber-800/80 mt-0.5">
                       Reiss #{job.jobNumber}: {job.pickupCity} → {job.deliveryCity}
