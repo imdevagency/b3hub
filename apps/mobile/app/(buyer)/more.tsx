@@ -40,9 +40,19 @@ import {
   Handshake,
   FileCheck,
   FolderKanban,
+  HardHat,
+  Recycle,
 } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const MARKET_PARTIES = [
+  { key: 'constructor', label: 'Celtnieks', icon: HardHat },
+  { key: 'freight', label: 'Pārvadājumi', icon: Truck },
+  { key: 'supplier', label: 'Piegādātājs', icon: Package },
+  { key: 'recycler', label: 'Pārstrādātājs', icon: Recycle },
+] as const;
+
 const COLS = 3;
 const H_PAD = 16;
 const GAP = 10;
@@ -349,13 +359,27 @@ export default function MoreScreen() {
           <ChevronRight size={18} color={colors.textMuted} />
         </View>
 
-        {/* ── Main tiles (auth-required) ─────────────────────── */}
+        {/* ── Marketing hero (guests only) ─────────────────── */}
         {!isLoading && !user && (
-          <View style={s.guestBanner}>
-            <User size={20} color={colors.textMuted} strokeWidth={1.6} />
-            <Text style={s.guestBannerText}>
-              Pierakstieties, lai piekļūtu pasūtījumiem, dokumentiem un kontam
+          <View style={s.heroCard}>
+            <Text style={s.heroTagline}>MARĶETPLEISS</Text>
+            <Text style={s.heroHeading}>
+              Viens digitāls marķetpleiss visai celtniecības loģistikai.
             </Text>
+            <Text style={s.heroSub}>
+              Pasūtiet materiālus, pārdodiet no karjera vai vediet kravas — platforma darbojas visām
+              četrām pusēm vienlaikus.
+            </Text>
+            <View style={s.partyGrid}>
+              {MARKET_PARTIES.map((p) => (
+                <View key={p.key} style={s.partyChip}>
+                  <View style={s.partyIconWrap}>
+                    <p.icon size={20} color={colors.primary} strokeWidth={1.7} />
+                  </View>
+                  <Text style={s.partyLabel}>{p.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
         {mainTiles.length > 0 && <TileGrid tiles={mainTiles} />}
@@ -573,26 +597,67 @@ const s = StyleSheet.create({
     marginLeft: 48,
   },
 
-  // Guest banner
-  guestBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  // Marketing hero
+  heroCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 14,
+    borderRadius: 18,
     marginHorizontal: H_PAD,
     marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 20,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  guestBannerText: {
-    flex: 1,
+  heroTagline: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.primary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  heroHeading: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  heroSub: {
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
     color: colors.textMuted,
-    lineHeight: 18,
+    lineHeight: 19,
+    marginBottom: 18,
+  },
+  partyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  partyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: colors.bgSubtle,
+    borderRadius: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  partyIconWrap: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partyLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
 
   // Guest actions
