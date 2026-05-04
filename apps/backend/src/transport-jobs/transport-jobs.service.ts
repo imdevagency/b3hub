@@ -877,8 +877,9 @@ export class TransportJobsService {
     const requiresWeighingSlip =
       job.jobType === 'MATERIAL_DELIVERY' || job.jobType === 'WASTE_COLLECTION';
     const requiresDeliveryProof = true;
+    const requiresWasteTransportNote = job.jobType === 'WASTE_COLLECTION';
 
-    const [deliveryProof, weighingSlip, deliveryNote] = await Promise.all([
+    const [deliveryProof, weighingSlip, deliveryNote, wasteTransportNote] = await Promise.all([
       this.prisma.deliveryProof.findUnique({
         where: { transportJobId: id },
         select: { id: true },
@@ -911,16 +912,29 @@ export class TransportJobsService {
         },
         select: { id: true },
       }),
+      requiresWasteTransportNote
+        ? this.prisma.document.findFirst({
+            where: {
+              transportJobId: id,
+              type: DocumentType.WASTE_TRANSPORT_NOTE,
+              status: { in: ['ISSUED', 'SIGNED'] },
+            },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
     ]);
 
     const hasDeliveryProof = !!deliveryProof;
     const hasWeighingSlip = !!weighingSlip;
     const hasDeliveryNote = !!deliveryNote;
+    const hasWasteTransportNote = !!wasteTransportNote;
 
     const missing: string[] = [];
     if (requiresDeliveryProof && !hasDeliveryProof)
       missing.push('DELIVERY_PROOF');
     if (requiresWeighingSlip && !hasWeighingSlip) missing.push('WEIGHING_SLIP');
+    if (requiresWasteTransportNote && !hasWasteTransportNote)
+      missing.push('WASTE_TRANSPORT_NOTE');
 
     return {
       transportJobId: id,
@@ -928,11 +942,13 @@ export class TransportJobsService {
       requires: {
         deliveryProof: requiresDeliveryProof,
         weighingSlip: requiresWeighingSlip,
+        wasteTransportNote: requiresWasteTransportNote,
       },
       has: {
         deliveryProof: hasDeliveryProof,
         weighingSlip: hasWeighingSlip,
         deliveryNote: hasDeliveryNote,
+        wasteTransportNote: hasWasteTransportNote,
       },
       canMarkDelivered: missing.length === 0,
       missing,
@@ -1324,7 +1340,45 @@ export class TransportJobsService {
       }
     }
 
-    if (scored.length === 0) return; // no eligible drivers right now
+    if (scored.length === 0) {
+      // All candidates have either declined, are busy, or are out of range.
+      // If there are also no more online candidates at all (after excluding
+      // declined drivers), escalate to admins so manual intervention can happen.
+      const anyRemainingOnline = await this.prisma.user.count({
+        where: {
+          canTransport: true,
+          status: 'ACTIVE',
+          notifJobAlerts: true,
+          id: { notIn: excludedIds },
+        },
+      });
+      if (anyRemainingOnline === 0) {
+        // No eligible drivers remain — alert platform admins
+        this.prisma.user
+          .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+          .then((admins) => {
+            if (admins.length === 0) return;
+            return this.notifications.createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '🚨 Nav pieejamu šoferu',
+                message: `Darbam ${job.id} (${job.pickupCity} → ${job.deliveryCity}) nav pieejamu šoferu. Nepieciešama manuāla iejaukšanās vai darba pārplānošana.`,
+                data: { jobId: job.id },
+              },
+            );
+          })
+          .catch((err) =>
+            this.logger.error(
+              `dispatchToNextDriver: admin escalation failed for job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
+        this.logger.warn(
+          `dispatchToNextDriver: no eligible drivers left for job ${job.id} — admins alerted`,
+        );
+      }
+      return;
+    }
 
     scored.sort((a, b) => a.distKm - b.distKm);
     const nextDriver = scored[0];
@@ -1734,6 +1788,17 @@ export class TransportJobsService {
       select: this.jobSelect,
     });
 
+    // Mark the assigned vehicle as IN_USE so it cannot be double-booked
+    if (vehicleId) {
+      this.prisma.vehicle
+        .update({ where: { id: vehicleId }, data: { status: 'IN_USE' } })
+        .catch((err) =>
+          this.logger.warn(
+            `applyAssignment: failed to set vehicle ${vehicleId} to IN_USE: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
+    }
+
     this.notifications
       .create({
         userId: driverId,
@@ -1826,6 +1891,21 @@ export class TransportJobsService {
 
     // Auto-generate documents on key transitions
     const orderId = updatedJob.order?.id;
+
+    // Restore vehicle to ACTIVE when job reaches a terminal state
+    if (
+      (dto.status === TransportJobStatus.DELIVERED ||
+        dto.status === TransportJobStatus.DELIVERY_REFUSED) &&
+      job.vehicleId
+    ) {
+      this.prisma.vehicle
+        .update({ where: { id: job.vehicleId }, data: { status: 'ACTIVE' } })
+        .catch((err) =>
+          this.logger.warn(
+            `updateStatus: failed to restore vehicle ${job.vehicleId} to ACTIVE: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
+    }
 
     if (dto.status === TransportJobStatus.LOADED && orderId) {
       // Fetch order owner (createdById = buyer user)
@@ -2177,6 +2257,40 @@ export class TransportJobsService {
             .catch((err) =>
               this.logger.error(
                 err instanceof Error ? err.message : String(err),
+              ),
+            );
+
+          // Notify supplier(s) so they can hold stock and coordinate rescheduling
+          getSupplierUserIds()
+            .then((sellerIds) => {
+              if (sellerIds.length === 0) return;
+              return this.notifications.createForMany(sellerIds, {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '⛔ Piegāde atteikta',
+                message: `Šoferis ${driverName} ziņo, ka piegāde pasūtījumam ${orderNum} tika atteikta. Saglabājiet kravu — admin sazināsies ar koordināciju.`,
+                data: { jobId: updatedJob.id, orderId },
+              });
+            })
+            .catch((err) =>
+              this.logger.error(
+                err instanceof Error ? err.message : String(err),
+              ),
+            );
+
+          // Auto-create an exception record for audit trail and admin queue
+          this.prisma.transportJobException
+            .create({
+              data: {
+                transportJobId: updatedJob.id,
+                type: 'REJECTED_DELIVERY',
+                status: 'OPEN',
+                notes: dto.notes ?? 'Piegāde atteikta saņemšanas vietā',
+                reportedById: driverId,
+              },
+            })
+            .catch((err) =>
+              this.logger.error(
+                `DELIVERY_REFUSED: exception record creation failed for job ${updatedJob.id}: ${err instanceof Error ? err.message : String(err)}`,
               ),
             );
         }
@@ -3992,6 +4106,7 @@ export class TransportJobsService {
         jobNumber: true,
         status: true,
         driverId: true,
+        vehicleId: true,
         carrierId: true,
         requestedById: true,
         pickupCity: true,
@@ -4029,6 +4144,17 @@ export class TransportJobsService {
       select: this.jobSelect,
     });
 
+    // Restore vehicle availability when driver releases the job
+    if (job.vehicleId) {
+      this.prisma.vehicle
+        .update({ where: { id: job.vehicleId }, data: { status: 'ACTIVE' } })
+        .catch((err) =>
+          this.logger.warn(
+            `driverCancel: failed to restore vehicle ${job.vehicleId} to ACTIVE: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
+    }
+
     // Log the cancellation as a DRIVER_NO_SHOW exception for traceability
     await this.prisma.transportJobException.create({
       data: {
@@ -4041,10 +4167,57 @@ export class TransportJobsService {
     });
 
     // Increment reliability penalty counter on driver profile
-    await this.prisma.driverProfile.updateMany({
+    const updatedProfile = await this.prisma.driverProfile.updateMany({
       where: { userId: driverId },
       data: { noShowCount: { increment: 1 } },
     });
+
+    // Suspension threshold: 3 or more no-shows → suspend driver and alert admins
+    const NO_SHOW_SUSPENSION_THRESHOLD = 3;
+    if (updatedProfile.count > 0) {
+      const profile = await this.prisma.driverProfile.findUnique({
+        where: { userId: driverId },
+        select: { noShowCount: true },
+      });
+      if (profile && profile.noShowCount >= NO_SHOW_SUSPENSION_THRESHOLD) {
+        // Take driver offline so they stop receiving job offers
+        await this.prisma.driverProfile
+          .updateMany({
+            where: { userId: driverId },
+            data: { isOnline: false },
+          })
+          .catch((err) =>
+            this.logger.error(
+              `noShowCount: failed to take driver ${driverId} offline: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
+
+        // Alert admins to review the driver's account
+        this.prisma.user
+          .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+          .then((admins) => {
+            if (admins.length === 0) return;
+            return this.notifications.createForMany(
+              admins.map((a) => a.id),
+              {
+                type: NotificationType.SYSTEM_ALERT,
+                title: '⚠️ Šoferis automātiski apturēts',
+                message: `Šoferim ${driverId} ir ${profile.noShowCount} darbu atcelšanas — automātiski noņemts no tiešsaistes. Nepieciešams pārskatīt kontu.`,
+                data: { driverId },
+              },
+            );
+          })
+          .catch((err) =>
+            this.logger.error(
+              `noShowCount: admin notification failed for driver ${driverId}: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
+
+        this.logger.warn(
+          `Driver ${driverId} suspended: reached ${profile.noShowCount} no-shows (threshold: ${NO_SHOW_SUSPENSION_THRESHOLD})`,
+        );
+      }
+    }
 
     const routeLabel = `${job.pickupCity} → ${job.deliveryCity}`;
 

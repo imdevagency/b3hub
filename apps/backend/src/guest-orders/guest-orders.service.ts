@@ -91,6 +91,7 @@ export class GuestOrdersService {
         contactPhone: dto.contactPhone,
         contactEmail: dto.contactEmail,
         notes: dto.notes,
+        bisNumber: dto.bisNumber ?? null,
         status: GuestOrderStatus.PENDING,
       },
     });

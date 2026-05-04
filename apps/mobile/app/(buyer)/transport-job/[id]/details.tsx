@@ -87,7 +87,10 @@ export default function TransportJobDetailsScreen() {
   const [ratingLoading, setRatingLoading] = useState(false);
 
   // Don't subscribe to live updates for terminal jobs — no new events expected
-  const isTerminalJob = job?.status === 'DELIVERED' || job?.status === 'CANCELLED';
+  const isTerminalJob =
+    job?.status === 'DELIVERED' ||
+    job?.status === 'CANCELLED' ||
+    job?.status === 'DELIVERY_REFUSED';
 
   const { jobStatus: liveJobStatus } = useLiveUpdates({
     jobId: !isTerminalJob && typeof id === 'string' ? id : null,

@@ -872,6 +872,9 @@ model GuestOrder {
   quotedAmount   Float?
   quotedCurrency String @default("EUR")
 
+  // Regulatory — BIS case reference for construction waste disposal (required by Latvian law)
+  bisNumber String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

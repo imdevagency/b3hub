@@ -448,6 +448,11 @@ export class PaymentsService {
 
     // ── Record CarrierPayout obligation ──────────────────────────────────────
     if (driverCents > 0 && deliveredJob) {
+      if (!deliveredJob.driverId) {
+        this.logger.warn(
+          `releaseFunds: transport job ${deliveredJob.id} for order ${orderId} has no driverId — CarrierPayout skipped to avoid orphan record. Manual reconciliation required.`,
+        );
+      } else {
       const driverCompanyId = deliveredJob.driver?.companyId;
       if (driverCompanyId) {
         const driverCompany = await this.prisma.company.findUnique({
@@ -481,6 +486,7 @@ export class PaymentsService {
           dueDate,
         },
       });
+      } // end else (driverId guard)
     }
 
     // Mark payment as released

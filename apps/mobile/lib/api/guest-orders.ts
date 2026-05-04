@@ -56,6 +56,7 @@ export interface CreateGuestDisposalPayload extends GuestContactBase {
   wasteTypes: string;       // JSON array string e.g. '["CONCRETE","SOIL"]'
   disposalVolume?: number;
   truckType?: string;
+  bisNumber?: string;       // BIS case reference — required for construction waste under Latvian law
 }
 
 /** Union of all supported guest order payloads */

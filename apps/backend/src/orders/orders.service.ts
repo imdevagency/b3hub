@@ -1412,7 +1412,7 @@ export class OrdersService {
       [OrderStatus.DELIVERED]: {
         type: NotificationType.ORDER_DELIVERED,
         title: 'Pasūtījums piegādāts',
-        message: `Jūsu pasūtījums #${order.orderNumber} ir piegādāts.`,
+        message: `Jūsu pasūtījums #${order.orderNumber} ir piegādāts. Jums ir 48 stundas, lai iesniegtu sūdzību — ja pretenzija netiek iesniegta, pasūtījums tiks automātiski apstiprināts.`,
       },
       [OrderStatus.CANCELLED]: {
         type: NotificationType.ORDER_CANCELLED,
@@ -2880,11 +2880,11 @@ export class OrdersService {
   // ─── Scheduled tasks ─────────────────────────────────────────────────────────
 
   /**
-   * Auto-complete orders that have been DELIVERED for more than 24 hours without
+   * Auto-complete orders that have been DELIVERED for more than 48 hours without
    * a buyer dispute. This fires releaseFunds() and pays the seller + driver.
    *
    * Construction logistics norm: if the buyer hasn't raised a complaint within
-   * 24 hours of the ePOD being accepted, the delivery is considered accepted.
+   * 48 hours of the ePOD being accepted, the delivery is considered accepted.
    */
   @Cron(CronExpression.EVERY_HOUR)
   async autoCompleteDeliveredOrders(): Promise<void> {
@@ -2892,7 +2892,7 @@ export class OrdersService {
       this.prisma,
       'autoCompleteDeliveredOrders',
       async () => {
-        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1_000); // 24 hrs ago
+        const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1_000); // 48 hrs ago
 
         const stale = await this.prisma.order.findMany({
           where: {

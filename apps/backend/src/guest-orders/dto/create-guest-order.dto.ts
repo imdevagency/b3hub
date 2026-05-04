@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -15,8 +16,7 @@ export class CreateGuestOrderDto {
   // ── Category discriminator ─────────────────────────────────────────────────
   /** MATERIAL | SKIP_HIRE | TRANSPORT | DISPOSAL — defaults to MATERIAL */
   @IsOptional()
-  @IsString()
-  @MaxLength(20)
+  @IsIn(['MATERIAL', 'SKIP_HIRE', 'TRANSPORT', 'DISPOSAL'])
   category?: string;
 
   // ── MATERIAL fields ───────────────────────────────────────────────────────
@@ -171,4 +171,12 @@ export class CreateGuestOrderDto {
   @IsString()
   @MaxLength(1000)
   notes?: string;
+
+  // ── Regulatory ─────────────────────────────────────────────────────────────
+  /** BIS (Būvniecības informācijas sistēma) case reference — required for
+   * construction waste disposal under Latvian law. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  bisNumber?: string;
 }

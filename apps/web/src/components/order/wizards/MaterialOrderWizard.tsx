@@ -603,7 +603,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
         },
         tok,
       );
-      setOrderNumber(result.orderNumber);
+      setOrderNumber(result.orderNumber ?? result.orders?.[0]?.orderNumber ?? '');
       setStep('order-confirmed');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');

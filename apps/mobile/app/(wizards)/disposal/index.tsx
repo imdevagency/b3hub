@@ -215,6 +215,7 @@ export default function DisposalWizard() {
   );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
+  const [bisNumber, setBisNumber] = useState('');
 
   // Recycling centre picker (populated after availability check when >1 center exists)
   const [availableCenters, setAvailableCenters] = useState<
@@ -473,6 +474,7 @@ export default function DisposalWizard() {
           contactPhone: contact.phone,
           contactEmail: contact.email,
           notes: notes || undefined,
+          bisNumber: bisNumber.trim() || undefined,
         });
         haptics.success();
         setGuestResult({ token: result.token, orderNumber: result.orderNumber });
@@ -884,6 +886,14 @@ export default function DisposalWizard() {
                 multiline
                 value={notes}
                 onChangeText={setNotes}
+              />
+              <TextInputField
+                label="BIS numurs (nav obligāts)"
+                placeholder="Piem., BIS-2024-12345"
+                hint="Būvniecības informācijas sistēmas lietas numurs — nepieciešams celtniecības atkritumu utilizācijai pēc LR tiesību normām."
+                value={bisNumber}
+                onChangeText={setBisNumber}
+                autoCapitalize="characters"
               />
             </View>
 

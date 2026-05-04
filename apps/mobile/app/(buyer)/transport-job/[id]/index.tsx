@@ -41,6 +41,7 @@ const JOB_STATUS_LABEL: Record<string, string> = {
   EN_ROUTE_DELIVERY: 'Šoferis dodas uz jums',
   AT_DELIVERY: 'Šoferis ir uz vietas',
   DELIVERED: 'Piegāde pabeigta',
+  DELIVERY_REFUSED: 'Piegāde atteikta saņemšanas vietā',
   CANCELLED: 'Pasūtījums atcelts',
 };
 const JOB_STEPS = [
@@ -60,6 +61,7 @@ const JOB_STATUS_TO_STEP: Record<string, number> = {
   EN_ROUTE_DELIVERY: 2,
   AT_DELIVERY: 3,
   DELIVERED: 3,
+  DELIVERY_REFUSED: 3,
 };
 
 /** Minimal Google Maps style: hides POIs and transit to keep tracking uncluttered. */
@@ -103,7 +105,8 @@ export default function TransportJobTrackingScreen() {
 
   // Don't open a live subscription for truly terminal jobs (no new events expected)
   const jobIsTerminalForLive =
-    job != null && (job.status === 'DELIVERED' || job.status === 'CANCELLED');
+    job != null &&
+    (job.status === 'DELIVERED' || job.status === 'CANCELLED' || job.status === 'DELIVERY_REFUSED');
 
   const {
     jobLocation: liveLocation,
@@ -139,7 +142,11 @@ export default function TransportJobTrackingScreen() {
 
   // Clear stale driver marker and ETA when job becomes terminal
   useEffect(() => {
-    if (job?.status === 'DELIVERED' || job?.status === 'CANCELLED') {
+    if (
+      job?.status === 'DELIVERED' ||
+      job?.status === 'CANCELLED' ||
+      job?.status === 'DELIVERY_REFUSED'
+    ) {
       setDriverLocationOnMap(null);
       setEtaMin(null);
     }
@@ -259,7 +266,8 @@ export default function TransportJobTrackingScreen() {
   const isDisposal = job.jobType === 'WASTE_COLLECTION';
   const driver = job.driver;
   const currentStepIdx = JOB_STATUS_TO_STEP[job.status] ?? -1;
-  const isTerminal = job.status === 'DELIVERED' || job.status === 'CANCELLED';
+  const isTerminal =
+    job.status === 'DELIVERED' || job.status === 'CANCELLED' || job.status === 'DELIVERY_REFUSED';
   const isSearching = job.status === 'AVAILABLE' || job.status === 'ASSIGNED';
 
   const heroPrimary = (() => {
