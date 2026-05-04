@@ -48,6 +48,7 @@ import {
 
 import { useAuth } from '@/lib/auth-context';
 import { useMode, type Mode } from '@/lib/mode-context';
+import { PORTAL_NAV_GROUPS, getGroupPaths } from '@/lib/portal-nav-groups';
 import {
   getAllTransportJobs,
   getMyOrders,
@@ -72,7 +73,14 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 
-type NavItem = { label: string; href: string; icon: React.ElementType };
+type NavItem = {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  /** All paths in this group — sidebar item stays active on any of them */
+  groupPaths?: string[];
+  badgeKey?: keyof SidebarBadgeCounts;
+};
 type NavSection = {
   id: string;
   label: string;
@@ -80,158 +88,137 @@ type NavSection = {
   items: NavItem[];
 };
 
+// ── Sidebar nav — one item per business domain (max 6 per role). ─────────────
+// Sub-pages within each domain appear as tab strips (PortalSectionTabs).
+// groupPaths keeps the sidebar item highlighted on all sibling pages.
+
 const ROLE_NAV: Record<Mode, NavSection[]> = {
   BUYER: [
     {
       id: 'buyer-main',
-      label: 'Galvenā',
+      label: '',
       icon: LayoutDashboard,
-      items: [{ label: 'Sākumlapa', href: '/dashboard/buyer', icon: LayoutDashboard }],
-    },
-    {
-      id: 'buyer-orders',
-      label: 'Pasūtījumi',
-      icon: ClipboardList,
       items: [
-        { label: 'Mani Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-        { label: 'Regulārie Pasūtījumi', href: '/dashboard/orders/schedules', icon: CalendarClock },
-        { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
-        { label: 'Skip Noma', href: '/dashboard/order/skip-hire', icon: Box },
-        { label: 'Mani Strīdi', href: '/dashboard/disputes', icon: AlertTriangle },
-      ],
-    },
-    {
-      id: 'buyer-procurement',
-      label: 'Iepirkumi',
-      icon: FolderKanban,
-      items: [
-        { label: 'Pasūtīt Materiālus', href: '/dashboard/catalog', icon: Package },
-        { label: 'Ietvarlīgumi', href: '/dashboard/framework-contracts', icon: FolderKanban },
-        { label: 'Caurlaides', href: '/dashboard/field-passes', icon: Ticket },
-      ],
-    },
-    {
-      id: 'buyer-finance',
-      label: 'Finanses',
-      icon: Receipt,
-      items: [
-        { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
-        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
-        { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+        { label: 'Sākumlapa', href: '/dashboard/buyer', icon: LayoutDashboard },
+        {
+          label: 'Pasūtījumi',
+          href: '/dashboard/orders',
+          icon: ClipboardList,
+          groupPaths: getGroupPaths('BUYER', 'orders'),
+        },
+        {
+          label: 'Iepirkumi',
+          href: '/dashboard/catalog',
+          icon: Package,
+          groupPaths: getGroupPaths('BUYER', 'procurement'),
+        },
+        {
+          label: 'Finanses',
+          href: '/dashboard/invoices',
+          icon: Receipt,
+          groupPaths: getGroupPaths('BUYER', 'finance'),
+        },
       ],
     },
   ],
   SUPPLIER: [
     {
-      id: 'supplier-workspace',
-      label: 'Mani Materiāli un Pasūtījumi',
-      icon: LayoutGrid,
+      id: 'supplier-main',
+      label: '',
+      icon: LayoutDashboard,
       items: [
         { label: 'Sākumlapa', href: '/dashboard/supplier', icon: LayoutDashboard },
-        { label: 'Mani Materiāli', href: '/dashboard/materials', icon: Package },
-        { label: 'Ienākošie Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-        { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
-        { label: 'Pieprasījumu Tirgus', href: '/dashboard/quote-requests/open', icon: Search },
-      ],
-    },
-    {
-      id: 'supplier-business',
-      label: 'Finanses',
-      icon: Banknote,
-      items: [
-        { label: 'Ieņēmumi', href: '/dashboard/earnings', icon: Banknote },
-        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
-        { label: 'Atsauksmes', href: '/dashboard/reviews', icon: Star },
-        { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+        {
+          label: 'Darbi',
+          href: '/dashboard/orders',
+          icon: ClipboardList,
+          groupPaths: getGroupPaths('SUPPLIER', 'work'),
+        },
+        {
+          label: 'Katalogs',
+          href: '/dashboard/materials',
+          icon: Package,
+          groupPaths: getGroupPaths('SUPPLIER', 'catalog'),
+        },
+        {
+          label: 'Finanses',
+          href: '/dashboard/earnings',
+          icon: Banknote,
+          groupPaths: getGroupPaths('SUPPLIER', 'finance'),
+        },
       ],
     },
   ],
   CARRIER: [
     {
-      id: 'carrier-jobs',
-      label: 'Darbi',
-      icon: Briefcase,
+      id: 'carrier-main',
+      label: '',
+      icon: LayoutDashboard,
       items: [
         { label: 'Sākumlapa', href: '/dashboard/transporter', icon: LayoutDashboard },
-        { label: 'Darbu Tirgus', href: '/dashboard/jobs', icon: Briefcase },
-        { label: 'Piegāžu Grafiks', href: '/dashboard/deliveries', icon: CalendarDays },
-        { label: 'Utilizācijas Centri', href: '/dashboard/recycling-centers', icon: Recycle },
-      ],
-    },
-    {
-      id: 'carrier-fleet',
-      label: 'Flote',
-      icon: Car,
-      items: [
-        { label: 'Flotes Pārvaldība', href: '/dashboard/fleet-management', icon: LayoutGrid },
-      ],
-    },
-    {
-      id: 'carrier-business',
-      label: 'Finanses un Dokumenti',
-      icon: Banknote,
-      items: [
-        { label: 'Ienākumi', href: '/dashboard/earnings', icon: Banknote },
-        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
-        { label: 'Mani Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
+        {
+          label: 'Darbi',
+          href: '/dashboard/jobs',
+          icon: Briefcase,
+          groupPaths: getGroupPaths('CARRIER', 'work'),
+          badgeKey: 'activeJobs',
+        },
+        {
+          label: 'Flote',
+          href: '/dashboard/fleet-management',
+          icon: Car,
+          groupPaths: getGroupPaths('CARRIER', 'fleet'),
+        },
+        {
+          label: 'Finanses',
+          href: '/dashboard/earnings',
+          icon: Banknote,
+          groupPaths: getGroupPaths('CARRIER', 'finance'),
+        },
       ],
     },
   ],
   CONSTRUCTION: [
     {
       id: 'construction-main',
-      label: 'Galvenā',
+      label: '',
       icon: LayoutDashboard,
-      items: [{ label: 'Sākumlapa', href: '/dashboard/construction', icon: LayoutDashboard }],
-    },
-    {
-      id: 'construction-projects',
-      label: 'Projekti',
-      icon: FolderKanban,
       items: [
-        { label: 'Mani Projekti', href: '/dashboard/projects', icon: FolderKanban },
-        { label: 'Materiālu Pasūtījumi', href: '/dashboard/orders', icon: ClipboardList },
-        { label: 'Katalogs', href: '/dashboard/catalog', icon: Package },
-      ],
-    },
-    {
-      id: 'construction-finance',
-      label: 'Finanses un Dokumenti',
-      icon: Receipt,
-      items: [
-        { label: 'Rēķini', href: '/dashboard/invoices', icon: Receipt },
-        { label: 'Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
-        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
+        { label: 'Sākumlapa', href: '/dashboard/construction', icon: LayoutDashboard },
+        {
+          label: 'Projekti',
+          href: '/dashboard/projects',
+          icon: FolderKanban,
+          groupPaths: getGroupPaths('CONSTRUCTION', 'projects'),
+        },
+        {
+          label: 'Finanses',
+          href: '/dashboard/invoices',
+          icon: Receipt,
+          groupPaths: getGroupPaths('CONSTRUCTION', 'finance'),
+        },
       ],
     },
   ],
   RECYCLER: [
     {
       id: 'recycler-main',
-      label: 'Galvenā',
+      label: '',
       icon: LayoutDashboard,
-      items: [{ label: 'Sākumlapa', href: '/dashboard/recycling', icon: LayoutDashboard }],
-    },
-    {
-      id: 'recycler-jobs',
-      label: 'Ienākošie darbi',
-      icon: Recycle,
       items: [
-        { label: 'Ienākošie darbi', href: '/dashboard/recycling/jobs', icon: Truck },
+        { label: 'Sākumlapa', href: '/dashboard/recycling', icon: LayoutDashboard },
         {
-          label: 'Atkritumu žurnāls',
-          href: '/dashboard/recycling/waste-records',
-          icon: ClipboardList,
+          label: 'Darbi',
+          href: '/dashboard/recycling/jobs',
+          icon: Recycle,
+          groupPaths: getGroupPaths('RECYCLER', 'work'),
         },
-      ],
-    },
-    {
-      id: 'recycler-docs',
-      label: 'Dokumenti',
-      icon: FolderOpen,
-      items: [
-        { label: 'Dokumenti', href: '/dashboard/documents', icon: FolderOpen },
-        { label: 'Analītika', href: '/dashboard/analytics', icon: BarChart3 },
+        {
+          label: 'Dokumenti',
+          href: '/dashboard/documents',
+          icon: FolderOpen,
+          groupPaths: getGroupPaths('RECYCLER', 'docs'),
+        },
       ],
     },
   ],
@@ -298,8 +285,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
 
   const isRouteActive = React.useCallback(
-    (href: string) => {
-      if (PARENT_NAV_HREFS.has(href)) return pathname === href;
+    (item: NavItem) => {
+      const { href } = item;
+      // Exact match for home/root pages
+      if (
+        href === '/dashboard/buyer' ||
+        href === '/dashboard/supplier' ||
+        href === '/dashboard/transporter' ||
+        href === '/dashboard/construction' ||
+        href === '/dashboard/recycling'
+      ) {
+        return pathname === href;
+      }
+      // Group-aware: highlight when on any tab within the domain
+      if (item.groupPaths && item.groupPaths.length > 0) {
+        return item.groupPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
+      }
       return pathname === href || pathname.startsWith(`${href}/`);
     },
     [pathname],
@@ -313,102 +314,51 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [...section.items],
     }));
 
-    if (activeMode === 'BUYER') {
-      // All buyers get the project tracker
-      sections = sections.map((section) => {
-        if (section.id !== 'buyer-procurement') return section;
-        return {
-          ...section,
-          items: [
-            ...section.items,
-            { label: 'Projekti', href: '/dashboard/projects', icon: FolderKanban },
-          ],
-        };
-      });
-    }
-
     if (activeMode === 'CARRIER') {
       const isDispatcher =
         user?.isCompany && (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
-
       const isCompanyDriver =
         user?.isCompany && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
 
       if (isDispatcher) {
-        // Inject Dispatcher Panel for company owners/managers only
+        // Dispatcher: insert dispatcher panel right after home
         sections = sections.map((section) => {
-          if (section.id !== 'carrier-jobs') return section;
+          if (section.id !== 'carrier-main') return section;
+          const [home, ...rest] = section.items;
           return {
             ...section,
             items: [
-              section.items[0],
+              home,
               { label: 'Dispečera Panelis', href: '/dashboard/active', icon: LayoutGrid },
-              ...section.items.slice(1),
+              ...rest,
+            ],
+          };
+        });
+      } else if (user?.companyRole !== 'DRIVER') {
+        // Non-dispatcher, non-field driver: add active job monitor
+        sections = sections.map((section) => {
+          if (section.id !== 'carrier-main') return section;
+          const [home, ...rest] = section.items;
+          return {
+            ...section,
+            items: [
+              home,
+              { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: MapPin },
+              ...rest,
             ],
           };
         });
       }
 
       if (isCompanyDriver) {
-        // Company drivers are field workers — hide dispatcher-only management screens
-        // and the job marketplace (they accept jobs on mobile, not desktop)
-        sections = sections.map((section) => {
-          if (section.id === 'carrier-jobs') {
-            return {
-              ...section,
-              items: section.items.filter(
-                (item) => item.href !== '/dashboard/transporter' && item.href !== '/dashboard/jobs',
-              ),
-            };
-          }
-          return section;
-        });
-      }
-
-      if (!isDispatcher) {
-        // Non-dispatcher carrier users without a DRIVER companyRole get the fleet control tower link
-        // DRIVER role users are redirected away from /active, so don't show the link to them
-        if (user?.companyRole !== 'DRIVER') {
-          sections = sections.map((section) => {
-            if (section.id !== 'carrier-jobs') return section;
-            const dashboardItem = section.items[0];
-            return {
-              ...section,
-              items: [
-                dashboardItem,
-                { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: MapPin },
-                ...section.items.slice(1),
-              ],
-            };
-          });
-        }
-      }
-    }
-
-    if (activeMode === 'CARRIER' && user?.canSkipHire) {
-      // Skip-hire operators get the operator settings link
-      sections = sections.map((section) => {
-        if (section.id !== 'carrier-fleet') return section;
-        return {
+        // Field drivers: remove home dashboard + job marketplace sidebar items
+        sections = sections.map((section) => ({
           ...section,
-          items: [
-            ...section.items,
-            {
-              label: 'Operatora Iestatījumi',
-              href: '/dashboard/transporter/settings',
-              icon: Settings,
-            },
-          ],
-        };
-      });
-    }
-
-    if (activeMode === 'SUPPLIER' && !user?.isCompany) {
-      // Individual (non-company) suppliers have no company reviews — hide the Reviews link
-      sections = sections.map((section) => ({
-        ...section,
-        items: section.items.filter((item) => item.href !== '/dashboard/reviews'),
-      }));
+          items: section.items.filter(
+            (item) => item.href !== '/dashboard/transporter' && item.href !== '/dashboard/jobs',
+          ),
+        }));
+      }
     }
 
     return sections;
@@ -632,14 +582,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {user?.userType !== 'ADMIN' &&
           navSections.map((section) => (
             <SidebarGroup key={section.id} className="pt-2">
-              <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
-                {section.label}
-              </SidebarGroupLabel>
+              {section.label && (
+                <SidebarGroupLabel className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider pb-1">
+                  {section.label}
+                </SidebarGroupLabel>
+              )}
               <SidebarMenu>
                 {section.items.map((item) => {
-                  const isActive = isRouteActive(item.href);
+                  const isActive = isRouteActive(item);
+                  const badgeCount = item.badgeKey
+                    ? badgeCounts[item.badgeKey]
+                    : (itemBadgeCountByHref[item.href] ?? 0);
                   return (
-                    <SidebarMenuItem key={item.label}>
+                    <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         asChild
                         tooltip={item.label}
@@ -649,7 +604,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <Link href={item.href}>
                           <item.icon className="size-4 shrink-0" />
                           <span>{item.label}</span>
-                          {renderBadge(itemBadgeCountByHref[item.href] ?? 0)}
+                          {renderBadge(badgeCount)}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -670,7 +625,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Paziņojumi"
-                  isActive={isRouteActive('/dashboard/notifications')}
+                  isActive={isRouteActive({
+                    href: '/dashboard/notifications',
+                    label: 'Paziņojumi',
+                    icon: Bell,
+                  })}
                   className="font-medium text-gray-600 hover:text-gray-900"
                 >
                   <Link href="/dashboard/notifications">
@@ -684,7 +643,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton
                   asChild
                   tooltip="Ziņojumi"
-                  isActive={isRouteActive('/dashboard/chat')}
+                  isActive={isRouteActive({
+                    href: '/dashboard/chat',
+                    label: 'Ziņojumi',
+                    icon: MessageSquare,
+                  })}
                   className="font-medium text-gray-600 hover:text-gray-900"
                 >
                   <Link href="/dashboard/chat">

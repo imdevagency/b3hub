@@ -53,103 +53,157 @@ interface MenuItem {
   route: string;
 }
 
+interface MenuSection {
+  label: string;
+  items: MenuItem[];
+}
+
 interface BuildItemsUser {
   isCompany?: boolean;
   canSkipHire?: boolean;
 }
 
-function buildItems(role: Role, user: BuildItemsUser | null | undefined): MenuItem[] {
-  const items: MenuItem[] = [];
+function buildSections(role: Role, user: BuildItemsUser | null | undefined): MenuSection[] {
   const isCompany = user?.isCompany ?? false;
 
   if (role === 'seller') {
-    items.push({
-      icon: (c) => <FileText size={20} color={c} />,
-      label: 'Piedāvājumi',
-      route: '/(seller)/quotes',
-    });
-    items.push({
-      icon: (c) => <Euro size={20} color={c} />,
-      label: 'Izpeļņa',
-      route: '/(seller)/earnings',
-    });
-    items.push({
-      icon: (c) => <Box size={20} color={c} />,
-      label: 'Dokumenti',
-      route: '/(seller)/documents',
-    });
-    items.push({
-      icon: (c) => <Handshake size={20} color={c} />,
-      label: 'Līgumi',
-      route: '/(seller)/framework-contracts',
-    });
-    items.push({
-      icon: (c) => <Bell size={20} color={c} />,
-      label: 'Paziņojumi',
-      route: '/notifications',
-    });
+    return [
+      {
+        label: 'Darbi',
+        items: [
+          {
+            icon: (c) => <FileText size={20} color={c} />,
+            label: 'Piedāvājumi',
+            route: '/(seller)/quotes',
+          },
+          {
+            icon: (c) => <Box size={20} color={c} />,
+            label: 'Dokumenti',
+            route: '/(seller)/documents',
+          },
+          {
+            icon: (c) => <Handshake size={20} color={c} />,
+            label: 'Līgumi',
+            route: '/(seller)/framework-contracts',
+          },
+        ],
+      },
+      {
+        label: 'Finanses',
+        items: [
+          {
+            icon: (c) => <Euro size={20} color={c} />,
+            label: 'Izpeļņa',
+            route: '/(seller)/earnings',
+          },
+        ],
+      },
+      {
+        label: 'Saziņa',
+        items: [
+          {
+            icon: (c) => <Bell size={20} color={c} />,
+            label: 'Paziņojumi',
+            route: '/notifications',
+          },
+        ],
+      },
+    ];
   }
 
   if (role === 'driver') {
+    const fleetItems: MenuItem[] = [];
     if (user?.canSkipHire) {
-      items.push({
+      fleetItems.push({
         icon: (c) => <Trash2 size={20} color={c} />,
         label: 'Konteineri',
         route: '/(driver)/skips',
       });
     }
-    items.push({
+    fleetItems.push({
       icon: (c) => <Truck size={20} color={c} />,
       label: 'Transportlīdzekļi',
       route: '/(driver)/vehicles',
     });
-    items.push({
-      icon: (c) => <CalendarDays size={20} color={c} />,
-      label: 'Grafiks',
-      route: '/(driver)/schedule',
-    });
-    items.push({
-      icon: (c) => <Box size={20} color={c} />,
-      label: 'Dokumenti',
-      route: '/(driver)/documents',
-    });
-    items.push({
-      icon: (c) => <Bell size={20} color={c} />,
-      label: 'Paziņojumi',
-      route: '/notifications',
-    });
+
+    return [
+      {
+        label: 'Flote & Grafiks',
+        items: [
+          ...fleetItems,
+          {
+            icon: (c) => <CalendarDays size={20} color={c} />,
+            label: 'Grafiks',
+            route: '/(driver)/schedule',
+          },
+        ],
+      },
+      {
+        label: 'Dokumenti',
+        items: [
+          {
+            icon: (c) => <Box size={20} color={c} />,
+            label: 'Dokumenti',
+            route: '/(driver)/documents',
+          },
+        ],
+      },
+      {
+        label: 'Saziņa',
+        items: [
+          {
+            icon: (c) => <Bell size={20} color={c} />,
+            label: 'Paziņojumi',
+            route: '/notifications',
+          },
+        ],
+      },
+    ];
   }
 
-  if (role === 'buyer') {
-    items.push({
-      icon: (c) => <FileText size={20} color={c} />,
-      label: 'Dokumenti',
-      route: '/(buyer)/(account)/documents',
-    });
-    items.push({
-      icon: (c) => <AlertCircle size={20} color={c} />,
-      label: 'Strīdi',
-      route: '/(buyer)/(account)/disputes',
-    });
-    items.push({
-      icon: (c) => <Bell size={20} color={c} />,
-      label: 'Paziņojumi',
-      route: '/notifications',
-    });
-  }
-
-  items.push({
-    icon: (c) => <MessageCircle size={20} color={c} />,
-    label: 'Ziņojumi',
-    route: '/messages',
-  });
-  items.push({
-    icon: (c) => <Settings size={20} color={c} />,
-    label: 'Iestatījumi',
-    route: '/settings',
-  });
-
-  return items;
+  // buyer
+  return [
+    {
+      label: 'Konts',
+      items: [
+        {
+          icon: (c) => <FileText size={20} color={c} />,
+          label: 'Dokumenti',
+          route: '/(buyer)/(account)/documents',
+        },
+        {
+          icon: (c) => <AlertCircle size={20} color={c} />,
+          label: 'Strīdi',
+          route: '/(buyer)/(account)/disputes',
+        },
+      ],
+    },
+    {
+      label: 'Saziņa',
+      items: [
+        {
+          icon: (c) => <Bell size={20} color={c} />,
+          label: 'Paziņojumi',
+          route: '/notifications',
+        },
+        {
+          icon: (c) => <MessageCircle size={20} color={c} />,
+          label: 'Ziņojumi',
+          route: '/messages',
+        },
+      ],
+    },
+    {
+      label: 'Vispārīgi',
+      items: [
+        {
+          icon: (c) => <Settings size={20} color={c} />,
+          label: 'Iestatījumi',
+          route: '/settings',
+        },
+      ],
+    },
+  ];
 }
 
 export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
@@ -162,7 +216,7 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
-  const items = buildItems(role, user);
+  const sections = buildSections(role, user);
 
   useEffect(() => {
     if (visible) {
@@ -249,16 +303,21 @@ export function Sidebar({ visible, onClose, role, accentColor }: SidebarProps) {
 
         {/* Menu */}
         <ScrollView style={styles.menu} showsVerticalScrollIndicator={false}>
-          {items.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.row}
-              onPress={() => navigate(item.route)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.rowIcon}>{item.icon('#4b5563')}</View>
-              <Text style={styles.rowLabel}>{item.label}</Text>
-            </TouchableOpacity>
+          {sections.map((section, sIdx) => (
+            <View key={sIdx}>
+              <Text style={styles.sectionLabel}>{section.label}</Text>
+              {section.items.map((item, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.row}
+                  onPress={() => navigate(item.route)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.rowIcon}>{item.icon('#4b5563')}</View>
+                  <Text style={styles.rowLabel}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           ))}
 
           {/* Divider */}
@@ -340,6 +399,17 @@ const styles = StyleSheet.create({
   menu: {
     flex: 1,
     paddingTop: 12,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: '#9ca3af',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
   row: {
     flexDirection: 'row',
