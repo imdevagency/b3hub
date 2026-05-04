@@ -15,12 +15,14 @@ import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { AvatarImage } from '@/components/ui/AvatarImage';
 import { LogOut, Trash2, ChevronRight, AlertCircle, ArrowUpDown, Globe } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
 import { useMode } from '@/lib/mode-context';
 import { RoleSheet } from '@/components/ui/TopBar';
+import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import { api } from '@/lib/api';
 import { t } from '@/lib/translations';
 import { getRoleName } from '@/lib/utils';
@@ -40,6 +42,15 @@ export default function ProfileScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? null);
+
+  const { pick: pickAvatar, uploading: avatarUploading } = useAvatarUpload({
+    type: 'user',
+    onSuccess: (url) => {
+      setAvatarUrl(url);
+      if (user) updateUser({ ...user, avatar: url });
+    },
+  });
 
   const [form, setForm] = useState({
     firstName: user?.firstName ?? '',
@@ -145,43 +156,78 @@ export default function ProfileScreen() {
     <ScreenContainer topInset={0} bg="#ffffff" noAnimation>
       <ScreenHeader title="Profils" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Identity Block */}
-        <TouchableOpacity style={styles.profileBlock} activeOpacity={0.85} onPress={openEdit}>
-          <View
-            className={`w-16 h-16 rounded-full items-center justify-center mr-4 ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[0] : 'bg-gray-100'}`}
+        {/* Profile Identity Block — avatar tap = upload photo, text tap = edit name/phone */}
+        <View style={styles.profileBlock}>
+          <AvatarImage
+            url={avatarUrl}
+            initials={initials.toUpperCase()}
+            size={64}
+            onPress={pickAvatar}
+            loading={avatarUploading}
+          />
+          <TouchableOpacity
+            style={{ flex: 1, marginLeft: 16 }}
+            activeOpacity={0.85}
+            onPress={openEdit}
           >
             <Text
-              className={`text-2xl font-semibold ${ROLE_THEME[mode] ? ROLE_THEME[mode].split(' ')[1] : 'text-gray-700'}`}
-            >
-              {initials}
-            </Text>
-          </View>
-          <View className="flex-1">
-            <Text
-              className=" font-semibold text-gray-900 mb-1"
-              style={{ fontSize: 28 }}
+              style={{
+                fontSize: 22,
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
+                color: '#111827',
+                marginBottom: 4,
+              }}
               numberOfLines={1}
             >
               {user?.firstName} {user?.lastName}
             </Text>
-            <View className="flex-row items-center flex-wrap">
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
               {user?.phone ? (
-                <Text className="text-gray-500 font-medium mr-3">{user.phone}</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Inter_400Regular', color: '#6b7280' }}>
+                  {user.phone}
+                </Text>
               ) : (
-                <Text className="text-gray-400 font-medium mr-3">{user?.email}</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Inter_400Regular', color: '#9ca3af' }}>
+                  {user?.email}
+                </Text>
               )}
-              <View className="bg-gray-100 px-2 py-0.5 rounded flex-row items-center">
+              <View
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 6,
+                }}
+              >
                 <Text
-                  className="font-semibold text-gray-600 uppercase tracking-widest"
-                  style={{ fontSize: 10 }}
+                  style={{
+                    fontSize: 10,
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                  }}
                 >
                   {accountTypeLabel}
                 </Text>
               </View>
             </View>
-          </View>
+            <Text style={{ fontSize: 12, fontFamily: 'Inter_400Regular', color: '#9ca3af' }}>
+              Pieskarties, lai rediģētu
+            </Text>
+          </TouchableOpacity>
           <ChevronRight size={20} color="#d1d5db" />
-        </TouchableOpacity>
+        </View>
 
         {/* Completeness Nudge */}
         {!!user && !isComplete && (

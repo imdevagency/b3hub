@@ -2284,7 +2284,7 @@ export class TransportJobsService {
                 transportJobId: updatedJob.id,
                 type: 'REJECTED_DELIVERY',
                 status: 'OPEN',
-                notes: dto.notes ?? 'Piegāde atteikta saņemšanas vietā',
+                notes: 'Piegāde atteikta saņemšanas vietā',
                 reportedById: driverId,
               },
             })

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,12 @@ import {
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { AvatarImage } from '@/components/ui/AvatarImage';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { getRoleName } from '@/lib/utils';
-import { useAvatarUpload } from '@/lib/use-avatar-upload';
+
 import {
   User,
   MessageCircle,
@@ -127,21 +125,9 @@ function ListRow({
 }
 
 export default function MoreScreen() {
-  const { user, isLoading, logout, updateUser } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const { mode, isMultiRole } = useMode();
   const router = useRouter();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? null);
-
-  const { pick: pickAvatar, uploading: avatarUploading } = useAvatarUpload({
-    type: 'user',
-    onSuccess: (url) => {
-      setAvatarUrl(url);
-      if (user) updateUser({ ...user, avatar: url });
-    },
-  });
-
-  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
-  const accountLabel = user ? getRoleName(user) : 'Viesis';
 
   /** Redirect guests to register instead of navigating to a protected screen. */
   const requireAuth = (action: () => void) => () => {
@@ -168,6 +154,11 @@ export default function MoreScreen() {
   // ── Main navigation tiles (auth-required) ────────────────────
   const mainTiles: TileItem[] = user
     ? [
+        {
+          icon: User,
+          label: 'Profils',
+          onPress: () => router.push('/(buyer)/profile'),
+        },
         {
           icon: MessageCircle,
           label: 'Ziņojumi',
@@ -325,48 +316,6 @@ export default function MoreScreen() {
     <ScreenContainer topInset={0} noAnimation>
       <ScreenHeader title="Vairāk" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        {/* ── Identity card ──────────────────────────────────── */}
-        <View style={s.identityCard}>
-          {user ? (
-            <AvatarImage
-              url={avatarUrl}
-              initials={initials}
-              size={52}
-              onPress={pickAvatar}
-              loading={avatarUploading}
-            />
-          ) : (
-            <AvatarImage url={null} initials="" size={52} />
-          )}
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            activeOpacity={0.82}
-            onPress={() => {
-              haptics.light();
-              if (!user) {
-                router.push('/(auth)/register' as never);
-              } else {
-                router.push('/(buyer)/profile');
-              }
-            }}
-          >
-            {user ? (
-              <>
-                <Text style={s.identityName} numberOfLines={1}>
-                  {user.firstName} {user.lastName}
-                </Text>
-                <Text style={s.identityRole}>{accountLabel}</Text>
-              </>
-            ) : (
-              <>
-                <Text style={s.identityName}>Viesis</Text>
-                <Text style={s.identityRole}>Pierakstieties vai reģistrējieties</Text>
-              </>
-            )}
-          </TouchableOpacity>
-          <ChevronRight size={18} color={colors.textMuted} />
-        </View>
-
         {/* ── Marketing hero (guests only) ─────────────────── */}
         {!isLoading && !user && (
           <View style={s.heroCard}>
@@ -489,31 +438,6 @@ export default function MoreScreen() {
 const s = StyleSheet.create({
   scroll: {
     paddingBottom: 32,
-  },
-
-  // Identity card
-  identityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bgCard,
-    marginHorizontal: H_PAD,
-    marginTop: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  identityName: {
-    fontSize: 17,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  identityRole: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    color: colors.textMuted,
   },
 
   // Tile grid
