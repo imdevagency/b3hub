@@ -45,7 +45,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 // ── Proxy ──────────────────────────────────────────────────────────────────
 
-export function proxy(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── APP_MODE: admin deployment route guard ────────────────────────────────

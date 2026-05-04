@@ -12,7 +12,7 @@ const journey = [
     body: 'Pievienojiet karjera profilu ar materiāliem, frakcijām un cenām. Verificācija 48h laikā — pēc tam esat katalogā.',
     features: [
       'Bezmaksas sarakste ar pircēju jau pirms apstiprināšanas',
-      'Profils redzams 240+ pircēju katalogā',
+      'Profils redzams visiem platformas pircējiem',
     ],
   },
   {
@@ -446,8 +446,8 @@ export default function KarjeriemPage() {
                 </div>
                 <div className="bg-neutral-50 rounded-[2rem] p-10 grid grid-cols-2 gap-8 shadow-sm">
                   {[
-                    { value: '18', label: 'Piegādātāji' },
-                    { value: '240+', label: 'Pārvadātāji' },
+                    { value: '6%', label: 'Komisija tikai par sekmīgiem pasūtījumiem' },
+                    { value: '0 €', label: 'Reģistrācija un publicēšana bezmaksas' },
                   ].map(({ value, label }) => (
                     <div key={label}>
                       <p className="text-4xl font-bold tracking-tighter leading-none mb-2">

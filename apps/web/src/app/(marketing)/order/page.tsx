@@ -38,10 +38,11 @@ export default function OrderHubPage() {
           <div>
             <Clock className="size-9 mb-5 text-foreground" strokeWidth={1.5} />
             <h3 className="font-extrabold text-xl mb-2.5 tracking-tight">
-              Bez liekas reģistrācijas
+              Konteineri un materiāli — bez konta
             </h3>
             <p className="text-[15px] font-medium text-muted-foreground leading-relaxed">
-              Pasūtiet, norādot tikai adresi un numuru. Ja vēlaties, kontu var izveidot vēlāk.
+              Konteineri, materiāli un utilizācija — pasūtiet ar telefona numuru, konts nav
+              vajadzīgs. Transports pieejams uzņēmumiem ar kontu.
             </p>
           </div>
           <div>

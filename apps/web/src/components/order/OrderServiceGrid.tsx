@@ -51,7 +51,7 @@ const SERVICES: ServiceDef[] = [
     href: '/dashboard/order/transport',
     icon: Truck,
     title: 'Transports',
-    description: 'Jebkuras kravas pārvadāšana visā Latvijas teritorijā.',
+    description: 'Kravas pārvadāšana uzņēmumiem visā Latvijā. Nepieciešams konts.',
     badge: 'B2B',
   },
 ];

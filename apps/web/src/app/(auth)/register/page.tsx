@@ -157,7 +157,7 @@ function RegisterPageInner() {
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* --- STEP 1 --- */}
               {step === 1 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">

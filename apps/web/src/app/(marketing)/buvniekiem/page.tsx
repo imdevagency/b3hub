@@ -9,7 +9,7 @@ const journey = [
     step: '01',
     title: 'Izvēlies',
     body: 'Atrodi materiālu katalogā ar reālo cenu un pieejamību. Nav zvanu, nav derğibu.',
-    features: ['Cenas no 240+ piegādātājiem', 'Piegāde ieplānota uzreiz'],
+    features: ['Cenas no reģionālajiem karjeriem', 'Piegāde ieplānota uzreiz'],
   },
   {
     step: '02',
