@@ -10,7 +10,6 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ShieldCheck, FileDown, Recycle, ExternalLink } from 'lucide-react-native';
@@ -139,14 +138,10 @@ function RecordCard({ item }: { item: ApiWasteRecord }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CertificatesScreen() {
-  const { token, user } = useAuth();
-  const _router = useRouter();
-  React.useEffect(() => {
-    if (user && !user.isCompany) _router.replace('/(buyer)/profile');
-  }, [user, _router]);
-  if (user && !user.isCompany) return null;
+  const { token } = useAuth();
   const toast = useToast();
   const [records, setRecords] = useState<ApiWasteRecord[]>([]);
+  const [co2Tonnes, setCo2Tonnes] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
@@ -155,8 +150,12 @@ export default function CertificatesScreen() {
     if (!token) return;
     setError(false);
     try {
-      const res = await api.recyclingCenters.myDisposalRecords(token);
-      setRecords(res);
+      const [recordsRes, statsRes] = await Promise.all([
+        api.recyclingCenters.myDisposalRecords(token),
+        api.recyclingCenters.sustainabilityStats(token).catch(() => null),
+      ]);
+      setRecords(recordsRes);
+      if (statsRes) setCo2Tonnes(statsRes.co2DiversionTonnes);
     } catch {
       setError(true);
     } finally {
@@ -169,18 +168,7 @@ export default function CertificatesScreen() {
     load();
   }, [load]);
 
-  if (!user?.canSkipHire) {
-    return (
-      <ScreenContainer bg="#f2f2f7">
-        <ScreenHeader title="Sertifikāti" />
-        <EmptyState
-          icon={<ShieldCheck size={42} color="#9ca3af" />}
-          title="Nav pieejams"
-          subtitle="Atkritumu sertifikāti ir pieejami tikai apstiprinātu konteineru operatoriem."
-        />
-      </ScreenContainer>
-    );
-  }
+  if (!token) return null;
 
   const certified = records.filter((r) => !!r.certificateUrl);
   const pending = records.filter((r) => !r.certificateUrl);
@@ -217,7 +205,7 @@ export default function CertificatesScreen() {
           <ShieldCheck size={52} color="#d1d5db" />
           <Text style={s.emptyTitle}>Nav sertifikātu</Text>
           <Text style={s.emptyDesc}>
-            Kad pārvadātājs nogādās konteineru atkritumu pārstrādes centrā, šeit parādīsies jūsu
+            Kad jūsu atkritumi tiks apstrādāti sertificētā pārstrādes centrā, šeit parādīsies
             atbilstības sertifikāti.
           </Text>
         </View>
@@ -253,6 +241,20 @@ export default function CertificatesScreen() {
               </Text>
               <Text style={s.summaryLabel}>Kopā</Text>
             </View>
+            {co2Tonnes != null && co2Tonnes > 0 && (
+              <>
+                <View style={s.summaryDivider} />
+                <View style={s.summaryItem}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Recycle size={14} color="#15803d" />
+                    <Text style={[s.summaryNum, { color: '#15803d' }]}>
+                      {co2Tonnes.toFixed(1)}t
+                    </Text>
+                  </View>
+                  <Text style={s.summaryLabel}>CO₂ ietaupīts</Text>
+                </View>
+              </>
+            )}
           </View>
 
           {records.map((r) => (

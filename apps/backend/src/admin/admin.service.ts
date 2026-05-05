@@ -1934,6 +1934,84 @@ export class AdminService {
     return record;
   }
 
+  /**
+   * POST /admin/b3-recycling/waste-records/:id/create-listing
+   * Converts a processed WasteRecord into a marketplace Material listing.
+   * Sets WasteRecord.producedMaterialId to close the circular economy loop.
+   */
+  async adminCreateListingFromWasteRecord(
+    id: string,
+    data: { basePrice: number; name?: string },
+  ) {
+    const record = await this.prisma.wasteRecord.findUnique({
+      where: { id },
+      include: {
+        recyclingCenter: { select: { id: true, name: true, city: true, companyId: true } },
+      },
+    });
+    if (!record) throw new NotFoundException('Waste record not found');
+    if (record.producedMaterialId) {
+      throw new BadRequestException('A supply listing already exists for this waste record');
+    }
+    if (!record.recyclableWeight || record.recyclableWeight <= 0) {
+      throw new BadRequestException(
+        'Cannot create a listing: recyclable weight is not set or is zero',
+      );
+    }
+
+    // Map WasteType → MaterialCategory
+    const CATEGORY_MAP: Record<string, import('@prisma/client').MaterialCategory> = {
+      CONCRETE: 'RECYCLED_CONCRETE',
+      BRICK: 'RECYCLED_CONCRETE',
+      SOIL: 'RECYCLED_SOIL',
+      WOOD: 'OTHER',
+      METAL: 'OTHER',
+      PLASTIC: 'OTHER',
+      MIXED: 'OTHER',
+      HAZARDOUS: 'OTHER',
+    };
+    const category = CATEGORY_MAP[record.wasteType] ?? 'OTHER';
+
+    const defaultName = data.name?.trim() || `RC materiāls — ${record.recyclingCenter.name}`;
+
+    const [material] = await this.prisma.$transaction([
+      this.prisma.material.create({
+        data: {
+          name: defaultName,
+          category,
+          isRecycled: true,
+          basePrice: data.basePrice,
+          unit: 'TONNE',
+          stockQty: record.recyclableWeight,
+          inStock: true,
+          supplierId: record.recyclingCenter.companyId,
+          certificates: [],
+          images: [],
+          // Circular economy provenance
+          wasteRecordId: record.id,
+          recoveryRate: record.recyclingRate ?? null,
+          provenanceFacility: record.recyclingCenter.name,
+        },
+      }),
+    ]);
+
+    const updated = await this.prisma.wasteRecord.update({
+      where: { id },
+      data: { producedMaterialId: material.id },
+      include: {
+        recyclingCenter: { select: { id: true, name: true, city: true } },
+        containerOrder: {
+          select: {
+            id: true,
+            order: { select: { id: true, orderNumber: true, buyer: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+    });
+
+    return { wasteRecord: updated, material };
+  }
+
   // ── Documents (admin view) ────────────────────────────────────────────────
 
   /**

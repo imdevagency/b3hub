@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Recycle,
   ArrowUpDown,
 } from 'lucide-react';
 
@@ -254,9 +255,16 @@ function MaterialsTab({ token }: { token: string }) {
                           <p className="text-xs text-muted-foreground">{m.subCategory}</p>
                         )}
                         {m.isRecycled && (
-                          <span className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 mt-0.5">
+                          <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 mt-0.5">
+                            <Recycle className="h-2.5 w-2.5" />
                             Pārstrādāts
+                            {m.recoveryRate != null ? ` · ${m.recoveryRate.toFixed(0)}%` : ''}
                           </span>
+                        )}
+                        {m.isRecycled && m.provenanceFacility && (
+                          <p className="text-[11px] text-emerald-700 mt-0.5">
+                            {m.provenanceFacility}
+                          </p>
                         )}
                       </div>
                     </td>

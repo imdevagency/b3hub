@@ -40,3 +40,13 @@ export function formatDateNumeric(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+
+/**
+ * Medium date — short month + year, e.g. "03. mar. 2025".
+ * Used where a short month name is preferable to a numeric format but the full
+ * month name would be too long (e.g., document lists).
+ */
+export function formatDateMedium(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('lv-LV', { day: '2-digit', month: 'short', year: 'numeric' });
+}

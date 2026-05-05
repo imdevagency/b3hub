@@ -144,3 +144,32 @@ export const DRIVER_JOB_BUYER_LABELS: Record<string, string> = {
   EN_ROUTE_DELIVERY: 'Piegādē',
   AT_DELIVERY: 'Šoferis uz vietas',
 };
+
+// ─── Seller-facing order statuses (incoming orders view) ──────────────────────
+// PENDING maps to 'Jauns' (New) from the seller's perspective.
+// DISPATCHED is the normalized terminal state after loading.
+
+export const SELLER_ORDER_STATUS_MAP: Record<string, StatusEntry> = {
+  PENDING:    { label: 'Jauns',       bg: '#fff7ed', color: '#d97706' },
+  CONFIRMED:  { label: 'Apstiprināts', bg: '#eff6ff', color: '#2563eb' },
+  LOADING:    { label: 'Iekraušana',   bg: '#f0fdf4', color: '#16a34a' },
+  DISPATCHED: { label: 'Piegādē',     bg: '#f3f4f6', color: '#4b5563' },
+  CANCELLED:  { label: 'Atcelts',     bg: '#fef2f2', color: colors.dangerText },
+};
+
+export function getSellerOrderStatus(status: string): StatusEntry {
+  return SELLER_ORDER_STATUS_MAP[status] ?? { label: status, bg: '#f3f4f6', color: colors.textMuted };
+}
+
+// ─── Dispute status ────────────────────────────────────────────────────────────
+
+export const DISPUTE_STATUS_MAP: Record<string, StatusEntry> = {
+  OPEN:         { label: 'Atvērts',      bg: '#fff7ed', color: '#f59e0b' },
+  UNDER_REVIEW: { label: 'Izskatīšanā', bg: '#eff6ff', color: '#3b82f6' },
+  RESOLVED:     { label: 'Atrisināts',  bg: '#ecfdf5', color: '#10b981' },
+  REJECTED:     { label: 'Noraidīts',   bg: '#fef2f2', color: '#ef4444' },
+};
+
+export function getDisputeStatus(status: string): StatusEntry {
+  return DISPUTE_STATUS_MAP[status] ?? { label: status, bg: '#f3f4f6', color: colors.textMuted };
+}

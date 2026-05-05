@@ -14,7 +14,25 @@ import { CATEGORY_LABELS } from '@b3hub/shared';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { RefreshCw, Package, Search, CheckCircle, Ban, ExternalLink } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  RefreshCw,
+  Package,
+  Search,
+  CheckCircle,
+  Ban,
+  ExternalLink,
+  Recycle,
+  ArrowDown,
+  Factory,
+  FileCheck2,
+} from 'lucide-react';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -93,6 +111,131 @@ function ToggleButton({
   );
 }
 
+// ─── provenance dialog ────────────────────────────────────────────────────────
+
+function ProvenanceDialog({
+  material,
+  open,
+  onClose,
+}: {
+  material: AdminMaterial | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  if (!material) return null;
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Recycle className="h-5 w-5 text-emerald-600" />
+            Pārstrādes ķēde
+          </DialogTitle>
+          <DialogDescription>
+            Cirkulārās ekonomikas izsekojamība — {material.name}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Step 1 — Waste source */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="h-8 w-8 rounded-full bg-red-50 border border-red-200 flex items-center justify-center shrink-0">
+                <Factory className="h-4 w-4 text-red-600" />
+              </div>
+              <div className="w-0.5 flex-1 bg-border mt-1" />
+            </div>
+            <div className="pb-4">
+              <p className="text-sm font-semibold text-foreground">Izcelsmes atkritumu ieraksts</p>
+              {material.wasteRecordId ? (
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                  ID: {material.wasteRecordId}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">Nav norādīts</p>
+              )}
+              {material.provenanceFacility && (
+                <p className="text-xs text-emerald-700 mt-1 font-medium">
+                  Iestāde: {material.provenanceFacility}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Step 2 — Processing */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="h-8 w-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                <Recycle className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="w-0.5 flex-1 bg-border mt-1" />
+            </div>
+            <div className="pb-4">
+              <p className="text-sm font-semibold text-foreground">Pārstrādes process</p>
+              {material.recoveryRate != null ? (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Atgūšanas koeficients:{' '}
+                  <span className="font-semibold text-foreground">
+                    {material.recoveryRate.toFixed(0)}%
+                  </span>
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">Atgūšanas koeficients: —</p>
+              )}
+            </div>
+          </div>
+
+          {/* Step 3 — Material listing */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+                <Package className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="w-0.5 flex-1 bg-border mt-1" />
+            </div>
+            <div className="pb-4">
+              <p className="text-sm font-semibold text-foreground">Materiāls katalogā</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {material.name} — {material.supplier.name}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Pasūtījumi:{' '}
+                <span className="font-semibold text-foreground">{material._count.orderItems}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Step 4 — Orders (summary count) */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="h-8 w-8 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+                <FileCheck2 className="h-4 w-4 text-blue-600" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Iepirkumu pasūtījumi</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {material._count.orderItems > 0
+                  ? `${material._count.orderItems} pasūtījumu pozīcijas no šī materiāla`
+                  : 'Vēl nav pasūtījumu'}
+              </p>
+              {material.wasteRecordId && (
+                <Link
+                  href={`/dashboard/b3-recycling/waste-log`}
+                  className="text-xs text-blue-600 underline underline-offset-2 mt-1 inline-flex items-center gap-1"
+                >
+                  Skatīt atkritumu žurnālā
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── main page ────────────────────────────────────────────────────────────────
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
@@ -106,6 +249,7 @@ export default function AdminMaterialsPage() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [provenanceMaterial, setProvenanceMaterial] = useState<AdminMaterial | null>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -306,9 +450,21 @@ export default function AdminMaterialsPage() {
                           <p className="text-xs text-muted-foreground">{m.subCategory}</p>
                         )}
                         {m.isRecycled && (
-                          <span className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 mt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setProvenanceMaterial(m)}
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 mt-0.5 hover:bg-emerald-100 transition-colors"
+                            title="Skatīt pārstrādes ķēdi"
+                          >
+                            <Recycle className="h-2.5 w-2.5" />
                             Pārstrādāts
-                          </span>
+                            {m.recoveryRate != null ? ` · ${m.recoveryRate.toFixed(0)}%` : ''}
+                          </button>
+                        )}
+                        {m.isRecycled && m.provenanceFacility && (
+                          <p className="text-[11px] text-emerald-700 mt-0.5">
+                            {m.provenanceFacility}
+                          </p>
                         )}
                       </div>
                     </td>
@@ -389,6 +545,12 @@ export default function AdminMaterialsPage() {
           </div>
         </div>
       )}
+
+      <ProvenanceDialog
+        material={provenanceMaterial}
+        open={provenanceMaterial !== null}
+        onClose={() => setProvenanceMaterial(null)}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { Star, Zap, CheckCircle } from 'lucide-react-native';
+import { Star, Zap, CheckCircle, Recycle } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
 import { UNIT_SHORT } from '@/lib/materials';
 import type { MaterialUnit } from '@/lib/materials';
@@ -56,6 +56,16 @@ export function OfferCard({
         </View>
       )}
 
+      {/* Recycled material badge */}
+      {offer.isRecycled && (
+        <View style={s.recycledBadge}>
+          <Recycle size={9} color="#15803d" />
+          <Text style={s.recycledBadgeText}>
+            Pārstrādāts{offer.recoveryRate != null ? ` · ${offer.recoveryRate.toFixed(0)}%` : ''}
+          </Text>
+        </View>
+      )}
+
       {/* Left Column: Supplier, Location, Details */}
       <View style={s.leftCol}>
         <View style={s.supplierRow}>
@@ -96,6 +106,14 @@ export function OfferCard({
           {offer.effectiveUnitPrice?.toFixed(2) ?? '—'} €/{UNIT_SHORT[unit]}
           {offer.deliveryFee != null ? ` + ${offer.deliveryFee?.toFixed(2)} € piegāde` : ''}
         </Text>
+        {offer.isRecycled && offer.provenanceFacility && (
+          <View style={s.provenanceRow}>
+            <Recycle size={11} color="#15803d" />
+            <Text style={s.provenanceText} numberOfLines={1}>
+              {offer.provenanceFacility}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Right Column: Price */}
@@ -189,6 +207,26 @@ const s = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     letterSpacing: 0.3,
   },
+  recycledBadge: {
+    position: 'absolute',
+    top: -10,
+    left: 16,
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  recycledBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#15803d',
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.3,
+  },
   leftCol: { flex: 1, paddingRight: 16 },
   supplierRow: {
     flexDirection: 'row',
@@ -223,6 +261,17 @@ const s = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: 'Inter_500Medium',
     marginBottom: 2,
+  },
+  provenanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  provenanceText: {
+    fontSize: 12,
+    color: '#15803d',
+    fontFamily: 'Inter_400Regular',
   },
   perfRow: {
     flexDirection: 'row',

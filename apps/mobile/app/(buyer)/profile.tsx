@@ -20,7 +20,7 @@ import { LogOut, Trash2, ChevronRight, AlertCircle, ArrowUpDown } from 'lucide-r
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { RoleSheet } from '@/components/ui/TopBar';
+import { RoleSheet } from '@/components/ui/RoleSheet';
 import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { api } from '@/lib/api';

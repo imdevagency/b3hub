@@ -85,7 +85,11 @@ export default function ChangePasswordScreen() {
       setNewPw('');
       setConfirmPw('');
       Alert.alert('Veiksmīgi', 'Parole ir nomainīta.', [
-        { text: 'Labi', onPress: () => router.back() },
+        {
+          text: 'Labi',
+          onPress: () =>
+            router.canGoBack() ? router.back() : router.replace('/(shared)/settings'),
+        },
       ]);
     } catch (err: unknown) {
       haptics.error();

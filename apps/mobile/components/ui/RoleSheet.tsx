@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Check, ShoppingCart, Store, Truck } from 'lucide-react-native';
+import { Check, ShoppingCart, Store, Truck, Recycle } from 'lucide-react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useMode, AppMode, MODE_HOME } from '@/lib/mode-context';
 import { haptics } from '@/lib/haptics';
@@ -23,6 +23,11 @@ const ROLE_CFG: Record<AppMode, { Icon: React.ElementType; label: string; desc: 
     Icon: Truck,
     label: 'Vadītājs',
     desc: 'Piegādes darbi un maršruti',
+  },
+  RECYCLER: {
+    Icon: Recycle,
+    label: 'Reciklētājs',
+    desc: 'Atkritumu pieņemšana un apstrāde',
   },
 };
 

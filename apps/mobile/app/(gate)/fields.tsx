@@ -19,13 +19,15 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useAuth } from '@/lib/auth-context';
+import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { b3Fields, type ApiMobileB3Field } from '@/lib/api/b3-fields';
 import { MapPin, ChevronRight, LogOut, RefreshCw } from 'lucide-react-native';
 import { colors, spacing, radius, fontSizes } from '@/lib/theme';
 
 export default function GateFieldsScreen() {
   const router = useRouter();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
+  const handleLogout = useLogoutConfirm();
   const [fields, setFields] = useState<ApiMobileB3Field[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,11 +51,6 @@ export default function GateFieldsScreen() {
       load();
     }, [load]),
   );
-
-  const handleLogout = () => {
-    logout();
-    router.replace('/(auth)/login');
-  };
 
   return (
     <ScreenContainer standalone bg={colors.bgScreen}>

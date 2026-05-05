@@ -69,7 +69,11 @@ export default function LoginScreen() {
       >
         {/* Minimal Header */}
         <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/welcome'))}
+            activeOpacity={0.7}
+          >
             <ChevronLeft size={24} color="#000" />
           </TouchableOpacity>
         </View>

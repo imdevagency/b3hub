@@ -24,6 +24,9 @@ export interface ApiMaterial {
   maxOrder?: number;
   deliveryRadiusKm?: number | null;
   isRecycled: boolean;
+  wasteRecordId?: string | null;
+  recoveryRate?: number | null;
+  provenanceFacility?: string | null;
   quality?: string;
   images: string[];
   certificates?: string[];

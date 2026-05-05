@@ -871,7 +871,20 @@ export class AdminController {
     return this.service.adminCreateWasteRecord(body);
   }
 
-  // ── B3 Construction — Rate Library ─────────────────────────────────────────
+  /**
+   * POST /admin/b3-recycling/waste-records/:id/create-listing
+   * Converts a processed WasteRecord into a marketplace Material listing.
+   * Closes the circular economy loop: waste processed → RC material listed for sale.
+   */
+  @Post('b3-recycling/waste-records/:id/create-listing')
+  createListingFromWasteRecord(
+    @Param('id') id: string,
+    @Body() body: { basePrice: number; name?: string },
+  ) {
+    return this.service.adminCreateListingFromWasteRecord(id, body);
+  }
+
+
 
   /**
    * GET /admin/b3-construction/rates

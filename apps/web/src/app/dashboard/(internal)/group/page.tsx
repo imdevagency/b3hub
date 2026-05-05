@@ -31,6 +31,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   getAdminStats,
   adminGetConstructionProfitability,
@@ -39,6 +40,7 @@ import {
   adminGetRecyclingWasteRecords,
   type AdminStats,
   type ConstructionProfitabilityResponse,
+  type RecyclingInboundJob,
 } from '@/lib/api/admin';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -146,6 +148,7 @@ interface GroupData {
   construction: ConstructionProfitabilityResponse;
   activeProjects: number;
   recyclingJobsTotal: number;
+  recyclingJobsData: RecyclingInboundJob[];
   recyclingWasteTotal: number; // kg total weight
   recyclingCertsTotal: number;
 }
@@ -171,7 +174,7 @@ export default function GroupOverviewPage() {
           getAdminStats(token),
           adminGetConstructionProfitability(token),
           adminGetConstructionProjects(token, { status: 'ACTIVE', limit: 1 }),
-          adminGetRecyclingJobs(token, { limit: 1 }),
+          adminGetRecyclingJobs(token, { limit: 500 }),
           adminGetRecyclingWasteRecords(token, { limit: 200 }),
         ]);
 
@@ -179,6 +182,8 @@ export default function GroupOverviewPage() {
       const construction = constructionRes.status === 'fulfilled' ? constructionRes.value : null;
       const activeProjects =
         activeProjectsRes.status === 'fulfilled' ? activeProjectsRes.value.total : 0;
+      const recyclingJobsAll =
+        recyclingJobsRes.status === 'fulfilled' ? recyclingJobsRes.value.data : [];
       const recyclingJobsTotal =
         recyclingJobsRes.status === 'fulfilled' ? recyclingJobsRes.value.total : 0;
       const wasteRecords =
@@ -192,6 +197,7 @@ export default function GroupOverviewPage() {
           construction,
           activeProjects,
           recyclingJobsTotal,
+          recyclingJobsData: recyclingJobsAll,
           recyclingWasteTotal,
           recyclingCertsTotal,
         });
@@ -226,6 +232,34 @@ export default function GroupOverviewPage() {
   // Group-level aggregated GMV = marketplace GMV + construction contract value
   const groupRevenue = (hub.gmvAllTime ?? 0) + (construction.totals.contractValue ?? 0);
   const groupRevenue30d = hub.gmv30d ?? 0;
+
+  // ── Consolidated P&L ───────────────────────────────────────────────────────
+  // B3 Hub: platform commission estimate (gmv30d × 8% — same estimate used on analytics page)
+  const hubRevenue30d = hub.commissionEst30d ?? 0;
+
+  // B3 Recycling: completed job revenue (all time — MTD would require date filter on full load)
+  const now = new Date();
+  const recyclingRevenueMTD = data.recyclingJobsData
+    .filter((j) => {
+      const d = new Date(j.createdAt);
+      return (
+        (j.status === 'COMPLETED' || j.paymentStatus === 'PAID') &&
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth()
+      );
+    })
+    .reduce((s, j) => s + (j.total ?? 0), 0);
+
+  // B3 Construction: gross margin from profitability (all projects)
+  const constructionGrossMargin = construction.totals.grossMargin ?? 0;
+  const constructionDprCost = construction.totals.dprCost ?? 0;
+  const constructionContractValue = construction.totals.contractValue ?? 0;
+
+  // Group totals
+  const groupGrossRevenue = constructionContractValue + recyclingRevenueMTD;
+  const groupTotalCosts = constructionDprCost;
+  const groupGrossMargin = constructionGrossMargin + recyclingRevenueMTD;
+  const groupMarginPct = groupGrossRevenue > 0 ? (groupGrossMargin / groupGrossRevenue) * 100 : 0;
 
   return (
     <div className="space-y-12">
@@ -299,6 +333,111 @@ export default function GroupOverviewPage() {
             { label: 'Visi projekti', value: num(construction.projects?.length ?? 0) },
           ]}
         />
+      </div>
+
+      {/* ── Consolidated P&L ── */}
+      <div>
+        <h2 className="text-base font-semibold mb-4">Konsolidētais P&L (pārskats)</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Platformas komisija (30 d.)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-blue-700">{eur(hubRevenue30d)}</p>
+              <p className="text-xs text-muted-foreground mt-1">B3 Hub est. ieņēmumi</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Pārstrādes ieņēmumi (MTD)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-700">{eur(recyclingRevenueMTD)}</p>
+              <p className="text-xs text-muted-foreground mt-1">B3 Recycling pabeigti darbi</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Būvniecības bruto peļņa
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p
+                className={`text-2xl font-bold ${constructionGrossMargin >= 0 ? 'text-amber-700' : 'text-red-700'}`}
+              >
+                {eur(constructionGrossMargin)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {construction.totals.marginPct != null
+                  ? `${construction.totals.marginPct.toFixed(1)}% no ${eur(constructionContractValue)}`
+                  : 'B3 Construction'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Grupas bruto peļņa
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p
+                className={`text-2xl font-bold ${groupGrossMargin >= 0 ? 'text-foreground' : 'text-red-700'}`}
+              >
+                {eur(groupGrossMargin)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {groupMarginPct.toFixed(0)}% no {eur(groupGrossRevenue)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Cost breakdown row */}
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card className="sm:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Izmaksu sadalījums</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-muted-foreground">Būvniecības DPR izmaksas</span>
+                <span className="font-medium tabular-nums">{eur(constructionDprCost)}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-muted-foreground">Platformas izmaksas (est. izmaksas)</span>
+                <span className="font-medium tabular-nums">{eur(hub.pendingPayouts ?? 0)}</span>
+              </div>
+              <div className="flex justify-between pt-1 font-semibold">
+                <span>Kopā izmaksas</span>
+                <span className="tabular-nums">
+                  {eur(constructionDprCost + (hub.pendingPayouts ?? 0))}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Starpkompāniju darījumi</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <p>
+                B3 Construction → B3 Recycling atkritumu izvešanas pasūtījumi tiek iegrāmatoti kā
+                iekšējie darījumi un netiek dubulti skaitīti grupas ieņēmumos.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { TopBar } from '@/components/ui/TopBar';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { t } from '@/lib/translations';
 import { Check, Clock, ChevronRight, AlertCircle, Truck } from 'lucide-react-native';
@@ -356,19 +356,7 @@ export default function EarningsScreen() {
   if (loading) {
     return (
       <ScreenContainer bg="#ffffff" topBg="#ffffff">
-        <TopBar transparent />
-        <View className="px-5 pt-2 pb-6">
-          <Text
-            style={{
-              fontSize: 32,
-              fontWeight: '700',
-              color: colors.textPrimary,
-              letterSpacing: -0.8,
-            }}
-          >
-            Izpeļņa
-          </Text>
-        </View>
+        <ScreenHeader title="Izpeļņa" onBack={null} />
         <View className="px-5">
           <SkeletonCard count={3} />
         </View>
@@ -378,7 +366,7 @@ export default function EarningsScreen() {
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
-      <TopBar transparent />
+      <ScreenHeader title="Izpeļņa" onBack={null} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -391,19 +379,6 @@ export default function EarningsScreen() {
           />
         }
       >
-        <View className="px-5 pt-1 pb-4">
-          <Text
-            style={{
-              fontSize: 32,
-              fontWeight: '700',
-              color: colors.textPrimary,
-              letterSpacing: -0.8,
-            }}
-          >
-            Izpeļņa
-          </Text>
-        </View>
-
         {user?.isCompany && user.payoutEnabled === false && (
           <View className="mx-5 mb-8 bg-gray-50 rounded-3xl p-5 border border-gray-100">
             <View className="flex-row items-center mb-3">

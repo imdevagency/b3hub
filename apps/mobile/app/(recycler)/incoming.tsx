@@ -1,5 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  Pressable,
+} from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { getRecyclerIncomingJobs } from '@/lib/api';
@@ -10,9 +19,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderConfig } from '@/lib/header-context';
 import { colors } from '@/lib/theme';
 import { getRecyclerJobStatus } from '@/lib/status';
-import { Truck, Calendar } from 'lucide-react-native';
+import { Truck, Calendar, X, MapPin, FileText } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-function JobCard({ job }: { job: IncomingJob }) {
+function JobCard({ job, onPress }: { job: IncomingJob; onPress: () => void }) {
   const statusMeta = getRecyclerJobStatus(job.status);
   const pickupDate = job.scheduledPickupAt
     ? new Date(job.scheduledPickupAt).toLocaleDateString('lv-LV', {
@@ -24,7 +34,7 @@ function JobCard({ job }: { job: IncomingJob }) {
     : null;
 
   return (
-    <TouchableOpacity style={ls.card} activeOpacity={0.85}>
+    <TouchableOpacity style={ls.card} activeOpacity={0.85} onPress={onPress}>
       <View style={ls.cardTop}>
         <Text style={ls.cardId}>#{job.id.slice(-6).toUpperCase()}</Text>
         <View style={[ls.badge, { backgroundColor: statusMeta.bg }]}>
@@ -67,9 +77,11 @@ function JobCard({ job }: { job: IncomingJob }) {
 export default function RecyclerIncomingScreen() {
   const { token } = useAuth();
   const { setConfig } = useHeaderConfig();
+  const insets = useSafeAreaInsets();
   const [jobs, setJobs] = useState<IncomingJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<IncomingJob | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -131,9 +143,81 @@ export default function RecyclerIncomingScreen() {
       >
         <Text style={ls.count}>{jobs.length} piegādes</Text>
         {jobs.map((j) => (
-          <JobCard key={j.id} job={j} />
+          <JobCard key={j.id} job={j} onPress={() => setSelectedJob(j)} />
         ))}
       </ScrollView>
+
+      {/* Job detail sheet */}
+      <Modal
+        visible={selectedJob !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedJob(null)}
+      >
+        <Pressable style={ls.backdrop} onPress={() => setSelectedJob(null)} />
+        {selectedJob &&
+          (() => {
+            const meta = getRecyclerJobStatus(selectedJob.status);
+            const pickupDate = selectedJob.scheduledPickupAt
+              ? new Date(selectedJob.scheduledPickupAt).toLocaleDateString('lv-LV', {
+                  weekday: 'short',
+                  day: '2-digit',
+                  month: 'long',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : null;
+            return (
+              <View style={[ls.sheet, { paddingBottom: insets.bottom + 24 }]}>
+                <View style={ls.sheetHandle} />
+                <View style={ls.sheetHeader}>
+                  <Text style={ls.sheetId}>#{selectedJob.id.slice(-6).toUpperCase()}</Text>
+                  <View style={[ls.badge, { backgroundColor: meta.bg }]}>
+                    <Text style={[ls.badgeText, { color: meta.color }]}>{meta.label}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setSelectedJob(null)} hitSlop={12}>
+                    <X size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+                {selectedJob.requester && (
+                  <View style={ls.row}>
+                    <Truck size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>
+                      {selectedJob.requester.firstName} {selectedJob.requester.lastName}
+                      {selectedJob.requester.phone ? ` · ${selectedJob.requester.phone}` : ''}
+                    </Text>
+                  </View>
+                )}
+                {pickupDate && (
+                  <View style={ls.row}>
+                    <Calendar size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>{pickupDate}</Text>
+                  </View>
+                )}
+                {selectedJob.vehicle && (
+                  <View style={ls.row}>
+                    <Truck size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>
+                      {selectedJob.vehicle.plateNumber} · {selectedJob.vehicle.type}
+                    </Text>
+                  </View>
+                )}
+                {(selectedJob as any).pickupAddress && (
+                  <View style={ls.row}>
+                    <MapPin size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>{(selectedJob as any).pickupAddress}</Text>
+                  </View>
+                )}
+                {selectedJob.notes && (
+                  <View style={ls.row}>
+                    <FileText size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>{selectedJob.notes}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -162,7 +246,38 @@ const ls = StyleSheet.create({
     borderRadius: 6,
   },
   badgeText: { fontSize: 11, fontWeight: '600' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   rowText: { fontSize: 13, color: colors.textSecondary, flex: 1 },
   notes: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  // Detail sheet
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingTop: 12,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#d1d5db',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  sheetId: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, flex: 1 },
 });

@@ -18,7 +18,6 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
 import { useActiveJob } from '@/lib/use-active-job';
 import { useNotifications } from '@/lib/notifications-context';
-import { useChatUnreadCount } from '@/lib/use-chat-unread-count';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
@@ -29,8 +28,7 @@ function DriverLayoutContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { hasActiveJob } = useActiveJob();
-  const { unreadCount } = useNotifications();
-  const chatUnreadCount = useChatUnreadCount();
+  const { unreadCount, chatUnreadCount } = useNotifications();
   const { config } = useHeaderConfig();
 
   // eslint-disable-next-line react/display-name

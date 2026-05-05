@@ -351,6 +351,9 @@ export interface AdminMaterial {
   stockQty: number | null;
   active: boolean;
   isRecycled: boolean;
+  wasteRecordId?: string | null;
+  recoveryRate?: number | null;
+  provenanceFacility?: string | null;
   createdAt: string;
   supplier: { id: string; name: string; verified: boolean };
   _count: { orderItems: number };
@@ -1346,6 +1349,7 @@ export interface RecyclingWasteRecord {
   recyclableWeight: number | null;
   recyclingRate: number | null;
   certificateUrl: string | null;
+  producedMaterialId: string | null;
   createdAt: string;
   recyclingCenter: { id: string; name: string; city: string };
   containerOrder: {
@@ -1659,6 +1663,18 @@ export async function adminCreateWasteRecord(
   token: string,
 ): Promise<RecyclingWasteRecord> {
   return apiFetch<RecyclingWasteRecord>('/admin/b3-recycling/waste-records', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminCreateListingFromWasteRecord(
+  id: string,
+  data: { basePrice: number; name?: string },
+  token: string,
+): Promise<{ wasteRecord: RecyclingWasteRecord; material: AdminMaterial }> {
+  return apiFetch(`/admin/b3-recycling/waste-records/${id}/create-listing`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

@@ -108,7 +108,7 @@ export default function ApplyRoleScreen() {
           </Text>
           <TouchableOpacity
             style={[s.doneBtn, { backgroundColor: meta.color }]}
-            onPress={() => router.back()}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/welcome'))}
             activeOpacity={0.85}
           >
             <Text style={s.doneBtnText}>Atpakaļ uz profilu</Text>
@@ -127,7 +127,11 @@ export default function ApplyRoleScreen() {
       >
         {/* Header */}
         <View style={s.header}>
-          <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={s.backBtn}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(auth)/welcome'))}
+            activeOpacity={0.7}
+          >
             <ChevronLeft size={22} color="#374151" />
           </TouchableOpacity>
           <View style={[s.roleBadge, { backgroundColor: meta.bg }]}>

@@ -184,6 +184,16 @@ const B3HUB_NAV: NavSection[] = [
         icon: Settings2,
         groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'config')?.tabs.map((t) => t.href),
       },
+      {
+        label: 'Analītika',
+        href: '/dashboard/admin/analytics',
+        icon: BarChart3,
+      },
+      {
+        label: 'Rezultātu karte',
+        href: '/dashboard/admin/scorecard',
+        icon: Scale,
+      },
     ],
   },
 ];
@@ -210,6 +220,11 @@ const RECYCLING_NAV: NavSection[] = [
         label: 'APUS',
         href: '/dashboard/b3-recycling/apus',
         icon: FileText,
+      },
+      {
+        label: 'Finanses & Vide',
+        href: '/dashboard/b3-recycling/finances',
+        icon: BarChart3,
       },
     ],
   },
@@ -257,6 +272,8 @@ const CONSTRUCTION_NAV: NavSection[] = [
         href: '/dashboard/b3-construction/daily-reports',
         icon: ClipboardList,
       },
+      { label: 'Tehnika', href: '/dashboard/b3-construction/equipment', icon: Wrench },
+      { label: 'Piedāvājumi', href: '/dashboard/b3-construction/tenders', icon: Gavel },
     ],
   },
   {

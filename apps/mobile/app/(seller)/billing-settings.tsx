@@ -60,7 +60,10 @@ export default function BillingSettingsScreen() {
         ...(days !== undefined && { paymentTermsDays: days }),
       });
       Alert.alert('Saglabāts', 'Norēķinu iestatījumi saglabāti.', [
-        { text: 'Labi', onPress: () => router.back() },
+        {
+          text: 'Labi',
+          onPress: () => (router.canGoBack() ? router.back() : router.replace('/(seller)/more')),
+        },
       ]);
     } catch {
       Alert.alert('Kļūda', 'Neizdevās saglabāt iestatījumus. Lūdzu, mēģiniet vēlreiz.');

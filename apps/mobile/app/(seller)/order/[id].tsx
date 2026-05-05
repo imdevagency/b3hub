@@ -114,7 +114,7 @@ export default function SellerOrderDetailScreen() {
             await api.orders.sellerCancel(order.id, 'Piegādātājs noraidīja pasūtījumu', token!);
             haptics.success();
             toast.success('Pasūtījums noraidīts.');
-            router.back();
+            router.canGoBack() ? router.back() : router.replace('/(seller)/incoming');
           } catch {
             haptics.error();
             toast.error('Neizdevās noraidīt.');

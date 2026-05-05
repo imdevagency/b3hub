@@ -493,6 +493,13 @@ export default function ActiveJobScreen() {
     }
   };
 
+  // ── Redirect to jobs list when no active job found ───────────
+  useEffect(() => {
+    if (!loading && !job) {
+      router.replace('/(driver)/jobs');
+    }
+  }, [loading, job, router]);
+
   // ── Fetch return trips when status enters EN_ROUTE_DELIVERY / AT_DELIVERY ──
   useEffect(() => {
     if (!token || !job) return;
@@ -1104,7 +1111,7 @@ export default function ActiveJobScreen() {
       >
         <TouchableOpacity
           style={[styles.iconButton, { position: 'absolute', left: 16 }]}
-          onPress={() => router.back()}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(driver)/home'))}
         >
           <ArrowLeft size={24} color="#111827" />
         </TouchableOpacity>
@@ -1217,10 +1224,7 @@ export default function ActiveJobScreen() {
         {/* Address & Quick Actions Side-by-Side (Uber Style) */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           {/* Destination */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setActiveTab('details')}
-          >
+          <TouchableOpacity activeOpacity={0.7} onPress={() => setActiveTab('details')}>
             <RNText
               style={{
                 fontSize: 28,
@@ -1285,16 +1289,50 @@ export default function ActiveJobScreen() {
           </TouchableOpacity>
 
           {/* Inline offline/exceptions alerts directly below address */}
-          {(isOffline || openExceptions.length > 0 || (returnTrips.length > 0 && RETURN_TRIP_STATUSES.includes(currentStatus))) && (
+          {(isOffline ||
+            openExceptions.length > 0 ||
+            (returnTrips.length > 0 && RETURN_TRIP_STATUSES.includes(currentStatus))) && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
               {isOffline ? (
-                <View style={{ backgroundColor: '#fef3c7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
-                  <RNText style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#b45309' }}>Bezsaistē: darbības tiks rindotas</RNText>
+                <View
+                  style={{
+                    backgroundColor: '#fef3c7',
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                  }}
+                >
+                  <RNText
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                      color: '#b45309',
+                    }}
+                  >
+                    Bezsaistē: darbības tiks rindotas
+                  </RNText>
                 </View>
               ) : null}
               {openExceptions.length > 0 ? (
-                <View style={{ backgroundColor: '#fef2f2', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
-                  <RNText style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600', color: '#b91c1c' }}>{openExceptions.length} atvērta problēma</RNText>
+                <View
+                  style={{
+                    backgroundColor: '#fef2f2',
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                  }}
+                >
+                  <RNText
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                      color: '#b91c1c',
+                    }}
+                  >
+                    {openExceptions.length} atvērta problēma
+                  </RNText>
                 </View>
               ) : null}
             </View>

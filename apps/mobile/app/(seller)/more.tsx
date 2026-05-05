@@ -175,7 +175,7 @@ export default function SellerMoreScreen() {
           />
         </View>
         {/* Help */}
-        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>{' '}
+        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
         <View style={s.listCard}>
           <ListRow icon={HelpCircle} label="Palīdzība / BUJ" onPress={() => router.push('/help')} />
           <ListRow

@@ -200,7 +200,7 @@ export default function PhoneOtpScreen() {
             style={s.backBtn}
             onPress={() => {
               if (step === 'phone') {
-                router.back();
+                router.canGoBack() ? router.back() : router.replace('/(auth)/welcome');
               } else if (step === 'otp') {
                 setStep('phone');
                 setOtpErr(null);

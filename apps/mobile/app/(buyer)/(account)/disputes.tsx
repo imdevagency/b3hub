@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
 import { api, type ApiDispute, type DisputeReason, type DisputeStatus } from '@/lib/api';
 import { formatDateShort } from '@/lib/format';
+import { getDisputeStatus } from '@/lib/status';
 import { haptics } from '@/lib/haptics';
 import { AlertCircle } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -32,13 +33,6 @@ const REASON_LABEL: Record<DisputeReason, string> = {
   OTHER: 'Cits',
 };
 
-const STATUS_MAP: Record<DisputeStatus, { label: string; bg: string; color: string }> = {
-  OPEN: { label: 'Atvērts', bg: '#fff7ed', color: '#f59e0b' },
-  UNDER_REVIEW: { label: 'Izskatīšanā', bg: '#eff6ff', color: '#3b82f6' },
-  RESOLVED: { label: 'Atrisināts', bg: '#ecfdf5', color: '#10b981' },
-  REJECTED: { label: 'Noraidīts', bg: '#fef2f2', color: '#ef4444' },
-};
-
 export default function DisputesScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
@@ -54,7 +48,7 @@ export default function DisputesScreen() {
   const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const renderItem = ({ item }: { item: ApiDispute }) => {
-    const status = STATUS_MAP[item.status] ?? STATUS_MAP.OPEN;
+    const status = getDisputeStatus(item.status);
     const reason = REASON_LABEL[item.reason] ?? item.reason;
 
     return (

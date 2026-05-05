@@ -247,11 +247,13 @@ export class RecyclingCentersService {
 
   /** Buyer: get disposal records linked to their container orders */
   async getMyDisposalRecords(userId: string) {
+    // Include both container-order-linked records AND direct disposal order records
     return this.prisma.wasteRecord.findMany({
       where: {
-        containerOrder: {
-          order: { createdById: userId },
-        },
+        OR: [
+          { containerOrder: { order: { createdById: userId } } },
+          { order: { createdById: userId } },
+        ],
       },
       include: {
         recyclingCenter: {
@@ -263,9 +265,78 @@ export class RecyclingCentersService {
             order: { select: { id: true, createdAt: true } },
           },
         },
+        order: {
+          select: { id: true, orderNumber: true, createdAt: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /**
+   * Buyer: aggregate sustainability stats across all their disposal records.
+   * CO₂ estimate uses 0.35t CO₂e per tonne of construction waste diverted from landfill.
+   */
+  async getMySustainabilityStats(userId: string) {
+    const records = await this.prisma.wasteRecord.findMany({
+      where: {
+        OR: [
+          { containerOrder: { order: { createdById: userId } } },
+          { order: { createdById: userId } },
+        ],
+      },
+      select: {
+        id: true,
+        weight: true,
+        recyclableWeight: true,
+        recyclingRate: true,
+        certificateUrl: true,
+        wasteType: true,
+        processedDate: true,
+        createdAt: true,
+      },
+    });
+
+    const totalWeight = records.reduce((s, r) => s + (r.weight ?? 0), 0);
+    const totalRecycled = records.reduce((s, r) => s + (r.recyclableWeight ?? 0), 0);
+    const certifiedCount = records.filter((r) => !!r.certificateUrl).length;
+    const co2DiversionTonnes = parseFloat((totalRecycled * 0.35).toFixed(2));
+    const avgRecyclingRate =
+      records.filter((r) => r.recyclingRate != null).length > 0
+        ? records
+            .filter((r) => r.recyclingRate != null)
+            .reduce((s, r) => s + (r.recyclingRate ?? 0), 0) /
+          records.filter((r) => r.recyclingRate != null).length
+        : null;
+
+    // Monthly trend: last 6 months
+    const now = new Date();
+    const monthlyTrend: { month: string; weight: number; recycled: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleDateString('lv-LV', { month: 'short', year: '2-digit' });
+      const monthRecords = records.filter((r) => {
+        const rd = new Date(r.createdAt);
+        return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth();
+      });
+      monthlyTrend.push({
+        month: label,
+        weight: parseFloat(monthRecords.reduce((s, r) => s + (r.weight ?? 0), 0).toFixed(2)),
+        recycled: parseFloat(
+          monthRecords.reduce((s, r) => s + (r.recyclableWeight ?? 0), 0).toFixed(2),
+        ),
+      });
+    }
+
+    return {
+      totalRecords: records.length,
+      totalWeightTonnes: parseFloat(totalWeight.toFixed(2)),
+      totalRecycledTonnes: parseFloat(totalRecycled.toFixed(2)),
+      certifiedCount,
+      co2DiversionTonnes,
+      avgRecyclingRate: avgRecyclingRate != null ? parseFloat(avgRecyclingRate.toFixed(1)) : null,
+      monthlyTrend,
+    };
   }
 
   /** Carrier: update processing results / add certificate URL */

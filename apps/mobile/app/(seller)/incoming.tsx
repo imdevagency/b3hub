@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/Toast';
 import { api, type ApiOrder } from '@/lib/api';
 import { useLiveUpdates } from '@/lib/use-live-updates';
 import { colors } from '@/lib/theme';
+import { getSellerOrderStatus } from '@/lib/status';
 import {
   X,
   Square,
@@ -94,23 +95,6 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     siteContactName: o.siteContactName ?? undefined,
     siteContactPhone: o.siteContactPhone ?? undefined,
   };
-}
-
-function getStatusMeta(status: OrderStatus) {
-  switch (status) {
-    case 'PENDING':
-      return { text: 'Jauns', color: '#d97706', bg: '#fff7ed' };
-    case 'CONFIRMED':
-      return { text: 'Apstiprināts', color: '#2563eb', bg: '#eff6ff' };
-    case 'LOADING':
-      return { text: 'Iekraušana', color: '#16a34a', bg: '#f0fdf4' };
-    case 'DISPATCHED':
-      return { text: 'Piegādē', color: '#4b5563', bg: '#f3f4f6' };
-    case 'CANCELLED':
-      return { text: 'Atcelts', color: colors.dangerText, bg: '#fef2f2' };
-    default:
-      return { text: status, color: colors.textMuted, bg: '#f3f4f6' };
-  }
 }
 
 // ── LoadingModal ──────────────────────────────────────────────────────────────
@@ -271,7 +255,7 @@ function OrderCard({
   onPress: () => void;
 }) {
   const isBusy = actioning === order.id;
-  const statusMeta = getStatusMeta(order.status);
+  const statusMeta = getSellerOrderStatus(order.status);
 
   return (
     <View className="px-5 pt-5 border-b border-gray-100 bg-white">
@@ -298,7 +282,7 @@ function OrderCard({
               €{order.price.toFixed(0)}
             </Text>
             <StatusPill
-              label={statusMeta.text}
+              label={statusMeta.label}
               bg={statusMeta.bg}
               color={statusMeta.color}
               size="sm"

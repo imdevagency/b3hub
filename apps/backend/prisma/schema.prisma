@@ -626,6 +626,11 @@ model Material {
   quality      String? // Quality grade
   certificates String[] // Certification IDs
 
+  // Circular economy provenance (set when created from a WasteRecord)
+  wasteRecordId      String? @unique // source WasteRecord → reverse of WasteRecord.producedMaterialId
+  recoveryRate       Float?           // % of incoming waste that was recovered (copied from WasteRecord)
+  provenanceFacility String?          // recycling facility name, for display on listing
+
   // Visibility
   featured Boolean @default(false) // promoted listing — sorted to top in catalog
 

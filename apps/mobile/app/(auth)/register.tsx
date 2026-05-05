@@ -137,7 +137,7 @@ export default function RegisterScreen() {
     setErrors({});
     setApiError(null);
     if (step > 1) setStep((s) => s - 1);
-    else router.back();
+    else router.canGoBack() ? router.back() : router.replace('/(auth)/welcome');
   };
 
   const handleSubmit = async () => {

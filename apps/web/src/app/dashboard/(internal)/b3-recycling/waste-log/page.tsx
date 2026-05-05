@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth-context';
 import {
   adminGetRecyclingWasteRecords,
   adminCreateWasteRecord,
+  adminCreateListingFromWasteRecord,
   adminGetRecyclingCenters,
   type RecyclingWasteRecord,
   type AdminRecyclingCenter,
@@ -47,7 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { RefreshCw, FileText, Recycle, Plus } from 'lucide-react';
+import { RefreshCw, FileText, Recycle, Plus, PackagePlus } from 'lucide-react';
 import { format } from 'date-fns';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -287,9 +288,130 @@ function LogWalkInDialog({
   );
 }
 
+// ─── Create Supply Listing Dialog ────────────────────────────────────────────
+
+function CreateListingDialog({
+  open,
+  record,
+  token,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  record: RecyclingWasteRecord | null;
+  token: string;
+  onClose: () => void;
+  onCreated: (updated: RecyclingWasteRecord) => void;
+}) {
+  const [name, setName] = useState('');
+  const [basePrice, setBasePrice] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  // Reset fields whenever a new record is opened
+  useEffect(() => {
+    if (open) {
+      setName('');
+      setBasePrice('');
+      setError('');
+    }
+  }, [open, record?.id]);
+
+  const isValid = basePrice && parseFloat(basePrice) > 0;
+
+  const handleSubmit = async () => {
+    if (!isValid || !record) return;
+    setSaving(true);
+    setError('');
+    try {
+      const result = await adminCreateListingFromWasteRecord(
+        record.id,
+        { basePrice: parseFloat(basePrice), name: name || undefined },
+        token,
+      );
+      onCreated(result.wasteRecord);
+      onClose();
+    } catch {
+      setError('Neizdevās izveidot sarakstu. Pārbaudiet datus.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Izveidot piegādes sarakstu</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-2">
+          {record && (
+            <div className="rounded-md bg-muted p-3 text-sm space-y-1">
+              <div>
+                <span className="text-muted-foreground">Atkritumu veids: </span>
+                <span className="font-medium">
+                  {WASTE_TYPE_LABELS[record.wasteType] ?? record.wasteType}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Pārstrādājamais: </span>
+                <span className="font-medium">{formatTonnes(record.recyclableWeight)}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-1.5">
+            <Label>Materiāla nosaukums</Label>
+            <Input
+              placeholder={record ? `RC materiāls — ${record.recyclingCenter.name}` : ''}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label>
+              Cena (EUR/t) <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={basePrice}
+              onChange={(e) => setBasePrice(e.target.value)}
+            />
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Atcelt
+          </Button>
+          <Button onClick={handleSubmit} disabled={!isValid || saving}>
+            {saving ? 'Izveido...' : 'Izveidot'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
-function WasteRecordRow({ record }: { record: RecyclingWasteRecord }) {
+function WasteRecordRow({
+  record,
+  onCreateListing,
+}: {
+  record: RecyclingWasteRecord;
+  onCreateListing: (record: RecyclingWasteRecord) => void;
+}) {
+  const canList =
+    !record.producedMaterialId && record.recyclableWeight && record.recyclableWeight > 0;
+
   return (
     <TableRow>
       <TableCell className="text-sm">
@@ -321,6 +443,26 @@ function WasteRecordRow({ record }: { record: RecyclingWasteRecord }) {
           <span className="text-xs text-muted-foreground">Nav</span>
         )}
       </TableCell>
+      <TableCell>
+        {record.producedMaterialId ? (
+          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+            <PackagePlus className="h-3.5 w-3.5" />
+            Tirgū
+          </span>
+        ) : canList ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => onCreateListing(record)}
+          >
+            <PackagePlus className="h-3.5 w-3.5 mr-1" />
+            Pārdot
+          </Button>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
       <TableCell className="text-xs text-muted-foreground">
         {format(new Date(record.createdAt), 'dd.MM.yyyy')}
       </TableCell>
@@ -337,6 +479,7 @@ export default function WasteLogPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [listingRecord, setListingRecord] = useState<RecyclingWasteRecord | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -361,6 +504,10 @@ export default function WasteLogPage() {
   const handleCreated = (record: RecyclingWasteRecord) => {
     setRecords((prev) => [record, ...prev]);
     setTotal((prev) => prev + 1);
+  };
+
+  const handleListingCreated = (updated: RecyclingWasteRecord) => {
+    setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   };
 
   return (
@@ -408,12 +555,13 @@ export default function WasteLogPage() {
                   <TableHead>Pārstrādes %</TableHead>
                   <TableHead>Klients</TableHead>
                   <TableHead>Sertifikāts</TableHead>
+                  <TableHead>Tirgus</TableHead>
                   <TableHead>Ierakstīts</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {records.map((r) => (
-                  <WasteRecordRow key={r.id} record={r} />
+                  <WasteRecordRow key={r.id} record={r} onCreateListing={setListingRecord} />
                 ))}
               </TableBody>
             </Table>
@@ -428,6 +576,16 @@ export default function WasteLogPage() {
           centers={centers}
           token={token}
           onCreated={handleCreated}
+        />
+      )}
+
+      {token && (
+        <CreateListingDialog
+          open={!!listingRecord}
+          record={listingRecord}
+          token={token}
+          onClose={() => setListingRecord(null)}
+          onCreated={handleListingCreated}
         />
       )}
     </div>

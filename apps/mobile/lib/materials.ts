@@ -76,24 +76,6 @@ export const TJB_STATUS: Record<string, { label: string; bg: string; color: stri
   CANCELLED:         { label: 'Atcelts',                            bg: '#f9fafb', color: colors.textDisabled },
 };
 
-export const CONTAINER_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING:         { label: 'Gaida',            bg: '#f3f4f6', color: colors.textMuted },
-  CONFIRMED:       { label: 'Apstiprināts',    bg: '#e5e7eb', color: colors.textPrimary },
-  DELIVERED:       { label: 'Nogādāts',         bg: '#e5e7eb', color: colors.textPrimary },
-  AWAITING_PICKUP: { label: 'Gaida izņemšanu', bg: '#e5e7eb', color: colors.textPrimary },
-  COLLECTED:       { label: 'Savākts',          bg: '#e5e7eb', color: colors.textPrimary },
-  COMPLETED:       { label: 'Pabeigts',          bg: '#111827', color: '#f9fafb' },
-  CANCELLED:       { label: 'Atcelts',           bg: '#f9fafb', color: colors.textDisabled },
-};
-
-/** Seller-side incoming order statuses (PENDING → DISPATCHED pipeline). */
-export const SELLER_ORDER_STATUS: Record<string, { label: string; bg: string; color: string }> = {
-  PENDING:    { label: 'Jauns',        bg: '#f3f4f6', color: colors.textMuted },
-  CONFIRMED:  { label: 'Apstiprināts', bg: '#e5e7eb', color: colors.textPrimary },
-  LOADING:    { label: 'Iekraušana',   bg: '#e5e7eb', color: colors.textPrimary },
-  DISPATCHED: { label: 'Nosūtīts',    bg: '#111827', color: '#f9fafb' },
-};
-
 /** User account status labels (profile screens). */
 export const ACCOUNT_STATUS: Record<string, string> = {
   ACTIVE:    'Aktīvs',

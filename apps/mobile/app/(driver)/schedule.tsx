@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { TopBar } from '@/components/ui/TopBar';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useFocusEffect } from 'expo-router';
@@ -90,7 +90,9 @@ function DayRow({
               </View>
             </TouchableOpacity>
           ) : (
-            <Text style={{ fontSize: 14, color: colors.textDisabled, fontWeight: '600' }}>Brīvdiena</Text>
+            <Text style={{ fontSize: 14, color: colors.textDisabled, fontWeight: '600' }}>
+              Brīvdiena
+            </Text>
           )}
         </View>
       </View>
@@ -285,7 +287,7 @@ export default function ScheduleScreen() {
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff">
-      <TopBar transparent />
+      <ScreenHeader title="Grafiks" onBack={null} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -301,13 +303,6 @@ export default function ScheduleScreen() {
       >
         {loading ? (
           <View className="px-5">
-            <View className="pt-2 pb-6">
-              <Text
-                style={{ fontSize: 32, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.8 }}
-              >
-                Grafiks
-              </Text>
-            </View>
             <SkeletonCard count={3} />
           </View>
         ) : !profile ? (
@@ -320,14 +315,6 @@ export default function ScheduleScreen() {
           </View>
         ) : (
           <>
-            <View className="px-5 pt-1 pb-6">
-              <Text
-                style={{ fontSize: 32, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.8 }}
-              >
-                Grafiks
-              </Text>
-            </View>
-
             {/* Status Hero */}
             <View className="px-5 mb-8">
               <View
@@ -394,11 +381,18 @@ export default function ScheduleScreen() {
             <View>
               <View className="px-5 pb-3">
                 <Text
-                  style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5 }}
+                  style={{
+                    fontSize: 20,
+                    fontWeight: '700',
+                    color: colors.textPrimary,
+                    letterSpacing: -0.5,
+                  }}
                 >
                   Nedēļas plāns
                 </Text>
-                <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}>
+                <Text
+                  style={{ fontSize: 14, color: colors.textMuted, fontWeight: '500', marginTop: 2 }}
+                >
                   Norādiet darba stundas katrai dienai
                 </Text>
               </View>
@@ -481,7 +475,12 @@ export default function ScheduleScreen() {
           >
             <View className="flex-row justify-between items-center mb-6">
               <Text
-                style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5 }}
+                style={{
+                  fontSize: 22,
+                  fontWeight: '700',
+                  color: colors.textPrimary,
+                  letterSpacing: -0.5,
+                }}
               >
                 {editingDay !== null ? DAY_FULL[editingDay] : ''}
               </Text>

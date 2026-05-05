@@ -30,6 +30,7 @@ import { api, type ApiInvoice, type InvoiceStatus } from '@/lib/api';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { haptics } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
+import { formatDateMedium } from '@/lib/format';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -53,12 +54,7 @@ try {
 // ── Helpers ────────────────────────────────────────────────────
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return iso ? formatDateMedium(iso) : '—';
 }
 
 function fmtEur(n: number): string {

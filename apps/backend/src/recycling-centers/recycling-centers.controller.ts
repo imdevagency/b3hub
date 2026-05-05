@@ -89,6 +89,12 @@ export class RecyclingCentersController {
     return this.service.getMyDisposalRecords(user.userId);
   }
 
+  /** GET /recycling-centers/sustainability/stats — buyer's aggregate sustainability stats */
+  @Get('sustainability/stats')
+  getMySustainabilityStats(@CurrentUser() user: RequestingUser) {
+    return this.service.getMySustainabilityStats(user.userId);
+  }
+
   /** GET /recycling-centers/mine-incoming-jobs — disposal transport jobs heading to this operator's centers */
   @Get('mine-incoming-jobs')
   getIncomingJobs(@CurrentUser() user: RequestingUser) {

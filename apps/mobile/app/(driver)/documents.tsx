@@ -31,6 +31,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { getDocumentStatusLabel } from '@/lib/status';
+import { formatDateMedium } from '@/lib/format';
 
 // ── Config ────────────────────────────────────────────────────
 
@@ -55,11 +56,7 @@ const TYPE_META: Partial<
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatDateMedium(iso);
 }
 
 // ── Document Row ──────────────────────────────────────────────

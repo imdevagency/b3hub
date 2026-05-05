@@ -8,8 +8,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Download, Receipt } from 'lucide-react';
-import { format } from 'date-fns';
+import { CheckCircle2, Download, Loader2, Receipt } from 'lucide-react';
+import { differenceInDays, format } from 'date-fns';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import {
   adminGetClientInvoices,
+  adminUpdateClientInvoice,
   type ConstructionClientInvoice,
   type ClientInvoiceStatus,
 } from '@/lib/api/admin';
@@ -66,6 +67,24 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+
+  async function markAsPaid(inv: ConstructionClientInvoice) {
+    if (!token) return;
+    setMarkingPaid(inv.id);
+    try {
+      await adminUpdateClientInvoice(token, inv.id, {
+        status: 'PAID',
+        paidAt: new Date().toISOString(),
+        paidAmount: inv.amount,
+      });
+      await load();
+    } catch {
+      // silent — invoice still shows
+    } finally {
+      setMarkingPaid(null);
+    }
+  }
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -92,6 +111,33 @@ export default function InvoicesPage() {
   const totalPaid = filtered.reduce((s, inv) => s + (inv.paidAmount ?? 0), 0);
   const totalOutstanding = totalInvoiced - totalPaid;
   const overdueCount = filtered.filter((inv) => inv.status === 'OVERDUE').length;
+
+  // AR aging buckets (unpaid invoices only)
+  const today = new Date();
+  function daysOverdue(inv: ConstructionClientInvoice): number {
+    if (!inv.dueDate) return 0;
+    return differenceInDays(today, new Date(inv.dueDate));
+  }
+  const unpaid = invoices.filter(
+    (inv) => inv.status === 'ISSUED' || inv.status === 'PARTIALLY_PAID' || inv.status === 'OVERDUE',
+  );
+  const agingCurrent = unpaid.filter((inv) => !inv.dueDate || daysOverdue(inv) <= 0);
+  const aging1to30 = unpaid.filter((inv) => daysOverdue(inv) >= 1 && daysOverdue(inv) <= 30);
+  const aging31to60 = unpaid.filter((inv) => daysOverdue(inv) >= 31 && daysOverdue(inv) <= 60);
+  const aging60plus = unpaid.filter((inv) => daysOverdue(inv) > 60);
+  const agingCurrentAmt = agingCurrent.reduce(
+    (s, inv) => s + (inv.amount - (inv.paidAmount ?? 0)),
+    0,
+  );
+  const aging1to30Amt = aging1to30.reduce((s, inv) => s + (inv.amount - (inv.paidAmount ?? 0)), 0);
+  const aging31to60Amt = aging31to60.reduce(
+    (s, inv) => s + (inv.amount - (inv.paidAmount ?? 0)),
+    0,
+  );
+  const aging60plusAmt = aging60plus.reduce(
+    (s, inv) => s + (inv.amount - (inv.paidAmount ?? 0)),
+    0,
+  );
 
   function exportCsv() {
     const rows: string[][] = [
@@ -166,6 +212,49 @@ export default function InvoicesPage() {
         <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
+      )}
+
+      {/* AR Aging bar */}
+      {!loading && unpaid.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Debitoru parādu novecošanās (AR Aging)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="flex flex-col gap-1 rounded-lg bg-green-50 p-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-green-700">
+                  Kārtējie
+                </span>
+                <span className="text-lg font-bold text-green-700">{fmtEur(agingCurrentAmt)}</span>
+                <span className="text-xs text-green-600">{agingCurrent.length} rēķini</span>
+              </div>
+              <div className="flex flex-col gap-1 rounded-lg bg-amber-50 p-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-amber-700">
+                  1–30 dienas
+                </span>
+                <span className="text-lg font-bold text-amber-700">{fmtEur(aging1to30Amt)}</span>
+                <span className="text-xs text-amber-600">{aging1to30.length} rēķini</span>
+              </div>
+              <div className="flex flex-col gap-1 rounded-lg bg-orange-50 p-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-orange-700">
+                  31–60 dienas
+                </span>
+                <span className="text-lg font-bold text-orange-700">{fmtEur(aging31to60Amt)}</span>
+                <span className="text-xs text-orange-600">{aging31to60.length} rēķini</span>
+              </div>
+              <div className="flex flex-col gap-1 rounded-lg bg-red-50 p-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-red-700">
+                  60+ dienas
+                </span>
+                <span className="text-lg font-bold text-red-700">{fmtEur(aging60plusAmt)}</span>
+                <span className="text-xs text-red-600">{aging60plus.length} rēķini</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* KPI row */}
@@ -246,6 +335,7 @@ export default function InvoicesPage() {
                 <TableHead className="text-right">Summa</TableHead>
                 <TableHead className="text-right">Saņemts</TableHead>
                 <TableHead className="text-right">Atlikums</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -280,6 +370,24 @@ export default function InvoicesPage() {
                     >
                       {outstanding > 0 ? fmtEur(outstanding) : '—'}
                     </TableCell>
+                    <TableCell>
+                      {(inv.status === 'ISSUED' ||
+                        inv.status === 'OVERDUE' ||
+                        inv.status === 'PARTIALLY_PAID') && (
+                        <button
+                          onClick={() => markAsPaid(inv)}
+                          disabled={markingPaid === inv.id}
+                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50"
+                        >
+                          {markingPaid === inv.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3" />
+                          )}
+                          Apmaksāts
+                        </button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -296,6 +404,7 @@ export default function InvoicesPage() {
                 >
                   {fmtEur(totalOutstanding)}
                 </TableCell>
+                <TableCell />
               </TableRow>
             </TableBody>
           </Table>

@@ -20,6 +20,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { useHeaderConfig } from '@/lib/header-context';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { getOrderStatus } from '@/lib/status';
 import { colors } from '@/lib/theme';
 
 const TAB_H = 52;
@@ -36,21 +37,6 @@ const REVENUE_STATUSES = [
 function fmtEur(v: number) {
   if (v >= 1000) return `€${(v / 1000).toFixed(1)}k`;
   return `€${v.toFixed(0)}`;
-}
-
-function getStatusMeta(status: string) {
-  switch (status) {
-    case 'PENDING':
-      return { text: 'Gaida', color: '#d97706', bg: '#fef3c7' };
-    case 'CONFIRMED':
-      return { text: 'Apstiprināts', color: '#166534', bg: '#dcfce7' };
-    case 'DELIVERED':
-      return { text: 'Piegādāts', color: '#1d4ed8', bg: '#dbeafe' };
-    case 'CANCELLED':
-      return { text: 'Atcelts', color: colors.dangerText, bg: '#fef2f2' };
-    default:
-      return { text: status, color: colors.textMuted, bg: '#f3f4f6' };
-  }
 }
 
 export default function SellerHomeScreen() {
@@ -450,7 +436,7 @@ export default function SellerHomeScreen() {
             </View>
           ) : (
             recentOrders.map((order, i) => {
-              const meta = getStatusMeta(order.status);
+              const meta = getOrderStatus(order.status);
               return (
                 <TouchableOpacity
                   key={order.id}
@@ -466,7 +452,7 @@ export default function SellerHomeScreen() {
                       <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
                         #{order.orderNumber}
                       </Text>
-                      <StatusPill label={meta.text} bg={meta.bg} color={meta.color} size="sm" />
+                      <StatusPill label={meta.label} bg={meta.bg} color={meta.color} size="sm" />
                     </View>
                     <Text className="text-sm text-gray-500 font-medium" numberOfLines={1}>
                       {order.buyer?.name ?? '—'} · {order.deliveryCity}

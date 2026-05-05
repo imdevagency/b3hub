@@ -116,6 +116,20 @@ export const containersApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    /** Buyer: aggregate sustainability stats (CO₂ diversion, recycled tonnage, trends) */
+    sustainabilityStats: (token: string) =>
+      apiFetch<{
+        totalRecords: number;
+        totalWeightTonnes: number;
+        totalRecycledTonnes: number;
+        certifiedCount: number;
+        co2DiversionTonnes: number;
+        avgRecyclingRate: number | null;
+        monthlyTrend: { month: string; weight: number; recycled: number }[];
+      }>('/recycling-centers/sustainability/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+
     /** Check if any active centers accept a given waste type (limit=1 probe) */
     checkAvailability: (wasteType: WasteType, token: string) =>
       apiFetch<{ data: { id: string; name: string }[]; total: number }>(

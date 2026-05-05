@@ -36,6 +36,12 @@ export interface ApiMaterial {
   stockQty?: number | null;
   /** Supabase Storage URLs for product photos */
   images?: string[];
+  /** Source WasteRecord ID (only set on recycled listings) */
+  wasteRecordId?: string | null;
+  /** Recovery rate % from the source WasteRecord */
+  recoveryRate?: number | null;
+  /** Recycling facility name for provenance display */
+  provenanceFacility?: string | null;
   supplier: {
     id: string;
     name: string;
@@ -80,6 +86,12 @@ export interface SupplierOffer {
   onTimePct?: number | null;
   /** Cached order fulfillment % from nightly cron */
   fulfillmentPct?: number | null;
+  /** True if this is a recycled material listing */
+  isRecycled?: boolean;
+  /** Recovery rate % from the source WasteRecord */
+  recoveryRate?: number | null;
+  /** Recycling facility name for provenance display */
+  provenanceFacility?: string | null;
   supplier: {
     id: string;
     name: string;

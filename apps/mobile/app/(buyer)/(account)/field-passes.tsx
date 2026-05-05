@@ -28,18 +28,11 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import { colors, spacing, radius } from '@/lib/theme';
+import { formatDateNumeric } from '@/lib/format';
 
 const WEB_PASSES_URL = 'https://b3hub.lv/dashboard/field-passes';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('lv-LV', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
 
 function isToday(from: string, to: string) {
   const now = new Date();
@@ -83,7 +76,9 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
         style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.textPrimary }}>
+          <Text
+            style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.textPrimary }}
+          >
             {pass.vehiclePlate}
           </Text>
           <Text style={{ fontSize: 12, color: colors.textMuted }}>{pass.passNumber}</Text>
@@ -102,7 +97,7 @@ function PassCard({ pass }: { pass: ApiFieldPass }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
           <Calendar size={12} color={colors.textMuted} />
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>
-            {fmtDate(pass.validFrom)} – {fmtDate(pass.validTo)}
+            {formatDateNumeric(pass.validFrom)} – {formatDateNumeric(pass.validTo)}
           </Text>
         </View>
         {pass.estimatedTonnes && (
