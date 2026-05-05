@@ -36,18 +36,18 @@ const STAGE_META: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
 > = {
-  RECEIVED:   { label: 'Saņemts',    variant: 'outline' },
-  SORTED:     { label: 'Šķirots',    variant: 'outline' },
-  PROCESSING: { label: 'Apstrādē',   variant: 'default' },
-  PROCESSED:  { label: 'Apstrādāts', variant: 'secondary' },
-  LISTED:     { label: 'Tirgū',      variant: 'secondary' },
-  REJECTED:   { label: 'Noraidīts',  variant: 'destructive' },
+  RECEIVED: { label: 'Saņemts', variant: 'outline' },
+  SORTED: { label: 'Šķirots', variant: 'outline' },
+  PROCESSING: { label: 'Apstrādē', variant: 'default' },
+  PROCESSED: { label: 'Apstrādāts', variant: 'secondary' },
+  LISTED: { label: 'Tirgū', variant: 'secondary' },
+  REJECTED: { label: 'Noraidīts', variant: 'destructive' },
 };
 
 const RC_GRADE_LABELS: Record<string, string> = {
-  RC_A:     'RC-A',
-  RC_B:     'RC-B',
-  RC_C:     'RC-C',
+  RC_A: 'RC-A',
+  RC_B: 'RC-B',
+  RC_C: 'RC-C',
   UNGRADED: '',
 };
 
@@ -155,7 +155,11 @@ function ConvertDialog({
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Atcelt
           </Button>
-          <Button onClick={handleSubmit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
             {saving ? 'Publicē...' : 'Publicēt'}
           </Button>
         </DialogFooter>
@@ -216,7 +220,10 @@ export default function RecyclerWasteRecordsPage() {
         <div className="space-y-3">
           {records.map((record) => {
             const stageMeta = record.processingStage
-              ? (STAGE_META[record.processingStage] ?? { label: record.processingStage, variant: 'outline' as const })
+              ? (STAGE_META[record.processingStage] ?? {
+                  label: record.processingStage,
+                  variant: 'outline' as const,
+                })
               : null;
 
             const gradeLabel =
@@ -224,8 +231,7 @@ export default function RecyclerWasteRecordsPage() {
                 ? (RC_GRADE_LABELS[record.rcGrade] ?? record.rcGrade)
                 : null;
 
-            const canConvert =
-              (record.recyclableWeight ?? 0) > 0 && !record.producedMaterialId;
+            const canConvert = (record.recyclableWeight ?? 0) > 0 && !record.producedMaterialId;
 
             return (
               <Card key={record.id} className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">

@@ -13,10 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import {
-  adminGetCircularEconomyStats,
-  type CircularEconomyStats,
-} from '@/lib/api/admin';
+import { adminGetCircularEconomyStats, type CircularEconomyStats } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +46,11 @@ function pct(n: number, dp = 0) {
 }
 
 function eur(n: number) {
-  return new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat('lv-LV', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 /** Formats a YYYY-MM key to a short month label */
@@ -89,19 +90,23 @@ function PipelineStage({
           <Icon className={cn('h-5 w-5', iconColor)} />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </p>
           <p className="mt-1 text-2xl font-bold">{fmt(tonnes)} t</p>
           <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
         </div>
         {efficiency !== undefined && (
-          <div className={cn(
-            'mt-auto px-2.5 py-1 rounded-full text-xs font-semibold border',
-            efficiency >= 70
-              ? 'bg-green-50 border-green-200 text-green-700'
-              : efficiency >= 40
-                ? 'bg-amber-50 border-amber-200 text-amber-700'
-                : 'bg-red-50 border-red-200 text-red-600',
-          )}>
+          <div
+            className={cn(
+              'mt-auto px-2.5 py-1 rounded-full text-xs font-semibold border',
+              efficiency >= 70
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : efficiency >= 40
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-red-50 border-red-200 text-red-600',
+            )}
+          >
             {pct(efficiency)} {efficiencyLabel}
           </div>
         )}
@@ -148,17 +153,20 @@ export default function CircularFlowPage() {
   }, [load]);
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const listingEfficiency = data && data.totalRecyclableTonnes > 0
-    ? (data.totalConvertedTonnes / data.totalRecyclableTonnes) * 100
-    : 0;
+  const listingEfficiency =
+    data && data.totalRecyclableTonnes > 0
+      ? (data.totalConvertedTonnes / data.totalRecyclableTonnes) * 100
+      : 0;
 
-  const saleEfficiency = data && data.totalConvertedTonnes > 0
-    ? (data.quantitySoldTonnes / data.totalConvertedTonnes) * 100
-    : 0;
+  const saleEfficiency =
+    data && data.totalConvertedTonnes > 0
+      ? (data.quantitySoldTonnes / data.totalConvertedTonnes) * 100
+      : 0;
 
-  const maxMonthlyWaste = data && data.monthlyTrend.length > 0
-    ? Math.max(...data.monthlyTrend.map((m) => m.wasteIn), 1)
-    : 1;
+  const maxMonthlyWaste =
+    data && data.monthlyTrend.length > 0
+      ? Math.max(...data.monthlyTrend.map((m) => m.wasteIn), 1)
+      : 1;
 
   if (error) {
     return (
@@ -173,14 +181,19 @@ export default function CircularFlowPage() {
 
   return (
     <div className="flex flex-col gap-8 p-6 lg:p-8 max-w-350 mx-auto">
-
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <PageHeader
           title="Aprites Ekonomikas Plūsma"
           description="Atkritumi → Pārstrāde → Saraksts tirgū → Pārdots atpakaļ būvniecībai. Pilns cilpas pārskats."
         />
-        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="gap-2 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={load}
+          disabled={loading}
+          className="gap-2 shrink-0"
+        >
           <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
           {loading ? 'Atjauno...' : 'Atjaunot'}
         </Button>
@@ -193,7 +206,6 @@ export default function CircularFlowPage() {
         </div>
       ) : data ? (
         <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
           {/* ── Top KPIs ── */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
@@ -291,25 +303,49 @@ export default function CircularFlowPage() {
               {/* Funnel loss indicators */}
               <div className="mt-6 pt-4 border-t grid grid-cols-3 gap-4 text-center text-sm">
                 <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Zaudējumi pārstrādē</p>
-                  <p className="font-semibold">{fmt(data.totalWasteInTonnes - data.totalRecyclableTonnes)} t</p>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Zaudējumi pārstrādē
+                  </p>
+                  <p className="font-semibold">
+                    {fmt(data.totalWasteInTonnes - data.totalRecyclableTonnes)} t
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {data.totalWasteInTonnes > 0
-                      ? pct(((data.totalWasteInTonnes - data.totalRecyclableTonnes) / data.totalWasteInTonnes) * 100)
-                      : '0%'} nav atgūstams
+                      ? pct(
+                          ((data.totalWasteInTonnes - data.totalRecyclableTonnes) /
+                            data.totalWasteInTonnes) *
+                            100,
+                        )
+                      : '0%'}{' '}
+                    nav atgūstams
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Gaida konversiju</p>
-                  <p className={cn('font-semibold', data.pendingConversionCount > 0 ? 'text-amber-600' : 'text-green-600')}>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Gaida konversiju
+                  </p>
+                  <p
+                    className={cn(
+                      'font-semibold',
+                      data.pendingConversionCount > 0 ? 'text-amber-600' : 'text-green-600',
+                    )}
+                  >
                     {fmt(data.pendingConversionTonnes)} t
                   </p>
-                  <p className="text-xs text-muted-foreground">{data.pendingConversionCount} ieraksti</p>
+                  <p className="text-xs text-muted-foreground">
+                    {data.pendingConversionCount} ieraksti
+                  </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Sarakstā, negārdots</p>
-                  <p className="font-semibold">{fmt(data.totalConvertedTonnes - data.quantitySoldTonnes)} t</p>
-                  <p className="text-xs text-muted-foreground">{data.activeMaterialListings} aktīvi saraksti</p>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Sarakstā, negārdots
+                  </p>
+                  <p className="font-semibold">
+                    {fmt(data.totalConvertedTonnes - data.quantitySoldTonnes)} t
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {data.activeMaterialListings} aktīvi saraksti
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -317,16 +353,21 @@ export default function CircularFlowPage() {
 
           {/* ── Two Panel Row ── */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
             {/* Pending conversion alert */}
             <Card className="overflow-hidden border-border/50 shadow-sm">
               <CardHeader className="bg-muted/20 border-b pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className={cn('p-2 rounded-lg', data.pendingConversionCount > 0 ? 'bg-amber-100/50' : 'bg-green-100/50')}>
-                    {data.pendingConversionCount > 0
-                      ? <AlertTriangle className="h-5 w-5 text-amber-600" />
-                      : <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    }
+                  <div
+                    className={cn(
+                      'p-2 rounded-lg',
+                      data.pendingConversionCount > 0 ? 'bg-amber-100/50' : 'bg-green-100/50',
+                    )}
+                  >
+                    {data.pendingConversionCount > 0 ? (
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    ) : (
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    )}
                   </div>
                   <div>
                     <CardTitle className="text-base">Konversijas rinda</CardTitle>
@@ -338,14 +379,17 @@ export default function CircularFlowPage() {
                 {data.pendingConversionCount > 0 ? (
                   <>
                     <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50">
-                      <p className="text-3xl font-bold text-amber-700">{fmt(data.pendingConversionTonnes)} t</p>
+                      <p className="text-3xl font-bold text-amber-700">
+                        {fmt(data.pendingConversionTonnes)} t
+                      </p>
                       <p className="text-sm text-amber-700 mt-1">
-                        <strong>{data.pendingConversionCount}</strong> apstrādāti ieraksti nav pārvērsti materiālu sarakstos.
-                        Šie materiāli nav redzami pircējiem.
+                        <strong>{data.pendingConversionCount}</strong> apstrādāti ieraksti nav
+                        pārvērsti materiālu sarakstos. Šie materiāli nav redzami pircējiem.
                       </p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Katrs nekonvertēts ieraksts ir tiešs ieņēmumu zaudējums un mazāka aprites efektivitāte.
+                      Katrs nekonvertēts ieraksts ir tiešs ieņēmumu zaudējums un mazāka aprites
+                      efektivitāte.
                     </p>
                     <Button asChild className="w-full">
                       <Link href="/dashboard/b3-recycling/waste-log">
@@ -357,10 +401,12 @@ export default function CircularFlowPage() {
                   <div className="flex items-start gap-3 p-4 rounded-xl border border-green-200 bg-green-50/50">
                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-sm font-semibold text-green-800">Pilns konversijas temps!</p>
+                      <p className="text-sm font-semibold text-green-800">
+                        Pilns konversijas temps!
+                      </p>
                       <p className="text-sm text-green-700 mt-1">
-                        Visi pārstrādātie materiāli ir pārvērsti aktīvos materiālu sarakstos.
-                        Cilpa ir aizvērta.
+                        Visi pārstrādātie materiāli ir pārvērsti aktīvos materiālu sarakstos. Cilpa
+                        ir aizvērta.
                       </p>
                     </div>
                   </div>
@@ -383,7 +429,9 @@ export default function CircularFlowPage() {
               </CardHeader>
               <CardContent className="p-5 flex flex-col gap-5">
                 <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
-                  <p className="text-3xl font-bold text-emerald-700">{eur(data.revenueFromRecycledMaterials)}</p>
+                  <p className="text-3xl font-bold text-emerald-700">
+                    {eur(data.revenueFromRecycledMaterials)}
+                  </p>
                   <p className="text-sm text-emerald-700 mt-1">
                     No <strong>{fmt(data.quantitySoldTonnes)} t</strong> pārdotiem RC materiāliem
                   </p>
@@ -391,19 +439,26 @@ export default function CircularFlowPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg border bg-card text-center">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Pārdots t</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                      Pārdots t
+                    </p>
                     <p className="text-xl font-bold mt-1">{fmt(data.quantitySoldTonnes)}</p>
                   </div>
                   <div className="p-3 rounded-lg border bg-card text-center">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Konvertēti ieraksti</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                      Konvertēti ieraksti
+                    </p>
                     <p className="text-xl font-bold mt-1">{data.totalConvertedCount}</p>
                   </div>
                 </div>
 
                 {data.quantitySoldTonnes > 0 && (
                   <div className="text-sm text-muted-foreground border-t pt-4">
-                    Vidēji <strong>{eur(data.revenueFromRecycledMaterials / data.quantitySoldTonnes)}/t</strong> par RC materiālu —
-                    {' '}salīdziniet ar primāro materiālu cenām katalogā.
+                    Vidēji{' '}
+                    <strong>
+                      {eur(data.revenueFromRecycledMaterials / data.quantitySoldTonnes)}/t
+                    </strong>{' '}
+                    par RC materiālu — salīdziniet ar primāro materiālu cenām katalogā.
                   </div>
                 )}
 
@@ -426,7 +481,9 @@ export default function CircularFlowPage() {
                   </div>
                   <div>
                     <CardTitle className="text-base">Ikmēneša tendence</CardTitle>
-                    <CardDescription>Pēdējie 6 mēneši — atkritumu plūsma un pārstrāde</CardDescription>
+                    <CardDescription>
+                      Pēdējie 6 mēneši — atkritumu plūsma un pārstrāde
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -435,17 +492,28 @@ export default function CircularFlowPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/10">
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">Mēnesis</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pieņemts (t)</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pārstrādāts (t)</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Konvertēts (t)</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-52">Efektivitāte</th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">
+                          Mēnesis
+                        </th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Pieņemts (t)
+                        </th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Pārstrādāts (t)
+                        </th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Konvertēts (t)
+                        </th>
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-52">
+                          Efektivitāte
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {data.monthlyTrend.map((row, i) => {
                         const efficiency = row.wasteIn > 0 ? (row.recycled / row.wasteIn) * 100 : 0;
-                        const barWidth = maxMonthlyWaste > 0 ? (row.wasteIn / maxMonthlyWaste) * 100 : 0;
+                        const barWidth =
+                          maxMonthlyWaste > 0 ? (row.wasteIn / maxMonthlyWaste) * 100 : 0;
                         return (
                           <tr
                             key={row.month}
@@ -454,7 +522,9 @@ export default function CircularFlowPage() {
                               i === data.monthlyTrend.length - 1 && 'font-medium',
                             )}
                           >
-                            <td className="px-5 py-3.5 text-sm font-semibold">{monthLabel(row.month)}</td>
+                            <td className="px-5 py-3.5 text-sm font-semibold">
+                              {monthLabel(row.month)}
+                            </td>
                             <td className="px-5 py-3.5">
                               <div className="flex items-center gap-3">
                                 <div className="flex-1 h-2 rounded-full bg-muted/40 max-w-32 overflow-hidden">
@@ -471,7 +541,9 @@ export default function CircularFlowPage() {
                                 <div className="flex-1 h-2 rounded-full bg-muted/40 max-w-32 overflow-hidden">
                                   <div
                                     className="h-full rounded-full bg-teal-500 transition-all duration-500"
-                                    style={{ width: `${maxMonthlyWaste > 0 ? (row.recycled / maxMonthlyWaste) * 100 : 0}%` }}
+                                    style={{
+                                      width: `${maxMonthlyWaste > 0 ? (row.recycled / maxMonthlyWaste) * 100 : 0}%`,
+                                    }}
                                   />
                                 </div>
                                 <span className="text-sm tabular-nums">{fmt(row.recycled)}</span>
@@ -482,7 +554,9 @@ export default function CircularFlowPage() {
                                 <div className="flex-1 h-2 rounded-full bg-muted/40 max-w-32 overflow-hidden">
                                   <div
                                     className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                                    style={{ width: `${maxMonthlyWaste > 0 ? (row.converted / maxMonthlyWaste) * 100 : 0}%` }}
+                                    style={{
+                                      width: `${maxMonthlyWaste > 0 ? (row.converted / maxMonthlyWaste) * 100 : 0}%`,
+                                    }}
                                   />
                                 </div>
                                 <span className="text-sm tabular-nums">{fmt(row.converted)}</span>
@@ -519,9 +593,10 @@ export default function CircularFlowPage() {
             <div>
               <p className="text-sm font-semibold text-foreground">Izsekojamība katrā sarakstā</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Katrs RC materiālu saraksts platformā satur <code className="text-xs bg-muted px-1 py-0.5 rounded">isRecycled: true</code>,{' '}
-                atgūšanas procentu un izcelsmes objekta nosaukumu —
-                redzami pircēja produkta lapā kā "Zaļā izcelsme".
+                Katrs RC materiālu saraksts platformā satur{' '}
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">isRecycled: true</code>,{' '}
+                atgūšanas procentu un izcelsmes objekta nosaukumu — redzami pircēja produkta lapā kā
+                "Zaļā izcelsme".
               </p>
               <div className="flex gap-3 mt-3">
                 <Button variant="outline" size="sm" asChild>
@@ -533,7 +608,6 @@ export default function CircularFlowPage() {
               </div>
             </div>
           </div>
-
         </div>
       ) : null}
     </div>

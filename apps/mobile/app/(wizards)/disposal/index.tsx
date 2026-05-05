@@ -817,7 +817,9 @@ export default function DisposalWizard() {
                                       paddingVertical: 1,
                                     }}
                                   >
-                                    <Text style={{ fontSize: 10, color: '#166534', fontWeight: '600' }}>
+                                    <Text
+                                      style={{ fontSize: 10, color: '#166534', fontWeight: '600' }}
+                                    >
                                       VVD
                                     </Text>
                                   </View>
@@ -828,15 +830,36 @@ export default function DisposalWizard() {
                                 {center.distanceKm != null ? ` · ${center.distanceKm} km` : ''}
                               </Text>
                               {center.disposalFeeEur != null ? (
-                                <Text style={{ fontSize: 13, color: '#111827', marginTop: 4, fontWeight: '600' }}>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    color: '#111827',
+                                    marginTop: 4,
+                                    fontWeight: '600',
+                                  }}
+                                >
                                   Utilizācijas maksa: €{center.disposalFeeEur.toFixed(2)}
                                 </Text>
                               ) : center.priceNote ? (
-                                <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, fontStyle: 'italic' }}>
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    color: '#9ca3af',
+                                    marginTop: 4,
+                                    fontStyle: 'italic',
+                                  }}
+                                >
                                   {center.priceNote}
                                 </Text>
                               ) : (
-                                <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, fontStyle: 'italic' }}>
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    color: '#9ca3af',
+                                    marginTop: 4,
+                                    fontStyle: 'italic',
+                                  }}
+                                >
                                   Cena pēc pieprasījuma
                                 </Text>
                               )}

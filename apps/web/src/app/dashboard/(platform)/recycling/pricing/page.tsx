@@ -9,10 +9,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import {
-  getMyRecyclingCenters,
-  type RecyclingCenter,
-} from '@/lib/api/recycling-centers';
+import { getMyRecyclingCenters, type RecyclingCenter } from '@/lib/api/recycling-centers';
 import {
   recyclerGetPricingRules,
   recyclerUpsertPricingRule,
@@ -51,14 +48,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Euro,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Trash2,
-  Weight,
-} from 'lucide-react';
+import { Euro, Pencil, Plus, RefreshCw, Trash2, Weight } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -131,9 +121,15 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
   );
 
   async function handleSave() {
-    if (!wasteType) { setError('Izvēlieties atkritumu veidu.'); return; }
+    if (!wasteType) {
+      setError('Izvēlieties atkritumu veidu.');
+      return;
+    }
     const price = parseFloat(pricePerTonne);
-    if (isNaN(price) || price < 0) { setError('Ievadiet derīgu cenu.'); return; }
+    if (isNaN(price) || price < 0) {
+      setError('Ievadiet derīgu cenu.');
+      return;
+    }
 
     const payload: UpsertPricingRulePayload = {
       wasteType,
@@ -161,7 +157,9 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Rediģēt cenas noteikumu' : 'Pievienot cenas noteikumu'}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? 'Rediģēt cenas noteikumu' : 'Pievienot cenas noteikumu'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -249,11 +247,7 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
 
           {/* Accepted toggle */}
           <div className="flex items-center gap-3">
-            <Switch
-              id="accepted"
-              checked={accepted}
-              onCheckedChange={setAccepted}
-            />
+            <Switch id="accepted" checked={accepted} onCheckedChange={setAccepted} />
             <Label htmlFor="accepted" className="cursor-pointer">
               Centrs pieņem šo atkritumu veidu
             </Label>
@@ -277,13 +271,7 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
 
 // ─── Center pricing card ───────────────────────────────────────────────────────
 
-function CenterPricingCard({
-  center,
-  token,
-}: {
-  center: RecyclingCenter;
-  token: string;
-}) {
+function CenterPricingCard({ center, token }: { center: RecyclingCenter; token: string }) {
   const [rules, setRules] = useState<PricingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -489,8 +477,8 @@ export default function RecyclingPricingPage() {
           <p className="font-medium">Kā cenas tiek izmantotas</p>
           <p className="text-blue-700 mt-1">
             Kad pircējs pasūta atkritumu izvešanu, viņam tiek rādīts centru salīdzinājums ar
-            aprēķināto utilizācijas maksu. Cena = cena/t × svars. Minimālā maksa tiek piemērota,
-            ja krava ir mazāka par minimālo svaru.
+            aprēķināto utilizācijas maksu. Cena = cena/t × svars. Minimālā maksa tiek piemērota, ja
+            krava ir mazāka par minimālo svaru.
           </p>
         </div>
       </div>

@@ -12,7 +12,15 @@ import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Building2, Search, DollarSign, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import {
+  RefreshCw,
+  Building2,
+  Search,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
+  Shield,
+} from 'lucide-react';
 import { COMPANY_TYPE_CONFIG, StatusBadgeTw } from '@/lib/status-config';
 
 // ── Toggle button ─────────────────────────────────────────────────────────────
@@ -152,7 +160,8 @@ export default function AdminCompaniesPage() {
 
   const filtered = companies.filter((c) => {
     if (typeFilter === 'FIRST_PARTY' && !c.isFirstParty) return false;
-    if (typeFilter !== 'ALL' && typeFilter !== 'FIRST_PARTY' && c.companyType !== typeFilter) return false;
+    if (typeFilter !== 'ALL' && typeFilter !== 'FIRST_PARTY' && c.companyType !== typeFilter)
+      return false;
     const q = search.toLowerCase();
     if (!q) return true;
     return (

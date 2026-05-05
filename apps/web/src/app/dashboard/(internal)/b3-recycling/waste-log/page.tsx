@@ -72,12 +72,12 @@ const STAGE_META: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
 > = {
-  RECEIVED:   { label: 'Saņemts',    variant: 'outline' },
-  SORTED:     { label: 'Šķirots',    variant: 'outline' },
-  PROCESSING: { label: 'Apstrādē',   variant: 'default' },
-  PROCESSED:  { label: 'Apstrādāts', variant: 'secondary' },
-  LISTED:     { label: 'Tirgū',      variant: 'secondary' },
-  REJECTED:   { label: 'Noraidīts',  variant: 'destructive' },
+  RECEIVED: { label: 'Saņemts', variant: 'outline' },
+  SORTED: { label: 'Šķirots', variant: 'outline' },
+  PROCESSING: { label: 'Apstrādē', variant: 'default' },
+  PROCESSED: { label: 'Apstrādāts', variant: 'secondary' },
+  LISTED: { label: 'Tirgū', variant: 'secondary' },
+  REJECTED: { label: 'Noraidīts', variant: 'destructive' },
 };
 
 const RC_GRADE_LABELS: Record<string, string> = {
@@ -443,17 +443,24 @@ function WasteRecordRow({
       <TableCell className="text-sm">{formatTonnes(record.recyclableWeight)}</TableCell>
       <TableCell className="text-sm">{formatRate(record.recyclingRate)}</TableCell>
       <TableCell>
-        {record.processingStage
-          ? (() => {
-              const m = STAGE_META[record.processingStage] ?? { label: record.processingStage, variant: 'outline' as const };
-              return <Badge variant={m.variant}>{m.label}</Badge>;
-            })()
-          : <span className="text-xs text-muted-foreground">—</span>}
+        {record.processingStage ? (
+          (() => {
+            const m = STAGE_META[record.processingStage] ?? {
+              label: record.processingStage,
+              variant: 'outline' as const,
+            };
+            return <Badge variant={m.variant}>{m.label}</Badge>;
+          })()
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell className="text-xs font-mono">
-        {record.rcGrade && record.rcGrade !== 'UNGRADED'
-          ? (RC_GRADE_LABELS[record.rcGrade] ?? record.rcGrade)
-          : <span className="text-muted-foreground">—</span>}
+        {record.rcGrade && record.rcGrade !== 'UNGRADED' ? (
+          (RC_GRADE_LABELS[record.rcGrade] ?? record.rcGrade)
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell className="text-xs font-mono text-muted-foreground">
         {record.weighbridgeTicketRef ?? '—'}
