@@ -755,8 +755,8 @@ export function DisposalWizard({ mode }: Props) {
     <div
       className={
         mode === 'public'
-          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-[600px] rounded-3xl shadow-xl ring-1 ring-border/40'
-          : 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
+          ? 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-150 rounded-3xl shadow-xl ring-1 ring-border/40'
+          : 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
       <div

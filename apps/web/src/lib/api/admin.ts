@@ -289,6 +289,7 @@ export interface AdminCompany {
   verified: boolean;
   payoutEnabled: boolean;
   commissionRate: number;
+  isFirstParty: boolean;
   createdAt: string;
   _count: { users: number; orders: number };
 }
@@ -1382,6 +1383,9 @@ export interface RecyclingWasteRecord {
   recyclingRate: number | null;
   certificateUrl: string | null;
   producedMaterialId: string | null;
+  processingStage: string | null;
+  rcGrade: string | null;
+  weighbridgeTicketRef: string | null;
   createdAt: string;
   recyclingCenter: { id: string; name: string; city: string };
   containerOrder: {

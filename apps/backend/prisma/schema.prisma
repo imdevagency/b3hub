@@ -37,6 +37,7 @@ enum CompanyType {
   SUPPLIER // Material supplier
   RECYCLER // Waste management
   CARRIER // Transport company
+  HYBRID // Recycler + Supplier (e.g. B3 Recycling — processes waste AND sells RC materials)
 }
 
 enum CompanyFeature {
@@ -158,6 +159,22 @@ enum WasteType {
   SOIL
   MIXED
   HAZARDOUS
+}
+
+enum WasteProcessingStage {
+  RECEIVED    // logged on arrival, not yet sorted
+  SORTED      // visually classified, separated by type
+  PROCESSING  // crusher / screener running on this batch
+  PROCESSED   // output weight + recyclingRate set, ready to list
+  LISTED      // producedMaterialId set — marketplace listing created
+  REJECTED    // contaminated or otherwise unusable, diverted to landfill
+}
+
+enum RcGrade {
+  RC_A  // clean, single-type source (e.g. demolition concrete, no steel)
+  RC_B  // mixed but acceptable — standard recycled aggregate
+  RC_C  // lower grade — fines, mixed demolition, suitable for fill/sub-base only
+  UNGRADED // grade not yet assessed
 }
 
 // ── Skip Hire (public 4-step wizard) ──────────────────────────
@@ -546,6 +563,9 @@ model Company {
   logo        String?
   verified    Boolean @default(false)
   rating      Float?
+
+  // B3 Group ownership flag — first-party participants on the marketplace
+  isFirstParty Boolean @default(false) // true = owned by B3 Group (B3 Recycling, B3 Logistics, B3 Construction)
 
   // Payout & Commission
   ibanNumber            String? // IBAN for Paysera IBAN payouts (supplier / carrier)
@@ -1222,11 +1242,33 @@ model RecyclingCenter {
   wasteRecords  WasteRecord[]
   incomingJobs  TransportJob[] // WASTE_COLLECTION jobs destined for this center
   b3Field       B3Field? // reverse of B3Field.recyclingCenter
+  pricingRules  RecyclingCenterPricingRule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("recycling_centers")
+}
+
+model RecyclingCenterPricingRule {
+  id String @id @default(cuid())
+
+  recyclingCenter   RecyclingCenter @relation(fields: [recyclingCenterId], references: [id], onDelete: Cascade)
+  recyclingCenterId String
+
+  wasteType     WasteType
+  pricePerTonne Float // EUR per tonne (disposal fee charged to buyer)
+  minimumWeight Float? // minimum load in tonnes; if below → minimumFee applies
+  minimumFee    Float? // flat charge when load < minimumWeight
+  maximumWeight Float? // center won't accept loads heavier than this per booking
+  accepted      Boolean @default(true) // false = center does not accept this waste type
+  notes         String? // operator notes shown to buyer ("No ceramics mixed in")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([recyclingCenterId, wasteType])
+  @@map("recycling_center_pricing_rules")
 }
 
 model WasteRecord {
@@ -1249,6 +1291,16 @@ model WasteRecord {
   processedDate    DateTime?
   recyclableWeight Float?
   recyclingRate    Float? // percentage
+
+  // Processing lifecycle stage
+  processingStage WasteProcessingStage @default(RECEIVED)
+
+  // Quality grading (assessed after processing)
+  rcGrade RcGrade @default(UNGRADED)
+
+  // Weighbridge documentation
+  weighbridgeTicketRef String? // official weigh ticket number / reference from the physical weighbridge
+  weighbridgePhotoUrl  String? // upload of the weigh ticket document
 
   // Output
   producedMaterialId String? // If converted to recycled material

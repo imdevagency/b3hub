@@ -30,6 +30,7 @@ import { useDisposal } from '@/lib/disposal-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { WasteType, DisposalTruckType } from '@/lib/api';
+import type { DisposalQuoteCenterResult } from '@/lib/api/containers';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -217,10 +218,8 @@ export default function DisposalWizard() {
   const [notes, setNotes] = useState('');
   const [bisNumber, setBisNumber] = useState('');
 
-  // Recycling centre picker (populated after availability check when >1 center exists)
-  const [availableCenters, setAvailableCenters] = useState<
-    { id: string; name: string; city: string; address: string }[]
-  >([]);
+  // Recycling centre comparison (populated from disposal-quote when >1 center exists)
+  const [availableCenters, setAvailableCenters] = useState<DisposalQuoteCenterResult[]>([]);
   const [preferredRecyclingCenterId, setPreferredRecyclingCenterId] = useState<string | undefined>(
     undefined,
   );
@@ -524,8 +523,19 @@ export default function DisposalWizard() {
     if (step === 2 && state.wasteType && token) {
       setLoading(true);
       try {
-        const result = await api.recyclingCenters.listByWasteType(state.wasteType, token);
-        if (result.total === 0) {
+        const weightT2 = parseFloat(weightText);
+        const weightKg = !isNaN(weightT2) && weightT2 > 0 ? weightT2 * 1000 : 1000;
+        const result = await api.recyclingCenters.getDisposalQuote(
+          {
+            wasteType: state.wasteType,
+            weightKg,
+            lat: picked?.lat,
+            lng: picked?.lng,
+          },
+          token,
+        );
+        const accepted = result.data.filter((c) => c.accepted);
+        if (accepted.length === 0) {
           Alert.alert(
             'Nav pieejamu šķirošanas centru',
             'Šobrīd nav reģistrētu centru, kas pieņem šāda veida atkritumus.\n\nSazinieties ar mums:',
@@ -543,8 +553,8 @@ export default function DisposalWizard() {
           );
           return;
         }
-        // If multiple centers, expose them for picker (user can override in step 3)
-        if (result.data.length > 1) {
+        // Show comparison if >1 accepted center
+        if (accepted.length > 1) {
           setAvailableCenters(result.data);
         } else {
           setAvailableCenters([]);
@@ -731,75 +741,127 @@ export default function DisposalWizard() {
               ))}
             </View>
 
-            {availableCenters.length > 1 && (
+            {availableCenters.filter((c) => c.accepted).length > 1 && (
               <>
                 <SectionLabel label="Šķirošanas centrs (neobligāti)" style={{ marginTop: 20 }} />
                 <View style={{ gap: 8 }}>
                   {[
-                    { id: '', name: 'Tuvākais pieejamais', city: '', address: '' },
-                    ...availableCenters,
-                  ].map((center) => (
-                    <TouchableOpacity
-                      key={center.id}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        padding: 14,
-                        borderRadius: 10,
-                        borderWidth: 1.5,
-                        borderColor:
-                          (preferredRecyclingCenterId ?? '') === center.id ? '#111827' : '#e5e7eb',
-                        backgroundColor:
-                          (preferredRecyclingCenterId ?? '') === center.id ? '#f9fafb' : '#fff',
-                        gap: 10,
-                      }}
-                      onPress={() => setPreferredRecyclingCenterId(center.id || undefined)}
-                      activeOpacity={0.75}
-                    >
-                      <View
+                    null, // null = "auto" option
+                    ...availableCenters.filter((c) => c.accepted),
+                  ].map((center, idx) => {
+                    const centerId = center?.centerId ?? '';
+                    const isSelected = (preferredRecyclingCenterId ?? '') === centerId;
+                    return (
+                      <TouchableOpacity
+                        key={centerId || 'auto'}
                         style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: 9,
-                          borderWidth: 2,
-                          borderColor:
-                            (preferredRecyclingCenterId ?? '') === center.id
-                              ? '#111827'
-                              : '#d1d5db',
+                          flexDirection: 'row',
                           alignItems: 'center',
-                          justifyContent: 'center',
+                          padding: 14,
+                          borderRadius: 10,
+                          borderWidth: 1.5,
+                          borderColor: isSelected ? '#111827' : '#e5e7eb',
+                          backgroundColor: isSelected ? '#f9fafb' : '#fff',
+                          gap: 10,
                         }}
+                        onPress={() => setPreferredRecyclingCenterId(centerId || undefined)}
+                        activeOpacity={0.75}
                       >
-                        {(preferredRecyclingCenterId ?? '') === center.id && (
-                          <View
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 4,
-                              backgroundColor: '#166534',
-                            }}
-                          />
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
+                        {/* Radio dot */}
+                        <View
                           style={{
-                            fontSize: 14,
-                            fontWeight: '600',
-                            color: '#111827',
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            borderWidth: 2,
+                            borderColor: isSelected ? '#111827' : '#d1d5db',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}
                         >
-                          {center.name}
-                        </Text>
-                        {!!center.city && (
-                          <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                            {center.city}
-                            {center.address ? ` • ${center.address}` : ''}
-                          </Text>
+                          {isSelected && (
+                            <View
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: '#166534',
+                              }}
+                            />
+                          )}
+                        </View>
+
+                        {/* Center info */}
+                        <View style={{ flex: 1 }}>
+                          {center === null ? (
+                            <>
+                              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                                Tuvākais pieejamais
+                              </Text>
+                              <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                                Sistēma izvēlēsies optimālo centru
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                                  {center.name}
+                                </Text>
+                                {center.licensed && (
+                                  <View
+                                    style={{
+                                      backgroundColor: '#dcfce7',
+                                      borderRadius: 4,
+                                      paddingHorizontal: 5,
+                                      paddingVertical: 1,
+                                    }}
+                                  >
+                                    <Text style={{ fontSize: 10, color: '#166534', fontWeight: '600' }}>
+                                      VVD
+                                    </Text>
+                                  </View>
+                                )}
+                              </View>
+                              <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                                {center.city}
+                                {center.distanceKm != null ? ` · ${center.distanceKm} km` : ''}
+                              </Text>
+                              {center.disposalFeeEur != null ? (
+                                <Text style={{ fontSize: 13, color: '#111827', marginTop: 4, fontWeight: '600' }}>
+                                  Utilizācijas maksa: €{center.disposalFeeEur.toFixed(2)}
+                                </Text>
+                              ) : center.priceNote ? (
+                                <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, fontStyle: 'italic' }}>
+                                  {center.priceNote}
+                                </Text>
+                              ) : (
+                                <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 4, fontStyle: 'italic' }}>
+                                  Cena pēc pieprasījuma
+                                </Text>
+                              )}
+                            </>
+                          )}
+                        </View>
+
+                        {/* Cheapest badge (first accepted center with a price) */}
+                        {idx === 1 && center?.disposalFeeEur != null && (
+                          <View
+                            style={{
+                              backgroundColor: '#f0fdf4',
+                              borderRadius: 6,
+                              paddingHorizontal: 6,
+                              paddingVertical: 3,
+                            }}
+                          >
+                            <Text style={{ fontSize: 10, color: '#166534', fontWeight: '700' }}>
+                              LĒTĀKAIS
+                            </Text>
+                          </View>
                         )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </>
             )}

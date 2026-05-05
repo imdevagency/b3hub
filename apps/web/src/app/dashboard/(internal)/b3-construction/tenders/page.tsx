@@ -118,7 +118,7 @@ function PipelineColumn({
   const total = tenders.reduce((s, t) => s + t.value, 0);
 
   return (
-    <div className="flex min-w-[200px] flex-1 flex-col gap-2">
+    <div className="flex min-w-50 flex-1 flex-col gap-2">
       <div className="flex items-center justify-between px-1">
         <Badge className={STATUS_STYLE[status]} variant="secondary">
           {STATUS_LABELS[status]}

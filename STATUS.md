@@ -311,6 +311,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/b3-fields/[id]
 - dashboard/(internal)/admin/broadcast
 - dashboard/(internal)/admin/catalog
+- dashboard/(internal)/admin/circular-flow
 - dashboard/(internal)/admin/companies
 - dashboard/(internal)/admin/companies/[id]
 - dashboard/(internal)/admin/config
@@ -328,6 +329,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/invoices
 - dashboard/(internal)/admin/jobs
 - dashboard/(internal)/admin/jobs/[id]
+- dashboard/(internal)/admin/market-health
+- dashboard/(internal)/admin/market-match
 - dashboard/(internal)/admin/marketing
 - dashboard/(internal)/admin/marketplace
 - dashboard/(internal)/admin/materials

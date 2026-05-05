@@ -11,7 +11,8 @@ import { adminGetCompanies, adminUpdateCompany, type AdminCompany } from '@/lib/
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Building2, Search, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, Building2, Search, DollarSign, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { COMPANY_TYPE_CONFIG, StatusBadgeTw } from '@/lib/status-config';
 
 // ── Toggle button ─────────────────────────────────────────────────────────────
@@ -44,10 +45,11 @@ function ToggleBtn({
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
-type TypeFilter = 'ALL' | AdminCompany['companyType'];
+type TypeFilter = 'ALL' | AdminCompany['companyType'] | 'FIRST_PARTY';
 
 const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: 'ALL', label: 'Visi' },
+  { value: 'FIRST_PARTY', label: 'B3 Grupa' },
   { value: 'SUPPLIER', label: 'Piegādātāji' },
   { value: 'CARRIER', label: 'Pārvadātāji' },
   { value: 'CONSTRUCTION', label: 'Būvniecība' },
@@ -149,7 +151,8 @@ export default function AdminCompaniesPage() {
   };
 
   const filtered = companies.filter((c) => {
-    if (typeFilter !== 'ALL' && c.companyType !== typeFilter) return false;
+    if (typeFilter === 'FIRST_PARTY' && !c.isFirstParty) return false;
+    if (typeFilter !== 'ALL' && typeFilter !== 'FIRST_PARTY' && c.companyType !== typeFilter) return false;
     const q = search.toLowerCase();
     if (!q) return true;
     return (
@@ -259,7 +262,14 @@ export default function AdminCompaniesPage() {
                     <tr className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <div>
-                          <p className="font-semibold text-gray-900">{c.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{c.name}</p>
+                            {c.isFirstParty && (
+                              <Badge className="gap-1 bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs">
+                                <Shield className="h-3 w-3" /> B3 Grupa
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">{c.email}</p>
                         </div>
                       </td>

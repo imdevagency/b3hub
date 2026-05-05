@@ -1274,7 +1274,7 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
             {wizardContent}
           </div>
           {/* Right: map panel */}
-          <div className="hidden lg:flex flex-1 relative items-center justify-center p-10 h-[600px] sticky top-28 rounded-3xl overflow-hidden ring-1 ring-border/40 shadow-xl bg-muted/10">
+          <div className="hidden lg:flex flex-1 items-center justify-center p-10 h-150 sticky top-28 rounded-3xl overflow-hidden ring-1 ring-border/40 shadow-xl bg-muted/10">
             <div className="absolute inset-0 bg-[#e5e3df]">
               <div ref={mapDivRef} className="absolute inset-0" />
               {form.address && (

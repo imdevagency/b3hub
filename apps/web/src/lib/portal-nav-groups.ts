@@ -168,6 +168,14 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       ],
     },
     {
+      id: 'pricing',
+      label: 'Cenas',
+      primaryHref: '/dashboard/recycling/pricing',
+      tabs: [
+        { label: 'Cenas noteikumi', href: '/dashboard/recycling/pricing' },
+      ],
+    },
+    {
       id: 'docs',
       label: 'Dokumenti',
       primaryHref: '/dashboard/documents',

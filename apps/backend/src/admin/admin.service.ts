@@ -319,10 +319,11 @@ export class AdminService {
         verified: true,
         payoutEnabled: true,
         commissionRate: true,
+        isFirstParty: true,
         createdAt: true,
         _count: { select: { users: true, orders: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ isFirstParty: 'desc' }, { createdAt: 'desc' }],
     });
   }
 

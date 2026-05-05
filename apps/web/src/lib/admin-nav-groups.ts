@@ -106,6 +106,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Analītika', href: '/dashboard/admin/analytics' },
       { label: 'Mārketings', href: '/dashboard/admin/marketing' },
       { label: 'Rezultātu karte', href: '/dashboard/admin/scorecard' },
+      { label: 'Aprites plūsma', href: '/dashboard/admin/circular-flow' },
     ],
   },
 ];

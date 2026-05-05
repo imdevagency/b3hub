@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (3121 lines, 76 models, 65 enums).
+Schema: `apps/backend/prisma/schema.prisma` (3173 lines, 77 models, 67 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -88,7 +88,7 @@ npm run db:seed           # reseed demo data
 | `UserType` | BUYER ADMIN |
 | `ApplicationStatus` | PENDING APPROVED REJECTED |
 | `UserStatus` | PENDING ACTIVE SUSPENDED DEACTIVATED |
-| `CompanyType` | CONSTRUCTION SUPPLIER RECYCLER CARRIER |
+| `CompanyType` | CONSTRUCTION SUPPLIER RECYCLER CARRIER HYBRID |
 | `CompanyFeature` | CONSTRUCTION_MANAGEMENT RECYCLING_MANAGEMENT |
 | `CompanyRole` | OWNER MANAGER DRIVER MEMBER |
 | `MaterialCategory` | SAND GRAVEL STONE CONCRETE SOIL RECYCLED_CONCRETE RECYCLED_SOIL ASPHALT CLAY OTHER |
@@ -103,6 +103,8 @@ npm run db:seed           # reseed demo data
 | `WastePurpose` | CONSTRUCTION_WASTE DEMOLITION_WASTE EXCAVATION_SOIL MIXED_WASTE RECYCLABLE_MATERIALS HAZARDOUS_WASTE GREEN_WASTE OTHER |
 | `ApusStatus` | NOT_REQUIRED PENDING SUBMITTED ACCEPTED REJECTED |
 | `WasteType` | CONCRETE BRICK WOOD METAL PLASTIC SOIL MIXED HAZARDOUS |
+| `WasteProcessingStage` | RECEIVED SORTED PROCESSING PROCESSED LISTED REJECTED |
+| `RcGrade` | RC_A RC_B RC_C UNGRADED |
 | `SkipWasteCategory` | MIXED GREEN_GARDEN CONCRETE_RUBBLE WOOD METAL_SCRAP ELECTRONICS_WEEE |
 | `SkipCategory` | SKIP BIG_BAG CONTAINER |
 | `SkipHireStatus` | PENDING CONFIRMED DELIVERED COLLECTED COMPLETED CANCELLED |
@@ -189,7 +191,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Company — `@@map("companies")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `paymentTermsDays`: Int?, `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `isFirstParty`: Boolean @default(false), `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `paymentTermsDays`: Int?, `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType, `features`: CompanyFeature  
 **Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead
 
@@ -272,13 +274,20 @@ npm run db:seed           # reseed demo data
 ### RecyclingCenter — `@@map("recycling_centers")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String, `state`: String, `postalCode`: String, `coordinates`: Json?, `companyId`: String, `capacity`: Float, `certifications`: String, `operatingHours`: Json, `licensed`: Boolean @default(false), `apusRegistrationId`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `acceptedWasteTypes`: WasteType  
-**Relations:** → Company, WasteRecord, TransportJob, B3Field?
+**Relations:** → Company, WasteRecord, TransportJob, B3Field?, RecyclingCenterPricingRule
+
+---
+
+### RecyclingCenterPricingRule — `@@map("recycling_center_pricing_rules")`  
+**Fields:** `id`: String @id @default(cuid(), `recyclingCenterId`: String, `pricePerTonne`: Float, `minimumWeight`: Float?, `minimumFee`: Float?, `maximumWeight`: Float?, `accepted`: Boolean @default(true), `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `wasteType`: WasteType  
+**Relations:** → RecyclingCenter
 
 ---
 
 ### WasteRecord — `@@map("waste_records")`  
-**Fields:** `id`: String @id @default(cuid(), `containerOrderId`: String?, `recyclingCenterId`: String, `weight`: Float, `volume`: Float?, `processedDate`: DateTime?, `recyclableWeight`: Float?, `recyclingRate`: Float?, `producedMaterialId`: String?, `certificateUrl`: String?, `apusSubmissionId`: String?, `apusSubmittedAt`: DateTime?, `apusNote`: String?, `bisNumber`: String?, `orderId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
-**Enum fields:** `wasteType`: WasteType, `apusStatus`: ApusStatus (@default(PENDING))  
+**Fields:** `id`: String @id @default(cuid(), `containerOrderId`: String?, `recyclingCenterId`: String, `weight`: Float, `volume`: Float?, `processedDate`: DateTime?, `recyclableWeight`: Float?, `recyclingRate`: Float?, `weighbridgeTicketRef`: String?, `weighbridgePhotoUrl`: String?, `producedMaterialId`: String?, `certificateUrl`: String?, `apusSubmissionId`: String?, `apusSubmittedAt`: DateTime?, `apusNote`: String?, `bisNumber`: String?, `orderId`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `wasteType`: WasteType, `processingStage`: WasteProcessingStage (@default(RECEIVED)), `rcGrade`: RcGrade (@default(UNGRADED)), `apusStatus`: ApusStatus (@default(PENDING))  
 **Relations:** → ContainerOrder?, RecyclingCenter, Order?
 
 ---

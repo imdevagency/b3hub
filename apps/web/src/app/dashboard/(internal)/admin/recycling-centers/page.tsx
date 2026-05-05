@@ -91,7 +91,7 @@ function CenterRow({
         <p className="text-xs text-muted-foreground">{center.company.city}</p>
       </TableCell>
       <TableCell>
-        <div className="flex flex-wrap gap-1 max-w-[220px]">
+        <div className="flex flex-wrap gap-1 max-w-55">
           {center.acceptedWasteTypes.slice(0, 4).map((wt) => (
             <Badge key={wt} variant="outline" className="text-xs px-1.5 py-0">
               {WASTE_LABELS[wt] ?? wt}

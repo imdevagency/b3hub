@@ -538,7 +538,7 @@ function SupportTab({ token }: { token: string }) {
                       {!m.fromAdmin && (
                         <p className="text-[11px] font-medium opacity-70 mb-0.5">{m.senderName}</p>
                       )}
-                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
                       <p className="text-[10px] mt-1 opacity-60 text-right">
                         {new Date(m.createdAt).toLocaleTimeString('lv-LV', {
                           hour: '2-digit',

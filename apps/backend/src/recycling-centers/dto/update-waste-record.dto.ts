@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { WasteProcessingStage, RcGrade } from '@prisma/client';
 
 export class UpdateWasteRecordDto {
   @IsOptional()
@@ -24,6 +26,24 @@ export class UpdateWasteRecordDto {
   @Min(0)
   @Max(100)
   recyclingRate?: number;
+
+  @IsOptional()
+  @IsEnum(WasteProcessingStage)
+  processingStage?: WasteProcessingStage;
+
+  @IsOptional()
+  @IsEnum(RcGrade)
+  rcGrade?: RcGrade;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  weighbridgeTicketRef?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
+  weighbridgePhotoUrl?: string;
 
   @IsOptional()
   @IsString()

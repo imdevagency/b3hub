@@ -23,6 +23,8 @@ import { UpdateRecyclingCenterDto } from './dto/update-recycling-center.dto';
 import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
 import { CreateWasteRecordDto } from './dto/create-waste-record.dto';
 import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
+import { UpsertPricingRuleDto } from './dto/upsert-pricing-rule.dto';
+import { DisposalQuoteQueryDto } from './dto/disposal-quote-query.dto';
 
 /** Asserts caller is an approved carrier or recycler operator. */
 function assertIsCarrierOp(user: RequestingUser): void {
@@ -185,5 +187,67 @@ export class RecyclingCentersController {
       dto,
       user.companyId,
     );
+  }
+
+  /** POST /recycling-centers/waste-records/:recordId/create-listing — convert processed record to marketplace listing */
+  @Post('waste-records/:recordId/create-listing')
+  createListingFromWasteRecord(
+    @Param('recordId') recordId: string,
+    @Body() body: { basePrice: number; name?: string },
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertIsRecycler(user);
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
+    return this.service.createListingFromWasteRecord(recordId, body, user.companyId);
+  }
+
+  // ── Disposal Quote (public) ─────────────────────────────────────────────
+
+  /**
+   * GET /recycling-centers/disposal-quote
+   * Returns available centers with disposal fees for the given waste type + weight.
+   * Optional lat/lng for distance-sorted results.
+   */
+  @Get('disposal-quote')
+  getDisposalQuote(@Query() query: DisposalQuoteQueryDto) {
+    return this.service.getDisposalQuote(query);
+  }
+
+  // ── Pricing Rules (operator) ─────────────────────────────────────────
+
+  /** GET /recycling-centers/:centerId/pricing-rules — list all rules for a center */
+  @Get(':centerId/pricing-rules')
+  getPricingRules(
+    @Param('centerId') centerId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertIsRecycler(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.getPricingRules(centerId, user.companyId);
+  }
+
+  /** PUT /recycling-centers/:centerId/pricing-rules — upsert a pricing rule */
+  @Post(':centerId/pricing-rules')
+  upsertPricingRule(
+    @Param('centerId') centerId: string,
+    @Body() dto: UpsertPricingRuleDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertIsRecycler(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.upsertPricingRule(centerId, dto, user.companyId);
+  }
+
+  /** DELETE /recycling-centers/:centerId/pricing-rules/:wasteType — remove a pricing rule */
+  @Delete(':centerId/pricing-rules/:wasteType')
+  deletePricingRule(
+    @Param('centerId') centerId: string,
+    @Param('wasteType') wasteType: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertIsRecycler(user);
+    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    return this.service.deletePricingRule(centerId, wasteType, user.companyId);
   }
 }

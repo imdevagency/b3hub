@@ -94,7 +94,7 @@ function Bubble({ msg }: { msg: SupportMessage }) {
         }`}
       >
         {!isAdmin && <p className="text-[11px] font-medium opacity-70 mb-0.5">{msg.senderName}</p>}
-        <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+        <p className="whitespace-pre-wrap wrap-break-word">{msg.body}</p>
         <p className={`text-[10px] mt-1 opacity-60 text-right`}>
           {new Date(msg.createdAt).toLocaleTimeString('lv-LV', {
             hour: '2-digit',

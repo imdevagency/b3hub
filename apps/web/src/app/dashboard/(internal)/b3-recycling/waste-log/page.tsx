@@ -68,6 +68,25 @@ const WASTE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   WASTE_TYPE_OPTIONS.map((o) => [o.value, o.label]),
 );
 
+const STAGE_META: Record<
+  string,
+  { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
+> = {
+  RECEIVED:   { label: 'Saņemts',    variant: 'outline' },
+  SORTED:     { label: 'Šķirots',    variant: 'outline' },
+  PROCESSING: { label: 'Apstrādē',   variant: 'default' },
+  PROCESSED:  { label: 'Apstrādāts', variant: 'secondary' },
+  LISTED:     { label: 'Tirgū',      variant: 'secondary' },
+  REJECTED:   { label: 'Noraidīts',  variant: 'destructive' },
+};
+
+const RC_GRADE_LABELS: Record<string, string> = {
+  RC_A: 'RC-A',
+  RC_B: 'RC-B',
+  RC_C: 'RC-C',
+  UNGRADED: '',
+};
+
 function formatTonnes(kg: number | null): string {
   if (kg === null) return '—';
   return `${kg.toFixed(2)} t`;
@@ -423,6 +442,22 @@ function WasteRecordRow({
       <TableCell className="text-sm">{formatTonnes(record.weight)}</TableCell>
       <TableCell className="text-sm">{formatTonnes(record.recyclableWeight)}</TableCell>
       <TableCell className="text-sm">{formatRate(record.recyclingRate)}</TableCell>
+      <TableCell>
+        {record.processingStage
+          ? (() => {
+              const m = STAGE_META[record.processingStage] ?? { label: record.processingStage, variant: 'outline' as const };
+              return <Badge variant={m.variant}>{m.label}</Badge>;
+            })()
+          : <span className="text-xs text-muted-foreground">—</span>}
+      </TableCell>
+      <TableCell className="text-xs font-mono">
+        {record.rcGrade && record.rcGrade !== 'UNGRADED'
+          ? (RC_GRADE_LABELS[record.rcGrade] ?? record.rcGrade)
+          : <span className="text-muted-foreground">—</span>}
+      </TableCell>
+      <TableCell className="text-xs font-mono text-muted-foreground">
+        {record.weighbridgeTicketRef ?? '—'}
+      </TableCell>
       <TableCell className="text-sm text-muted-foreground">
         {record.containerOrder?.order?.buyer?.name ??
           record.containerOrder?.order?.orderNumber ??
@@ -553,6 +588,9 @@ export default function WasteLogPage() {
                   <TableHead>Svars</TableHead>
                   <TableHead>Pārstrādājamais</TableHead>
                   <TableHead>Pārstrādes %</TableHead>
+                  <TableHead>Stadija</TableHead>
+                  <TableHead>Klase</TableHead>
+                  <TableHead>Svēršanas biļete</TableHead>
                   <TableHead>Klients</TableHead>
                   <TableHead>Sertifikāts</TableHead>
                   <TableHead>Tirgus</TableHead>

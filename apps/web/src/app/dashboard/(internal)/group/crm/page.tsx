@@ -441,7 +441,7 @@ function LeadSheet({ leadId, token, onClose, onUpdated }: LeadSheetProps) {
                   <div key={t.id} className="flex items-start gap-2">
                     <button
                       onClick={() => handleToggleTask(t.id, !t.done)}
-                      className="mt-0.5 flex-shrink-0"
+                      className="mt-0.5 shrink-0"
                     >
                       <CheckCircle2
                         className={`h-4 w-4 ${t.done ? 'text-green-500' : 'text-muted-foreground/40'}`}
@@ -453,7 +453,7 @@ function LeadSheet({ leadId, token, onClose, onUpdated }: LeadSheetProps) {
                       {t.title}
                     </span>
                     {t.dueAt && (
-                      <span className="ml-auto text-xs text-muted-foreground flex-shrink-0">
+                      <span className="ml-auto text-xs text-muted-foreground shrink-0">
                         {new Date(t.dueAt).toLocaleDateString('lv-LV')}
                       </span>
                     )}
@@ -642,7 +642,7 @@ export default function CrmPage() {
 
       {error && !loading && (
         <div className="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 text-destructive text-sm">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
@@ -697,7 +697,7 @@ export default function CrmPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {lead.value != null && (
                       <span className="text-sm font-medium">€{lead.value}</span>
                     )}

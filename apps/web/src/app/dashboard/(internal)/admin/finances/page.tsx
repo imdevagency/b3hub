@@ -1299,7 +1299,7 @@ function OverviewTab({ token }: { token: string }) {
         </div>
         <CardContent className="pb-4">
           <div className="overflow-x-auto">
-            <div className="flex items-end gap-2 min-w-[600px] h-44">
+            <div className="flex items-end gap-2 min-w-150 h-44">
               {stats.monthlyTrend.map((m) => {
                 const gmvH = maxGmv > 0 ? Math.round((m.gmv / maxGmv) * 148) : 2;
                 const comH = maxGmv > 0 ? Math.round((m.commission / maxGmv) * 148) : 2;

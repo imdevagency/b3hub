@@ -9,7 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { WasteType } from '@prisma/client';
+import { WasteType, WasteProcessingStage, RcGrade } from '@prisma/client';
 
 export class CreateWasteRecordDto {
   // Optional link to a container order
@@ -54,6 +54,26 @@ export class CreateWasteRecordDto {
   @IsString()
   @MaxLength(50)
   producedMaterialId?: string;
+
+  // Processing lifecycle
+  @IsOptional()
+  @IsEnum(WasteProcessingStage)
+  processingStage?: WasteProcessingStage;
+
+  @IsOptional()
+  @IsEnum(RcGrade)
+  rcGrade?: RcGrade;
+
+  // Weighbridge documentation
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  weighbridgeTicketRef?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
+  weighbridgePhotoUrl?: string;
 
   // Compliance
   @IsOptional()

@@ -1,30 +1,54 @@
 /**
  * Recycler waste records — /dashboard/recycling/waste-records
  * All waste intake records across this operator's recycling centers.
+ * Eligible records (processed, recyclableWeight > 0, no listing yet) can be
+ * converted to marketplace Material listings directly by the operator.
  */
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getRecyclerWasteRecords } from '@/lib/api';
+import { getRecyclerWasteRecords, recyclerCreateListing } from '@/lib/api';
 import type { RecyclerWasteRecord } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ClipboardList, ExternalLink } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ClipboardList, ExternalLink, ArrowRightCircle, CheckCircle2 } from 'lucide-react';
 import { fmtDate } from '@/lib/format';
 
-const PROCESSING_META: Record<
+// ── Display maps ──────────────────────────────────────────────────────────────
+
+const STAGE_META: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }
 > = {
-  PENDING: { label: 'Gaida', variant: 'outline' },
-  IN_PROGRESS: { label: 'Apstrādē', variant: 'default' },
-  COMPLETED: { label: 'Pabeigts', variant: 'secondary' },
-  CERTIFIED: { label: 'Sertificēts', variant: 'default' },
+  RECEIVED:   { label: 'Saņemts',    variant: 'outline' },
+  SORTED:     { label: 'Šķirots',    variant: 'outline' },
+  PROCESSING: { label: 'Apstrādē',   variant: 'default' },
+  PROCESSED:  { label: 'Apstrādāts', variant: 'secondary' },
+  LISTED:     { label: 'Tirgū',      variant: 'secondary' },
+  REJECTED:   { label: 'Noraidīts',  variant: 'destructive' },
+};
+
+const RC_GRADE_LABELS: Record<string, string> = {
+  RC_A:     'RC-A',
+  RC_B:     'RC-B',
+  RC_C:     'RC-C',
+  UNGRADED: '',
 };
 
 function formatWeight(weightKg?: number | null): string {
@@ -33,6 +57,115 @@ function formatWeight(weightKg?: number | null): string {
   return `${weightKg} kg`;
 }
 
+// ── Convert to listing dialog ─────────────────────────────────────────────────
+
+function ConvertDialog({
+  record,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  record: RecyclerWasteRecord | null;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (updatedRecord: RecyclerWasteRecord) => void;
+}) {
+  const { token } = useAuth();
+  const [price, setPrice] = useState('');
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset form when record changes
+  useEffect(() => {
+    if (record) {
+      setPrice('');
+      setName('');
+      setError(null);
+    }
+  }, [record]);
+
+  async function handleSubmit() {
+    if (!record || !token) return;
+    const basePrice = parseFloat(price);
+    if (!price || isNaN(basePrice) || basePrice <= 0) {
+      setError('Ievadiet derīgu cenu (> 0)');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await recyclerCreateListing(token, record.id, {
+        basePrice,
+        name: name.trim() || undefined,
+      });
+      onSuccess({ ...record, producedMaterialId: result.material.id });
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Kļūda');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!record) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ArrowRightCircle className="h-5 w-5 text-emerald-600" />
+            Pārvērst tirgus sarakstā
+          </DialogTitle>
+          <DialogDescription>
+            {formatWeight(record.recyclableWeight)} pārstrādājamā materiāla no{' '}
+            <strong>{record.wasteType}</strong> tiks publicēts kā RC materiāls tirgū.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="listing-name">Nosaukums (nav obligāts)</Label>
+            <Input
+              id="listing-name"
+              placeholder={`RC materiāls — ${record.recyclingCenter?.name ?? ''}`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="listing-price">
+              Cena par tonnu (EUR) <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="listing-price"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="p.ē. 12.00"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Atcelt
+          </Button>
+          <Button onClick={handleSubmit} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            {saving ? 'Publicē...' : 'Publicēt'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function RecyclerWasteRecordsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
@@ -40,6 +173,7 @@ export default function RecyclerWasteRecordsPage() {
   const [records, setRecords] = useState<RecyclerWasteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [convertTarget, setConvertTarget] = useState<RecyclerWasteRecord | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -52,6 +186,10 @@ export default function RecyclerWasteRecordsPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [user, token]);
+
+  function handleConvertSuccess(updated: RecyclerWasteRecord) {
+    setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
 
   if (isLoading || !user) return <PageSpinner />;
 
@@ -77,18 +215,31 @@ export default function RecyclerWasteRecordsPage() {
       {!loading && !error && records.length > 0 && (
         <div className="space-y-3">
           {records.map((record) => {
-            const meta = record.processingStatus
-              ? (PROCESSING_META[record.processingStatus] ?? {
-                  label: record.processingStatus,
-                  variant: 'outline' as const,
-                })
+            const stageMeta = record.processingStage
+              ? (STAGE_META[record.processingStage] ?? { label: record.processingStage, variant: 'outline' as const })
               : null;
+
+            const gradeLabel =
+              record.rcGrade && record.rcGrade !== 'UNGRADED'
+                ? (RC_GRADE_LABELS[record.rcGrade] ?? record.rcGrade)
+                : null;
+
+            const canConvert =
+              (record.recyclableWeight ?? 0) > 0 && !record.producedMaterialId;
+
             return (
               <Card key={record.id} className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm">{record.wasteType}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-sm">{record.wasteType}</p>
+                        {gradeLabel && (
+                          <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">
+                            {gradeLabel}
+                          </span>
+                        )}
+                      </div>
                       {record.recyclingCenter && (
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {record.recyclingCenter.name}
@@ -96,7 +247,19 @@ export default function RecyclerWasteRecordsPage() {
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Svars: {formatWeight(record.weightKg)}
+                        {(record.recyclableWeight ?? 0) > 0 && (
+                          <span className="ml-2 text-emerald-700 font-medium">
+                            · Pārstrādājams: {formatWeight(record.recyclableWeight)}
+                            {record.recyclingRate != null && ` (${record.recyclingRate}%)`}
+                          </span>
+                        )}
                       </p>
+                      {record.weighbridgeTicketRef && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Svēršanas biļete:{' '}
+                          <span className="font-mono">{record.weighbridgeTicketRef}</span>
+                        </p>
+                      )}
                       {record.certificateUrl && (
                         <a
                           href={record.certificateUrl}
@@ -108,11 +271,28 @@ export default function RecyclerWasteRecordsPage() {
                         </a>
                       )}
                     </div>
-                    {meta && (
-                      <Badge variant={meta.variant} className="shrink-0 whitespace-nowrap">
-                        {meta.label}
-                      </Badge>
-                    )}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {stageMeta && (
+                        <Badge variant={stageMeta.variant} className="whitespace-nowrap">
+                          {stageMeta.label}
+                        </Badge>
+                      )}
+                      {record.producedMaterialId ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
+                          <CheckCircle2 className="size-3.5" /> Tirgū
+                        </span>
+                      ) : canConvert ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => setConvertTarget(record)}
+                        >
+                          <ArrowRightCircle className="size-3.5 mr-1" />
+                          Pārvērst sarakstā
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-3">
                     Izveidots {fmtDate(record.createdAt)}
@@ -123,6 +303,13 @@ export default function RecyclerWasteRecordsPage() {
           })}
         </div>
       )}
+
+      <ConvertDialog
+        record={convertTarget}
+        open={convertTarget !== null}
+        onClose={() => setConvertTarget(null)}
+        onSuccess={handleConvertSuccess}
+      />
     </div>
   );
 }

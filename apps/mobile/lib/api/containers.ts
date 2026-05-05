@@ -3,6 +3,29 @@ import type { WasteType } from './orders';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
+export interface DisposalQuoteCenterResult {
+  centerId: string;
+  name: string;
+  address: string;
+  city: string;
+  licensed: boolean;
+  certifications: string[];
+  distanceKm: number | null;
+  pricePerTonne: number | null;
+  disposalFeeEur: number | null;
+  priceNote: string | null;
+  accepted: boolean;
+  hasPriceRule: boolean;
+}
+
+export interface DisposalQuoteResult {
+  data: DisposalQuoteCenterResult[];
+  weightKg: number;
+  wasteType: WasteType;
+}
+
+// ─── Types ─────────────────────────────────────────────────────────────────
+
 export type ContainerType = 'SKIP' | 'ROLL_OFF' | 'COMPACTOR' | 'HOOKLOADER' | 'FLATBED';
 export type ContainerSize = 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
 export type ContainerStatus = 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RETIRED';
@@ -143,5 +166,21 @@ export const containersApi = {
         `/recycling-centers?wasteType=${encodeURIComponent(wasteType)}&activeOnly=true&limit=50`,
         { headers: { Authorization: `Bearer ${token}` } },
       ),
+
+    /** Get disposal quotes from all centers for a given waste type + weight */
+    getDisposalQuote: (
+      params: { wasteType: WasteType; weightKg: number; lat?: number; lng?: number },
+      token: string,
+    ) => {
+      const q = new URLSearchParams({
+        wasteType: params.wasteType,
+        weightKg: String(params.weightKg),
+      });
+      if (params.lat != null) q.set('lat', String(params.lat));
+      if (params.lng != null) q.set('lng', String(params.lng));
+      return apiFetch<DisposalQuoteResult>(`/recycling-centers/disposal-quote?${q.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
   },
 };

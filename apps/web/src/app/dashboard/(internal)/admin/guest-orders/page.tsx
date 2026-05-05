@@ -169,7 +169,7 @@ function QuoteDialog({
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="max-w-[160px]"
+              className="max-w-40"
             />
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
