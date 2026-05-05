@@ -611,6 +611,39 @@ export async function adminGetSkipHireOrders(token: string): Promise<AdminSkipHi
   return res.data;
 }
 
+// ─── Toilet cabin orders ──────────────────────────────────────────────────────
+
+export interface AdminToiletCabinOrder {
+  id: string;
+  orderNumber: string;
+  address: string;
+  city: string;
+  lat: number | null;
+  lng: number | null;
+  cabinCount: number;
+  hireDays: number;
+  deliveryDate: string;
+  deliveryWindow: string | null;
+  price: number;
+  currency: string;
+  paymentStatus: string;
+  status: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  notes: string | null;
+  carrier: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function adminGetToiletCabinOrders(token: string): Promise<AdminToiletCabinOrder[]> {
+  const res = await apiFetch<{ data: AdminToiletCabinOrder[] }>('/admin/toilet-cabins', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
 // ─── Transport job exceptions ─────────────────────────────────────────────────
 
 export interface AdminException {
@@ -1022,6 +1055,9 @@ export interface AdminRecyclingCenter {
   acceptedWasteTypes: string[];
   capacity: number;
   certifications: string[];
+  licensed: boolean;
+  licenceNumber: string | null;
+  apusRegistrationId: string | null;
   active: boolean;
   createdAt: string;
   company: { id: string; name: string; logo: string | null; city: string };
@@ -1047,6 +1083,34 @@ export async function adminToggleRecyclingCenter(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ active }),
+  });
+}
+
+export interface CreateRecyclingCenterInput {
+  companyId: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  coordinates?: { lat: number; lng: number };
+  acceptedWasteTypes: string[];
+  capacity: number;
+  certifications?: string[];
+  operatingHours: Record<string, { open: string; close: string } | null>;
+  licensed?: boolean;
+  licenceNumber?: string;
+  apusRegistrationId?: string;
+}
+
+export async function adminCreateRecyclingCenter(
+  data: CreateRecyclingCenterInput,
+  token: string,
+): Promise<AdminRecyclingCenter> {
+  return apiFetch<AdminRecyclingCenter>('/admin/recycling-centers', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
   });
 }
 
@@ -2825,6 +2889,100 @@ export interface MarketMatchData {
 
 export async function adminGetMarketMatch(token: string): Promise<MarketMatchData> {
   return apiFetch<MarketMatchData>('/admin/market-match', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Admin Projects ────────────────────────────────────────────────────────────
+
+export interface AdminProjectWasteDeclaration {
+  id: string;
+  wasteType: string;
+  estimatedTonnes: number;
+  availableFrom: string;
+  availableTo: string;
+  willingToSell: boolean;
+  notes?: string;
+}
+
+export interface AdminProjectMaterialNeed {
+  id: string;
+  materialCategory: string;
+  estimatedTonnes: number;
+  neededFrom: string;
+  neededTo: string;
+  notes?: string;
+}
+
+export interface AdminProjectItem {
+  id: string;
+  name: string;
+  status: string;
+  siteAddress?: string;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  company: { id: string; name: string; city?: string };
+  wasteDeclarations: AdminProjectWasteDeclaration[];
+  materialNeeds: AdminProjectMaterialNeed[];
+  _count: { orders: number };
+}
+
+export async function adminGetAllProjects(token: string): Promise<AdminProjectItem[]> {
+  return apiFetch<AdminProjectItem[]>('/admin/projects', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Waste Supply-Demand Signals ───────────────────────────────────────────────
+
+export type WasteSignalStatus = 'COVERED' | 'OVERCAPACITY' | 'GAP' | 'NO_DATA';
+
+export interface WasteSignalMonth {
+  month: string;
+  supplyTonnes: number;
+  capacityTonnes: number;
+  sellableTonnes: number;
+  gap: number;
+  status: WasteSignalStatus;
+}
+
+export interface WasteSignalRow {
+  wasteType: string;
+  totalSupply: number;
+  totalCapacity: number;
+  totalSellable: number;
+  hasGap: boolean;
+  monthlyData: WasteSignalMonth[];
+}
+
+export interface MaterialSignalMonth {
+  month: string;
+  demandTonnes: number;
+}
+
+export interface MaterialSignalRow {
+  materialCategory: string;
+  totalDemand: number;
+  monthlyDemand: MaterialSignalMonth[];
+}
+
+export interface WasteSignalsData {
+  months: string[];
+  wasteSignals: WasteSignalRow[];
+  materialSignals: MaterialSignalRow[];
+  summary: {
+    totalDeclarations: number;
+    totalDeclarationTonnes: number;
+    totalSellableTonnes: number;
+    totalMaterialNeedTonnes: number;
+    wasteTypesWithGap: string[];
+    activeCenters: number;
+  };
+}
+
+export async function adminGetWasteSignals(token: string): Promise<WasteSignalsData> {
+  return apiFetch<WasteSignalsData>('/admin/waste-signals', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

@@ -59,6 +59,8 @@ export * from './analytics';
 
 export * from './recycler';
 
+export * from './toilet-cabins';
+
 // Re-export the helper and error class for consumers that need them directly
 
 export { apiFetch, ApiError } from './common';
@@ -104,6 +106,8 @@ import { guestOrdersApi } from './guest-orders';
 import { fieldPassesApi } from './field-passes';
 
 import { analyticsApi } from './analytics';
+
+import { toiletCabinsApi } from './toilet-cabins';
 
 
 
@@ -219,5 +223,7 @@ export const api = {
   // ── Analytics ────────────────────────────────────────────────────────
 
   analytics: analyticsApi,
+  // ── Toilet cabin rental ─────────────────────────────────────────────
 
+  ...toiletCabinsApi,
 };

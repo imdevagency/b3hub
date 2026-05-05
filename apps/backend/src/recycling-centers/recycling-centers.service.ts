@@ -55,6 +55,9 @@ export class RecyclingCentersService {
         operatingHours: dto.operatingHours as Prisma.InputJsonValue,
         companyId,
         active: true,
+        licensed: dto.licensed ?? false,
+        licenceNumber: dto.licenceNumber ?? null,
+        apusRegistrationId: dto.apusRegistrationId ?? null,
       },
     });
     this.logger.log(
@@ -150,6 +153,9 @@ export class RecyclingCentersService {
     if (dto.operatingHours !== undefined)
       data.operatingHours = dto.operatingHours;
     if (dto.active !== undefined) data.active = dto.active;
+    if (dto.licensed !== undefined) data.licensed = dto.licensed;
+    if (dto.licenceNumber !== undefined) data.licenceNumber = dto.licenceNumber;
+    if (dto.apusRegistrationId !== undefined) data.apusRegistrationId = dto.apusRegistrationId;
 
     return this.prisma.recyclingCenter.update({ where: { id }, data });
   }
@@ -639,7 +645,8 @@ export class RecyclingCentersService {
         distanceKm,
         pricePerTonne: rule?.pricePerTonne ?? null,
         disposalFeeEur,
-        priceNote: priceNote ?? rule?.notes ?? null,
+        priceNote: priceNote ?? null,
+        centerNotes: rule?.notes ?? null,
         accepted: rule ? rule.accepted : true, // if no rule, center accepts but price TBD
         hasPriceRule: rule !== null,
       };

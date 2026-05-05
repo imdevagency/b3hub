@@ -72,4 +72,19 @@ export class UpdateRecyclingCenterDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  // Licensing
+  @IsOptional()
+  @IsBoolean()
+  licensed?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  licenceNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  apusRegistrationId?: string;
 }

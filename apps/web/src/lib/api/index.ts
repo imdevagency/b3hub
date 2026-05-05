@@ -38,3 +38,4 @@ export * from './equipment';
 export * from './vehicle-assignments';
 export * from './crm';
 export * from './cms';
+export * from './toilet-cabins';

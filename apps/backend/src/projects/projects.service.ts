@@ -16,6 +16,8 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AssignOrdersDto } from './dto/assign-orders.dto';
 import { CreateProjectSiteDto } from './dto/create-project-site.dto';
+import { CreateWasteDeclarationDto } from './dto/create-waste-declaration.dto';
+import { CreateMaterialNeedDto } from './dto/create-material-need.dto';
 import PDFDocument from 'pdfkit';
 
 /** Order statuses that count as committed material spend */
@@ -690,5 +692,96 @@ export class ProjectsService {
 
       doc.end();
     });
+  }
+
+  // ── Waste declarations ────────────────────────────────────────────────────
+
+  async getWasteDeclarations(projectId: string, companyId?: string) {
+    await this.assertMember(projectId, companyId);
+    return this.prisma.projectWasteDeclaration.findMany({
+      where: { projectId },
+      orderBy: { availableFrom: 'asc' },
+    });
+  }
+
+  async addWasteDeclaration(
+    projectId: string,
+    dto: CreateWasteDeclarationDto,
+    companyId?: string,
+  ) {
+    await this.assertMember(projectId, companyId);
+    return this.prisma.projectWasteDeclaration.create({
+      data: {
+        projectId,
+        wasteType: dto.wasteType,
+        estimatedTonnes: dto.estimatedTonnes,
+        availableFrom: new Date(dto.availableFrom),
+        availableTo: new Date(dto.availableTo),
+        willingToSell: dto.willingToSell ?? false,
+        notes: dto.notes ?? null,
+      },
+    });
+  }
+
+  async deleteWasteDeclaration(
+    projectId: string,
+    declarationId: string,
+    companyId?: string,
+  ) {
+    await this.assertMember(projectId, companyId);
+    const decl = await this.prisma.projectWasteDeclaration.findUnique({
+      where: { id: declarationId },
+      select: { projectId: true },
+    });
+    if (!decl || decl.projectId !== projectId) {
+      throw new NotFoundException('Declaration not found');
+    }
+    await this.prisma.projectWasteDeclaration.delete({ where: { id: declarationId } });
+    return { deleted: 1 };
+  }
+
+  // ── Material needs ────────────────────────────────────────────────────────
+
+  async getMaterialNeeds(projectId: string, companyId?: string) {
+    await this.assertMember(projectId, companyId);
+    return this.prisma.projectMaterialNeed.findMany({
+      where: { projectId },
+      orderBy: { neededFrom: 'asc' },
+    });
+  }
+
+  async addMaterialNeed(
+    projectId: string,
+    dto: CreateMaterialNeedDto,
+    companyId?: string,
+  ) {
+    await this.assertMember(projectId, companyId);
+    return this.prisma.projectMaterialNeed.create({
+      data: {
+        projectId,
+        materialCategory: dto.materialCategory,
+        estimatedTonnes: dto.estimatedTonnes,
+        neededFrom: new Date(dto.neededFrom),
+        neededTo: new Date(dto.neededTo),
+        notes: dto.notes ?? null,
+      },
+    });
+  }
+
+  async deleteMaterialNeed(
+    projectId: string,
+    needId: string,
+    companyId?: string,
+  ) {
+    await this.assertMember(projectId, companyId);
+    const need = await this.prisma.projectMaterialNeed.findUnique({
+      where: { id: needId },
+      select: { projectId: true },
+    });
+    if (!need || need.projectId !== projectId) {
+      throw new NotFoundException('Material need not found');
+    }
+    await this.prisma.projectMaterialNeed.delete({ where: { id: needId } });
+    return { deleted: 1 };
   }
 }

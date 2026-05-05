@@ -238,3 +238,122 @@ export function removeProjectSite(
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Waste declarations ─────────────────────────────────────────────────────
+
+export type WasteType =
+  | 'CONCRETE' | 'BRICK' | 'WOOD' | 'METAL' | 'PLASTIC'
+  | 'SOIL' | 'MIXED' | 'HAZARDOUS' | 'ASPHALT' | 'GREEN_WASTE'
+  | 'WEEE' | 'OIL_WASTE' | 'TIRES' | 'PACKAGING_WASTE';
+
+export interface ApiWasteDeclaration {
+  id: string;
+  projectId: string;
+  wasteType: WasteType;
+  estimatedTonnes: number;
+  availableFrom: string;
+  availableTo: string;
+  willingToSell: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWasteDeclarationInput {
+  wasteType: WasteType;
+  estimatedTonnes: number;
+  availableFrom: string;
+  availableTo: string;
+  willingToSell?: boolean;
+  notes?: string;
+}
+
+export function getWasteDeclarations(
+  projectId: string,
+  token: string,
+): Promise<ApiWasteDeclaration[]> {
+  return apiFetch(`/projects/${projectId}/waste-declarations`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function addWasteDeclaration(
+  projectId: string,
+  input: CreateWasteDeclarationInput,
+  token: string,
+): Promise<ApiWasteDeclaration> {
+  return apiFetch(`/projects/${projectId}/waste-declarations`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteWasteDeclaration(
+  projectId: string,
+  declarationId: string,
+  token: string,
+): Promise<{ deleted: number }> {
+  return apiFetch(`/projects/${projectId}/waste-declarations/${declarationId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Material needs ──────────────────────────────────────────────────────────
+
+export type MaterialCategoryValue =
+  | 'SAND' | 'GRAVEL' | 'STONE' | 'CONCRETE' | 'SOIL'
+  | 'RECYCLED_CONCRETE' | 'RECYCLED_SOIL' | 'ASPHALT' | 'CLAY' | 'OTHER';
+
+export interface ApiMaterialNeed {
+  id: string;
+  projectId: string;
+  materialCategory: MaterialCategoryValue;
+  estimatedTonnes: number;
+  neededFrom: string;
+  neededTo: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMaterialNeedInput {
+  materialCategory: MaterialCategoryValue;
+  estimatedTonnes: number;
+  neededFrom: string;
+  neededTo: string;
+  notes?: string;
+}
+
+export function getMaterialNeeds(
+  projectId: string,
+  token: string,
+): Promise<ApiMaterialNeed[]> {
+  return apiFetch(`/projects/${projectId}/material-needs`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function addMaterialNeed(
+  projectId: string,
+  input: CreateMaterialNeedInput,
+  token: string,
+): Promise<ApiMaterialNeed> {
+  return apiFetch(`/projects/${projectId}/material-needs`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteMaterialNeed(
+  projectId: string,
+  needId: string,
+  token: string,
+): Promise<{ deleted: number }> {
+  return apiFetch(`/projects/${projectId}/material-needs/${needId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

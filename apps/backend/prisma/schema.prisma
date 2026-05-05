@@ -151,14 +151,20 @@ enum ApusStatus {
 }
 
 enum WasteType {
-  CONCRETE
-  BRICK
-  WOOD
-  METAL
-  PLASTIC
-  SOIL
-  MIXED
-  HAZARDOUS
+  CONCRETE          // demolition concrete, rubble
+  BRICK             // bricks, masonry
+  WOOD              // formwork, pallets, structural timber
+  METAL             // rebar, steel, scrap metal
+  PLASTIC           // pipes, sheeting, containers
+  SOIL              // excavation soil, clay-free fill
+  MIXED             // unsorted mixed construction waste
+  HAZARDOUS         // asbestos, chemical residues, contaminated soil
+  ASPHALT           // road surface milling, asphalt demolition
+  GREEN_WASTE       // vegetation, stumps, site clearing biomass
+  WEEE              // waste electrical & electronic equipment from site
+  OIL_WASTE         // spent lubricants, hydraulic fluids, fuel residues
+  TIRES             // vehicle/machinery tyres
+  PACKAGING_WASTE   // big bags, stretch film, pallet wrap, cardboard
 }
 
 enum WasteProcessingStage {
@@ -197,6 +203,16 @@ enum SkipHireStatus {
   PENDING
   CONFIRMED
   DELIVERED
+  COLLECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ToiletCabinStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  IN_USE
   COLLECTED
   COMPLETED
   CANCELLED
@@ -247,6 +263,7 @@ enum TransportExceptionType {
 
 enum TransportExceptionStatus {
   OPEN
+  IN_REVIEW
   RESOLVED
 }
 
@@ -606,6 +623,7 @@ model Company {
   serviceZones               CarrierServiceZone[]  @relation("CarrierServiceZones")
   availabilityBlocks         CarrierAvailability[] @relation("CarrierAvailability")
   assignedSkipOrders         SkipHireOrder[]       @relation("AssignedSkipCarrier")
+  assignedToiletCabinOrders  ToiletCabinOrder[]    @relation("AssignedToiletCabinCarrier")
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
@@ -1233,7 +1251,8 @@ model RecyclingCenter {
 
   // APUS / licensing
   licensed           Boolean @default(false) // true = VVD-licensed recycling facility (Gulbene)
-  apusRegistrationId String? // VVD-issued APUS facility registration number
+  licenceNumber      String? // VVD waste management licence number (e.g. "VVD/RA/4-04/315")
+  apusRegistrationId String? // VVD-issued APUS facility registration number (for electronic waste movement reporting)
 
   // Status
   active Boolean @default(true)
@@ -1660,6 +1679,58 @@ model SkipHireOrder {
   @@map("skip_hire_orders")
 }
 
+// ── Toilet cabin rental ──────────────────────────────────────────────────────
+
+model ToiletCabinOrder {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  // Location
+  address String
+  city    String
+  lat     Float?
+  lng     Float?
+
+  // Rental details
+  cabinCount Int @default(1) // number of units needed
+  hireDays   Int             // hire period in days
+
+  // Scheduling
+  deliveryDate   DateTime
+  deliveryWindow String?  // 'AM' | 'PM' | 'ANY'
+
+  // Pricing (stored at time of order)
+  price    Float
+  currency String @default("EUR")
+
+  // Payment
+  paymentMethod     PaymentMethod @default(CARD)
+  payseraOrderId    String?
+  payseraPaymentUrl String?
+  paymentStatus     PaymentStatus @default(PENDING)
+
+  // Status lifecycle
+  status ToiletCabinStatus @default(PENDING)
+
+  // Contact (guest or registered user)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  userId       String?
+
+  // Carrier assigned
+  carrier   Company? @relation("AssignedToiletCabinCarrier", fields: [carrierId], references: [id])
+  carrierId String?
+
+  notes            String?
+  statusTimestamps Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("toilet_cabin_orders")
+}
+
 // ── Carrier comparison engine ─────────────────────────────────────────────────
 
 model CarrierPricing {
@@ -2046,11 +2117,56 @@ model Project {
   // Client invoices issued for this project
   clientInvoices ConstructionClientInvoice[]
 
+  // Temporal supply/demand signals (Schuttflix-style urban quarry matching)
+  wasteDeclarations ProjectWasteDeclaration[]
+  materialNeeds     ProjectMaterialNeed[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([companyId])
   @@map("projects")
+}
+
+// Waste output declared by a demolition/earthworks contractor upfront.
+// "This project will produce ~800t concrete, available June 1 – July 15, willing to sell."
+model ProjectWasteDeclaration {
+  id              String    @id @default(cuid())
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String
+  wasteType       WasteType
+  estimatedTonnes Float
+  availableFrom   DateTime
+  availableTo     DateTime
+  willingToSell   Boolean   @default(false) // true = auto-list on marketplace after processing
+  notes           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([wasteType, availableFrom, availableTo])
+  @@map("project_waste_declarations")
+}
+
+// Material demand declared by a construction company against a project timeline.
+// "We need ~300t fill material between May 20 – June 20."
+model ProjectMaterialNeed {
+  id               String           @id @default(cuid())
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String
+  materialCategory MaterialCategory
+  estimatedTonnes  Float
+  neededFrom       DateTime
+  neededTo         DateTime
+  notes            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([materialCategory, neededFrom, neededTo])
+  @@map("project_material_needs")
 }
 
 enum ProjectSiteType {

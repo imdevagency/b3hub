@@ -20,8 +20,8 @@ interface Props {
     city?: string,
     postal?: string,
   ) => void;
-  onNext: () => void;
-  onBack: () => void;
+  onNext?: () => void;
+  onBack?: () => void;
   /** Override the step heading (defaults to skip-hire wording) */
   title?: string;
   /** Override the step subtitle */
@@ -71,12 +71,14 @@ export function Step2Address({
 
   return (
     <div className="flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-2">
-      <div>
-        <h2 className="text-lg font-bold">{title ?? 'Kur piegādāt konteineru?'}</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {subtitle ?? 'Ievadiet precīzu adresi vai izmantojiet GPS'}
-        </p>
-      </div>
+      {(title !== '' || subtitle !== '') && (
+        <div>
+          <h2 className="text-lg font-bold">{title ?? 'Kur piegādāt konteineru?'}</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {subtitle ?? 'Ievadiet precīzu adresi vai izmantojiet GPS'}
+          </p>
+        </div>
+      )}
 
       {/* Address input — shared custom component */}
       <div className="space-y-2">
@@ -148,21 +150,27 @@ export function Step2Address({
       )}
 
       {/* Nav buttons */}
-      <div className="flex gap-3 pt-4">
-        <button
-          onClick={onBack}
-          className="flex-1 rounded-full border-2 border-border/60 py-3.5 text-base font-bold text-foreground hover:bg-muted/50 transition-colors"
-        >
-          Atpakaļ
-        </button>
-        <button
-          onClick={onNext}
-          disabled={!isValid}
-          className="flex-[2] rounded-full bg-foreground py-3.5 text-base font-bold text-background shadow-md hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-        >
-          {nextLabel ?? 'Rādīt piedāvājumus'}
-        </button>
-      </div>
+      {(onNext || onBack) && (
+        <div className="flex gap-3 pt-4">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex-1 rounded-full border-2 border-border/60 py-3.5 text-base font-bold text-foreground hover:bg-muted/50 transition-colors"
+            >
+              Atpakaļ
+            </button>
+          )}
+          {onNext && (
+            <button
+              onClick={onNext}
+              disabled={!isValid}
+              className="flex-[2] rounded-full bg-foreground py-3.5 text-base font-bold text-background shadow-md hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+            >
+              {nextLabel ?? 'Rādīt piedāvājumus'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

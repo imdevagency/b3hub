@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
 import { MaterialsModule } from './materials/materials.module';
 import { OrdersModule } from './orders/orders.module';
 import { SkipHireModule } from './skip-hire/skip-hire.module';
+import { ToiletCabinsModule } from './toilet-cabins/toilet-cabins.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ProviderApplicationsModule } from './provider-applications/provider-applications.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
@@ -83,6 +84,7 @@ import { CmsModule } from './cms/cms.module';
     MaterialsModule,
     OrdersModule,
     SkipHireModule,
+    ToiletCabinsModule,
     DocumentsModule,
     ProviderApplicationsModule,
     VehiclesModule,

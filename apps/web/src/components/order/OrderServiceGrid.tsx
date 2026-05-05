@@ -9,7 +9,7 @@
  * each card is just a Link; auth is handled downstream in the wizard.
  */
 import Link from 'next/link';
-import { HardHat, Package, Trash2, Truck, ArrowRight } from 'lucide-react';
+import { HardHat, Lock, Package, Truck, Building2, Recycle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ServiceDef {
@@ -19,6 +19,7 @@ export interface ServiceDef {
   title: string;
   description: string;
   badge?: string;
+  badgeVariant?: 'default' | 'restricted';
 }
 
 const SERVICES: ServiceDef[] = [
@@ -35,24 +36,35 @@ const SERVICES: ServiceDef[] = [
     href: '/order/skip-hire',
     icon: Package,
     title: 'Konteineri',
-    description: 'Konteiners ieved uz vietu, jūs to piepildāt — mēs aizvedām.',
+    description:
+      'Skip, Big-Bag un konteinerus atkritumu savākšanai. Piegāde un savākšana iekļauta.',
     badge: 'No €59',
   },
   {
     id: 'disposal',
     href: '/order/disposal',
-    icon: Trash2,
-    title: 'Utilizācija',
-    description: 'Kravas auto iebrauc jūsu objektā, iekrauj atkritumus un aizved.',
+    icon: Recycle,
+    title: 'Būvgružu izvešana',
+    description:
+      'Betons, ķieģeļi, koks, grunts, metāls, bīstamie — nodošana licencētā pieņemšanas punktā. Sertifikāts automātiski.',
     badge: 'Cena pēc svara',
+  },
+  {
+    id: 'toilet-cabin',
+    href: '/order/toilet-cabin',
+    icon: Building2,
+    title: 'Tualetes kabīnes',
+    description: 'Mobilās tualetes noma būvlaukumiem un pasākumiem. Piegāde un savākšana iekļauta.',
+    badge: 'No €84/ned.',
   },
   {
     id: 'transport',
     href: '/dashboard/order/transport',
     icon: Truck,
     title: 'Transports',
-    description: 'Kravas pārvadāšana uzņēmumiem visā Latvijā. Nepieciešams konts.',
-    badge: 'B2B',
+    description: 'Kravaš pārvadāšana uzņēmumiem visā Latvijā. Nepie-ciešams konts.',
+    badge: 'Tikai reģištrētiem lietotājiem',
+    badgeVariant: 'restricted',
   },
 ];
 
@@ -60,6 +72,7 @@ const DASHBOARD_HREFS: Record<string, string> = {
   materials: '/dashboard/catalog',
   'skip-hire': '/dashboard/order/skip-hire',
   disposal: '/dashboard/order/disposal',
+  'toilet-cabin': '/dashboard/order/toilet-cabin',
   transport: '/dashboard/order/transport',
 };
 
@@ -104,9 +117,16 @@ export function OrderServiceGrid({ dashboard = false, className }: Props) {
 
             {s.badge && (
               <div className="mt-8">
-                <span className="inline-flex items-center rounded-xl bg-background px-3 py-1.5 text-[12px] font-bold text-foreground shadow-sm">
-                  {s.badge}
-                </span>
+                {s.badgeVariant === 'restricted' ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-[12px] font-bold text-amber-800">
+                    <Lock className="size-3 shrink-0" />
+                    {s.badge}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-xl bg-background px-3 py-1.5 text-[12px] font-bold text-foreground shadow-sm">
+                    {s.badge}
+                  </span>
+                )}
               </div>
             )}
           </Link>

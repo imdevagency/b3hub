@@ -338,6 +338,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/orders/[id]
 - dashboard/(internal)/admin/payments
 - dashboard/(internal)/admin/payouts
+- dashboard/(internal)/admin/projects
 - dashboard/(internal)/admin/recycling-centers
 - dashboard/(internal)/admin/rfqs
 - dashboard/(internal)/admin/scorecard
@@ -351,6 +352,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/triage
 - dashboard/(internal)/admin/users
 - dashboard/(internal)/admin/users/[id]
+- dashboard/(internal)/admin/waste-signals
 - dashboard/(internal)/admin/weighing-slips
 - dashboard/(internal)/b3-construction
 - dashboard/(internal)/b3-construction/clients
@@ -416,6 +418,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/recycling
 - dashboard/(platform)/recycling-centers
 - dashboard/(platform)/recycling/jobs
+- dashboard/(platform)/recycling/pricing
 - dashboard/(platform)/recycling/waste-records
 - dashboard/(platform)/reviews
 - dashboard/(platform)/supplier

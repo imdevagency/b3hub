@@ -138,7 +138,7 @@ export default function MaterialCatalogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Container className="py-12 md:py-20 max-w-6xl">
+      <Container className="pt-32 pb-20">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="max-w-xl">

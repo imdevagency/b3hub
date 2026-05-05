@@ -20,6 +20,8 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AssignOrdersDto } from './dto/assign-orders.dto';
 import { CreateProjectSiteDto } from './dto/create-project-site.dto';
+import { CreateWasteDeclarationDto } from './dto/create-waste-declaration.dto';
+import { CreateMaterialNeedDto } from './dto/create-material-need.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -210,5 +212,73 @@ export class ProjectsController {
       );
     }
     return this.service.removeSite(id, siteId, user.companyId);
+  }
+
+  // ── Waste declarations ────────────────────────────────────────────────────
+
+  /** GET /projects/:id/waste-declarations */
+  @Get(':id/waste-declarations')
+  getWasteDeclarations(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.getWasteDeclarations(id, user.companyId);
+  }
+
+  /** POST /projects/:id/waste-declarations */
+  @Post(':id/waste-declarations')
+  addWasteDeclaration(
+    @Param('id') id: string,
+    @Body() dto: CreateWasteDeclarationDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project data');
+    }
+    return this.service.addWasteDeclaration(id, dto, user.companyId);
+  }
+
+  /** DELETE /projects/:id/waste-declarations/:declarationId */
+  @Delete(':id/waste-declarations/:declarationId')
+  deleteWasteDeclaration(
+    @Param('id') id: string,
+    @Param('declarationId') declarationId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project data');
+    }
+    return this.service.deleteWasteDeclaration(id, declarationId, user.companyId);
+  }
+
+  // ── Material needs ────────────────────────────────────────────────────────
+
+  /** GET /projects/:id/material-needs */
+  @Get(':id/material-needs')
+  getMaterialNeeds(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.getMaterialNeeds(id, user.companyId);
+  }
+
+  /** POST /projects/:id/material-needs */
+  @Post(':id/material-needs')
+  addMaterialNeed(
+    @Param('id') id: string,
+    @Body() dto: CreateMaterialNeedDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project data');
+    }
+    return this.service.addMaterialNeed(id, dto, user.companyId);
+  }
+
+  /** DELETE /projects/:id/material-needs/:needId */
+  @Delete(':id/material-needs/:needId')
+  deleteMaterialNeed(
+    @Param('id') id: string,
+    @Param('needId') needId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!isOwnerOrManager(user)) {
+      throw new ForbiddenException('You do not have permission to manage project data');
+    }
+    return this.service.deleteMaterialNeed(id, needId, user.companyId);
   }
 }

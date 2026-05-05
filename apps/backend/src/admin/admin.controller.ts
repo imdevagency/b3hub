@@ -399,6 +399,12 @@ export class AdminController {
     return this.service.getSkipHireOrders(pagination.page ?? 1, pagination.limit ?? 50);
   }
 
+  /** GET /admin/toilet-cabins — all toilet cabin hire orders (paginated) */
+  @Get('toilet-cabins')
+  getToiletCabinOrders(@Query() pagination: PagePaginationDto) {
+    return this.service.getToiletCabinOrders(pagination.page ?? 1, pagination.limit ?? 50);
+  }
+
   /**
    * GET /admin/exceptions — all transport job exceptions
    * Query param: ?status=OPEN|RESOLVED|ALL
@@ -562,6 +568,31 @@ export class AdminController {
       pagination.page ?? 1,
       pagination.limit ?? 50,
     );
+  }
+
+  /** POST /admin/recycling-centers — admin manually onboards a waste partner */
+  @Post('recycling-centers')
+  createRecyclingCenter(
+    @Body()
+    body: {
+      companyId: string;
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      coordinates?: { lat: number; lng: number };
+      acceptedWasteTypes: string[];
+      capacity: number;
+      certifications?: string[];
+      operatingHours: Record<string, { open: string; close: string } | null>;
+      licensed?: boolean;
+      licenceNumber?: string;
+      apusRegistrationId?: string;
+    },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminCreateRecyclingCenter(body, admin.userId);
   }
 
   /** PATCH /admin/recycling-centers/:id — toggle active flag */
@@ -1399,6 +1430,18 @@ export class AdminController {
     return this.service.adminGetMarketHealth();
   }
 
+  // ── Waste Supply-Demand Signals ───────────────────────────────────────────
+
+  /**
+   * GET /admin/waste-signals
+   * Temporal matching: declared waste supply vs recycling center capacity,
+   * plus forward material demand — by waste type and month.
+   */
+  @Get('waste-signals')
+  getWasteSignals() {
+    return this.service.adminGetWasteSignals();
+  }
+
   // ── Market Matching ───────────────────────────────────────────────────────
 
   /**
@@ -1409,6 +1452,16 @@ export class AdminController {
   @Get('market-match')
   getMarketMatch() {
     return this.service.adminGetMarketMatch();
+  }
+
+  /**
+   * GET /admin/projects
+   * Platform-wide list of all construction projects with waste declarations
+   * and material needs — the supply/demand signal overview.
+   */
+  @Get('projects')
+  getAllProjects() {
+    return this.service.adminGetAllProjects();
   }
 }
 

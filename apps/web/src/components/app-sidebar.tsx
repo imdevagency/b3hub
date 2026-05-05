@@ -21,6 +21,7 @@ import {
   Car,
   ClipboardList,
   Clock,
+  Euro,
   FileQuestion,
   FolderKanban,
   FolderOpen,
@@ -213,6 +214,12 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           href: '/dashboard/recycling/jobs',
           icon: Recycle,
           groupPaths: getGroupPaths('RECYCLER', 'work'),
+        },
+        {
+          label: 'Cenas',
+          href: '/dashboard/recycling/pricing',
+          icon: Euro,
+          groupPaths: getGroupPaths('RECYCLER', 'pricing'),
         },
         {
           label: 'Dokumenti',

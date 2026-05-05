@@ -23,6 +23,10 @@ import {
   AlertTriangle,
   Check,
   Bookmark,
+  Zap,
+  FlameKindling,
+  CircleDot,
+  Leaf,
   type LucideIcon,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -71,21 +75,74 @@ interface WasteOption {
 }
 
 // ── Constants ─────────────────────────────────────────────────────
-const WASTE_OPTIONS: WasteOption[] = [
-  { id: 'CONCRETE', label: 'Betons / Bruģis', desc: 'Betona gabali, plātnes', Icon: Hammer },
-  { id: 'SOIL', label: 'Augsne / Grunts', desc: 'Z0/Z1 grunts, smilts, māls', Icon: Layers },
-  { id: 'BRICK', label: 'Ķieģeļi / Mūris', desc: 'Nojaukšanas atkritumi', Icon: Hammer },
-  { id: 'WOOD', label: 'Koks', desc: 'Dēļi, sijas, finiera atgriezumi', Icon: Trees },
-  { id: 'METAL', label: 'Metāls', desc: 'Profili, stiegrojums, lūžņi', Icon: Wrench },
-  { id: 'PLASTIC', label: 'Plastmasa', desc: 'Caurules, pārsegi, maisi', Icon: Package },
-  { id: 'MIXED', label: 'Jaukti celtniec.', desc: 'Dažādi celtniecības atkritumi', Icon: Trash2 },
+interface WasteGroup {
+  label: string;
+  hint?: string;
+  items: WasteOption[];
+}
+
+const WASTE_GROUPS: WasteGroup[] = [
   {
-    id: 'HAZARDOUS',
-    label: 'Bīstami atkritumi',
-    desc: 'Azbests, krāsas, šķīdinātāji',
-    Icon: AlertTriangle,
+    label: 'Celtniecības atkritumi',
+    hint: 'Konteineri · Pašizgāzēji',
+    items: [
+      { id: 'CONCRETE', label: 'Betons / Bruģis', desc: 'Betona gabali, plātnes', Icon: Hammer },
+      { id: 'BRICK', label: 'Ķieģeļi / Mūris', desc: 'Nojaukšanas atkritumi', Icon: Hammer },
+      { id: 'WOOD', label: 'Koks', desc: 'Dēļi, sijas, finiera atgriezumi', Icon: Trees },
+      { id: 'SOIL', label: 'Augsne / Grunts', desc: 'Z0/Z1 grunts, smilts, māls', Icon: Layers },
+      { id: 'PLASTIC', label: 'Plastmasa', desc: 'Caurules, pārsegi, maisi', Icon: Package },
+      {
+        id: 'PACKAGING_WASTE',
+        label: 'Iepakojums',
+        desc: 'Kartoni, paletes, plēve',
+        Icon: Package,
+      },
+      { id: 'ASPHALT', label: 'Asfalta lauskas', desc: 'Vecs asfalta segums', Icon: Layers },
+      {
+        id: 'MIXED',
+        label: 'Jaukti celtniec.',
+        desc: 'Dažādi celtniecības atkritumi',
+        Icon: Trash2,
+      },
+    ],
+  },
+  {
+    label: 'Bīstami / Licencēti',
+    hint: 'Maršrutēti uz licencētiem partneriem',
+    items: [
+      {
+        id: 'HAZARDOUS',
+        label: 'Bīstami atkritumi',
+        desc: 'Azbests, krāsas, šķīdinātāji',
+        Icon: AlertTriangle,
+      },
+      { id: 'WEEE', label: 'Elektroatkritumi', desc: 'Elektronikas, sadzīves tehnika', Icon: Zap },
+      {
+        id: 'OIL_WASTE',
+        label: 'Eļļošanas atkritumi',
+        desc: 'Motoreļļa, hidraulika',
+        Icon: FlameKindling,
+      },
+      { id: 'TIRES', label: 'Riepas', desc: 'Nolietots auto un tehnikas gumija', Icon: CircleDot },
+    ],
+  },
+  {
+    label: 'Otrreizēji izejmateriāli',
+    hint: 'Var tikt atpirkt vai pārstrādāts',
+    items: [
+      { id: 'METAL', label: 'Metāls / Lūžņi', desc: 'Profili, stiegrojums, lūžņi', Icon: Wrench },
+      {
+        id: 'GREEN_WASTE',
+        label: 'Zaļie atkritumi',
+        desc: 'Zari, lapas, žogs, dārzs',
+        Icon: Leaf,
+      },
+    ],
   },
 ];
+
+// Flat list used by the rest of the wizard logic (order submission, labels)
+const WASTE_OPTIONS: WasteOption[] = WASTE_GROUPS.flatMap((g) => g.items);
 
 const TIPPER_TRUCKS: Array<{
   type: DisposalTruckType;
@@ -126,10 +183,16 @@ const WASTE_LABELS: Record<string, string> = {
   SOIL: 'Augsne / Grunts',
   BRICK: 'Ķieģeļi / Mūris',
   WOOD: 'Koks',
-  METAL: 'Metāls',
+  METAL: 'Metāls / Lūžņi',
   PLASTIC: 'Plastmasa',
   MIXED: 'Jaukti celtniecības',
   HAZARDOUS: 'Bīstami atkritumi',
+  ASPHALT: 'Asfalta lauskas',
+  GREEN_WASTE: 'Zaļie atkritumi',
+  WEEE: 'Elektroatkritumi',
+  OIL_WASTE: 'Eļļošanas atkritumi',
+  TIRES: 'Riepas',
+  PACKAGING_WASTE: 'Iepakojums',
 };
 
 function addDays(d: Date, n: number): Date {
@@ -446,6 +509,7 @@ export default function DisposalWizard() {
     setConfirmedDisposal,
     selectedWastes,
     picked,
+    preferredRecyclingCenterId,
   ]);
 
   // ── Guest submit handler ──────────────────────────────────────────────────
@@ -568,7 +632,7 @@ export default function DisposalWizard() {
     }
     haptics.medium();
     setStep((s) => (s + 1) as Step);
-  }, [step, selectedWastes, handleSubmit, state.wasteType, token]);
+  }, [step, selectedWastes, handleSubmit, state.wasteType, token, weightText, picked]);
 
   const STEP_TITLES: Record<Step, string> = {
     1: 'Kas jāizved?',
@@ -614,42 +678,50 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={s.stepSub}>Izvēlieties galveno atkritumu veidu.</Text>
-            <View style={s.wasteList}>
-              {WASTE_OPTIONS.map((opt) => {
-                const isSel = selectedWastes.includes(opt.id);
-                const WasteIcon = opt.Icon;
-                return (
-                  <TouchableOpacity
-                    key={opt.id}
-                    style={[s.wasteRow, isSel && s.wasteRowSel]}
-                    onPress={() => toggleWaste(opt.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ marginRight: 16 }}>
-                      <WasteIcon
-                        size={24}
-                        color={isSel ? '#ffffff' : '#6b7280'}
-                        strokeWidth={1.5}
-                      />
-                    </View>
+            <Text style={s.stepSub}>Izvēlieties atkritumu veidu(-s).</Text>
+            {WASTE_GROUPS.map((group) => (
+              <View key={group.label} style={{ marginBottom: 4 }}>
+                <View style={s.groupHeader}>
+                  <Text style={s.groupLabel}>{group.label}</Text>
+                  {group.hint ? <Text style={s.groupHint}>{group.hint}</Text> : null}
+                </View>
+                <View style={s.wasteList}>
+                  {group.items.map((opt) => {
+                    const isSel = selectedWastes.includes(opt.id);
+                    const WasteIcon = opt.Icon;
+                    return (
+                      <TouchableOpacity
+                        key={opt.id}
+                        style={[s.wasteRow, isSel && s.wasteRowSel]}
+                        onPress={() => toggleWaste(opt.id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{ marginRight: 16 }}>
+                          <WasteIcon
+                            size={24}
+                            color={isSel ? '#ffffff' : '#6b7280'}
+                            strokeWidth={1.5}
+                          />
+                        </View>
 
-                    <View style={s.wasteInfo}>
-                      <Text style={[s.wasteLabel, isSel && { color: colors.white }]}>
-                        {opt.label}
-                      </Text>
-                      <Text style={[s.wasteDesc, isSel && { color: colors.textDisabled }]}>
-                        {opt.desc}
-                      </Text>
-                    </View>
+                        <View style={s.wasteInfo}>
+                          <Text style={[s.wasteLabel, isSel && { color: colors.white }]}>
+                            {opt.label}
+                          </Text>
+                          <Text style={[s.wasteDesc, isSel && { color: colors.textDisabled }]}>
+                            {opt.desc}
+                          </Text>
+                        </View>
 
-                    <View style={[s.checkboxOuter, isSel && s.checkboxOuterSel]}>
-                      {isSel && <Check size={14} color="#111827" strokeWidth={3} />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                        <View style={[s.checkboxOuter, isSel && s.checkboxOuterSel]}>
+                          {isSel && <Check size={14} color="#111827" strokeWidth={3} />}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
 
             <SectionLabel label="Aptuvenais svars *" style={{ marginTop: 20 }} />
             <TextInputField
@@ -839,6 +911,7 @@ export default function DisposalWizard() {
                                   }}
                                 >
                                   Utilizācijas maksa: €{center.disposalFeeEur.toFixed(2)}
+                                  {center.priceNote ? ` · ${center.priceNote}` : ''}
                                 </Text>
                               ) : center.priceNote ? (
                                 <Text
@@ -863,6 +936,17 @@ export default function DisposalWizard() {
                                   Cena pēc pieprasījuma
                                 </Text>
                               )}
+                              {center.centerNotes ? (
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#6b7280',
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  {center.centerNotes}
+                                </Text>
+                              ) : null}
                             </>
                           )}
                         </View>
@@ -1032,6 +1116,21 @@ const s = StyleSheet.create({
   wasteList: {
     gap: 12,
     marginBottom: 24,
+  },
+  groupHeader: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  groupLabel: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  groupHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   wasteRow: {
     flexDirection: 'row',

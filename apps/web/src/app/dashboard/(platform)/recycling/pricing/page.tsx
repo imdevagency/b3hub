@@ -313,10 +313,23 @@ function CenterPricingCard({ center, token }: { center: RecyclingCenter; token: 
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div>
-          <CardTitle className="text-base">{center.name}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">{center.name}</CardTitle>
+            {center.licensed && (
+              <Badge variant="outline" className="text-xs px-1.5 py-0 border-green-500 text-green-700">
+                VVD
+              </Badge>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {center.address}, {center.city}
           </p>
+          {center.licenceNumber && (
+            <p className="text-xs text-muted-foreground">Licence: {center.licenceNumber}</p>
+          )}
+          {center.apusRegistrationId && (
+            <p className="text-xs text-muted-foreground">APUS: {center.apusRegistrationId}</p>
+          )}
         </div>
         <Button
           size="sm"

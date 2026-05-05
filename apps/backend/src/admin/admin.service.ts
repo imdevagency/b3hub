@@ -1402,6 +1402,42 @@ export class AdminService {
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
+  async getToiletCabinOrders(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.toiletCabinOrder.findMany({
+        select: {
+          id: true,
+          orderNumber: true,
+          address: true,
+          city: true,
+          lat: true,
+          lng: true,
+          cabinCount: true,
+          hireDays: true,
+          deliveryDate: true,
+          deliveryWindow: true,
+          price: true,
+          currency: true,
+          paymentStatus: true,
+          status: true,
+          contactName: true,
+          contactEmail: true,
+          contactPhone: true,
+          notes: true,
+          carrier: { select: { id: true, name: true } },
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.toiletCabinOrder.count(),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
   /**
    * GET /admin/exceptions — all open transport job exceptions (paginated)
    */
@@ -1830,6 +1866,61 @@ export class AdminService {
       this.prisma.recyclingCenter.count(),
     ]);
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /** POST /admin/recycling-centers — admin manually onboards a waste partner */
+  async adminCreateRecyclingCenter(
+    body: {
+      companyId: string;
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      coordinates?: { lat: number; lng: number };
+      acceptedWasteTypes: string[];
+      capacity: number;
+      certifications?: string[];
+      operatingHours: Record<string, { open: string; close: string } | null>;
+      licensed?: boolean;
+      licenceNumber?: string;
+      apusRegistrationId?: string;
+    },
+    adminId: string,
+  ) {
+    const center = await this.prisma.recyclingCenter.create({
+      data: {
+        companyId: body.companyId,
+        name: body.name,
+        address: body.address,
+        city: body.city,
+        state: body.state,
+        postalCode: body.postalCode,
+        coordinates: body.coordinates ?? undefined,
+        acceptedWasteTypes: body.acceptedWasteTypes as import('@prisma/client').WasteType[],
+        capacity: body.capacity,
+        certifications: body.certifications ?? [],
+        operatingHours: body.operatingHours,
+        licensed: body.licensed ?? false,
+        licenceNumber: body.licenceNumber ?? null,
+        apusRegistrationId: body.apusRegistrationId ?? null,
+        active: true,
+      },
+      include: {
+        company: { select: { id: true, name: true, city: true } },
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'RECYCLING_CENTER_CREATED',
+      'RecyclingCenter',
+      center.id,
+      null,
+      { name: center.name, companyId: body.companyId },
+    );
+
+    return center;
   }
 
   /** PATCH /admin/recycling-centers/:id — toggle active flag */
@@ -4346,6 +4437,220 @@ export class AdminService {
   }
 
   // ── Market Health ─────────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/projects
+   * Platform-wide view of all construction projects across all companies,
+   * including waste declarations (supply signals) and material needs (demand signals).
+   */
+  async adminGetAllProjects() {
+    return this.prisma.project.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        siteAddress: true,
+        startDate: true,
+        endDate: true,
+        createdAt: true,
+        company: { select: { id: true, name: true, city: true } },
+        wasteDeclarations: {
+          select: {
+            id: true,
+            wasteType: true,
+            estimatedTonnes: true,
+            availableFrom: true,
+            availableTo: true,
+            willingToSell: true,
+            notes: true,
+          },
+          orderBy: { availableFrom: 'asc' },
+        },
+        materialNeeds: {
+          select: {
+            id: true,
+            materialCategory: true,
+            estimatedTonnes: true,
+            neededFrom: true,
+            neededTo: true,
+            notes: true,
+          },
+          orderBy: { neededFrom: 'asc' },
+        },
+        _count: { select: { orders: true } },
+      },
+    });
+  }
+
+  /**
+   * GET /admin/waste-signals
+   * Temporal supply-demand matching:
+   *   - For each WasteType: tonnes declared available per month (from ProjectWasteDeclarations)
+   *   - RecyclingCenter accepted waste types + monthly capacity (capacityTpd × working days)
+   *   - Gap/surplus/match status per type per month
+   */
+  async adminGetWasteSignals() {
+    const now = new Date();
+    // Build a 6-month forward window (current + 5 future months)
+    const months: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+
+    // ── Supply: project waste declarations ────────────────────────────────────
+    const declarations = await this.prisma.projectWasteDeclaration.findMany({
+      where: {
+        availableTo: { gte: now }, // only future/current windows
+      },
+      select: {
+        wasteType: true,
+        estimatedTonnes: true,
+        availableFrom: true,
+        availableTo: true,
+        willingToSell: true,
+        project: { select: { company: { select: { name: true } } } },
+      },
+    });
+
+    // ── Capacity: recycling centers ───────────────────────────────────────────
+    const centers = await this.prisma.recyclingCenter.findMany({
+      where: { active: true },
+      select: {
+        id: true,
+        name: true,
+        capacity: true,
+        acceptedWasteTypes: true,
+      },
+    });
+
+    // ── Demand: project material needs ────────────────────────────────────────
+    const materialNeeds = await this.prisma.projectMaterialNeed.findMany({
+      where: {
+        neededTo: { gte: now },
+      },
+      select: {
+        materialCategory: true,
+        estimatedTonnes: true,
+        neededFrom: true,
+        neededTo: true,
+      },
+    });
+
+    // ── Build monthly supply map by wasteType ─────────────────────────────────
+    // Key: "wasteType:YYYY-MM" → tonnes
+    const supplyMap = new Map<string, number>();
+    const sellableMap = new Map<string, number>(); // willingToSell=true
+    for (const d of declarations) {
+      const from = new Date(d.availableFrom);
+      const to = new Date(d.availableTo);
+      // Distribute tonnes evenly across months in the window
+      const windowMonths: string[] = [];
+      const cur = new Date(from.getFullYear(), from.getMonth(), 1);
+      while (cur <= to) {
+        const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`;
+        if (months.includes(key)) windowMonths.push(key);
+        cur.setMonth(cur.getMonth() + 1);
+      }
+      if (windowMonths.length === 0) continue;
+      const perMonth = d.estimatedTonnes / windowMonths.length;
+      for (const m of windowMonths) {
+        const k = `${d.wasteType}:${m}`;
+        supplyMap.set(k, (supplyMap.get(k) ?? 0) + perMonth);
+        if (d.willingToSell) {
+          sellableMap.set(k, (sellableMap.get(k) ?? 0) + perMonth);
+        }
+      }
+    }
+
+    // ── Build monthly capacity map by wasteType ───────────────────────────────
+    const capacityMap = new Map<string, number>();
+    const workingDaysPerMonth = 22;
+    for (const center of centers) {
+      const monthlyCapacity = (center.capacity ?? 0) * workingDaysPerMonth;
+      if (monthlyCapacity === 0) continue;
+      for (const wt of center.acceptedWasteTypes) {
+        for (const m of months) {
+          const k = `${wt}:${m}`;
+          capacityMap.set(k, (capacityMap.get(k) ?? 0) + monthlyCapacity);
+        }
+      }
+    }
+
+    // ── Build monthly material demand map ─────────────────────────────────────
+    const demandMap = new Map<string, number>();
+    for (const n of materialNeeds) {
+      const from = new Date(n.neededFrom);
+      const to = new Date(n.neededTo);
+      const windowMonths: string[] = [];
+      const cur = new Date(from.getFullYear(), from.getMonth(), 1);
+      while (cur <= to) {
+        const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`;
+        if (months.includes(key)) windowMonths.push(key);
+        cur.setMonth(cur.getMonth() + 1);
+      }
+      if (windowMonths.length === 0) continue;
+      const perMonth = n.estimatedTonnes / windowMonths.length;
+      for (const m of windowMonths) {
+        const k = `${n.materialCategory}:${m}`;
+        demandMap.set(k, (demandMap.get(k) ?? 0) + perMonth);
+      }
+    }
+
+    // ── All waste types that have any signal ──────────────────────────────────
+    const wasteTypes = new Set<string>();
+    for (const k of supplyMap.keys()) wasteTypes.add(k.split(':')[0]);
+    for (const k of capacityMap.keys()) wasteTypes.add(k.split(':')[0]);
+
+    const wasteSignals = Array.from(wasteTypes).sort().map((wasteType) => {
+      const monthlyData = months.map((month) => {
+        const supplyTonnes = Math.round((supplyMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
+        const capacityTonnes = Math.round((capacityMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
+        const sellableTonnes = Math.round((sellableMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
+        const gap = Math.round((capacityTonnes - supplyTonnes) * 10) / 10; // positive = spare capacity, negative = overflow
+        let status: 'COVERED' | 'OVERCAPACITY' | 'GAP' | 'NO_DATA';
+        if (supplyTonnes === 0 && capacityTonnes === 0) status = 'NO_DATA';
+        else if (supplyTonnes === 0) status = 'OVERCAPACITY';
+        else if (capacityTonnes === 0) status = 'GAP';
+        else if (gap >= 0) status = 'COVERED';
+        else status = 'GAP';
+        return { month, supplyTonnes, capacityTonnes, sellableTonnes, gap, status };
+      });
+      const totalSupply = monthlyData.reduce((s, m) => s + m.supplyTonnes, 0);
+      const totalCapacity = monthlyData.reduce((s, m) => s + m.capacityTonnes, 0);
+      const totalSellable = monthlyData.reduce((s, m) => s + m.sellableTonnes, 0);
+      const hasGap = monthlyData.some((m) => m.status === 'GAP');
+      return { wasteType, totalSupply, totalCapacity, totalSellable, hasGap, monthlyData };
+    });
+
+    // ── All material categories that have demand ──────────────────────────────
+    const materialCategories = new Set<string>();
+    for (const k of demandMap.keys()) materialCategories.add(k.split(':')[0]);
+
+    const materialSignals = Array.from(materialCategories).sort().map((cat) => {
+      const monthlyDemand = months.map((month) => ({
+        month,
+        demandTonnes: Math.round((demandMap.get(`${cat}:${month}`) ?? 0) * 10) / 10,
+      }));
+      const totalDemand = monthlyDemand.reduce((s, m) => s + m.demandTonnes, 0);
+      return { materialCategory: cat, totalDemand, monthlyDemand };
+    });
+
+    return {
+      months,
+      wasteSignals,
+      materialSignals,
+      summary: {
+        totalDeclarations: declarations.length,
+        totalDeclarationTonnes: Math.round(declarations.reduce((s, d) => s + d.estimatedTonnes, 0) * 10) / 10,
+        totalSellableTonnes: Math.round(declarations.filter((d) => d.willingToSell).reduce((s, d) => s + d.estimatedTonnes, 0) * 10) / 10,
+        totalMaterialNeedTonnes: Math.round(materialNeeds.reduce((s, n) => s + n.estimatedTonnes, 0) * 10) / 10,
+        wasteTypesWithGap: wasteSignals.filter((w) => w.hasGap).map((w) => w.wasteType),
+        activeCenters: centers.length,
+      },
+    };
+  }
 
   /**
    * GET /admin/market-health

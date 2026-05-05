@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (3173 lines, 77 models, 67 enums).
+Schema: `apps/backend/prisma/schema.prisma` (3288 lines, 80 models, 68 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -102,12 +102,13 @@ npm run db:seed           # reseed demo data
 | `PaymentMethod` | CARD INVOICE SEPA |
 | `WastePurpose` | CONSTRUCTION_WASTE DEMOLITION_WASTE EXCAVATION_SOIL MIXED_WASTE RECYCLABLE_MATERIALS HAZARDOUS_WASTE GREEN_WASTE OTHER |
 | `ApusStatus` | NOT_REQUIRED PENDING SUBMITTED ACCEPTED REJECTED |
-| `WasteType` | CONCRETE BRICK WOOD METAL PLASTIC SOIL MIXED HAZARDOUS |
+| `WasteType` | CONCRETE BRICK WOOD METAL PLASTIC SOIL MIXED HAZARDOUS ASPHALT GREEN_WASTE WEEE OIL_WASTE TIRES PACKAGING_WASTE |
 | `WasteProcessingStage` | RECEIVED SORTED PROCESSING PROCESSED LISTED REJECTED |
 | `RcGrade` | RC_A RC_B RC_C UNGRADED |
 | `SkipWasteCategory` | MIXED GREEN_GARDEN CONCRETE_RUBBLE WOOD METAL_SCRAP ELECTRONICS_WEEE |
 | `SkipCategory` | SKIP BIG_BAG CONTAINER |
 | `SkipHireStatus` | PENDING CONFIRMED DELIVERED COLLECTED COMPLETED CANCELLED |
+| `ToiletCabinStatus` | PENDING CONFIRMED DELIVERED IN_USE COLLECTED COMPLETED CANCELLED |
 | `ContainerOrderStatus` | SCHEDULED DELIVERED IN_USE PICKED_UP COMPLETED CANCELLED |
 | `TransportJobType` | MATERIAL_DELIVERY CONTAINER_DELIVERY CONTAINER_PICKUP WASTE_COLLECTION EQUIPMENT_TRANSPORT TRANSPORT |
 | `TransportJobStatus` | AVAILABLE ASSIGNED ACCEPTED EN_ROUTE_PICKUP AT_PICKUP LOADED EN_ROUTE_DELIVERY AT_DELIVERY DELIVERED CANCELLED DELIVERY_REFUSED |
@@ -193,7 +194,7 @@ npm run db:seed           # reseed demo data
 ### Company — `@@map("companies")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `isFirstParty`: Boolean @default(false), `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `paymentTermsDays`: Int?, `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType, `features`: CompanyFeature  
-**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead
+**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, ToiletCabinOrder, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead
 
 ---
 
@@ -272,7 +273,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### RecyclingCenter — `@@map("recycling_centers")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String, `state`: String, `postalCode`: String, `coordinates`: Json?, `companyId`: String, `capacity`: Float, `certifications`: String, `operatingHours`: Json, `licensed`: Boolean @default(false), `apusRegistrationId`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String, `state`: String, `postalCode`: String, `coordinates`: Json?, `companyId`: String, `capacity`: Float, `certifications`: String, `operatingHours`: Json, `licensed`: Boolean @default(false), `licenceNumber`: String?, `apusRegistrationId`: String?, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `acceptedWasteTypes`: WasteType  
 **Relations:** → Company, WasteRecord, TransportJob, B3Field?, RecyclingCenterPricingRule
 
@@ -342,6 +343,13 @@ npm run db:seed           # reseed demo data
 **Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `location`: String, `skipSize`: String, `deliveryDate`: DateTime, `deliveryWindow`: String?, `hireDays`: Int?, `price`: Float, `currency`: String @default("EUR"), `payseraOrderId`: String?, `payseraPaymentUrl`: String?, `contactName`: String?, `contactEmail`: String?, `contactPhone`: String?, `userId`: String?, `notes`: String?, `bisNumber`: String?, `unloadingPointPhotoUrl`: String?, `carrierId`: String?, `lat`: Float?, `lng`: Float?, `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `wasteCategory`: SkipWasteCategory, `paymentMethod`: PaymentMethod (@default(CARD)), `paymentStatus`: PaymentStatus (@default(PENDING)), `status`: SkipHireStatus (@default(PENDING))  
 **Relations:** → Company?, Order?
+
+---
+
+### ToiletCabinOrder — `@@map("toilet_cabin_orders")`  
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `address`: String, `city`: String, `lat`: Float?, `lng`: Float?, `cabinCount`: Int @default(1), `hireDays`: Int, `deliveryDate`: DateTime, `deliveryWindow`: String?, `price`: Float, `currency`: String @default("EUR"), `payseraOrderId`: String?, `payseraPaymentUrl`: String?, `contactName`: String?, `contactEmail`: String?, `contactPhone`: String?, `userId`: String?, `carrierId`: String?, `notes`: String?, `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `paymentMethod`: PaymentMethod (@default(CARD)), `paymentStatus`: PaymentStatus (@default(PENDING)), `status`: ToiletCabinStatus (@default(PENDING))  
+**Relations:** → Company?
 
 ---
 
@@ -436,7 +444,21 @@ npm run db:seed           # reseed demo data
 ### Project — `@@map("projects")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `clientName`: String?, `siteAddress`: String?, `contractValue`: Float, `budgetAmount`: Float?, `startDate`: DateTime?, `endDate`: DateTime?, `companyId`: String, `createdById`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `status`: ProjectStatus (@default(PLANNING))  
-**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite, DailyReport, DprTemplate, ProjectBudgetLine, SubcontractorEngagement, ConstructionClientInvoice
+**Relations:** → Company, User, Order, TransportJob, FrameworkContract, ProjectSite, DailyReport, DprTemplate, ProjectBudgetLine, SubcontractorEngagement, ConstructionClientInvoice, ProjectWasteDeclaration, ProjectMaterialNeed
+
+---
+
+### ProjectWasteDeclaration — `@@map("project_waste_declarations")`  
+**Fields:** `id`: String @id @default(cuid(), `projectId`: String, `estimatedTonnes`: Float, `availableFrom`: DateTime, `availableTo`: DateTime, `willingToSell`: Boolean @default(false), `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `wasteType`: WasteType  
+**Relations:** → Project
+
+---
+
+### ProjectMaterialNeed — `@@map("project_material_needs")`  
+**Fields:** `id`: String @id @default(cuid(), `projectId`: String, `estimatedTonnes`: Float, `neededFrom`: DateTime, `neededTo`: DateTime, `notes`: String?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Enum fields:** `materialCategory`: MaterialCategory  
+**Relations:** → Project
 
 ---
 

@@ -13,6 +13,7 @@ import {
   AlertCircle,
   ArrowRight,
   MailCheck,
+  Building2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -81,6 +82,13 @@ const SERVICES = [
   },
   { id: 'container', icon: Package, label: 'Konteineri', sub: 'Piegāde', route: '/skip-hire' },
   { id: 'disposal', icon: Trash2, label: 'Utilizācija', sub: 'Būvgruži, zeme', route: '/disposal' },
+  {
+    id: 'toilet-cabin',
+    icon: Building2,
+    label: 'Tualetes kabīnes',
+    sub: 'Noma būvlaukumam',
+    route: '/toilet-cabin',
+  },
 ];
 
 export default function HomeScreen() {

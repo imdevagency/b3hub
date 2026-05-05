@@ -13,7 +13,10 @@ export interface DisposalQuoteCenterResult {
   distanceKm: number | null;
   pricePerTonne: number | null;
   disposalFeeEur: number | null;
+  /** Pricing condition note (e.g. min-fee triggered, max weight exceeded) */
   priceNote: string | null;
+  /** Operator-entered notes about accepted waste composition etc. */
+  centerNotes: string | null;
   accepted: boolean;
   hasPriceRule: boolean;
 }

@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsObject,
@@ -69,4 +70,19 @@ export class CreateRecyclingCenterDto {
   // Operating hours: {monday: {open: '08:00', close: '17:00'}, ...}
   @IsObject()
   operatingHours!: Record<string, { open: string; close: string } | null>;
+
+  // Licensing
+  @IsOptional()
+  @IsBoolean()
+  licensed?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  licenceNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  apusRegistrationId?: string;
 }

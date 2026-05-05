@@ -10,12 +10,21 @@ export interface RecyclingCenter {
   id: string;
   name: string;
   address: string;
-  lat?: number;
-  lng?: number;
-  phone?: string;
-  openingHours?: string;
-  materials: string[];
-  company?: { id: string; name: string };
+  city: string;
+  state: string;
+  postalCode: string;
+  coordinates?: { lat: number; lng: number } | null;
+  acceptedWasteTypes: string[];
+  capacity: number;
+  certifications: string[];
+  operatingHours: Record<string, { open: string; close: string } | null>;
+  licensed: boolean;
+  licenceNumber: string | null;
+  apusRegistrationId: string | null;
+  active: boolean;
+  company?: { id: string; name: string; logo: string | null };
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Functions ─────────────────────────────────────────────────────────────
