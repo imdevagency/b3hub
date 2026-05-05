@@ -249,6 +249,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - social
 - supplier-locations
 - support
+- toilet-cabins
 - tracking
 - transport-jobs
 - updates
@@ -296,6 +297,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (marketing)/order/materials
 - (marketing)/order/materials/[category]
 - (marketing)/order/skip-hire
+- (marketing)/order/toilet-cabin
 - (marketing)/order/transport
 - (marketing)/parvadatajiem
 - (marketing)/pricing
@@ -336,6 +338,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/materials
 - dashboard/(internal)/admin/orders
 - dashboard/(internal)/admin/orders/[id]
+- dashboard/(internal)/admin/partner-contracts
 - dashboard/(internal)/admin/payments
 - dashboard/(internal)/admin/payouts
 - dashboard/(internal)/admin/projects
@@ -349,6 +352,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/suppliers
 - dashboard/(internal)/admin/support
 - dashboard/(internal)/admin/surcharges
+- dashboard/(internal)/admin/toilet-cabins
 - dashboard/(internal)/admin/triage
 - dashboard/(internal)/admin/users
 - dashboard/(internal)/admin/users/[id]
@@ -421,6 +425,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/recycling/pricing
 - dashboard/(platform)/recycling/waste-records
 - dashboard/(platform)/reviews
+- dashboard/(platform)/skip-hire/fleet
 - dashboard/(platform)/supplier
 - dashboard/(platform)/transport-history
 - dashboard/(platform)/transport-jobs/[id]
@@ -517,6 +522,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (wizards)/material-order
 - (wizards)/skip-hire/confirmation
 - (wizards)/skip-hire/index
+- (wizards)/toilet-cabin/index
 - (wizards)/transport/confirmation
 - (wizards)/transport/index
 - index

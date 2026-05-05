@@ -608,6 +608,8 @@ export class OrdersService {
             deliveryPostal: orderData.deliveryPostal ?? '',
             deliveryLat: orderData.deliveryLat ?? null,
             deliveryLng: orderData.deliveryLng ?? null,
+            unloadLat: orderData.unloadLat ?? null,
+            unloadLng: orderData.unloadLng ?? null,
             deliveryDate: orderData.deliveryDate
               ? new Date(orderData.deliveryDate)
               : undefined,

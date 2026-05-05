@@ -169,6 +169,8 @@ export const materialsApi = {
         deliveryFee?: number;
         deliveryLat?: number;
         deliveryLng?: number;
+        unloadLat?: number;
+        unloadLng?: number;
         siteContactName?: string;
         siteContactPhone?: string;
         sitePhotoUrl?: string;
@@ -205,6 +207,8 @@ export const materialsApi = {
           deliveryFee: input.deliveryFee,
           deliveryLat: input.deliveryLat,
           deliveryLng: input.deliveryLng,
+          unloadLat: input.unloadLat,
+          unloadLng: input.unloadLng,
           siteContactName: input.siteContactName,
           siteContactPhone: input.siteContactPhone,
           sitePhotoUrl: input.sitePhotoUrl,

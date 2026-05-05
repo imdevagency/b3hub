@@ -21,6 +21,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { CreateConstructionClientDto } from './dto/create-construction-client.dto';
 import {
   IsBoolean,
@@ -144,6 +145,15 @@ export class AdminController {
   @Get('users')
   getUsers(@Query() pagination: PagePaginationDto) {
     return this.service.getUsers(pagination.page ?? 1, pagination.limit ?? 50);
+  }
+
+  /** POST /admin/users — admin creates a new user account */
+  @Post('users')
+  createUser(
+    @Body() dto: CreateAdminUserDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.createUser(dto, admin.userId);
   }
 
   /** GET /admin/users/:id — user detail */

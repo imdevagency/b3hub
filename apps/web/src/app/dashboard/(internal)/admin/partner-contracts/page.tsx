@@ -340,7 +340,9 @@ interface PreviewProps {
 
 function buildContractHtml(type: ContractType, fields: ContractFields): string {
   const title = CONTRACT_TITLES[type];
-  const clauses = CLAUSE_GENERATORS[type](fields.commissionPct || TYPE_CONFIG[type].defaultCommission);
+  const clauses = CLAUSE_GENERATORS[type](
+    fields.commissionPct || TYPE_CONFIG[type].defaultCommission,
+  );
   const dateStr = fields.contractDate ? isoToLv(fields.contractDate) : todayLv();
 
   return `
@@ -520,26 +522,26 @@ export default function AdminPartnerContractsPage() {
               <CardTitle className="text-sm font-semibold">Līguma veids</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2 pt-0">
-              {(Object.entries(TYPE_CONFIG) as [ContractType, (typeof TYPE_CONFIG)[ContractType]][]).map(
-                ([type, cfg]) => {
-                  const Icon = cfg.icon;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => handleTypeChange(type)}
-                      className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
-                        contractType === type
-                          ? 'border-foreground bg-foreground text-background'
-                          : 'border-border text-foreground hover:border-foreground/40'
-                      }`}
-                    >
-                      <Icon className="size-4 shrink-0" strokeWidth={1.75} />
-                      {cfg.label}
-                    </button>
-                  );
-                },
-              )}
+              {(
+                Object.entries(TYPE_CONFIG) as [ContractType, (typeof TYPE_CONFIG)[ContractType]][]
+              ).map(([type, cfg]) => {
+                const Icon = cfg.icon;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => handleTypeChange(type)}
+                    className={`flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+                      contractType === type
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-border text-foreground hover:border-foreground/40'
+                    }`}
+                  >
+                    <Icon className="size-4 shrink-0" strokeWidth={1.75} />
+                    {cfg.label}
+                  </button>
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -551,7 +553,10 @@ export default function AdminPartnerContractsPage() {
                 {!manualMode && (
                   <button
                     type="button"
-                    onClick={() => { setManualMode(true); clearSelection(); }}
+                    onClick={() => {
+                      setManualMode(true);
+                      clearSelection();
+                    }}
                     className="text-xs font-normal text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                   >
                     <UserPen className="size-3" /> Ievadīt manuāli
@@ -646,7 +651,7 @@ export default function AdminPartnerContractsPage() {
                 <Input
                   value={fields.partnerLegalName}
                   onChange={(e) => setFields((f) => ({ ...f, partnerLegalName: e.target.value }))}
-                  placeholder="SIA „Uzņēmums""
+                  placeholder={'SIA \u201eUzņēmums\u201c'}
                   className="h-9 text-sm"
                 />
               </div>

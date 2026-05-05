@@ -117,6 +117,7 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/fleet-management',
       tabs: [
         { label: 'Transportlīdzekļi', href: '/dashboard/fleet-management' },
+        { label: 'Skip flote', href: '/dashboard/skip-hire/fleet' },
         { label: 'Iestatījumi', href: '/dashboard/transporter/settings' },
       ],
     },

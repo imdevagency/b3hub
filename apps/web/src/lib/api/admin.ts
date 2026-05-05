@@ -55,6 +55,7 @@ export interface AdminUser {
   canSell: boolean;
   canTransport: boolean;
   canSkipHire: boolean;
+  canRecycle: boolean;
   companyRole?: string;
   emailVerified: boolean;
   company?: { id: string; name: string } | null;
@@ -127,6 +128,7 @@ export async function adminUpdateUser(
     canSell: boolean;
     canTransport: boolean;
     canSkipHire: boolean;
+    canRecycle: boolean;
     status: string;
     userType: string;
     creditLimit: number | null;
@@ -136,6 +138,35 @@ export async function adminUpdateUser(
 ): Promise<AdminUser> {
   return apiFetch<AdminUser>(`/admin/users/${id}`, {
     method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export interface AdminCreateUserPayload {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName?: string;
+  userType?: 'BUYER' | 'ADMIN';
+  canSell?: boolean;
+  canTransport?: boolean;
+  canSkipHire?: boolean;
+  canRecycle?: boolean;
+  isCompany?: boolean;
+  company?: {
+    name: string;
+    regNumber?: string;
+    companyType: 'CONSTRUCTION' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER' | 'HYBRID';
+  };
+}
+
+export async function adminCreateUser(
+  data: AdminCreateUserPayload,
+  token: string,
+): Promise<AdminUser> {
+  return apiFetch<AdminUser>('/admin/users', {
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });

@@ -22,6 +22,10 @@ export class UpdateUserDto {
   canSkipHire?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  canRecycle?: boolean;
+
+  @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
 

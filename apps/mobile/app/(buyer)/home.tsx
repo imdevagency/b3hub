@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Animated, ScrollView, RefreshControl } fr
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { ApiOrder, SkipHireOrder, ApiTransportJob } from '@/lib/api';
+import type { ApiOrder, SkipHireOrder, ApiTransportJob, ApiProject } from '@/lib/api';
 import {
   HardHat,
   Trash2,
@@ -14,6 +14,7 @@ import {
   ArrowRight,
   MailCheck,
   Building2,
+  FolderOpen,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -99,6 +100,7 @@ export default function HomeScreen() {
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
+  const [activeProjects, setActiveProjects] = useState<ApiProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
@@ -133,11 +135,15 @@ export default function HomeScreen() {
         }),
         api.skipHire.myOrders(token).catch(() => [] as SkipHireOrder[]),
         api.transportJobs.myRequests(token).catch(() => [] as ApiTransportJob[]),
+        api.projects.getAll(token).catch(() => [] as ApiProject[]),
       ])
-        .then(([mats, skips, reqs]) => {
+        .then(([mats, skips, reqs, projs]) => {
           setOrders(mats as ApiOrder[]);
           setSkipOrders(skips as SkipHireOrder[]);
           setTransportOrders(reqs as ApiTransportJob[]);
+          setActiveProjects(
+            (projs as ApiProject[]).filter((p) => p.status === 'ACTIVE').slice(0, 5),
+          );
         })
         .finally(() => {
           setLoading(false);
@@ -565,6 +571,139 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+        {/* ── Project Quick-Order ── */}
+        {activeProjects.length > 0 && (!user?.companyRole || (user?.permManageOrders ?? false)) && (
+          <View style={{ marginBottom: 32 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 20,
+                marginBottom: 14,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  fontSize: 22,
+                  letterSpacing: -0.5,
+                  color: '#111827',
+                }}
+              >
+                Projekti
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(buyer)/orders' as any)}
+                hitSlop={12}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={{
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    fontSize: 14,
+                    color: '#166534',
+                  }}
+                >
+                  Visi projekti
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+            >
+              {activeProjects.map((project) => (
+                <TouchableOpacity
+                  key={project.id}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    haptics.light();
+                    router.push(`/(wizards)/material-order?projectId=${project.id}` as any);
+                  }}
+                  style={{
+                    width: 200,
+                    backgroundColor: '#f0fdf4',
+                    borderRadius: 24,
+                    padding: 18,
+                    borderWidth: 1,
+                    borderColor: '#bbf7d0',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: '#dcfce7',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 14,
+                    }}
+                  >
+                    <FolderOpen size={20} color="#166534" strokeWidth={2} />
+                  </View>
+                  <Text
+                    style={{
+                      fontFamily: 'Inter_700Bold',
+                      fontWeight: '700',
+                      fontSize: 15,
+                      color: '#111827',
+                      letterSpacing: -0.3,
+                      marginBottom: 4,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {project.name}
+                  </Text>
+                  {project.siteAddress ? (
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_400Regular',
+                        fontSize: 12,
+                        color: '#6b7280',
+                        marginBottom: 14,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {project.siteAddress}
+                    </Text>
+                  ) : (
+                    <View style={{ marginBottom: 14 }} />
+                  )}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#166534',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      gap: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_600SemiBold',
+                        fontWeight: '600',
+                        fontSize: 13,
+                        color: '#fff',
+                        flex: 1,
+                      }}
+                    >
+                      Pasūtīt
+                    </Text>
+                    <ArrowRight size={14} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* ── Empty State / Actions Grid ── */}
         {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
           <View style={{ paddingHorizontal: 20 }}>
@@ -737,69 +876,71 @@ export default function HomeScreen() {
         )}
 
         {/* Restricted member — no order permission */}
-        {user?.companyRole && !(user?.permManageOrders ?? false) && (
-          <View
-            style={{
-              marginHorizontal: 20,
-              marginTop: 8,
-              backgroundColor: '#f9fafb',
-              borderRadius: 24,
-              padding: 24,
-              alignItems: 'center',
-            }}
-          >
-            <AlertCircle size={36} color="#9ca3af" style={{ marginBottom: 16 }} />
-            <Text
+        {user?.companyRole &&
+          user.companyRole !== 'OWNER' &&
+          !(user?.permManageOrders ?? false) && (
+            <View
               style={{
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
-                fontSize: 18,
-                color: '#111827',
-                textAlign: 'center',
-                marginBottom: 8,
+                marginHorizontal: 20,
+                marginTop: 8,
+                backgroundColor: '#f9fafb',
+                borderRadius: 24,
+                padding: 24,
+                alignItems: 'center',
               }}
             >
-              Pasūtīšana nav atļauta
-            </Text>
-            <Text
-              style={{
-                fontFamily: 'Inter_400Regular',
-                fontSize: 15,
-                color: '#6b7280',
-                textAlign: 'center',
-                marginBottom: 20,
-                lineHeight: 22,
-              }}
-            >
-              Jūsu kontam nav tiesību veikt pasūtījumus. Sazinieties ar uzņēmuma vadītāju, lai
-              saņemtu piekļuvi.
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                haptics.light();
-                router.push('/(buyer)/orders');
-              }}
-              style={{
-                backgroundColor: '#f3f4f6',
-                paddingHorizontal: 20,
-                paddingVertical: 12,
-                borderRadius: 12,
-              }}
-            >
+              <AlertCircle size={36} color="#9ca3af" style={{ marginBottom: 16 }} />
               <Text
                 style={{
-                  fontFamily: 'Inter_600SemiBold',
-                  fontWeight: '600',
-                  fontSize: 15,
-                  color: '#374151',
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  fontSize: 18,
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: 8,
                 }}
               >
-                Skatīt pasūtījumus
+                Pasūtīšana nav atļauta
               </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <Text
+                style={{
+                  fontFamily: 'Inter_400Regular',
+                  fontSize: 15,
+                  color: '#6b7280',
+                  textAlign: 'center',
+                  marginBottom: 20,
+                  lineHeight: 22,
+                }}
+              >
+                Jūsu kontam nav tiesību veikt pasūtījumus. Sazinieties ar uzņēmuma vadītāju, lai
+                saņemtu piekļuvi.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  haptics.light();
+                  router.push('/(buyer)/orders');
+                }}
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: 'Inter_600SemiBold',
+                    fontWeight: '600',
+                    fontSize: 15,
+                    color: '#374151',
+                  }}
+                >
+                  Skatīt pasūtījumus
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
       </ScrollView>
     </ScreenContainer>
   );

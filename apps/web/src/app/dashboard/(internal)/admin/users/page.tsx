@@ -7,7 +7,13 @@
 import { useCallback, useEffect, useState, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetUsers, adminUpdateUser, type AdminUser } from '@/lib/api';
+import {
+  adminGetUsers,
+  adminUpdateUser,
+  adminCreateUser,
+  type AdminUser,
+  type AdminCreateUserPayload,
+} from '@/lib/api';
 import {
   RefreshCw,
   Users,
@@ -28,9 +34,484 @@ import {
   Calendar,
   ShieldCheck,
   ShieldOff,
+  UserPlus,
+  Recycle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// ── Role presets ──────────────────────────────────────────────────────────────
+
+type RolePreset =
+  | 'b2c'
+  | 'construction'
+  | 'supplier'
+  | 'carrier'
+  | 'driver'
+  | 'recycler'
+  | 'skiphire'
+  | 'admin';
+
+const PRESETS: { value: RolePreset; label: string; apply: Partial<CreateUserForm> }[] = [
+  {
+    value: 'b2c',
+    label: 'B2C Pircējs',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: false,
+      canSkipHire: false,
+      canRecycle: false,
+      isCompany: false,
+    },
+  },
+  {
+    value: 'construction',
+    label: 'Celtniecības uzņēmums (B2B)',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: false,
+      canSkipHire: false,
+      canRecycle: false,
+      isCompany: true,
+      companyType: 'CONSTRUCTION',
+    },
+  },
+  {
+    value: 'supplier',
+    label: 'Materiālu piegādātājs',
+    apply: {
+      userType: 'BUYER',
+      canSell: true,
+      canTransport: false,
+      canSkipHire: false,
+      canRecycle: false,
+      isCompany: true,
+      companyType: 'SUPPLIER',
+    },
+  },
+  {
+    value: 'carrier',
+    label: 'Pārvadātājs (uzņēmums)',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: true,
+      canSkipHire: false,
+      canRecycle: false,
+      isCompany: true,
+      companyType: 'CARRIER',
+    },
+  },
+  {
+    value: 'driver',
+    label: 'Vadītājs (individuāls)',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: true,
+      canSkipHire: false,
+      canRecycle: false,
+      isCompany: false,
+    },
+  },
+  {
+    value: 'recycler',
+    label: 'Atkritumu apsaimniekotājs',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: false,
+      canSkipHire: false,
+      canRecycle: true,
+      isCompany: true,
+      companyType: 'RECYCLER',
+    },
+  },
+  {
+    value: 'skiphire',
+    label: 'Konteineru operators',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: false,
+      canSkipHire: true,
+      canRecycle: false,
+      isCompany: true,
+      companyType: 'SUPPLIER',
+    },
+  },
+  {
+    value: 'admin',
+    label: 'Platformas admins',
+    apply: {
+      userType: 'ADMIN',
+      canSell: false,
+      canTransport: false,
+      canSkipHire: false,
+      canRecycle: false,
+      isCompany: false,
+    },
+  },
+];
+
+// ── Create user dialog ────────────────────────────────────────────────────────
+
+interface CreateUserForm {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  userType: 'BUYER' | 'ADMIN';
+  canSell: boolean;
+  canTransport: boolean;
+  canSkipHire: boolean;
+  canRecycle: boolean;
+  isCompany: boolean;
+  companyName: string;
+  companyRegNo: string;
+  companyType: 'CONSTRUCTION' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER' | 'HYBRID';
+}
+
+const BLANK_FORM: CreateUserForm = {
+  email: '',
+  password: '',
+  firstName: '',
+  lastName: '',
+  userType: 'BUYER',
+  canSell: false,
+  canTransport: false,
+  canSkipHire: false,
+  canRecycle: false,
+  isCompany: false,
+  companyName: '',
+  companyRegNo: '',
+  companyType: 'CONSTRUCTION',
+};
+
+function CreateUserDialog({
+  open,
+  token,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  token: string;
+  onClose: () => void;
+  onCreated: (u: AdminUser) => void;
+}) {
+  const [form, setForm] = useState<CreateUserForm>(BLANK_FORM);
+  const [preset, setPreset] = useState<RolePreset | ''>('');
+  const [showPw, setShowPw] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function applyPreset(p: RolePreset) {
+    const found = PRESETS.find((x) => x.value === p);
+    if (!found) return;
+    setPreset(p);
+    setForm((prev) => ({ ...prev, ...found.apply }));
+  }
+
+  function field<K extends keyof CreateUserForm>(key: K, value: CreateUserForm[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.email || !form.password || !form.firstName) {
+      setError('E-pasts, parole un vārds ir obligāti.');
+      return;
+    }
+    if (form.isCompany && !form.companyName) {
+      setError('Uzņēmuma nosaukums ir obligāts.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const payload: AdminCreateUserPayload = {
+        email: form.email,
+        password: form.password,
+        firstName: form.firstName,
+        lastName: form.lastName || undefined,
+        userType: form.userType,
+        canSell: form.canSell,
+        canTransport: form.canTransport,
+        canSkipHire: form.canSkipHire,
+        canRecycle: form.canRecycle,
+        isCompany: form.isCompany,
+        ...(form.isCompany && form.companyName
+          ? {
+              company: {
+                name: form.companyName,
+                regNumber: form.companyRegNo || undefined,
+                companyType: form.companyType,
+              },
+            }
+          : {}),
+      };
+      const created = await adminCreateUser(payload, token);
+      onCreated(created as AdminUser);
+      setForm(BLANK_FORM);
+      setPreset('');
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Neizdevās izveidot lietotāju');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleClose() {
+    setForm(BLANK_FORM);
+    setPreset('');
+    setError(null);
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Pievienot lietotāju</DialogTitle>
+          <DialogDescription>
+            Izveidojiet kontu ar jebkuru lomu. Parole ir pagaidu — lietotājs to var mainīt pēc
+            pirmās pieslēgšanās.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-5 pt-1">
+          {/* Role preset */}
+          <div className="space-y-1.5">
+            <Label>Lomas priekšiestatījums</Label>
+            <Select value={preset} onValueChange={(v) => applyPreset(v as RolePreset)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Izvēlēties lomu…" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRESETS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Identity */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Vārds *</Label>
+              <Input
+                value={form.firstName}
+                onChange={(e) => field('firstName', e.target.value)}
+                placeholder="Jānis"
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Uzvārds</Label>
+              <Input
+                value={form.lastName}
+                onChange={(e) => field('lastName', e.target.value)}
+                placeholder="Bērziņš"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>E-pasts *</Label>
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => field('email', e.target.value)}
+              placeholder="lietotajs@example.lv"
+              autoComplete="off"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Pagaidu parole *</Label>
+            <div className="relative">
+              <Input
+                type={showPw ? 'text' : 'password'}
+                value={form.password}
+                onChange={(e) => field('password', e.target.value)}
+                placeholder="Min. 8 rakstzīmes"
+                autoComplete="new-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Capabilities */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Atļaujas
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { key: 'canSell', icon: Package, label: 'Pārdevējs' },
+                  { key: 'canTransport', icon: Truck, label: 'Pārvadātājs' },
+                  { key: 'canSkipHire', icon: SkipForward, label: 'Konteineri' },
+                  { key: 'canRecycle', icon: Recycle, label: 'Reciklēšana' },
+                ] as const
+              ).map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => field(key, !form[key])}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border text-sm font-medium transition-colors ${
+                    form[key]
+                      ? 'border-green-300 bg-green-50 text-green-800'
+                      : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${form[key] ? 'text-green-600' : ''}`} />
+                  {label}
+                  {form[key] && <CheckCircle className="h-3.5 w-3.5 ml-auto text-green-500" />}
+                </button>
+              ))}
+            </div>
+            {/* Admin toggle */}
+            <button
+              type="button"
+              onClick={() => field('userType', form.userType === 'ADMIN' ? 'BUYER' : 'ADMIN')}
+              className={`w-full flex items-center gap-2 rounded-xl px-3 py-2.5 border text-sm font-medium transition-colors ${
+                form.userType === 'ADMIN'
+                  ? 'border-red-300 bg-red-50 text-red-800'
+                  : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/40'
+              }`}
+            >
+              <ShieldCheck
+                className={`h-4 w-4 ${form.userType === 'ADMIN' ? 'text-red-600' : ''}`}
+              />
+              Platformas admins (ADMIN)
+              {form.userType === 'ADMIN' && (
+                <CheckCircle className="h-3.5 w-3.5 ml-auto text-red-500" />
+              )}
+            </button>
+          </div>
+
+          {/* Company section */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => field('isCompany', !form.isCompany)}
+              className={`w-full flex items-center gap-2 rounded-xl px-3 py-2.5 border text-sm font-medium transition-colors ${
+                form.isCompany
+                  ? 'border-blue-300 bg-blue-50 text-blue-800'
+                  : 'border-border bg-muted/20 text-muted-foreground hover:bg-muted/40'
+              }`}
+            >
+              <Building2 className={`h-4 w-4 ${form.isCompany ? 'text-blue-600' : ''}`} />
+              Uzņēmuma konts
+              {form.isCompany && <CheckCircle className="h-3.5 w-3.5 ml-auto text-blue-500" />}
+            </button>
+
+            {form.isCompany && (
+              <div className="border border-blue-200 rounded-xl p-4 space-y-3 bg-blue-50/30">
+                <div className="space-y-1.5">
+                  <Label>Uzņēmuma nosaukums *</Label>
+                  <Input
+                    value={form.companyName}
+                    onChange={(e) => field('companyName', e.target.value)}
+                    placeholder="SIA Piemērs"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Reģ. nr.</Label>
+                    <Input
+                      value={form.companyRegNo}
+                      onChange={(e) => field('companyRegNo', e.target.value)}
+                      placeholder="40001234567"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Uzņēmuma tips</Label>
+                    <Select
+                      value={form.companyType}
+                      onValueChange={(v) =>
+                        field('companyType', v as CreateUserForm['companyType'])
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CONSTRUCTION">Celtniecība</SelectItem>
+                        <SelectItem value="SUPPLIER">Piegādātājs</SelectItem>
+                        <SelectItem value="CARRIER">Pārvadātājs</SelectItem>
+                        <SelectItem value="RECYCLER">Reciklētājs</SelectItem>
+                        <SelectItem value="HYBRID">Hibrīds</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={saving}>
+              Atcelt
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" /> Izveido…
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-1.5" /> Izveidot kontu
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // ── Capability badge ──────────────────────────────────────────────────────────
 
@@ -331,6 +812,7 @@ export default function AdminUsersPage() {
     Record<string, { creditLimit: string; paymentTerms: string }>
   >({});
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -450,19 +932,35 @@ export default function AdminUsersPage() {
         title="Lietotāji"
         description={`${users.length} reģistrēti lietotāji`}
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setLoading(true);
-              fetchUsers();
-            }}
-          >
-            <RefreshCw className="h-4 w-4 mr-1.5" />
-            Atjaunot
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setLoading(true);
+                fetchUsers();
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-1.5" />
+              Atjaunot
+            </Button>
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-1.5" />
+              Pievienot lietotāju
+            </Button>
+          </div>
         }
       />
+
+      {/* Create user dialog */}
+      {token && (
+        <CreateUserDialog
+          open={createOpen}
+          token={token}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(u) => setUsers((prev) => [u, ...prev])}
+        />
+      )}
 
       {/* Search */}
       <div className="relative">

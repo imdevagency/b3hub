@@ -86,11 +86,20 @@ export interface SkipMapOrder {
   wasteCategory: SkipWasteCategory;
   status: SkipHireMapStatus;
   deliveryDate: string;
+  deliveryWindow?: string | null;
+  /** Agreed hire period in days (default 7 if null). */
+  hireDays?: number | null;
+  /** Per-status ISO timestamps — used to compute days on site. */
+  statusTimestamps?: Record<string, string> | null;
   contactName: string | null;
   contactPhone: string | null;
   notes: string | null;
   price: number;
   currency: string;
+  /** Days overdue since hire period expired (0 = on time). Computed server-side. */
+  overdueDays: number;
+  /** Accumulated overdue charge in EUR. Computed server-side. */
+  overdueFeeEur: number;
   createdAt: string;
 }
 

@@ -9,10 +9,13 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { TransportJobStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
@@ -35,6 +38,7 @@ export class AdminService {
     canSell: true,
     canTransport: true,
     canSkipHire: true,
+    canRecycle: true,
     companyRole: true,
     emailVerified: true,
     createdAt: true,
@@ -43,6 +47,64 @@ export class AdminService {
       select: { creditLimit: true, creditUsed: true, paymentTerms: true },
     },
   } as const;
+
+  async createUser(dto: CreateAdminUserDto, adminId: string) {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('User with this email already exists');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
+    const isCompany = dto.isCompany ?? !!dto.company;
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        userType: dto.userType ?? 'BUYER',
+        isCompany,
+        canSell: dto.canSell ?? false,
+        canTransport: dto.canTransport ?? false,
+        canSkipHire: dto.canSkipHire ?? false,
+        canRecycle: dto.canRecycle ?? false,
+        emailVerified: true,
+        termsAcceptedAt: new Date(),
+        status: 'ACTIVE',
+      },
+      select: this.userSelect,
+    });
+
+    if (dto.company) {
+      const company = await this.prisma.company.create({
+        data: {
+          name: dto.company.name,
+          registrationNum: dto.company.regNumber,
+          companyType: dto.company.companyType,
+        },
+      });
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          companyId: company.id,
+          companyRole: 'OWNER',
+          permCreateContracts: true,
+          permReleaseCallOffs: true,
+          permManageOrders: true,
+          permViewFinancials: true,
+          permManageTeam: true,
+        },
+      });
+      const full = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        select: this.userSelect,
+      });
+      this.logAdminAction(adminId, 'CREATE_USER', 'User', user.id, {}, dto).catch(() => {});
+      return full;
+    }
+
+    this.logAdminAction(adminId, 'CREATE_USER', 'User', user.id, {}, dto).catch(() => {});
+    return user;
+  }
 
   async getUsers(page = 1, limit = 50) {
     const skip = (page - 1) * limit;
@@ -192,6 +254,9 @@ export class AdminService {
         }),
         ...(data.canSkipHire !== undefined && {
           canSkipHire: data.canSkipHire,
+        }),
+        ...(data.canRecycle !== undefined && {
+          canRecycle: data.canRecycle,
         }),
         ...(data.status !== undefined && { status: data.status }),
         ...(data.userType !== undefined && {

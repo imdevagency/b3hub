@@ -82,6 +82,20 @@ export class CreateOrderDto {
   @Max(180)
   deliveryLng?: number;
 
+  /** Precise unloading pin latitude — dragged by buyer on the map step, within the delivery site. */
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  unloadLat?: number;
+
+  /** Precise unloading pin longitude — dragged by buyer on the map step, within the delivery site. */
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  unloadLng?: number;
+
   @IsOptional()
   @IsEnum(PaymentStatus)
   paymentStatus?: PaymentStatus;

@@ -784,6 +784,11 @@ model Order {
   // Unloading-point photo — buyer can photograph the exact drop zone when placing the order
   sitePhotoUrl  String?
 
+  // Precise unloading pin — buyer can drag a map pin to the exact spot within the site
+  // (distinct from deliveryLat/Lng which is the geocoded street address)
+  unloadLat Float?
+  unloadLng Float?
+
   // Special instructions
   notes         String?
   internalNotes String?

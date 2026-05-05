@@ -32,6 +32,7 @@ import { WhenStep } from '@/components/wizard/material/WhenStep';
 import { OffersStep } from '@/components/wizard/material/OffersStep';
 import { FulfillmentStep } from '@/components/wizard/material/FulfillmentStep';
 import { FieldPickerStep } from '@/components/wizard/material/FieldPickerStep';
+import { UnloadingSpotStep } from '@/components/wizard/material/UnloadingSpotStep';
 import {
   CATEGORY_FRACTIONS,
   CATEGORY_DEFAULT_UNIT,
@@ -42,7 +43,7 @@ import {
 
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
-type Step = 'specs' | 'fulfillment' | 'address' | 'field' | 'when' | 'offers';
+type Step = 'specs' | 'fulfillment' | 'address' | 'unload' | 'field' | 'when' | 'offers';
 type SubmitResult = 'order' | 'rfq';
 
 const STEP_TITLES: Record<Step, string> = {
@@ -50,6 +51,7 @@ const STEP_TITLES: Record<Step, string> = {
   specs: 'Ko pasūtīt?',
   fulfillment: 'Kā saņemt?',
   field: 'Izvēlies punktu',
+  unload: 'Izkraušanas vieta',
   when: 'Kad piegādāt?',
   offers: 'Piedāvājumi',
 };
@@ -108,7 +110,7 @@ export default function OrderRequestWizard() {
   const STEPS: Step[] =
     fulfillmentType === 'PICKUP'
       ? ['specs', 'fulfillment', 'field', 'offers']
-      : ['specs', 'fulfillment', 'address', 'when', 'offers'];
+      : ['specs', 'fulfillment', 'address', 'unload', 'when', 'offers'];
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -148,6 +150,10 @@ export default function OrderRequestWizard() {
 
   // ── Address ──
   const [pickedAddress, setPickedAddress] = useState<PickedAddress | null>(null);
+
+  // ── Unloading spot (precise pin within site) ──
+  const [unloadLat, setUnloadLat] = useState<number | null>(null);
+  const [unloadLng, setUnloadLng] = useState<number | null>(null);
 
   // ── When ──
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -450,6 +456,8 @@ export default function OrderRequestWizard() {
           deliveryFee: offer.deliveryFee ?? undefined,
           deliveryLat: pickedAddress?.lat,
           deliveryLng: pickedAddress?.lng,
+          unloadLat: unloadLat ?? undefined,
+          unloadLng: unloadLng ?? undefined,
           siteContactName: effectiveContactName || undefined,
           siteContactPhone: effectiveContactPhone || undefined,
           notes: notes || undefined,
@@ -608,9 +616,11 @@ export default function OrderRequestWizard() {
           ? true // always can proceed (has a default)
           : step === 'field'
             ? !!pickupFieldId && !!pickupSlotId
-            : step === 'when'
-              ? !!deliveryDate
-              : !offersLoading && !submitting && !submitted && termsAccepted;
+            : step === 'unload'
+              ? true // always skippable — pin defaults to delivery address
+              : step === 'when'
+                ? !!deliveryDate
+                : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
     ? submitted === 'rfq'
@@ -701,11 +711,28 @@ export default function OrderRequestWizard() {
           <View style={{ paddingHorizontal: 20 }}>
             <AddressField
               value={pickedAddress}
-              onPick={(p) => setPickedAddress(p)}
+              onPick={(p) => {
+                setPickedAddress(p);
+                // Reset the precise pin whenever a new address is picked
+                setUnloadLat(null);
+                setUnloadLng(null);
+              }}
               placeholder="Norādiet piegādes adresi"
             />
           </View>
         </ScrollView>
+      )}
+      {step === 'unload' && pickedAddress && (
+        <UnloadingSpotStep
+          deliveryLat={pickedAddress.lat}
+          deliveryLng={pickedAddress.lng}
+          unloadLat={unloadLat}
+          unloadLng={unloadLng}
+          onChange={(lat, lng) => {
+            setUnloadLat(lat);
+            setUnloadLng(lng);
+          }}
+        />
       )}
       {step === 'specs' && (
         <SpecsStep

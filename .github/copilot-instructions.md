@@ -181,7 +181,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 - `(recycler)` — home, incoming, more, records
 - `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
 - `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, messages, notification/, notifications, review/, settings, support-chat
-- `(wizards)` — disposal/, material-order, skip-hire/, transport/
+- `(wizards)` — disposal/, material-order, skip-hire/, toilet-cabin/, transport/
 <!-- END GEN -->
 
 ### Styling

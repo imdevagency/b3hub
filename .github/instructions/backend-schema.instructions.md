@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (3288 lines, 80 models, 68 enums).
+Schema: `apps/backend/prisma/schema.prisma` (3294 lines, 80 models, 68 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -24,6 +24,7 @@ DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL`
 - `MaterialsModule`
 - `OrdersModule`
 - `SkipHireModule`
+- `ToiletCabinsModule`
 - `DocumentsModule`
 - `ProviderApplicationsModule`
 - `VehiclesModule`
@@ -113,7 +114,7 @@ npm run db:seed           # reseed demo data
 | `TransportJobType` | MATERIAL_DELIVERY CONTAINER_DELIVERY CONTAINER_PICKUP WASTE_COLLECTION EQUIPMENT_TRANSPORT TRANSPORT |
 | `TransportJobStatus` | AVAILABLE ASSIGNED ACCEPTED EN_ROUTE_PICKUP AT_PICKUP LOADED EN_ROUTE_DELIVERY AT_DELIVERY DELIVERED CANCELLED DELIVERY_REFUSED |
 | `TransportExceptionType` | DRIVER_NO_SHOW SUPPLIER_NOT_READY WRONG_MATERIAL PARTIAL_DELIVERY REJECTED_DELIVERY SITE_CLOSED OVERWEIGHT OTHER |
-| `TransportExceptionStatus` | OPEN RESOLVED |
+| `TransportExceptionStatus` | OPEN IN_REVIEW RESOLVED |
 | `VehicleType` | DUMP_TRUCK FLATBED_TRUCK SEMI_TRAILER HOOK_LIFT SKIP_LOADER TANKER VAN |
 | `VehicleStatus` | ACTIVE IN_USE MAINTENANCE INACTIVE |
 | `NotificationType` | ORDER_CREATED ORDER_CONFIRMED ORDER_CANCELLED ORDER_DELIVERED TRANSPORT_ASSIGNED TRANSPORT_STARTED TRANSPORT_COMPLETED PAYMENT_RECEIVED QUOTE_RECEIVED QUOTE_ACCEPTED SYSTEM_ALERT DOCUMENT_EXPIRING_SOON DRIVER_NEARBY WEIGHING_SLIP PAYOUT_PENDING |
@@ -219,7 +220,7 @@ npm run db:seed           # reseed demo data
 ---
 
 ### Order — `@@map("orders")`  
-**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `pickupFieldId`: String?, `pickupSlotId`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `notes`: String?, `internalNotes`: String?, `bisNumber`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `isInternational`: Boolean @default(false), `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `buyerId`: String, `createdById`: String, `deliveryAddress`: String, `deliveryCity`: String, `deliveryState`: String, `deliveryPostal`: String, `deliveryLat`: Float?, `deliveryLng`: Float?, `deliveryDate`: DateTime?, `deliveryWindow`: String?, `pickupFieldId`: String?, `pickupSlotId`: String?, `subtotal`: Float, `tax`: Float, `deliveryFee`: Float, `total`: Float, `currency`: String @default("EUR"), `siteContactName`: String?, `siteContactPhone`: String?, `sitePhotoUrl`: String?, `unloadLat`: Float?, `unloadLng`: Float?, `notes`: String?, `internalNotes`: String?, `bisNumber`: String?, `projectId`: String?, `linkedSkipOrderId`: String? @unique, `truckCount`: Int @default(1), `truckIntervalMinutes`: Int?, `scheduleId`: String?, `trackingToken`: String? @unique, `isInternational`: Boolean @default(false), `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `orderType`: OrderType, `fulfillmentType`: OrderFulfillmentType (@default(DELIVERY)), `status`: OrderStatus, `paymentStatus`: PaymentStatus, `paymentMethod`: PaymentMethod (@default(CARD))  
 **Relations:** → Company, User, B3Field?, PickupSlot?, Project?, SkipHireOrder?, OrderSchedule?, OrderItem, ContainerOrder, TransportJob, Invoice, Payment?, OrderSurcharge, Dispute?, ChatMessage, FieldPass, SupplierPayout, CarrierPayout, WasteRecord
 
