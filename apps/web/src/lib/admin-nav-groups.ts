@@ -70,6 +70,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Piegādātāji', href: '/dashboard/admin/suppliers' },
       { label: 'Pārstrādes centri', href: '/dashboard/admin/recycling-centers' },
       { label: 'B3 Lauki', href: '/dashboard/admin/b3-fields' },
+      { label: 'Partneru līgumi', href: '/dashboard/admin/partner-contracts' },
     ],
   },
   {
