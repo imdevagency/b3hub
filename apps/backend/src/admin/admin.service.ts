@@ -704,6 +704,7 @@ export class AdminService {
         stockQty: true,
         active: true,
         isRecycled: true,
+        featured: true,
         createdAt: true,
         supplier: { select: { id: true, name: true, verified: true } },
         _count: { select: { orderItems: true } },
@@ -737,6 +738,67 @@ export class AdminService {
       id,
       { active: material.active },
       { active: updated.active },
+    );
+
+    return updated;
+  }
+
+  /**
+   * PATCH /admin/materials/:id/details
+   * Admin override: edit name, category, price, unit, stock, featured flag.
+   * Suppliers own their listings; admin can correct data quality issues.
+   */
+  async adminUpdateMaterialDetails(
+    id: string,
+    dto: {
+      name?: string;
+      category?: string;
+      subCategory?: string;
+      basePrice?: number;
+      unit?: string;
+      inStock?: boolean;
+      stockQty?: number;
+      featured?: boolean;
+    },
+    adminId: string,
+  ) {
+    const material = await this.prisma.material.findUnique({
+      where: { id },
+      select: {
+        id: true, name: true, category: true, subCategory: true,
+        basePrice: true, unit: true, inStock: true, stockQty: true, featured: true,
+      },
+    });
+    if (!material) throw new NotFoundException('Material not found');
+
+    const updated = await this.prisma.material.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.category !== undefined && { category: dto.category as any }),
+        ...(dto.subCategory !== undefined && { subCategory: dto.subCategory }),
+        ...(dto.basePrice !== undefined && { basePrice: dto.basePrice }),
+        ...(dto.unit !== undefined && { unit: dto.unit as any }),
+        ...(dto.inStock !== undefined && { inStock: dto.inStock }),
+        ...(dto.stockQty !== undefined && { stockQty: dto.stockQty }),
+        ...(dto.featured !== undefined && { featured: dto.featured }),
+      },
+      select: {
+        id: true, name: true, category: true, subCategory: true,
+        basePrice: true, unit: true, inStock: true, stockQty: true,
+        active: true, featured: true,
+        supplier: { select: { id: true, name: true, verified: true } },
+        _count: { select: { orderItems: true } },
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'MATERIAL_UPDATED',
+      'Material',
+      id,
+      material,
+      dto,
     );
 
     return updated;
@@ -1427,6 +1489,33 @@ export class AdminService {
       exceptionId,
       { status: exception.status },
       { status: 'RESOLVED', resolution },
+    );
+
+    return updated;
+  }
+
+  async setExceptionInReview(exceptionId: string, adminId: string) {
+    const exception = await this.prisma.transportJobException.findUnique({
+      where: { id: exceptionId },
+      select: { id: true, status: true },
+    });
+    if (!exception) throw new NotFoundException('Exception not found');
+    if (exception.status === 'RESOLVED')
+      throw new BadRequestException('Exception is already resolved');
+
+    const updated = await this.prisma.transportJobException.update({
+      where: { id: exceptionId },
+      data: { status: 'IN_REVIEW' },
+      select: { id: true, type: true, status: true },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'EXCEPTION_SET_IN_REVIEW',
+      'TransportJobException',
+      exceptionId,
+      { status: exception.status },
+      { status: 'IN_REVIEW' },
     );
 
     return updated;
@@ -4145,6 +4234,402 @@ export class AdminService {
         apusNote: note ?? null,
       },
     });
+  }
+
+  // ── Circular Economy Stats ────────────────────────────────────────────────
+
+  /**
+   * GET /admin/b3-recycling/circular-economy-stats
+   * Platform-wide circular economy KPIs:
+   *   waste in → recycled → converted to marketplace listing → sold
+   */
+  async adminGetCircularEconomyStats() {
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    // Pull all waste records
+    const allRecords = await this.prisma.wasteRecord.findMany({
+      select: {
+        id: true,
+        weight: true,
+        recyclableWeight: true,
+        recyclingRate: true,
+        producedMaterialId: true,
+        processedDate: true,
+        createdAt: true,
+      },
+    });
+
+    const totalWasteInTonnes = allRecords.reduce((s, r) => s + (r.weight ?? 0), 0);
+    const totalRecyclableTonnes = allRecords.reduce(
+      (s, r) => s + (r.recyclableWeight ?? 0),
+      0,
+    );
+
+    const rated = allRecords.filter((r) => r.recyclingRate != null);
+    const avgRecoveryRate =
+      rated.length > 0
+        ? rated.reduce((s, r) => s + (r.recyclingRate ?? 0), 0) / rated.length
+        : 0;
+
+    const converted = allRecords.filter((r) => r.producedMaterialId != null);
+    const totalConvertedCount = converted.length;
+    const totalConvertedTonnes = converted.reduce(
+      (s, r) => s + (r.recyclableWeight ?? 0),
+      0,
+    );
+
+    const pendingConversions = allRecords.filter(
+      (r) =>
+        r.producedMaterialId == null &&
+        (r.recyclableWeight ?? 0) > 0 &&
+        r.processedDate != null,
+    );
+    const pendingConversionCount = pendingConversions.length;
+    const pendingConversionTonnes = pendingConversions.reduce(
+      (s, r) => s + (r.recyclableWeight ?? 0),
+      0,
+    );
+
+    const co2SavedTonnes = parseFloat((totalConvertedTonnes * 0.35).toFixed(2));
+
+    // Recycled material listings
+    const [activeMaterialListings, soldFromRecycled] = await Promise.all([
+      this.prisma.material.count({ where: { isRecycled: true, active: true } }),
+      this.prisma.orderItem.aggregate({
+        where: { material: { isRecycled: true }, order: { status: 'COMPLETED' } },
+        _sum: { total: true, quantity: true },
+      }),
+    ]);
+
+    const revenueFromRecycledMaterials = parseFloat(
+      (Number(soldFromRecycled._sum.total ?? 0)).toFixed(2),
+    );
+    const quantitySoldTonnes = parseFloat(
+      (Number(soldFromRecycled._sum.quantity ?? 0)).toFixed(2),
+    );
+
+    // Monthly trend — last 6 months
+    const monthlyMap: Record<string, { wasteIn: number; recycled: number; converted: number }> =
+      {};
+    for (let i = 0; i <= 5; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthlyMap[key] = { wasteIn: 0, recycled: 0, converted: 0 };
+    }
+    for (const r of allRecords) {
+      const ref = r.processedDate ?? r.createdAt;
+      if (ref < sixMonthsAgo) continue;
+      const key = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthlyMap[key]) continue;
+      monthlyMap[key].wasteIn += r.weight ?? 0;
+      monthlyMap[key].recycled += r.recyclableWeight ?? 0;
+      if (r.producedMaterialId) monthlyMap[key].converted += r.recyclableWeight ?? 0;
+    }
+    const monthlyTrend = Object.entries(monthlyMap).map(([month, v]) => ({ month, ...v }));
+
+    return {
+      totalWasteInTonnes: parseFloat(totalWasteInTonnes.toFixed(2)),
+      totalRecyclableTonnes: parseFloat(totalRecyclableTonnes.toFixed(2)),
+      avgRecoveryRate: parseFloat(avgRecoveryRate.toFixed(1)),
+      totalConvertedCount,
+      totalConvertedTonnes: parseFloat(totalConvertedTonnes.toFixed(2)),
+      pendingConversionCount,
+      pendingConversionTonnes: parseFloat(pendingConversionTonnes.toFixed(2)),
+      co2SavedTonnes,
+      activeMaterialListings,
+      revenueFromRecycledMaterials,
+      quantitySoldTonnes,
+      monthlyTrend,
+    };
+  }
+
+  // ── Market Health ─────────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/market-health
+   * Cross-side liquidity monitor: supply depth, demand signals, transport
+   * coverage, and recycling capacity — all in one response.
+   */
+  async adminGetMarketHealth() {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    // ── Supply ────────────────────────────────────────────────────────────────
+    const allMaterials = await this.prisma.material.findMany({
+      where: { active: true },
+      select: { category: true, supplierId: true, isRecycled: true },
+    });
+
+    const catListings = new Map<string, number>();
+    const catSuppliers = new Map<string, Set<string>>();
+    let recycledListings = 0;
+    for (const m of allMaterials) {
+      catListings.set(m.category, (catListings.get(m.category) ?? 0) + 1);
+      const s = catSuppliers.get(m.category) ?? new Set<string>();
+      s.add(m.supplierId);
+      catSuppliers.set(m.category, s);
+      if (m.isRecycled) recycledListings++;
+    }
+    const categoryCoverage = Array.from(catListings.entries())
+      .map(([category, listingCount]) => ({
+        category,
+        listingCount,
+        supplierCount: catSuppliers.get(category)?.size ?? 0,
+      }))
+      .sort((a, b) => b.listingCount - a.listingCount);
+
+    const thinCategories = categoryCoverage
+      .filter((c) => c.supplierCount < 2)
+      .map((c) => c.category);
+
+    const [totalSuppliers, totalCarriers, totalRecyclers] = await Promise.all([
+      this.prisma.company.count({ where: { companyType: 'SUPPLIER', verified: true } }),
+      this.prisma.company.count({ where: { companyType: 'CARRIER', verified: true } }),
+      this.prisma.company.count({ where: { companyType: 'RECYCLER', verified: true } }),
+    ]);
+
+    // ── Demand ────────────────────────────────────────────────────────────────
+    const [rfqTotal, rfqPending, rfqExpired, rfqAccepted, rfqCancelled, rfqByCategory] =
+      await Promise.all([
+        this.prisma.quoteRequest.count(),
+        this.prisma.quoteRequest.count({ where: { status: 'PENDING' } }),
+        this.prisma.quoteRequest.count({ where: { status: 'EXPIRED' } }),
+        this.prisma.quoteRequest.count({ where: { status: 'ACCEPTED' } }),
+        this.prisma.quoteRequest.count({ where: { status: 'CANCELLED' } }),
+        this.prisma.quoteRequest.groupBy({
+          by: ['materialCategory'],
+          _count: { id: true },
+          orderBy: { _count: { id: 'desc' } },
+          take: 5,
+        }),
+      ]);
+
+    const matchDenominator = rfqAccepted + rfqCancelled + rfqExpired;
+    const matchRate =
+      matchDenominator > 0
+        ? parseFloat(((rfqAccepted / matchDenominator) * 100).toFixed(1))
+        : 0;
+
+    // Orders last 30 days — how many had no suitable supplier?
+    const ordersLast30d = await this.prisma.order.count({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+    });
+    const cancelledLast30d = await this.prisma.order.count({
+      where: {
+        status: { in: ['CANCELLED'] },
+        createdAt: { gte: thirtyDaysAgo },
+      },
+    });
+
+    // ── Transport ─────────────────────────────────────────────────────────────
+    const [availableJobs, inProgressJobs, completedJobs30d, totalJobsCancelled] =
+      await Promise.all([
+        this.prisma.transportJob.count({ where: { status: 'AVAILABLE' } }),
+        this.prisma.transportJob.count({
+          where: {
+            status: {
+              in: [
+                'ASSIGNED',
+                'ACCEPTED',
+                'EN_ROUTE_PICKUP',
+                'AT_PICKUP',
+                'LOADED',
+                'EN_ROUTE_DELIVERY',
+                'AT_DELIVERY',
+              ],
+            },
+          },
+        }),
+        this.prisma.transportJob.count({
+          where: { status: 'DELIVERED', updatedAt: { gte: thirtyDaysAgo } },
+        }),
+        this.prisma.transportJob.count({ where: { status: 'CANCELLED' } }),
+      ]);
+
+    const totalJobsAssigned = await this.prisma.transportJob.count({
+      where: { status: { not: 'AVAILABLE' } },
+    });
+    const jobAcceptanceRate =
+      totalJobsAssigned > 0
+        ? parseFloat(
+            (((totalJobsAssigned - totalJobsCancelled) / totalJobsAssigned) * 100).toFixed(1),
+          )
+        : 0;
+
+    // ── Recycling ─────────────────────────────────────────────────────────────
+    const pendingConversions = await this.prisma.wasteRecord.findMany({
+      where: { producedMaterialId: null, recyclableWeight: { gt: 0 }, processedDate: { not: null } },
+      select: { recyclableWeight: true },
+    });
+    const pendingConversionCount = pendingConversions.length;
+    const pendingConversionTonnes = parseFloat(
+      pendingConversions.reduce((s, r) => s + (r.recyclableWeight ?? 0), 0).toFixed(2),
+    );
+
+    const [recyclingCenterCount, totalCapacity] = await Promise.all([
+      this.prisma.recyclingCenter.count({ where: { active: true } }),
+      this.prisma.recyclingCenter.aggregate({ _sum: { capacity: true } }),
+    ]);
+
+    return {
+      supply: {
+        totalActiveListings: allMaterials.length,
+        categoryCoverage,
+        recycledListings,
+        thinCategories,
+        totalSuppliers,
+        totalCarriers,
+        totalRecyclers,
+      },
+      demand: {
+        totalRfqs: rfqTotal,
+        pendingRfqs: rfqPending,
+        expiredRfqs: rfqExpired,
+        matchRate,
+        topRequestedCategories: rfqByCategory.map((r) => ({
+          category: r.materialCategory as string,
+          count: r._count.id,
+        })),
+        ordersLast30d,
+        cancelledLast30d,
+        cancelRate:
+          ordersLast30d > 0
+            ? parseFloat(((cancelledLast30d / ordersLast30d) * 100).toFixed(1))
+            : 0,
+      },
+      transport: {
+        availableJobs,
+        inProgressJobs,
+        completedJobs30d,
+        totalCarriers,
+        jobAcceptanceRate,
+      },
+      recycling: {
+        pendingConversionCount,
+        pendingConversionTonnes,
+        totalRecyclingCenters: recyclingCenterCount,
+        totalCapacityTpd: parseFloat((Number(totalCapacity._sum.capacity ?? 0)).toFixed(1)),
+      },
+    };
+  }
+
+  // ── Market Matching ───────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/market-match
+   * Per-category and per-waste-type coverage matrix:
+   * for every option a buyer can select in a wizard, how many suppliers /
+   * recycling centers actually back it up?
+   * Status: COVERED (≥2), THIN (1), GAP (0).
+   */
+  async adminGetMarketMatch() {
+    const MATERIAL_CATEGORIES = [
+      'SAND', 'GRAVEL', 'STONE', 'CONCRETE', 'SOIL',
+      'RECYCLED_CONCRETE', 'RECYCLED_SOIL', 'ASPHALT', 'CLAY', 'OTHER',
+    ] as const;
+
+    const WASTE_TYPES = [
+      'CONCRETE', 'BRICK', 'WOOD', 'METAL', 'PLASTIC', 'SOIL', 'MIXED', 'HAZARDOUS',
+    ] as const;
+
+    // ── 1. Material supply ─────────────────────────────────────────────────
+    const activeMaterials = await this.prisma.material.findMany({
+      where: { active: true },
+      select: { category: true, supplierId: true },
+    });
+
+    // ── 2. RFQ demand per category ─────────────────────────────────────────
+    const rfqByCategory = await this.prisma.quoteRequest.groupBy({
+      by: ['materialCategory'],
+      _count: { id: true },
+    });
+
+    const pendingRfqByCategory = await this.prisma.quoteRequest.groupBy({
+      by: ['materialCategory'],
+      where: { status: 'PENDING' },
+      _count: { id: true },
+    });
+
+    // ── 3. Recycling center waste type coverage ────────────────────────────
+    const activeCenters = await this.prisma.recyclingCenter.findMany({
+      where: { active: true },
+      select: { acceptedWasteTypes: true, capacity: true },
+    });
+
+    // ── Process material matching ──────────────────────────────────────────
+    const matSuppliersByCat = new Map<string, Set<string>>();
+    for (const m of activeMaterials) {
+      if (!matSuppliersByCat.has(m.category)) matSuppliersByCat.set(m.category, new Set());
+      matSuppliersByCat.get(m.category)!.add(m.supplierId);
+    }
+
+    const rfqTotalMap = new Map<string, number>(
+      rfqByCategory.map((r) => [r.materialCategory, r._count.id]),
+    );
+    const rfqPendingMap = new Map<string, number>(
+      pendingRfqByCategory.map((r) => [r.materialCategory, r._count.id]),
+    );
+
+    const materialMatrix = MATERIAL_CATEGORIES.map((cat) => {
+      const supplierSet = matSuppliersByCat.get(cat) ?? new Set<string>();
+      const supplierCount = supplierSet.size;
+      const listingCount = activeMaterials.filter((m) => m.category === cat).length;
+      const rfqTotal = rfqTotalMap.get(cat) ?? 0;
+      const rfqPending = rfqPendingMap.get(cat) ?? 0;
+      const status: 'COVERED' | 'THIN' | 'GAP' =
+        supplierCount === 0 ? 'GAP' : supplierCount === 1 ? 'THIN' : 'COVERED';
+      return { category: cat, supplierCount, listingCount, rfqTotal, rfqPending, status };
+    });
+
+    // ── Process waste type matching ────────────────────────────────────────
+    const wasteCoverageMap = new Map<string, { centerCount: number; capacityTpd: number }>(
+      WASTE_TYPES.map((wt) => [wt, { centerCount: 0, capacityTpd: 0 }]),
+    );
+    for (const center of activeCenters) {
+      for (const wt of center.acceptedWasteTypes) {
+        const entry = wasteCoverageMap.get(wt);
+        if (entry) {
+          entry.centerCount++;
+          entry.capacityTpd += center.capacity ?? 0;
+        }
+      }
+    }
+
+    const wasteMatrix = WASTE_TYPES.map((wt) => {
+      const { centerCount, capacityTpd } = wasteCoverageMap.get(wt)!;
+      const status: 'COVERED' | 'THIN' | 'GAP' =
+        centerCount === 0 ? 'GAP' : centerCount === 1 ? 'THIN' : 'COVERED';
+      return {
+        wasteType: wt,
+        centerCount,
+        capacityTpd: parseFloat(capacityTpd.toFixed(1)),
+        status,
+      };
+    });
+
+    // ── Summary ────────────────────────────────────────────────────────────
+    const materialGaps = materialMatrix.filter((m) => m.status === 'GAP').length;
+    const wasteGaps = wasteMatrix.filter((w) => w.status === 'GAP').length;
+    const total = MATERIAL_CATEGORIES.length + WASTE_TYPES.length;
+    const covered =
+      materialMatrix.filter((m) => m.status !== 'GAP').length +
+      wasteMatrix.filter((w) => w.status !== 'GAP').length;
+
+    return {
+      materialMatrix,
+      wasteMatrix,
+      summary: {
+        totalMaterialCategories: MATERIAL_CATEGORIES.length,
+        coveredCategories: materialMatrix.filter((m) => m.status === 'COVERED').length,
+        thinCategories: materialMatrix.filter((m) => m.status === 'THIN').length,
+        gapCategories: materialGaps,
+        totalWasteTypes: WASTE_TYPES.length,
+        coveredWasteTypes: wasteMatrix.filter((w) => w.status === 'COVERED').length,
+        thinWasteTypes: wasteMatrix.filter((w) => w.status === 'THIN').length,
+        gapWasteTypes: wasteGaps,
+        matchScore: parseFloat(((covered / total) * 100).toFixed(1)),
+      },
+    };
   }
 }
 

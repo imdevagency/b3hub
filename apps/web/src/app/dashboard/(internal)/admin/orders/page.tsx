@@ -24,6 +24,24 @@ import { RefreshCw, ClipboardList, Search, Truck, XCircle } from 'lucide-react';
 
 // ── Status badge ────────────────────────────────────────────────────────────
 
+const ORDER_TYPE_LABELS: Record<string, string> = {
+  MATERIAL_ORDER: 'Materiāli',
+  SKIP_HIRE: 'Skip',
+  TRANSPORT: 'Transports',
+  DISPOSAL: 'Atkritumi',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Gaida',
+  AUTHORIZED: 'Autorizēts',
+  CAPTURED: 'Ieturēts',
+  PAID: 'Apmaksāts',
+  PARTIALLY_PAID: 'Daļēji',
+  RELEASED: 'Atbrīvots',
+  REFUNDED: 'Atmaksāts',
+  FAILED: 'Neizdevās',
+};
+
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-500',
   PENDING: 'bg-yellow-100 text-yellow-700',
@@ -59,6 +77,8 @@ function StatusBadge({ value, colorMap }: { value: string; colorMap: Record<stri
 // ── Filters ─────────────────────────────────────────────────────────────────
 
 type StatusFilter = 'ALL' | AdminOrder['status'];
+type PaymentFilter = 'ALL' | string;
+type TypeFilter = 'ALL' | string;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'ALL', label: 'Visi' },
@@ -70,6 +90,24 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'CANCELLED', label: 'Atcelti' },
 ];
 
+const PAYMENT_FILTERS: { value: PaymentFilter; label: string }[] = [
+  { value: 'ALL', label: 'Visi maks.' },
+  { value: 'PENDING', label: 'Gaida' },
+  { value: 'AUTHORIZED', label: 'Autorizēts' },
+  { value: 'CAPTURED', label: 'Ieturēts' },
+  { value: 'PAID', label: 'Apmaksāts' },
+  { value: 'FAILED', label: '⚠ Neizdevās' },
+  { value: 'REFUNDED', label: 'Atmaksāts' },
+];
+
+const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
+  { value: 'ALL', label: 'Visi tipi' },
+  { value: 'MATERIAL_ORDER', label: 'Materiāli' },
+  { value: 'SKIP_HIRE', label: 'Skip' },
+  { value: 'TRANSPORT', label: 'Transports' },
+  { value: 'DISPOSAL', label: 'Atkritumi' },
+];
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminOrdersPage() {
@@ -79,6 +117,8 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('ALL');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
 
   // Cancel dialog
   const [cancelTarget, setCancelTarget] = useState<AdminOrder | null>(null);
@@ -123,6 +163,8 @@ export default function AdminOrdersPage() {
 
   const filtered = orders.filter((o) => {
     if (statusFilter !== 'ALL' && o.status !== statusFilter) return false;
+    if (paymentFilter !== 'ALL' && o.paymentStatus !== paymentFilter) return false;
+    if (typeFilter !== 'ALL' && o.orderType !== typeFilter) return false;
     const q = search.toLowerCase();
     if (!q) return true;
     return (
@@ -176,6 +218,39 @@ export default function AdminOrdersPage() {
             className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
               statusFilter === value
                 ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Payment + type filters */}
+      <div className="flex gap-2 flex-wrap">
+        {PAYMENT_FILTERS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setPaymentFilter(value)}
+            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+              paymentFilter === value
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-background border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="w-px bg-border mx-1" />
+        {TYPE_FILTERS.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTypeFilter(value)}
+            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+              typeFilter === value
+                ? 'bg-purple-600 text-white border-purple-600'
                 : 'bg-background border-border text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -251,7 +326,9 @@ export default function AdminOrdersPage() {
                       className="px-4 py-3 cursor-pointer"
                       onClick={() => router.push(`/dashboard/orders/${o.id}`)}
                     >
-                      <span className="text-xs text-gray-600 font-medium">{o.orderType}</span>
+                      <span className="text-xs text-gray-600 font-medium">
+                        {ORDER_TYPE_LABELS[o.orderType] ?? o.orderType}
+                      </span>
                     </td>
                     <td
                       className="px-4 py-3 text-gray-700 cursor-pointer"
@@ -263,7 +340,10 @@ export default function AdminOrdersPage() {
                       <StatusBadge value={o.status} colorMap={STATUS_COLORS} />
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge value={o.paymentStatus} colorMap={PAYMENT_COLORS} />
+                      <StatusBadge
+                        value={PAYMENT_STATUS_LABELS[o.paymentStatus] ?? o.paymentStatus}
+                        colorMap={PAYMENT_COLORS}
+                      />
                     </td>
                     <td
                       className="px-4 py-3 text-right font-semibold text-gray-900 cursor-pointer"
@@ -308,6 +388,15 @@ export default function AdminOrdersPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="px-4 py-2 border-t border-border bg-muted/20 text-xs text-muted-foreground flex items-center justify-between">
+            <span>{filtered.length} pasūtījumi</span>
+            <span className="font-semibold">
+              Kopā:{' '}
+              {filtered
+                .reduce((s, o) => s + o.total, 0)
+                .toLocaleString('lv-LV', { style: 'currency', currency: 'EUR' })}
+            </span>
           </div>
         </div>
       )}

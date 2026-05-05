@@ -17,6 +17,16 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   CheckCircle,
   XCircle,
@@ -71,13 +81,14 @@ function ApplicationCard({
   app,
   onApprove,
   onReject,
-  loading,
+  loadingId,
 }: {
   app: ProviderApplication;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
-  loading: boolean;
+  loadingId: string | null;
 }) {
+  const busy = loadingId === app.id;
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -151,18 +162,26 @@ function ApplicationCard({
                 size="sm"
                 className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                 onClick={() => onReject(app.id)}
-                disabled={loading}
+                disabled={!!loadingId}
               >
-                <XCircle className="h-4 w-4 mr-1" />
+                {busy ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-1" />
+                )}
                 Noraidīt
               </Button>
               <Button
                 size="sm"
                 className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={() => onApprove(app.id)}
-                disabled={loading}
+                disabled={!!loadingId}
               >
-                <CheckCircle className="h-4 w-4 mr-1" />
+                {busy ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                )}
                 Apstiprināt
               </Button>
             </div>
@@ -190,7 +209,13 @@ export default function AdminApplicationsPage() {
   const [apps, setApps] = useState<ProviderApplication[]>([]);
   const [filter, setFilter] = useState<Filter>('PENDING');
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  // Confirm dialogs
+  const [confirmApprove, setConfirmApprove] = useState<ProviderApplication | null>(null);
+  const [confirmReject, setConfirmReject] = useState<ProviderApplication | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -218,29 +243,34 @@ export default function AdminApplicationsPage() {
     load(filter);
   }, [filter, load]);
 
-  const handleApprove = async (id: string) => {
-    if (!token) return;
-    setActionLoading(true);
+  const handleApprove = async () => {
+    if (!token || !confirmApprove) return;
+    setLoadingId(confirmApprove.id);
+    setActionError('');
     try {
-      const updated = await approveProviderApplication(id, '', token);
-      setApps((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      const updated = await approveProviderApplication(confirmApprove.id, '', token);
+      setApps((prev) => prev.map((a) => (a.id === confirmApprove.id ? updated : a)));
+      setConfirmApprove(null);
     } catch {
-      /* show toast in production */
+      setActionError('Kļūda apstiprinot pieteikumu. Mēģini vēlreiz.');
     } finally {
-      setActionLoading(false);
+      setLoadingId(null);
     }
   };
 
-  const handleReject = async (id: string) => {
-    if (!token) return;
-    setActionLoading(true);
+  const handleReject = async () => {
+    if (!token || !confirmReject) return;
+    setLoadingId(confirmReject.id);
+    setActionError('');
     try {
-      const updated = await rejectProviderApplication(id, '', token);
-      setApps((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      const updated = await rejectProviderApplication(confirmReject.id, rejectReason || '', token);
+      setApps((prev) => prev.map((a) => (a.id === confirmReject.id ? updated : a)));
+      setConfirmReject(null);
+      setRejectReason('');
     } catch {
-      /* show toast in production */
+      setActionError('Kļūda noraidot pieteikumu. Mēģini vēlreiz.');
     } finally {
-      setActionLoading(false);
+      setLoadingId(null);
     }
   };
 
@@ -303,13 +333,120 @@ export default function AdminApplicationsPage() {
             <ApplicationCard
               key={app.id}
               app={app}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              loading={actionLoading}
+              onApprove={(id) => {
+                setActionError('');
+                setConfirmApprove(apps.find((a) => a.id === id) ?? null);
+              }}
+              onReject={(id) => {
+                setActionError('');
+                setRejectReason('');
+                setConfirmReject(apps.find((a) => a.id === id) ?? null);
+              }}
+              loadingId={loadingId}
             />
           ))}
         </div>
       )}
+
+      {/* ── Approve confirm dialog ─────────────────────────────────────────── */}
+      <Dialog open={!!confirmApprove} onOpenChange={(open) => !open && setConfirmApprove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apstiprināt pieteikumu?</DialogTitle>
+            <DialogDescription>
+              {confirmApprove && (
+                <>
+                  <strong>
+                    {confirmApprove.firstName} {confirmApprove.lastName}
+                  </strong>{' '}
+                  — {confirmApprove.companyName}. Pēc apstiprināšanas piegādātājs varēs publicēt
+                  materiālus.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmApprove(null)}
+              disabled={!!loadingId}
+            >
+              Atcelt
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApprove}
+              disabled={!!loadingId}
+            >
+              {loadingId ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-1.5" />
+              )}
+              Apstiprināt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Reject confirm dialog ──────────────────────────────────────────── */}
+      <Dialog
+        open={!!confirmReject}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmReject(null);
+            setRejectReason('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Noraidīt pieteikumu?</DialogTitle>
+            <DialogDescription>
+              {confirmReject && (
+                <>
+                  <strong>
+                    {confirmReject.firstName} {confirmReject.lastName}
+                  </strong>{' '}
+                  — {confirmReject.companyName}. Iesniedzējs tiks informēts par noraidīšanu.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">Noraidīšanas iemesls (piezīme)</Label>
+            <Textarea
+              id="reject-reason"
+              placeholder="Paskaidrojiet noraidīšanas iemeslu (neobligāts, bet ieteicams)..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmReject(null);
+                setRejectReason('');
+              }}
+              disabled={!!loadingId}
+            >
+              Atcelt
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!!loadingId}>
+              {loadingId ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
+              ) : (
+                <XCircle className="h-4 w-4 mr-1.5" />
+              )}
+              Noraidīt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

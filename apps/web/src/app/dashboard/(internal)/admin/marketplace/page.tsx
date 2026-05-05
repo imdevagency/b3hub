@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   adminGetMarketplace,
+  adminUpdateCompany,
   type AdminMarketplaceData,
   type MarketplaceCarrier,
 } from '@/lib/api/admin';
@@ -508,8 +509,36 @@ function FloorPricesTab({ data }: { data: AdminMarketplaceData }) {
 
 // ─── Tab: Commission rates ─────────────────────────────────────────────────────
 
-function CommissionsTab({ data }: { data: AdminMarketplaceData }) {
+function CommissionsTab({
+  data,
+  token,
+  onReload,
+}: {
+  data: AdminMarketplaceData;
+  token: string;
+  onReload: () => void;
+}) {
   const [search, setSearch] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+
+  const handleCommissionSave = async (carrierId: string) => {
+    const rate = parseFloat(editValue);
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      setEditingId(null);
+      return;
+    }
+    setSaving(true);
+    try {
+      await adminUpdateCompany(carrierId, { commissionRate: rate }, token);
+      onReload();
+    } finally {
+      setSaving(false);
+      setEditingId(null);
+    }
+  };
+
   const visible = data.carriers.filter(
     (c) => !search || c.name.toLowerCase().includes(search.toLowerCase()),
   );
@@ -570,7 +599,43 @@ function CommissionsTab({ data }: { data: AdminMarketplaceData }) {
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="font-mono text-sm">{carrier.commissionRate}%</span>
+                  {editingId === carrier.id ? (
+                    <div className="flex items-center justify-end gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-16 rounded border border-primary px-1.5 py-0.5 text-right text-sm font-mono focus:outline-none"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCommissionSave(carrier.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                      />
+                      <span className="text-xs text-muted-foreground">%</span>
+                      <button
+                        onClick={() => handleCommissionSave(carrier.id)}
+                        disabled={saving}
+                        className="text-emerald-600 hover:text-emerald-700 p-0.5"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setEditingId(carrier.id);
+                        setEditValue(String(carrier.commissionRate));
+                      }}
+                      className="font-mono text-sm hover:underline hover:text-primary transition-colors"
+                      title="Rediģēt komisiju"
+                    >
+                      {carrier.commissionRate}%
+                    </button>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <span className="font-mono text-sm font-semibold">
@@ -688,7 +753,7 @@ function MarketplaceContent() {
           <FloorPricesTab data={data} />
         </TabsContent>
         <TabsContent value="commission" className="mt-4">
-          <CommissionsTab data={data} />
+          <CommissionsTab data={data} token={token} onReload={load} />
         </TabsContent>
       </Tabs>
     </div>

@@ -109,6 +109,17 @@ class UpdateMaterialDto {
   @IsBoolean() active!: boolean;
 }
 
+class AdminUpdateMaterialDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() category?: string;
+  @IsOptional() @IsString() subCategory?: string;
+  @IsOptional() @IsNumber() @Min(0) basePrice?: number;
+  @IsOptional() @IsString() unit?: string;
+  @IsOptional() @IsBoolean() inStock?: boolean;
+  @IsOptional() @IsNumber() @Min(0) stockQty?: number;
+  @IsOptional() @IsBoolean() featured?: boolean;
+}
+
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Admin')
@@ -236,6 +247,16 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.setMaterialActive(id, body.active, admin.userId);
+  }
+
+  /** PATCH /admin/materials/:id/details — edit material fields (price, name, category, stock, featured) */
+  @Patch('materials/:id/details')
+  updateMaterialDetails(
+    @Param('id') id: string,
+    @Body() body: AdminUpdateMaterialDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminUpdateMaterialDetails(id, body, admin.userId);
   }
 
   /** GET /admin/payments — full payment pipeline (last 500) */
@@ -402,6 +423,18 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.resolveException(id, body.resolution, admin.userId);
+  }
+
+  /**
+   * PATCH /admin/exceptions/:id/review
+   * Move an exception to IN_REVIEW status.
+   */
+  @Patch('exceptions/:id/review')
+  setExceptionInReview(
+    @Param('id') id: string,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.setExceptionInReview(id, admin.userId);
   }
 
   // ── Invoices admin view ───────────────────────────────────────────────────
@@ -680,6 +713,15 @@ export class AdminController {
     @CurrentUser() admin: RequestingUser,
   ) {
     return this.service.adminApusSetStatus(id, status, note, admin.userId);
+  }
+
+  /**
+   * GET /admin/b3-recycling/circular-economy-stats
+   * Platform-wide circular economy KPIs: waste in → recycled → listed → sold.
+   */
+  @Get('b3-recycling/circular-economy-stats')
+  getCircularEconomyStats() {
+    return this.service.adminGetCircularEconomyStats();
   }
 
   // ── B3 Construction ───────────────────────────────────────────────────────
@@ -1343,6 +1385,30 @@ export class AdminController {
   @Delete('b3-construction/client-invoices/:id')
   deleteClientInvoice(@Param('id') id: string) {
     return this.service.adminDeleteClientInvoice(id);
+  }
+
+  // ── Market Health ─────────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/market-health
+   * Cross-side liquidity monitor — supply depth, demand signals, transport
+   * availability, and recycling capacity in one response.
+   */
+  @Get('market-health')
+  getMarketHealth() {
+    return this.service.adminGetMarketHealth();
+  }
+
+  // ── Market Matching ───────────────────────────────────────────────────────
+
+  /**
+   * GET /admin/market-match
+   * Per-category / per-waste-type coverage matrix: for every option a buyer
+   * can pick in a wizard, how many suppliers / recycling centers back it up?
+   */
+  @Get('market-match')
+  getMarketMatch() {
+    return this.service.adminGetMarketMatch();
   }
 }
 

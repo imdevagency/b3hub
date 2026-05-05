@@ -8,10 +8,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetSupplierPerformance, type SupplierPerformance } from '@/lib/api/admin';
+import {
+  adminGetSupplierPerformance,
+  adminUpdateCompany,
+  type SupplierPerformance,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   RefreshCw,
   Building2,
@@ -20,6 +31,9 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  MoreHorizontal,
+  ExternalLink,
+  ShieldOff,
 } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -307,13 +321,45 @@ export default function AdminSuppliersPage() {
                         {s.commissionRate}%
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/dashboard/admin/companies?id=${s.id}`}
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Atvērt uzņēmumu"
-                        >
-                          <TrendingUp className="h-4 w-4" />
-                        </Link>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/dashboard/admin/companies?id=${s.id}`}
+                                className="flex items-center gap-2"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                Skatīt uzņēmumu
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/dashboard/admin/triage?tab=disputes&supplier=${s.id}`}
+                                className="flex items-center gap-2"
+                              >
+                                <AlertTriangle className="h-4 w-4" />
+                                Skatīt strīdus
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600 flex items-center gap-2"
+                              onClick={async () => {
+                                if (!token || !confirm(`Apturēt ${s.name}?`)) return;
+                                await adminUpdateCompany(s.id, { verified: false }, token);
+                                load();
+                              }}
+                            >
+                              <ShieldOff className="h-4 w-4" />
+                              Apturēt
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   );

@@ -496,6 +496,7 @@ model User {
   driverPayouts               CarrierPayout[]         @relation("DriverPayouts")
   dailyReportsCreated         DailyReport[]           @relation("DprCreatedBy")
   dailyReportsApproved        DailyReport[]           @relation("DprApprovedBy")
+  crmLeads                    CrmLead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -595,6 +596,7 @@ model Company {
   sellerInvoices             Invoice[]             @relation("SellerInvoices")
   supplierPayouts            SupplierPayout[]      @relation("SupplierPayouts")
   carrierPayouts             CarrierPayout[]       @relation("CarrierPayouts")
+  crmLeads                   CrmLead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1178,6 +1180,7 @@ model Vehicle {
 
   // Relations
   transportJobs TransportJob[]
+  assignments   VehicleAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2830,6 +2833,49 @@ enum SubEngagementStatus {
   CANCELLED
 }
 
+// ─── Group Equipment ──────────────────────────────────────────────────────────
+
+model ConstructionEquipment {
+  id               String          @id @default(cuid())
+  name             String
+  type             EquipmentType
+  licensePlate     String          @unique
+  yearManufactured Int
+  status           EquipmentStatus @default(IDLE)
+  buContext        BuContext       @default(UNASSIGNED)
+  hourlyRate       Float           @default(0)
+  assignedProject  String?         // free-text project name / id until Projects relation is needed
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status])
+  @@index([buContext])
+  @@map("construction_equipment")
+}
+
+enum EquipmentType {
+  EXCAVATOR
+  DUMPER
+  ROLLER
+  COMPACTOR
+  CRANE
+  OTHER
+}
+
+enum EquipmentStatus {
+  ACTIVE
+  MAINTENANCE
+  IDLE
+}
+
+enum BuContext {
+  CONSTRUCTION
+  MARKETPLACE
+  RECYCLING
+  UNASSIGNED
+}
+
 // ─── Construction Client Invoice ──────────────────────────────────────────────
 // Invoices issued BY B3 Construction TO their clients.
 // Tracks what has been billed and what has been paid, per project.
@@ -2863,4 +2909,212 @@ enum ClientInvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+}
+
+// ─── Fleet: Cross-BU Vehicle Assignments ─────────────────────────────────────
+
+model VehicleAssignment {
+  id          String         @id @default(cuid())
+  vehicle     Vehicle        @relation(fields: [vehicleId], references: [id])
+  vehicleId   String
+
+  jobType     VehicleJobType
+  jobId       String          // polymorphic ref — orderId / constructionJobId / recyclingJobId
+  buContext   BuContext
+
+  driverName  String?         // free-text until full User relation is needed
+  description String?         // task label shown in fleet overview
+  startedAt   DateTime
+  endedAt     DateTime?
+
+  notes       String?
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([vehicleId])
+  @@index([jobType, jobId])
+  @@index([buContext])
+  @@index([endedAt])
+  @@map("vehicle_assignments")
+}
+
+enum VehicleJobType {
+  ORDER
+  DPR
+  RECYCLING_JOB
+}
+
+// ─── Native CRM ───────────────────────────────────────────────────────────────
+
+model CrmLead {
+  id          String      @id @default(cuid())
+
+  // Contact info — can be a free-text contact or linked to platform user/company
+  name        String
+  email       String?
+  phone       String?
+  company     String?     // free-text company name (pre-registration)
+
+  // Optional link to existing platform records
+  linkedUserId    String?
+  linkedUser      User?    @relation(fields: [linkedUserId], references: [id])
+  linkedCompanyId String?
+  linkedCompany   Company? @relation(fields: [linkedCompanyId], references: [id])
+
+  type        LeadType    @default(OTHER)
+  source      LeadSource  @default(OTHER)
+  status      LeadStatus  @default(NEW)
+  buContext   BuContext   @default(UNASSIGNED)  // which BU this lead is relevant to
+
+  value       Float?      // estimated deal value (€)
+  description String?     // initial enquiry / context
+
+  assignedTo  String?     // admin user id (free-text until User relation needed)
+
+  notes       CrmNote[]
+  tasks       CrmTask[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([buContext])
+  @@index([linkedUserId])
+  @@index([linkedCompanyId])
+  @@map("crm_leads")
+}
+
+model CrmNote {
+  id        String   @id @default(cuid())
+  lead      CrmLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId    String
+  content   String
+  authorId  String   // admin user id
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@map("crm_notes")
+}
+
+model CrmTask {
+  id          String      @id @default(cuid())
+  lead        CrmLead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId      String
+  title       String
+  dueAt       DateTime?
+  done        Boolean     @default(false)
+  doneAt      DateTime?
+  assignedTo  String?     // admin user id
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([leadId])
+  @@index([done])
+  @@map("crm_tasks")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+enum LeadSource {
+  PLATFORM
+  WHATSAPP
+  EMAIL
+  PHONE
+  REFERRAL
+  OTHER
+}
+
+enum LeadType {
+  BUYER
+  SUPPLIER
+  CARRIER
+  RECYCLER
+  OTHER
+}
+
+// ─── Native CMS ───────────────────────────────────────────────────────────────
+
+model CmsArticle {
+  id               String            @id @default(cuid())
+  title            String
+  slug             String            @unique
+  body             String            // markdown
+  excerpt          String?
+  type             CmsArticleType    @default(HELP)
+  status           CmsStatus         @default(DRAFT)
+  locale           String            @default("lv") // lv | en | ru
+  translationKey   String?           // groups lv/en/ru variants of same content
+  pageKey          String?           // marketing page slot: home | about | services | blog | faq | privacy | terms
+  targetRole       String?           // BUYER | SELLER | DRIVER | null = all
+  sortOrder        Int               @default(0)
+  authorId         String?           // admin user id
+  publishedAt      DateTime?
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@index([locale])
+  @@index([translationKey])
+  @@index([pageKey])
+  @@map("cms_articles")
+}
+
+model CmsAnnouncement {
+  id          String                  @id @default(cuid())
+  title       String
+  body        String
+  severity    AnnouncementSeverity    @default(INFO)
+  target      AnnouncementTarget      @default(ALL)
+  visibleFrom DateTime               @default(now())
+  visibleUntil DateTime?
+  authorId    String?
+  active      Boolean                 @default(true)
+
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([active])
+  @@index([target])
+  @@index([visibleUntil])
+  @@map("cms_announcements")
+}
+
+enum CmsArticleType {
+  HELP
+  FAQ
+  BLOG
+  POLICY
+  PAGE     // static marketing page content
+  LANDING  // landing section block
+}
+
+enum CmsStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AnnouncementSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AnnouncementTarget {
+  ALL
+  BUYER
+  SELLER
+  DRIVER
+  ADMIN
 }

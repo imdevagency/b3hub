@@ -30,9 +30,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Triāža', href: '/dashboard/admin/triage' },
       { label: 'Dispečerizācija', href: '/dashboard/admin/dispatch' },
       { label: 'SLA', href: '/dashboard/admin/sla' },
-      { label: 'Izņēmumi', href: '/dashboard/admin/exceptions' },
-      { label: 'Atbalsts', href: '/dashboard/admin/support' },
-      { label: 'Strīdi', href: '/dashboard/admin/disputes' },
     ],
   },
   {
@@ -80,12 +77,9 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     primaryHref: '/dashboard/admin/catalog',
     tabs: [
       { label: 'Katalogs', href: '/dashboard/admin/catalog' },
-      { label: 'Materiāli', href: '/dashboard/admin/materials' },
-      { label: 'Tirgus motors', href: '/dashboard/admin/marketplace' },
-      { label: 'Skip izmēri', href: '/dashboard/admin/skip-sizes' },
-      { label: 'Laukumu ops.', href: '/dashboard/admin/field-ops' },
-      { label: 'Caurlaides', href: '/dashboard/admin/field-passes' },
-      { label: 'Svēršanas taloni', href: '/dashboard/admin/weighing-slips' },
+      { label: 'Tirgus dzinējs', href: '/dashboard/admin/marketplace' },
+      { label: 'Tirgus veselība', href: '/dashboard/admin/market-health' },
+      { label: 'Tirgus atbilstība', href: '/dashboard/admin/market-match' },
     ],
   },
   {
@@ -93,12 +87,25 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Konfigurācija',
     primaryHref: '/dashboard/admin/config',
     tabs: [
-      { label: 'Konfigurācija', href: '/dashboard/admin/config' },
+      { label: 'Vispārīgi', href: '/dashboard/admin/config' },
       { label: 'Komisijas', href: '/dashboard/admin/fee-config' },
       { label: 'Karodziņi', href: '/dashboard/admin/feature-flags' },
       { label: 'Iestatījumi', href: '/dashboard/admin/settings' },
       { label: 'Izsūtīšana', href: '/dashboard/admin/broadcast' },
-      { label: 'Audita žurnāls', href: '/dashboard/admin/audit-logs' },
+      { label: 'Audits', href: '/dashboard/admin/audit-logs' },
+      { label: 'Laukumu ops', href: '/dashboard/admin/field-ops' },
+      { label: 'Caurlaides', href: '/dashboard/admin/field-passes' },
+      { label: 'Taloni', href: '/dashboard/admin/weighing-slips' },
+    ],
+  },
+  {
+    id: 'reports',
+    label: 'Atskaites',
+    primaryHref: '/dashboard/admin/analytics',
+    tabs: [
+      { label: 'Analītika', href: '/dashboard/admin/analytics' },
+      { label: 'Mārketings', href: '/dashboard/admin/marketing' },
+      { label: 'Rezultātu karte', href: '/dashboard/admin/scorecard' },
     ],
   },
 ];

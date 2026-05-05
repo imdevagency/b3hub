@@ -57,6 +57,7 @@ import {
   Users,
   Wallet,
   Wrench,
+  ContactRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ADMIN_NAV_GROUPS } from '@/lib/admin-nav-groups';
@@ -129,6 +130,18 @@ const GROUP_NAV: NavSection[] = [
     label: 'Pārskats',
     items: [{ label: 'Grupas pārskats', href: '/dashboard/group', icon: Globe2 }],
   },
+  {
+    id: 'shared',
+    label: 'Kopīgie resursi',
+    items: [
+      { label: 'Flote', href: '/dashboard/group/fleet', icon: Navigation },
+      { label: 'Tehnika', href: '/dashboard/group/equipment', icon: Wrench },
+      { label: 'Komanda', href: '/dashboard/group/team', icon: Users },
+      { label: 'CRM', href: '/dashboard/group/crm', icon: ContactRound },
+      { label: 'CMS', href: '/dashboard/group/cms', icon: FileText },
+      { label: 'Mārketings', href: '/dashboard/group/marketing', icon: Megaphone },
+    ],
+  },
 ];
 
 // ─── B3Hub navigation (marketplace admin) ────────────────────────────────────
@@ -185,14 +198,10 @@ const B3HUB_NAV: NavSection[] = [
         groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'config')?.tabs.map((t) => t.href),
       },
       {
-        label: 'Analītika',
+        label: 'Atskaites',
         href: '/dashboard/admin/analytics',
         icon: BarChart3,
-      },
-      {
-        label: 'Rezultātu karte',
-        href: '/dashboard/admin/scorecard',
-        icon: Scale,
+        groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'reports')?.tabs.map((t) => t.href),
       },
     ],
   },
@@ -272,7 +281,6 @@ const CONSTRUCTION_NAV: NavSection[] = [
         href: '/dashboard/b3-construction/daily-reports',
         icon: ClipboardList,
       },
-      { label: 'Tehnika', href: '/dashboard/b3-construction/equipment', icon: Wrench },
       { label: 'Piedāvājumi', href: '/dashboard/b3-construction/tenders', icon: Gavel },
     ],
   },
@@ -292,7 +300,6 @@ const CONSTRUCTION_NAV: NavSection[] = [
     label: 'Iestatījumi',
     items: [
       { label: 'Klienti', href: '/dashboard/b3-construction/clients', icon: Building2 },
-      { label: 'Darbinieki', href: '/dashboard/b3-construction/employees', icon: Users },
       { label: 'Izmaksu likmes', href: '/dashboard/b3-construction/rates', icon: BookOpen },
       {
         label: 'DPR Veidnes',

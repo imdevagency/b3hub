@@ -19,6 +19,7 @@ import {
   Leaf,
   Loader2,
   MapPin,
+  PackagePlus,
   Recycle,
   Truck,
   Weight,
@@ -31,9 +32,11 @@ import {
   adminGetRecyclingJobs,
   adminGetRecyclingWasteRecords,
   adminGetApusStats,
+  adminGetCircularEconomyStats,
   type RecyclingInboundJob,
   type RecyclingWasteRecord,
   type ApusStats,
+  type CircularEconomyStats,
 } from '@/lib/api/admin';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -116,11 +119,21 @@ const SECTIONS = [
   },
   {
     title: 'Atkritumu žurnāls',
-    description: 'Pieņemto atkritumu apjomi pa veidiem: betons, augsne, metāli, koks.',
+    description:
+      'Pieņemto atkritumu apjomi pa veidiem: betons, augsne, metāli, koks. Konvertēt uz tirgus sarakstiem.',
     icon: ClipboardList,
     href: '/dashboard/b3-recycling/waste-log',
     color: 'text-amber-600',
     bg: 'bg-amber-50',
+  },
+  {
+    title: 'Aprites saraksti',
+    description:
+      'Apstrādāti materiāli — pārdod pārstrādāto betonu, grunti un metālus atpakaļ tirgū.',
+    icon: PackagePlus,
+    href: '/dashboard/admin/catalog',
+    color: 'text-teal-600',
+    bg: 'bg-teal-50',
   },
   {
     title: 'Finanses & Vide',
@@ -164,6 +177,7 @@ export default function B3RecyclingPage() {
   const [jobs, setJobs] = useState<RecyclingInboundJob[]>([]);
   const [records, setRecords] = useState<RecyclingWasteRecord[]>([]);
   const [apus, setApus] = useState<ApusStats | null>(null);
+  const [ce, setCe] = useState<CircularEconomyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -172,14 +186,16 @@ export default function B3RecyclingPage() {
     setLoading(true);
     setError(null);
     try {
-      const [jobsRes, recordsRes, apusRes] = await Promise.allSettled([
+      const [jobsRes, recordsRes, apusRes, ceRes] = await Promise.allSettled([
         adminGetRecyclingJobs(token, { limit: 500 }),
         adminGetRecyclingWasteRecords(token, { limit: 500 }),
         adminGetApusStats(token),
+        adminGetCircularEconomyStats(token),
       ]);
       if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data);
       if (recordsRes.status === 'fulfilled') setRecords(recordsRes.value.data);
       if (apusRes.status === 'fulfilled') setApus(apusRes.value);
+      if (ceRes.status === 'fulfilled') setCe(ceRes.value);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kļūda ielādējot datus');
     } finally {
@@ -317,6 +333,27 @@ export default function B3RecyclingPage() {
               bg="bg-orange-50"
             />
           </div>
+
+          {/* ── Circular economy pending alert ── */}
+          {ce && ce.pendingConversionCount > 0 && (
+            <div className="flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <PackagePlus className="h-5 w-5 text-orange-600 shrink-0" />
+                <div className="text-sm text-orange-800">
+                  <span className="font-semibold">
+                    {ce.pendingConversionCount} apstrādāti ieraksti
+                  </span>{' '}
+                  ({ce.pendingConversionTonnes.toFixed(1)} t) vēl nav pievienoti tirgum.
+                </div>
+              </div>
+              <a
+                href="/dashboard/b3-recycling/waste-log"
+                className="text-sm font-medium text-orange-700 hover:underline shrink-0"
+              >
+                Konvertēt →
+              </a>
+            </div>
+          )}
 
           {/* ── Job status breakdown ── */}
           {jobs.length > 0 && (

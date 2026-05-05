@@ -350,6 +350,7 @@ export interface AdminMaterial {
   inStock: boolean;
   stockQty: number | null;
   active: boolean;
+  featured: boolean;
   isRecycled: boolean;
   wasteRecordId?: string | null;
   recoveryRate?: number | null;
@@ -374,6 +375,27 @@ export async function adminSetMaterialActive(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ active }),
+  });
+}
+
+export async function adminUpdateMaterialDetails(
+  id: string,
+  dto: {
+    name?: string;
+    category?: string;
+    subCategory?: string;
+    basePrice?: number;
+    unit?: string;
+    inStock?: boolean;
+    stockQty?: number | null;
+    featured?: boolean;
+  },
+  token: string,
+): Promise<AdminMaterial> {
+  return apiFetch(`/admin/materials/${id}/details`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
   });
 }
 
@@ -626,6 +648,16 @@ export async function adminResolveException(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ resolution }),
+  });
+}
+
+export async function adminSetExceptionInReview(
+  exceptionId: string,
+  token: string,
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/admin/exceptions/${exceptionId}/review`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -2674,5 +2706,121 @@ export async function adminApusSetStatus(
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ status, note }),
+  });
+}
+
+// ─── Circular Economy Stats ────────────────────────────────────────────────
+
+export interface CircularEconomyStats {
+  totalWasteInTonnes: number;
+  totalRecyclableTonnes: number;
+  avgRecoveryRate: number;
+  totalConvertedCount: number;
+  totalConvertedTonnes: number;
+  pendingConversionCount: number;
+  pendingConversionTonnes: number;
+  co2SavedTonnes: number;
+  activeMaterialListings: number;
+  revenueFromRecycledMaterials: number;
+  quantitySoldTonnes: number;
+  monthlyTrend: { month: string; wasteIn: number; recycled: number; converted: number }[];
+}
+
+export async function adminGetCircularEconomyStats(
+  token: string,
+): Promise<CircularEconomyStats> {
+  return apiFetch<CircularEconomyStats>('/admin/b3-recycling/circular-economy-stats', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Market Health ────────────────────────────────────────────────────────────
+
+export interface MarketCategoryCoverage {
+  category: string;
+  listingCount: number;
+  supplierCount: number;
+}
+
+export interface MarketHealthData {
+  supply: {
+    totalActiveListings: number;
+    categoryCoverage: MarketCategoryCoverage[];
+    recycledListings: number;
+    thinCategories: string[];
+    totalSuppliers: number;
+    totalCarriers: number;
+    totalRecyclers: number;
+  };
+  demand: {
+    totalRfqs: number;
+    pendingRfqs: number;
+    expiredRfqs: number;
+    matchRate: number;
+    topRequestedCategories: { category: string; count: number }[];
+    ordersLast30d: number;
+    cancelledLast30d: number;
+    cancelRate: number;
+  };
+  transport: {
+    availableJobs: number;
+    inProgressJobs: number;
+    completedJobs30d: number;
+    totalCarriers: number;
+    jobAcceptanceRate: number;
+  };
+  recycling: {
+    pendingConversionCount: number;
+    pendingConversionTonnes: number;
+    totalRecyclingCenters: number;
+    totalCapacityTpd: number;
+  };
+}
+
+export async function adminGetMarketHealth(token: string): Promise<MarketHealthData> {
+  return apiFetch<MarketHealthData>('/admin/market-health', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ── Market Matching ───────────────────────────────────────────────────────────
+
+export type MatchStatus = 'COVERED' | 'THIN' | 'GAP';
+
+export interface MaterialMatchRow {
+  category: string;
+  supplierCount: number;
+  listingCount: number;
+  rfqTotal: number;
+  rfqPending: number;
+  status: MatchStatus;
+}
+
+export interface WasteMatchRow {
+  wasteType: string;
+  centerCount: number;
+  capacityTpd: number;
+  status: MatchStatus;
+}
+
+export interface MarketMatchData {
+  materialMatrix: MaterialMatchRow[];
+  wasteMatrix: WasteMatchRow[];
+  summary: {
+    totalMaterialCategories: number;
+    coveredCategories: number;
+    thinCategories: number;
+    gapCategories: number;
+    totalWasteTypes: number;
+    coveredWasteTypes: number;
+    thinWasteTypes: number;
+    gapWasteTypes: number;
+    matchScore: number;
+  };
+}
+
+export async function adminGetMarketMatch(token: string): Promise<MarketMatchData> {
+  return apiFetch<MarketMatchData>('/admin/market-match', {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

@@ -54,6 +54,11 @@ import { TrackingModule } from './tracking/tracking.module';
 import { GuestOrdersModule } from './guest-orders/guest-orders.module';
 import { PayoutsModule } from './payouts/payouts.module';
 import { B3FieldsModule } from './b3-fields/b3-fields.module';
+import { SocialModule } from './social/social.module';
+import { EquipmentModule } from './equipment/equipment.module';
+import { VehicleAssignmentsModule } from './vehicle-assignments/vehicle-assignments.module';
+import { CrmModule } from './crm/crm.module';
+import { CmsModule } from './cms/cms.module';
 
 @Module({
   imports: [
@@ -113,6 +118,11 @@ import { B3FieldsModule } from './b3-fields/b3-fields.module';
     GuestOrdersModule,
     PayoutsModule,
     B3FieldsModule,
+    SocialModule,
+    EquipmentModule,
+    VehicleAssignmentsModule,
+    CrmModule,
+    CmsModule,
   ],
   controllers: [AppController],
   providers: [

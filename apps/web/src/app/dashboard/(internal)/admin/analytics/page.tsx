@@ -15,10 +15,14 @@ import {
   BarChart3,
   CheckCircle2,
   Euro,
+  Leaf,
   Loader2,
+  PackagePlus,
+  Recycle,
   ShoppingBag,
   Truck,
   Users,
+  Weight,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
@@ -36,8 +40,10 @@ import {
 import {
   getAdminStats,
   adminGetFinanceStats,
+  adminGetCircularEconomyStats,
   type AdminStats,
   type AdminFinanceStats,
+  type CircularEconomyStats,
 } from '@/lib/api/admin';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -139,6 +145,7 @@ export default function AdminAnalyticsPage() {
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [finance, setFinance] = useState<AdminFinanceStats | null>(null);
+  const [ce, setCe] = useState<CircularEconomyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,12 +154,14 @@ export default function AdminAnalyticsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, financeRes] = await Promise.allSettled([
+      const [statsRes, financeRes, ceRes] = await Promise.allSettled([
         getAdminStats(token),
         adminGetFinanceStats(token),
+        adminGetCircularEconomyStats(token),
       ]);
       if (statsRes.status === 'fulfilled') setStats(statsRes.value);
       if (financeRes.status === 'fulfilled') setFinance(financeRes.value);
+      if (ceRes.status === 'fulfilled') setCe(ceRes.value);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kļūda ielādējot datus');
     } finally {
@@ -287,6 +296,7 @@ export default function AdminAnalyticsPage() {
               <TabsTrigger value="orders">Pasūtījumu apjoms</TabsTrigger>
               <TabsTrigger value="revenue">Ieņēmumu sadalījums</TabsTrigger>
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+              <TabsTrigger value="circular">Aprite ♻️</TabsTrigger>
             </TabsList>
 
             {/* ── GMV trends ── */}
@@ -474,6 +484,168 @@ export default function AdminAnalyticsPage() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+            {/* ── Circular Economy ── */}
+            <TabsContent value="circular" className="pt-4">
+              {!ce ? (
+                <p className="text-sm text-muted-foreground">Nav datu</p>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {/* KPIs */}
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <KpiCard
+                      label="Kopā pieņemts"
+                      value={`${ce.totalWasteInTonnes.toLocaleString('lv-LV', { maximumFractionDigits: 1 })} t`}
+                      sub={`${ce.totalRecyclableTonnes.toLocaleString('lv-LV', { maximumFractionDigits: 1 })} t atgūstami`}
+                      icon={Weight}
+                      color="text-amber-600"
+                      bg="bg-amber-50"
+                    />
+                    <KpiCard
+                      label="Pārstrādes likme"
+                      value={`${ce.avgRecoveryRate.toFixed(0)}%`}
+                      sub={`${ce.totalConvertedCount} ieraksti tirgū`}
+                      icon={Recycle}
+                      color="text-green-600"
+                      bg="bg-green-50"
+                    />
+                    <KpiCard
+                      label="CO₂ ietaupīts"
+                      value={`${ce.co2SavedTonnes.toLocaleString('lv-LV', { maximumFractionDigits: 1 })} t`}
+                      sub="0,35 t CO₂e/t novirzīts"
+                      icon={Leaf}
+                      color="text-teal-600"
+                      bg="bg-teal-50"
+                    />
+                    <KpiCard
+                      label="Gaida konversiju"
+                      value={ce.pendingConversionCount}
+                      sub={`${ce.pendingConversionTonnes.toLocaleString('lv-LV', { maximumFractionDigits: 1 })} t nav sarakstā`}
+                      icon={PackagePlus}
+                      color={
+                        ce.pendingConversionCount > 0 ? 'text-orange-600' : 'text-muted-foreground'
+                      }
+                      bg={ce.pendingConversionCount > 0 ? 'bg-orange-50' : 'bg-muted'}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <KpiCard
+                      label="Aktīvie saraksti"
+                      value={ce.activeMaterialListings}
+                      sub="Pārstrādāti materiāli tirgū"
+                      icon={PackagePlus}
+                      color="text-blue-600"
+                      bg="bg-blue-50"
+                    />
+                    <KpiCard
+                      label="Ieņēmumi no RC"
+                      value={eur(ce.revenueFromRecycledMaterials)}
+                      sub={`${ce.quantitySoldTonnes.toLocaleString('lv-LV', { maximumFractionDigits: 1 })} t pārdots`}
+                      icon={Euro}
+                      color="text-green-600"
+                      bg="bg-green-50"
+                    />
+                    <KpiCard
+                      label="Konvertēts (t)"
+                      value={`${ce.totalConvertedTonnes.toLocaleString('lv-LV', { maximumFractionDigits: 1 })} t`}
+                      sub="No atkritumu plūsmas"
+                      icon={Recycle}
+                      color="text-purple-600"
+                      bg="bg-purple-50"
+                    />
+                    <KpiCard
+                      label="Aprites koeficients"
+                      value={
+                        ce.totalWasteInTonnes > 0
+                          ? `${((ce.totalConvertedTonnes / ce.totalWasteInTonnes) * 100).toFixed(0)}%`
+                          : '—'
+                      }
+                      sub="Konvertēts / pieņemts"
+                      icon={Recycle}
+                      color="text-indigo-600"
+                      bg="bg-indigo-50"
+                    />
+                  </div>
+
+                  {/* Monthly trend */}
+                  {ce.monthlyTrend.length > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm font-medium">
+                            Atkritumu apjoms pa mēnešiem (t)
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-3">
+                          {ce.monthlyTrend.map((m) => (
+                            <HBar
+                              key={m.month}
+                              label={monthLabel(m.month)}
+                              value={m.wasteIn}
+                              max={Math.max(...ce.monthlyTrend.map((x) => x.wasteIn), 1)}
+                              color="bg-amber-500"
+                            />
+                          ))}
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm font-medium">
+                            Pārstrādāts un konvertēts (t)
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-3">
+                          {ce.monthlyTrend.map((m) => (
+                            <div key={m.month} className="flex flex-col gap-1">
+                              <HBar
+                                label={monthLabel(m.month)}
+                                value={m.recycled}
+                                max={Math.max(...ce.monthlyTrend.map((x) => x.recycled), 1)}
+                                color="bg-green-500"
+                              />
+                              <HBar
+                                label=""
+                                value={m.converted}
+                                max={Math.max(...ce.monthlyTrend.map((x) => x.recycled), 1)}
+                                color="bg-teal-400"
+                              />
+                            </div>
+                          ))}
+                          <div className="flex gap-4 pt-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <span className="inline-block h-2 w-3 rounded bg-green-500" />
+                              Pārstrādāts
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="inline-block h-2 w-3 rounded bg-teal-400" />
+                              Konvertēts
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Action link */}
+                  {ce.pendingConversionCount > 0 && (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 flex items-center justify-between">
+                      <div className="text-sm text-orange-800">
+                        <span className="font-semibold">{ce.pendingConversionCount} ieraksti</span>{' '}
+                        ({ce.pendingConversionTonnes.toFixed(1)} t) ir apstrādāti bet vēl nav
+                        pievienoti tirgum.
+                      </div>
+                      <a
+                        href="/dashboard/b3-recycling/waste-log"
+                        className="text-sm font-medium text-orange-700 hover:underline"
+                      >
+                        Atvērt žurnālu →
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </>

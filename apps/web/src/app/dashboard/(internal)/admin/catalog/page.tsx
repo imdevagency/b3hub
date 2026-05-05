@@ -20,10 +20,16 @@ import {
   Trash2,
   Recycle,
   ArrowUpDown,
+  Star,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
-import { adminGetMaterials, adminSetMaterialActive, type AdminMaterial } from '@/lib/api/admin';
+import {
+  adminGetMaterials,
+  adminSetMaterialActive,
+  adminUpdateMaterialDetails,
+  type AdminMaterial,
+} from '@/lib/api/admin';
 import {
   adminListSkipSizes,
   adminUpsertSkipSize,
@@ -78,6 +84,32 @@ function catLabel(cat: string) {
 
 type MatStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
+const MATERIAL_CATEGORIES = [
+  'SAND',
+  'GRAVEL',
+  'STONE',
+  'CONCRETE',
+  'SOIL',
+  'RECYCLED_CONCRETE',
+  'RECYCLED_SOIL',
+  'ASPHALT',
+  'CLAY',
+  'OTHER',
+] as const;
+
+const UNIT_OPTIONS = ['TONNE', 'M3', 'PIECE', 'LOAD'] as const;
+
+interface EditForm {
+  name: string;
+  category: string;
+  subCategory: string;
+  basePrice: string;
+  unit: string;
+  inStock: boolean;
+  stockQty: string;
+  featured: boolean;
+}
+
 function MaterialsTab({ token }: { token: string }) {
   const [materials, setMaterials] = useState<AdminMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +117,10 @@ function MaterialsTab({ token }: { token: string }) {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<MatStatusFilter>('ALL');
+  const [editTarget, setEditTarget] = useState<AdminMaterial | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -108,6 +144,64 @@ function MaterialsTab({ token }: { token: string }) {
       setMaterials((prev) => prev.map((m) => (m.id === id ? { ...m, active } : m)));
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  function openEdit(m: AdminMaterial) {
+    setEditTarget(m);
+    setSaveError(null);
+    setEditForm({
+      name: m.name,
+      category: m.category,
+      subCategory: m.subCategory ?? '',
+      basePrice: String(m.basePrice),
+      unit: m.unit,
+      inStock: m.inStock,
+      stockQty: m.stockQty != null ? String(m.stockQty) : '',
+      featured: m.featured,
+    });
+  }
+
+  function closeEdit() {
+    setEditTarget(null);
+    setEditForm(null);
+    setSaveError(null);
+  }
+
+  async function handleSaveEdit() {
+    if (!editTarget || !editForm || !token) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const dto: Parameters<typeof adminUpdateMaterialDetails>[1] = {};
+      if (editForm.name !== editTarget.name) dto.name = editForm.name;
+      if (editForm.category !== editTarget.category) dto.category = editForm.category;
+      if (editForm.subCategory !== (editTarget.subCategory ?? ''))
+        dto.subCategory = editForm.subCategory || undefined;
+      const newPrice = parseFloat(editForm.basePrice);
+      if (!isNaN(newPrice) && newPrice !== editTarget.basePrice) dto.basePrice = newPrice;
+      if (editForm.unit !== editTarget.unit) dto.unit = editForm.unit;
+      if (editForm.inStock !== editTarget.inStock) dto.inStock = editForm.inStock;
+      const newQty = editForm.stockQty !== '' ? parseInt(editForm.stockQty, 10) : null;
+      if (newQty !== editTarget.stockQty) dto.stockQty = newQty ?? undefined;
+      if (editForm.featured !== editTarget.featured) dto.featured = editForm.featured;
+      const updated = await adminUpdateMaterialDetails(editTarget.id, dto, token);
+      setMaterials((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
+      closeEdit();
+    } catch {
+      setSaveError('Saglabāšana neizdevās. Mēģini vēlreiz.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleFeatured(id: string, featured: boolean) {
+    if (!token) return;
+    try {
+      const updated = await adminUpdateMaterialDetails(id, { featured }, token);
+      setMaterials((prev) => prev.map((m) => (m.id === id ? { ...m, ...updated } : m)));
+    } catch {
+      // silently ignore — UI will revert on next load
     }
   }
 
@@ -328,41 +422,66 @@ function MaterialsTab({ token }: { token: string }) {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {m.active ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={togglingId === m.id}
-                          onClick={() => handleToggle(m.id, false)}
-                          className="text-red-700 border-red-200 hover:bg-red-50"
-                        >
-                          {togglingId === m.id ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <Ban className="h-3.5 w-3.5 mr-1" />
-                              Deaktivizēt
-                            </>
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Featured star — quick toggle */}
+                        <button
+                          title={m.featured ? 'Noņemt no veicināšanas' : 'Veicināt katalogā'}
+                          onClick={() => handleToggleFeatured(m.id, !m.featured)}
+                          className={cn(
+                            'p-1.5 rounded transition-colors',
+                            m.featured
+                              ? 'text-amber-500 hover:text-amber-600'
+                              : 'text-muted-foreground hover:text-amber-500',
                           )}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={togglingId === m.id}
-                          onClick={() => handleToggle(m.id, true)}
-                          className="text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                         >
-                          {togglingId === m.id ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <>
-                              <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                              Aktivizēt
-                            </>
-                          )}
+                          <Star className={cn('h-4 w-4', m.featured && 'fill-amber-400')} />
+                        </button>
+                        {/* Edit */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEdit(m)}
+                          className="px-2"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                      )}
+                        {/* Active toggle */}
+                        {m.active ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={togglingId === m.id}
+                            onClick={() => handleToggle(m.id, false)}
+                            className="text-red-700 border-red-200 hover:bg-red-50"
+                          >
+                            {togglingId === m.id ? (
+                              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <Ban className="h-3.5 w-3.5 mr-1" />
+                                Deaktivizēt
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={togglingId === m.id}
+                            onClick={() => handleToggle(m.id, true)}
+                            className="text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                          >
+                            {togglingId === m.id ? (
+                              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                Aktivizēt
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -371,6 +490,145 @@ function MaterialsTab({ token }: { token: string }) {
           </div>
         </div>
       )}
+
+      {/* ── Edit material dialog ──────────────────────────────────────────── */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && closeEdit()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Rediģēt materiālu</DialogTitle>
+          </DialogHeader>
+          {editForm && (
+            <div className="space-y-4 pt-1">
+              {/* Name */}
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-name">Nosaukums</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => f && { ...f, name: e.target.value })}
+                />
+              </div>
+              {/* Category */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Kategorija</Label>
+                  <Select
+                    value={editForm.category}
+                    onValueChange={(v) => setEditForm((f) => f && { ...f, category: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MATERIAL_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {catLabel(c)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-sub">Apakškategorija</Label>
+                  <Input
+                    id="edit-sub"
+                    placeholder="nav"
+                    value={editForm.subCategory}
+                    onChange={(e) => setEditForm((f) => f && { ...f, subCategory: e.target.value })}
+                  />
+                </div>
+              </div>
+              {/* Price + Unit */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-price">Bāzes cena (€)</Label>
+                  <Input
+                    id="edit-price"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={editForm.basePrice}
+                    onChange={(e) => setEditForm((f) => f && { ...f, basePrice: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Vienība</Label>
+                  <Select
+                    value={editForm.unit}
+                    onValueChange={(v) => setEditForm((f) => f && { ...f, unit: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNIT_OPTIONS.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {UNIT_LABELS[u] ?? u}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* Stock */}
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <div className="flex items-center gap-2 pt-5">
+                  <Switch
+                    id="edit-instock"
+                    checked={editForm.inStock}
+                    onCheckedChange={(v) => setEditForm((f) => f && { ...f, inStock: v })}
+                  />
+                  <Label htmlFor="edit-instock">Noliktavā</Label>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-qty">Daudzums</Label>
+                  <Input
+                    id="edit-qty"
+                    type="number"
+                    min={0}
+                    placeholder="nav norādīts"
+                    value={editForm.stockQty}
+                    onChange={(e) => setEditForm((f) => f && { ...f, stockQty: e.target.value })}
+                  />
+                </div>
+              </div>
+              {/* Featured */}
+              <div className="flex items-center gap-2 rounded-lg border px-4 py-3 bg-amber-50 border-amber-200">
+                <Switch
+                  id="edit-featured"
+                  checked={editForm.featured}
+                  onCheckedChange={(v) => setEditForm((f) => f && { ...f, featured: v })}
+                />
+                <div>
+                  <Label htmlFor="edit-featured" className="font-medium">
+                    Veicināts katalogā
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Šis materiāls tiks rādīts augstāk katalogā
+                  </p>
+                </div>
+                <Star
+                  className={cn(
+                    'h-4 w-4 ml-auto',
+                    editForm.featured ? 'text-amber-500 fill-amber-400' : 'text-muted-foreground',
+                  )}
+                />
+              </div>
+
+              {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEdit} disabled={saving}>
+              Atcelt
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              Saglabāt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

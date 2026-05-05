@@ -640,13 +640,6 @@ _No props interface — check source file._
 
 ---
 
-#### `ModeSwitcher` — `@/components/ui/ModeSwitcher`
-_No props interface — check source file._
-
-**Exports:** `ModeSwitcher`
-
----
-
 #### `OfflineBanner` — `@/components/ui/OfflineBanner`
 _No props interface — check source file._
 
@@ -684,6 +677,13 @@ _No props interface — check source file._
 _No props interface — check source file._
 
 **Exports:** `RatingModal`
+
+---
+
+#### `RoleSheet` — `@/components/ui/RoleSheet`
+_No props interface — check source file._
+
+**Exports:** `RoleSheet`
 
 ---
 
@@ -800,7 +800,7 @@ _No props interface — check source file._
 | `rightElement` | `React.ReactNode` | optional |
 | `transparent` | `boolean` | optional |
 
-**Exports:** `RoleSheet`, `TopBar`
+**Exports:** `TopBar`
 
 ---
 

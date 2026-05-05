@@ -34,3 +34,7 @@ export * from './tracking';
 export * from './guest-orders';
 export * from './b3-fields';
 export * from './recycling';
+export * from './equipment';
+export * from './vehicle-assignments';
+export * from './crm';
+export * from './cms';
