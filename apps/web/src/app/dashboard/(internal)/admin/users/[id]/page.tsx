@@ -16,10 +16,17 @@ import {
   ShieldCheck,
   Truck,
   Package,
+  Recycle,
   ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetUserById, adminUpdateUser, type AdminUserDetail } from '@/lib/api/admin';
+import {
+  adminGetUserById,
+  adminUpdateUser,
+  adminGetCompanies,
+  type AdminUserDetail,
+  type AdminCompany,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +34,13 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { fmtDate } from '@/lib/format';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -72,13 +86,21 @@ export default function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
+  const [assignCompanyId, setAssignCompanyId] = useState<string>('');
+  const [assignRole, setAssignRole] = useState<string>('OWNER');
+  const [assigning, setAssigning] = useState(false);
 
   const load = useCallback(async () => {
     if (!token || !id) return;
     setLoading(true);
     setError(null);
     try {
-      setUser(await adminGetUserById(id, token));
+      const [u, cos] = await Promise.all([adminGetUserById(id, token), adminGetCompanies(token)]);
+      setUser(u);
+      setAssignCompanyId(u.company?.id ?? '');
+      setAssignRole(u.companyRole ?? 'OWNER');
+      setCompanies(cos);
     } catch {
       setError('Neizdevās ielādēt lietotāja informāciju.');
     } finally {
@@ -113,6 +135,26 @@ export default function AdminUserDetailPage() {
       setError('Neizdevās mainīt statusu.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function assignToCompany() {
+    if (!token || !user) return;
+    setAssigning(true);
+    try {
+      await adminUpdateUser(
+        user.id,
+        {
+          companyId: assignCompanyId || null,
+          companyRole: (assignCompanyId ? assignRole : null) as string | null,
+        },
+        token,
+      );
+      await load();
+    } catch {
+      setError('Neizdevās piešķirt uzņēmumu.');
+    } finally {
+      setAssigning(false);
     }
   }
 
@@ -285,6 +327,72 @@ export default function AdminUserDetailPage() {
               disabled={saving}
             />
           </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Recycle className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="canRecycle" className="font-medium">
+                  Reciklēšana (canRecycle)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Apstiprināts uzturēt atkritumu pieņemšanas/reciklēšanas centru
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="canRecycle"
+              checked={user.canRecycle ?? false}
+              onCheckedChange={(v) => toggle('canRecycle', v)}
+              disabled={saving}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Company assignment */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Piešķirt uzņēmumam
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Uzņēmums</Label>
+              <Select value={assignCompanyId} onValueChange={setAssignCompanyId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Nav piešķirta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nav piešķirta</SelectItem>
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Loma uzņēmumā</Label>
+              <Select value={assignRole} onValueChange={setAssignRole} disabled={!assignCompanyId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OWNER">Vlastnieks (OWNER)</SelectItem>
+                  <SelectItem value="MANAGER">Vadītājs (MANAGER)</SelectItem>
+                  <SelectItem value="DRIVER">Šoferis (DRIVER)</SelectItem>
+                  <SelectItem value="MEMBER">Loceklis (MEMBER)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button size="sm" onClick={assignToCompany} disabled={assigning}>
+            {assigning ? 'Saglabā...' : 'Saglabāt piederību'}
+          </Button>
         </CardContent>
       </Card>
 

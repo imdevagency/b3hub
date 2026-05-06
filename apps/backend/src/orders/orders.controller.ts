@@ -164,6 +164,18 @@ export class OrdersController {
     return this.ordersService.getMySchedules(user);
   }
 
+  /** GET /orders/supplier/loading-schedule — day-view loading schedule for pit dispatchers */
+  @Get('supplier/loading-schedule')
+  @UseGuards(RequireScopeGuard)
+  @RequireScope('orders:read')
+  getSupplierLoadingSchedule(
+    @CurrentUser() user: RequestingUser,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.ordersService.getSupplierLoadingSchedule(user, from, to);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.ordersService.findOne(id, user);
@@ -248,6 +260,26 @@ export class OrdersController {
     @CurrentUser() user: RequestingUser,
   ) {
     return this.ordersService.linkSkipOrder(id, skipHireOrderId ?? null, user);
+  }
+
+  /** PATCH /orders/:id/amend — buyer updates delivery details on PENDING/CONFIRMED orders */
+  @UseGuards(JwtOrApiKeyGuard, RequireScopeGuard)
+  @RequireScope('orders:write')
+  @Patch(':id/amend')
+  amend(
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      deliveryDate?: string;
+      deliveryWindow?: string;
+      notes?: string;
+      siteContactName?: string;
+      siteContactPhone?: string;
+      poNumber?: string | null;
+    },
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.amend(id, dto, user);
   }
 
   // ─── Recurring order schedules ────────────────────────────────────────────

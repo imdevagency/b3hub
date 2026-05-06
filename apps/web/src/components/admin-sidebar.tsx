@@ -115,13 +115,10 @@ type AdminBadges = {
 
 // ─── Business unit definitions ────────────────────────────────────────────────
 
-type Scope = 'group' | 'b3hub' | 'recycling' | 'construction';
+type Scope = 'b3hub';
 
 const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
-  { id: 'group', label: 'Grupa', href: '/dashboard/group' },
   { id: 'b3hub', label: 'APP', href: '/dashboard/admin' },
-  { id: 'recycling', label: 'Recycle', href: '/dashboard/b3-recycling' },
-  { id: 'construction', label: 'Būve', href: '/dashboard/b3-construction' },
 ];
 
 // ─── B3 Group navigation (cross-BU overview) ────────────────────────────────
@@ -139,9 +136,6 @@ const GROUP_NAV: NavSection[] = [
       { label: 'Flote', href: '/dashboard/group/fleet', icon: Navigation },
       { label: 'Tehnika', href: '/dashboard/group/equipment', icon: Wrench },
       { label: 'Komanda', href: '/dashboard/group/team', icon: Users },
-      { label: 'CRM', href: '/dashboard/group/crm', icon: ContactRound },
-      { label: 'CMS', href: '/dashboard/group/cms', icon: FileText },
-      { label: 'Mārketings', href: '/dashboard/group/marketing', icon: Megaphone },
     ],
   },
   {
@@ -210,6 +204,15 @@ const B3HUB_NAV: NavSection[] = [
         icon: BarChart3,
         groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'reports')?.tabs.map((t) => t.href),
       },
+    ],
+  },
+  {
+    id: 'growth',
+    label: 'Izaugsme',
+    items: [
+      { label: 'CRM', href: '/dashboard/admin/crm', icon: ContactRound },
+      { label: 'CMS', href: '/dashboard/admin/cms', icon: FileText },
+      { label: 'Mārketings', href: '/dashboard/admin/marketing', icon: Megaphone },
     ],
   },
   {
@@ -347,17 +350,11 @@ const CONSTRUCTION_NAV: NavSection[] = [
 // ─── Scope icon map ───────────────────────────────────────────────────────────
 
 const SCOPE_ICON: Record<Scope, React.ElementType> = {
-  group: Globe2,
   b3hub: ShieldCheck,
-  recycling: Recycle,
-  construction: HardHat,
 };
 
 const SCOPE_SUBTITLE: Record<Scope, string> = {
-  group: 'B3 Grupas pārskats',
   b3hub: 'Platformas pārvaldība',
-  recycling: 'Pārstrādes centrs',
-  construction: 'Būvdarbu projekti',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -367,23 +364,10 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   const pathname = usePathname();
   const router = useRouter();
 
-  // Detect active scope from URL
-  const activeScope: Scope = pathname.startsWith('/dashboard/b3-recycling')
-    ? 'recycling'
-    : pathname.startsWith('/dashboard/b3-construction')
-      ? 'construction'
-      : pathname === '/dashboard/group' || pathname.startsWith('/dashboard/group/')
-        ? 'group'
-        : 'b3hub';
+  // Always APP scope — Grupa tab removed
+  const activeScope: Scope = 'b3hub';
 
-  const activeNav =
-    activeScope === 'recycling'
-      ? RECYCLING_NAV
-      : activeScope === 'construction'
-        ? CONSTRUCTION_NAV
-        : activeScope === 'group'
-          ? GROUP_NAV
-          : B3HUB_NAV;
+  const activeNav = B3HUB_NAV;
 
   const ScopeIcon = SCOPE_ICON[activeScope];
 
@@ -398,15 +382,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     pendingGuestOrders: 0,
   });
 
-  const isActive = React.useCallback(
-    makeIsRouteActive(pathname, [
-      '/dashboard/admin',
-      '/dashboard/b3-recycling',
-      '/dashboard/b3-construction',
-      '/dashboard/group',
-    ]),
-    [pathname],
-  );
+  const isActive = React.useCallback(makeIsRouteActive(pathname, ['/dashboard/admin']), [pathname]);
 
   // Live badge refresh — only runs for B3Hub scope (where badges are meaningful)
   React.useEffect(() => {
@@ -501,26 +477,6 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-
-        {/* Business unit switcher — hidden when sidebar is collapsed to icon */}
-        <div className="px-2 pb-1 group-data-[collapsible=icon]:hidden">
-          <div className="flex rounded-lg bg-gray-100 p-0.5 gap-0.5">
-            {BUSINESS_UNITS.map((unit) => (
-              <Link
-                key={unit.id}
-                href={unit.href}
-                className={cn(
-                  'flex-1 text-center rounded-md px-1 py-1.5 text-[10px] font-semibold transition-all leading-none',
-                  activeScope === unit.id
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700',
-                )}
-              >
-                {unit.label}
-              </Link>
-            ))}
-          </div>
-        </div>
       </SidebarHeader>
 
       {/* Nav sections — scoped per business unit */}

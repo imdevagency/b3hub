@@ -6,7 +6,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { UserStatus, UserType } from '@prisma/client';
+import { CompanyRole, UserStatus, UserType } from '@prisma/client';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -32,6 +32,15 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(UserType)
   userType?: UserType;
+
+  // Company linking — admin assigns user to an existing company
+  @IsOptional()
+  @IsString()
+  companyId?: string | null;
+
+  @IsOptional()
+  @IsEnum(CompanyRole)
+  companyRole?: CompanyRole | null;
 
   // BuyerProfile fields
   @IsOptional()

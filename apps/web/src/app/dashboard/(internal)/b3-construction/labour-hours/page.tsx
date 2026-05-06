@@ -65,7 +65,11 @@ export default function LabourHoursPage() {
     setLoading(true);
     setError(null);
     try {
-      const empRes = await adminGetEmployees(token, { activeOnly: true, limit: 200 });
+      const empRes = await adminGetEmployees(token, {
+        activeOnly: true,
+        internalOnly: true,
+        limit: 200,
+      });
       setEmployees(empRes.data);
 
       const results = await Promise.all(empRes.data.map((e) => adminGetEmployeeHours(e.id, token)));

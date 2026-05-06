@@ -44,6 +44,7 @@ export interface User {
     name: string;
     companyType: string;
     logo?: string;
+    features?: string[];
   };
   buyerProfile?: {
     creditLimit: number | null;

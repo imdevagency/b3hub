@@ -7,11 +7,34 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetCompanies, adminUpdateCompany, type AdminCompany } from '@/lib/api/admin';
+import {
+  adminGetCompanies,
+  adminUpdateCompany,
+  adminCreateCompany,
+  type AdminCompany,
+  type AdminCreateCompanyPayload,
+} from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   RefreshCw,
   Building2,
@@ -20,6 +43,7 @@ import {
   ChevronDown,
   ChevronUp,
   Shield,
+  Plus,
 } from 'lucide-react';
 import { COMPANY_TYPE_CONFIG, StatusBadgeTw } from '@/lib/status-config';
 
@@ -75,6 +99,52 @@ export default function AdminCompaniesPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [expandedCommission, setExpandedCommission] = useState<Set<string>>(new Set());
   const [commissionEdits, setCommissionEdits] = useState<Record<string, string>>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState<AdminCreateCompanyPayload>({
+    name: '',
+    legalName: '',
+    companyType: 'CONSTRUCTION',
+    email: '',
+    phone: '',
+    registrationNum: '',
+    city: '',
+    street: '',
+    postalCode: '',
+    country: 'LV',
+    verified: false,
+    features: [],
+  });
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  async function handleCreateCompany() {
+    if (!token || !createForm.name || !createForm.email || !createForm.phone) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await adminCreateCompany(createForm, token);
+      setCreateOpen(false);
+      setCreateForm({
+        name: '',
+        legalName: '',
+        companyType: 'CONSTRUCTION',
+        email: '',
+        phone: '',
+        registrationNum: '',
+        city: '',
+        street: '',
+        postalCode: '',
+        country: 'LV',
+        verified: false,
+        features: [],
+      });
+      fetchCompanies();
+    } catch {
+      setCreateError('Neizdevās izveidot uzņēmumu.');
+    } finally {
+      setCreating(false);
+    }
+  }
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -186,12 +256,156 @@ export default function AdminCompaniesPage() {
         title="Uzņēmumi"
         description={`${companies.length} uzņēmumi platformā`}
         action={
-          <Button variant="outline" size="sm" onClick={fetchCompanies}>
-            <RefreshCw className="h-4 w-4 mr-1.5" />
-            Atjaunot
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={fetchCompanies}>
+              <RefreshCw className="h-4 w-4 mr-1.5" />
+              Atjaunot
+            </Button>
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Pievienot uzņēmumu
+            </Button>
+          </div>
         }
       />
+
+      {/* Create company dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Jauns uzņēmums</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1 col-span-2">
+                <Label>Nosaukums *</Label>
+                <Input
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  placeholder="SIA Piemērs"
+                />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label>Juridiskais nosaukums *</Label>
+                <Input
+                  value={createForm.legalName}
+                  onChange={(e) => setCreateForm({ ...createForm, legalName: e.target.value })}
+                  placeholder={'SIA "Piemērs"'}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Tips *</Label>
+                <Select
+                  value={createForm.companyType}
+                  onValueChange={(v) =>
+                    setCreateForm({ ...createForm, companyType: v, features: [] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CONSTRUCTION">Celtniecība</SelectItem>
+                    <SelectItem value="SUPPLIER">Piegādātājs</SelectItem>
+                    <SelectItem value="CARRIER">Pārvadātājs</SelectItem>
+                    <SelectItem value="RECYCLER">Pārstrādātājs</SelectItem>
+                    <SelectItem value="HYBRID">Hibrīds</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Reģ. nr.</Label>
+                <Input
+                  value={createForm.registrationNum ?? ''}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, registrationNum: e.target.value })
+                  }
+                  placeholder="40000000000"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>E-pasts *</Label>
+                <Input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Tālrunis *</Label>
+                <Input
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Pilsēta</Label>
+                <Input
+                  value={createForm.city ?? ''}
+                  onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Pasta indekss</Label>
+                <Input
+                  value={createForm.postalCode ?? ''}
+                  onChange={(e) => setCreateForm({ ...createForm, postalCode: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Verificēts</p>
+                <p className="text-xs text-muted-foreground">
+                  Uzreiz atzīmē uzņēmumu kā pārbaudītu
+                </p>
+              </div>
+              <Switch
+                checked={createForm.verified ?? false}
+                onCheckedChange={(v) => setCreateForm({ ...createForm, verified: v })}
+              />
+            </div>
+
+            {createForm.companyType === 'CONSTRUCTION' && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-medium">Celtniecības vadība (ERP)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Piešķir piekļuvi projektu, DPR un apakšuzņēmēju modulim
+                  </p>
+                </div>
+                <Switch
+                  checked={(createForm.features ?? []).includes('CONSTRUCTION_MANAGEMENT')}
+                  onCheckedChange={(v) =>
+                    setCreateForm({
+                      ...createForm,
+                      features: v
+                        ? [...(createForm.features ?? []), 'CONSTRUCTION_MANAGEMENT']
+                        : (createForm.features ?? []).filter(
+                            (f) => f !== 'CONSTRUCTION_MANAGEMENT',
+                          ),
+                    })
+                  }
+                />
+              </div>
+            )}
+
+            {createError && <p className="text-sm text-destructive">{createError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Atcelt
+            </Button>
+            <Button
+              onClick={handleCreateCompany}
+              disabled={creating || !createForm.name || !createForm.email || !createForm.phone}
+            >
+              {creating ? 'Izveido...' : 'Izveidot uzņēmumu'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Search */}
       <div className="relative">

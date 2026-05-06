@@ -10,6 +10,7 @@ export interface ApiTransportJob {
   jobNumber: string;
   jobType: string;
   requiredVehicleType: string | null;
+  requiredVehicleEnum: string | null;
   cargoType: string;
   cargoWeight: number | null;
   pickupAddress: string;
@@ -188,8 +189,9 @@ function extractJobsList(
 
 export const transportApi = {
   transportJobs: {
-    available: async (token: string): Promise<ApiTransportJob[]> => {
-      const res = await apiFetch<ApiTransportJob[] | { data?: ApiTransportJob[] }>('/transport-jobs', {
+    available: async (token: string, zonesOnly?: boolean): Promise<ApiTransportJob[]> => {
+      const qs = zonesOnly ? '?zonesOnly=true' : '';
+      const res = await apiFetch<ApiTransportJob[] | { data?: ApiTransportJob[] }>(`/transport-jobs${qs}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return extractJobsList(res);

@@ -158,6 +158,7 @@ export class AdminService {
         email: true, phone: true, city: true, country: true, street: true,
         registrationNum: true, taxId: true,
         verified: true, payoutEnabled: true, commissionRate: true,
+        features: true,
         createdAt: true,
         users: {
           select: { id: true, firstName: true, lastName: true, email: true, companyRole: true, status: true, canSell: true, canTransport: true },
@@ -251,7 +252,15 @@ export class AdminService {
       data.canTransport !== undefined ||
       data.canSkipHire !== undefined ||
       data.userType !== undefined ||
+      data.companyId !== undefined ||
+      data.companyRole !== undefined ||
       data.status !== undefined; // status change (suspend/deactivate) must also invalidate JWTs
+
+    // Validate companyId if provided (non-null)
+    if (data.companyId) {
+      const company = await this.prisma.company.findUnique({ where: { id: data.companyId }, select: { id: true } });
+      if (!company) throw new NotFoundException('Company not found');
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
@@ -270,6 +279,8 @@ export class AdminService {
         ...(data.userType !== undefined && {
           userType: data.userType,
         }),
+        ...(data.companyId !== undefined && { companyId: data.companyId }),
+        ...(data.companyRole !== undefined && { companyRole: data.companyRole }),
         // Invalidate in-flight JWTs when capabilities or role change.
         ...(capabilityChanged && { tokenVersion: { increment: 1 } }),
       },
@@ -400,6 +411,60 @@ export class AdminService {
     });
   }
 
+  async adminCreateCompany(
+    data: {
+      name: string;
+      legalName: string;
+      companyType: string;
+      email: string;
+      phone: string;
+      registrationNum?: string;
+      taxId?: string;
+      street?: string;
+      city?: string;
+      postalCode?: string;
+      country?: string;
+      verified?: boolean;
+      features?: string[];
+    },
+    adminId: string,
+  ) {
+    this.logger.log(`Admin ${adminId} creating company ${data.name} (${data.companyType})`);
+    return this.prisma.company.create({
+      data: {
+        name: data.name,
+        legalName: data.legalName,
+        companyType: data.companyType as any,
+        email: data.email,
+        phone: data.phone,
+        registrationNum: data.registrationNum,
+        taxId: data.taxId,
+        street: data.street ?? '',
+        city: data.city ?? '',
+        state: '',
+        postalCode: data.postalCode ?? '',
+        country: data.country ?? 'LV',
+        verified: data.verified ?? false,
+        features: { set: (data.features ?? []) as any[] },
+      },
+      select: {
+        id: true,
+        name: true,
+        legalName: true,
+        companyType: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        verified: true,
+        payoutEnabled: true,
+        commissionRate: true,
+        features: true,
+        createdAt: true,
+      },
+    });
+  }
+
   async updateCompany(
     id: string,
     data: {
@@ -407,6 +472,7 @@ export class AdminService {
       commissionRate?: number;
       carrierCommissionRate?: number;
       payoutEnabled?: boolean;
+      features?: string[];
     },
     adminId: string,
   ) {
@@ -418,13 +484,20 @@ export class AdminService {
         commissionRate: true,
         carrierCommissionRate: true,
         payoutEnabled: true,
+        features: true,
       },
     });
     if (!company) throw new NotFoundException('Company not found');
     this.logger.log(`Admin ${adminId} updated company ${id}`);
+    // Strip features from the Prisma update payload so we can set it separately
+    // (Prisma scalar-list assignment uses `set:`)
+    const { features, ...scalarData } = data;
     const result = await this.prisma.company.update({
       where: { id },
-      data,
+      data: {
+        ...scalarData,
+        ...(features !== undefined ? { features: { set: features as any[] } } : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -438,6 +511,7 @@ export class AdminService {
         payoutEnabled: true,
         commissionRate: true,
         carrierCommissionRate: true,
+        features: true,
         createdAt: true,
         _count: { select: { users: true, orders: true } },
       },
@@ -3141,14 +3215,18 @@ export class AdminService {
   async adminGetRateEntries(params: {
     category?: import('@prisma/client').RateCategory;
     activeOnly?: boolean;
+    internalOnly?: boolean;
     page?: number;
     limit?: number;
   }) {
-    const { category, activeOnly = false, page = 1, limit = 200 } = params;
+    const { category, activeOnly = false, internalOnly = false, page = 1, limit = 200 } = params;
     const skip = (page - 1) * limit;
     const where: import('@prisma/client').Prisma.MaterialRateEntryWhereInput = {
       ...(category ? { category } : {}),
       ...(activeOnly ? { effectiveTo: null } : {}),
+      // internalOnly=true → platform/B3 global rates (companyId: null)
+      // omitting → all rates visible (only use for full admin oversight pages)
+      ...(internalOnly ? { companyId: null } : {}),
     };
     const [data, total] = await Promise.all([
       this.prisma.materialRateEntry.findMany({
@@ -3383,12 +3461,15 @@ export class AdminService {
 
   // ── Construction Employee Roster ────────────────────────────────────────────
 
-  async adminGetEmployees(params: { activeOnly?: boolean; page?: number; limit?: number }) {
-    const { activeOnly = false, page = 1, limit = 200 } = params;
+  async adminGetEmployees(params: { activeOnly?: boolean; internalOnly?: boolean; page?: number; limit?: number }) {
+    const { activeOnly = false, internalOnly = false, page = 1, limit = 200 } = params;
     const skip = (page - 1) * limit;
-    const where: import('@prisma/client').Prisma.ConstructionEmployeeWhereInput = activeOnly
-      ? { active: true }
-      : {};
+    const where: import('@prisma/client').Prisma.ConstructionEmployeeWhereInput = {
+      ...(activeOnly ? { active: true } : {}),
+      // internalOnly=true → B3 Construction's own employees (companyId: null)
+      // omitting → platform-wide admin view (all companies, e.g. group/team page)
+      ...(internalOnly ? { companyId: null } : {}),
+    };
     const [data, total] = await Promise.all([
       this.prisma.constructionEmployee.findMany({
         where,
@@ -3691,16 +3772,19 @@ export class AdminService {
 
   // ── DPR Templates ─────────────────────────────────────────────────────────
 
-  async adminGetDprTemplates(params: { projectId?: string; includeGlobal?: boolean } = {}) {
-    const { projectId, includeGlobal = true } = params;
+  async adminGetDprTemplates(params: { projectId?: string; includeGlobal?: boolean; internalOnly?: boolean } = {}) {
+    const { projectId, includeGlobal = true, internalOnly = false } = params;
 
     const where: any = { active: true };
-    if (projectId && includeGlobal) {
+    if (internalOnly) {
+      // Only return global templates (projectId: null) — no external company templates
+      where.projectId = null;
+    } else if (projectId && includeGlobal) {
       where.OR = [{ projectId }, { projectId: null }];
     } else if (projectId) {
       where.projectId = projectId;
     }
-    // if neither, return all active templates
+    // if neither internalOnly nor projectId, return all active templates (full admin oversight)
 
     return this.prisma.dprTemplate.findMany({
       where,

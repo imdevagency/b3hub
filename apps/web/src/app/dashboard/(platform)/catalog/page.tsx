@@ -242,6 +242,7 @@ interface WizardState {
   truckIntervalMinutes: number;
   siteContactName: string;
   siteContactPhone: string;
+  poNumber: string;
 }
 
 function WizardInline({
@@ -285,6 +286,7 @@ function WizardInline({
     truckIntervalMinutes: 30,
     siteContactName: '',
     siteContactPhone: '',
+    poNumber: '',
   });
 
   // Pre-fill contact from user profile
@@ -428,6 +430,7 @@ function WizardInline({
           notes: form.notes || undefined,
           siteContactName: form.siteContactName || undefined,
           siteContactPhone: form.siteContactPhone || undefined,
+          poNumber: form.poNumber || undefined,
           items: [
             {
               materialId: offer.id,
@@ -748,6 +751,18 @@ function WizardInline({
                   className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-foreground/10"
                 />
               </div>
+              <div>
+                <label className="text-sm font-semibold text-foreground mb-1.5 block">
+                  PO numurs / pasūtījuma atsauce (neobligāti)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="piem. PO-2024-0042"
+                  value={form.poNumber}
+                  onChange={(e) => patch({ poNumber: e.target.value })}
+                  className="rounded-xl"
+                />
+              </div>
             </div>
             <div className="flex gap-3 pt-1">
               <button
@@ -960,7 +975,7 @@ function OfferCard({
               )}
               {offer.stockQty != null && offer.stockQty < 10 && (
                 <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
-                  <AlertTriangle className="size-3" /> Maz krājumu
+                  <AlertTriangle className="size-3" /> {offer.stockQty} {UNIT_SHORT[unit]} atlikušas
                 </span>
               )}
             </div>
@@ -992,6 +1007,12 @@ function OfferCard({
             <p className="text-xs text-muted-foreground">
               €{offer.basePrice.toFixed(2)} / {UNIT_SHORT[unit]}
             </p>
+            {offer.minOrder != null && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                min. {offer.minOrder} {UNIT_SHORT[unit]}
+                {offer.maxOrder != null && ` · max. ${offer.maxOrder} ${UNIT_SHORT[unit]}`}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

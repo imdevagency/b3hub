@@ -218,26 +218,38 @@ export function DisposalWizard({ mode }: Props) {
     const apiKey = getGoogleMapsPublicKey();
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
-      const google = window.google;
-      if (!google || !mapDivRef.current || mapInstanceRef.current) return;
-      const map = new google.maps.Map(mapDivRef.current, {
-        center: { lat: 56.9496, lng: 24.1052 },
-        zoom: 12,
-        disableDefaultUI: true,
-        zoomControl: true,
-        styles: MAP_STYLES,
+      // Defer one frame so layout is settled (avoids IntersectionObserver errors
+      // in WebKit when the map container's ancestor has display:none)
+      requestAnimationFrame(() => {
+        const google = window.google;
+        if (!google || !mapDivRef.current || mapInstanceRef.current) return;
+        if (!(mapDivRef.current instanceof Element)) return;
+        // Skip init when the panel is hidden (e.g. mobile, display:none ancestor)
+        const style = window.getComputedStyle(mapDivRef.current);
+        if (style.display === 'none' || style.visibility === 'hidden') return;
+        try {
+          const map = new google.maps.Map(mapDivRef.current, {
+            center: { lat: 56.9496, lng: 24.1052 },
+            zoom: 12,
+            disableDefaultUI: true,
+            zoomControl: true,
+            styles: MAP_STYLES,
+          });
+          mapInstanceRef.current = map;
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                map.setZoom(14);
+              },
+              () => {},
+              { timeout: 8000 },
+            );
+          }
+        } catch {
+          // Map init failed (e.g. element not visible) — non-fatal
+        }
       });
-      mapInstanceRef.current = map;
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            map.setZoom(14);
-          },
-          () => {},
-          { timeout: 8000 },
-        );
-      }
     });
   }, []);
 

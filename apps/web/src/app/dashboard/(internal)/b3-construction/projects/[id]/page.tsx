@@ -364,7 +364,7 @@ export default function ConstructionProjectDetailPage() {
         .then((r) => setInvoices(r.data))
         .catch(() => {});
       // Templates for estimate calculator — non-fatal
-      adminGetDprTemplates(token)
+      adminGetDprTemplates(token, { internalOnly: true })
         .then((t) => setTemplates(t.filter((tmpl) => tmpl.active)))
         .catch(() => {});
     } catch {

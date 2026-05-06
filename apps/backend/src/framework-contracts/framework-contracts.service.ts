@@ -320,6 +320,12 @@ export class FrameworkContractsService {
       );
     }
 
+    if (dto.supplierId && dto.supplierId === companyId) {
+      throw new BadRequestException(
+        'Cannot create a framework contract with your own company as the supplier',
+      );
+    }
+
     const contractNumber = this.generateContractNumber();
 
     const contract = await this.prisma.frameworkContract.create({

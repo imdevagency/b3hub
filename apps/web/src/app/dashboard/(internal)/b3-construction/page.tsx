@@ -77,7 +77,7 @@ export default function B3ConstructionPage() {
       adminGetConstructionProjects(token, { limit: 50 }),
       adminGetDailyReports(token, { limit: 5 }),
       adminGetConstructionProfitability(token, { from }),
-      adminGetEmployees(token, { limit: 1 }),
+      adminGetEmployees(token, { limit: 1, internalOnly: true }),
     ])
       .then(([projRes, dprRes, profRes, empRes]) => {
         if (projRes.status === 'fulfilled') setProjects(projRes.value.data);

@@ -50,6 +50,7 @@ import {
   Route,
   Map,
   List,
+  MapPin,
 } from 'lucide-react-native';
 // react-native-maps is not bundled in Expo Go — guard the import so the app
 // loads in Expo Go and shows a fallback instead of crashing the JS runtime.
@@ -280,12 +281,14 @@ const JobCard = React.memo(function JobCard({
   tourMode = false,
   selected = false,
   onToggleSelect,
+  fuelDiesel,
 }: {
   job: TransportJob;
   onAccept: (id: string) => void;
   tourMode?: boolean;
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
+  fuelDiesel?: number | null;
 }) {
   const swipeRef = useRef<{ close(): void } | null>(null);
 
@@ -373,7 +376,13 @@ const JobCard = React.memo(function JobCard({
         <View style={{ alignItems: 'center', paddingTop: 6, width: 12 }}>
           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#166534' }} />
           <View
-            style={{ width: 2, flex: 1, backgroundColor: '#166534', marginVertical: 4, minHeight: 40 }}
+            style={{
+              width: 2,
+              flex: 1,
+              backgroundColor: '#166534',
+              marginVertical: 4,
+              minHeight: 40,
+            }}
           />
           <View style={{ width: 10, height: 10, backgroundColor: '#166534' }} />
         </View>
@@ -429,6 +438,16 @@ const JobCard = React.memo(function JobCard({
         >
           {job.vehicleType} · {job.weightTonnes}t · {job.payload} · {job.date}
         </Text>
+        {job.requiredVehicleEnum && (
+          <View style={{ marginLeft: 8 }}>
+            <StatusPill
+              label={`🚛 ${job.vehicleType || job.requiredVehicleEnum}`}
+              bg="#fef3c7"
+              color="#92400e"
+              size="sm"
+            />
+          </View>
+        )}
         {job.pricePerTonne > 0 && (
           <View style={{ marginLeft: 8 }}>
             <StatusPill
@@ -448,6 +467,22 @@ const JobCard = React.memo(function JobCard({
             </View>
           );
         })()}
+        {fuelDiesel &&
+          job.distanceKm > 0 &&
+          (() => {
+            const fuelCost = (job.distanceKm / 100) * 35 * fuelDiesel;
+            const isHighCost = fuelCost > job.priceTotal * 0.5;
+            return (
+              <View style={{ marginLeft: 8 }}>
+                <StatusPill
+                  label={`⛽ ~€${Math.round(fuelCost)}`}
+                  bg={isHighCost ? '#fef2f2' : '#fef3c7'}
+                  color={isHighCost ? '#b91c1c' : '#92400e'}
+                  size="sm"
+                />
+              </View>
+            );
+          })()}
         {job.buyerOfferedRate != null && job.buyerOfferedRate > 0 && (
           <View style={{ marginLeft: 8 }}>
             <StatusPill
@@ -532,10 +567,22 @@ export default function JobsScreen() {
     city: string;
   } | null>(null);
 
+  // ── My zones filter ───────────────────────────────────────────
+  const [zonesOnly, setZonesOnly] = useState(false);
+
+  // ── Live diesel price ─────────────────────────────────────────
+  const [fuelDiesel, setFuelDiesel] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.fetchFuelRates().then((r) => {
+      if (r) setFuelDiesel(r.diesel);
+    });
+  }, []);
+
   const fetchJobs = useCallback(async () => {
     if (!token) return;
     try {
-      const data = await api.transportJobs.available(token);
+      const data = await api.transportJobs.available(token, zonesOnly);
       setAllJobs(data.map(mapJob));
     } catch (e) {
       toast.error('Neizdevās ielādēt darbus');
@@ -543,7 +590,7 @@ export default function JobsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, [token, zonesOnly]);
 
   // Refresh jobs whenever the tab is focused
   useFocusEffect(
@@ -859,6 +906,7 @@ export default function JobsScreen() {
         onAccept={handleAcceptPressed}
         tourMode={tourMode}
         selected={selectedIds.has(item.id)}
+        fuelDiesel={fuelDiesel}
         onToggleSelect={(id) => {
           setSelectedIds((prev) => {
             const next = new Set(prev);
@@ -869,7 +917,7 @@ export default function JobsScreen() {
         }}
       />
     ),
-    [handleAcceptPressed, tourMode, selectedIds],
+    [handleAcceptPressed, tourMode, selectedIds, fuelDiesel],
   );
 
   const nearbyForSheet = useMemo(
@@ -967,6 +1015,16 @@ export default function JobsScreen() {
           {avoidEmptyRuns && lastDeliveryCoords && (
             <Text style={styles.avoidEmptyChipSub}>· {lastDeliveryCoords.city}</Text>
           )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.avoidEmptyChip, zonesOnly && styles.avoidEmptyChipActive]}
+          onPress={() => setZonesOnly((v) => !v)}
+          activeOpacity={0.75}
+        >
+          <MapPin size={14} color={zonesOnly ? '#fff' : '#374151'} />
+          <Text style={[styles.avoidEmptyChipText, zonesOnly && styles.avoidEmptyChipTextActive]}>
+            Manas zonas
+          </Text>
         </TouchableOpacity>
       </View>
 

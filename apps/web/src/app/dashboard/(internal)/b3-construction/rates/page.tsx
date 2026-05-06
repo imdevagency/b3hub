@@ -135,6 +135,7 @@ export default function RatesPage() {
       const res = await adminGetRateEntries(token, {
         category: filterCategory || undefined,
         activeOnly,
+        internalOnly: true,
         limit: 500,
       });
       setEntries(res.data);

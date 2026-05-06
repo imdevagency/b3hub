@@ -1,6 +1,7 @@
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { RoleTabs } from '@/components/marketing/layout/RoleTabs';
+import { PriceEstimator } from '@/components/marketing/PriceEstimator';
 import {
   ArrowRight,
   Truck,
@@ -62,10 +63,7 @@ export default function HomePage() {
           </>
         }
       >
-        <div className="w-full h-125 md:h-187.5 bg-muted relative overflow-hidden self-center rounded-2xl md:rounded-3xl border border-border shadow-2xl">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888086925-920a0b4111eb?q=80&w=2670&auto=format&fit=crop')] bg-cover bg-center grayscale-[0.8] contrast-125 hover:scale-105 transition-transform duration-[4s] z-0" />
-          <div className="absolute inset-0 bg-linear-to-t from-background via-background/20 to-transparent z-10" />
-        </div>
+        <PriceEstimator variant="card" />
       </Hero>
 
       {/* ── 2. WHO WE SERVE — B2C / B2B / Driver / Supplier merged ── */}
@@ -112,7 +110,8 @@ export default function HomePage() {
               <div>
                 <h3 className="text-xl font-medium tracking-tight mb-1.5">Būvmateriāli</h3>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Grants, smilts, šķembas, dolomīts no reģionālajiem karjeriem. Cenas redzamas uzreiz.
+                  Grants, smilts, šķembas, dolomīts no reģionālajiem karjeriem. Cenas redzamas
+                  uzreiz.
                 </p>
               </div>
               <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
@@ -129,9 +128,12 @@ export default function HomePage() {
                 <Truck className="w-6 h-6 text-foreground" strokeWidth={1.5} />
               </div>
               <div>
-                <h3 className="text-xl font-medium tracking-tight mb-1.5">Transporta pakalpojumi</h3>
+                <h3 className="text-xl font-medium tracking-tight mb-1.5">
+                  Transporta pakalpojumi
+                </h3>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Zemes darbi, mašīnu noma, kravas pārvadājumi pa visu Latviju. GPS izsekošana reāllaikā.
+                  Zemes darbi, mašīnu noma, kravas pārvadājumi pa visu Latviju. GPS izsekošana
+                  reāllaikā.
                 </p>
               </div>
               <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
@@ -169,20 +171,24 @@ export default function HomePage() {
               <div>
                 <h3 className="text-xl font-medium tracking-tight mb-1.5">Būvgružu izvešana</h3>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed mb-4">
-                  Rezervējiet nodošanu licencētā atkritumu pieņemšanas punktā. Izvešanas un nodošanas
-                  sertifikāts automātiski.
+                  Rezervējiet nodošanu licencētā atkritumu pieņemšanas punktā. Izvešanas un
+                  nodošanas sertifikāts automātiski.
                 </p>
                 {/* Waste groups */}
                 <div className="flex flex-wrap gap-3">
                   <div className="flex items-center gap-2 bg-background border border-border rounded-full px-4 py-1.5 text-xs font-medium">
                     <Package className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
                     Celtniecības atkritumi
-                    <span className="text-muted-foreground/60">— betons, ķieģeļi, koks, grunts, asfaltbetons</span>
+                    <span className="text-muted-foreground/60">
+                      — betons, ķieģeļi, koks, grunts, asfaltbetons
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 bg-background border border-border rounded-full px-4 py-1.5 text-xs font-medium">
                     <FlameKindling className="w-3.5 h-3.5 text-orange-500" strokeWidth={1.5} />
                     Bīstami / Licencēti
-                    <span className="text-muted-foreground/60">— bīstamie, EEIA, eļļas, riepas</span>
+                    <span className="text-muted-foreground/60">
+                      — bīstamie, EEIA, eļļas, riepas
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 bg-background border border-border rounded-full px-4 py-1.5 text-xs font-medium">
                     <Leaf className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} />
@@ -207,7 +213,8 @@ export default function HomePage() {
               <div>
                 <h3 className="text-xl font-medium tracking-tight mb-1.5">Tualetes kabīnes</h3>
                 <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Mobilās tualetes noma būvlaukumiem un pasākumiem. Piegāde, uzstādīšana un savākšana iekļauta.
+                  Mobilās tualetes noma būvlaukumiem un pasākumiem. Piegāde, uzstādīšana un
+                  savākšana iekļauta.
                 </p>
               </div>
               <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">

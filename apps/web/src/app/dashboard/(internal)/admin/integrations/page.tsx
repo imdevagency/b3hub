@@ -27,11 +27,13 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  ExternalLink,
   HardHat,
   Mail,
   MapPin,
   MessageSquare,
   Receipt,
+  Recycle,
   WifiOff,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -40,7 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getLursoftSettings } from '@/lib/api/lursoft';
 import { getBisSettings } from '@/lib/api/bis';
-import { adminGetSettings } from '@/lib/api/admin';
+import { adminGetSettings, adminGetCompanies, type AdminCompany } from '@/lib/api/admin';
 
 // ─── Integration registry ────────────────────────────────────────────────────
 // Add every new platform integration here. Each entry drives the hub card.
@@ -231,17 +233,18 @@ function StatusBadge({ status, planned }: { status?: IntegrationStatus; planned?
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function IntegrationsHubPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { session, token } = useAuth();
+  const accessToken = session?.access_token ?? token ?? '';
 
   const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>({});
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
 
   // Resolve connection status for configured integrations
   useEffect(() => {
-    if (!token) return;
+    if (!accessToken) return;
 
     // Lursoft
-    getLursoftSettings(token)
+    getLursoftSettings(accessToken)
       .then((s) => {
         setStatuses((prev) => ({
           ...prev,
@@ -252,7 +255,7 @@ export default function IntegrationsHubPage() {
       .catch(() => setStatuses((prev) => ({ ...prev, lursoft: 'unknown' })));
 
     // BIS
-    getBisSettings(token)
+    getBisSettings(accessToken)
       .then((s) => {
         setStatuses((prev) => ({
           ...prev,
@@ -263,7 +266,7 @@ export default function IntegrationsHubPage() {
       .catch(() => setStatuses((prev) => ({ ...prev, bis: 'unknown' })));
 
     // Jumis marketplace (flat settings, jumis.* keys = B3Hub SIA)
-    adminGetSettings(token)
+    adminGetSettings(accessToken)
       .then((s) => {
         const jumisEnabled = s['jumis.enabled'] === 'true';
         const jumisHasUrl = !!s['jumis.apiUrl'];
@@ -291,9 +294,7 @@ export default function IntegrationsHubPage() {
       );
 
     // BIS internal — reuses shared OAuth2 connection status
-    // The internal-bis card shows whether B3 Construction can use the BIS lookup.
-    // Status mirrors the shared BIS connection (same clientId/secret).
-    getBisSettings(token)
+    getBisSettings(accessToken)
       .then((s) => {
         setStatuses((prev) => ({
           ...prev,
@@ -302,7 +303,14 @@ export default function IntegrationsHubPage() {
         }));
       })
       .catch(() => setStatuses((prev) => ({ ...prev, 'internal-bis': 'unknown' })));
-  }, [token]);
+
+    // Companies with features (for the module overview section)
+    adminGetCompanies(accessToken)
+      .then((data) => setCompanies(data.filter((c) => (c.features ?? []).length > 0)))
+      .catch(() => {
+        /* non-critical */
+      });
+  }, [accessToken]);
 
   const withStatuses = (items: PlatformIntegration[]) =>
     items.map((i) => ({ ...i, status: statuses[i.id] as IntegrationStatus | undefined }));
@@ -352,6 +360,55 @@ export default function IntegrationsHubPage() {
           ))}
         </div>
       </section>
+
+      {/* ── Per-company SaaS modules ──────────────────────────────────────── */}
+      {companies.length > 0 && (
+        <section>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
+            Klientu SaaS moduļi
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            Uzņēmumi ar iespējotiem papildu moduļiem. Pārvaldīt katram uzņēmumam atsevišķi.
+          </p>
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {companies.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.companyType}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {(c.features ?? []).includes('CONSTRUCTION_MANAGEMENT') && (
+                        <Badge variant="outline" className="gap-1 text-blue-700 border-blue-300">
+                          <HardHat className="h-3 w-3" />
+                          Celtniecība
+                        </Badge>
+                      )}
+                      {(c.features ?? []).includes('RECYCLING_MANAGEMENT') && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 text-emerald-700 border-emerald-300"
+                        >
+                          <Recycle className="h-3 w-3" />
+                          Reciklēšana
+                        </Badge>
+                      )}
+                      <Link href={`/dashboard/admin/companies/${c.id}`}>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }

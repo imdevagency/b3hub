@@ -636,6 +636,9 @@ model Company {
   supplierPayouts            SupplierPayout[]      @relation("SupplierPayouts")
   carrierPayouts             CarrierPayout[]       @relation("CarrierPayouts")
   crmLeads                   CrmLead[]
+  constructionRateEntries    MaterialRateEntry[]
+  constructionEmployees      ConstructionEmployee[]
+  constructionSubcontractors ConstructionSubcontractor[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -797,6 +800,9 @@ model Order {
   // BIS (Būvniecības informācijas sistēma) case reference — required for waste disposal orders
   // on construction sites. Collected in the wizard and stored for APUS reporting.
   bisNumber String?
+
+  // Buyer's internal purchase order reference (B2B procurement matching)
+  poNumber  String?
 
   // Project association (optional — retrospective tagging)
   project   Project? @relation(fields: [projectId], references: [id])
@@ -2769,6 +2775,10 @@ model MaterialRateEntry {
   effectiveTo       DateTime? // null = currently active
   notes             String?
 
+  // Multi-tenant: null = platform-wide shared library (visible to all); set = company-private rate
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2780,6 +2790,7 @@ model MaterialRateEntry {
 
   @@index([category])
   @@index([effectiveFrom])
+  @@index([companyId])
   @@map("material_rate_entries")
 }
 
@@ -2876,6 +2887,10 @@ model ConstructionEmployee {
 
   active Boolean @default(true)
 
+  // Multi-tenant: which company this employee belongs to (null = B3 internal / legacy)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String?
+
   // Back-ref: every DPR line that references this person
   reportLines   DailyReportLine[]
   templateLines DprTemplateLine[]
@@ -2884,6 +2899,7 @@ model ConstructionEmployee {
   updatedAt DateTime @updatedAt
 
   @@index([active])
+  @@index([companyId])
   @@map("construction_employees")
 }
 
@@ -2986,12 +3002,17 @@ model ConstructionSubcontractor {
   notes           String?
   active          Boolean @default(true)
 
+  // Multi-tenant: which company owns this subcontractor record (null = platform-shared)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String?
+
   engagements SubcontractorEngagement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([active])
+  @@index([companyId])
   @@map("construction_subcontractors")
 }
 
@@ -3310,4 +3331,20 @@ enum AnnouncementTarget {
   SELLER
   DRIVER
   ADMIN
+}
+
+// ── Fuel Price ────────────────────────────────────────────────────────────────
+// Weekly snapshot of Latvia retail diesel price (EUR/L incl. tax).
+// Populated by FuelService cron via Eurostat API every Monday 07:00.
+model FuelPrice {
+  id            String   @id @default(cuid())
+  date          DateTime @db.Date   // week start date
+  pricePerLitre Float               // EUR per litre, incl. all taxes
+  source        String              // "eurostat" | "manual" | "seed"
+  country       String   @default("LV")
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@map("fuel_prices")
 }

@@ -10,6 +10,7 @@ export interface TransportJob {
   id: string;
   jobNumber: string;
   vehicleType: string;
+  requiredVehicleEnum: string | null;
   payload: string;
   weightTonnes: number;
   fromCity: string;
@@ -155,6 +156,7 @@ export function mapJob(j: ApiTransportJob): TransportJob {
     id: j.id,
     jobNumber: j.jobNumber,
     vehicleType: j.requiredVehicleType ?? '',
+    requiredVehicleEnum: j.requiredVehicleEnum ?? null,
     payload: j.cargoType,
     weightTonnes: j.cargoWeight ?? 0,
     fromCity: j.pickupCity,

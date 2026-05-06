@@ -111,6 +111,12 @@ export class CreateOrderDto {
   @MaxLength(100)
   bisNumber?: string;
 
+  /** Buyer's internal purchase order reference number (B2B procurement). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  poNumber?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(100)

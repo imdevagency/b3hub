@@ -231,6 +231,8 @@ export interface SupplierOffer {
   etaDays: number;
   isInstant: boolean;
   stockQty?: number | null;
+  minOrder?: number | null;
+  maxOrder?: number | null;
   deliveryRadiusKm: number | null;
   images: string[];
   completionRate: number | null;

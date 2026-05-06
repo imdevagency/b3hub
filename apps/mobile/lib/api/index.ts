@@ -61,6 +61,8 @@ export * from './recycler';
 
 export * from './toilet-cabins';
 
+export * from './fuel';
+
 // Re-export the helper and error class for consumers that need them directly
 
 export { apiFetch, ApiError } from './common';
@@ -108,6 +110,8 @@ import { fieldPassesApi } from './field-passes';
 import { analyticsApi } from './analytics';
 
 import { toiletCabinsApi } from './toilet-cabins';
+
+import { fuelApi } from './fuel';
 
 
 
@@ -226,4 +230,8 @@ export const api = {
   // ── Toilet cabin rental ─────────────────────────────────────────────
 
   ...toiletCabinsApi,
+
+  // ── Fuel price rates (public, no auth) ──────────────────────────────
+
+  ...fuelApi,
 };

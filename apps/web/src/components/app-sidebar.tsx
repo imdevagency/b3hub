@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Clock,
   Euro,
+  FileCheck2,
   FileQuestion,
   FolderKanban,
   FolderOpen,
@@ -138,6 +139,12 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           groupPaths: getGroupPaths('SUPPLIER', 'work'),
         },
         {
+          label: 'Iekraušanas grafiks',
+          href: '/dashboard/supplier/loading-schedule',
+          icon: CalendarDays,
+          groupPaths: getGroupPaths('SUPPLIER', 'schedule'),
+        },
+        {
           label: 'Katalogs',
           href: '/dashboard/materials',
           icon: Package,
@@ -208,15 +215,62 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         { label: 'Sākumlapa', href: '/dashboard/construction', icon: LayoutDashboard },
         {
           label: 'Projekti',
-          href: '/dashboard/projects',
+          href: '/dashboard/construction/projects',
           icon: FolderKanban,
-          groupPaths: getGroupPaths('CONSTRUCTION', 'projects'),
         },
         {
-          label: 'Finanses',
-          href: '/dashboard/invoices',
+          label: 'Dienas atskaites',
+          href: '/dashboard/construction/daily-reports',
+          icon: ClipboardList,
+        },
+        {
+          label: 'DPR Veidnes',
+          href: '/dashboard/construction/dpr-templates',
+          icon: ScrollText,
+        },
+      ],
+    },
+    {
+      id: 'construction-finance',
+      label: 'Finanses',
+      icon: Receipt,
+      items: [
+        {
+          label: 'Rentabilitāte',
+          href: '/dashboard/construction/profitability',
+          icon: BarChart3,
+        },
+        {
+          label: 'Izrakstītie rēķini',
+          href: '/dashboard/construction/invoices',
           icon: Receipt,
-          groupPaths: getGroupPaths('CONSTRUCTION', 'finance'),
+        },
+      ],
+    },
+    {
+      id: 'construction-settings',
+      label: 'Iestatījumi',
+      icon: Settings,
+      items: [
+        {
+          label: 'Klienti',
+          href: '/dashboard/construction/clients',
+          icon: Building2,
+        },
+        {
+          label: 'Darbinieki',
+          href: '/dashboard/construction/employees',
+          icon: Users,
+        },
+        {
+          label: 'Apakšuzņēmēji',
+          href: '/dashboard/construction/subcontractors',
+          icon: Briefcase,
+        },
+        {
+          label: 'Izmaksu likmes',
+          href: '/dashboard/construction/rates',
+          icon: Euro,
         },
       ],
     },
@@ -239,6 +293,16 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           href: '/dashboard/recycling/pricing',
           icon: Euro,
           groupPaths: getGroupPaths('RECYCLER', 'pricing'),
+        },
+        {
+          label: 'APUS',
+          href: '/dashboard/recycling/apus',
+          icon: ClipboardList,
+        },
+        {
+          label: 'Sertifikāti',
+          href: '/dashboard/recycling/certificates',
+          icon: FileCheck2,
         },
         {
           label: 'Dokumenti',

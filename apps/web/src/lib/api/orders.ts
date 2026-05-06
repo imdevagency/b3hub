@@ -35,6 +35,7 @@ export interface ApiOrder {
   currency: string;
   siteContactName?: string | null;
   siteContactPhone?: string | null;
+  poNumber?: string | null;
   buyer?: {
     id: string;
     firstName: string;
@@ -102,6 +103,8 @@ export interface CreateCartOrderInput {
   truckIntervalMinutes?: number;
   /** Assign order to a project. */
   projectId?: string;
+  /** Buyer's internal purchase order reference (B2B). */
+  poNumber?: string;
   items: CartOrderItem[];
 }
 
@@ -238,6 +241,7 @@ export async function createCartOrder(
       siteContactName: input.siteContactName,
       siteContactPhone: input.siteContactPhone,
       projectId: input.projectId,
+      poNumber: input.poNumber,
       truckCount: input.truckCount ?? 1,
       truckIntervalMinutes: input.truckIntervalMinutes ?? undefined,
       items: input.items,
@@ -446,6 +450,54 @@ export async function deleteSchedule(id: string, token: string): Promise<void> {
 
 // ─── Share link ────────────────────────────────────────────────────────────
 
+export interface SupplierLoadingEntry {
+  id: string;
+  orderNumber: string;
+  status: string;
+  deliveryDate: string | null;
+  deliveryAddress: string;
+  deliveryCity: string;
+  siteContactName?: string | null;
+  siteContactPhone?: string | null;
+  poNumber?: string | null;
+  notes?: string | null;
+  buyer?: { id: string; firstName: string; lastName: string; phone?: string } | null;
+  items: Array<{
+    id: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    material: { id: string; name: string; category: string; unit: string };
+  }>;
+  transportJobs: Array<{
+    id: string;
+    jobNumber: string;
+    status: string;
+    pickupDate: string;
+    pickupWindow?: string | null;
+    deliveryAddress: string;
+    deliveryCity: string;
+    cargoWeight?: number | null;
+    driver?: { id: string; firstName: string; lastName: string; phone?: string } | null;
+    vehicle?: { id: string; registrationNumber: string; vehicleType: string } | null;
+  }>;
+}
+
+export async function getSupplierLoadingSchedule(
+  token: string,
+  from?: string,
+  to?: string,
+): Promise<SupplierLoadingEntry[]> {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.toString();
+  return apiFetch<SupplierLoadingEntry[]>(
+    `/orders/supplier/loading-schedule${qs ? `?${qs}` : ''}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
 export async function generateShareLink(
   orderId: string,
   token: string,
@@ -457,4 +509,28 @@ export async function generateShareLink(
       headers: { Authorization: `Bearer ${token}` },
     },
   );
+}
+
+export interface AmendOrderInput {
+  deliveryDate?: string;
+  deliveryWindow?: string;
+  notes?: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  poNumber?: string | null;
+}
+
+export async function amendOrder(
+  orderId: string,
+  input: AmendOrderInput,
+  token: string,
+): Promise<ApiOrder> {
+  return apiFetch<ApiOrder>(`/orders/${encodeURIComponent(orderId)}/amend`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
 }

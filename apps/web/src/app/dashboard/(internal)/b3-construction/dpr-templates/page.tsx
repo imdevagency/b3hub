@@ -150,10 +150,10 @@ export default function DprTemplatesPage() {
     setLoading(true);
     try {
       const [tpls, proj, rates, emps] = await Promise.all([
-        adminGetDprTemplates(token),
+        adminGetDprTemplates(token, { internalOnly: true }),
         adminGetConstructionProjects(token, { page: 1, limit: 200 }),
-        adminGetRateEntries(token, { limit: 500 }),
-        adminGetEmployees(token, { activeOnly: true, limit: 500 }),
+        adminGetRateEntries(token, { limit: 500, internalOnly: true }),
+        adminGetEmployees(token, { activeOnly: true, limit: 500, internalOnly: true }),
       ]);
       setTemplates(tpls);
       setProjects(proj.data ?? []);

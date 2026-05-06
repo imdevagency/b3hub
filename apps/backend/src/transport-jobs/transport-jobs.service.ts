@@ -598,6 +598,7 @@ export class TransportJobsService {
     skip: number = 0,
     updatedSince?: string,
     driverId?: string,
+    zonesOnly: boolean = false,
   ) {
     // If we know the driver, restrict to jobs their vehicles can handle.
     // Jobs with no requiredVehicleEnum are visible to everyone.
@@ -605,14 +606,24 @@ export class TransportJobsService {
       | { requiredVehicleEnum: null | { in: import('@prisma/client').VehicleType[] } }
       | undefined;
 
+    let zoneCities: string[] | undefined;
+
     if (driverId) {
-      const driverVehicles = await this.prisma.vehicle.findMany({
-        where: {
-          status: { in: ['ACTIVE', 'IN_USE'] },
-          OR: [{ ownerId: driverId }, { company: { users: { some: { id: driverId } } } }],
-        },
-        select: { vehicleType: true },
-      });
+      const [driverVehicles, driverZones] = await Promise.all([
+        this.prisma.vehicle.findMany({
+          where: {
+            status: { in: ['ACTIVE', 'IN_USE'] },
+            OR: [{ ownerId: driverId }, { company: { users: { some: { id: driverId } } } }],
+          },
+          select: { vehicleType: true },
+        }),
+        zonesOnly
+          ? this.prisma.carrierServiceZone.findMany({
+              where: { carrierId: driverId },
+              select: { city: true, postcode: true },
+            })
+          : Promise.resolve([] as { city: string; postcode: string | null }[]),
+      ]);
       const driverTypes = [
         ...new Set(driverVehicles.map((v) => v.vehicleType)),
       ] as import('@prisma/client').VehicleType[];
@@ -622,20 +633,35 @@ export class TransportJobsService {
           requiredVehicleEnum: { in: driverTypes },
         };
       }
+
+      if (zonesOnly && driverZones.length > 0) {
+        zoneCities = driverZones.map((z) => z.city.toLowerCase());
+      }
     }
+
+    const vehicleCondition = vehicleTypeFilter
+      ? [{ requiredVehicleEnum: null }, { requiredVehicleEnum: vehicleTypeFilter.requiredVehicleEnum }]
+      : null;
+    const zoneCondition =
+      zoneCities && zoneCities.length > 0
+        ? [
+            { pickupCity: { in: zoneCities, mode: 'insensitive' as const } },
+            { deliveryCity: { in: zoneCities, mode: 'insensitive' as const } },
+          ]
+        : null;
 
     const baseWhere = {
       status: TransportJobStatus.AVAILABLE,
       ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
-      // Show jobs that have no vehicle requirement OR match a type the driver has
-      ...(vehicleTypeFilter
-        ? {
-            OR: [
-              { requiredVehicleEnum: null },
-              { requiredVehicleEnum: vehicleTypeFilter.requiredVehicleEnum },
-            ],
-          }
-        : {}),
+      AND: [
+        ...(vehicleCondition ? [{ OR: vehicleCondition }] : []),
+        ...(zoneCondition ? [{ OR: zoneCondition }] : []),
+      ].length > 0
+        ? [
+            ...(vehicleCondition ? [{ OR: vehicleCondition }] : []),
+            ...(zoneCondition ? [{ OR: zoneCondition }] : []),
+          ]
+        : undefined,
     };
     const [jobs, total] = await Promise.all([
       this.prisma.transportJob.findMany({

@@ -196,9 +196,9 @@ export default function DailyReportsPage() {
     try {
       const [projRes, ratesRes, empRes, tplRes] = await Promise.all([
         adminGetConstructionProjects(token, { limit: 200 }),
-        adminGetRateEntries(token, { limit: 500 }),
-        adminGetEmployees(token, { activeOnly: true, limit: 500 }),
-        adminGetDprTemplates(token),
+        adminGetRateEntries(token, { limit: 500, internalOnly: true }),
+        adminGetEmployees(token, { activeOnly: true, limit: 500, internalOnly: true }),
+        adminGetDprTemplates(token, { internalOnly: true }),
       ]);
       setProjects(projRes.data);
       setRateEntries(ratesRes.data);
@@ -568,15 +568,15 @@ export default function DailyReportsPage() {
             <DialogTitle>Jauna dienas atskaite</DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-4 py-2">
+          <div className="grid gap-6 py-4">
             {createError && (
               <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
                 {createError}
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+              <div className="space-y-1.5">
                 <Label>Projekts *</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -592,7 +592,7 @@ export default function DailyReportsPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Datums *</Label>
                 <Input
                   type="date"
@@ -601,7 +601,7 @@ export default function DailyReportsPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Objekts / būvlaukums</Label>
                 <Input
                   value={createSiteLabel}
@@ -610,7 +610,7 @@ export default function DailyReportsPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Laika apstākļi</Label>
                 <Input
                   value={createWeather}
@@ -619,7 +619,7 @@ export default function DailyReportsPage() {
                 />
               </div>
 
-              <div className="col-span-2">
+              <div className="col-span-2 space-y-1.5">
                 <Label>Piezīmes</Label>
                 <Input
                   value={createNotes}
@@ -684,7 +684,7 @@ export default function DailyReportsPage() {
 
               <div className="space-y-3">
                 {createLines.map((line, idx) => (
-                  <div key={idx} className="rounded-md border p-3 bg-gray-50 relative">
+                  <div key={idx} className="rounded-md border p-4 bg-gray-50 relative">
                     {createLines.length > 1 && (
                       <button
                         className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
@@ -693,8 +693,8 @@ export default function DailyReportsPage() {
                         <X className="h-4 w-4" />
                       </button>
                     )}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
+                    <div className="grid grid-cols-3 gap-x-3 gap-y-4">
+                      <div className="space-y-1">
                         <Label className="text-xs">Izmaksu kods</Label>
                         <select
                           className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -710,7 +710,7 @@ export default function DailyReportsPage() {
                           ))}
                         </select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-2 space-y-1">
                         <Label className="text-xs">Apraksts *</Label>
                         <Input
                           className="h-9"
@@ -720,7 +720,7 @@ export default function DailyReportsPage() {
                         />
                       </div>
                       {line.costCode === 'LABOUR' && employees.length > 0 ? (
-                        <div>
+                        <div className="space-y-1">
                           <Label className="text-xs">Darbinieks</Label>
                           <select
                             className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -751,7 +751,7 @@ export default function DailyReportsPage() {
                           </select>
                         </div>
                       ) : (
-                        <div>
+                        <div className="space-y-1">
                           <Label className="text-xs">Persona / resurss</Label>
                           <Input
                             className="h-9"
@@ -761,7 +761,7 @@ export default function DailyReportsPage() {
                           />
                         </div>
                       )}
-                      <div>
+                      <div className="space-y-1">
                         <Label className="text-xs">Cenu katalogs</Label>
                         <select
                           className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -783,7 +783,7 @@ export default function DailyReportsPage() {
                           ))}
                         </select>
                       </div>
-                      <div>
+                      <div className="space-y-1">
                         <Label className="text-xs">Piezīmes</Label>
                         <Input
                           className="h-9"
@@ -791,7 +791,7 @@ export default function DailyReportsPage() {
                           onChange={(e) => updateLine(idx, { notes: e.target.value })}
                         />
                       </div>
-                      <div>
+                      <div className="space-y-1">
                         <Label className="text-xs">Daudzums</Label>
                         <Input
                           className="h-9"
@@ -804,7 +804,7 @@ export default function DailyReportsPage() {
                           }
                         />
                       </div>
-                      <div>
+                      <div className="space-y-1">
                         <Label className="text-xs">Mērvienība</Label>
                         <select
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
@@ -820,7 +820,7 @@ export default function DailyReportsPage() {
                           ))}
                         </select>
                       </div>
-                      <div>
+                      <div className="space-y-1">
                         <Label className="text-xs">Vienības cena (€)</Label>
                         <Input
                           className="h-9"
@@ -834,7 +834,7 @@ export default function DailyReportsPage() {
                         />
                       </div>
                     </div>
-                    <div className="mt-2 text-right text-sm font-semibold text-gray-700">
+                    <div className="mt-4 text-right text-sm font-semibold text-gray-700">
                       Kopsumma: €{lineTotal(line)}
                     </div>
                   </div>

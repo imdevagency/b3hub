@@ -295,6 +295,15 @@ export default function JobsPage() {
   const [returnTrips, setReturnTrips] = useState<ApiReturnTrip[]>([]);
   const [returnTripRef, setReturnTripRef] = useState<{ city: string; jobId: string } | null>(null);
 
+  // Live diesel price
+  const [fuelDiesel, setFuelDiesel] = useState<number | null>(null);
+  useEffect(() => {
+    fetch(`${API_URL}/public/price-rates`)
+      .then((r) => r.json())
+      .then((d: { diesel: number }) => setFuelDiesel(d.diesel))
+      .catch(() => {});
+  }, []);
+
   // Load saved searches from localStorage
   useEffect(() => {
     if (isLoading) return;
@@ -555,6 +564,22 @@ export default function JobsPage() {
           </div>
         }
       />
+
+      {/* Fuel price indicator */}
+      {fuelDiesel != null && typeof fuelDiesel === 'number' && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm">
+          <span className="text-base leading-none">⛽</span>
+          <span className="font-semibold text-amber-800">
+            Dīzelis {Number(fuelDiesel).toFixed(3)} €/L
+          </span>
+          <span className="text-amber-600">·</span>
+          <span className="text-amber-700">
+            35L/100km kravas auto — aptuveni{' '}
+            <span className="font-semibold">€{(Number(fuelDiesel) * 0.35).toFixed(2)}/100km</span>{' '}
+            degvielas izmaksas
+          </span>
+        </div>
+      )}
 
       {/* Tab switcher */}
       <div className="flex gap-1 bg-muted rounded-xl p-1">

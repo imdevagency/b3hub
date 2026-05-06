@@ -1,7 +1,10 @@
 /**
- * API Key management page — /dashboard/company/integrations
- * Company OWNER and MANAGER can create, view, and revoke API keys
- * for connecting external ERP systems or automation tools to B3Hub.
+ * Company Integrations Marketplace — /dashboard/company/integrations
+ *
+ * Three sections:
+ *  1. SaaS moduļi   — feature modules admin has enabled for this company
+ *  2. Platformas    — always-on platform services (payments, maps, identity)
+ *  3. API piekļuve  — API key management for external ERP/automation
  */
 'use client';
 
@@ -42,6 +45,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import Link from 'next/link';
 import {
   Key,
   Plus,
@@ -53,6 +57,14 @@ import {
   ShieldCheck,
   Clock,
   Zap,
+  HardHat,
+  Recycle,
+  CreditCard,
+  Map,
+  UserCheck,
+  MessageSquare,
+  ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { lv } from 'date-fns/locale';
@@ -261,6 +273,93 @@ function CreateDialog({ open, onClose, onCreated, token }: CreateDialogProps) {
   );
 }
 
+// ── Module definition ─────────────────────────────────────────────────────────
+
+interface ModuleDef {
+  id: string;
+  icon: React.FC<{ className?: string }>;
+  title: string;
+  description: string;
+  features: string[];
+  links: { label: string; href: string }[];
+  companyTypes: string[];
+}
+
+const MODULES: ModuleDef[] = [
+  {
+    id: 'CONSTRUCTION_MANAGEMENT',
+    icon: HardHat,
+    title: 'Celtniecības vadība',
+    description:
+      'Projektu vadība, DPR (dienas ražošanas pārskati), darba laika uzskaite, apakšuzņēmēji un piedāvājumu pārvaldība.',
+    features: [
+      'Projekti un apakšprojekti',
+      'DPR veidnes un aizpildīšana',
+      'Laiks un tehnika',
+      'Apakšuzņēmēju pārvaldība',
+    ],
+    links: [
+      { label: 'Projekti', href: '/dashboard/construction/projects' },
+      { label: 'DPR', href: '/dashboard/construction/dpr' },
+    ],
+    companyTypes: ['CONSTRUCTION', 'HYBRID'],
+  },
+  {
+    id: 'RECYCLING_MANAGEMENT',
+    icon: Recycle,
+    title: 'Atkritumu apsaimniekošana',
+    description:
+      'APUS ziņošana Valsts vides dienestam, atkritumu sertifikāti, pārstrādes ierakstu vadība.',
+    features: [
+      'APUS iesniegumi VVD',
+      'Atkritumu sertifikāti',
+      'Pieņemšanas ieraksti',
+      'Atkritumu veidu analītika',
+    ],
+    links: [
+      { label: 'APUS', href: '/dashboard/recycling/apus' },
+      { label: 'Sertifikāti', href: '/dashboard/recycling/certificates' },
+    ],
+    companyTypes: ['RECYCLER', 'HYBRID'],
+  },
+];
+
+// ── Platform services definition ──────────────────────────────────────────────
+
+interface PlatformService {
+  icon: React.FC<{ className?: string }>;
+  title: string;
+  description: string;
+  badge: string;
+}
+
+const PLATFORM_SERVICES: PlatformService[] = [
+  {
+    icon: UserCheck,
+    title: 'Lursoft identitāte',
+    description: 'Uzņēmumu reģistrācijas datu automātiska aizpilde no Lursoft Uzņēmumu reģistra.',
+    badge: 'Aktīvs',
+  },
+  {
+    icon: CreditCard,
+    title: 'Paysera maksājumi',
+    description: 'Drošs tiešsaistes norēķins par pasūtījumiem un rēķiniem caur Paysera vārteju.',
+    badge: 'Aktīvs',
+  },
+  {
+    icon: Map,
+    title: 'Google Maps',
+    description: 'Adresu meklēšana, maršrutu aprēķins un piegādes ģeolokācija visā platformā.',
+    badge: 'Aktīvs',
+  },
+  {
+    icon: MessageSquare,
+    title: 'SMS paziņojumi',
+    description: 'Automātiski pasūtījumu statusa paziņojumi un OTP autentifikācija pa SMS.',
+    badge: 'Aktīvs',
+  },
+];
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function IntegrationsPage() {
@@ -275,6 +374,11 @@ export default function IntegrationsPage() {
   const [revoking, setRevoking] = useState(false);
 
   const isOwnerOrManager = user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER';
+  const enabledFeatures: string[] = user?.company?.features ?? [];
+  const companyType = user?.company?.companyType ?? '';
+
+  // Only show modules that apply to this company's type
+  const relevantModules = MODULES.filter((m) => m.companyTypes.includes(companyType));
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -317,153 +421,274 @@ export default function IntegrationsPage() {
     return (
       <div className="p-6">
         <p className="text-muted-foreground text-sm">
-          API atslēgas ir pieejamas tikai uzņēmuma kontiem.
+          Integrācijas ir pieejamas tikai uzņēmuma kontiem.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-3xl space-y-6">
+    <div className="p-6 max-w-4xl space-y-8">
       <PageHeader
-        title="ERP integrācijas"
-        description="API atslēgas ļauj ārējām sistēmām (ERP, uzskaites programmatūra) pieslēgties B3Hub platformai."
-        action={
-          isOwnerOrManager ? (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Jauna atslēga
-            </Button>
-          ) : undefined
-        }
+        title="Integrācijas un moduļi"
+        description="Jūsu uzņēmumam iespējotie SaaS moduļi, platformas pakalpojumi un API piekļuve."
       />
 
-      {/* Revealed key banner — shown after creation */}
-      {revealedKey && (
-        <div className="space-y-2">
-          <KeyRevealBox rawKey={revealedKey} />
-          <Button variant="ghost" size="sm" onClick={() => setRevealedKey(null)}>
-            Aizvērt
-          </Button>
+      {/* ── Section 1: SaaS Modules ───────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">SaaS moduļi</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Papildu funkcionalitāte, ko admins var iespējot jūsu uzņēmumam.
+          </p>
         </div>
-      )}
 
-      {/* How it works card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="h-4 w-4 text-muted-foreground" />
-            Kā tas darbojas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>
-            Izveidojiet API atslēgu un pievienojiet to jūsu ERP sistēmas HTTP pieprasījumiem kā
-            <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-xs">
-              Authorization: Bearer &lt;atslēga&gt;
-            </code>
-            galveni.
-          </p>
-          <p>
-            Katrai atslēgai var ierobežot piekļuvi tikai nepieciešamajām datu kopām. Atslēgas ir
-            saistītas ar jūsu uzņēmumu — tās neatklāj citu uzņēmumu datus.
-          </p>
-          <div className="pt-1">
-            <p className="font-medium text-foreground mb-1">Bāzes URL:</p>
-            <code className="rounded bg-muted px-2 py-1 text-xs">
-              {process.env.NEXT_PUBLIC_API_URL ?? 'https://api.b3hub.lv'}/api/v1
-            </code>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Key list */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Key className="h-4 w-4 text-muted-foreground" />
-            Aktīvās atslēgas
-          </CardTitle>
-          <CardDescription>
-            {keys.length === 0 && !loading
-              ? 'Nav izveidotu atslēgu'
-              : `${keys.length} atslēg${keys.length === 1 ? 'a' : 'as'}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <p className="flex items-center gap-1.5 text-sm text-destructive mb-4">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {error}
-            </p>
-          )}
-
-          {loading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Ielādē...
-            </div>
-          ) : keys.length === 0 ? (
-            <EmptyState
-              icon={Key}
-              title="Nav API atslēgu"
-              description="Izveidojiet pirmo atslēgu, lai savienotu ERP sistēmu"
-              action={
-                isOwnerOrManager ? (
-                  <Button size="sm" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1.5" />
-                    Izveidot atslēgu
-                  </Button>
-                ) : undefined
-              }
-            />
-          ) : (
-            <div className="divide-y">
-              {keys.map((key) => (
-                <div key={key.id} className="py-4 first:pt-0 last:pb-0">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{key.label}</span>
-                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
-                          {key.keyPrefix}...
-                        </code>
+        {relevantModules.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Šim uzņēmuma tipam nav pieejamu papildu moduļu.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {relevantModules.map((mod) => {
+              const active = enabledFeatures.includes(mod.id);
+              return (
+                <Card
+                  key={mod.id}
+                  className={active ? 'border-primary/40 bg-primary/5' : 'opacity-60'}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`rounded-lg p-2 ${active ? 'bg-primary/10' : 'bg-muted'}`}>
+                          <mod.icon
+                            className={`h-5 w-5 ${active ? 'text-primary' : 'text-muted-foreground'}`}
+                          />
+                        </div>
+                        <CardTitle className="text-base">{mod.title}</CardTitle>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {key.scopes.map((s) => (
-                          <ScopeBadge key={s} scope={s} />
+                      <Badge variant={active ? 'default' : 'secondary'} className="shrink-0">
+                        {active ? 'Aktīvs' : 'Nav iespējots'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">{mod.description}</p>
+                    <ul className="space-y-1">
+                      {mod.features.map((f) => (
+                        <li
+                          key={f}
+                          className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                          <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    {active && mod.links.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {mod.links.map((l) => (
+                          <Link key={l.href} href={l.href}>
+                            <Button variant="outline" size="sm" className="h-7 gap-1">
+                              {l.label}
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            </Button>
+                          </Link>
                         ))}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Izveidota {relativeDate(key.createdAt)}</span>
-                        {key.lastUsedAt && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            Pēdējo reizi izmantota {relativeDate(key.lastUsedAt)}
-                          </span>
-                        )}
-                        {key.expiresAt && <span>Beidzas {relativeDate(key.expiresAt)}</span>}
-                      </div>
-                    </div>
-                    {isOwnerOrManager && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive shrink-0"
-                        onClick={() => setRevokeId(key.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    {!active && (
+                      <p className="text-xs text-muted-foreground italic">
+                        Sazinieties ar B3Hub atbalstu, lai iespējotu šo moduli.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
-      {/* Create dialog */}
+      {/* ── Section 2: Platform Services ─────────────────────────────────── */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">Platformas pakalpojumi</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Integrācijas, kas darbojas automātiski visiem B3Hub klientiem.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {PLATFORM_SERVICES.map((svc) => (
+            <Card key={svc.title} className="border-emerald-200 bg-emerald-50/40">
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="rounded-lg bg-emerald-100 p-2 shrink-0">
+                  <svc.icon className="h-4 w-4 text-emerald-700" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{svc.title}</span>
+                    <Badge
+                      variant="outline"
+                      className="text-emerald-700 border-emerald-300 bg-emerald-50 shrink-0"
+                    >
+                      {svc.badge}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{svc.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Section 3: API Keys ───────────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">API piekļuve (ERP integrācija)</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            API atslēgas ļauj ārējām sistēmām pieslēgties B3Hub platformai.
+          </p>
+        </div>
+
+        {/* Revealed key banner — shown after creation */}
+        {revealedKey && (
+          <div className="space-y-2">
+            <KeyRevealBox rawKey={revealedKey} />
+            <Button variant="ghost" size="sm" onClick={() => setRevealedKey(null)}>
+              Aizvērt
+            </Button>
+          </div>
+        )}
+
+        {/* How it works card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-muted-foreground" />
+              Kā tas darbojas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>
+              Izveidojiet API atslēgu un pievienojiet to jūsu ERP sistēmas HTTP pieprasījumiem kā
+              <code className="mx-1 rounded bg-muted px-1.5 py-0.5 text-xs">
+                Authorization: Bearer &lt;atslēga&gt;
+              </code>
+              galveni.
+            </p>
+            <p>
+              Katrai atslēgai var ierobežot piekļuvi tikai nepieciešamajām datu kopām. Atslēgas ir
+              saistītas ar jūsu uzņēmumu — tās neatklāj citu uzņēmumu datus.
+            </p>
+            <div className="pt-1">
+              <p className="font-medium text-foreground mb-1">Bāzes URL:</p>
+              <code className="rounded bg-muted px-2 py-1 text-xs">
+                {process.env.NEXT_PUBLIC_API_URL ?? 'https://api.b3hub.lv'}/api/v1
+              </code>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Key list */}
+        <Card>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Key className="h-4 w-4 text-muted-foreground" />
+                Aktīvās atslēgas
+              </CardTitle>
+              <CardDescription>
+                {keys.length === 0 && !loading
+                  ? 'Nav izveidotu atslēgu'
+                  : `${keys.length} atslēg${keys.length === 1 ? 'a' : 'as'}`}
+              </CardDescription>
+            </div>
+            {isOwnerOrManager && (
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Jauna atslēga
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <p className="flex items-center gap-1.5 text-sm text-destructive mb-4">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {error}
+              </p>
+            )}
+
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Ielādē...
+              </div>
+            ) : keys.length === 0 ? (
+              <EmptyState
+                icon={Key}
+                title="Nav API atslēgu"
+                description="Izveidojiet pirmo atslēgu, lai savienotu ERP sistēmu"
+                action={
+                  isOwnerOrManager ? (
+                    <Button size="sm" onClick={() => setCreateOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Izveidot atslēgu
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <div className="divide-y">
+                {keys.map((key) => (
+                  <div key={key.id} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm">{key.label}</span>
+                          <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
+                            {key.keyPrefix}...
+                          </code>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {key.scopes.map((s) => (
+                            <ScopeBadge key={s} scope={s} />
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Izveidota {relativeDate(key.createdAt)}</span>
+                          {key.lastUsedAt && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Pēdējo reizi izmantota {relativeDate(key.lastUsedAt)}
+                            </span>
+                          )}
+                          {key.expiresAt && <span>Beidzas {relativeDate(key.expiresAt)}</span>}
+                        </div>
+                      </div>
+                      {isOwnerOrManager && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setRevokeId(key.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Dialogs */}
       {token && (
         <CreateDialog
           open={createOpen}
@@ -473,7 +698,6 @@ export default function IntegrationsPage() {
         />
       )}
 
-      {/* Revoke confirmation */}
       <AlertDialog open={!!revokeId} onOpenChange={(o) => !o && setRevokeId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

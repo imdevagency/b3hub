@@ -16,6 +16,8 @@ import {
   Users,
   ShoppingBag,
   DollarSign,
+  HardHat,
+  Recycle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { adminGetCompanyById, adminUpdateCompany, type AdminCompanyDetail } from '@/lib/api/admin';
@@ -95,6 +97,21 @@ export default function AdminCompanyDetailPage() {
       setCompany((c) => (c ? { ...c, ...updated } : c));
     } catch {
       setError('Neizdevās saglabāt izmaiņas.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleFeature(feature: string, enabled: boolean) {
+    if (!token || !company) return;
+    setSaving(true);
+    try {
+      const current: string[] = company.features ?? [];
+      const next = enabled ? [...current, feature] : current.filter((f) => f !== feature);
+      const updated = await adminUpdateCompany(company.id, { features: next }, token);
+      setCompany((c) => (c ? { ...c, features: updated.features ?? next } : c));
+    } catch {
+      setError('Neizdevās saglabāt funkcionalitāti.');
     } finally {
       setSaving(false);
     }
@@ -318,6 +335,58 @@ export default function AdminCompanyDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Feature flags */}
+      {['CONSTRUCTION', 'RECYCLER', 'HYBRID'].includes(company.companyType) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">SaaS moļuļi</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {['CONSTRUCTION', 'HYBRID'].includes(company.companyType) && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label
+                    htmlFor="feat-construction"
+                    className="font-medium flex items-center gap-2"
+                  >
+                    <HardHat className="h-4 w-4 text-blue-600" />
+                    Celtniecības vadība
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Projekti, DPR, darba laiks, apakšuzņēmēji, piedāvājumi
+                  </p>
+                </div>
+                <Switch
+                  id="feat-construction"
+                  checked={(company.features ?? []).includes('CONSTRUCTION_MANAGEMENT')}
+                  onCheckedChange={(v) => toggleFeature('CONSTRUCTION_MANAGEMENT', v)}
+                  disabled={saving}
+                />
+              </div>
+            )}
+            {['RECYCLER', 'HYBRID'].includes(company.companyType) && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="feat-recycling" className="font-medium flex items-center gap-2">
+                    <Recycle className="h-4 w-4 text-emerald-600" />
+                    Reciklēšanas vadība
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    APUS ziņošana, atkritumu sertifikāti, pārstrādes ieraksti
+                  </p>
+                </div>
+                <Switch
+                  id="feat-recycling"
+                  checked={(company.features ?? []).includes('RECYCLING_MANAGEMENT')}
+                  onCheckedChange={(v) => toggleFeature('RECYCLING_MANAGEMENT', v)}
+                  disabled={saving}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Team */}
       {company.users && company.users.length > 0 && (

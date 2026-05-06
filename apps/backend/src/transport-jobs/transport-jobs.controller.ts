@@ -140,6 +140,7 @@ export class TransportJobsController {
     @Query() pagination: PaginationDto,
     @CurrentUser() user: RequestingUser,
     @Query('updatedSince') updatedSince?: string,
+    @Query('zonesOnly') zonesOnly?: string,
   ) {
     const driverId = user.canTransport ? user.userId : undefined;
     return this.service.findAvailable(
@@ -147,6 +148,7 @@ export class TransportJobsController {
       pagination.skip ?? 0,
       updatedSince,
       driverId,
+      zonesOnly === 'true',
     );
   }
 

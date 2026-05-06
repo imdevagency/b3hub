@@ -620,6 +620,7 @@ export class OrdersService {
             siteContactPhone: orderData.siteContactPhone,
             sitePhotoUrl: orderData.sitePhotoUrl ?? null,
             bisNumber: orderData.bisNumber ?? null,
+            poNumber: orderData.poNumber ?? null,
             projectId: orderData.projectId ?? null,
             truckCount: orderData.truckCount ?? 1,
             truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
@@ -1087,6 +1088,57 @@ export class OrdersService {
           },
         },
       },
+    });
+  }
+
+  /**
+   * Buyer-facing amendment: allows changing deliveryDate, deliveryWindow,
+   * notes, siteContactName, siteContactPhone, and poNumber on PENDING or
+   * CONFIRMED orders only.
+   */
+  async amend(
+    id: string,
+    dto: {
+      deliveryDate?: string;
+      deliveryWindow?: string;
+      notes?: string;
+      siteContactName?: string;
+      siteContactPhone?: string;
+      poNumber?: string | null;
+    },
+    currentUser: RequestingUser,
+  ) {
+    const order = await this.findOne(id, currentUser);
+
+    if (
+      currentUser.userType !== 'ADMIN' &&
+      order.createdById !== currentUser.userId
+    ) {
+      throw new ForbiddenException('Only the buyer who placed the order can amend it');
+    }
+
+    if (!['PENDING', 'CONFIRMED'].includes(order.status)) {
+      throw new BadRequestException(
+        `Order cannot be amended in status ${order.status}`,
+      );
+    }
+
+    const updateData: Prisma.OrderUpdateInput = {};
+    if (dto.deliveryDate !== undefined)
+      updateData.deliveryDate = new Date(dto.deliveryDate);
+    if (dto.deliveryWindow !== undefined)
+      updateData.deliveryWindow = dto.deliveryWindow;
+    if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (dto.siteContactName !== undefined)
+      updateData.siteContactName = dto.siteContactName;
+    if (dto.siteContactPhone !== undefined)
+      updateData.siteContactPhone = dto.siteContactPhone;
+    if (dto.poNumber !== undefined) updateData.poNumber = dto.poNumber;
+
+    return this.prisma.order.update({
+      where: { id },
+      data: updateData,
+      include: { items: { include: { material: true } } },
     });
   }
 
@@ -3258,6 +3310,75 @@ export class OrdersService {
       where: { createdById: currentUser.id },
       orderBy: { nextRunAt: 'asc' },
     });
+  }
+
+  /**
+   * Supplier loading schedule: returns confirmed/in-progress orders containing
+   * this supplier's materials, optionally filtered by date range, with transport
+   * job pickup details so the pit dispatcher can plan the loading bay.
+   */
+  async getSupplierLoadingSchedule(
+    currentUser: RequestingUser,
+    dateFrom?: string,
+    dateTo?: string,
+  ) {
+    if (!currentUser.canSell || !currentUser.companyId) {
+      throw new ForbiddenException('Only approved sellers can access loading schedule');
+    }
+    const from = dateFrom ? new Date(dateFrom) : new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = dateTo ? new Date(dateTo) : new Date(from);
+    to.setDate(to.getDate() + 7);
+    to.setHours(23, 59, 59, 999);
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        status: { in: ['CONFIRMED', 'IN_PROGRESS'] },
+        items: { some: { material: { supplierId: currentUser.companyId } } },
+        OR: [
+          { deliveryDate: { gte: from, lte: to } },
+          { transportJobs: { some: { pickupDate: { gte: from, lte: to } } } },
+        ],
+      },
+      orderBy: [{ deliveryDate: 'asc' }],
+      include: {
+        items: {
+          where: { material: { supplierId: currentUser.companyId } },
+          include: { material: { select: { id: true, name: true, category: true, unit: true } } },
+        },
+        transportJobs: {
+          select: {
+            id: true,
+            jobNumber: true,
+            status: true,
+            pickupDate: true,
+            pickupWindow: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            cargoWeight: true,
+            driver: { select: { id: true, firstName: true, lastName: true, phone: true } },
+            vehicle: { select: { id: true, registrationNumber: true, vehicleType: true } },
+          },
+        },
+        buyer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+      },
+    });
+
+    return orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      deliveryDate: o.deliveryDate,
+      deliveryAddress: o.deliveryAddress,
+      deliveryCity: o.deliveryCity,
+      siteContactName: o.siteContactName,
+      siteContactPhone: o.siteContactPhone,
+      poNumber: o.poNumber,
+      notes: o.notes,
+      buyer: o.buyer,
+      items: o.items,
+      transportJobs: o.transportJobs,
+    }));
   }
 
   async pauseSchedule(scheduleId: string, currentUser: RequestingUser) {

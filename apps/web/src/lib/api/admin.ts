@@ -157,6 +157,8 @@ export async function adminUpdateUser(
     canRecycle: boolean;
     status: string;
     userType: string;
+    companyId: string | null;
+    companyRole: string | null;
     creditLimit: number | null;
     paymentTerms: string | null;
   }>,
@@ -346,6 +348,7 @@ export interface AdminCompany {
   verified: boolean;
   payoutEnabled: boolean;
   commissionRate: number;
+  features: string[];
   isFirstParty: boolean;
   createdAt: string;
   _count: { users: number; orders: number };
@@ -357,9 +360,36 @@ export async function adminGetCompanies(token: string): Promise<AdminCompany[]> 
   });
 }
 
+export interface AdminCreateCompanyPayload {
+  name: string;
+  legalName: string;
+  companyType: string;
+  email: string;
+  phone: string;
+  registrationNum?: string;
+  taxId?: string;
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  verified?: boolean;
+  features?: string[];
+}
+
+export async function adminCreateCompany(
+  data: AdminCreateCompanyPayload,
+  token: string,
+): Promise<AdminCompany> {
+  return apiFetch<AdminCompany>('/admin/companies', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
 export async function adminUpdateCompany(
   id: string,
-  data: Partial<{ verified: boolean; payoutEnabled: boolean; commissionRate: number }>,
+  data: Partial<{ verified: boolean; payoutEnabled: boolean; commissionRate: number; features: string[] }>,
   token: string,
 ): Promise<AdminCompany> {
   return apiFetch<AdminCompany>(`/admin/companies/${id}`, {
@@ -1944,11 +1974,12 @@ export interface CreateRateEntryPayload {
 
 export async function adminGetRateEntries(
   token: string,
-  params?: { category?: RateCategory; activeOnly?: boolean; page?: number; limit?: number },
+  params?: { category?: RateCategory; activeOnly?: boolean; internalOnly?: boolean; page?: number; limit?: number },
 ): Promise<PaginatedResponse<MaterialRateEntry>> {
   const qs = new URLSearchParams();
   if (params?.category) qs.set('category', params.category);
   if (params?.activeOnly) qs.set('activeOnly', 'true');
+  if (params?.internalOnly) qs.set('internalOnly', 'true');
   if (params?.page) qs.set('page', String(params.page));
   if (params?.limit) qs.set('limit', String(params.limit));
   const q = qs.toString();
@@ -2125,10 +2156,11 @@ export interface CreateEmployeePayload {
 
 export async function adminGetEmployees(
   token: string,
-  params?: { activeOnly?: boolean; page?: number; limit?: number },
+  params?: { activeOnly?: boolean; internalOnly?: boolean; page?: number; limit?: number },
 ): Promise<PaginatedResponse<ConstructionEmployee>> {
   const qs = new URLSearchParams();
   if (params?.activeOnly) qs.set('activeOnly', 'true');
+  if (params?.internalOnly) qs.set('internalOnly', 'true');
   if (params?.page) qs.set('page', String(params.page));
   if (params?.limit) qs.set('limit', String(params.limit));
   const q = qs.toString();
@@ -2291,11 +2323,12 @@ export interface CreateDprTemplatePayload {
 
 export async function adminGetDprTemplates(
   token: string,
-  params?: { projectId?: string; includeGlobal?: boolean },
+  params?: { projectId?: string; includeGlobal?: boolean; internalOnly?: boolean },
 ): Promise<DprTemplate[]> {
   const qs = new URLSearchParams();
   if (params?.projectId) qs.set('projectId', params.projectId);
   if (params?.includeGlobal === false) qs.set('includeGlobal', 'false');
+  if (params?.internalOnly) qs.set('internalOnly', 'true');
   const q = qs.toString();
   return apiFetch<DprTemplate[]>(
     `/admin/b3-construction/dpr-templates${q ? `?${q}` : ''}`,

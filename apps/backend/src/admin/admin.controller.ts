@@ -29,6 +29,7 @@ import {
   IsOptional,
   IsString,
   IsIn,
+  IsArray,
   Max,
   Min,
 } from 'class-validator';
@@ -75,6 +76,23 @@ class UpdateCompanyDto {
   @IsOptional() @IsBoolean() verified?: boolean;
   @IsOptional() @IsBoolean() payoutEnabled?: boolean;
   @IsOptional() @IsNumber() @Min(0) @Max(100) commissionRate?: number;
+  @IsOptional() @IsArray() @IsString({ each: true }) features?: string[];
+}
+
+class AdminCreateCompanyDto {
+  @IsString() name!: string;
+  @IsString() legalName!: string;
+  @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID']) companyType!: string;
+  @IsString() email!: string;
+  @IsString() phone!: string;
+  @IsOptional() @IsString() registrationNum?: string;
+  @IsOptional() @IsString() taxId?: string;
+  @IsOptional() @IsString() street?: string;
+  @IsOptional() @IsString() city?: string;
+  @IsOptional() @IsString() postalCode?: string;
+  @IsOptional() @IsString() country?: string;
+  @IsOptional() @IsBoolean() verified?: boolean;
+  @IsOptional() @IsArray() @IsString({ each: true }) features?: string[];
 }
 
 class PlatformSettingUpsertDto {
@@ -203,6 +221,15 @@ export class AdminController {
   @Get('companies')
   getCompanies() {
     return this.service.getCompanies();
+  }
+
+  /** POST /admin/companies — admin onboards a new company */
+  @Post('companies')
+  createCompany(
+    @Body() body: AdminCreateCompanyDto,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminCreateCompany(body, admin.userId);
   }
 
   /** GET /admin/companies/:id — company detail */
@@ -1012,12 +1039,14 @@ export class AdminController {
   getRateEntries(
     @Query('category') category?: string,
     @Query('activeOnly') activeOnly?: string,
+    @Query('internalOnly') internalOnly?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.service.adminGetRateEntries({
       category: category as import('@prisma/client').RateCategory | undefined,
       activeOnly: activeOnly === 'true',
+      internalOnly: internalOnly === 'true',
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 200,
     });
@@ -1179,11 +1208,13 @@ export class AdminController {
   @Get('b3-construction/employees')
   getEmployees(
     @Query('activeOnly') activeOnly?: string,
+    @Query('internalOnly') internalOnly?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.service.adminGetEmployees({
       activeOnly: activeOnly === 'true',
+      internalOnly: internalOnly === 'true',
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 200,
     });
@@ -1269,10 +1300,12 @@ export class AdminController {
   getDprTemplates(
     @Query('projectId') projectId?: string,
     @Query('includeGlobal') includeGlobal?: string,
+    @Query('internalOnly') internalOnly?: string,
   ) {
     return this.service.adminGetDprTemplates({
       projectId,
       includeGlobal: includeGlobal !== 'false',
+      internalOnly: internalOnly === 'true',
     });
   }
 
