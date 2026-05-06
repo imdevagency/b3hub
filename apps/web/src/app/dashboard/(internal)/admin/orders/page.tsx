@@ -20,6 +20,13 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { RefreshCw, ClipboardList, Search, Truck, XCircle } from 'lucide-react';
 
 // ── Status badge ────────────────────────────────────────────────────────────
@@ -29,6 +36,16 @@ const ORDER_TYPE_LABELS: Record<string, string> = {
   SKIP_HIRE: 'Skip',
   TRANSPORT: 'Transports',
   DISPOSAL: 'Atkritumi',
+};
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Melraksts',
+  PENDING: 'Gaida',
+  CONFIRMED: 'Apstiprināti',
+  IN_PROGRESS: 'Izpildē',
+  DELIVERED: 'Piegādāti',
+  COMPLETED: 'Pabeigti',
+  CANCELLED: 'Atcelti',
 };
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -63,13 +80,21 @@ const PAYMENT_COLORS: Record<string, string> = {
   FAILED: 'bg-red-100 text-red-600',
 };
 
-function StatusBadge({ value, colorMap }: { value: string; colorMap: Record<string, string> }) {
+function StatusBadge({
+  value,
+  label,
+  colorMap,
+}: {
+  value: string;
+  label?: string;
+  colorMap: Record<string, string>;
+}) {
   const cls = colorMap[value] ?? 'bg-gray-100 text-gray-500';
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}
     >
-      {value}
+      {label ?? value}
     </span>
   );
 }
@@ -196,16 +221,42 @@ export default function AdminOrdersPage() {
         }
       />
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Meklēt pēc nr., pircēja, uzņēmuma, pilsētas..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
-        />
+      {/* Search and Dropdowns */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Meklēt pēc nr., pircēja, uzņēmuma, pilsētas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent"
+          />
+        </div>
+        <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as PaymentFilter)}>
+          <SelectTrigger className="w-full sm:w-[160px] rounded-xl h-auto py-2.5 border">
+            <SelectValue placeholder="Maksājums" />
+          </SelectTrigger>
+          <SelectContent>
+            {PAYMENT_FILTERS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>
+                {f.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
+          <SelectTrigger className="w-full sm:w-[160px] rounded-xl h-auto py-2.5 border">
+            <SelectValue placeholder="Tips" />
+          </SelectTrigger>
+          <SelectContent>
+            {TYPE_FILTERS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>
+                {f.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Status filters */}
@@ -218,39 +269,6 @@ export default function AdminOrdersPage() {
             className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
               statusFilter === value
                 ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background border-border text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Payment + type filters */}
-      <div className="flex gap-2 flex-wrap">
-        {PAYMENT_FILTERS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setPaymentFilter(value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-              paymentFilter === value
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-background border-border text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-        <span className="w-px bg-border mx-1" />
-        {TYPE_FILTERS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setTypeFilter(value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-              typeFilter === value
-                ? 'bg-purple-600 text-white border-purple-600'
                 : 'bg-background border-border text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -281,9 +299,6 @@ export default function AdminOrdersPage() {
                   <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Tips
                   </th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
-                    Pilsēta
-                  </th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Statuss
                   </th>
@@ -304,51 +319,41 @@ export default function AdminOrdersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                    <td
-                      className="px-4 py-3 font-mono text-xs text-gray-500 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                    >
-                      {o.orderNumber}
-                    </td>
-                    <td
-                      className="px-4 py-3 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                    >
+                  <tr
+                    key={o.id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                  >
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{o.orderNumber}</td>
+                    <td className="px-4 py-3">
                       <div>
                         <p className="font-semibold text-gray-900">{o.buyer.name}</p>
-                        {o.buyer.email && (
-                          <p className="text-xs text-muted-foreground">{o.buyer.email}</p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {o.buyer.email ? `${o.buyer.email} • ` : ''}
+                          {o.deliveryCity}
+                        </p>
                       </div>
                     </td>
-                    <td
-                      className="px-4 py-3 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                    >
+                    <td className="px-4 py-3">
                       <span className="text-xs text-gray-600 font-medium">
                         {ORDER_TYPE_LABELS[o.orderType] ?? o.orderType}
                       </span>
                     </td>
-                    <td
-                      className="px-4 py-3 text-gray-700 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                    >
-                      {o.deliveryCity}
-                    </td>
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge value={o.status} colorMap={STATUS_COLORS} />
+                      <StatusBadge
+                        value={o.status}
+                        label={ORDER_STATUS_LABELS[o.status]}
+                        colorMap={STATUS_COLORS}
+                      />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <StatusBadge
-                        value={PAYMENT_STATUS_LABELS[o.paymentStatus] ?? o.paymentStatus}
+                        value={o.paymentStatus}
+                        label={PAYMENT_STATUS_LABELS[o.paymentStatus]}
                         colorMap={PAYMENT_COLORS}
                       />
                     </td>
-                    <td
-                      className="px-4 py-3 text-right font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                    >
+                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
                       {o.total.toLocaleString('lv-LV', { style: 'currency', currency: o.currency })}
                     </td>
                     <td className="px-4 py-3 text-center text-xs text-muted-foreground">
@@ -361,10 +366,7 @@ export default function AdminOrdersPage() {
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
-                    <td
-                      className="px-4 py-3 text-right text-xs text-muted-foreground cursor-pointer"
-                      onClick={() => router.push(`/dashboard/orders/${o.id}`)}
-                    >
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
                       {new Date(o.createdAt).toLocaleDateString('lv-LV')}
                     </td>
                     <td className="px-4 py-3 text-right">

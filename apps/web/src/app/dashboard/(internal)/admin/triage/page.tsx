@@ -20,6 +20,9 @@ import {
   CheckCircle2,
   Search,
   Clock,
+  Building2,
+  Package,
+  ExternalLink,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -44,7 +47,9 @@ import {
   adminGetExceptions,
   adminResolveException,
   adminSetExceptionInReview,
+  adminGetUser,
   type AdminException,
+  type AdminUserDetail,
 } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -333,6 +338,17 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleDateString('lv-LV', { day: '2-digit', month: '2-digit' });
 }
 
+/** Returns age label + urgency color for a thread's createdAt */
+function ticketAge(createdAt: string): { label: string; cls: string } {
+  const diffMin = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60_000);
+  if (diffMin < 60) return { label: `${diffMin}min`, cls: 'text-emerald-600 bg-emerald-50' };
+  const h = Math.floor(diffMin / 60);
+  if (h < 4) return { label: `${h}h`, cls: 'text-yellow-600 bg-yellow-50' };
+  if (h < 24) return { label: `${h}h`, cls: 'text-orange-600 bg-orange-50' };
+  const d = Math.floor(h / 24);
+  return { label: `${d}d`, cls: 'text-red-600 bg-red-50' };
+}
+
 function userName(thread: SupportThread) {
   const u = thread.user;
   return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
@@ -347,6 +363,8 @@ function SupportTab({ token }: { token: string }) {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
   const [supportStatusFilter, setSupportStatusFilter] = useState<'ALL' | 'OPEN' | 'CLOSED'>('OPEN');
+  const [userDetail, setUserDetail] = useState<AdminUserDetail | null>(null);
+  const [loadingUser, setLoadingUser] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadThreads = useCallback(async () => {
@@ -369,10 +387,18 @@ function SupportTab({ token }: { token: string }) {
     async (threadId: string) => {
       if (!token) return;
       setLoadingThread(true);
+      setUserDetail(null);
       try {
-        setActiveThread(await adminGetSupportThread(threadId, token));
+        const thread = await adminGetSupportThread(threadId, token);
+        setActiveThread(thread);
         setReply('');
         setSendError('');
+        // Fetch user context in parallel
+        setLoadingUser(true);
+        adminGetUser(thread.user.id, token)
+          .then((u) => setUserDetail(u))
+          .catch(() => {})
+          .finally(() => setLoadingUser(false));
       } finally {
         setLoadingThread(false);
       }
@@ -456,18 +482,26 @@ function SupportTab({ token }: { token: string }) {
             .filter((t) => supportStatusFilter === 'ALL' || t.status === supportStatusFilter)
             .map((t) => {
               const lastMsg = t.messages[0];
+              const age = ticketAge(t.createdAt);
               return (
                 <button
                   key={t.id}
                   onClick={() => selectThread(t.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors ${activeThread?.id === t.id ? 'bg-accent' : 'hover:bg-muted/50'}`}
+                  className={`w-full text-left px-4 py-3 border-b border-border transition-colors ${
+                    activeThread?.id === t.id ? 'bg-accent' : 'hover:bg-muted/50'
+                  }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span className="font-medium text-sm truncate">{userName(t)}</span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-xs text-muted-foreground">
-                        {formatTime(t.updatedAt)}
-                      </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {t.status === 'OPEN' && (
+                        <span
+                          className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${age.cls}`}
+                        >
+                          <Clock className="h-2.5 w-2.5" />
+                          {age.label}
+                        </span>
+                      )}
                       <Badge
                         variant={t.status === 'OPEN' ? 'default' : 'secondary'}
                         className="text-[10px] px-1.5 py-0"
@@ -489,105 +523,232 @@ function SupportTab({ token }: { token: string }) {
       </aside>
 
       {activeThread ? (
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                <User className="h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-1 overflow-hidden">
+          {/* ── Chat pane ── */}
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{userName(activeThread)}</p>
+                  <p className="text-xs text-muted-foreground">{activeThread.user.email}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium">{userName(activeThread)}</p>
-                <p className="text-xs text-muted-foreground">{activeThread.user.email}</p>
-              </div>
+              <Button variant="outline" size="sm" onClick={handleToggleStatus}>
+                {activeThread.status === 'OPEN' ? (
+                  <>
+                    <CheckCheck className="h-4 w-4 mr-1.5" />
+                    Slēgt
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-4 w-4 mr-1.5" />
+                    Atvērt
+                  </>
+                )}
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleToggleStatus}>
-              {activeThread.status === 'OPEN' ? (
-                <>
-                  <CheckCheck className="h-4 w-4 mr-1.5" />
-                  Slēgt
-                </>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {loadingThread ? (
+                <div className="flex items-center justify-center h-full">
+                  <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : activeThread.messages.length === 0 ? (
+                <EmptyState
+                  icon={MessageSquare}
+                  title="Nav ziņojumu"
+                  description="Šajā sarakstē vēl nav ziņojumu"
+                />
               ) : (
                 <>
-                  <RotateCcw className="h-4 w-4 mr-1.5" />
-                  Atvērt
+                  {activeThread.messages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`flex ${m.fromAdmin ? 'justify-end' : 'justify-start'} mb-2`}
+                    >
+                      <div
+                        className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${
+                          m.fromAdmin
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-foreground'
+                        }`}
+                      >
+                        {!m.fromAdmin && (
+                          <p className="text-[11px] font-medium opacity-70 mb-0.5">
+                            {m.senderName}
+                          </p>
+                        )}
+                        <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
+                        <p className="text-[10px] mt-1 opacity-60 text-right">
+                          {new Date(m.createdAt).toLocaleTimeString('lv-LV', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={bottomRef} />
                 </>
               )}
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto px-4 py-4">
-            {loadingThread ? (
-              <div className="flex items-center justify-center h-full">
-                <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : activeThread.messages.length === 0 ? (
-              <EmptyState
-                icon={MessageSquare}
-                title="Nav ziņojumu"
-                description="Šajā sarakstē vēl nav ziņojumu"
-              />
-            ) : (
-              <>
-                {activeThread.messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`flex ${m.fromAdmin ? 'justify-end' : 'justify-start'} mb-2`}
+            </div>
+            {activeThread.status === 'OPEN' ? (
+              <div className="px-4 py-3 border-t border-border shrink-0">
+                {sendError && <p className="text-sm text-destructive mb-2">{sendError}</p>}
+                <div className="flex gap-2">
+                  <Textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Ierakstiet atbildi…"
+                    rows={2}
+                    className="resize-none flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={sending || !reply.trim()}
+                    className="self-end"
                   >
-                    <div
-                      className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${m.fromAdmin ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}
+                    {sending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Cmd+Enter — nosūtīt</p>
+              </div>
+            ) : (
+              <div className="px-4 py-3 border-t border-border bg-muted/30 text-center text-sm text-muted-foreground shrink-0">
+                Sarakste slēgta — atveriet to, lai atbildētu
+              </div>
+            )}
+          </div>
+
+          {/* ── Customer context panel ── */}
+          <aside className="w-60 shrink-0 border-l border-border overflow-y-auto bg-muted/20">
+            {loadingUser ? (
+              <div className="flex items-center justify-center py-10">
+                <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : userDetail ? (
+              <div className="p-4 space-y-4">
+                {/* User profile */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Lietotājs
+                    </span>
+                    <a
+                      href={`/dashboard/admin/users?id=${userDetail.id}`}
+                      className="text-muted-foreground hover:text-foreground"
+                      title="Atvērt profilu"
                     >
-                      {!m.fromAdmin && (
-                        <p className="text-[11px] font-medium opacity-70 mb-0.5">{m.senderName}</p>
-                      )}
-                      <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
-                      <p className="text-[10px] mt-1 opacity-60 text-right">
-                        {new Date(m.createdAt).toLocaleTimeString('lv-LV', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
+                      {(
+                        (userDetail.firstName?.[0] ?? '') + (userDetail.lastName?.[0] ?? '')
+                      ).toUpperCase() || <User className="h-4 w-4" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {[userDetail.firstName, userDetail.lastName].filter(Boolean).join(' ') ||
+                          '—'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {userDetail.email}
                       </p>
                     </div>
                   </div>
-                ))}
-                <div ref={bottomRef} />
-              </>
-            )}
-          </div>
-          {activeThread.status === 'OPEN' ? (
-            <div className="px-4 py-3 border-t border-border shrink-0">
-              {sendError && <p className="text-sm text-destructive mb-2">{sendError}</p>}
-              <div className="flex gap-2">
-                <Textarea
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder="Ierakstiet atbildi…"
-                  rows={2}
-                  className="resize-none flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={sending || !reply.trim()}
-                  className="self-end"
-                >
-                  {sending ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Pievienojies</span>
+                      <span className="text-foreground">
+                        {new Date(userDetail.createdAt).toLocaleDateString('lv-LV')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tips</span>
+                      <span className="text-foreground">{userDetail.userType}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company */}
+                {userDetail.company && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                      Uzņēmums
+                    </p>
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{userDetail.company.name}</p>
+                        {userDetail.company.companyType && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {userDetail.company.companyType}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent orders */}
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    Pēdējie pasūtījumi
+                  </p>
+                  {userDetail.ordersCreated.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nav pasūtījumu</p>
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <div className="space-y-1.5">
+                      {userDetail.ordersCreated.slice(0, 8).map((o) => (
+                        <a
+                          key={o.id}
+                          href={`/dashboard/admin/orders?q=${o.orderNumber}`}
+                          className="flex items-center justify-between rounded-lg border border-border bg-background px-2.5 py-1.5 hover:border-primary/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Package className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span className="text-[11px] font-mono truncate">{o.orderNumber}</span>
+                          </div>
+                          <span
+                            className={`text-[9px] font-semibold rounded-full px-1.5 py-0.5 shrink-0 ml-1 ${
+                              o.status === 'DELIVERED'
+                                ? 'bg-green-100 text-green-700'
+                                : o.status === 'CANCELLED'
+                                  ? 'bg-red-100 text-red-600'
+                                  : o.status === 'PENDING'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-blue-100 text-blue-700'
+                            }`}
+                          >
+                            {o.status}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
                   )}
-                </Button>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Cmd+Enter — nosūtīt</p>
-            </div>
-          ) : (
-            <div className="px-4 py-3 border-t border-border bg-muted/30 text-center text-sm text-muted-foreground shrink-0">
-              Sarakste slēgta — atveriet to, lai atbildētu
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                <User className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="text-xs text-muted-foreground">Konteksts nav pieejams</p>
+              </div>
+            )}
+          </aside>
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center">

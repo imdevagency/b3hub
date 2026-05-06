@@ -109,6 +109,8 @@ describe('TransportJobsService', () => {
     releaseFunds: (jest.fn() as any).mockResolvedValue(undefined),
   } as any;
 
+  const orders = {} as any;
+
   const service = new TransportJobsService(
     prisma,
     notifications,
@@ -116,6 +118,7 @@ describe('TransportJobsService', () => {
     updates,
     email,
     payments,
+    orders,
   );
 
   beforeEach(() => {
@@ -141,8 +144,8 @@ describe('TransportJobsService', () => {
     jest.spyOn(service, 'getDocumentReadiness').mockResolvedValue({
       transportJobId: 'job1',
       status: TransportJobStatus.AT_DELIVERY,
-      requires: { deliveryProof: true, weighingSlip: true },
-      has: { deliveryProof: false, weighingSlip: false, deliveryNote: false },
+      requires: { deliveryProof: true, weighingSlip: true, wasteTransportNote: false },
+      has: { deliveryProof: false, weighingSlip: false, deliveryNote: false, wasteTransportNote: false },
       canMarkDelivered: false,
       missing: ['DELIVERY_PROOF', 'WEIGHING_SLIP'],
     });
@@ -168,8 +171,8 @@ describe('TransportJobsService', () => {
     jest.spyOn(service, 'getDocumentReadiness').mockResolvedValue({
       transportJobId: 'job1',
       status: TransportJobStatus.AT_DELIVERY,
-      requires: { deliveryProof: true, weighingSlip: true },
-      has: { deliveryProof: false, weighingSlip: true, deliveryNote: false },
+      requires: { deliveryProof: true, weighingSlip: true, wasteTransportNote: false },
+      has: { deliveryProof: false, weighingSlip: true, deliveryNote: false, wasteTransportNote: false },
       canMarkDelivered: false,
       missing: ['DELIVERY_PROOF'],
     });

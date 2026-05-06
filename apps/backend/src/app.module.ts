@@ -60,6 +60,7 @@ import { EquipmentModule } from './equipment/equipment.module';
 import { VehicleAssignmentsModule } from './vehicle-assignments/vehicle-assignments.module';
 import { CrmModule } from './crm/crm.module';
 import { CmsModule } from './cms/cms.module';
+import { JumisModule } from './jumis/jumis.module';
 
 @Module({
   imports: [
@@ -125,6 +126,7 @@ import { CmsModule } from './cms/cms.module';
     VehicleAssignmentsModule,
     CrmModule,
     CmsModule,
+    JumisModule,
   ],
   controllers: [AppController],
   providers: [

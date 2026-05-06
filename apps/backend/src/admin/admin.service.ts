@@ -60,7 +60,7 @@ export class AdminService {
         email: dto.email,
         password: hashedPassword,
         firstName: dto.firstName,
-        lastName: dto.lastName,
+        lastName: dto.lastName ?? '',
         userType: dto.userType ?? 'BUYER',
         isCompany,
         canSell: dto.canSell ?? false,
@@ -78,8 +78,16 @@ export class AdminService {
       const company = await this.prisma.company.create({
         data: {
           name: dto.company.name,
+          legalName: dto.company.name,
           registrationNum: dto.company.regNumber,
           companyType: dto.company.companyType,
+          email: '',
+          phone: '',
+          street: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: 'LV',
         },
       });
       await this.prisma.user.update({
@@ -2016,6 +2024,109 @@ export class AdminService {
     );
 
     return updated;
+  }
+
+  /** GET /admin/recycling-centers/:id/pricing-rules */
+  async adminGetPricingRules(centerId: string) {
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: centerId },
+      select: { id: true },
+    });
+    if (!center) throw new NotFoundException('Recycling center not found');
+    return this.prisma.recyclingCenterPricingRule.findMany({
+      where: { recyclingCenterId: centerId },
+      orderBy: { wasteType: 'asc' },
+    });
+  }
+
+  /** POST /admin/recycling-centers/:id/pricing-rules — upsert a rule for one waste type */
+  async adminUpsertPricingRule(
+    centerId: string,
+    dto: {
+      wasteType: string;
+      pricePerTonne: number;
+      minimumWeight?: number;
+      minimumFee?: number;
+      maximumWeight?: number;
+      accepted?: boolean;
+      notes?: string;
+    },
+    adminId: string,
+  ) {
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: centerId },
+      select: { id: true },
+    });
+    if (!center) throw new NotFoundException('Recycling center not found');
+
+    const rule = await this.prisma.recyclingCenterPricingRule.upsert({
+      where: {
+        recyclingCenterId_wasteType: {
+          recyclingCenterId: centerId,
+          wasteType: dto.wasteType as import('@prisma/client').WasteType,
+        },
+      },
+      create: {
+        recyclingCenterId: centerId,
+        wasteType: dto.wasteType as import('@prisma/client').WasteType,
+        pricePerTonne: dto.pricePerTonne,
+        minimumWeight: dto.minimumWeight ?? null,
+        minimumFee: dto.minimumFee ?? null,
+        maximumWeight: dto.maximumWeight ?? null,
+        accepted: dto.accepted ?? true,
+        notes: dto.notes ?? null,
+      },
+      update: {
+        pricePerTonne: dto.pricePerTonne,
+        minimumWeight: dto.minimumWeight ?? null,
+        minimumFee: dto.minimumFee ?? null,
+        maximumWeight: dto.maximumWeight ?? null,
+        accepted: dto.accepted ?? true,
+        notes: dto.notes ?? null,
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'PRICING_RULE_UPSERTED',
+      'RecyclingCenterPricingRule',
+      rule.id,
+      null,
+      { centerId, ...dto },
+    );
+
+    return rule;
+  }
+
+  /** DELETE /admin/recycling-centers/:id/pricing-rules/:wasteType */
+  async adminDeletePricingRule(
+    centerId: string,
+    wasteType: string,
+    adminId: string,
+  ) {
+    const center = await this.prisma.recyclingCenter.findUnique({
+      where: { id: centerId },
+      select: { id: true },
+    });
+    if (!center) throw new NotFoundException('Recycling center not found');
+
+    await this.prisma.recyclingCenterPricingRule.deleteMany({
+      where: {
+        recyclingCenterId: centerId,
+        wasteType: wasteType as import('@prisma/client').WasteType,
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'PRICING_RULE_DELETED',
+      'RecyclingCenterPricingRule',
+      `${centerId}_${wasteType}`,
+      { wasteType },
+      null,
+    );
+
+    return { ok: true };
   }
 
   // ── B3 Recycling — inbound jobs & waste records (admin view) ─────────────

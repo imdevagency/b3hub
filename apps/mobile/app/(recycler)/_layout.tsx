@@ -4,10 +4,11 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, Inbox, FileText, MoreHorizontal } from 'lucide-react-native';
+import { Home, Inbox, FileText, MoreHorizontal, MessageCircle } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
+import { useNotifications } from '@/lib/notifications-context';
 import { TopBar } from '@/components/ui/TopBar';
 import { HeaderProvider, useHeaderConfig } from '@/lib/header-context';
 import { haptics } from '@/lib/haptics';
@@ -17,6 +18,7 @@ function RecyclerLayoutContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { unreadCount, chatUnreadCount } = useNotifications();
   const { config } = useHeaderConfig();
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback((props: BottomTabBarProps) => <AnimatedTabBar {...props} />, []);
@@ -59,7 +61,7 @@ function RecyclerLayoutContent() {
           <ActivityIndicator size="large" color="#111827" />
         </View>
       )}
-      {config !== null && <TopBar title="" leftElement={avatarBtn} />}
+      {config !== null && <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />}
       <Tabs initialRouteName="home" screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
         <Tabs.Screen
           name="home"
@@ -80,6 +82,14 @@ function RecyclerLayoutContent() {
           options={{
             title: 'Ieraksti',
             tabBarIcon: ({ color }) => <FileText size={22} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="messages"
+          options={{
+            title: 'Ziņojumi',
+            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
+            tabBarBadge: chatUnreadCount > 0 ? chatUnreadCount : undefined,
           }}
         />
         <Tabs.Screen

@@ -122,6 +122,32 @@ export async function adminGetUsers(token: string): Promise<AdminUser[]> {
   return res as AdminUser[];
 }
 
+export interface AdminUserOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  total: number;
+  currency: string;
+  createdAt: string;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  company?: {
+    id: string;
+    name: string;
+    legalName?: string;
+    companyType?: string;
+    verified?: boolean;
+  } | null;
+  ordersCreated: AdminUserOrder[];
+}
+
+export async function adminGetUser(id: string, token: string): Promise<AdminUserDetail> {
+  return apiFetch<AdminUserDetail>(`/admin/users/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export async function adminUpdateUser(
   id: string,
   data: Partial<{
@@ -1143,6 +1169,66 @@ export async function adminCreateRecyclingCenter(
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(data),
   });
+}
+
+export interface AdminPricingRule {
+  id: string;
+  wasteType: string;
+  pricePerTonne: number;
+  minimumWeight: number | null;
+  minimumFee: number | null;
+  maximumWeight: number | null;
+  accepted: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function adminGetPricingRules(
+  centerId: string,
+  token: string,
+): Promise<AdminPricingRule[]> {
+  return apiFetch<AdminPricingRule[]>(
+    `/admin/recycling-centers/${centerId}/pricing-rules`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function adminUpsertPricingRule(
+  centerId: string,
+  data: {
+    wasteType: string;
+    pricePerTonne: number;
+    minimumWeight?: number;
+    minimumFee?: number;
+    maximumWeight?: number;
+    accepted?: boolean;
+    notes?: string;
+  },
+  token: string,
+): Promise<AdminPricingRule> {
+  return apiFetch<AdminPricingRule>(
+    `/admin/recycling-centers/${centerId}/pricing-rules`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export async function adminDeletePricingRule(
+  centerId: string,
+  wasteType: string,
+  token: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(
+    `/admin/recycling-centers/${centerId}/pricing-rules/${wasteType}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
 // ── RFQ / Quote Requests (admin) ──────────────────────────────────────────────

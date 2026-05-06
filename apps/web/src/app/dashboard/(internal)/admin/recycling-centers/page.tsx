@@ -12,9 +12,13 @@ import {
   adminToggleRecyclingCenter,
   adminCreateRecyclingCenter,
   adminGetCompanies,
+  adminGetPricingRules,
+  adminUpsertPricingRule,
+  adminDeletePricingRule,
   type AdminRecyclingCenter,
   type AdminCompany,
   type CreateRecyclingCenterInput,
+  type AdminPricingRule,
 } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -47,7 +51,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ChevronDown, ChevronUp, Plus, RefreshCw, Recycle, Search, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  RefreshCw,
+  Recycle,
+  Search,
+  CheckCircle2,
+  XCircle,
+  Trash2,
+  Receipt,
+} from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -143,7 +159,10 @@ function AddCenterDialog({
     setShowHours(false);
   };
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
   const toggleType = (type: string) =>
     setSelectedTypes((prev) =>
@@ -194,12 +213,16 @@ function AddCenterDialog({
         acceptedWasteTypes: selectedTypes,
         capacity: Number(capacity),
         certifications: certifications.trim()
-          ? certifications.split(',').map((s) => s.trim()).filter(Boolean)
+          ? certifications
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
           : [],
         operatingHours: hours,
         licensed,
         licenceNumber: licensed && licenceNumber.trim() ? licenceNumber.trim() : undefined,
-        apusRegistrationId: licensed && apusRegistrationId.trim() ? apusRegistrationId.trim() : undefined,
+        apusRegistrationId:
+          licensed && apusRegistrationId.trim() ? apusRegistrationId.trim() : undefined,
       };
       const created = await adminCreateRecyclingCenter(payload, token);
       onCreated(created);
@@ -226,7 +249,9 @@ function AddCenterDialog({
               </SelectTrigger>
               <SelectContent>
                 {companies.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name} — {c.city}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} — {c.city}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -235,14 +260,22 @@ function AddCenterDialog({
 
           <div className="space-y-1">
             <Label>Centra nosaukums *</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="SIA Eko Centrs — Rīga" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="SIA Eko Centrs — Rīga"
+            />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1 col-span-2">
               <Label>Adrese *</Label>
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Brīvības iela 1" />
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Brīvības iela 1"
+              />
               {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
             </div>
             <div className="space-y-1">
@@ -252,17 +285,32 @@ function AddCenterDialog({
             </div>
             <div className="space-y-1">
               <Label>Reģions *</Label>
-              <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="Rīgas reģions" />
+              <Input
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="Rīgas reģions"
+              />
               {errors.state && <p className="text-xs text-destructive">{errors.state}</p>}
             </div>
             <div className="space-y-1">
               <Label>Pasta indekss *</Label>
-              <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="LV-1001" />
+              <Input
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                placeholder="LV-1001"
+              />
               {errors.postalCode && <p className="text-xs text-destructive">{errors.postalCode}</p>}
             </div>
             <div className="space-y-1">
               <Label>Jauda (t/dienā) *</Label>
-              <Input type="number" min="0" step="0.5" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="50" />
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+                placeholder="50"
+              />
               {errors.capacity && <p className="text-xs text-destructive">{errors.capacity}</p>}
             </div>
           </div>
@@ -290,25 +338,47 @@ function AddCenterDialog({
           </div>
 
           <div className="space-y-1">
-            <Label>Sertifikāti <span className="text-muted-foreground text-xs">(neobligāts, komatatdalīts)</span></Label>
-            <Input value={certifications} onChange={(e) => setCertifications(e.target.value)} placeholder="ISO 14001, EN 12350" />
+            <Label>
+              Sertifikāti{' '}
+              <span className="text-muted-foreground text-xs">(neobligāts, komatatdalīts)</span>
+            </Label>
+            <Input
+              value={certifications}
+              onChange={(e) => setCertifications(e.target.value)}
+              placeholder="ISO 14001, EN 12350"
+            />
           </div>
 
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
             <Switch checked={licensed} onCheckedChange={setLicensed} id="licensed-toggle" />
-            <Label htmlFor="licensed-toggle" className="cursor-pointer">VVD licencēts pārstrādes uzņēmums</Label>
+            <Label htmlFor="licensed-toggle" className="cursor-pointer">
+              VVD licencēts pārstrādes uzņēmums
+            </Label>
           </div>
 
           {licensed && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Licences numurs *</Label>
-                <Input value={licenceNumber} onChange={(e) => setLicenceNumber(e.target.value)} placeholder="VVD/RA/4-04/315" />
-                {errors.licenceNumber && <p className="text-xs text-destructive">{errors.licenceNumber}</p>}
+                <Input
+                  value={licenceNumber}
+                  onChange={(e) => setLicenceNumber(e.target.value)}
+                  placeholder="VVD/RA/4-04/315"
+                />
+                {errors.licenceNumber && (
+                  <p className="text-xs text-destructive">{errors.licenceNumber}</p>
+                )}
               </div>
               <div className="space-y-1">
-                <Label>APUS reģistrācijas ID <span className="text-muted-foreground text-xs">(neobligāts)</span></Label>
-                <Input value={apusRegistrationId} onChange={(e) => setApusRegistrationId(e.target.value)} placeholder="APUS-12345" />
+                <Label>
+                  APUS reģistrācijas ID{' '}
+                  <span className="text-muted-foreground text-xs">(neobligāts)</span>
+                </Label>
+                <Input
+                  value={apusRegistrationId}
+                  onChange={(e) => setApusRegistrationId(e.target.value)}
+                  placeholder="APUS-12345"
+                />
               </div>
             </div>
           )}
@@ -333,16 +403,28 @@ function AddCenterDialog({
                       onClick={() => toggleDay(key)}
                       className={[
                         'w-28 text-xs px-2 py-1 rounded border transition-colors text-left',
-                        dayVal ? 'border-primary text-primary bg-primary/5' : 'border-border text-muted-foreground',
+                        dayVal
+                          ? 'border-primary text-primary bg-primary/5'
+                          : 'border-border text-muted-foreground',
                       ].join(' ')}
                     >
                       {label}
                     </button>
                     {dayVal ? (
                       <>
-                        <Input type="time" value={dayVal.open} onChange={(e) => setDayHour(key, 'open', e.target.value)} className="w-32 text-sm" />
+                        <Input
+                          type="time"
+                          value={dayVal.open}
+                          onChange={(e) => setDayHour(key, 'open', e.target.value)}
+                          className="w-32 text-sm"
+                        />
                         <span className="text-muted-foreground text-sm">—</span>
-                        <Input type="time" value={dayVal.close} onChange={(e) => setDayHour(key, 'close', e.target.value)} className="w-32 text-sm" />
+                        <Input
+                          type="time"
+                          value={dayVal.close}
+                          onChange={(e) => setDayHour(key, 'close', e.target.value)}
+                          className="w-32 text-sm"
+                        />
                       </>
                     ) : (
                       <span className="text-xs text-muted-foreground">Slēgts</span>
@@ -354,11 +436,15 @@ function AddCenterDialog({
           )}
 
           {errors.submit && (
-            <p className="text-sm text-destructive bg-destructive/10 rounded px-3 py-2">{errors.submit}</p>
+            <p className="text-sm text-destructive bg-destructive/10 rounded px-3 py-2">
+              {errors.submit}
+            </p>
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={saving}>Atcelt</Button>
+          <Button variant="outline" onClick={handleClose} disabled={saving}>
+            Atcelt
+          </Button>
           <Button onClick={handleSubmit} disabled={saving}>
             {saving ? 'Saglabā...' : 'Pievienot centru'}
           </Button>
@@ -368,16 +454,268 @@ function AddCenterDialog({
   );
 }
 
+// ─── Pricing Sheet ───────────────────────────────────────────────────────────
+
+function PricingSheet({
+  center,
+  token,
+  open,
+  onClose,
+}: {
+  center: AdminRecyclingCenter;
+  token: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [rules, setRules] = useState<AdminPricingRule[]>([]);
+  const [loadingRules, setLoadingRules] = useState(false);
+  const [form, setForm] = useState<{
+    wasteType: string;
+    pricePerTonne: string;
+    minimumWeight: string;
+    minimumFee: string;
+    notes: string;
+    accepted: boolean;
+  }>({
+    wasteType: '',
+    pricePerTonne: '',
+    minimumWeight: '',
+    minimumFee: '',
+    notes: '',
+    accepted: true,
+  });
+  const [saving, setSaving] = useState(false);
+  const [deletingType, setDeletingType] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    if (!open || !token) return;
+    setLoadingRules(true);
+    adminGetPricingRules(center.id, token)
+      .then(setRules)
+      .finally(() => setLoadingRules(false));
+  }, [open, center.id, token]);
+
+  const handleSave = async () => {
+    const price = Number(form.pricePerTonne);
+    if (!form.wasteType || !form.pricePerTonne || isNaN(price) || price < 0) {
+      setFormError('Izvēlieties atkritumu veidu un ievadiet derīgu cenu');
+      return;
+    }
+    setSaving(true);
+    setFormError('');
+    try {
+      const rule = await adminUpsertPricingRule(
+        center.id,
+        {
+          wasteType: form.wasteType,
+          pricePerTonne: price,
+          minimumWeight: form.minimumWeight ? Number(form.minimumWeight) : undefined,
+          minimumFee: form.minimumFee ? Number(form.minimumFee) : undefined,
+          notes: form.notes.trim() || undefined,
+          accepted: form.accepted,
+        },
+        token,
+      );
+      setRules((prev) => {
+        const idx = prev.findIndex((r) => r.wasteType === rule.wasteType);
+        return idx >= 0 ? prev.map((r, i) => (i === idx ? rule : r)) : [...prev, rule];
+      });
+      setForm({
+        wasteType: '',
+        pricePerTonne: '',
+        minimumWeight: '',
+        minimumFee: '',
+        notes: '',
+        accepted: true,
+      });
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Neizdevās saglabāt');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (wasteType: string) => {
+    setDeletingType(wasteType);
+    try {
+      await adminDeletePricingRule(center.id, wasteType, token);
+      setRules((prev) => prev.filter((r) => r.wasteType !== wasteType));
+    } finally {
+      setDeletingType(null);
+    }
+  };
+
+  const availableTypes = ALL_WASTE_TYPES.filter((t) => center.acceptedWasteTypes.includes(t.value));
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle>Tarifu pārvaldīšana — {center.name}</SheetTitle>
+        </SheetHeader>
+
+        {loadingRules ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : rules.length === 0 ? (
+          <p className="text-sm text-muted-foreground mb-6">Nav pievienotu tarifu.</p>
+        ) : (
+          <div className="mb-6 border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Atkritumu veids</TableHead>
+                  <TableHead className="text-xs text-right">€/t</TableHead>
+                  <TableHead className="text-xs text-right">Min. krava (t)</TableHead>
+                  <TableHead className="text-xs text-right">Min. maksa (€)</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rules.map((r) => (
+                  <TableRow key={r.wasteType} className={!r.accepted ? 'opacity-50' : ''}>
+                    <TableCell className="text-sm">
+                      <div className="flex items-center gap-1">
+                        {WASTE_LABELS[r.wasteType] ?? r.wasteType}
+                        {!r.accepted && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-1 py-0 text-red-500 border-red-300"
+                          >
+                            Nepieņem
+                          </Badge>
+                        )}
+                      </div>
+                      {r.notes && <p className="text-xs text-muted-foreground mt-0.5">{r.notes}</p>}
+                    </TableCell>
+                    <TableCell className="text-sm text-right font-medium">
+                      {r.pricePerTonne.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-sm text-right">{r.minimumWeight ?? '—'}</TableCell>
+                    <TableCell className="text-sm text-right">
+                      {r.minimumFee != null ? r.minimumFee.toFixed(2) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        disabled={deletingType === r.wasteType}
+                        onClick={() => handleDelete(r.wasteType)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Add / edit form */}
+        <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+          <p className="text-sm font-medium">Pievienot / rediģēt tarifu</p>
+          <div className="space-y-1">
+            <Label className="text-xs">Atkritumu veids *</Label>
+            <Select
+              value={form.wasteType}
+              onValueChange={(v) => setForm((f) => ({ ...f, wasteType: v }))}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="Izvēlieties..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTypes.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Cena (€/t) *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                className="h-8 text-sm"
+                value={form.pricePerTonne}
+                onChange={(e) => setForm((f) => ({ ...f, pricePerTonne: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Min. krava (t)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.1"
+                className="h-8 text-sm"
+                value={form.minimumWeight}
+                onChange={(e) => setForm((f) => ({ ...f, minimumWeight: e.target.value }))}
+                placeholder="—"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Min. maksa (€)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                className="h-8 text-sm"
+                value={form.minimumFee}
+                onChange={(e) => setForm((f) => ({ ...f, minimumFee: e.target.value }))}
+                placeholder="—"
+              />
+            </div>
+            <div className="space-y-1 flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={form.accepted}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, accepted: v }))}
+                />
+                <span className="text-xs text-muted-foreground">Pieņem šo veidu</span>
+              </label>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Piezīmes</Label>
+            <Input
+              className="h-8 text-sm"
+              value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Piemēram: Keramika nav pieņemta"
+            />
+          </div>
+          {formError && <p className="text-xs text-destructive">{formError}</p>}
+          <Button size="sm" onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? 'Saglabā...' : 'Saglabāt tarifu'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
 function CenterRow({
   center,
   token,
   onToggled,
+  onTarifi,
 }: {
   center: AdminRecyclingCenter;
   token: string;
   onToggled: (id: string, active: boolean) => void;
+  onTarifi: (center: AdminRecyclingCenter) => void;
 }) {
   const [busy, setBusy] = useState(false);
 
@@ -404,7 +742,10 @@ function CenterRow({
             <div className="flex items-center gap-2">
               <p className="font-medium text-sm">{center.name}</p>
               {center.licensed && (
-                <Badge variant="outline" className="text-xs px-1.5 py-0 border-green-500 text-green-700">
+                <Badge
+                  variant="outline"
+                  className="text-xs px-1.5 py-0 border-green-500 text-green-700"
+                >
                   VVD
                 </Badge>
               )}
@@ -447,6 +788,15 @@ function CenterRow({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2 justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => onTarifi(center)}
+          >
+            <Receipt className="h-3.5 w-3.5 mr-1" />
+            Tarifi
+          </Button>
           <span className="text-xs text-muted-foreground">
             {center.active ? 'Aktīvs' : 'Neaktīvs'}
           </span>
@@ -474,6 +824,7 @@ export default function AdminRecyclingCentersPage() {
   const [search, setSearch] = useState('');
   const [hideInactive, setHideInactive] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pricingCenter, setPricingCenter] = useState<AdminRecyclingCenter | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -600,7 +951,7 @@ export default function AdminRecyclingCentersPage() {
                 <TableHead>Pieņemtie atkritumi</TableHead>
                 <TableHead className="text-right">Jauda</TableHead>
                 <TableHead className="text-right">Ieraksti</TableHead>
-                <TableHead className="text-right">Statuss</TableHead>
+                <TableHead className="text-right">Darbības</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -612,6 +963,7 @@ export default function AdminRecyclingCentersPage() {
                   onToggled={(id, active) =>
                     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, active } : r)))
                   }
+                  onTarifi={setPricingCenter}
                 />
               ))}
             </TableBody>
@@ -625,6 +977,14 @@ export default function AdminRecyclingCentersPage() {
         onCreated={(center) => setRows((prev) => [center, ...prev])}
         token={token}
       />
+      {pricingCenter && (
+        <PricingSheet
+          center={pricingCenter}
+          token={token}
+          open={!!pricingCenter}
+          onClose={() => setPricingCenter(null)}
+        />
+      )}
     </div>
   );
 }

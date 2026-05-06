@@ -16,6 +16,7 @@ export interface SupportMessage {
 export interface SupportThread {
   id: string;
   status: 'OPEN' | 'CLOSED';
+  createdAt: string;
   updatedAt: string;
   user: {
     id: string;

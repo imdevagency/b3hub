@@ -172,10 +172,28 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           groupPaths: getGroupPaths('CARRIER', 'fleet'),
         },
         {
+          label: 'Vadītāji',
+          href: '/dashboard/drivers',
+          icon: Users,
+          groupPaths: getGroupPaths('CARRIER', 'drivers'),
+        },
+        {
+          label: 'Veiktspēja',
+          href: '/dashboard/scorecard',
+          icon: BarChart3,
+          groupPaths: getGroupPaths('CARRIER', 'scorecard'),
+        },
+        {
           label: 'Finanses',
           href: '/dashboard/earnings',
           icon: Banknote,
           groupPaths: getGroupPaths('CARRIER', 'finance'),
+        },
+        {
+          label: 'Līgumi',
+          href: '/dashboard/framework-contracts',
+          icon: ScrollText,
+          groupPaths: getGroupPaths('CARRIER', 'contracts'),
         },
       ],
     },

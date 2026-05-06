@@ -615,6 +615,41 @@ export class AdminController {
     return this.service.adminToggleRecyclingCenter(id, body.active, admin.userId);
   }
 
+  /** GET /admin/recycling-centers/:id/pricing-rules */
+  @Get('recycling-centers/:id/pricing-rules')
+  getRecyclingCenterPricingRules(@Param('id') id: string) {
+    return this.service.adminGetPricingRules(id);
+  }
+
+  /** POST /admin/recycling-centers/:id/pricing-rules — upsert one rule */
+  @Post('recycling-centers/:id/pricing-rules')
+  upsertRecyclingCenterPricingRule(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      wasteType: string;
+      pricePerTonne: number;
+      minimumWeight?: number;
+      minimumFee?: number;
+      maximumWeight?: number;
+      accepted?: boolean;
+      notes?: string;
+    },
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminUpsertPricingRule(id, body, admin.userId);
+  }
+
+  /** DELETE /admin/recycling-centers/:id/pricing-rules/:wasteType */
+  @Delete('recycling-centers/:id/pricing-rules/:wasteType')
+  deleteRecyclingCenterPricingRule(
+    @Param('id') id: string,
+    @Param('wasteType') wasteType: string,
+    @CurrentUser() admin: RequestingUser,
+  ) {
+    return this.service.adminDeletePricingRule(id, wasteType, admin.userId);
+  }
+
   // ── Documents ─────────────────────────────────────────────────────────────
 
   /**

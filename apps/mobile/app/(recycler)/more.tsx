@@ -104,7 +104,7 @@ export default function RecyclerMoreScreen() {
             <ListRow
               icon={Bell}
               label="Paziņojumi"
-              onPress={() => router.push('/(shared)/settings')}
+              onPress={() => router.push('/(shared)/notifications')}
             />
             <ListRow
               icon={Settings}

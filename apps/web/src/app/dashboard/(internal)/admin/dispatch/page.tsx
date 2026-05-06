@@ -86,12 +86,12 @@ function jobCoord(job: AdminDispatchJob): { lat: number; lng: number } | null {
 
 interface DispatchMapProps {
   jobs: AdminDispatchJob[];
-  activeStatuses: Set<string>;
+  activeStatus: string;
   onSelectJob: (job: AdminDispatchJob | null) => void;
   selectedJobId: string | null;
 }
 
-function DispatchMap({ jobs, activeStatuses, onSelectJob, selectedJobId }: DispatchMapProps) {
+function DispatchMap({ jobs, activeStatus, onSelectJob, selectedJobId }: DispatchMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { isLoaded } = useJsApiLoader({
     id: 'b3hub-google-maps',
@@ -99,8 +99,8 @@ function DispatchMap({ jobs, activeStatuses, onSelectJob, selectedJobId }: Dispa
   });
 
   const filteredJobs = useMemo(
-    () => (activeStatuses.size === 0 ? jobs : jobs.filter((j) => activeStatuses.has(j.status))),
-    [jobs, activeStatuses],
+    () => (activeStatus === 'ALL' ? jobs : jobs.filter((j) => j.status === activeStatus)),
+    [jobs, activeStatus],
   );
 
   const mappable = useMemo(
@@ -258,54 +258,28 @@ function DispatchMap({ jobs, activeStatuses, onSelectJob, selectedJobId }: Dispa
   );
 }
 
-// ─── Status Legend ────────────────────────────────────────────────────────────
-
-function StatusLegend({
-  counts,
-  active,
-  onToggle,
-}: {
-  counts: Record<string, number>;
-  active: Set<string>;
-  onToggle: (s: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {STATUS_ORDER.map((s) => {
-        const count = counts[s] ?? 0;
-        const isActive = active.size === 0 || active.has(s);
-        return (
-          <button
-            key={s}
-            onClick={() => onToggle(s)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all
-              ${isActive ? 'border-transparent text-white shadow-sm' : 'border-border bg-card text-muted-foreground opacity-60'}`}
-            style={isActive ? { backgroundColor: STATUS_PIN[s] } : {}}
-          >
-            <span>{STATUS_LV[s]}</span>
-            <span
-              className={`px-1.5 py-0.5 rounded-full text-xs leading-none
-                ${isActive ? 'bg-white/25' : 'bg-muted'}`}
-            >
-              {count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── Right Panel ──────────────────────────────────────────────────────────────
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function FleetPanel({
   data,
   onSelectJob,
   selectedJobId,
+  activeStatus,
+  onStatusChange,
 }: {
   data: AdminDispatchData;
   onSelectJob: (job: AdminDispatchJob) => void;
   selectedJobId: string | null;
+  activeStatus: string;
+  onStatusChange: (v: string) => void;
 }) {
   const { summary, onlineDrivers, carriers, jobs } = data;
 
@@ -331,6 +305,22 @@ function FleetPanel({
             <p className="text-xs text-muted-foreground mt-0.5">Pārvadātāji</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="px-1 shrink-0">
+        <Select value={activeStatus} onValueChange={onStatusChange}>
+          <SelectTrigger className="w-full rounded-xl border h-10">
+            <SelectValue placeholder="Visi statusi" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Visi statusi</SelectItem>
+            {STATUS_ORDER.map((s) => (
+              <SelectItem key={s} value={s}>
+                {STATUS_LV[s]} ({summary.jobsByStatus[s] ?? 0})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Online Drivers */}
@@ -460,7 +450,7 @@ function DispatchContent() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL_S);
-  const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
+  const [activeStatus, setActiveStatus] = useState<string>('ALL');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -503,30 +493,9 @@ function DispatchContent() {
     return () => clearInterval(interval);
   }, [load]);
 
-  const toggleStatus = (s: string) => {
-    setActiveStatuses((prev) => {
-      const next = new Set(prev);
-      if (next.has(s)) next.delete(s);
-      else next.add(s);
-      return next;
-    });
-  };
-
   const handleSelectJob = (job: AdminDispatchJob | null) => {
     setSelectedJobId(job?.id ?? null);
   };
-
-  const statusCounts = useMemo(
-    () =>
-      STATUS_ORDER.reduce(
-        (acc, s) => {
-          acc[s] = data?.jobs.filter((j) => j.status === s).length ?? 0;
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
-    [data],
-  );
 
   if (loading) {
     return (
@@ -555,9 +524,8 @@ function DispatchContent() {
 
   return (
     <div className="flex flex-col gap-3 h-full overflow-hidden">
-      {/* Filter chips + refresh */}
-      <div className="flex items-center justify-between gap-3 shrink-0">
-        <StatusLegend counts={statusCounts} active={activeStatuses} onToggle={toggleStatus} />
+      {/* Title + refresh */}
+      <div className="flex justify-end shrink-0">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Clock className="h-3 w-3" />
@@ -582,7 +550,7 @@ function DispatchContent() {
         <div className="flex-1 min-h-0 rounded-xl overflow-hidden border shadow-sm">
           <DispatchMap
             jobs={data.jobs}
-            activeStatuses={activeStatuses}
+            activeStatus={activeStatus}
             onSelectJob={handleSelectJob}
             selectedJobId={selectedJobId}
           />
@@ -594,6 +562,8 @@ function DispatchContent() {
             data={data}
             onSelectJob={(job) => setSelectedJobId(job.id)}
             selectedJobId={selectedJobId}
+            activeStatus={activeStatus}
+            onStatusChange={setActiveStatus}
           />
         </div>
       </div>

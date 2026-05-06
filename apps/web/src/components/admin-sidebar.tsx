@@ -17,6 +17,7 @@ import {
   BarChart2,
   BarChart3,
   BookOpen,
+  BookText,
   Box,
   Boxes,
   Building2,
@@ -141,6 +142,11 @@ const GROUP_NAV: NavSection[] = [
       { label: 'CMS', href: '/dashboard/group/cms', icon: FileText },
       { label: 'Mārketings', href: '/dashboard/group/marketing', icon: Megaphone },
     ],
+  },
+  {
+    id: 'finance',
+    label: 'Finanses',
+    items: [{ label: 'Grāmatvedība', href: '/dashboard/group/accounting', icon: BookText }],
   },
 ];
 

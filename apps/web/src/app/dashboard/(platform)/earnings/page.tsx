@@ -8,7 +8,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getEarnings, type EarningsResponse, type EarningEntry } from '@/lib/api';
+import {
+  getEarnings,
+  getCompanyMembers,
+  getAllTransportJobs,
+  type EarningsResponse,
+  type EarningEntry,
+  type CompanyMember,
+  type ApiTransportJob,
+} from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertCircle,
@@ -21,12 +29,22 @@ import {
   Package,
   BarChart3,
   RefreshCw,
+  Users,
+  Car,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface DriverBreakdownRow {
+  id: string;
+  name: string;
+  jobCount: number;
+  totalEarned: number;
+  vehicles: string[];
+}
 
 interface EarningsStats {
   todayAmount: number;
@@ -180,9 +198,14 @@ export default function EarningsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
 
+  // Per-driver breakdown (carrier OWNER/MANAGER only)
+  const [breakdownRows, setBreakdownRows] = useState<DriverBreakdownRow[]>([]);
+  const [breakdownPeriod, setBreakdownPeriod] = useState<'week' | 'month' | 'all'>('month');
+
   // Role detection
   const isSupplier = Boolean(user?.canSell);
   const isCarrier = Boolean(user?.canTransport);
+  const isDispatcher = user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER';
 
   useEffect(() => {
     if (!user) return;
@@ -234,6 +257,60 @@ export default function EarningsPage() {
       setRefreshing(false);
     }
   };
+
+  // Load per-driver breakdown for OWNER/MANAGER carriers
+  useEffect(() => {
+    if (!token || !isCarrier || !isDispatcher) return;
+    Promise.all([getCompanyMembers(token), getAllTransportJobs(token)])
+      .then(([members, jobs]) => {
+        const drivers = members.filter((m) => m.canTransport);
+        const driverIds = new Set(drivers.map((d) => d.id));
+        const completedJobs = jobs.filter(
+          (j) => j.status === 'DELIVERED' && j.driverId && driverIds.has(j.driverId),
+        );
+
+        // Group by driver
+        const byDriver = new Map<string, { member: CompanyMember; jobs: ApiTransportJob[] }>();
+        for (const d of drivers) byDriver.set(d.id, { member: d, jobs: [] });
+        for (const j of completedJobs) {
+          if (j.driverId) byDriver.get(j.driverId)?.jobs.push(j);
+        }
+
+        // Group by vehicle
+        const byVehicle = new Map<
+          string,
+          { plate: string; type: string; jobs: ApiTransportJob[] }
+        >();
+        for (const j of completedJobs) {
+          if (j.vehicle) {
+            const key = j.vehicle.id;
+            if (!byVehicle.has(key)) {
+              byVehicle.set(key, {
+                plate: j.vehicle.licensePlate,
+                type: j.vehicle.vehicleType,
+                jobs: [],
+              });
+            }
+            byVehicle.get(key)!.jobs.push(j);
+          }
+        }
+
+        const rows: DriverBreakdownRow[] = [...byDriver.values()].map(({ member, jobs }) => ({
+          id: member.id,
+          name: `${member.firstName} ${member.lastName}`,
+          jobCount: jobs.length,
+          totalEarned: jobs.reduce((s, j) => s + (j.rate ?? 0), 0),
+          vehicles: [...new Set(jobs.filter((j) => j.vehicle).map((j) => j.vehicle!.licensePlate))],
+        }));
+
+        rows.sort((a, b) => b.totalEarned - a.totalEarned);
+        setBreakdownRows(rows);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, isCarrier, isDispatcher]);
 
   useEffect(() => {
     load();
@@ -437,6 +514,65 @@ export default function EarningsPage() {
           </div>
         </div>
       </div>
+
+      {/* Per-driver breakdown — OWNER/MANAGER only */}
+      {isCarrier && isDispatcher && breakdownRows.length > 0 && (
+        <div className="rounded-xl bg-muted/30 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Ienākumi pēc vadītāja
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Pabeigto darbu apkopojums — visā laikā
+              </p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b border-border">
+                  <th className="pb-2 font-medium text-muted-foreground">Vadītājs</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Darbi</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Kopā</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">
+                    Vidēji/darbā
+                  </th>
+                  <th className="pb-2 font-medium text-muted-foreground">Transportlīdzekļi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakdownRows.map((row) => (
+                  <tr key={row.id} className="border-b border-border/50 last:border-0">
+                    <td className="py-3 font-medium">{row.name}</td>
+                    <td className="py-3 text-right tabular-nums">{row.jobCount}</td>
+                    <td className="py-3 text-right tabular-nums font-semibold">
+                      {euro(row.totalEarned)}
+                    </td>
+                    <td className="py-3 text-right tabular-nums text-muted-foreground">
+                      {row.jobCount > 0 ? euro(row.totalEarned / row.jobCount) : '—'}
+                    </td>
+                    <td className="py-3 text-muted-foreground text-xs">
+                      {row.vehicles.length > 0 ? row.vehicles.join(', ') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Totals row */}
+          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-sm">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Car className="h-3.5 w-3.5" />
+              {breakdownRows.length} vadītāji
+            </span>
+            <span className="font-semibold">
+              Kopā: {euro(breakdownRows.reduce((s, r) => s + r.totalEarned, 0))}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
