@@ -59,6 +59,7 @@ import {
   Wallet,
   Wrench,
   ContactRound,
+  Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ADMIN_NAV_GROUPS } from '@/lib/admin-nav-groups';
@@ -211,6 +212,25 @@ const B3HUB_NAV: NavSection[] = [
       },
     ],
   },
+  {
+    id: 'integrations',
+    label: 'Integrācijas',
+    items: [
+      {
+        label: 'Visas integrācijas',
+        href: '/dashboard/admin/integrations',
+        icon: Link2,
+        groupPaths: [
+          '/dashboard/admin/integrations',
+          '/dashboard/admin/integrations/lursoft',
+          '/dashboard/admin/integrations/paysera',
+          '/dashboard/admin/integrations/sms',
+          '/dashboard/admin/integrations/email',
+          '/dashboard/admin/integrations/maps',
+        ],
+      },
+    ],
+  },
 ];
 
 // ─── B3 Recycling navigation ──────────────────────────────────────────────────
@@ -312,6 +332,14 @@ const CONSTRUCTION_NAV: NavSection[] = [
         href: '/dashboard/b3-construction/dpr-templates',
         icon: LayoutTemplate,
       },
+    ],
+  },
+  {
+    id: 'bis',
+    label: 'Integrācijas',
+    items: [
+      { label: 'BIS Reģistri', href: '/dashboard/b3-construction/bis', icon: Link2 },
+      { label: 'Jumis', href: '/dashboard/b3-construction/jumis', icon: BookOpen },
     ],
   },
 ];

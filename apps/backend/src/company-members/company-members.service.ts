@@ -27,6 +27,7 @@ const MEMBER_SELECT = {
   phone: true,
   avatar: true,
   companyRole: true,
+  canTransport: true,
   status: true,
   permCreateContracts: true,
   permReleaseCallOffs: true,
@@ -133,6 +134,7 @@ export class CompanyMembersService {
         status: 'ACTIVE',
         companyId,
         companyRole: 'MEMBER',
+        canTransport: dto.canTransport ?? false,
         permCreateContracts: dto.permCreateContracts ?? false,
         permReleaseCallOffs: dto.permReleaseCallOffs ?? false,
         permManageOrders: dto.permManageOrders ?? false,
@@ -182,6 +184,8 @@ export class CompanyMembersService {
     }
 
     const updateData: Record<string, boolean> = {};
+    if (dto.canTransport !== undefined)
+      updateData.canTransport = dto.canTransport;
     if (dto.permCreateContracts !== undefined)
       updateData.permCreateContracts = dto.permCreateContracts;
     if (dto.permReleaseCallOffs !== undefined)

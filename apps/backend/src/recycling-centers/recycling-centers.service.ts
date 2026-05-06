@@ -11,7 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, MaterialCategory, WasteType } from '@prisma/client';
+import { Prisma, MaterialCategory, WasteType, TransportJobStatus } from '@prisma/client';
 import { CreateRecyclingCenterDto } from './dto/create-recycling-center.dto';
 import { UpdateRecyclingCenterDto } from './dto/update-recycling-center.dto';
 import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
@@ -386,6 +386,16 @@ export class RecyclingCentersService {
       data.producedMaterialId = dto.producedMaterialId;
     if (dto.certificateUrl !== undefined)
       data.certificateUrl = dto.certificateUrl;
+    // APUS manual tracking
+    if (dto.apusStatus !== undefined) {
+      data.apusStatus = dto.apusStatus;
+      // Auto-stamp submission time when operator marks as SUBMITTED
+      if (dto.apusStatus === 'SUBMITTED' && !record.apusSubmittedAt) {
+        data.apusSubmittedAt = new Date();
+      }
+    }
+    if (dto.apusSubmissionId !== undefined) data.apusSubmissionId = dto.apusSubmissionId;
+    if (dto.apusNote !== undefined) data.apusNote = dto.apusNote;
 
     return this.prisma.wasteRecord.update({ where: { id: recordId }, data });
   }
@@ -673,5 +683,34 @@ export class RecyclingCentersService {
       select: { id: true },
     });
     if (!center) throw new ForbiddenException('Center not found or access denied');
+  }
+
+  /**
+   * Recycler: cancel an incoming waste collection job they cannot receive.
+   * Only cancellable while the driver hasn't yet loaded the cargo.
+   */
+  async cancelIncomingJob(centerId: string, jobId: string, companyId: string) {
+    await this.assertOwns(centerId, companyId);
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      select: { id: true, status: true, recyclingCenterId: true },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.recyclingCenterId !== centerId)
+      throw new ForbiddenException('Job is not destined for your center');
+    const cancellable: TransportJobStatus[] = [
+      'AVAILABLE',
+      'ASSIGNED',
+      'ACCEPTED',
+      'EN_ROUTE_PICKUP',
+    ];
+    if (!cancellable.includes(job.status))
+      throw new BadRequestException(
+        `Cannot cancel a job with status ${job.status} — driver may already be en route to delivery`,
+      );
+    return this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: { status: 'CANCELLED' },
+    });
   }
 }

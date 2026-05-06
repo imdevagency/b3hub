@@ -39,17 +39,17 @@ export const CATEGORY_ACCENT: Record<string, string> = {
 // ── Category icon emoji (used in order-request flow) ──────────
 
 export const CATEGORY_ICON: Record<string, string> = {
-  ALL: '\ud83d\udce6',
-  SAND: '\ud83c\udfdc\ufe0f',
-  GRAVEL: '\ud83e\udea8',
-  STONE: '\ud83d\uddff',
-  CONCRETE: '\ud83e\uddf1',
-  SOIL: '\ud83c\udf31',
-  RECYCLED_CONCRETE: '\u267b\ufe0f',
-  RECYCLED_SOIL: '\ud83c\udf3f',
-  ASPHALT: '\ud83d\udee3\ufe0f',
-  CLAY: '\ud83d\udfe4',
-  OTHER: '\ud83d\udce6',
+  ALL: '📦',
+  SAND: '🏜️',
+  GRAVEL: '🪨',
+  STONE: '🗿',
+  CONCRETE: '🧱',
+  SOIL: '🌱',
+  RECYCLED_CONCRETE: '♻️',
+  RECYCLED_SOIL: '🌿',
+  ASPHALT: '🛣️',
+  CLAY: '🟤',
+  OTHER: '📦',
 };
 
 // ── Order status label maps ────────────────────────────────────

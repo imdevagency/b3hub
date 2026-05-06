@@ -45,6 +45,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Zap,
 } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth-context';
@@ -1015,6 +1016,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <Link href="/dashboard/company/team">
                         <Users className="size-4 shrink-0" />
                         <span>Uzņēmuma komanda</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {(user.companyRole === 'OWNER' || user.companyRole === 'MANAGER') && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="ERP integrācijas"
+                      isActive={isRouteActive('/dashboard/company/integrations')}
+                    >
+                      <Link href="/dashboard/company/integrations">
+                        <Zap className="size-4 shrink-0" />
+                        <span>ERP integrācijas</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

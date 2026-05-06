@@ -9,7 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { WasteProcessingStage, RcGrade } from '@prisma/client';
+import { WasteProcessingStage, RcGrade, ApusStatus } from '@prisma/client';
 
 export class UpdateWasteRecordDto {
   @IsOptional()
@@ -54,4 +54,19 @@ export class UpdateWasteRecordDto {
   @IsUrl({ protocols: ['https'], require_protocol: true })
   @MaxLength(2048)
   certificateUrl?: string;
+
+  /** APUS — operator marks manual VVD submission status */
+  @IsOptional()
+  @IsEnum(ApusStatus)
+  apusStatus?: ApusStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  apusSubmissionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  apusNote?: string;
 }

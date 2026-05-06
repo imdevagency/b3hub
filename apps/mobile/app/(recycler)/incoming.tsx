@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { getRecyclerIncomingJobs } from '@/lib/api';
+import { getRecyclerIncomingJobs, cancelIncomingJob } from '@/lib/api';
 import type { IncomingJob } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
@@ -19,7 +21,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderConfig } from '@/lib/header-context';
 import { colors } from '@/lib/theme';
 import { getRecyclerJobStatus } from '@/lib/status';
-import { Truck, Calendar, X, MapPin, FileText } from 'lucide-react-native';
+import { Truck, Calendar, X, MapPin, FileText, XCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function JobCard({ job, onPress }: { job: IncomingJob; onPress: () => void }) {
@@ -82,6 +84,36 @@ export default function RecyclerIncomingScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedJob, setSelectedJob] = useState<IncomingJob | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const CANCELLABLE = ['AVAILABLE', 'ASSIGNED', 'ACCEPTED', 'EN_ROUTE_PICKUP'];
+
+  async function handleCancel(job: IncomingJob) {
+    if (!token || !job.recyclingCenter?.id) return;
+    Alert.alert(
+      'Atcelt piegādi',
+      'Vai tiešām vēlaties atcelt šo atkritumu piegādi? Klients tiks informēts.',
+      [
+        { text: 'Nē', style: 'cancel' },
+        {
+          text: 'Jā, atcelt',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await cancelIncomingJob(token, job.recyclingCenter!.id, job.id);
+              setJobs((prev) => prev.filter((j) => j.id !== job.id));
+              setSelectedJob(null);
+            } catch {
+              Alert.alert('Kļūda', 'Neizdevās atcelt piegādi. Mēģiniet vēlreiz.');
+            } finally {
+              setCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -214,6 +246,23 @@ export default function RecyclerIncomingScreen() {
                     <Text style={ls.rowText}>{selectedJob.notes}</Text>
                   </View>
                 )}
+                {CANCELLABLE.includes(selectedJob.status) && (
+                  <TouchableOpacity
+                    style={ls.cancelBtn}
+                    activeOpacity={0.8}
+                    onPress={() => handleCancel(selectedJob)}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? (
+                      <ActivityIndicator size="small" color="#dc2626" />
+                    ) : (
+                      <XCircle size={15} color="#dc2626" />
+                    )}
+                    <Text style={ls.cancelBtnText}>
+                      {cancelling ? 'Atceļ...' : 'Atcelt piegādi'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             );
           })()}
@@ -280,4 +329,17 @@ const ls = StyleSheet.create({
     marginBottom: 4,
   },
   sheetId: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, flex: 1 },
+  cancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    backgroundColor: '#fef2f2',
+    justifyContent: 'center',
+  },
+  cancelBtnText: { fontSize: 14, fontWeight: '600', color: '#dc2626' },
 });

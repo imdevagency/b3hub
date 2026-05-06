@@ -25,6 +25,11 @@ import {
 } from './dto/query-materials.dto';
 import { GetOffersDto } from './dto/get-offers.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOrApiKeyGuard } from '../auth/guards/jwt-or-api-key.guard';
+import {
+  RequireScope,
+  RequireScopeGuard,
+} from '../auth/guards/require-scope.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
@@ -61,7 +66,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Materials')
 @Controller('materials')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtOrApiKeyGuard)
 export class MaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}
 
@@ -84,6 +89,8 @@ export class MaterialsController {
   }
 
   @Get()
+  @UseGuards(JwtOrApiKeyGuard, RequireScopeGuard)
+  @RequireScope('materials:read')
   findAll(@Query() query: QueryMaterialsDto) {
     return this.materialsService.findAll(query);
   }

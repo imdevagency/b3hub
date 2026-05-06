@@ -250,4 +250,23 @@ export class RecyclingCentersController {
     if (!user.companyId) throw new ForbiddenException('A linked company is required');
     return this.service.deletePricingRule(centerId, wasteType, user.companyId);
   }
+
+  // ── Incoming Job Management ───────────────────────────────────────────────
+
+  /**
+   * POST /recycling-centers/:centerId/incoming-jobs/:jobId/cancel
+   * Operator cancels an incoming waste delivery they cannot receive.
+   * Only allowed while the driver has not yet loaded the cargo.
+   */
+  @Post(':centerId/incoming-jobs/:jobId/cancel')
+  cancelIncomingJob(
+    @Param('centerId') centerId: string,
+    @Param('jobId') jobId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertIsRecycler(user);
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
+    return this.service.cancelIncomingJob(centerId, jobId, user.companyId);
+  }
 }

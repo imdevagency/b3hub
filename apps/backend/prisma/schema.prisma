@@ -619,11 +619,12 @@ model Company {
   quoteResponses   QuoteResponse[]
 
   // Carrier comparison engine
-  carrierPricing             CarrierPricing[]      @relation("CarrierPricing")
-  serviceZones               CarrierServiceZone[]  @relation("CarrierServiceZones")
-  availabilityBlocks         CarrierAvailability[] @relation("CarrierAvailability")
-  assignedSkipOrders         SkipHireOrder[]       @relation("AssignedSkipCarrier")
-  assignedToiletCabinOrders  ToiletCabinOrder[]    @relation("AssignedToiletCabinCarrier")
+  carrierPricing             CarrierPricing[]             @relation("CarrierPricing")
+  serviceZones               CarrierServiceZone[]         @relation("CarrierServiceZones")
+  availabilityBlocks         CarrierAvailability[]        @relation("CarrierAvailability")
+  assignedSkipOrders         SkipHireOrder[]              @relation("AssignedSkipCarrier")
+  assignedToiletCabinOrders  ToiletCabinOrder[]           @relation("AssignedToiletCabinCarrier")
+  toiletCabinSettings        CarrierToiletCabinSettings?
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
@@ -1734,6 +1735,25 @@ model ToiletCabinOrder {
   updatedAt DateTime @updatedAt
 
   @@map("toilet_cabin_orders")
+}
+
+// Carrier pricing & availability settings for toilet cabin rental.
+// One row per carrier company. Carriers set their day-rate and list the
+// cities/regions they operate in — used by the quote engine.
+model CarrierToiletCabinSettings {
+  id        String  @id @default(cuid())
+  carrier   Company @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId String  @unique
+
+  pricePerCabinPerDay Float    // EUR per cabin per day
+  maxCabins           Int      @default(1) // fleet capacity (max simultaneous rentals)
+  serviceCities       String[] // lowercase city names e.g. ["rīga", "jūrmala", "sigulda"]
+  isActive            Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("carrier_toilet_cabin_settings")
 }
 
 // ── Carrier comparison engine ─────────────────────────────────────────────────

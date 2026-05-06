@@ -1188,16 +1188,29 @@ export default function ConstructionProjectDetailPage() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <ClipboardList className="h-4 w-4 text-muted-foreground" />
                 Dienas atskaites
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="ml-auto"
-                  onClick={() =>
-                    router.push(`/dashboard/b3-construction/daily-reports?projectId=${id}`)
-                  }
-                >
-                  Atvērt DPR sadaļu
-                </Button>
+                <div className="ml-auto flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/b3-construction/daily-reports?projectId=${id}&create=1`,
+                      )
+                    }
+                  >
+                    <FilePlus className="h-3.5 w-3.5 mr-1.5" />
+                    Jauna atskaite
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      router.push(`/dashboard/b3-construction/daily-reports?projectId=${id}`)
+                    }
+                  >
+                    Visas atskaites
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -1709,7 +1722,7 @@ export default function ConstructionProjectDetailPage() {
                               <TableCell className="text-sm text-gray-500">
                                 {inv.dueDate ? format(new Date(inv.dueDate), 'dd.MM.yyyy') : '—'}
                               </TableCell>
-                              <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
+                              <TableCell className="text-sm text-gray-600 max-w-50 truncate">
                                 {inv.description ?? '—'}
                               </TableCell>
                               <TableCell>
@@ -1849,7 +1862,7 @@ export default function ConstructionProjectDetailPage() {
             <div>
               <label className="text-sm font-medium mb-1 block">Piezīmes</label>
               <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px]"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-15"
                 value={invoiceForm.notes}
                 onChange={(e) => setInvoiceForm((f) => ({ ...f, notes: e.target.value }))}
               />
@@ -1953,7 +1966,7 @@ export default function ConstructionProjectDetailPage() {
             <div>
               <label className="text-sm font-medium mb-1 block">Piezīmes</label>
               <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px]"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-15"
                 value={docForm.notes ?? ''}
                 onChange={(e) => setDocForm((f) => ({ ...f, notes: e.target.value }))}
               />

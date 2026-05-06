@@ -40,3 +40,54 @@ export async function getMyRecyclingCenters(token: string): Promise<RecyclingCen
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ─── Recycler operator types ────────────────────────────────────────────────
+
+export interface RecyclerIncomingJob {
+  id: string;
+  status: string;
+  jobType: string;
+  createdAt: string;
+  updatedAt: string;
+  scheduledAt?: string | null;
+  notes?: string | null;
+  recyclingCenter?: { id: string; name: string; address: string | null } | null;
+  requester?: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+  vehicle?: { id: string; licensePlate: string; vehicleType: string } | null;
+}
+
+export interface RecyclerWasteRecord {
+  id: string;
+  wasteType: string;
+  weight: number | null;
+  volume: number | null;
+  recyclableWeight: number | null;
+  recyclingRate: number | null;
+  processingStage: string;
+  rcGrade: string;
+  certificateUrl: string | null;
+  processedDate: string | null;
+  apusStatus: string;
+  apusSubmissionId: string | null;
+  apusNote: string | null;
+  apusSubmittedAt: string | null;
+  createdAt: string;
+  recyclingCenter?: { id: string; name: string } | null;
+  containerOrder?: { id: string; order: { id: string; createdAt: string } } | null;
+}
+
+// ─── Recycler operator functions ────────────────────────────────────────────
+
+/** GET /recycling-centers/mine-incoming-jobs — disposal transport jobs heading to this operator's centers */
+export async function getRecyclerIncomingJobs(token: string): Promise<RecyclerIncomingJob[]> {
+  return apiFetch<RecyclerIncomingJob[]>('/recycling-centers/mine-incoming-jobs', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/** GET /recycling-centers/waste-records/mine — all waste records for this operator's centers */
+export async function getRecyclerWasteRecords(token: string): Promise<RecyclerWasteRecord[]> {
+  return apiFetch<RecyclerWasteRecord[]>('/recycling-centers/waste-records/mine', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

@@ -9,7 +9,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getRecyclerWasteRecords, recyclerCreateListing } from '@/lib/api';
+import {
+  getRecyclerWasteRecords,
+  recyclerCreateListing,
+  recyclerUpdateWasteRecord,
+} from '@/lib/api';
 import type { RecyclerWasteRecord } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -25,9 +29,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ClipboardList, ExternalLink, ArrowRightCircle, CheckCircle2 } from 'lucide-react';
+import {
+  ClipboardList,
+  ExternalLink,
+  ArrowRightCircle,
+  CheckCircle2,
+  ChevronRight,
+  Shield,
+} from 'lucide-react';
 import { fmtDate } from '@/lib/format';
 
 // ── Display maps ──────────────────────────────────────────────────────────────
@@ -50,6 +68,20 @@ const RC_GRADE_LABELS: Record<string, string> = {
   RC_C: 'RC-C',
   UNGRADED: '',
 };
+
+const STAGE_SEQUENCE: Record<string, string> = {
+  RECEIVED: 'SORTED',
+  SORTED: 'PROCESSING',
+  PROCESSING: 'PROCESSED',
+};
+
+const APUS_OPTIONS = [
+  { value: 'NOT_REQUIRED', label: 'Nav nepieciešams' },
+  { value: 'PENDING', label: 'Gaidīšanas rindā' },
+  { value: 'SUBMITTED', label: 'Iesniegts' },
+  { value: 'ACCEPTED', label: 'Apstiprināts' },
+  { value: 'REJECTED', label: 'Noraidīts' },
+] as const;
 
 function formatWeight(weightKg?: number | null): string {
   if (weightKg == null) return '—';
@@ -168,6 +200,119 @@ function ConvertDialog({
   );
 }
 
+// ── APUS tracking dialog ──────────────────────────────────────────────────────
+
+function ApusDialog({
+  record,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  record: RecyclerWasteRecord | null;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (updated: RecyclerWasteRecord) => void;
+}) {
+  const { token } = useAuth();
+  const [apusStatus, setApusStatus] = useState('');
+  const [apusSubmissionId, setApusSubmissionId] = useState('');
+  const [apusNote, setApusNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (record) {
+      setApusStatus(record.apusStatus ?? 'NOT_REQUIRED');
+      setApusSubmissionId(record.apusSubmissionId ?? '');
+      setApusNote(record.apusNote ?? '');
+      setError(null);
+    }
+  }, [record]);
+
+  async function handleSave() {
+    if (!record || !token || !record.recyclingCenter?.id) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await recyclerUpdateWasteRecord(token, record.recyclingCenter.id, record.id, {
+        apusStatus: apusStatus || undefined,
+        apusSubmissionId: apusSubmissionId.trim() || undefined,
+        apusNote: apusNote.trim() || undefined,
+      });
+      onSuccess(updated);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Kļūda');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!record) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-blue-600" />
+            APUS izsekošana
+          </DialogTitle>
+          <DialogDescription>
+            Atjauniniet APUS reģistrācijas statusu šim atkritumu ierakstam.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Statuss</Label>
+            <Select value={apusStatus} onValueChange={setApusStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Izvēlieties statusu" />
+              </SelectTrigger>
+              <SelectContent>
+                {APUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="apus-id">Iesnieguma ID</Label>
+            <Input
+              id="apus-id"
+              placeholder="APUS iesnieguma numurs"
+              value={apusSubmissionId}
+              onChange={(e) => setApusSubmissionId(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="apus-note">Piezīme</Label>
+            <Input
+              id="apus-note"
+              placeholder="Papildu informācija"
+              value={apusNote}
+              onChange={(e) => setApusNote(e.target.value)}
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Atcelt
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Saglabā...' : 'Saglabāt'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RecyclerWasteRecordsPage() {
@@ -178,6 +323,8 @@ export default function RecyclerWasteRecordsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [convertTarget, setConvertTarget] = useState<RecyclerWasteRecord | null>(null);
+  const [apusTarget, setApusTarget] = useState<RecyclerWasteRecord | null>(null);
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -193,6 +340,26 @@ export default function RecyclerWasteRecordsPage() {
 
   function handleConvertSuccess(updated: RecyclerWasteRecord) {
     setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
+
+  function handleApusSuccess(updated: RecyclerWasteRecord) {
+    setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  }
+
+  async function handleAdvanceStage(record: RecyclerWasteRecord) {
+    const nextStage = STAGE_SEQUENCE[record.processingStage ?? ''];
+    if (!nextStage || !token || !record.recyclingCenter?.id) return;
+    setAdvancingId(record.id);
+    try {
+      const updated = await recyclerUpdateWasteRecord(token, record.recyclingCenter.id, record.id, {
+        processingStage: nextStage,
+      });
+      setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    } catch {
+      // silent — user can retry
+    } finally {
+      setAdvancingId(null);
+    }
   }
 
   if (isLoading || !user) return <PageSpinner />;
@@ -283,6 +450,29 @@ export default function RecyclerWasteRecordsPage() {
                           {stageMeta.label}
                         </Badge>
                       )}
+                      {STAGE_SEQUENCE[record.processingStage ?? ''] && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7"
+                          disabled={advancingId === record.id}
+                          onClick={() => handleAdvanceStage(record)}
+                        >
+                          <ChevronRight className="size-3.5 mr-1" />
+                          {advancingId === record.id
+                            ? 'Virzās...'
+                            : `→ ${STAGE_META[STAGE_SEQUENCE[record.processingStage ?? '']]?.label}`}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => setApusTarget(record)}
+                      >
+                        <Shield className="size-3.5 mr-1" />
+                        APUS
+                      </Button>
                       {record.producedMaterialId ? (
                         <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
                           <CheckCircle2 className="size-3.5" /> Tirgū
@@ -315,6 +505,12 @@ export default function RecyclerWasteRecordsPage() {
         open={convertTarget !== null}
         onClose={() => setConvertTarget(null)}
         onSuccess={handleConvertSuccess}
+      />
+      <ApusDialog
+        record={apusTarget}
+        open={apusTarget !== null}
+        onClose={() => setApusTarget(null)}
+        onSuccess={handleApusSuccess}
       />
     </div>
   );

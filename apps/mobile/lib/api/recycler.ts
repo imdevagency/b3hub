@@ -34,7 +34,13 @@ export interface WasteRecord {
   processedDate?: string;
   recyclableWeight?: number;
   recyclingRate?: number;
+  processingStage?: string;
+  rcGrade?: string;
   certificateUrl?: string;
+  apusStatus?: string;
+  apusSubmissionId?: string;
+  apusNote?: string;
+  apusSubmittedAt?: string;
   createdAt: string;
   recyclingCenter?: { id: string; name: string };
 }
@@ -64,4 +70,50 @@ export async function getRecyclerWasteRecords(token: string): Promise<WasteRecor
   });
   if (!res.ok) throw new Error('Failed to load waste records');
   return res.json();
+}
+
+export interface UpdateWasteRecordInput {
+  processingStage?: string;
+  recyclableWeight?: number;
+  recyclingRate?: number;
+  rcGrade?: string;
+  apusStatus?: string;
+  apusSubmissionId?: string;
+  apusNote?: string;
+  processedDate?: string;
+}
+
+/** PATCH /recycling-centers/:centerId/waste-records/:recordId */
+export async function updateWasteRecord(
+  token: string,
+  centerId: string,
+  recordId: string,
+  input: UpdateWasteRecordInput,
+): Promise<WasteRecord> {
+  const res = await fetch(
+    `${API_BASE}/recycling-centers/${centerId}/waste-records/${recordId}`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  );
+  if (!res.ok) throw new Error('Failed to update waste record');
+  return res.json();
+}
+
+/** POST /recycling-centers/:centerId/incoming-jobs/:jobId/cancel */
+export async function cancelIncomingJob(
+  token: string,
+  centerId: string,
+  jobId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/recycling-centers/${centerId}/incoming-jobs/${jobId}/cancel`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!res.ok) throw new Error('Failed to cancel job');
 }

@@ -7,13 +7,22 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getRecyclerIncomingJobs } from '@/lib/api';
+import { getRecyclerIncomingJobs, recyclerCancelIncomingJob } from '@/lib/api';
 import type { RecyclerIncomingJob } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Truck } from 'lucide-react';
 import { fmtDate } from '@/lib/format';
 
@@ -30,6 +39,8 @@ const STATUS_META: Record<
   CANCELLED: { label: 'Atcelts', variant: 'destructive' },
 };
 
+const CANCELLABLE = new Set(['AVAILABLE', 'ASSIGNED', 'ACCEPTED', 'EN_ROUTE_PICKUP']);
+
 export default function RecyclerJobsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
@@ -37,6 +48,8 @@ export default function RecyclerJobsPage() {
   const [jobs, setJobs] = useState<RecyclerIncomingJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const [confirmJob, setConfirmJob] = useState<RecyclerIncomingJob | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
@@ -49,6 +62,19 @@ export default function RecyclerJobsPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [user, token]);
+
+  async function handleCancel(job: RecyclerIncomingJob) {
+    if (!token || !job.recyclingCenter?.id) return;
+    setCancelling(job.id);
+    try {
+      await recyclerCancelIncomingJob(token, job.recyclingCenter.id, job.id);
+      setJobs((prev) => prev.filter((j) => j.id !== job.id));
+    } catch {
+      // error ignored — user can retry
+    } finally {
+      setCancelling(null);
+    }
+  }
 
   if (isLoading || !user) return <PageSpinner />;
 
@@ -115,12 +141,53 @@ export default function RecyclerJobsPage() {
                   <p className="text-[11px] text-muted-foreground mt-3">
                     Izveidots {fmtDate(job.createdAt)}
                   </p>
+                  {CANCELLABLE.has(job.status) && (
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                        disabled={cancelling === job.id}
+                        onClick={() => setConfirmJob(job)}
+                      >
+                        {cancelling === job.id ? 'Atceļ...' : 'Atcelt'}
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
         </div>
       )}
+
+      <Dialog open={!!confirmJob} onOpenChange={(v) => !v && setConfirmJob(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Atcelt piegādi?</DialogTitle>
+            <DialogDescription>
+              Vai tiešām vēlaties atcelt šo atkritumu piegādi? Klients tiks informēts par atcelšanu.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmJob(null)}>
+              Nē
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelling === confirmJob?.id}
+              onClick={async () => {
+                if (confirmJob) {
+                  await handleCancel(confirmJob);
+                  setConfirmJob(null);
+                }
+              }}
+            >
+              {cancelling === confirmJob?.id ? 'Atceļ...' : 'Jā, atcelt'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

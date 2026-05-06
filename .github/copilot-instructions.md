@@ -176,9 +176,9 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 <!-- GEN:mobile-routes -->
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
-- `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, vehicles
+- `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
 - `(gate)` — fields
-- `(recycler)` — home, incoming, more, records
+- `(recycler)` — home, incoming, messages, more, records
 - `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
 - `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, messages, notification/, notifications, review/, settings, support-chat
 - `(wizards)` — disposal/, material-order, skip-hire/, toilet-cabin/, transport/
@@ -214,6 +214,50 @@ Prefer hooks over inline `useEffect` + `fetch` in components.
 - **App Router** (Next.js 14+). All pages under `src/app/`.
 - UI components in `src/components/` — built on **shadcn/ui** (config: `components.json`).
 - Shared hooks: `src/hooks/`, utilities: `src/lib/`, types: `src/types/`.
+
+---
+
+## Admin dashboard — scope boundaries and integration ownership
+
+The admin dashboard has **four scopes** (sidebar tabs). Code, routes, and integrations must not bleed across scope lines.
+
+| Scope | Tab | Routes | Serves |
+|---|---|---|---|
+| **Platform** | `APP` | `/dashboard/admin/*` | The B3Hub marketplace — buyers, sellers, carriers, platform operators |
+| **B3 Recycling** | `Recycle` | `/dashboard/b3-recycling/*` | B3 Recycling facility internal team |
+| **B3 Construction** | `Būve` | `/dashboard/b3-construction/*` | B3 Construction internal team |
+| **Group** | `Grupa` | `/dashboard/group/*` | Cross-BU read-only aggregates |
+
+### Integration ownership — the one decision rule
+
+> **"Who is the end user of this integration's data?"**
+
+| End user | Integration lives under |
+|---|---|
+| Marketplace users (buyers, sellers, carriers) | **Platform** — `/dashboard/admin/integrations/*` |
+| B3 Construction internal staff | **Būve** — `/dashboard/b3-construction/*` |
+| B3 Recycling internal staff | **Recycle** — `/dashboard/b3-recycling/*` |
+
+**Concrete examples:**
+- `Lursoft` — company registry auto-fill for B2B registration, buyer/seller risk checks → **Platform** (`/dashboard/admin/integrations/lursoft`)
+- `BIS` — construction company registry lookup for B3 Construction subcontractor vetting → **Būve** (`/dashboard/b3-construction/bis`)
+- `Jumis` — B3 Group internal accounting → **Būve** or **Grupa**
+- Payment processor, SMS, email, maps — serve marketplace transactions/notifications → **Platform**
+
+### Platform integrations hub
+
+All platform integrations are registered in `/dashboard/admin/integrations/page.tsx`. When you add a new platform integration:
+1. Create the page at `/dashboard/admin/integrations/<name>/page.tsx`
+2. Add it to the `INTEGRATIONS` array in `integrations/page.tsx` (the hub)
+3. The sidebar item ("Visas integrācijas") already covers all sub-routes — no extra sidebar entry needed
+
+### Backend module ownership signal
+
+Backend is flat (`apps/backend/src/`). Ownership is signalled by the **controller route prefix**:
+- Platform integrations: `/api/v1/<name>/*` (e.g. `/api/v1/lursoft/*`)
+- BU-specific tools: `/api/v1/admin/bis/*`, `/api/v1/admin/jumis/*`
+
+**Never add platform marketplace logic to a BU-specific module, and vice versa.**
 
 ---
 

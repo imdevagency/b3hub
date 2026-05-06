@@ -417,7 +417,7 @@ export default function RatesPage() {
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
+              <div className="col-span-2 space-y-1.5">
                 <Label>Nosaukums *</Label>
                 <Input
                   value={form.name}
@@ -426,7 +426,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Kategorija</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -443,7 +443,7 @@ export default function RatesPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Mērvienība *</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -460,7 +460,7 @@ export default function RatesPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Piegādātājs *</Label>
                 <Input
                   value={form.supplierName}
@@ -469,7 +469,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Piegādātāja piezīme</Label>
                 <Input
                   value={form.supplierNote ?? ''}
@@ -478,7 +478,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Cena / vienība (€) *</Label>
                 <Input
                   type="number"
@@ -491,7 +491,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Piegādes maksa (€)</Label>
                 <Input
                   type="number"
@@ -504,7 +504,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Pašizmaksa / vienība (€)</Label>
                 <Input
                   type="number"
@@ -521,7 +521,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Blīvuma koeficients</Label>
                 <Input
                   type="number"
@@ -538,7 +538,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Kravas auto konfigurācija</Label>
                 <Input
                   value={form.truckConfig ?? ''}
@@ -547,7 +547,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div>
+              <div className="space-y-1.5">
                 <Label>Zona / reģions</Label>
                 <Input
                   value={form.zone ?? ''}
@@ -556,7 +556,7 @@ export default function RatesPage() {
                 />
               </div>
 
-              <div className="col-span-2">
+              <div className="col-span-2 space-y-1.5">
                 <Label>Piezīmes</Label>
                 <Input
                   value={form.notes ?? ''}

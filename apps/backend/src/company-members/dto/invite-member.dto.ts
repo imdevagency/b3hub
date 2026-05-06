@@ -22,6 +22,11 @@ export class InviteMemberDto {
   @IsOptional()
   phone?: string;
 
+  /** Grant transport execution capability at invite time (auto-true for DRIVER role) */
+  @IsBoolean()
+  @IsOptional()
+  canTransport?: boolean;
+
   // Initial permissions
   @IsBoolean()
   @IsOptional()

@@ -61,6 +61,8 @@ import { VehicleAssignmentsModule } from './vehicle-assignments/vehicle-assignme
 import { CrmModule } from './crm/crm.module';
 import { CmsModule } from './cms/cms.module';
 import { JumisModule } from './jumis/jumis.module';
+import { BisModule } from './bis/bis.module';
+import { LursoftModule } from './lursoft/lursoft.module';
 
 @Module({
   imports: [
@@ -127,6 +129,8 @@ import { JumisModule } from './jumis/jumis.module';
     CrmModule,
     CmsModule,
     JumisModule,
+    BisModule,
+    LursoftModule,
   ],
   controllers: [AppController],
   providers: [

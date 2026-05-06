@@ -20,4 +20,9 @@ export class UpdatePermissionsDto {
   @IsBoolean()
   @IsOptional()
   permManageTeam?: boolean;
+
+  /** Allow this member to execute transport jobs (driver capability) */
+  @IsBoolean()
+  @IsOptional()
+  canTransport?: boolean;
 }

@@ -73,4 +73,9 @@ export class CreateToiletCabinDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** Carrier selected from quote results */
+  @IsOptional()
+  @IsString()
+  carrierId?: string;
 }

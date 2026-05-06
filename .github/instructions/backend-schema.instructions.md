@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (3294 lines, 80 models, 68 enums).
+Schema: `apps/backend/prisma/schema.prisma` (3314 lines, 81 models, 68 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -65,6 +65,9 @@ DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL`
 - `VehicleAssignmentsModule`
 - `CrmModule`
 - `CmsModule`
+- `JumisModule`
+- `BisModule`
+- `LursoftModule`
 
 ---
 
@@ -195,7 +198,7 @@ npm run db:seed           # reseed demo data
 ### Company — `@@map("companies")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `isFirstParty`: Boolean @default(false), `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `paymentTermsDays`: Int?, `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType, `features`: CompanyFeature  
-**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, ToiletCabinOrder, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead
+**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, ToiletCabinOrder, CarrierToiletCabinSettings?, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead
 
 ---
 
@@ -351,6 +354,12 @@ npm run db:seed           # reseed demo data
 **Fields:** `id`: String @id @default(cuid(), `orderNumber`: String @unique, `address`: String, `city`: String, `lat`: Float?, `lng`: Float?, `cabinCount`: Int @default(1), `hireDays`: Int, `deliveryDate`: DateTime, `deliveryWindow`: String?, `price`: Float, `currency`: String @default("EUR"), `payseraOrderId`: String?, `payseraPaymentUrl`: String?, `contactName`: String?, `contactEmail`: String?, `contactPhone`: String?, `userId`: String?, `carrierId`: String?, `notes`: String?, `statusTimestamps`: Json?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `paymentMethod`: PaymentMethod (@default(CARD)), `paymentStatus`: PaymentStatus (@default(PENDING)), `status`: ToiletCabinStatus (@default(PENDING))  
 **Relations:** → Company?
+
+---
+
+### CarrierToiletCabinSettings — `@@map("carrier_toilet_cabin_settings")`  
+**Fields:** `id`: String @id @default(cuid(), `carrierId`: String @unique, `pricePerCabinPerDay`: Float, `maxCabins`: Int @default(1), `serviceCities`: String, `isActive`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → Company
 
 ---
 

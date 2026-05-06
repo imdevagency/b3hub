@@ -36,6 +36,10 @@ export interface RecyclerWasteRecord {
   producedMaterialId?: string | null;
   processingStatus?: string | null;
   certificateUrl?: string | null;
+  apusStatus?: string | null;
+  apusSubmissionId?: string | null;
+  apusNote?: string | null;
+  apusSubmittedAt?: string | null;
   createdAt: string;
   recyclingCenter?: { id: string; name: string } | null;
 }
@@ -105,5 +109,38 @@ export async function recyclerCreateListing(
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
+  });
+}
+
+export async function recyclerUpdateWasteRecord(
+  token: string,
+  centerId: string,
+  recordId: string,
+  data: {
+    processingStage?: string;
+    recyclableWeight?: number;
+    recyclingRate?: number;
+    rcGrade?: string;
+    apusStatus?: string;
+    apusSubmissionId?: string;
+    apusNote?: string;
+    processedDate?: string;
+  },
+): Promise<RecyclerWasteRecord> {
+  return apiFetch(`/recycling-centers/${centerId}/waste-records/${recordId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function recyclerCancelIncomingJob(
+  token: string,
+  centerId: string,
+  jobId: string,
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/recycling-centers/${centerId}/incoming-jobs/${jobId}/cancel`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

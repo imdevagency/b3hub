@@ -9,6 +9,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Eye, Trash2, Search, ChevronDown, X, LayoutTemplate, Download } from 'lucide-react';
 import { PageHelp } from '@/components/ui/page-help';
 import { useAuth } from '@/lib/auth-context';
@@ -127,6 +128,9 @@ const EMPTY_LINE: NewLine = {
 
 export default function DailyReportsPage() {
   const { token } = useAuth();
+  const searchParams = useSearchParams();
+  const paramProjectId = searchParams.get('projectId') ?? '';
+  const paramCreate = searchParams.get('create') === '1';
 
   // List state
   const [reports, setReports] = useState<DailyReport[]>([]);
@@ -134,8 +138,8 @@ export default function DailyReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [filterProject, setFilterProject] = useState('');
+  // Filters — initialised from URL param
+  const [filterProject, setFilterProject] = useState(paramProjectId);
   const [filterStatus, setFilterStatus] = useState('');
   const [search, setSearch] = useState('');
 
@@ -150,9 +154,9 @@ export default function DailyReportsPage() {
   const [detailReport, setDetailReport] = useState<DailyReport | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Create dialog
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createProjectId, setCreateProjectId] = useState('');
+  // Create dialog — pre-fill project from URL param, auto-open when ?create=1
+  const [createOpen, setCreateOpen] = useState(paramCreate);
+  const [createProjectId, setCreateProjectId] = useState(paramProjectId);
   const [createDate, setCreateDate] = useState(new Date().toISOString().slice(0, 10));
   const [createSiteLabel, setCreateSiteLabel] = useState('');
   const [createWeather, setCreateWeather] = useState('');
@@ -630,24 +634,48 @@ export default function DailyReportsPage() {
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-base font-semibold">Izmaksu rindas</Label>
                 <div className="flex items-center gap-2">
-                  {templates.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1">
-                          <LayoutTemplate className="h-3.5 w-3.5" /> Veidne
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {templates
-                          .filter((t) => !t.projectId || t.projectId === createProjectId)
-                          .map((t) => (
-                            <DropdownMenuItem key={t.id} onClick={() => applyTemplate(t)}>
-                              {t.name}
-                            </DropdownMenuItem>
-                          ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  {templates.length > 0 &&
+                    (() => {
+                      const visibleTemplates = templates.filter(
+                        (t) => !t.projectId || t.projectId === createProjectId,
+                      );
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                              disabled={visibleTemplates.length === 0}
+                              title={
+                                visibleTemplates.length === 0
+                                  ? 'Izvēlieties projektu, lai redzētu piemērojamās veidnes'
+                                  : undefined
+                              }
+                            >
+                              <LayoutTemplate className="h-3.5 w-3.5" /> Veidne
+                              {visibleTemplates.length > 0 && (
+                                <span className="ml-1 rounded-full bg-muted px-1.5 text-xs font-medium">
+                                  {visibleTemplates.length}
+                                </span>
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {visibleTemplates.map((t) => (
+                              <DropdownMenuItem key={t.id} onClick={() => applyTemplate(t)}>
+                                {t.name}
+                                {t.projectId && (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    projekts
+                                  </span>
+                                )}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      );
+                    })()}
                   <Button variant="outline" size="sm" onClick={addLine} className="gap-1">
                     <Plus className="h-3.5 w-3.5" /> Pievienot
                   </Button>

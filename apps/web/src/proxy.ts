@@ -13,7 +13,13 @@ import type { NextRequest } from 'next/server';
 // ── Route matchers ──────────────────────────────────────────────────────────
 
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
-const ADMIN_PATH_PREFIX = '/dashboard/admin';
+// All routes that are only accessible to ADMIN users (internal staff dashboards)
+const INTERNAL_PATH_PREFIXES = [
+  '/dashboard/admin',
+  '/dashboard/b3-construction',
+  '/dashboard/b3-recycling',
+  '/dashboard/group',
+];
 const ADMIN_ALLOWED_PREFIXES = [
   '/dashboard/admin',
   '/dashboard/group',
@@ -72,10 +78,11 @@ export default function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard/group', request.url));
     }
   } else {
-    // ── APP_MODE: marketplace deployment — block admin routes for non-admins
-    // Only redirect non-admins away from /dashboard/admin. Admins can still
-    // access it so local dev (no APP_MODE set) doesn't create a redirect loop.
-    if (pathname.startsWith(ADMIN_PATH_PREFIX)) {
+    // ── APP_MODE: marketplace deployment — block internal routes for non-admins.
+    // This covers /dashboard/admin, /dashboard/b3-construction,
+    // /dashboard/b3-recycling, and /dashboard/group.
+    // Admins can still access them so local dev (no APP_MODE set) works.
+    if (INTERNAL_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
       const token = request.cookies.get('b3hub_token')?.value;
       const payload = token ? decodeJwtPayload(token) : null;
       if (!payload || payload.userType !== 'ADMIN') {
@@ -109,8 +116,8 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin routes → require ADMIN userType
-  if (pathname.startsWith(ADMIN_PATH_PREFIX)) {
+  // Internal routes (admin + BU dashboards) → require ADMIN userType
+  if (INTERNAL_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
     const payload = decodeJwtPayload(token);
     if (!payload || payload.userType !== 'ADMIN') {
       const url = request.nextUrl.clone();

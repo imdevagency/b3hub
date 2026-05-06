@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Truck,
   Package,
+  Toilet,
   FileText,
   MessageCircle,
   Bell,
@@ -120,6 +121,11 @@ export default function DriverMoreScreen() {
             icon: Package,
             label: 'Konteineri',
             onPress: () => router.push('/(driver)/skips'),
+          } as TileItem,
+          {
+            icon: Toilet,
+            label: 'Kabīnes',
+            onPress: () => router.push('/(driver)/toilet-cabins'),
           } as TileItem,
         ]
       : []),

@@ -213,6 +213,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - api-keys
 - auth
 - b3-fields
+- bis
 - carrier-settings
 - chat
 - cms
@@ -230,6 +231,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - guest-orders
 - health
 - invoices
+- jumis
+- lursoft
 - maps
 - materials
 - notifications
@@ -328,6 +331,10 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/finances
 - dashboard/(internal)/admin/framework-contracts
 - dashboard/(internal)/admin/guest-orders
+- dashboard/(internal)/admin/integrations
+- dashboard/(internal)/admin/integrations/bis
+- dashboard/(internal)/admin/integrations/jumis
+- dashboard/(internal)/admin/integrations/lursoft
 - dashboard/(internal)/admin/invoices
 - dashboard/(internal)/admin/jobs
 - dashboard/(internal)/admin/jobs/[id]
@@ -359,6 +366,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/waste-signals
 - dashboard/(internal)/admin/weighing-slips
 - dashboard/(internal)/b3-construction
+- dashboard/(internal)/b3-construction/bis
 - dashboard/(internal)/b3-construction/clients
 - dashboard/(internal)/b3-construction/daily-reports
 - dashboard/(internal)/b3-construction/disposal
@@ -366,6 +374,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/b3-construction/employees
 - dashboard/(internal)/b3-construction/equipment
 - dashboard/(internal)/b3-construction/invoices
+- dashboard/(internal)/b3-construction/jumis
 - dashboard/(internal)/b3-construction/labour-hours
 - dashboard/(internal)/b3-construction/profitability
 - dashboard/(internal)/b3-construction/projects
@@ -380,6 +389,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/b3-recycling/jobs
 - dashboard/(internal)/b3-recycling/waste-log
 - dashboard/(internal)/group
+- dashboard/(internal)/group/accounting
 - dashboard/(internal)/group/cms
 - dashboard/(internal)/group/crm
 - dashboard/(internal)/group/equipment
@@ -397,6 +407,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/deliveries
 - dashboard/(platform)/disputes
 - dashboard/(platform)/documents
+- dashboard/(platform)/drivers
 - dashboard/(platform)/earnings
 - dashboard/(platform)/field-passes
 - dashboard/(platform)/fleet
@@ -425,6 +436,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/recycling/pricing
 - dashboard/(platform)/recycling/waste-records
 - dashboard/(platform)/reviews
+- dashboard/(platform)/scorecard
 - dashboard/(platform)/skip-hire/fleet
 - dashboard/(platform)/supplier
 - dashboard/(platform)/transport-history
@@ -488,10 +500,12 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/profile
 - (driver)/schedule
 - (driver)/skips
+- (driver)/toilet-cabins
 - (driver)/vehicles
 - (gate)/fields
 - (recycler)/home
 - (recycler)/incoming
+- (recycler)/messages
 - (recycler)/more
 - (recycler)/records
 - (seller)/billing-settings
