@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, Alert, ScrollView } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -25,14 +25,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { AddressField } from '@/components/ui/AddressField';
+import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SpecsStep } from '@/components/wizard/material/SpecsStep';
 import { WhenStep } from '@/components/wizard/material/WhenStep';
 import { OffersStep } from '@/components/wizard/material/OffersStep';
-import { FulfillmentStep } from '@/components/wizard/material/FulfillmentStep';
 import { FieldPickerStep } from '@/components/wizard/material/FieldPickerStep';
-import { UnloadingSpotStep } from '@/components/wizard/material/UnloadingSpotStep';
+
 import {
   CATEGORY_FRACTIONS,
   CATEGORY_DEFAULT_UNIT,
@@ -43,7 +42,7 @@ import {
 
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
-type Step = 'specs' | 'fulfillment' | 'address' | 'unload' | 'field' | 'when' | 'offers';
+type Step = 'specs' | 'fulfillment' | 'address' | 'field' | 'when' | 'offers';
 type SubmitResult = 'order' | 'rfq';
 
 const STEP_TITLES: Record<Step, string> = {
@@ -51,7 +50,6 @@ const STEP_TITLES: Record<Step, string> = {
   specs: 'Ko pasūtīt?',
   fulfillment: 'Kā saņemt?',
   field: 'Izvēlies punktu',
-  unload: 'Izkraušanas vieta',
   when: 'Kad piegādāt?',
   offers: 'Piedāvājumi',
 };
@@ -109,15 +107,15 @@ export default function OrderRequestWizard() {
   // Computed STEPS depends on fulfillmentType
   const STEPS: Step[] =
     fulfillmentType === 'PICKUP'
-      ? ['specs', 'fulfillment', 'field', 'offers']
-      : ['specs', 'fulfillment', 'address', 'unload', 'when', 'offers'];
+      ? ['specs', 'field', 'offers']
+      : ['specs', 'address', 'when', 'offers'];
 
   const stepIndex = STEPS.indexOf(step);
 
   // When fulfillmentType changes and current step is no longer valid, snap back to fulfillment
   useEffect(() => {
     if (stepIndex === -1) {
-      setStep('fulfillment');
+      setStep('specs');
     }
   }, [fulfillmentType]);
 
@@ -156,7 +154,11 @@ export default function OrderRequestWizard() {
   const [unloadLng, setUnloadLng] = useState<number | null>(null);
 
   // ── When ──
-  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [truckCount] = useState(1);
   const [truckIntervalMinutes] = useState(60);
@@ -197,6 +199,25 @@ export default function OrderRequestWizard() {
   const draftLoadedRef = useRef(false);
   useEffect(() => {
     if (params.resumeDraft !== 'true') {
+      // Pre-fill delivery address from last order (if no explicit prefill param)
+      if (!params.prefillAddress) {
+        AsyncStorage.getItem('@b3hub_last_delivery')
+          .then((raw) => {
+            if (!raw) return;
+            try {
+              const d = JSON.parse(raw);
+              if (d?.address && d?.lat && d?.lng) {
+                setPickedAddress({
+                  address: d.address,
+                  city: d.city ?? '',
+                  lat: d.lat,
+                  lng: d.lng,
+                });
+              }
+            } catch {}
+          })
+          .catch(() => {});
+      }
       draftLoadedRef.current = true;
       return;
     }
@@ -612,25 +633,21 @@ export default function OrderRequestWizard() {
       ? !!pickedAddress
       : step === 'specs'
         ? quantity > 0
-        : step === 'fulfillment'
-          ? true // always can proceed (has a default)
-          : step === 'field'
-            ? !!pickupFieldId && !!pickupSlotId
-            : step === 'unload'
-              ? true // always skippable — pin defaults to delivery address
-              : step === 'when'
-                ? !!deliveryDate
-                : !offersLoading && !submitting && !submitted && termsAccepted;
+        : step === 'field'
+          ? !!pickupFieldId && !!pickupSlotId
+          : step === 'when'
+            ? !!deliveryDate
+            : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
     ? submitted === 'rfq'
       ? 'Skatīt pieprasījumu'
-      : 'Apmaksāt pasūtījumu'
+      : orderId.startsWith('guest:')
+        ? 'Uz sākumu'
+        : 'Apmaksāt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
-      : step === 'when' && !deliveryDate
-        ? 'Izvēlieties datumu'
-        : 'Turpināt';
+      : 'Turpināt';
 
   const handleCTA = submitted
     ? submitted === 'rfq'
@@ -665,7 +682,7 @@ export default function OrderRequestWizard() {
       onCTA={handleCTA}
       ctaDisabled={!canProceed || submitting}
       ctaLoading={submitting && step !== 'offers'}
-      hideFooter={step === 'offers'}
+      hideFooter={step === 'offers' || step === 'address'}
       stepKey={step}
       footerLeft={
         step === 'specs' ? (
@@ -689,9 +706,6 @@ export default function OrderRequestWizard() {
         ) : undefined
       }
     >
-      {step === 'fulfillment' && (
-        <FulfillmentStep value={fulfillmentType} onChange={setFulfillmentType} />
-      )}
       {step === 'field' && (
         <FieldPickerStep
           selectedFieldId={pickupFieldId}
@@ -702,40 +716,23 @@ export default function OrderRequestWizard() {
         />
       )}
       {step === 'address' && (
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={{ paddingHorizontal: 20 }}>
-            <AddressField
-              value={pickedAddress}
-              onPick={(p) => {
-                setPickedAddress(p);
-                // Reset the precise pin whenever a new address is picked
-                setUnloadLat(null);
-                setUnloadLng(null);
-              }}
-              placeholder="Norādiet piegādes adresi"
-            />
-          </View>
-        </ScrollView>
-      )}
-      {step === 'unload' && pickedAddress && (
-        <UnloadingSpotStep
-          deliveryLat={pickedAddress.lat}
-          deliveryLng={pickedAddress.lng}
-          unloadLat={unloadLat}
-          unloadLng={unloadLng}
-          onChange={(lat, lng) => {
-            setUnloadLat(lat);
-            setUnloadLng(lng);
+        <InlineAddressStep
+          picked={pickedAddress}
+          onPick={(p) => {
+            setPickedAddress(p);
+            setUnloadLat(null);
+            setUnloadLng(null);
           }}
+          onConfirm={goNext}
+          contextLabel="Piegādes adrese"
+          pricePreviewCategory={selectedCategory}
+          pricePreviewQuantity={quantity}
         />
       )}
       {step === 'specs' && (
         <SpecsStep
+          fulfillmentType={fulfillmentType}
+          onFulfillmentTypeChange={setFulfillmentType}
           category={selectedCategory}
           onCategoryChange={setSelectedCategory}
           selectedFraction={selectedFraction}
@@ -796,9 +793,10 @@ export default function OrderRequestWizard() {
           guestToken={orderId.startsWith('guest:') ? orderId.slice(6) : undefined}
           onNavigateToOrder={() => {
             if (!orderId) return;
-            // Guest orders navigate to the public tracking screen via deep link;
-            // for now we just stay on the success screen — add screen later.
-            if (orderId.startsWith('guest:')) return;
+            if (orderId.startsWith('guest:')) {
+              router.replace('/(buyer)/home' as never);
+              return;
+            }
             router.replace(`/(buyer)/order/${orderId}` as never);
           }}
           onNavigateToRFQ={() => {

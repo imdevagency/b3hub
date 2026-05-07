@@ -96,9 +96,11 @@ export default function OrderWizard() {
     state.wasteCategory,
   );
   const [selectedSize, setSelectedSizeState] = useState<SkipSize | null>(state.skipSize);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  // collectionDay = end of hire period; null until user taps the second date.
-  const [collectionDay, setCollectionDay] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(() => toISO(addDays(today, 1)));
+  // collectionDay = end of hire period; defaults to +14 days.
+  const [collectionDay, setCollectionDay] = useState<string | null>(() =>
+    toISO(addDays(today, 15)),
+  );
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   // Derived: days between delivery and collection (min 1). Falls back to 14 if not yet chosen.
   const hireDays =
@@ -818,7 +820,15 @@ export default function OrderWizard() {
                       '💳 Ar karti (Paysera)',
                       'Tūlītējs maksājums ar debetkarti vai kredītkarti',
                     ],
-                    ['INVOICE', '🧾 Priekšapmaksas rēķins', 'Rēķins tiks nosūtīts uz e-pastu'],
+                    ...(user
+                      ? [
+                          [
+                            'INVOICE',
+                            '🧾 Priekšapmaksas rēķins',
+                            'Rēķins tiks nosūtīts uz e-pastu',
+                          ] as const,
+                        ]
+                      : []),
                   ] as const
                 ).map(([val, label, sub]) => (
                   <TouchableOpacity

@@ -14,9 +14,9 @@ import {
 
 export class CreateGuestOrderDto {
   // ── Category discriminator ─────────────────────────────────────────────────
-  /** MATERIAL | SKIP_HIRE | TRANSPORT | DISPOSAL — defaults to MATERIAL */
+  /** MATERIAL | SKIP_HIRE | TRANSPORT | DISPOSAL | TOILET_CABIN — defaults to MATERIAL */
   @IsOptional()
-  @IsIn(['MATERIAL', 'SKIP_HIRE', 'TRANSPORT', 'DISPOSAL'])
+  @IsIn(['MATERIAL', 'SKIP_HIRE', 'TRANSPORT', 'DISPOSAL', 'TOILET_CABIN'])
   category?: string;
 
   // ── MATERIAL fields ───────────────────────────────────────────────────────

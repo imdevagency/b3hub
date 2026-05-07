@@ -65,7 +65,9 @@ interface DisposalDraft {
 }
 
 // ── Types ─────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4;
+// Step 3 (compare) is only entered when multiple recycling centers match;
+// otherwise navigation jumps 2→4 and 4→back-to-2.
+type Step = 1 | 2 | 3 | 4 | 5;
 
 interface WasteOption {
   id: WasteType;
@@ -287,6 +289,10 @@ export default function DisposalWizard() {
     undefined,
   );
 
+  // Derived: centers that can accept this waste type
+  const acceptedCenters = availableCenters.filter((c) => c.accepted);
+  const hasComparison = acceptedCenters.length > 1;
+
   // Auto-derive truck from weight (weight is required in step 1)
   const weightT = parseFloat(weightText);
   const derived = deriveTruckType(!isNaN(weightT) && weightT > 0 ? weightT : 1);
@@ -391,8 +397,12 @@ export default function DisposalWizard() {
     if (step === 1) {
       if (router.canGoBack()) router.back();
       else router.replace('/(buyer)/home' as never);
-    } else setStep((s) => (s - 1) as Step);
-  }, [step, router]);
+    } else if (step === 4 && !hasComparison) {
+      setStep(2); // skip over the unused comparison step
+    } else {
+      setStep((s) => (s - 1) as Step);
+    }
+  }, [step, hasComparison, router]);
 
   const handleSubmit = useCallback(async () => {
     if (!token) {
@@ -556,10 +566,11 @@ export default function DisposalWizard() {
     (step === 2 && !picked) ||
     loading;
 
-  const ctaLabel = step === 4 ? 'Nosūtīt pieprasījumu' : 'Turpināt';
+  const ctaLabel = step === 5 ? 'Nosūtīt pieprasījumu' : 'Turpināt';
 
   const onCTA = useCallback(async () => {
-    if (step === 4) {
+    // Step 5 = confirm / submit
+    if (step === 5) {
       if (!user) {
         setShowAuthGate(true);
         return;
@@ -567,6 +578,8 @@ export default function DisposalWizard() {
       handleSubmit();
       return;
     }
+
+    // Step 1 hazardous gate
     if (step === 1) {
       if (selectedWastes.includes('HAZARDOUS')) {
         Alert.alert(
@@ -584,62 +597,79 @@ export default function DisposalWizard() {
         return;
       }
     }
-    if (step === 2 && state.wasteType && token) {
-      setLoading(true);
-      try {
-        const weightT2 = parseFloat(weightText);
-        const weightKg = !isNaN(weightT2) && weightT2 > 0 ? weightT2 * 1000 : 1000;
-        const result = await api.recyclingCenters.getDisposalQuote(
-          {
-            wasteType: state.wasteType,
-            weightKg,
-            lat: picked?.lat,
-            lng: picked?.lng,
-          },
-          token,
-        );
-        const accepted = result.data.filter((c) => c.accepted);
-        if (accepted.length === 0) {
-          Alert.alert(
-            'Nav pieejamu šķirošanas centru',
-            'Šobrīd nav reģistrētu centru, kas pieņem šāda veida atkritumus.\n\nSazinieties ar mums:',
-            [
-              {
-                text: 'Zvanīt: +371 2000 0000',
-                onPress: () => Linking.openURL('tel:+37120000000'),
-              },
-              {
-                text: 'E-pasts: info@b3hub.lv',
-                onPress: () => Linking.openURL('mailto:info@b3hub.lv'),
-              },
-              { text: 'Aizvert', style: 'cancel' },
-            ],
+
+    // Step 2 → fetch disposal quotes, then route to compare (step 3) or skip to date (step 4)
+    if (step === 2) {
+      haptics.medium();
+      if (state.wasteType && token) {
+        setLoading(true);
+        try {
+          const weightT2 = parseFloat(weightText);
+          const weightKg = !isNaN(weightT2) && weightT2 > 0 ? weightT2 * 1000 : 1000;
+          const result = await api.recyclingCenters.getDisposalQuote(
+            {
+              wasteType: state.wasteType,
+              weightKg,
+              lat: picked?.lat,
+              lng: picked?.lng,
+            },
+            token,
           );
-          return;
+          const accepted = result.data.filter((c) => c.accepted);
+          if (accepted.length === 0) {
+            Alert.alert(
+              'Nav pieejamu šķirošanas centru',
+              'Šobrīd nav reģistrētu centru, kas pieņem šāda veida atkritumus.\n\nSazinieties ar mums:',
+              [
+                {
+                  text: 'Zvanīt: +371 2000 0000',
+                  onPress: () => Linking.openURL('tel:+37120000000'),
+                },
+                {
+                  text: 'E-pasts: info@b3hub.lv',
+                  onPress: () => Linking.openURL('mailto:info@b3hub.lv'),
+                },
+                { text: 'Aizvert', style: 'cancel' },
+              ],
+            );
+            return;
+          }
+          if (accepted.length > 1) {
+            setAvailableCenters(result.data);
+            setStep(3); // show comparison
+          } else {
+            setAvailableCenters([]);
+            setPreferredRecyclingCenterId(undefined);
+            setStep(4); // skip comparison, go straight to date
+          }
+        } catch {
+          // Fail-open: network error should not block the order flow
+          setStep(4);
+        } finally {
+          setLoading(false);
         }
-        // Show comparison if >1 accepted center
-        if (accepted.length > 1) {
-          setAvailableCenters(result.data);
-        } else {
-          setAvailableCenters([]);
-          setPreferredRecyclingCenterId(undefined);
-        }
-      } catch {
-        // Fail-open: network error should not block the order flow
-      } finally {
-        setLoading(false);
+      } else {
+        // No token / waste type — skip comparison
+        setStep(4);
       }
+      return;
     }
+
     haptics.medium();
     setStep((s) => (s + 1) as Step);
-  }, [step, selectedWastes, handleSubmit, state.wasteType, token, weightText, picked]);
+  }, [step, selectedWastes, handleSubmit, state.wasteType, token, weightText, picked, user]);
 
   const STEP_TITLES: Record<Step, string> = {
     1: 'Kas jāizved?',
     2: 'Kur paņemt atkritumus?',
-    3: 'Kad?',
-    4: 'Apstiprini izvešanu',
+    3: 'Salīdzini cenas',
+    4: 'Kad?',
+    5: 'Apstiprini izvešanu',
   };
+
+  // Progress bar: when no comparison step, display step 4→3, 5→4 so it reads 1/4..4/4
+  const displayStep = !hasComparison && step > 3 ? ((step - 1) as Step) : step;
+  const totalDisplaySteps = hasComparison ? 5 : 4;
 
   // ── Guest success screen ──────────────────────────────────────────────────
   if (guestResult) {
@@ -657,8 +687,8 @@ export default function DisposalWizard() {
     <>
       <WizardLayout
         title={STEP_TITLES[step]}
-        step={step}
-        totalSteps={4}
+        step={displayStep}
+        totalSteps={totalDisplaySteps}
         onBack={goBack}
         onClose={() => {
           if (router.canGoBack()) router.back();
@@ -777,8 +807,18 @@ export default function DisposalWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 3: Date + time window ── */}
+        {/* ── Step 3: Compare recycling centers ── */}
         {step === 3 && (
+          <StepCompare
+            centers={acceptedCenters}
+            selectedId={preferredRecyclingCenterId ?? null}
+            onSelect={(id) => setPreferredRecyclingCenterId(id ?? undefined)}
+            weightT={parseFloat(weightText) > 0 ? parseFloat(weightText) : 1}
+          />
+        )}
+
+        {/* ── Step 4: Date + time window ── */}
+        {step === 4 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -788,7 +828,7 @@ export default function DisposalWizard() {
             <WizardCalendar
               selectedDate={date ? date.toISOString().split('T')[0] : ''}
               onDateChange={(d) => setDate(new Date(d))}
-              minDate={new Date().toISOString().split('T')[0]}
+              minDate={toISO(addDays(today, 1))}
             />
 
             <SectionLabel label="Vēlamais savākšanas laiks" />
@@ -812,171 +852,11 @@ export default function DisposalWizard() {
                 </TouchableOpacity>
               ))}
             </View>
-
-            {availableCenters.filter((c) => c.accepted).length > 1 && (
-              <>
-                <SectionLabel label="Šķirošanas centrs (neobligāti)" style={{ marginTop: 20 }} />
-                <View style={{ gap: 8 }}>
-                  {[
-                    null, // null = "auto" option
-                    ...availableCenters.filter((c) => c.accepted),
-                  ].map((center, idx) => {
-                    const centerId = center?.centerId ?? '';
-                    const isSelected = (preferredRecyclingCenterId ?? '') === centerId;
-                    return (
-                      <TouchableOpacity
-                        key={centerId || 'auto'}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          padding: 14,
-                          borderRadius: 10,
-                          borderWidth: 1.5,
-                          borderColor: isSelected ? '#111827' : '#e5e7eb',
-                          backgroundColor: isSelected ? '#f9fafb' : '#fff',
-                          gap: 10,
-                        }}
-                        onPress={() => setPreferredRecyclingCenterId(centerId || undefined)}
-                        activeOpacity={0.75}
-                      >
-                        {/* Radio dot */}
-                        <View
-                          style={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: 9,
-                            borderWidth: 2,
-                            borderColor: isSelected ? '#111827' : '#d1d5db',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {isSelected && (
-                            <View
-                              style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 4,
-                                backgroundColor: '#166534',
-                              }}
-                            />
-                          )}
-                        </View>
-
-                        {/* Center info */}
-                        <View style={{ flex: 1 }}>
-                          {center === null ? (
-                            <>
-                              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                                Tuvākais pieejamais
-                              </Text>
-                              <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                                Sistēma izvēlēsies optimālo centru
-                              </Text>
-                            </>
-                          ) : (
-                            <>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                                  {center.name}
-                                </Text>
-                                {center.licensed && (
-                                  <View
-                                    style={{
-                                      backgroundColor: '#dcfce7',
-                                      borderRadius: 4,
-                                      paddingHorizontal: 5,
-                                      paddingVertical: 1,
-                                    }}
-                                  >
-                                    <Text
-                                      style={{ fontSize: 10, color: '#166534', fontWeight: '600' }}
-                                    >
-                                      VVD
-                                    </Text>
-                                  </View>
-                                )}
-                              </View>
-                              <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                                {center.city}
-                                {center.distanceKm != null ? ` · ${center.distanceKm} km` : ''}
-                              </Text>
-                              {center.disposalFeeEur != null ? (
-                                <Text
-                                  style={{
-                                    fontSize: 13,
-                                    color: '#111827',
-                                    marginTop: 4,
-                                    fontWeight: '600',
-                                  }}
-                                >
-                                  Utilizācijas maksa: €{center.disposalFeeEur.toFixed(2)}
-                                  {center.priceNote ? ` · ${center.priceNote}` : ''}
-                                </Text>
-                              ) : center.priceNote ? (
-                                <Text
-                                  style={{
-                                    fontSize: 12,
-                                    color: '#9ca3af',
-                                    marginTop: 4,
-                                    fontStyle: 'italic',
-                                  }}
-                                >
-                                  {center.priceNote}
-                                </Text>
-                              ) : (
-                                <Text
-                                  style={{
-                                    fontSize: 12,
-                                    color: '#9ca3af',
-                                    marginTop: 4,
-                                    fontStyle: 'italic',
-                                  }}
-                                >
-                                  Cena pēc pieprasījuma
-                                </Text>
-                              )}
-                              {center.centerNotes ? (
-                                <Text
-                                  style={{
-                                    fontSize: 11,
-                                    color: '#6b7280',
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {center.centerNotes}
-                                </Text>
-                              ) : null}
-                            </>
-                          )}
-                        </View>
-
-                        {/* Cheapest badge (first accepted center with a price) */}
-                        {idx === 1 && center?.disposalFeeEur != null && (
-                          <View
-                            style={{
-                              backgroundColor: '#f0fdf4',
-                              borderRadius: 6,
-                              paddingHorizontal: 6,
-                              paddingVertical: 3,
-                            }}
-                          >
-                            <Text style={{ fontSize: 10, color: '#166534', fontWeight: '700' }}>
-                              LĒTĀKAIS
-                            </Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            )}
           </ScrollView>
         )}
 
-        {/* ── Step 4: Review + contact + confirm ── */}
-        {step === 4 && (
+        {/* ── Step 5: Review + contact + confirm ── */}
+        {step === 5 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -1027,8 +907,20 @@ export default function DisposalWizard() {
               <DetailRow
                 label="Orientējošā cena"
                 value={`no €${derived.fromPrice} + PVN 21%`}
-                last
+                last={!hasComparison}
               />
+              {hasComparison && (
+                <DetailRow
+                  label="Šķirošanas centrs"
+                  value={
+                    preferredRecyclingCenterId
+                      ? (acceptedCenters.find((c) => c.centerId === preferredRecyclingCenterId)
+                          ?.name ?? 'Izdevīgākais pieejamais')
+                      : 'Izdevīgākais pieejamais'
+                  }
+                  last
+                />
+              )}
             </View>
 
             <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
@@ -1087,6 +979,170 @@ export default function DisposalWizard() {
     </>
   );
 }
+
+// ── Step 3: Compare recycling centers ────────────────────────────
+
+function StepCompare({
+  centers,
+  selectedId,
+  onSelect,
+  weightT,
+}: {
+  centers: DisposalQuoteCenterResult[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  weightT: number;
+}) {
+  return (
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={cmp.intro}>
+        Izvēlieties, kurš šķirošanas centrs pieņems atkritumus. Cenas norāda centru utilizācijas
+        maksu — pārvadājuma maksa tiek aprēķināta atsevišķi.
+      </Text>
+
+      {/* Auto option */}
+      {(() => {
+        const isAuto = !selectedId;
+        return (
+          <TouchableOpacity
+            style={[cmp.card, isAuto && cmp.cardSel]}
+            onPress={() => {
+              haptics.light();
+              onSelect(null);
+            }}
+            activeOpacity={0.75}
+          >
+            <View style={cmp.cardContent}>
+              <View style={{ flex: 1 }}>
+                <Text style={[cmp.cardName, isAuto && cmp.cardNameSel]}>
+                  Automātiski — izdevīgākais
+                </Text>
+                <Text style={[cmp.cardCity, isAuto && cmp.cardCitySel]}>
+                  Sistēma piešķirs piemērotāko centru
+                </Text>
+              </View>
+            </View>
+            {isAuto && <Text style={cmp.checkmark}>✓ Izvēlēts</Text>}
+          </TouchableOpacity>
+        );
+      })()}
+
+      {/* Center cards */}
+      {centers.map((center, idx) => {
+        const isSel = center.centerId === selectedId;
+        const isCheapest = idx === 0 && center.disposalFeeEur != null;
+        return (
+          <TouchableOpacity
+            key={center.centerId}
+            style={[cmp.card, isSel && cmp.cardSel]}
+            onPress={() => {
+              haptics.light();
+              onSelect(center.centerId);
+            }}
+            activeOpacity={0.75}
+          >
+            {isCheapest && (
+              <View style={cmp.cheapBadge}>
+                <Text style={cmp.cheapBadgeText}>💰 Zemākā utilizācijas maksa</Text>
+              </View>
+            )}
+            <View style={cmp.cardContent}>
+              <View style={{ flex: 1 }}>
+                <View style={cmp.nameRow}>
+                  <Text style={[cmp.cardName, isSel && cmp.cardNameSel]} numberOfLines={1}>
+                    {center.name}
+                  </Text>
+                  {center.licensed && (
+                    <View style={[cmp.vvdBadge, isSel && cmp.vvdBadgeSel]}>
+                      <Text style={[cmp.vvdText, isSel && cmp.vvdTextSel]}>VVD</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[cmp.cardCity, isSel && cmp.cardCitySel]}>
+                  {center.city}
+                  {center.distanceKm != null ? ` · ${center.distanceKm} km` : ''}
+                </Text>
+                {center.centerNotes ? (
+                  <Text style={[cmp.cardNotes, isSel && cmp.cardNotesSel]} numberOfLines={2}>
+                    {center.centerNotes}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={cmp.priceWrap}>
+                {center.disposalFeeEur != null ? (
+                  <>
+                    <Text style={[cmp.priceMain, isSel && cmp.priceMainSel]}>
+                      €{center.disposalFeeEur.toFixed(2)}
+                    </Text>
+                    <Text style={[cmp.priceRate, isSel && cmp.priceRateSel]}>
+                      ~{weightT} t · bez pārvadājuma
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={[cmp.priceOnRequest, isSel && cmp.priceOnRequestSel]}>
+                    Pēc{'\n'}pieprasījuma
+                  </Text>
+                )}
+              </View>
+            </View>
+            {isSel && <Text style={cmp.checkmark}>✓ Izvēlēts</Text>}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+const cmp = StyleSheet.create({
+  intro: { fontSize: 14, color: colors.textMuted, marginBottom: 16, lineHeight: 20 },
+  card: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    padding: 14,
+    marginBottom: 10,
+  },
+  cardSel: { backgroundColor: colors.primary, borderColor: colors.primary },
+  cheapBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fef9c3',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 8,
+  },
+  cheapBadgeText: { fontSize: 11, color: '#713f12', fontWeight: '700' },
+  cardContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  cardName: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, flexShrink: 1 },
+  cardNameSel: { color: colors.white },
+  vvdBadge: {
+    backgroundColor: '#dcfce7',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  vvdBadgeSel: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  vvdText: { fontSize: 10, color: '#166534', fontWeight: '700' },
+  vvdTextSel: { color: colors.white },
+  cardCity: { fontSize: 12, color: colors.textMuted },
+  cardCitySel: { color: 'rgba(255,255,255,0.75)' },
+  cardNotes: { fontSize: 11, color: colors.textMuted, marginTop: 4, fontStyle: 'italic' },
+  cardNotesSel: { color: 'rgba(255,255,255,0.7)' },
+  priceWrap: { alignItems: 'flex-end', minWidth: 70 },
+  priceMain: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  priceMainSel: { color: colors.white },
+  priceRate: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  priceRateSel: { color: 'rgba(255,255,255,0.7)' },
+  priceOnRequest: { fontSize: 12, color: colors.textMuted, textAlign: 'right' },
+  priceOnRequestSel: { color: 'rgba(255,255,255,0.75)' },
+  checkmark: { fontSize: 12, color: colors.white, fontWeight: '600', marginTop: 8 },
+});
 
 // ── Styles ────────────────────────────────────────────────────────
 const s = StyleSheet.create({

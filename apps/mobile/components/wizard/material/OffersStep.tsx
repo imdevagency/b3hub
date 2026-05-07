@@ -313,6 +313,39 @@ export function OffersStep({
             paziņojumu.
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: colors.primary,
+            borderRadius: 14,
+            paddingVertical: 16,
+            alignItems: 'center',
+            marginBottom: 12,
+          }}
+          onPress={onNavigateToRFQ}
+          activeOpacity={0.85}
+        >
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: '#fff',
+              fontFamily: 'Inter_600SemiBold',
+            }}
+          >
+            Skatīt pieprasījumu
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{ paddingVertical: 14, alignItems: 'center' }}
+          onPress={() => router.replace('/(buyer)/home' as never)}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}>
+            Atgriezties uz sākumu
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }

@@ -25,6 +25,7 @@ import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { api } from '@/lib/api';
+import { addGuestOrder } from '@/lib/guest-token-storage';
 import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -89,6 +90,9 @@ export default function ToiletCabinWizard() {
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
+  const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
+    null,
+  );
   const [showAuthGate, setShowAuthGate] = useState(false);
 
   // End-of-hire ISO date (derived from delivery date + hireDays)
@@ -116,6 +120,54 @@ export default function ToiletCabinWizard() {
     loading;
 
   const ctaLabel = step === 4 ? 'Apstiprināt pasūtījumu' : 'Turpināt';
+
+  // ── Guest submit handler ─────────────────────────────────────────
+  const handleGuestSubmit = useCallback(
+    async (contact: { name: string; phone: string; email?: string }) => {
+      if (!picked || !selectedDay) return;
+      if (loadingRef.current) return;
+      loadingRef.current = true;
+      setLoading(true);
+      try {
+        const result = await api.guestOrders.create({
+          category: 'TOILET_CABIN',
+          quantity: cabinCount,
+          unit: 'CABIN',
+          materialName: 'Tualetes kabīne',
+          hireDays,
+          collectionDate: collectionDay ?? undefined,
+          deliveryAddress: picked.address,
+          deliveryCity: picked.city ?? '',
+          deliveryLat: picked.lat,
+          deliveryLng: picked.lng,
+          deliveryDate: selectedDay,
+          deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+          contactEmail: contact.email,
+          notes: notes || undefined,
+        });
+        haptics.success();
+        await addGuestOrder({
+          token: result.token,
+          orderNumber: result.orderNumber,
+          category: 'TOILET_CABIN',
+          createdAt: Date.now(),
+        });
+        setGuestResult({ token: result.token, orderNumber: result.orderNumber });
+      } catch (err: unknown) {
+        haptics.error();
+        Alert.alert(
+          'Kļūda',
+          err instanceof Error ? err.message : 'Neizdevās iesniegt pieprasījumu',
+        );
+      } finally {
+        loadingRef.current = false;
+        setLoading(false);
+      }
+    },
+    [picked, selectedDay, cabinCount, hireDays, collectionDay, deliveryWindow, notes],
+  );
 
   // ── Submit ────────────────────────────────────────────────────────
   const doSubmit = useCallback(
@@ -187,6 +239,31 @@ export default function ToiletCabinWizard() {
   }, [step, router]);
 
   // ── Success screen ─────────────────────────────────────────────
+  // ── Success screen ─────────────────────────────────────────────
+  if (guestResult) {
+    return (
+      <GuestOrderSuccess
+        orderNumber={guestResult.orderNumber}
+        guestToken={guestResult.token}
+        contactEmail={contactEmail || undefined}
+        onBack={() => router.replace('/(buyer)/home' as never)}
+        category="TOILET_CABIN"
+      />
+    );
+  }
+
+  if (guestResult) {
+    return (
+      <GuestOrderSuccess
+        orderNumber={guestResult.orderNumber}
+        guestToken={guestResult.token}
+        contactEmail={contactEmail || undefined}
+        onBack={() => router.replace('/(buyer)/home' as never)}
+        category="TOILET_CABIN"
+      />
+    );
+  }
+
   if (confirmedOrderNumber) {
     return (
       <GuestOrderSuccess
@@ -252,6 +329,16 @@ export default function ToiletCabinWizard() {
 
             <View style={s.cabinHint}>
               <Text style={s.cabinHintText}>Tipiskais ieteikums: 1 kabīne uz 10 darbiniekiem.</Text>
+            </View>
+
+            {/* Live price estimate based on current count + default hire period */}
+            <View style={s.priceEstimate}>
+              <Text style={s.priceEstimateMain}>
+                ~€{cabinCount * BASE_PRICE_PER_CABIN_PER_DAY}/dienā
+              </Text>
+              <Text style={s.priceEstimateSub}>
+                ~€{estimatedPrice} par {hireDays} dienām · + PVN 21%
+              </Text>
             </View>
           </ScrollView>
         )}
@@ -435,6 +522,10 @@ export default function ToiletCabinWizard() {
           // token will be updated in the next render via useAuth; re-trigger via onCTA
           setTimeout(() => onCTA(), 0);
         }}
+        onGuestContact={(contact) => {
+          setShowAuthGate(false);
+          handleGuestSubmit(contact);
+        }}
         onDismiss={() => setShowAuthGate(false)}
         prefilledName={contactName}
         prefilledPhone={contactPhone}
@@ -528,6 +619,27 @@ const s = StyleSheet.create({
     color: colors.textMuted,
     lineHeight: 20,
     textAlign: 'center',
+  },
+
+  priceEstimate: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  priceEstimateMain: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  priceEstimateSub: {
+    fontSize: 13,
+    color: '#166534',
+    marginTop: 4,
+    opacity: 0.8,
   },
 
   // Range summary bar (matches skip-hire Step 3)

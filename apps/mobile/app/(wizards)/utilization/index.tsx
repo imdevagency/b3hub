@@ -5,7 +5,8 @@
  *   Step 2 – Location + weight
  *   Step 3 – Contact + confirm
  */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -23,6 +24,9 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
+import { WizardCalendar } from '@/components/wizard/WizardCalendar';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
+import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 import { AddressField } from '@/components/ui/AddressField';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { DetailRow } from '@/components/ui/DetailRow';
@@ -128,11 +132,32 @@ const WASTE_LABELS: Record<string, string> = {
   PACKAGING_WASTE: 'Iepakojums',
 };
 
+const MIN_DATE = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+})();
+
 const STEP_TITLES: Record<Step, string> = {
   1: 'Kas jāizved?',
-  2: 'Kur paņemt atkritumus?',
+  2: 'Vieta un laiks',
   3: 'Apstiprini izvešanu',
 };
+
+// ── Draft persistence ────────────────────────────────────────────
+const UTILIZATION_DRAFT_KEY = '@b3hub_utilization_draft';
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface UtilizationDraft {
+  step: Step;
+  selectedWastes: WasteType[];
+  weightText: string;
+  notes: string;
+  selectedDate: string;
+  contactName: string;
+  contactPhone: string;
+  savedAt: number;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -165,12 +190,67 @@ export default function UtilizationWizard() {
   const [weightText, setWeightText] = useState('');
   const [notes, setNotes] = useState('');
 
+  // Step 2 — date
+  const [selectedDate, setSelectedDate] = useState<string>(MIN_DATE);
+
   // Step 3 — contact
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [submitting, setSubmitting] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
+  const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
+    null,
+  );
+
+  // ── Draft: restore from AsyncStorage on mount ──────────────────
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    AsyncStorage.getItem(UTILIZATION_DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const draft: UtilizationDraft = JSON.parse(raw);
+          if (Date.now() - draft.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(UTILIZATION_DRAFT_KEY).catch(() => {});
+            return;
+          }
+          setStep(draft.step);
+          setSelectedWastes(draft.selectedWastes);
+          setWeightText(draft.weightText);
+          setNotes(draft.notes);
+          setSelectedDate(draft.selectedDate);
+          setContactName(draft.contactName);
+          setContactPhone(draft.contactPhone);
+        } catch {
+          /* ignore corrupt draft */
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        draftLoadedRef.current = true;
+      });
+  }, []);
+
+  // ── Draft: save on state change ────────────────────────────────
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const draft: UtilizationDraft = {
+      step,
+      selectedWastes,
+      weightText,
+      notes,
+      selectedDate,
+      contactName,
+      contactPhone,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(UTILIZATION_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [step, selectedWastes, weightText, notes, selectedDate, contactName, contactPhone]);
 
   // Sync contact fields when user authenticates mid-wizard
   useEffect(() => {
@@ -210,11 +290,7 @@ export default function UtilizationWizard() {
   // ── Submit ───────────────────────────────────────────────────
 
   const handleSubmit = useCallback(async () => {
-    if (!token) {
-      toast.error('Lūdzu, piesakieties vēlreiz.');
-      return;
-    }
-    if (!resolvedWasteType || !picked) return;
+    if (!token || !resolvedWasteType || !picked) return;
 
     const estimatedWeight = !isNaN(weightT) && weightT > 0 ? weightT : 1;
     const wasteBreakdown =
@@ -235,7 +311,7 @@ export default function UtilizationWizard() {
           truckCount: derived.truckCount,
           estimatedWeight,
           description: wasteBreakdown || undefined,
-          requestedDate: new Date().toISOString().split('T')[0],
+          requestedDate: selectedDate,
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
@@ -245,6 +321,7 @@ export default function UtilizationWizard() {
         token,
       );
       const jn = result?.jobNumber ?? '';
+      AsyncStorage.removeItem(UTILIZATION_DRAFT_KEY).catch(() => {});
       router.replace({ pathname: '/(buyer)/orders' as never, params: { highlight: jn } });
       toast.success(`Pasūtījums ${jn} nosūtīts!`);
     } catch (err) {
@@ -259,6 +336,7 @@ export default function UtilizationWizard() {
     weightT,
     selectedWastes,
     derived,
+    selectedDate,
     contactName,
     contactPhone,
     notes,
@@ -266,6 +344,40 @@ export default function UtilizationWizard() {
     router,
     toast,
   ]);
+
+  // ── Guest submit handler ────────────────────────────────────
+
+  const handleGuestSubmit = useCallback(
+    async (contact: { name: string; phone: string; email?: string }) => {
+      if (!picked || selectedWastes.length === 0) return;
+      setSubmitting(true);
+      try {
+        const result = await api.guestOrders.create({
+          category: 'DISPOSAL',
+          wasteTypes: JSON.stringify(selectedWastes),
+          disposalVolume: !isNaN(weightT) && weightT > 0 ? weightT : undefined,
+          truckType: derived.truckType,
+          deliveryAddress: picked.address,
+          deliveryCity: picked.city ?? '',
+          deliveryLat: picked.lat,
+          deliveryLng: picked.lng,
+          deliveryDate: selectedDate,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+          contactEmail: contact.email,
+          notes: notes || undefined,
+        });
+        haptics.success();
+        AsyncStorage.removeItem(UTILIZATION_DRAFT_KEY).catch(() => {});
+        setGuestResult({ token: result.token, orderNumber: result.orderNumber });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Neizdevās nosūtīt pieprasījumu.');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [picked, selectedWastes, weightT, derived, selectedDate, notes, toast],
+  );
 
   // ── CTA press ────────────────────────────────────────────────
 
@@ -294,9 +406,16 @@ export default function UtilizationWizard() {
       return;
     }
     haptics.medium();
-    if (step < 3) setStep((s) => (s + 1) as Step);
-    else handleSubmit();
-  }, [step, selectedWastes, handleSubmit]);
+    if (step < 3) {
+      setStep((s) => (s + 1) as Step);
+    } else {
+      if (!token) {
+        setShowAuthGate(true);
+        return;
+      }
+      handleSubmit();
+    }
+  }, [step, token, selectedWastes, handleSubmit]);
 
   const wasteLabel = resolvedWasteType
     ? selectedWastes.length > 1
@@ -304,48 +423,79 @@ export default function UtilizationWizard() {
       : (WASTE_LABELS[resolvedWasteType] ?? resolvedWasteType)
     : '-';
 
+  if (guestResult) {
+    return (
+      <GuestOrderSuccess
+        orderNumber={guestResult.orderNumber}
+        guestToken={guestResult.token}
+        category="DISPOSAL"
+        onBack={() => router.replace('/(buyer)/home' as never)}
+      />
+    );
+  }
+
   return (
-    <WizardLayout
-      title={STEP_TITLES[step]}
-      step={step}
-      totalSteps={3}
-      onBack={goBack}
-      ctaLabel={step === 3 ? 'Nosūtīt pieprasījumu' : 'Turpināt'}
-      onCTA={handleCTA}
-      ctaDisabled={ctaDisabled}
-      ctaLoading={submitting}
-      stepKey={step}
-    >
-      {step === 1 && (
-        <StepWasteType
-          selected={selectedWastes}
-          onToggle={toggleWaste}
-          weightText={weightText}
-          onWeightChange={setWeightText}
-          onGoToBuyback={() => router.push('/scrap-buyback' as never)}
-        />
-      )}
-      {step === 2 && (
-        <StepLocation
-          picked={picked}
-          onPickChange={setPicked}
-          notes={notes}
-          onNotesChange={setNotes}
-        />
-      )}
-      {step === 3 && (
-        <StepConfirm
-          wasteLabel={wasteLabel}
-          picked={picked}
-          weightText={weightText}
-          derived={derived}
-          contactName={contactName}
-          onContactNameChange={setContactName}
-          contactPhone={contactPhone}
-          onContactPhoneChange={setContactPhone}
-        />
-      )}
-    </WizardLayout>
+    <>
+      <WizardLayout
+        title={STEP_TITLES[step]}
+        step={step}
+        totalSteps={3}
+        onBack={goBack}
+        ctaLabel={step === 3 ? 'Nosūtīt pieprasījumu' : 'Turpināt'}
+        onCTA={handleCTA}
+        ctaDisabled={ctaDisabled}
+        ctaLoading={submitting}
+        stepKey={step}
+      >
+        {step === 1 && (
+          <StepWasteType
+            selected={selectedWastes}
+            onToggle={toggleWaste}
+            weightText={weightText}
+            onWeightChange={setWeightText}
+            onGoToBuyback={() => router.push('/scrap-buyback' as never)}
+          />
+        )}
+        {step === 2 && (
+          <StepLocation
+            picked={picked}
+            onPickChange={setPicked}
+            notes={notes}
+            onNotesChange={setNotes}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            minDate={MIN_DATE}
+          />
+        )}
+        {step === 3 && (
+          <StepConfirm
+            wasteLabel={wasteLabel}
+            picked={picked}
+            weightText={weightText}
+            derived={derived}
+            contactName={contactName}
+            onContactNameChange={setContactName}
+            contactPhone={contactPhone}
+            onContactPhoneChange={setContactPhone}
+            selectedDate={selectedDate}
+          />
+        )}
+      </WizardLayout>
+      <WizardAuthGate
+        visible={showAuthGate}
+        onAuthenticated={() => {
+          setShowAuthGate(false);
+          handleSubmit();
+        }}
+        onGuestContact={(contact) => {
+          setShowAuthGate(false);
+          handleGuestSubmit(contact);
+        }}
+        onDismiss={() => setShowAuthGate(false)}
+        prefilledName={contactName}
+        prefilledPhone={contactPhone}
+      />
+    </>
   );
 }
 
@@ -447,11 +597,17 @@ function StepLocation({
   onPickChange,
   notes,
   onNotesChange,
+  selectedDate,
+  onDateChange,
+  minDate,
 }: {
   picked: PickedAddress | null;
   onPickChange: (p: PickedAddress) => void;
   notes: string;
   onNotesChange: (t: string) => void;
+  selectedDate: string;
+  onDateChange: (d: string) => void;
+  minDate: string;
 }) {
   return (
     <ScrollView
@@ -475,6 +631,8 @@ function StepLocation({
         multiline
         numberOfLines={3}
       />
+      <SectionLabel label="Kad izvest atkritumus?" style={{ marginTop: 20 }} />
+      <WizardCalendar selectedDate={selectedDate} onDateChange={onDateChange} minDate={minDate} />
     </ScrollView>
   );
 }
@@ -490,6 +648,7 @@ function StepConfirm({
   onContactNameChange,
   contactPhone,
   onContactPhoneChange,
+  selectedDate,
 }: {
   wasteLabel: string;
   picked: PickedAddress | null;
@@ -499,6 +658,7 @@ function StepConfirm({
   onContactNameChange: (t: string) => void;
   contactPhone: string;
   onContactPhoneChange: (t: string) => void;
+  selectedDate: string;
 }) {
   const truckLabels: Record<string, string> = {
     TIPPER_SMALL: 'Mazais pašizgāzējs (≤10 t)',
@@ -516,6 +676,18 @@ function StepConfirm({
       <View style={s.summaryCard}>
         <DetailRow label="Atkritumu veids" value={wasteLabel} />
         <DetailRow label="Adrese" value={picked?.address ?? '-'} />
+        <DetailRow
+          label="Datums"
+          value={
+            selectedDate
+              ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              : '-'
+          }
+        />
         <DetailRow label="Svars" value={weightText ? `~${weightText} t` : '-'} />
         <DetailRow
           label="Auto"

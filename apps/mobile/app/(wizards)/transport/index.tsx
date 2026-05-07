@@ -517,10 +517,17 @@ export default function TransportWizard() {
     (step === 4 && !step4Valid) ||
     submitting;
 
+  const estimatedPrice =
+    currentVehicle && route
+      ? `~€${Math.round(currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm)}`
+      : currentVehiclePrice
+        ? `no €${currentVehiclePrice}`
+        : null;
+
   const ctaLabel =
     step === 4
-      ? currentVehiclePrice
-        ? `Nosūtīt pieprasījumu${truckCount > 1 ? ` ${truckCount}×` : ''} — no €${currentVehiclePrice}`
+      ? estimatedPrice
+        ? `Nosūtīt pieprasījumu${truckCount > 1 ? ` ${truckCount}×` : ''} — ${estimatedPrice}`
         : 'Nosūtīt pieprasījumu'
       : 'Turpināt';
 
@@ -713,9 +720,28 @@ export default function TransportWizard() {
                       <Text style={[s.vehicleSub, isSel && s.vehicleSubSel]}>{v.sub}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
-                        €{v.fromPrice}
-                      </Text>
+                      {route ? (
+                        <>
+                          <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
+                            ~€{Math.round(v.fromPrice + route.distanceKm * v.pricePerKm)}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: isSel ? 'rgba(255,255,255,0.65)' : '#9ca3af',
+                              marginTop: 1,
+                            }}
+                          >
+                            {route.distanceKm.toFixed(0)} km
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
+                            no €{v.fromPrice}
+                          </Text>
+                        </>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -822,7 +848,7 @@ export default function TransportWizard() {
                 setSelectedDay(d);
                 setRequestedDate(d);
               }}
-              minDate={new Date().toISOString().split('T')[0]}
+              minDate={DAY_OPTIONS[0].iso}
             />
 
             <SectionLabel label="Vēlamais iekraušanas laiks" />

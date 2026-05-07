@@ -45,6 +45,8 @@ export type SpecsStepProps = {
   setSitePhotoUrl: (url: string | null) => void;
   uploadingPhoto: boolean;
   handlePickSitePhoto: () => void;
+  fulfillmentType?: 'DELIVERY' | 'PICKUP';
+  onFulfillmentTypeChange?: (v: 'DELIVERY' | 'PICKUP') => void;
 };
 
 export function SpecsStep({
@@ -63,6 +65,8 @@ export function SpecsStep({
   setSitePhotoUrl,
   uploadingPhoto,
   handlePickSitePhoto,
+  fulfillmentType,
+  onFulfillmentTypeChange,
 }: SpecsStepProps) {
   // ── Internal UI state ──
   const [catPickerOpen, setCatPickerOpen] = useState(false);
@@ -93,6 +97,16 @@ export function SpecsStep({
 
   const stepAmt = 1;
 
+  // ── Quantity direct-edit ──
+  const [quantityEditing, setQuantityEditing] = useState(false);
+  const [quantityDraft, setQuantityDraft] = useState('');
+
+  const QUANTITY_PRESETS: Record<OrderType, number[]> = {
+    BY_WEIGHT: [5, 10, 20, 40, 80],
+    BY_VOLUME: [5, 10, 20, 50, 100],
+    BY_LOAD: [1, 2, 5, 10, 20],
+  };
+
   return (
     <>
       {/* ── ScrollView content (rendered inside WizardLayout) ── */}
@@ -101,6 +115,54 @@ export function SpecsStep({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Fulfillment type toggle */}
+        {onFulfillmentTypeChange && (
+          <View
+            style={{
+              flexDirection: 'row',
+              backgroundColor: '#f3f4f6',
+              borderRadius: 14,
+              padding: 4,
+              marginBottom: 20,
+            }}
+          >
+            {(['DELIVERY', 'PICKUP'] as const).map((opt) => {
+              const active = fulfillmentType === opt;
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  onPress={() => {
+                    haptics.light();
+                    onFulfillmentTypeChange(opt);
+                  }}
+                  activeOpacity={0.8}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    backgroundColor: active ? '#fff' : 'transparent',
+                    shadowColor: '#000',
+                    shadowOpacity: active ? 0.06 : 0,
+                    shadowRadius: active ? 4 : 0,
+                    elevation: active ? 2 : 0,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: active ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                      color: active ? '#111827' : '#9ca3af',
+                    }}
+                  >
+                    {opt === 'DELIVERY' ? '🚛  Piegāde' : '📍  Paņemšana'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {/* Material + Fraction pickers */}
         <View className="flex-row gap-4 mb-6">
           <TouchableOpacity
@@ -140,51 +202,145 @@ export function SpecsStep({
         >
           <Text className="text-gray-400 text-sm font-semibold mb-1">Pasūtījuma veids</Text>
           <View className="flex-row items-center justify-between">
-            <Text className="text-gray-900 font-bold text-lg">
-              {ORDER_TYPE_LABELS[orderType]}
-            </Text>
+            <Text className="text-gray-900 font-bold text-lg">{ORDER_TYPE_LABELS[orderType]}</Text>
             <ChevronDown size={18} color="#9ca3af" />
           </View>
         </TouchableOpacity>
 
         {/* Quantity stepper */}
-        <View className="mb-10 items-center justify-center">
+        <View className="mb-6 items-center justify-center">
           <Text className="text-gray-400 text-sm font-semibold tracking-widest uppercase mb-6">
             Kopējais apjoms
           </Text>
           <View className="flex-row items-center justify-center gap-6">
             <TouchableOpacity
               className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center"
-              onPress={() => onQuantityChange(Math.max(1, Math.round(quantity - stepAmt)))}
+              onPress={() => {
+                haptics.light();
+                onQuantityChange(Math.max(1, Math.round(quantity - stepAmt)));
+              }}
               activeOpacity={0.8}
             >
               <Minus size={24} color="#111827" />
             </TouchableOpacity>
 
             <View className="items-center px-4 w-[160px]">
-              <View className="flex-row items-end">
-                <Text
-                  className="text-5xl font-black text-gray-900 tracking-tighter"
-                  numberOfLines={1}
+              {quantityEditing ? (
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                  <TextInput
+                    autoFocus
+                    keyboardType="decimal-pad"
+                    value={quantityDraft}
+                    onChangeText={setQuantityDraft}
+                    onBlur={() => {
+                      const parsed = parseFloat(quantityDraft);
+                      if (!isNaN(parsed) && parsed > 0) onQuantityChange(parsed);
+                      setQuantityEditing(false);
+                    }}
+                    onSubmitEditing={() => {
+                      const parsed = parseFloat(quantityDraft);
+                      if (!isNaN(parsed) && parsed > 0) onQuantityChange(parsed);
+                      setQuantityEditing(false);
+                    }}
+                    returnKeyType="done"
+                    style={{
+                      fontSize: 48,
+                      fontFamily: 'Inter_900Black',
+                      color: '#111827',
+                      textAlign: 'center',
+                      minWidth: 100,
+                      borderBottomWidth: 2,
+                      borderBottomColor: '#111827',
+                    }}
+                  />
+                  <Text
+                    className="text-xl font-semibold text-gray-400 ml-1"
+                    style={{ marginBottom: 8 }}
+                  >
+                    {ORDER_TYPE_UNIT_LABEL[orderType]}
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setQuantityDraft(String(quantity));
+                    setQuantityEditing(true);
+                  }}
+                  activeOpacity={0.7}
                 >
-                  {quantity.toString()}
-                </Text>
-                <Text
-                  className="text-xl font-semibold text-gray-400 mb-1 ml-1"
-                  style={{ marginBottom: 6 }}
-                >
-                  {ORDER_TYPE_UNIT_LABEL[orderType]}
-                </Text>
-              </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                    <Text
+                      className="text-5xl font-black text-gray-900 tracking-tighter"
+                      numberOfLines={1}
+                    >
+                      {quantity.toString()}
+                    </Text>
+                    <Text
+                      className="text-xl font-semibold text-gray-400 ml-1"
+                      style={{ marginBottom: 6 }}
+                    >
+                      {ORDER_TYPE_UNIT_LABEL[orderType]}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{ fontSize: 10, color: '#9ca3af', textAlign: 'center', marginTop: 3 }}
+                  >
+                    pieskarties lai rediģētu
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <TouchableOpacity
               className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center"
-              onPress={() => onQuantityChange(Math.round(quantity + stepAmt))}
+              onPress={() => {
+                haptics.light();
+                onQuantityChange(Math.round(quantity + stepAmt));
+              }}
               activeOpacity={0.8}
             >
               <Plus size={24} color="#111827" />
             </TouchableOpacity>
+          </View>
+
+          {/* Quick presets */}
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: 8,
+              marginTop: 16,
+            }}
+          >
+            {QUANTITY_PRESETS[orderType].map((p) => (
+              <TouchableOpacity
+                key={p}
+                onPress={() => {
+                  haptics.light();
+                  onQuantityChange(p);
+                }}
+                activeOpacity={0.8}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 100,
+                  borderWidth: 1.5,
+                  borderColor: quantity === p ? '#111827' : '#e5e7eb',
+                  backgroundColor: quantity === p ? '#111827' : '#f9fafb',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontFamily: 'Inter_600SemiBold',
+                    color: quantity === p ? '#fff' : '#374151',
+                  }}
+                >
+                  {p} {ORDER_TYPE_UNIT_LABEL[orderType]}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 

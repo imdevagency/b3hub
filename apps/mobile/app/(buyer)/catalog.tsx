@@ -507,6 +507,32 @@ export default function CatalogScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
         }
         contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+        ListHeaderComponent={
+          resumeDraft ? (
+            <TouchableOpacity
+              className="mx-5 mb-4 flex-row items-center bg-green-50 border border-green-200 rounded-2xl px-4 py-3.5"
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.light();
+                router.push({
+                  pathname: '/material-order',
+                  params: { resumeDraft: 'true', projectId: projectId || undefined },
+                });
+              }}
+            >
+              <Calculator size={18} color="#166534" style={{ marginRight: 10 }} />
+              <View style={{ flex: 1 }}>
+                <Text className="text-green-900 font-semibold" style={{ fontSize: 15 }}>
+                  Turpināt pasūtījumu
+                </Text>
+                <Text className="text-green-700 font-medium" style={{ fontSize: 13, marginTop: 1 }}>
+                  {resumeDraft.materialName} · {resumeDraft.quantity} {resumeDraft.unit}
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#166534" />
+            </TouchableOpacity>
+          ) : null
+        }
         ListEmptyComponent={() => {
           if (loading) {
             return (

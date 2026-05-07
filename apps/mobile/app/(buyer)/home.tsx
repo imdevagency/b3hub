@@ -574,7 +574,7 @@ export default function HomeScreen() {
                   activeOpacity={0.85}
                   onPress={() => {
                     haptics.light();
-                    router.push(`/(wizards)/material-order?projectId=${project.id}` as any);
+                    router.push(`/(buyer)/catalog?projectId=${project.id}` as any);
                   }}
                   style={{
                     width: 200,

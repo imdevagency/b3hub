@@ -27,6 +27,8 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
+import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { AddressField } from '@/components/ui/AddressField';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { DetailRow } from '@/components/ui/DetailRow';
@@ -129,11 +131,17 @@ export default function ScrapBuybackWizard() {
   const [selectedCenterId, setSelectedCenterId] = useState<string | null>(null);
 
   // Step 4 — contact + submit
+  const [pickupDate, setPickupDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [submitting, setSubmitting] = useState(false);
+  const [showAuthGate, setShowAuthGate] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -189,6 +197,11 @@ export default function ScrapBuybackWizard() {
   const handleCTA = useCallback(async () => {
     haptics.medium();
     if (step === 2) {
+      // Require auth before loading offers (payment requires account)
+      if (!token) {
+        setShowAuthGate(true);
+        return;
+      }
       // advance to step 3 and load offers
       setStep(3);
       await loadOffers();
@@ -200,7 +213,7 @@ export default function ScrapBuybackWizard() {
     }
     // step 4 — submit
     if (!token) {
-      toast.error('Lūdzu, piesakieties vēlreiz.');
+      setShowAuthGate(true);
       return;
     }
     if (!materialType || !picked || !selectedOffer) return;
@@ -220,7 +233,7 @@ export default function ScrapBuybackWizard() {
           truckType: derived.truckType,
           truckCount: derived.truckCount,
           estimatedWeight: estimated,
-          requestedDate: new Date().toISOString().split('T')[0],
+          requestedDate: pickupDate,
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes:
@@ -255,6 +268,7 @@ export default function ScrapBuybackWizard() {
     contactName,
     contactPhone,
     notes,
+    pickupDate,
     projectId,
     router,
     toast,
@@ -269,58 +283,78 @@ export default function ScrapBuybackWizard() {
     submitting;
 
   return (
-    <WizardLayout
-      title={STEP_TITLES[step]}
-      step={step}
-      totalSteps={4}
-      onBack={goBack}
-      ctaLabel={step === 4 ? 'Nosūtīt pieprasījumu' : 'Turpināt'}
-      onCTA={handleCTA}
-      ctaDisabled={ctaDisabled}
-      ctaLoading={submitting}
-      stepKey={step}
-    >
-      {step === 1 && (
-        <StepMaterial
-          selected={materialType}
-          onSelect={setMaterialType}
-          weightText={weightText}
-          onWeightChange={setWeightText}
-          hasPhoto={hasPhoto}
-          onHasPhotoChange={setHasPhoto}
-        />
-      )}
-      {step === 2 && (
-        <StepAddress
-          picked={picked}
-          onPickChange={setPicked}
-          notes={notes}
-          onNotesChange={setNotes}
-        />
-      )}
-      {step === 3 && (
-        <StepOffers
-          loading={loadingOffers}
-          offers={offers}
-          selectedId={selectedCenterId}
-          onSelect={setSelectedCenterId}
-          weightT={validWeight ? weightT : 1}
-          materialLabel={materialType ? (MATERIAL_LABELS[materialType] ?? materialType) : ''}
-        />
-      )}
-      {step === 4 && (
-        <StepConfirm
-          offer={selectedOffer}
-          materialLabel={materialType ? (MATERIAL_LABELS[materialType] ?? materialType) : ''}
-          weightText={weightText}
-          picked={picked}
-          contactName={contactName}
-          onContactNameChange={setContactName}
-          contactPhone={contactPhone}
-          onContactPhoneChange={setContactPhone}
-        />
-      )}
-    </WizardLayout>
+    <>
+      <WizardLayout
+        title={STEP_TITLES[step]}
+        step={step}
+        totalSteps={4}
+        onBack={goBack}
+        ctaLabel={step === 4 ? 'Nosūtīt pieprasījumu' : 'Turpināt'}
+        onCTA={handleCTA}
+        ctaDisabled={ctaDisabled}
+        ctaLoading={submitting}
+        stepKey={step}
+      >
+        {step === 1 && (
+          <StepMaterial
+            selected={materialType}
+            onSelect={setMaterialType}
+            weightText={weightText}
+            onWeightChange={setWeightText}
+            hasPhoto={hasPhoto}
+            onHasPhotoChange={setHasPhoto}
+          />
+        )}
+        {step === 2 && (
+          <StepAddress
+            picked={picked}
+            onPickChange={setPicked}
+            notes={notes}
+            onNotesChange={setNotes}
+          />
+        )}
+        {step === 3 && (
+          <StepOffers
+            loading={loadingOffers}
+            offers={offers}
+            selectedId={selectedCenterId}
+            onSelect={setSelectedCenterId}
+            weightT={validWeight ? weightT : 1}
+            materialLabel={materialType ? (MATERIAL_LABELS[materialType] ?? materialType) : ''}
+          />
+        )}
+        {step === 4 && (
+          <StepConfirm
+            offer={selectedOffer}
+            materialLabel={materialType ? (MATERIAL_LABELS[materialType] ?? materialType) : ''}
+            weightText={weightText}
+            picked={picked}
+            pickupDate={pickupDate}
+            onPickupDateChange={setPickupDate}
+            contactName={contactName}
+            onContactNameChange={setContactName}
+            contactPhone={contactPhone}
+            onContactPhoneChange={setContactPhone}
+          />
+        )}
+      </WizardLayout>
+      <WizardAuthGate
+        visible={showAuthGate}
+        onAuthenticated={async () => {
+          setShowAuthGate(false);
+          if (step === 2) {
+            setStep(3);
+            await loadOffers();
+          } else {
+            // Re-trigger CTA — token is now available
+            handleCTA();
+          }
+        }}
+        onDismiss={() => setShowAuthGate(false)}
+        prefilledName={contactName}
+        prefilledPhone={contactPhone}
+      />
+    </>
   );
 }
 
@@ -477,7 +511,7 @@ function StepAddress({
   onNotesChange,
 }: {
   picked: PickedAddress | null;
-  onPickChange: (a: PickedAddress | null) => void;
+  onPickChange: (a: PickedAddress) => void;
   notes: string;
   onNotesChange: (t: string) => void;
 }) {
@@ -492,7 +526,7 @@ function StepAddress({
       <AddressField
         label="Savākšanas adrese"
         value={picked}
-        onChange={onPickChange}
+        onPick={onPickChange}
         placeholder="Ievadiet adresi vai izvēlieties kartē"
       />
       <TextInputField
@@ -622,6 +656,8 @@ function StepConfirm({
   materialLabel,
   weightText,
   picked,
+  pickupDate,
+  onPickupDateChange,
   contactName,
   onContactNameChange,
   contactPhone,
@@ -631,11 +667,19 @@ function StepConfirm({
   materialLabel: string;
   weightText: string;
   picked: PickedAddress | null;
+  pickupDate: string;
+  onPickupDateChange: (d: string) => void;
   contactName: string;
   onContactNameChange: (t: string) => void;
   contactPhone: string;
   onContactPhoneChange: (t: string) => void;
 }) {
+  const minDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  })();
+
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -663,6 +707,16 @@ function StepConfirm({
         <DetailRow label="Adrese" value={picked?.address ?? '-'} />
         {offer && <DetailRow label="Pārstrādātājs" value={offer.name} />}
       </View>
+
+      <SectionLabel
+        label="Vēlamais savākšanas datums"
+        style={[s.sectionLabel, { marginTop: spacing.lg }]}
+      />
+      <WizardCalendar
+        selectedDate={pickupDate}
+        onDateChange={onPickupDateChange}
+        minDate={minDate}
+      />
 
       <SectionLabel label="Kontaktpersona" style={[s.sectionLabel, { marginTop: spacing.lg }]} />
       <TextInputField
