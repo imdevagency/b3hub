@@ -3,21 +3,15 @@
 
 ## What this product is
 
-**B3 Group** is the parent company. Two business units share a unified admin dashboard:
-
-| Business unit | What it is | Admin scope |
-|---|---|---|
-| **B3Hub** | Construction logistics marketplace (this platform) | `/dashboard/admin/*` — marketplace platform |
-| **B3 Recycling** | Licensed construction waste recycling facility in Gulbene | `/dashboard/b3-recycling` — ✅ built |
-
-B3Hub is a **pure marketplace platform** — there is no longer a separate B3 Construction internal business unit. The admin dashboard has a **3-tab scope switcher** in the sidebar header: **Grupa | APP | Recycle**. "Grupa" (`/dashboard/group`) is a cross-BU overview. Each tab shows its own nav sections. Active scope is auto-detected from the URL pathname.
+**B3 Group** is the parent company behind B3Hub. B3Hub is a **pure construction logistics marketplace** — one platform, one admin dashboard at `/dashboard/admin/*`.
 
 **B3Hub** is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
 
-It connects three sides:
+It connects **four market sides**:
 - **Buyers** — ranges from homeowners ordering a skip for a garden project (B2C, guest checkout) to construction companies running 50 deliveries across multiple sites (B2B, full account with contracts and team management)
 - **Sellers/Suppliers** — quarries and material suppliers listing gravel, sand, concrete, soil
-- **Transport providers** — trucking companies and independent drivers executing deliveries
+- **Carriers** — trucking companies and independent drivers executing deliveries
+- **Recyclers** — licensed waste processing facilities accepting, processing, and certifying construction waste
 
 Full order flow: buyer places order → seller confirms loading → driver delivers → documents auto-generated.
 
@@ -25,10 +19,6 @@ Full order flow: buyer places order → seller confirms loading → driver deliv
 **B2B segment**: construction companies, contractors, project managers. Account required. Framework contracts, project cost tracking, invoicing, team/permissions management.
 
 Both segments share the same backend and mobile app. The web portal serves sellers and admins primarily.
-
-**B3 Fields** are physical sites operated by B3 Group — two types:
-- **Standard fields**: materials pickup + waste drop-off (no recycling licence). Modelled as `RecyclingCenter` with `licensed: false`.
-- **B3 Recycling (Gulbene)**: licensed recycling facility. Accepts, processes, and certifies construction waste (concrete, soil, rubble, metals, wood). Modelled as `RecyclingCenter` with `licensed: true`. Customers book online via B3Hub disposal wizard.
 
 ---
 
@@ -62,7 +52,9 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
+
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
+
 <!-- END GEN -->
 
 ### Module anatomy
@@ -90,6 +82,7 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
+
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -115,6 +108,7 @@ export interface RequestingUser {
   companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }
 ```
+
 <!-- END GEN -->
 
 > ⚠️ **Important**: The `/auth/me` and login API responses return company features as `user.company.features` (nested), **not** as a flat `user.companyFeatures`. Mobile `mode-context.tsx` reads `user.company.features` accordingly. Never read `user.companyFeatures` directly in mobile code.
@@ -175,14 +169,15 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
+
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
-- `(buyer)` — (account)/, catalog, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
+- `(buyer)` — (account)/, catalog, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
 - `(gate)` — fields
-- `(recycler)` — home, incoming, messages, more, records
+- `(recycler)` — documents, home, incoming, messages, more, profile, records
 - `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
-- `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, messages, notification/, notifications, review/, settings, support-chat
-- `(wizards)` — disposal/, material-order, skip-hire/, toilet-cabin/, transport/
+- `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, language, messages, notification/, notifications, review/, settings, support-chat
+- `(wizards)` — disposal/, material-order, skip-hire/, toilet-cabin/, transport/, utilization/
 <!-- END GEN -->
 
 ### Styling
@@ -218,45 +213,32 @@ Prefer hooks over inline `useEffect` + `fetch` in components.
 
 ---
 
-## Admin dashboard — scope boundaries and integration ownership
+## Admin dashboard — scope
 
-The admin dashboard has **three scopes** (sidebar tabs). Code, routes, and integrations must not bleed across scope lines.
+One admin dashboard, one scope: `/dashboard/admin/*`. It manages all four market sides — buyers, sellers, carriers, and recyclers — plus platform operations.
 
-| Scope | Tab | Routes | Serves |
-|---|---|---|---|
-| **Platform** | `APP` | `/dashboard/admin/*` | The B3Hub marketplace — buyers, sellers, carriers, Construction ERP accounts, platform operators |
-| **B3 Recycling** | `Recycle` | `/dashboard/b3-recycling/*` | B3 Recycling facility internal team |
-| **Group** | `Grupa` | `/dashboard/group/*` | Cross-BU read-only aggregates |
+> ⚠️ There is **no** `Būve` tab, **no** `/dashboard/b3-construction` route, and **no** separate B3 Recycling admin scope. Do not recreate them.
 
-> ⚠️ There is **no** `Būve` tab and **no** `/dashboard/b3-construction` route. Those were removed. Do not recreate them.
+### Integration ownership
 
-### Integration ownership — the one decision rule
-
-> **"Who is the end user of this integration's data?"**
-
-| End user | Integration lives under |
-|---|---|
-| Marketplace users (buyers, sellers, carriers) | **Platform** — `/dashboard/admin/integrations/*` |
-| B3 Recycling internal staff | **Recycle** — `/dashboard/b3-recycling/*` |
+All integrations live under `/dashboard/admin/integrations/*` — they serve the marketplace (all four sides).
 
 **Concrete examples:**
-- `Lursoft` — company registry auto-fill for B2B registration, buyer/seller risk checks → **Platform** (`/dashboard/admin/integrations/lursoft`)
-- Payment processor, SMS, email, maps — serve marketplace transactions/notifications → **Platform**
+
+- `Lursoft` — company registry auto-fill for B2B registration, buyer/seller risk checks → `/dashboard/admin/integrations/lursoft`
+- Payment processor (Paysera), SMS, email, maps — serve marketplace transactions/notifications → `/dashboard/admin/integrations/`
 
 ### Platform integrations hub
 
 All platform integrations are registered in `/dashboard/admin/integrations/page.tsx`. When you add a new platform integration:
+
 1. Create the page at `/dashboard/admin/integrations/<name>/page.tsx`
 2. Add it to the `INTEGRATIONS` array in `integrations/page.tsx` (the hub)
 3. The sidebar item ("Visas integrācijas") already covers all sub-routes — no extra sidebar entry needed
 
 ### Backend module ownership signal
 
-Backend is flat (`apps/backend/src/`). Ownership is signalled by the **controller route prefix**:
-- Platform features: `/api/v1/<name>/*` (e.g. `/api/v1/lursoft/*`)
-- Recycling internal tools: `/api/v1/admin/recycling/*`
-
-**Never add platform marketplace logic to a Recycling-scoped module, and vice versa.**
+Backend is flat (`apps/backend/src/`). All marketplace and admin features use the prefix `/api/v1/<name>/*` (e.g. `/api/v1/lursoft/*`).
 
 ---
 
@@ -316,7 +298,7 @@ Key rules:
 | `STATUS.md`                                                  | **Feature status matrix** — what is built, connected, or missing across all three apps  |
 | `ARCHITECTURE.md`                                            | System architecture overview — ⚠️ partially stale, see stale notice at file top         |
 | `PRODUCT.md`                                                 | Product description, user personas, and full order flow                                 |
-| `apps/web/src/components/admin-sidebar.tsx`                  | 3-scope admin sidebar with tab switcher (Grupa / APP / Recycle) — no Būve tab           |
+| `apps/web/src/components/admin-sidebar.tsx`                  | Admin sidebar — single scope managing all 4 market sides                                |
 | `apps/web/src/components/sidebar-switch.tsx`                 | Picks AdminSidebar vs AppSidebar based on `user.userType`                               |
 | `apps/web/src/proxy.ts`                                      | Next.js middleware — route guards for admin and marketplace deployments                 |
 | `.github/instructions/backend-schema.instructions.md`        | All 30 DB models, enums, Prisma workflow, migration checklist                           |

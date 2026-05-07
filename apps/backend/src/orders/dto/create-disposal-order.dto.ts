@@ -96,4 +96,16 @@ export class CreateDisposalOrderDto {
   @IsUUID()
   @IsOptional()
   preferredRecyclingCenterId?: string;
+
+  /** B3 Field destination for waste utilization orders. When provided, the
+   *  waste is routed to this physical B3 Field location. The backend resolves
+   *  the linked recycling centre automatically if one is configured. */
+  @IsUUID()
+  @IsOptional()
+  destinationB3FieldId?: string;
+
+  /** True when the buyer expects a buyback payout from the recycler (scrap metal flow).
+   *  When set, the order total is €0 and buyerPayoutAmount records the expected payout. */
+  @IsOptional()
+  buybackPricePerTonne?: number; // EUR/t — agreed buyback rate; used to calculate buyerPayoutAmount
 }

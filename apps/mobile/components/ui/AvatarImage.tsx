@@ -23,8 +23,10 @@ interface AvatarImageProps {
   initials: string;
   /** Diameter in logical pixels. Defaults to 48. */
   size?: number;
-  /** Background colour for the initials fallback circle. Defaults to brand green. */
+  /** Background colour for the initials fallback circle. Defaults to light grey. */
   fallbackBg?: string;
+  /** Text colour for the initials. Defaults to dark grey (readable on light fallback). */
+  fallbackColor?: string;
   /** Called when user taps the avatar. Enables the camera-badge overlay. */
   onPress?: () => void;
   /** Show a spinner overlay (e.g. while upload is in progress). */
@@ -35,7 +37,8 @@ export function AvatarImage({
   url,
   initials,
   size = 48,
-  fallbackBg = '#166534',
+  fallbackBg = '#e5e7eb',
+  fallbackColor = '#374151',
   onPress,
   loading = false,
 }: AvatarImageProps) {
@@ -44,30 +47,37 @@ export function AvatarImage({
   const badgeSize = Math.round(size * 0.33);
 
   const inner = (
-    <View style={[styles.container, { width: size, height: size, borderRadius: radius }]}>
-      {url ? (
-        <Image
-          source={{ uri: url }}
-          style={{ width: size, height: size, borderRadius: radius }}
-          resizeMode="cover"
-        />
-      ) : (
-        <View
-          style={[
-            styles.fallback,
-            { width: size, height: size, borderRadius: radius, backgroundColor: fallbackBg },
-          ]}
-        >
-          <Text style={[styles.initials, { fontSize }]}>{initials.toUpperCase()}</Text>
-        </View>
-      )}
+    // Outer wrapper has no overflow:hidden so the camera badge can sit outside the circle
+    <View style={{ width: size, height: size }}>
+      {/* Circle: overflow:hidden masks the image/initials into a circle */}
+      <View style={[styles.circle, { width: size, height: size, borderRadius: radius }]}>
+        {url ? (
+          <Image
+            source={{ uri: url }}
+            style={{ width: size, height: size, borderRadius: radius }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View
+            style={[
+              styles.fallback,
+              { width: size, height: size, borderRadius: radius, backgroundColor: fallbackBg },
+            ]}
+          >
+            <Text style={[styles.initials, { fontSize, color: fallbackColor }]}>
+              {initials.toUpperCase()}
+            </Text>
+          </View>
+        )}
 
-      {loading && (
-        <View style={[styles.overlay, { borderRadius: radius }]}>
-          <ActivityIndicator color="#fff" />
-        </View>
-      )}
+        {loading && (
+          <View style={[styles.overlay, { borderRadius: radius }]}>
+            <ActivityIndicator color="#fff" />
+          </View>
+        )}
+      </View>
 
+      {/* Badge lives outside the overflow:hidden circle — no more clipping */}
       {onPress && !loading && (
         <View
           style={[
@@ -99,8 +109,7 @@ export function AvatarImage({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
+  circle: {
     overflow: 'hidden',
   },
   fallback: {
@@ -108,9 +117,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initials: {
-    color: '#fff',
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
+    // color is applied inline via fallbackColor prop
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

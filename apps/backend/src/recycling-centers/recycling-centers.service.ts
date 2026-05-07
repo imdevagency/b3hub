@@ -540,6 +540,7 @@ export class RecyclingCentersService {
         recyclingCenterId: centerId,
         wasteType: dto.wasteType,
         pricePerTonne: dto.pricePerTonne,
+        buybackPricePerTonne: dto.buybackPricePerTonne ?? null,
         minimumWeight: dto.minimumWeight ?? null,
         minimumFee: dto.minimumFee ?? null,
         maximumWeight: dto.maximumWeight ?? null,
@@ -548,6 +549,7 @@ export class RecyclingCentersService {
       },
       update: {
         pricePerTonne: dto.pricePerTonne,
+        buybackPricePerTonne: dto.buybackPricePerTonne ?? null,
         minimumWeight: dto.minimumWeight ?? null,
         minimumFee: dto.minimumFee ?? null,
         maximumWeight: dto.maximumWeight ?? null,
@@ -683,6 +685,79 @@ export class RecyclingCentersService {
       select: { id: true },
     });
     if (!center) throw new ForbiddenException('Center not found or access denied');
+  }
+
+  // ── Buyback Quote ─────────────────────────────────────────────────────────
+
+  /**
+   * GET /recycling-centers/buyback-quote
+   * Returns centers that offer a buyback price for the requested waste type.
+   * Sorted by highest payout (buybackPricePerTonne × weightTonnes), descending.
+   * Only centers where accepted=true AND buybackPricePerTonne > 0 are returned.
+   */
+  async getBuybackQuote(query: DisposalQuoteQueryDto) {
+    const weightTonnes = query.weightKg / 1000;
+
+    const centers = await this.prisma.recyclingCenter.findMany({
+      where: { active: true, acceptedWasteTypes: { has: query.wasteType } },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        coordinates: true,
+        licensed: true,
+        certifications: true,
+        pricingRules: {
+          where: { wasteType: query.wasteType, accepted: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    const results = centers
+      .filter((c) => {
+        const rule = c.pricingRules[0];
+        return rule && rule.buybackPricePerTonne != null && rule.buybackPricePerTonne > 0;
+      })
+      .map((center) => {
+        const rule = center.pricingRules[0]!;
+        const coords = center.coordinates as { lat?: number; lng?: number } | null;
+
+        let distanceKm: number | null = null;
+        if (query.lat != null && query.lng != null && coords?.lat != null && coords?.lng != null) {
+          const R = 6371;
+          const dLat = ((coords.lat - query.lat) * Math.PI) / 180;
+          const dLng = ((coords.lng - query.lng) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos((query.lat * Math.PI) / 180) *
+              Math.cos((coords.lat * Math.PI) / 180) *
+              Math.sin(dLng / 2) ** 2;
+          distanceKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+        }
+
+        const buybackPricePerTonne = rule.buybackPricePerTonne!;
+        const totalPayoutEur = Math.round(buybackPricePerTonne * weightTonnes * 100) / 100;
+
+        return {
+          centerId: center.id,
+          name: center.name,
+          address: center.address,
+          city: center.city,
+          licensed: center.licensed,
+          certifications: center.certifications,
+          distanceKm,
+          buybackPricePerTonne,
+          totalPayoutEur,
+          centerNotes: rule.notes ?? null,
+        };
+      });
+
+    // Sort: highest payout first
+    results.sort((a, b) => b.totalPayoutEur - a.totalPayoutEur);
+
+    return { data: results, weightKg: query.weightKg, wasteType: query.wasteType };
   }
 
   /**

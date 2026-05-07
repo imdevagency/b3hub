@@ -7,6 +7,7 @@ import type { IncomingJob, WasteRecord, RecyclerCenter } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useHeaderConfig } from '@/lib/header-context';
+import { getRecyclerJobStatus } from '@/lib/status';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { Inbox, FileText, Recycle, ChevronRight } from 'lucide-react-native';
@@ -164,35 +165,14 @@ export default function RecyclerHomeScreen() {
                 </Text>
               </View>
               <View style={ls.jobCardRight}>
-                <View
-                  style={[
-                    ls.statusBadge,
-                    {
-                      backgroundColor:
-                        job.status === 'DELIVERED'
-                          ? '#dcfce7'
-                          : job.status === 'IN_PROGRESS'
-                            ? '#dbeafe'
-                            : '#fef3c7',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      ls.statusText,
-                      {
-                        color:
-                          job.status === 'DELIVERED'
-                            ? '#166534'
-                            : job.status === 'IN_PROGRESS'
-                              ? '#1d4ed8'
-                              : '#92400e',
-                      },
-                    ]}
-                  >
-                    {job.status}
-                  </Text>
-                </View>
+                {(() => {
+                  const s = getRecyclerJobStatus(job.status);
+                  return (
+                    <View style={[ls.statusBadge, { backgroundColor: s.bg }]}>
+                      <Text style={[ls.statusText, { color: s.color }]}>{s.label}</Text>
+                    </View>
+                  );
+                })()}
                 <ChevronRight size={16} color={colors.textMuted} />
               </View>
             </TouchableOpacity>

@@ -15,6 +15,7 @@ import {
   MailCheck,
   Building2,
   FolderOpen,
+  Wrench,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -83,7 +84,20 @@ const SERVICES = [
     route: '/transport',
   },
   { id: 'container', icon: Package, label: 'Konteineri', sub: 'Piegāde', route: '/skip-hire' },
-  { id: 'disposal', icon: Trash2, label: 'Utilizācija', sub: 'Būvgruži, zeme', route: '/disposal' },
+  {
+    id: 'disposal',
+    icon: Trash2,
+    label: 'Utilizācija',
+    sub: 'Būvgruži, zeme',
+    route: '/utilization',
+  },
+  {
+    id: 'scrap-buyback',
+    icon: Wrench,
+    label: 'Metāllūžņi',
+    sub: 'Nodo un saņem samaksu',
+    route: '/scrap-buyback',
+  },
   {
     id: 'toilet-cabin',
     icon: Building2,
@@ -292,86 +306,51 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Profile Nudge */}
-        {user && (!user.phone || (user.isCompany && !user.company?.id)) && (
+        {/* Single-priority account nudge — profile completion wins over email nudge */}
+        {user && (!user.phone || (user.isCompany && !user.company?.id)) ? (
           <TouchableOpacity
             style={{
               marginHorizontal: 20,
-              marginBottom: 32,
+              marginBottom: 20,
               backgroundColor: '#fffbeb',
-              padding: 24,
-              borderRadius: 32,
+              borderRadius: 16,
               flexDirection: 'row',
               alignItems: 'center',
+              padding: 14,
+              gap: 12,
+              borderWidth: 1,
+              borderColor: '#fde68a',
             }}
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
-              // Phone-missing: edit profile; company-missing: apply for supplier role
-              if (!user.phone) {
-                router.push('/(buyer)/profile');
-              } else {
-                router.push('/(auth)/apply-role?type=supplier' as never);
-              }
+              if (!user.phone) router.push('/(buyer)/profile');
+              else router.push('/(auth)/apply-role?type=supplier' as never);
             }}
           >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: '#fef3c7',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: 16,
-              }}
+            <AlertCircle size={18} color="#d97706" />
+            <Text
+              style={{ flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: '#92400e' }}
             >
-              <AlertCircle size={24} color="#d97706" />
-            </View>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text
-                style={{
-                  color: '#92400e',
-                  fontSize: 18,
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  letterSpacing: -0.5,
-                  marginBottom: 4,
-                }}
-              >
-                Pabeidziet konta reģistrāciju
-              </Text>
-              <Text
-                style={{
-                  color: '#b45309',
-                  fontSize: 14,
-                  fontFamily: 'Inter_500Medium',
-                  fontWeight: '500',
-                }}
-              >
-                {!user.phone
-                  ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
-                  : 'Pievienojiet uzņēmuma datus'}
-              </Text>
-            </View>
-            <ChevronRight size={24} color="#d97706" />
+              {!user.phone
+                ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
+                : 'Pievienojiet uzņēmuma datus'}
+            </Text>
+            <ChevronRight size={16} color="#d97706" />
           </TouchableOpacity>
-        )}
-
-        {/* Email Verification Nudge */}
-        {user && !user.emailVerified && (
+        ) : user && !user.emailVerified ? (
           <TouchableOpacity
             style={{
               marginHorizontal: 20,
               marginBottom: 20,
               backgroundColor: '#eff6ff',
-              padding: 16,
-              borderRadius: 20,
+              borderRadius: 16,
               flexDirection: 'row',
               alignItems: 'center',
+              padding: 14,
+              gap: 12,
               borderWidth: 1,
               borderColor: '#bfdbfe',
-              gap: 12,
             }}
             activeOpacity={0.8}
             onPress={() => {
@@ -379,43 +358,15 @@ export default function HomeScreen() {
               router.push('/(buyer)/profile');
             }}
           >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: '#dbeafe',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
+            <MailCheck size={18} color="#2563eb" strokeWidth={2} />
+            <Text
+              style={{ flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: '#1e3a5f' }}
             >
-              <MailCheck size={20} color="#2563eb" strokeWidth={2} />
-            </View>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text
-                style={{
-                  color: '#1e3a5f',
-                  fontSize: 14,
-                  fontFamily: 'Inter_600SemiBold',
-                  fontWeight: '600',
-                  marginBottom: 2,
-                }}
-              >
-                Apstipriniet e-pastu
-              </Text>
-              <Text
-                style={{
-                  color: '#1d4ed8',
-                  fontSize: 12,
-                  fontFamily: 'Inter_400Regular',
-                }}
-              >
-                Apstipriniet kontu, lai saņemtu rēķinus un atjauninājumus
-              </Text>
-            </View>
-            <ChevronRight size={18} color="#2563eb" />
+              Apstipriniet e-pastu, lai saņemtu rēķinus
+            </Text>
+            <ChevronRight size={16} color="#2563eb" />
           </TouchableOpacity>
-        )}
+        ) : null}
 
         {/* Tracking (Uber-style dark card) */}
         {activeItem && (
@@ -708,92 +659,19 @@ export default function HomeScreen() {
         {/* ── Empty State / Actions Grid ── */}
         {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
           <View style={{ paddingHorizontal: 20 }}>
-            {/* If there are NO active orders at all, render a big "Empty State" hero section */}
+            {/* Empty state — just a heading prompt, the grid below is the CTA */}
             {!activeItem && !loading && (
-              <View style={{ marginBottom: 32, alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 40,
-                    backgroundColor: '#f3f4f6',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 20,
-                  }}
-                >
-                  <Package size={40} color="#9ca3af" strokeWidth={1.5} />
-                </View>
-                <Text
-                  style={{
-                    fontFamily: 'Inter_700Bold',
-                    fontWeight: '700',
-                    fontSize: 24,
-                    letterSpacing: -0.5,
-                    color: '#111827',
-                    marginBottom: 8,
-                    textAlign: 'center',
-                  }}
-                >
-                  Nav aktīvu pasūtījumu
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: 'Inter_500Medium',
-                    fontWeight: '500',
-                    fontSize: 16,
-                    color: '#6b7280',
-                    textAlign: 'center',
-                    marginBottom: 24,
-                  }}
-                >
-                  Pasūtiet konteineru, materiālus vai autotransportu — viss vienuviet.
-                </Text>
-                <View style={{ width: '100%', gap: 12 }}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      haptics.light();
-                      router.push('/skip-hire');
-                    }}
-                    style={{
-                      backgroundColor: '#166534',
-                      borderRadius: 16,
-                      paddingVertical: 18,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Package size={20} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={{ color: '#fff', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}>
-                      Pasūtīt konteineru
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      haptics.light();
-                      router.push('/(buyer)/catalog');
-                    }}
-                    style={{
-                      backgroundColor: '#f3f4f6',
-                      borderRadius: 16,
-                      paddingVertical: 18,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <HardHat size={20} color="#111827" style={{ marginRight: 8 }} />
-                    <Text
-                      style={{ color: '#111827', fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
-                    >
-                      Pasūtīt materiālus
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <Text
+                style={{
+                  fontFamily: 'Inter_500Medium',
+                  fontWeight: '500',
+                  fontSize: 15,
+                  color: '#6b7280',
+                  marginBottom: 16,
+                }}
+              >
+                Nav aktīvu pasūtījumu. Sāciet no pakalpojumiem zemāk.
+              </Text>
             )}
 
             <Text

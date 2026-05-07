@@ -435,7 +435,7 @@ export default function IncomingScreen() {
   const [loadingOrder, setLoadingOrder] = useState<IncomingOrder | null>(null);
   const [actioning, setActioning] = useState<string | null>(null);
   const [confirmingLoad, setConfirmingLoad] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('PENDING');
   // Reject confirmation bottom sheet
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
 
@@ -444,15 +444,8 @@ export default function IncomingScreen() {
       if (!token) return;
       if (!isRefresh) setFetching(true);
       try {
-        const data = await api.orders.myOrders(token);
-        const companyId = user?.company?.id;
-        const userId = user?.id;
-        const sellerOrders = data.filter(
-          (o) =>
-            (companyId ? o.buyer?.id !== companyId : true) &&
-            (userId ? o.createdBy?.id !== userId : true),
-        );
-        setOrders(sellerOrders.map(mapApiOrder));
+        const data = await api.orders.sellerOrders(token);
+        setOrders(data.map(mapApiOrder));
       } catch {
         if (!isRefresh) toast.error('Kļūda ielādējot pasūtījumus');
       } finally {
@@ -460,7 +453,7 @@ export default function IncomingScreen() {
         setRefreshing(false);
       }
     },
-    [token, user?.company?.id],
+    [token],
   );
 
   useFocusEffect(

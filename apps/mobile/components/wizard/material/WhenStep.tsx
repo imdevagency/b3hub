@@ -9,6 +9,9 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Sun, Moon, CalendarClock } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
+import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
+
+const MIN_DATE = toISO(addDays(new Date(), 1));
 
 export type WhenStepProps = {
   deliveryDate: string;
@@ -36,7 +39,7 @@ export function WhenStep({
             haptics.light();
             onDateChange(d);
           }}
-          minDate={new Date().toISOString().split('T')[0]}
+          minDate={MIN_DATE}
         />
       </View>
 
@@ -68,7 +71,9 @@ export function WhenStep({
                 activeOpacity={0.8}
               >
                 <Icon size={20} color={active ? '#ffffff' : '#9ca3af'} className="mb-2" />
-                <Text className={`font-semibold text-xs ${active ? 'text-white' : 'text-gray-500'}`}>
+                <Text
+                  className={`font-semibold text-xs ${active ? 'text-white' : 'text-gray-500'}`}
+                >
                   {w.label}
                 </Text>
               </TouchableOpacity>

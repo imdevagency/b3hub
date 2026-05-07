@@ -248,6 +248,7 @@ export const lv = {
     BUYER: 'Pasūtītājs',
     SUPPLIER: 'Piegādātājs',
     CARRIER: 'Šoferis',
+    RECYCLER: 'Pārstrādātājs',
   },
 
   jobs: {
@@ -877,7 +878,7 @@ export const ru: Translations = {
     fallback: 'B3Hub',
   },
 
-  mode: { BUYER: 'Покупатель', CARRIER: 'Водитель', SUPPLIER: 'Продавец' },
+  mode: { BUYER: 'Покупатель', CARRIER: 'Водитель', SUPPLIER: 'Продавец', RECYCLER: 'Переработчик' },
 
   jobs: {
     title: 'Доступные работы',

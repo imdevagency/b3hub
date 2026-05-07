@@ -44,30 +44,14 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const availableModes = useMemo<AppMode[]>(() => {
     const modes: AppMode[] = [];
-    const companyFeatures: string[] = (user as any)?.company?.features ?? [];
-    const isConstructionErp = companyFeatures.includes('CONSTRUCTION_MANAGEMENT');
-    // BUYER = zero-specialist identity. Once a user is approved for any role on the platform
-    // their primary experience is that role. A supplier sells, a carrier drives, a recycler
-    // operates a facility — none of them need the general buyer marketplace tab.
-    const hasSpecialistRole = !!(
-      user?.canSell ||
-      user?.canTransport ||
-      (user as any)?.canRecycle ||
-      isConstructionErp
-    );
-    if (!hasSpecialistRole) modes.push('BUYER');
+    // All users can access BUYER — this is a marketplace and anyone may want to order
+    // materials/transport regardless of their primary specialist role.
+    modes.push('BUYER');
     if (user?.canSell) modes.push('SUPPLIER');
     if (user?.canTransport) modes.push('CARRIER');
     if ((user as any)?.canRecycle) modes.push('RECYCLER');
-    if (isConstructionErp) modes.push('CONSTRUCTION');
-    if (modes.length === 0) modes.push('BUYER'); // fallback for unauthenticated/edge cases
     return modes;
-  }, [
-    user?.canSell,
-    user?.canTransport,
-    (user as any)?.canRecycle,
-    (user as any)?.company?.features,
-  ]);
+  }, [user?.canSell, user?.canTransport, (user as any)?.canRecycle]);
 
   const [mode, setModeState] = useState<AppMode>(() => defaultModeForUser(user));
 

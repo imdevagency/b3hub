@@ -173,10 +173,6 @@ export default function CatalogScreen() {
     quantity: number;
     unit: string;
   } | null>(null);
-  const [calcVisible, setCalcVisible] = useState(false);
-  const [calcArea, setCalcArea] = useState('');
-  const [calcDepth, setCalcDepth] = useState('');
-  const [calcDensity, setCalcDensity] = useState('1.6');
 
   // ── Live pricing from last known delivery address ─────────────────────────
   const [savedDelivery, setSavedDelivery] = useState<{
@@ -471,7 +467,9 @@ export default function CatalogScreen() {
             }}
             activeOpacity={0.8}
           >
-            <Text className={`font-semibold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}>
+            <Text
+              className={`font-semibold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}
+            >
               Visi
             </Text>
           </TouchableOpacity>

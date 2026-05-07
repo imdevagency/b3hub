@@ -1,15 +1,9 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  Linking,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { TileGrid, TileItem, H_PAD } from '@/components/ui/TileGrid';
+import { ListRow } from '@/components/ui/ListRow';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
@@ -31,16 +25,12 @@ import {
   HelpCircle,
   Package,
   Truck,
-  ChevronRight,
   LogOut,
   Building2,
-  ArrowUpDown,
   HardHat,
   Recycle,
   CreditCard,
 } from 'lucide-react-native';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const MARKET_PARTIES = [
   { key: 'constructor', label: 'Celtnieks', icon: HardHat },
@@ -49,81 +39,9 @@ const MARKET_PARTIES = [
   { key: 'recycler', label: 'Pārstrādātājs', icon: Recycle },
 ] as const;
 
-const COLS = 3;
-const H_PAD = 16;
-const GAP = 10;
-const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - GAP * (COLS - 1)) / COLS;
-
-type TileItem = {
-  icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
-  label: string;
-  badge?: number;
-  onPress: () => void;
-};
-
-function TileGrid({ tiles }: { tiles: TileItem[] }) {
-  return (
-    <View style={s.grid}>
-      {tiles.map((tile, i) => (
-        <TouchableOpacity
-          key={i}
-          style={s.tile}
-          activeOpacity={0.72}
-          onPress={() => {
-            haptics.light();
-            tile.onPress();
-          }}
-        >
-          {tile.badge != null && tile.badge > 0 && (
-            <View style={s.tileBadge}>
-              <Text style={s.tileBadgeText}>{tile.badge > 99 ? '99+' : tile.badge}</Text>
-            </View>
-          )}
-          <tile.icon size={26} color={colors.textSecondary} strokeWidth={1.6} />
-          <Text style={s.tileLabel} numberOfLines={2}>
-            {tile.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
-
-function ListRow({
-  icon: Icon,
-  label,
-  onPress,
-  isDestructive = false,
-  last = false,
-}: {
-  icon: TileItem['icon'];
-  label: string;
-  onPress: () => void;
-  isDestructive?: boolean;
-  last?: boolean;
-}) {
-  return (
-    <>
-      <TouchableOpacity
-        style={s.listRow}
-        activeOpacity={0.7}
-        onPress={() => {
-          haptics.light();
-          onPress();
-        }}
-      >
-        <Icon size={20} color={isDestructive ? '#dc2626' : colors.textMuted} strokeWidth={1.8} />
-        <Text style={[s.listLabel, isDestructive && s.listLabelDestructive]}>{label}</Text>
-        <ChevronRight size={16} color={colors.border} />
-      </TouchableOpacity>
-      {!last && <View style={s.listDivider} />}
-    </>
-  );
-}
-
 export default function MoreScreen() {
   const { user, isLoading } = useAuth();
-  const { isMultiRole } = useMode();
+  useMode();
   const router = useRouter();
 
   const requireAuth = useRequireAuth();
@@ -202,6 +120,11 @@ export default function MoreScreen() {
           label: 'Uzņēmums',
           onPress: () => Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null),
         },
+        {
+          icon: FileText,
+          label: 'Rāmjlīgumi',
+          onPress: () => router.push('/(buyer)/framework-contracts'),
+        },
       ]
     : [];
 
@@ -265,24 +188,6 @@ export default function MoreScreen() {
           <>
             <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
             <TileGrid tiles={companyTiles} />
-          </>
-        )}
-
-        {/* ── Role switch ────────────────────────────────────── */}
-        {isMultiRole && (
-          <>
-            <Text style={s.sectionLabel}>LOMA</Text>
-            <View style={s.listCard}>
-              <ListRow
-                icon={ArrowUpDown}
-                label="Mainīt lomu"
-                last
-                onPress={() => {
-                  // Navigate to profile where the RoleSheet lives, or trigger directly
-                  router.push('/(buyer)/profile');
-                }}
-              />
-            </View>
           </>
         )}
 
@@ -351,52 +256,6 @@ const s = StyleSheet.create({
     paddingBottom: 32,
   },
 
-  // Tile grid
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: H_PAD,
-    gap: GAP,
-    marginBottom: 8,
-  },
-  tile: {
-    width: TILE_W,
-    minHeight: 90,
-    backgroundColor: colors.bgCard,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 6,
-    gap: 8,
-  },
-  tileLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    fontWeight: '500',
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  tileBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#ef4444',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  tileBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
-  },
-
   // Section label
   sectionLabel: {
     fontSize: 11,
@@ -418,28 +277,6 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 8,
   },
-  listRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  listLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter_400Regular',
-    color: colors.textPrimary,
-  },
-  listLabelDestructive: {
-    color: '#dc2626',
-  },
-  listDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginLeft: 48,
-  },
-
   // Marketing hero
   heroCard: {
     backgroundColor: colors.bgCard,

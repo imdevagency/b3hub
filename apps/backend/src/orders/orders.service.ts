@@ -772,9 +772,10 @@ export class OrdersService {
     limit: number = 20,
     skip: number = 0,
     updatedSince?: string,
+    sellerView: boolean = false,
   ) {
     const where = {
-      ...this.buildOrderWhere(currentUser, status),
+      ...this.buildOrderWhere(currentUser, status, sellerView),
       ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
     };
 
@@ -855,7 +856,7 @@ export class OrdersService {
     };
   }
 
-  private buildOrderWhere(currentUser: RequestingUser, status?: OrderStatus) {
+  private buildOrderWhere(currentUser: RequestingUser, status?: OrderStatus, sellerView: boolean = false) {
     const statusFilter = status ? { status } : {};
 
     // Admins see everything
@@ -871,7 +872,7 @@ export class OrdersService {
       !currentUser.canSell &&
       currentUser.userType !== 'ADMIN';
 
-    if (!transportOnly) {
+    if (!transportOnly && !sellerView) {
       orConditions.push({ createdById: currentUser.userId });
     }
 
@@ -2665,18 +2666,31 @@ export class OrdersService {
         cargoVolume: truck.volume * dto.truckCount,
         requiredVehicleType: truck.label,
         specialRequirements: dto.description ?? null,
-        rate: dto.quotedRate ?? 0,
+        rate: dto.buybackPricePerTonne != null ? 0 : (dto.quotedRate ?? 0), // buyback = driver collects, buyer gets paid
         currency: 'EUR',
         projectId: dto.projectId ?? null,
         status: TransportJobStatus.AVAILABLE,
       },
     });
 
-    this.logger.log(
-      `Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`,
-    );
+    const isBuyback = dto.buybackPricePerTonne != null && dto.buybackPricePerTonne > 0;
+    const buyerPayoutAmount = isBuyback
+      ? Math.round(dto.buybackPricePerTonne! * dto.estimatedWeight * 100) / 100
+      : undefined;
+
+    if (isBuyback) {
+      this.logger.log(
+        `Buyback disposal job ${jobNumber} created (${dto.wasteType}, ${dto.estimatedWeight}t, payout €${buyerPayoutAmount})`,
+      );
+    } else {
+      this.logger.log(
+        `Disposal job ${jobNumber} created (${dto.wasteType} × ${dto.truckCount} trucks from ${dto.pickupCity})`,
+      );
+    }
 
     // Generate invoice + Stripe Payment Link for the quoted rate (fire-and-forget)
+    // Buyback orders have €0 charge so skip invoice generation
+    if (!isBuyback) {
     this.invoices
       .createForCallOff({
         id: job.id,
@@ -2690,16 +2704,19 @@ export class OrdersService {
           `Invoice creation failed for disposal job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
         ),
       );
+    }
 
     // Notify all active drivers about the new job (fire-and-forget)
     this.notifyActiveDrivers(
-      `🗑️ Jauns atkritumu izvešanas darbs: ${dto.pickupCity}`,
+      isBuyback
+        ? `♻️ Metāllūžņu savākšana: ${dto.pickupCity}`
+        : `🗑️ Jauns atkritumu izvešanas darbs: ${dto.pickupCity}`,
       `${dto.wasteType} × ${dto.truckCount} transportlīdzekļi`,
     ).catch((err) =>
       this.logger.error(err instanceof Error ? err.message : String(err)),
     );
 
-    return job;
+    return isBuyback ? { ...job, isBuyback: true, buyerPayoutAmount } : job;
   }
 
   async createFreightOrder(dto: CreateFreightOrderDto, userId: string) {

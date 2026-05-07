@@ -214,6 +214,17 @@ export class RecyclingCentersController {
     return this.service.getDisposalQuote(query);
   }
 
+  /**
+   * GET /recycling-centers/buyback-quote
+   * Returns centers offering a buyback price for the given waste type + weight.
+   * Sorted by highest payout descending.
+   * Used by the scrap metal buyback wizard.
+   */
+  @Get('buyback-quote')
+  getBuybackQuote(@Query() query: DisposalQuoteQueryDto) {
+    return this.service.getBuybackQuote(query);
+  }
+
   // ── Pricing Rules (operator) ─────────────────────────────────────────
 
   /** GET /recycling-centers/:centerId/pricing-rules — list all rules for a center */

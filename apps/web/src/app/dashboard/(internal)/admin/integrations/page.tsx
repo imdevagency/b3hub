@@ -355,12 +355,6 @@ export default function IntegrationsHubPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {(c.features ?? []).includes('CONSTRUCTION_MANAGEMENT') && (
-                        <Badge variant="outline" className="gap-1 text-blue-700 border-blue-300">
-                          <HardHat className="h-3 w-3" />
-                          Celtniecība
-                        </Badge>
-                      )}
                       {(c.features ?? []).includes('RECYCLING_MANAGEMENT') && (
                         <Badge
                           variant="outline"

@@ -100,6 +100,7 @@ function SellerLayoutContent() {
             tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
+        <Tabs.Screen name="billing-settings" options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ href: null }} />
         <Tabs.Screen name="framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />

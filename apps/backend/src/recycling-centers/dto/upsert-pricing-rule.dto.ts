@@ -38,4 +38,10 @@ export class UpsertPricingRuleDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** EUR per tonne the center pays to the buyer (scrap metal buyback). Null = no buyback. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  buybackPricePerTonne?: number;
 }

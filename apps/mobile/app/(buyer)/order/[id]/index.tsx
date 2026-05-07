@@ -524,6 +524,26 @@ export default function OrderTrackingScreen() {
               >
                 Detaļas
               </Button>
+              {order.status === 'COMPLETED' && order.items?.length > 0 && (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="flex-1"
+                  onPress={() => {
+                    haptics.medium();
+                    router.push({
+                      pathname: '/(wizards)/material-order' as never,
+                      params: {
+                        initialCategory: order.items[0]?.material?.category ?? undefined,
+                        prefillAddress: order.deliveryAddress ?? undefined,
+                        prefillCity: order.deliveryCity ?? undefined,
+                      },
+                    } as never);
+                  }}
+                >
+                  Pasūtīt vēlreiz
+                </Button>
+              )}
             </View>
           </View>
         </View>

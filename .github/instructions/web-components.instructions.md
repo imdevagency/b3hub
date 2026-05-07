@@ -374,6 +374,10 @@ Wrap page sections that may throw.
 
 ---
 
+#### `alert-dialog` — `@/components/ui/alert-dialog`
+
+---
+
 #### `avatar` — `@/components/ui/avatar`
 
 ---
@@ -396,6 +400,10 @@ Wrap page sections that may throw.
 ---
 
 #### `card` — `@/components/ui/card`
+
+---
+
+#### `checkbox` — `@/components/ui/checkbox`
 
 ---
 

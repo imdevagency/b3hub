@@ -66,6 +66,8 @@ export type OffersStepProps = {
   prefilledContactName?: string;
   prefilledContactPhone?: string;
   prefilledContactEmail?: string;
+  onContactNameChange?: (v: string) => void;
+  onContactPhoneChange?: (v: string) => void;
   /** True if the success screen is for a guest order (no instant-pay path). */
   isGuestSuccess?: boolean;
   /** Public tracking token for the guest order — used to persist it in AsyncStorage. */
@@ -102,6 +104,8 @@ export function OffersStep({
   prefilledContactName,
   prefilledContactPhone,
   prefilledContactEmail,
+  onContactNameChange,
+  onContactPhoneChange,
   isGuestSuccess,
   guestToken,
   onNavigateToOrder,
@@ -346,11 +350,71 @@ export function OffersStep({
             {submitError}
           </Text>
         ) : null}
+
+        {/* BIS + terms before the RFQ button */}
+        <TextInput
+          value={bisNumber}
+          onChangeText={onBisNumberChange}
+          placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
+          placeholderTextColor={colors.textDisabled}
+          autoCapitalize="characters"
+          style={{
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            fontSize: 14,
+            color: colors.textPrimary,
+            fontFamily: 'Inter_400Regular',
+            backgroundColor: '#fff',
+          }}
+        />
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+          onPress={() => onTermsAcceptedChange(!termsAccepted)}
+          activeOpacity={0.7}
+        >
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              borderWidth: 1.5,
+              borderColor: termsAccepted ? '#111827' : '#d1d5db',
+              backgroundColor: termsAccepted ? '#111827' : '#fff',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 1,
+            }}
+          >
+            {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+          </View>
+          <Text
+            style={{
+              flex: 1,
+              fontSize: 13,
+              color: colors.textSecondary,
+              fontFamily: 'Inter_400Regular',
+              lineHeight: 20,
+            }}
+          >
+            Piekrītu{' '}
+            <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
+              lietošanas noteikumiem
+            </Text>{' '}
+            un{' '}
+            <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
+              privātuma politikai
+            </Text>
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => requireAuth(onSendRFQ)}
-          disabled={submitting}
-          style={s.rfqBox}
+          disabled={submitting || !termsAccepted}
+          style={[s.rfqBox, !termsAccepted && { opacity: 0.45 }]}
         >
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
             <View style={s.rfqIconBg}>
@@ -525,34 +589,50 @@ export function OffersStep({
             {submitError}
           </Text>
         ) : null}
-      </View>
 
-      <ScrollView
-        contentContainerStyle={{
-          paddingBottom: selectedOffer ? 120 : 32, // make space for sticky button
-          gap: 12,
-          paddingHorizontal: 16,
-          paddingTop: 16,
-        }}
-      >
-        {sorted.map((offer, idx) => (
-          <OfferCard
-            key={offer.id}
-            offer={offer}
-            unit={unit}
-            isSelected={selectedOffer?.id === offer.id}
-            isCheapest={offersSort === 'price' && idx === 0}
-            submitting={submitting && selectedOffer?.id === offer.id}
-            onSelect={() => {
-              if (submitting) return;
-              haptics.selection();
-              setSelectedOffer(offer);
-            }}
-          />
-        ))}
+        {/* Contact — always editable so site contact can differ from account */}
+        {isAuthenticated && (
+          <View style={{ gap: 8 }}>
+            <TextInput
+              value={prefilledContactName ?? ''}
+              onChangeText={onContactNameChange}
+              placeholder="Kontaktpersona"
+              placeholderTextColor={colors.textDisabled}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                color: colors.textPrimary,
+                fontFamily: 'Inter_400Regular',
+                backgroundColor: '#fff',
+              }}
+            />
+            <TextInput
+              value={prefilledContactPhone ?? ''}
+              onChangeText={onContactPhoneChange}
+              placeholder="Tālrunis"
+              placeholderTextColor={colors.textDisabled}
+              keyboardType="phone-pad"
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                color: colors.textPrimary,
+                fontFamily: 'Inter_400Regular',
+                backgroundColor: '#fff',
+              }}
+            />
+          </View>
+        )}
 
-        {/* BIS number + terms — shown above RFQ fallback */}
-        <View style={{ gap: 12, marginTop: 4 }}>
+        {/* BIS number + terms — fixed above the scrollable offer list */}
+        <View style={{ gap: 10 }}>
           <TextInput
             value={bisNumber}
             onChangeText={onBisNumberChange}
@@ -611,6 +691,31 @@ export function OffersStep({
             </Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: selectedOffer ? 120 : 32, // make space for sticky button
+          gap: 12,
+          paddingHorizontal: 16,
+          paddingTop: 16,
+        }}
+      >
+        {sorted.map((offer, idx) => (
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            unit={unit}
+            isSelected={selectedOffer?.id === offer.id}
+            isCheapest={offersSort === 'price' && idx === 0}
+            submitting={submitting && selectedOffer?.id === offer.id}
+            onSelect={() => {
+              if (submitting) return;
+              haptics.selection();
+              setSelectedOffer(offer);
+            }}
+          />
+        ))}
 
         {/* RFQ fallback */}
         <View
@@ -642,7 +747,7 @@ export function OffersStep({
               borderRadius: 8,
             }}
             onPress={() => requireAuth(onSendRFQ)}
-            disabled={submitting}
+            disabled={submitting || !termsAccepted}
             activeOpacity={0.8}
           >
             <Send size={14} color="#111827" />

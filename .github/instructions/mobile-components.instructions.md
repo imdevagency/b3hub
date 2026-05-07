@@ -528,6 +528,7 @@ _No props interface — check source file._
 | `initials` | `string` | **required** |
 | `size` | `number` | optional |
 | `fallbackBg` | `string` | optional |
+| `fallbackColor` | `string` | optional |
 | `onPress` | `() => void` | optional |
 | `loading` | `boolean` | optional |
 
@@ -637,6 +638,13 @@ _No props interface — check source file._
 | `followCurrentPosition` | `boolean` | optional |
 
 **Exports:** `JobRouteMap`
+
+---
+
+#### `ListRow` — `@/components/ui/ListRow`
+_No props interface — check source file._
+
+**Exports:** `ListRow`
 
 ---
 
@@ -777,6 +785,13 @@ _No props interface — check source file._
 | `fullWidth` | `boolean` | optional |
 
 **Exports:** `TextInputField`
+
+---
+
+#### `TileGrid` — `@/components/ui/TileGrid`
+_No props interface — check source file._
+
+**Exports:** `COLS`, `H_PAD`, `GAP`, `TILE_W`, `TileGrid`
 
 ---
 

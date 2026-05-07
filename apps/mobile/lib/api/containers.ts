@@ -27,6 +27,27 @@ export interface DisposalQuoteResult {
   wasteType: WasteType;
 }
 
+export interface BuybackQuoteCenterResult {
+  centerId: string;
+  name: string;
+  address: string;
+  city: string;
+  licensed: boolean;
+  certifications: string[];
+  distanceKm: number | null;
+  /** EUR per tonne the center pays to the buyer */
+  buybackPricePerTonne: number;
+  /** Total payout amount for the given weight */
+  totalPayoutEur: number;
+  centerNotes: string | null;
+}
+
+export interface BuybackQuoteResult {
+  data: BuybackQuoteCenterResult[];
+  weightKg: number;
+  wasteType: WasteType;
+}
+
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 export type ContainerType = 'SKIP' | 'ROLL_OFF' | 'COMPACTOR' | 'HOOKLOADER' | 'FLATBED';
@@ -182,6 +203,22 @@ export const containersApi = {
       if (params.lat != null) q.set('lat', String(params.lat));
       if (params.lng != null) q.set('lng', String(params.lng));
       return apiFetch<DisposalQuoteResult>(`/recycling-centers/disposal-quote?${q.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+
+    /** Get buyback quotes — centers that will PAY the buyer for their scrap material */
+    getBuybackQuote: (
+      params: { wasteType: WasteType; weightKg: number; lat?: number; lng?: number },
+      token: string,
+    ) => {
+      const q = new URLSearchParams({
+        wasteType: params.wasteType,
+        weightKg: String(params.weightKg),
+      });
+      if (params.lat != null) q.set('lat', String(params.lat));
+      if (params.lng != null) q.set('lng', String(params.lng));
+      return apiFetch<BuybackQuoteResult>(`/recycling-centers/buyback-quote?${q.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     },

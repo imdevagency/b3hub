@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Switch,
   Linking,
   Alert,
   ActivityIndicator,
@@ -15,14 +14,10 @@ import { useRouter } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
 import { t } from '@/lib/translations';
 import {
-  Bell,
   Globe,
-  HelpCircle,
-  Info,
   Lock,
   LogOut,
   Shield,
-  KeyRound,
   ChevronRight,
   Trash2,
   Calendar,
@@ -80,7 +75,7 @@ function LinkRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout, user, token } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const fallbackHome = user?.canTransport
     ? '/(driver)/home'
     : user?.canSell
@@ -155,18 +150,11 @@ export default function SettingsScreen() {
           <LinkRow
             icon={<Globe size={24} color="#4b5563" />}
             label="Valoda / Язык"
+            description={language === 'lv' ? 'Latviešu' : 'Русский'}
             onPress={() => {
               haptics.light();
-              language === 'lv' ? setLanguage('ru') : setLanguage('lv');
+              router.push('/language');
             }}
-            rightSlot={
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.langOpt, language === 'lv' && styles.langOptActive]}>LV</Text>
-                <Text style={{ color: '#d1d5db' }}>|</Text>
-                <Text style={[styles.langOpt, language === 'ru' && styles.langOptActive]}>RU</Text>
-                <ChevronRight size={20} color="#9ca3af" />
-              </View>
-            }
           />
 
           <LinkRow
@@ -311,14 +299,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#f3f4f6',
     marginLeft: 64, // 24 + 24 + 16
-  },
-  langOpt: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-    color: '#9ca3af',
-  },
-  langOptActive: {
-    color: '#111827',
   },
   guestSignInPrompt: {
     marginHorizontal: 24,

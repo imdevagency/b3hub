@@ -138,6 +138,7 @@ export class OrdersController {
     @Query('limit') limit: string = '20',
     @Query('skip') skip: string = '0',
     @Query('updatedSince') updatedSince?: string,
+    @Query('sellerView') sellerView?: string,
   ) {
     if (
       status !== undefined &&
@@ -155,6 +156,7 @@ export class OrdersController {
       limitNum,
       skipNum,
       updatedSince,
+      sellerView === 'true',
     );
   }
 

@@ -69,7 +69,7 @@ export function ToiletCabinWizard({ mode }: Props) {
 
   // Step 3 — delivery
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [deliveryWindow, setDeliveryWindow] = useState('');
+  const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM' | ''>('');
   const [contactName, setContactName] = useState(
     mode === 'dashboard' && user
       ? `${(user as any).firstName ?? ''} ${(user as any).lastName ?? ''}`.trim()
@@ -343,18 +343,24 @@ export function ToiletCabinWizard({ mode }: Props) {
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Piegādes laiks</label>
             <div className="flex gap-2">
-              {(['Rīts (8–13)', 'Pēcpusdiena (13–18)', 'Jebkurā'] as const).map((w) => (
+              {(
+                [
+                  { value: 'ANY', label: 'Jebkurā laikā' },
+                  { value: 'AM', label: 'Rīts (8–12)' },
+                  { value: 'PM', label: 'Pēcpusdiena (12–17)' },
+                ] as const
+              ).map(({ value, label }) => (
                 <button
-                  key={w}
+                  key={value}
                   type="button"
-                  onClick={() => setDeliveryWindow(deliveryWindow === w ? '' : w)}
+                  onClick={() => setDeliveryWindow(deliveryWindow === value ? '' : value)}
                   className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-                    deliveryWindow === w
+                    deliveryWindow === value
                       ? 'border-foreground bg-foreground text-background'
                       : 'border-border text-muted-foreground hover:border-foreground/40'
                   }`}
                 >
-                  {w}
+                  {label}
                 </button>
               ))}
             </div>

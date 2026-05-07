@@ -1,216 +1,127 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { TileGrid, TileItem, H_PAD } from '@/components/ui/TileGrid';
+import { ListRow } from '@/components/ui/ListRow';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
-import { RoleSheet } from '@/components/ui/RoleSheet';
-import { haptics } from '@/lib/haptics';
 import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { colors } from '@/lib/theme';
 import {
   User,
+  FileText,
+  MessageCircle,
   Bell,
   Settings,
   HelpCircle,
-  ChevronRight,
   LogOut,
   Building2,
-  Recycle,
-  ArrowUpDown,
+  Users,
 } from 'lucide-react-native';
-
-function ListRow({
-  icon: Icon,
-  label,
-  onPress,
-  isDestructive = false,
-  last = false,
-}: {
-  icon: React.ComponentType<{ size: number; color: string }>;
-  label: string;
-  onPress: () => void;
-  isDestructive?: boolean;
-  last?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      style={[ls.row, last && ls.rowLast]}
-      activeOpacity={0.8}
-      onPress={() => {
-        haptics.light();
-        onPress();
-      }}
-    >
-      <View style={ls.rowLeft}>
-        <Icon size={18} color={isDestructive ? colors.dangerText : colors.textSecondary} />
-        <Text style={[ls.rowLabel, isDestructive && { color: colors.dangerText }]}>{label}</Text>
-      </View>
-      <ChevronRight size={16} color={colors.textMuted} />
-    </TouchableOpacity>
-  );
-}
 
 export default function RecyclerMoreScreen() {
   const { user } = useAuth();
-  const { isMultiRole } = useMode();
+  useMode();
   const router = useRouter();
-  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   const handleLogout = useLogoutConfirm();
 
+  const canManageTeam =
+    user?.companyRole === 'OWNER' ||
+    user?.companyRole === 'MANAGER' ||
+    (user?.permManageTeam ?? false);
+
+  const mainTiles: TileItem[] = [
+    { icon: User, label: 'Profils', onPress: () => router.push('/(recycler)/profile') },
+    { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(recycler)/documents') },
+    { icon: MessageCircle, label: 'Ziņojumi', onPress: () => router.push('/messages') },
+    { icon: Bell, label: 'Paziņojumi', onPress: () => router.push('/notifications') },
+  ];
+
+  const settingsTiles: TileItem[] = [
+    { icon: Settings, label: 'Iestatījumi', onPress: () => router.push('/settings') },
+  ];
+
   return (
-    <ScreenContainer>
+    <ScreenContainer topInset={0} noAnimation>
       <ScreenHeader title="Vairāk" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={ls.scroll}>
-        {/* profile banner */}
-        <View style={ls.banner}>
-          <View style={ls.avatar}>
-            <Text style={ls.avatarText}>
-              {(user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')}
-            </Text>
-          </View>
-          <View style={ls.bannerInfo}>
-            <Text style={ls.bannerName}>
-              {user?.firstName} {user?.lastName}
-            </Text>
-            <Text style={ls.bannerRole}>Reciklēšanas operators</Text>
-            {user?.email && <Text style={ls.bannerEmail}>{user.email}</Text>}
-          </View>
-        </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+        {/* Main tiles */}
+        <TileGrid tiles={mainTiles} />
 
-        {/* nav section */}
-        <View style={ls.section}>
-          <Text style={ls.sectionLabel}>Konts</Text>
-          <View style={ls.card}>
-            <ListRow
-              icon={User}
-              label="Mans profils"
-              onPress={() => router.push('/(shared)/settings')}
-            />
-            <ListRow
-              icon={Building2}
-              label="Uzņēmums"
-              onPress={() => router.push('/(shared)/settings')}
-            />
-            <ListRow
-              icon={Recycle}
-              label="Reciklēšanas centrs"
-              onPress={() => router.push('/(shared)/settings')}
-              last
-            />
-          </View>
-        </View>
-
-        <View style={ls.section}>
-          <Text style={ls.sectionLabel}>Iestatījumi</Text>
-          <View style={ls.card}>
-            <ListRow
-              icon={Bell}
-              label="Paziņojumi"
-              onPress={() => router.push('/(shared)/notifications')}
-            />
-            <ListRow
-              icon={Settings}
-              label="Iestatījumi"
-              onPress={() => router.push('/(shared)/settings')}
-              last
-            />
-          </View>
-        </View>
-
-        <View style={ls.section}>
-          <Text style={ls.sectionLabel}>Atbalsts</Text>
-          <View style={ls.card}>
-            <ListRow
-              icon={HelpCircle}
-              label="Palīdzība"
-              onPress={() => router.push('/(shared)/help')}
-              last
-            />
-          </View>
-        </View>
-
-        {isMultiRole && (
-          <View style={ls.section}>
-            <Text style={ls.sectionLabel}>Loma</Text>
-            <View style={ls.card}>
+        {/* Company */}
+        {canManageTeam && (
+          <>
+            <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
+            <View style={s.listCard}>
               <ListRow
-                icon={ArrowUpDown}
-                label="Mainīt lomu"
-                onPress={() => setRoleSheetOpen(true)}
+                icon={Building2}
+                label="Uzņēmuma portāls"
+                onPress={() =>
+                  Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null)
+                }
+              />
+              <ListRow
+                icon={Users}
+                label="Komanda"
                 last
+                onPress={() =>
+                  Linking.openURL('https://b3hub.lv/dashboard/company/team').catch(() => null)
+                }
               />
             </View>
-          </View>
+          </>
         )}
 
-        <View style={ls.section}>
-          <View style={ls.card}>
-            <ListRow icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive last />
-          </View>
-        </View>
-      </ScrollView>
+        {/* Settings */}
+        <Text style={s.sectionLabel}>KONTS</Text>
+        <TileGrid tiles={settingsTiles} />
 
-      {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
+        {/* Help */}
+        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
+        <View style={s.listCard}>
+          <ListRow icon={HelpCircle} label="Palīdzība / BUJ" onPress={() => router.push('/help')} />
+          <ListRow
+            icon={MessageCircle}
+            label="Atbalsts"
+            last
+            onPress={() => router.push('/support-chat' as never)}
+          />
+        </View>
+
+        {/* Sign out */}
+        <View style={s.listCard}>
+          <ListRow icon={LogOut} label="Iziet" isDestructive last onPress={handleLogout} />
+        </View>
+
+        <View style={{ height: 32 }} />
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
-const ls = StyleSheet.create({
-  scroll: { padding: 16, paddingBottom: 40 },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    gap: 14,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.primaryMid,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  bannerInfo: { flex: 1, gap: 2 },
-  bannerName: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
-  bannerRole: { fontSize: 12, color: colors.primary, fontWeight: '500' },
-  bannerEmail: { fontSize: 12, color: colors.textMuted },
-  section: { marginBottom: 16 },
+const s = StyleSheet.create({
+  scroll: { paddingBottom: 32 },
+
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
     fontWeight: '600',
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 6,
-    paddingHorizontal: 4,
+    marginHorizontal: H_PAD + 4,
+    marginTop: 20,
+    marginBottom: 10,
   },
-  card: {
-    backgroundColor: '#fff',
+
+  listCard: {
+    backgroundColor: colors.bgCard,
+    marginHorizontal: H_PAD,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     overflow: 'hidden',
+    marginBottom: 8,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  rowLast: { borderBottomWidth: 0 },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rowLabel: { fontSize: 14, color: colors.textPrimary },
 });

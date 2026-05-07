@@ -55,7 +55,7 @@ Each row is a product feature domain.
 | **Recycling Centers / Disposal** | ✅ `recycling-centers/`                 | ✅ `/dashboard/recycling-centers`                                                                                                                                                                                             | ✅ `disposal/index`                                                                    | Waste disposal booking; mobile confirmation now uses context (job data preserved)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | **Projects**                     | ✅ Full CRUD + P&L (`/api/v1/projects`) | ✅ `/dashboard/buyer/projects` → `/dashboard/projects` (real list+create); `/[id]` → real detail+assign                                                                                                                       | ✅ `(buyer)/projects` list screen; `project/[id]` detail screen; `lib/api/projects.ts` | Fully wired end-to-end                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **Certificates**                 | (via documents)                         | ✅ `/dashboard/certificates`                                                                                                                                                                                                  | ✅ `(buyer)/certificates`                                                              | Web page added this session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| **Admin — Dashboard**            | ✅ `admin/`                             | ✅ `/dashboard/admin` (GMV KPI cards + monthly trend charts + revenue breakdown)                                                                                                                                              | 📵                                                                                     | `AdminSidebar` has a **2-scope switcher**: APP (marketplace) / Recycle (B3 Recycling). Active scope auto-detected from URL. Live badge counts (APP tab) every 30 s. Deploy with `NEXT_PUBLIC_APP_MODE=admin` for admin-only Vercel instance.                                                                                                                                                                                                                                                                                                                                                                      |
+| **Admin — Dashboard**            | ✅ `admin/`                             | ✅ `/dashboard/admin` (GMV KPI cards + monthly trend charts + revenue breakdown)                                                                                                                                              | 📵                                                                                     | Single admin scope managing all 4 market sides. Live badge counts every 30 s. Deploy with `NEXT_PUBLIC_APP_MODE=admin` for admin-only Vercel instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **Admin — Users**                | ✅ `admin/`                             | ✅ `/dashboard/admin/users`                                                                                                                                                                                                   | 📵                                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Admin — Companies**            | ✅ `admin/`                             | ✅ `/dashboard/admin/companies`                                                                                                                                                                                               | 📵                                                                                     | Verify, payout toggle, commission rate edit                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **Admin — Orders**               | ✅ `admin/`                             | ✅ `/dashboard/admin/orders`                                                                                                                                                                                                  | 📵                                                                                     | All orders, status filter, search                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -65,9 +65,8 @@ Each row is a product feature domain.
 | **Admin — Surcharges**           | ✅ `admin/`                             | ✅ `/dashboard/admin/surcharges`                                                                                                                                                                                              | 📵                                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Admin — SLA Monitor**          | ✅ `admin/`                             | ✅ `/dashboard/admin/sla`                                                                                                                                                                                                     | 📵                                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Admin — Materials**            | ✅ `admin/`                             | ✅ `/dashboard/admin/materials`                                                                                                                                                                                               | 📵                                                                                     | Toggle material active/inactive                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Admin — B3 Fields**            | ✅ `b3-fields/`                         | ✅ `/dashboard/admin/b3-fields`                                                                                                                                                                                               | 📵                                                                                     | Two-tier field model: (1) standard fields = materials pickup + waste drop-off (no licence); (2) B3 Recycling Gulbene = licensed facility. Fields modelled as `RecyclingCenter` with `licensed` flag.                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **B3 Recycling — Portal**        | ✅ `admin/` (b3-recycling endpoints)    | ✅ `/dashboard/b3-recycling` — overview, jobs, waste-log, certificates, apus                                                                                                                                                  | 📵                                                                                     | Internal portal for Gulbene licensed recycling facility. Inbound jobs, waste records, certificates, APUS reporting. Accessible via Recycle tab in AdminSidebar scope switcher.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **B3 Group — Overview**          | 📵                                      | ✅ `/dashboard/group`                                                                                                                                                                                                         | 📵                                                                                     | Cross-BU overview page. Accessible via Grupa tab in AdminSidebar scope switcher.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Admin — B3 Fields**            | ✅ `b3-fields/`                         | ✅ `/dashboard/admin/b3-fields`                                                                                                                                                                                               | 📵                                                                                     | B3 Field locations. Fields modelled as `RecyclingCenter` with `licensed` flag (licensed fields can process and certify construction waste).                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Admin — Recycling Portal**     | ✅ `admin/` (b3-recycling endpoints)    | ✅ `/dashboard/b3-recycling` — overview, jobs, waste-log, certificates, apus                                                                                                                                                  | 📵                                                                                     | Admin portal for managing licensed recycling facility operations: inbound jobs, waste records, certificates, APUS reporting.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | **Admin — Field Passes**         | ✅ `field-passes/`                      | ✅ `/dashboard/admin/field-passes`                                                                                                                                                                                            | 📵                                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Admin — Weighing Slips**       | ✅ `weighing-slips/`                    | ✅ `/dashboard/admin/weighing-slips`                                                                                                                                                                                          | 📵                                                                                     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Admin — Disputes**             | ✅ `disputes/`                          | ✅ `/dashboard/admin/disputes`                                                                                                                                                                                                | 📵                                                                                     | Live badge count (openDisputes) in AdminSidebar                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -228,6 +227,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - equipment
 - field-passes
 - framework-contracts
+- fuel
 - guest-orders
 - health
 - invoices
@@ -318,9 +318,12 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/broadcast
 - dashboard/(internal)/admin/catalog
 - dashboard/(internal)/admin/circular-flow
+- dashboard/(internal)/admin/cms
 - dashboard/(internal)/admin/companies
 - dashboard/(internal)/admin/companies/[id]
 - dashboard/(internal)/admin/config
+- dashboard/(internal)/admin/crm
+- dashboard/(internal)/admin/demand-gaps
 - dashboard/(internal)/admin/dispatch
 - dashboard/(internal)/admin/disputes
 - dashboard/(internal)/admin/documents
@@ -372,20 +375,13 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/b3-recycling/finances
 - dashboard/(internal)/b3-recycling/jobs
 - dashboard/(internal)/b3-recycling/waste-log
-- dashboard/(internal)/group
-- dashboard/(internal)/group/accounting
-- dashboard/(internal)/group/cms
-- dashboard/(internal)/group/crm
-- dashboard/(internal)/group/equipment
-- dashboard/(internal)/group/fleet
-- dashboard/(internal)/group/marketing
-- dashboard/(internal)/group/team
 - dashboard/(platform)/active
 - dashboard/(platform)/analytics
 - dashboard/(platform)/buyer
 - dashboard/(platform)/catalog
 - dashboard/(platform)/checkout
 - dashboard/(platform)/company
+- dashboard/(platform)/company/integrations
 - dashboard/(platform)/company/team
 - dashboard/(platform)/deliveries
 - dashboard/(platform)/disputes
@@ -415,6 +411,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/quote-requests/open
 - dashboard/(platform)/recycling
 - dashboard/(platform)/recycling-centers
+- dashboard/(platform)/recycling/apus
+- dashboard/(platform)/recycling/certificates
 - dashboard/(platform)/recycling/jobs
 - dashboard/(platform)/recycling/pricing
 - dashboard/(platform)/recycling/waste-records
@@ -422,6 +420,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/scorecard
 - dashboard/(platform)/skip-hire/fleet
 - dashboard/(platform)/supplier
+- dashboard/(platform)/supplier/loading-schedule
 - dashboard/(platform)/transport-history
 - dashboard/(platform)/transport-jobs/[id]
 - dashboard/(platform)/transporter
@@ -460,6 +459,8 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/(account)/saved-addresses
 - (buyer)/(account)/schedules
 - (buyer)/catalog
+- (buyer)/framework-contract/[id]
+- (buyer)/framework-contracts
 - (buyer)/home
 - (buyer)/messages
 - (buyer)/more
@@ -487,10 +488,12 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/toilet-cabins
 - (driver)/vehicles
 - (gate)/fields
+- (recycler)/documents
 - (recycler)/home
 - (recycler)/incoming
 - (recycler)/messages
 - (recycler)/more
+- (recycler)/profile
 - (recycler)/records
 - (seller)/billing-settings
 - (seller)/catalog
@@ -509,6 +512,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (shared)/delivery-proof
 - (shared)/gate-scan
 - (shared)/help
+- (shared)/language
 - (shared)/messages
 - (shared)/notification/[id]
 - (shared)/notifications
@@ -523,6 +527,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (wizards)/toilet-cabin/index
 - (wizards)/transport/confirmation
 - (wizards)/transport/index
+- (wizards)/utilization/index
 - index
 <!-- END GEN -->
 

@@ -29,19 +29,7 @@ Every feature, every B3 Field, and every integration should either increase the 
 
 ## B3 Group — Who We Are
 
-**B3 Group** is the parent company behind B3Hub. Three business units operate under the B3 brand:
-
-| Business unit       | What it does                                               | Status               |
-| ------------------- | ---------------------------------------------------------- | -------------------- |
-| **B3 Construction** | Subcontracting company, specialising in groundworks        | Operating            |
-| **B3 Recycling**    | Licensed construction waste recycling facility (Gulbene)   | Operating — licensed |
-| **B3Hub**           | Digital construction logistics marketplace (this platform) | Building             |
-
-All three are managed through a single unified admin dashboard, scoped by business unit. They are separate operations with their own customers, staff, and finances — but share the same platform infrastructure.
-
-**B3 Construction** is a groundworks subcontractor. The admin module is a purely internal project tracker — no client-facing portal. Construction projects can feed directly into B3Hub (ordering materials, transport) as a B2B buyer.
-
-**B3 Recycling** operates the Gulbene site, which holds a construction waste recycling licence. Customers book waste drop-offs online via the B3Hub platform. Other B3 Fields (non-Gulbene) can receive waste from clients but do not have a recycling licence — they are drop-off points only.
+**B3 Group** is the parent company behind B3Hub. B3Hub is the group's digital construction logistics marketplace — a single platform connecting four market sides on one transaction layer.
 
 ---
 
@@ -49,11 +37,12 @@ All three are managed through a single unified admin dashboard, scoped by busine
 
 B3Hub is a **construction logistics marketplace** for the Latvian and Baltic market.
 
-It connects three sides of the construction supply chain:
+It connects **four market sides**:
 
 - **Buyers** — construction companies, contractors, homeowners who need materials delivered or waste removed
 - **Sellers** — quarries, material suppliers who sell gravel, sand, concrete, soil, recycled materials
 - **Carriers** — trucking companies and independent drivers who execute deliveries
+- **Recyclers** — licensed waste processing facilities that accept, process, and certify construction waste
 
 The platform handles the **complete transaction lifecycle**: buyer places order → seller confirms loading → driver delivers → documents generated automatically → payment settled.
 
@@ -68,42 +57,23 @@ B3Hub serves **two customer segments on the same marketplace**:
 
 ## B3 Fields — Physical Fulfillment Network
 
-In addition to the digital marketplace, B3 Group operates **B3 Fields** — physical sites where customers can interact with materials and services directly.
+In addition to the digital marketplace, B3 Group operates **B3 Fields** — physical sites where customers can pick up materials or drop off construction waste.
 
-### Two-tier field model
-
-B3 Fields come in two types:
-
-#### Standard B3 Fields (materials pickup + waste drop-off)
+### What B3 Fields do
 
 - **Materials pickup** — customers buy materials on the platform and collect on-site (no delivery truck needed). Ideal for homeowners and small contractors with their own vehicle.
-- **Waste drop-off** — clients drive in and leave construction waste. No recycling licence; waste is received and logged but not processed on-site. Certificate of receipt issued.
+- **Waste drop-off** — clients drive in and leave construction waste. Waste is received, logged, and a receipt is issued.
 - **Trailer rental** — rent a trailer tied to a material pickup order for self-haul.
-
-#### B3 Recycling — Gulbene (licensed recycling facility)
-
-The Gulbene site holds a **construction waste recycling licence**. In addition to everything a standard field does:
-
-- Accepts and processes construction waste: concrete, soil, rubble, metals, wood
-- Generates legally required waste transfer certificates
-- Customers book waste drop-offs online via the B3Hub platform (public booking flow)
-- Admin tracks inbound jobs, waste volumes, and regulatory compliance
-
-The distinction matters for the data model: only Gulbene is a licensed `RecyclingCenter`. Other fields that receive waste are modelled as drop-off points with a `licensed: false` flag.
 
 ### How B3 Fields fit the platform
 
-B3 Fields are not standalone physical stores — every transaction at a B3 Field flows through the B3Hub platform. Payment, documents, and receipts are handled the same way as any other order. This keeps the data model consistent and every euro traceable.
+Every transaction at a B3 Field flows through the B3Hub platform. Payment, documents, and receipts are handled the same way as any other order.
 
 B3 Fields are modelled as **fulfillment locations** in the system:
 
 - Material orders: `fulfillmentType: PICKUP` at a B3 Field address
-- Waste disposal / recycling: B3 Field registered as a `RecyclingCenter` with `licensed` flag, physical address, and opening hours
+- Waste disposal: B3 Field registered as a `RecyclingCenter` with `licensed` flag, physical address, and opening hours
 - Trailer rental: attached to a B3Hub order (not available as a standalone rental)
-
-### Strategic value
-
-Physical centers create a **network of fulfillment nodes** that competitors cannot copy with software alone. They unlock the homeowner and micro-contractor segment — buyers who need half a tonne of gravel and have no need for a full delivery truck. The Gulbene recycling licence closes the loop: B3 Group can source materials, deliver them, and process the resulting waste — all on one platform.
 
 ---
 

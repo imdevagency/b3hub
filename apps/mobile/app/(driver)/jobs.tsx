@@ -982,20 +982,8 @@ export default function JobsScreen() {
         }
       />
 
-      {/* ── Earnings strip ────────────────────────────────── */}
-      <View style={styles.earningsStrip}>
-        {todayStats !== null ? (
-          <View style={styles.earningsStripInner}>
-            <Text style={styles.earningsStripAmount}>€{todayStats.earnings.toFixed(0)}</Text>
-            <Text style={styles.earningsStripLabel}>šodien · {todayStats.completed} paveikti</Text>
-          </View>
-        ) : (
-          <ActivityIndicator size="small" color="#111827" />
-        )}
-      </View>
-
-      {/* ── Avoid empty runs chip ──────────────────────────── */}
-      <View style={styles.avoidEmptyRow}>
+      {/* ── Quick filter + earnings row ───────────────────── */}
+      <View style={styles.quickFilterRow}>
         <TouchableOpacity
           style={[styles.avoidEmptyChip, avoidEmptyRuns && styles.avoidEmptyChipActive]}
           onPress={handleToggleAvoidEmptyRuns}
@@ -1005,27 +993,29 @@ export default function JobsScreen() {
           {returnTripsLoading ? (
             <ActivityIndicator size="small" color={avoidEmptyRuns ? '#fff' : '#111827'} />
           ) : (
-            <Truck size={14} color={avoidEmptyRuns ? '#fff' : '#374151'} />
+            <Truck size={13} color={avoidEmptyRuns ? '#fff' : '#374151'} />
           )}
           <Text
             style={[styles.avoidEmptyChipText, avoidEmptyRuns && styles.avoidEmptyChipTextActive]}
           >
             Tukšbrauciens
           </Text>
-          {avoidEmptyRuns && lastDeliveryCoords && (
-            <Text style={styles.avoidEmptyChipSub}>· {lastDeliveryCoords.city}</Text>
-          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.avoidEmptyChip, zonesOnly && styles.avoidEmptyChipActive]}
           onPress={() => setZonesOnly((v) => !v)}
           activeOpacity={0.75}
         >
-          <MapPin size={14} color={zonesOnly ? '#fff' : '#374151'} />
+          <MapPin size={13} color={zonesOnly ? '#fff' : '#374151'} />
           <Text style={[styles.avoidEmptyChipText, zonesOnly && styles.avoidEmptyChipTextActive]}>
-            Manas zonas
+            Zonas
           </Text>
         </TouchableOpacity>
+        {todayStats !== null && todayStats.earnings > 0 && (
+          <View style={styles.earningsPill}>
+            <Text style={styles.earningsPillText}>€{todayStats.earnings.toFixed(0)} šodien</Text>
+          </View>
+        )}
       </View>
 
       {/* ── Active filter pill ────────────────────────────── */}
@@ -1316,30 +1306,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
     borderWidth: 2,
     borderColor: colors.white,
-  },
-
-  // Earnings strip (below ScreenHeader)
-  earningsStrip: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    backgroundColor: colors.bgCard,
-  },
-  earningsStripInner: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  earningsStripAmount: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  earningsStripLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
   },
 
   scrollContent: { paddingBottom: 120, paddingHorizontal: 20, paddingTop: 8, gap: 16 },
@@ -1642,17 +1608,19 @@ const styles = StyleSheet.create({
   tourDoneBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 
   // ── Avoid empty runs chip ─────────────────────────────────────
-  avoidEmptyRow: {
+  quickFilterRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 6,
+    gap: 8,
   },
   avoidEmptyChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: colors.bgCard,
     borderWidth: 1,
@@ -1663,17 +1631,26 @@ const styles = StyleSheet.create({
     borderColor: '#166534',
   },
   avoidEmptyChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#374151',
   },
   avoidEmptyChipTextActive: {
     color: '#fff',
   },
-  avoidEmptyChipSub: {
+  earningsPill: {
+    marginLeft: 'auto' as any,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  earningsPillText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '500',
+    fontWeight: '700',
+    color: '#166534',
   },
 });
 

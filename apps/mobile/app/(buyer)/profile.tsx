@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { router } from 'expo-router';
 import { useToast } from '@/components/ui/Toast';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -20,6 +20,7 @@ import { LogOut, Trash2, ChevronRight, AlertCircle, ArrowUpDown } from 'lucide-r
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RoleSheet } from '@/components/ui/RoleSheet';
 import { useAvatarUpload } from '@/lib/use-avatar-upload';
 import { useLogoutConfirm } from '@/lib/use-logout-confirm';
@@ -39,6 +40,7 @@ function SectionHeader({ label }: { label: string }) {
 export default function ProfileScreen() {
   const { user, token, updateUser } = useAuth();
   const { mode, isMultiRole } = useMode();
+  const insets = useSafeAreaInsets();
   const [editOpen, setEditOpen] = useState(false);
   const [roleSheetOpen, setRoleSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -60,12 +62,6 @@ export default function ProfileScreen() {
   const toast = useToast();
 
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`;
-
-  const ROLE_THEME: Record<string, string> = {
-    BUYER: 'bg-red-50 text-red-700',
-    SUPPLIER: 'bg-emerald-50 text-emerald-700',
-    CARRIER: 'bg-blue-50 text-blue-700',
-  };
 
   const accountTypeLabel = user?.userType === 'ADMIN' ? 'Administrators' : getRoleName(user);
 
@@ -119,7 +115,10 @@ export default function ProfileScreen() {
   return (
     <ScreenContainer topInset={0} bg="#ffffff" noAnimation>
       <ScreenHeader title="Profils" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom + 16 }]}
+      >
         {/* Profile Identity Block — avatar tap = upload photo, text tap = edit name/phone */}
         <View style={styles.profileBlock}>
           <AvatarImage
@@ -378,7 +377,7 @@ function MenuItem({
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 80,
+    paddingBottom: 0, // overridden inline with dynamic insets + tab bar height
   },
   profileBlock: {
     backgroundColor: '#ffffff',
@@ -454,13 +453,5 @@ const styles = StyleSheet.create({
   },
   dangerLabel: {
     color: '#ef4444',
-  },
-  langOpt: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9ca3af',
-  },
-  langOptActive: {
-    color: '#111827',
   },
 });

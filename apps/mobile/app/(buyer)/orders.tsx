@@ -8,7 +8,6 @@ import {
   Package,
   Truck,
   FileText,
-  RotateCcw,
   Trash2,
   Search,
   X,
@@ -437,9 +436,7 @@ function UniversalRow({
       </View>
 
       <View className="items-end justify-start pt-1 ml-3">
-        <View className="w-8 h-8 rounded-full border border-gray-300 items-center justify-center active:bg-gray-100">
-          <RotateCcw size={16} color="#6b7280" />
-        </View>
+        <ChevronRight size={18} color="#9ca3af" />
       </View>
     </TouchableOpacity>
   );

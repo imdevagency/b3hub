@@ -52,6 +52,11 @@ export interface CreateDisposalOrderInput {
   /** Buyer-selected recycling centre override. When provided, the disposal job
    *  is routed to this centre instead of the nearest available one. */
   preferredRecyclingCenterId?: string;
+  /** B3 Field destination for utilization orders (waste drop-off at a B3 Field). */
+  destinationB3FieldId?: string;
+  /** Scrap buyback flow — set the agreed buyback price per tonne (€/t).
+   *  When provided: order total = €0, buyer receives payout based on this rate × weight. */
+  buybackPricePerTonne?: number;
 }
 
 export interface CreateTransportOrderInput {
@@ -308,6 +313,14 @@ export const ordersApi = {
       const res = await apiFetch<{ data: ApiOrder[]; pagination: any }>('/orders', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      return res.data || [];
+    },
+
+    sellerOrders: async (token: string): Promise<ApiOrder[]> => {
+      const res = await apiFetch<{ data: ApiOrder[]; pagination: any }>(
+        '/orders?sellerView=true&limit=100',
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
       return res.data || [];
     },
 

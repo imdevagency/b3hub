@@ -32,7 +32,7 @@ import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 
 // ── Types ─────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4;
 type Stop = { lat: number; lng: number };
 
 // ── Constants ─────────────────────────────────────────────────────
@@ -174,10 +174,10 @@ export default function TransportWizard() {
   const [notes, setNotes] = useState('');
   const [offeredRateText, setOfferedRateText] = useState('');
 
-  // ── Route (for step 4 summary) ────────────────────────────────
+  // ── Route (for step 3 summary) ────────────────────────────────
   const { route } = useRoute(
-    step >= 3 && pickupStop ? pickupStop : null,
-    step >= 3 && dropoffStop ? dropoffStop : null,
+    step >= 2 && pickupStop ? pickupStop : null,
+    step >= 2 && dropoffStop ? dropoffStop : null,
   );
 
   const currentVehicle = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle);
@@ -499,9 +499,9 @@ export default function TransportWizard() {
     ],
   );
 
-  const step3Valid = selectedVehicle !== null;
-  const step4Valid = !!selectedDay;
-  const step5Valid = !!siteContactName.trim() && !!siteContactPhone.trim();
+  const step2Valid = selectedVehicle !== null;
+  const step3Valid = !!selectedDay;
+  const step4Valid = !!siteContactName.trim() && !!siteContactPhone.trim();
 
   // Detect identical pickup/dropoff coordinates
   const sameAddress =
@@ -511,22 +511,21 @@ export default function TransportWizard() {
     pickupStop.lng === dropoffStop.lng;
 
   const ctaDisabled =
-    (step === 1 && !pickupPicked) ||
-    (step === 2 && (!dropoffPicked || sameAddress)) ||
+    (step === 1 && (!pickupPicked || !dropoffPicked || sameAddress)) ||
+    (step === 2 && !step2Valid) ||
     (step === 3 && !step3Valid) ||
     (step === 4 && !step4Valid) ||
-    (step === 5 && !step5Valid) ||
     submitting;
 
   const ctaLabel =
-    step === 5
+    step === 4
       ? currentVehiclePrice
         ? `Nosūtīt pieprasījumu${truckCount > 1 ? ` ${truckCount}×` : ''} — no €${currentVehiclePrice}`
         : 'Nosūtīt pieprasījumu'
       : 'Turpināt';
 
   const onCTA = useCallback(() => {
-    if (step === 5) {
+    if (step === 4) {
       if (!user) {
         setShowAuthGate(true);
         return;
@@ -539,11 +538,10 @@ export default function TransportWizard() {
   }, [step, user, handleSubmit]);
 
   const STEP_TITLES: Record<Step, string> = {
-    1: 'Kur paņemt kravu?',
-    2: 'Kur piegādāt?',
-    3: 'Izvēlies transportu',
-    4: 'Kad?',
-    5: 'Apstiprini pasūtījumu',
+    1: 'Maršruts',
+    2: 'Izvēlies transportu',
+    3: 'Kad?',
+    4: 'Apstiprini pasūtījumu',
   };
 
   // ── Guest success screen ──────────────────────────────────────────────────
@@ -563,7 +561,7 @@ export default function TransportWizard() {
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
-        totalSteps={5}
+        totalSteps={4}
         onBack={goBack}
         onClose={() => {
           if (router.canGoBack()) router.back();
@@ -575,7 +573,7 @@ export default function TransportWizard() {
         ctaLoading={submitting}
         stepKey={step}
       >
-        {/* ── Step 1: Pickup address ── */}
+        {/* ── Step 1: Route (pickup + dropoff combined) ── */}
         {step === 1 && (
           <ScrollView
             style={s.content}
@@ -583,15 +581,17 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Pickup */}
             <View style={{ paddingHorizontal: 20 }}>
+              <Text style={s.routeFieldLabel}>No</Text>
               <AddressField
                 value={pickupPicked}
                 onPick={handlePickupConfirm}
-                placeholder="Norādiet ielādes adresi"
+                placeholder="Ielādes adrese"
               />
             </View>
             {pickupPicked && (
-              <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+              <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
                 <TouchableOpacity
                   style={s.saveAddrRow}
                   onPress={() => setSavePickup((v) => !v)}
@@ -610,63 +610,25 @@ export default function TransportWizard() {
                 </TouchableOpacity>
               </View>
             )}
-          </ScrollView>
-        )}
 
-        {/* ── Step 2: Dropoff address ── */}
-        {step === 2 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {pickupPicked && (
-              <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View
-                    style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' }}
-                  />
-                  <Text style={{ fontSize: 13, color: colors.textMuted }} numberOfLines={1}>
-                    {pickupPicked.address.split(',')[0]}
-                  </Text>
-                </View>
-              </View>
-            )}
+            {/* Divider */}
+            <View style={s.routeDivider}>
+              <View style={s.routeDividerLine} />
+              <View style={s.routeDividerDot} />
+              <View style={s.routeDividerLine} />
+            </View>
+
+            {/* Dropoff */}
             <View style={{ paddingHorizontal: 20 }}>
+              <Text style={s.routeFieldLabel}>Uz</Text>
               <AddressField
                 value={dropoffPicked}
                 onPick={handleDropoffConfirm}
-                placeholder="Norādiet izkraušanas adresi"
+                placeholder="Izkraušanas adrese"
               />
             </View>
-            {sameAddress && (
-              <View
-                style={{
-                  marginHorizontal: 20,
-                  marginTop: 10,
-                  backgroundColor: '#fef2f2',
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderWidth: 1,
-                  borderColor: '#fecaca',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: '#dc2626',
-                    fontFamily: 'Inter_500Medium',
-                    fontWeight: '500',
-                  }}
-                >
-                  Izkraušanas adresei jāatšķiras no iekraušanas adreses.
-                </Text>
-              </View>
-            )}
             {dropoffPicked && (
-              <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+              <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
                 <TouchableOpacity
                   style={s.saveAddrRow}
                   onPress={() => setSaveDropoff((v) => !v)}
@@ -685,11 +647,30 @@ export default function TransportWizard() {
                 </TouchableOpacity>
               </View>
             )}
+
+            {sameAddress && (
+              <View
+                style={{
+                  marginHorizontal: 20,
+                  marginTop: 10,
+                  backgroundColor: '#fef2f2',
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderWidth: 1,
+                  borderColor: '#fecaca',
+                }}
+              >
+                <Text style={{ fontSize: 13, color: '#dc2626', fontWeight: '500' }}>
+                  Izkraušanas adresei jāatšķiras no iekraušanas adreses.
+                </Text>
+              </View>
+            )}
           </ScrollView>
         )}
 
-        {/* ── Step 3: Vehicle + Cargo ── */}
-        {step === 3 && (
+        {/* ── Step 2: Vehicle + Cargo ── */}
+        {step === 2 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -827,8 +808,8 @@ export default function TransportWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 4: Date + time window ── */}
-        {step === 4 && (
+        {/* ── Step 3: Date + time window ── */}
+        {step === 3 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -868,8 +849,8 @@ export default function TransportWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 5: Review + contact + confirm ── */}
-        {step === 5 && (
+        {/* ── Step 4: Review + contact + confirm ── */}
+        {step === 4 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -1369,4 +1350,27 @@ const s = StyleSheet.create({
     color: colors.textPrimary,
   },
   saveAddrSub: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
+  routeFieldLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  routeDivider: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    marginVertical: 12,
+  },
+  routeDividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
+  routeDividerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#d1d5db',
+    marginHorizontal: 10,
+  },
 });

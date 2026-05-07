@@ -94,6 +94,9 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
   const isEdit = !!initial;
   const [wasteType, setWasteType] = useState(initial?.wasteType ?? '');
   const [pricePerTonne, setPricePerTonne] = useState(String(initial?.pricePerTonne ?? ''));
+  const [buybackPricePerTonne, setBuybackPricePerTonne] = useState(
+    initial?.buybackPricePerTonne != null ? String(initial.buybackPricePerTonne) : '',
+  );
   const [minimumWeight, setMinimumWeight] = useState(String(initial?.minimumWeight ?? ''));
   const [minimumFee, setMinimumFee] = useState(String(initial?.minimumFee ?? ''));
   const [maximumWeight, setMaximumWeight] = useState(String(initial?.maximumWeight ?? ''));
@@ -107,6 +110,9 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
     if (open) {
       setWasteType(initial?.wasteType ?? '');
       setPricePerTonne(String(initial?.pricePerTonne ?? ''));
+      setBuybackPricePerTonne(
+        initial?.buybackPricePerTonne != null ? String(initial.buybackPricePerTonne) : '',
+      );
       setMinimumWeight(String(initial?.minimumWeight ?? ''));
       setMinimumFee(String(initial?.minimumFee ?? ''));
       setMaximumWeight(String(initial?.maximumWeight ?? ''));
@@ -134,6 +140,7 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
     const payload: UpsertPricingRulePayload = {
       wasteType,
       pricePerTonne: price,
+      buybackPricePerTonne: buybackPricePerTonne ? parseFloat(buybackPricePerTonne) || null : null,
       accepted,
       notes: notes.trim() || null,
       minimumWeight: minimumWeight ? parseFloat(minimumWeight) || null : null,
@@ -194,6 +201,24 @@ function RuleDialog({ open, onClose, onSave, initial, existingWasteTypes }: Rule
               value={pricePerTonne}
               onChange={(e) => setPricePerTonne(e.target.value)}
               placeholder="piem. 12.50"
+            />
+          </div>
+
+          {/* Buyback price */}
+          <div className="space-y-1.5">
+            <Label>
+              Atpirkšanas cena (EUR/t){' '}
+              <span className="text-muted-foreground font-normal text-xs ml-1">
+                — centrs maksā pircējam (metāllūžņi u.c.)
+              </span>
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={buybackPricePerTonne}
+              onChange={(e) => setBuybackPricePerTonne(e.target.value)}
+              placeholder="nav (atstājiet tukšu)"
             />
           </div>
 
@@ -316,7 +341,10 @@ function CenterPricingCard({ center, token }: { center: RecyclingCenter; token: 
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">{center.name}</CardTitle>
             {center.licensed && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0 border-green-500 text-green-700">
+              <Badge
+                variant="outline"
+                className="text-xs px-1.5 py-0 border-green-500 text-green-700"
+              >
                 VVD
               </Badge>
             )}
@@ -362,7 +390,8 @@ function CenterPricingCard({ center, token }: { center: RecyclingCenter; token: 
             <TableHeader>
               <TableRow>
                 <TableHead>Atkritumu veids</TableHead>
-                <TableHead className="text-right">EUR/t</TableHead>
+                <TableHead className="text-right">Utilizācijas maksa</TableHead>
+                <TableHead className="text-right">Atpirkšanas cena</TableHead>
                 <TableHead className="text-right">Min. svars</TableHead>
                 <TableHead className="text-right">Max. svars</TableHead>
                 <TableHead>Statuss</TableHead>
@@ -381,11 +410,20 @@ function CenterPricingCard({ center, token }: { center: RecyclingCenter; token: 
                     )}
                   </TableCell>
                   <TableCell className="text-right font-semibold text-sm">
-                    €{rule.pricePerTonne.toFixed(2)}
+                    €{rule.pricePerTonne.toFixed(2)}/t
                     {rule.minimumFee != null && (
                       <p className="text-xs text-muted-foreground font-normal">
                         min €{rule.minimumFee.toFixed(2)}
                       </p>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {rule.buybackPricePerTonne != null ? (
+                      <span className="font-semibold text-emerald-700">
+                        +€{rule.buybackPricePerTonne.toFixed(2)}/t
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground">

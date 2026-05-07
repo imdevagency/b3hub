@@ -99,6 +99,8 @@ function RecyclerLayoutContent() {
             tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
+        <Tabs.Screen name="profile" options={{ href: null }} />
+        <Tabs.Screen name="documents" options={{ href: null }} />
       </Tabs>
     </View>
   );

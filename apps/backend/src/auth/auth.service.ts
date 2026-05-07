@@ -384,7 +384,6 @@ export class AuthService {
     const modes: string[] = [];
     const isTransport = user.canTransport;
     const companyType = (user as any).company?.companyType as string | undefined;
-    const companyFeatures: string[] = (user as any).company?.features ?? [];
 
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
     const isPureTransportIndividual =
@@ -394,8 +393,6 @@ export class AuthService {
     // Generic BUYER mode follows as a secondary access level.
     if (companyType === 'RECYCLER' || (user as any).canRecycle)
       modes.push('RECYCLER');
-    if (companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
-      modes.push('CONSTRUCTION');
     if (user.userType === 'BUYER' && !isPureTransportIndividual)
       modes.push('BUYER');
     if (user.canSell) modes.push('SUPPLIER');

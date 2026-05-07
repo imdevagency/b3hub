@@ -801,6 +801,12 @@ model Order {
   // on construction sites. Collected in the wizard and stored for APUS reporting.
   bisNumber String?
 
+  // Scrap buyback — when true the buyer receives payment instead of paying disposal fee.
+  // buyerPayoutAmount is the agreed amount (based on buybackPricePerTonne × estimated weight)
+  // that the platform owes the buyer after collection is confirmed by the recycler.
+  isBuyback         Boolean @default(false)
+  buyerPayoutAmount Float?  // EUR; set when order is created with a fixed buyback quote
+
   // Buyer's internal purchase order reference (B2B procurement matching)
   poNumber  String?
 
@@ -1287,13 +1293,14 @@ model RecyclingCenterPricingRule {
   recyclingCenter   RecyclingCenter @relation(fields: [recyclingCenterId], references: [id], onDelete: Cascade)
   recyclingCenterId String
 
-  wasteType     WasteType
-  pricePerTonne Float // EUR per tonne (disposal fee charged to buyer)
-  minimumWeight Float? // minimum load in tonnes; if below → minimumFee applies
-  minimumFee    Float? // flat charge when load < minimumWeight
-  maximumWeight Float? // center won't accept loads heavier than this per booking
-  accepted      Boolean @default(true) // false = center does not accept this waste type
-  notes         String? // operator notes shown to buyer ("No ceramics mixed in")
+  wasteType            WasteType
+  pricePerTonne        Float  // EUR per tonne (disposal fee charged to buyer; 0 = free disposal)
+  buybackPricePerTonne Float? // EUR per tonne the center PAYS to the buyer (metal buyback, scrap); null = no buyback offered
+  minimumWeight        Float? // minimum load in tonnes; if below → minimumFee applies
+  minimumFee           Float? // flat charge when load < minimumWeight
+  maximumWeight        Float? // center won't accept loads heavier than this per booking
+  accepted             Boolean @default(true) // false = center does not accept this waste type
+  notes                String? // operator notes shown to buyer ("No ceramics mixed in")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

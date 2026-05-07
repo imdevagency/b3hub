@@ -6,8 +6,6 @@ import {
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  Pressable,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -18,10 +16,11 @@ import type { IncomingJob } from '@/lib/api';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useHeaderConfig } from '@/lib/header-context';
 import { colors } from '@/lib/theme';
 import { getRecyclerJobStatus } from '@/lib/status';
-import { Truck, Calendar, X, MapPin, FileText, XCircle } from 'lucide-react-native';
+import { Truck, Calendar, MapPin, FileText, XCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function JobCard({ job, onPress }: { job: IncomingJob; onPress: () => void }) {
@@ -180,13 +179,7 @@ export default function RecyclerIncomingScreen() {
       </ScrollView>
 
       {/* Job detail sheet */}
-      <Modal
-        visible={selectedJob !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedJob(null)}
-      >
-        <Pressable style={ls.backdrop} onPress={() => setSelectedJob(null)} />
+      <BottomSheet visible={selectedJob !== null} onClose={() => setSelectedJob(null)} scrollable>
         {selectedJob &&
           (() => {
             const meta = getRecyclerJobStatus(selectedJob.status);
@@ -200,16 +193,12 @@ export default function RecyclerIncomingScreen() {
                 })
               : null;
             return (
-              <View style={[ls.sheet, { paddingBottom: insets.bottom + 24 }]}>
-                <View style={ls.sheetHandle} />
+              <View style={{ paddingBottom: insets.bottom + 16 }}>
                 <View style={ls.sheetHeader}>
                   <Text style={ls.sheetId}>#{selectedJob.id.slice(-6).toUpperCase()}</Text>
                   <View style={[ls.badge, { backgroundColor: meta.bg }]}>
                     <Text style={[ls.badgeText, { color: meta.color }]}>{meta.label}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => setSelectedJob(null)} hitSlop={12}>
-                    <X size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
                 </View>
                 {selectedJob.requester && (
                   <View style={ls.row}>
@@ -266,7 +255,7 @@ export default function RecyclerIncomingScreen() {
               </View>
             );
           })()}
-      </Modal>
+      </BottomSheet>
     </ScreenContainer>
   );
 }
@@ -299,29 +288,6 @@ const ls = StyleSheet.create({
   rowText: { fontSize: 13, color: colors.textSecondary, flex: 1 },
   notes: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   // Detail sheet
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingTop: 12,
-  },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#d1d5db',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',

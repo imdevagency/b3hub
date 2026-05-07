@@ -49,6 +49,7 @@ export interface PricingRule {
   recyclingCenterId: string;
   wasteType: string;
   pricePerTonne: number;
+  buybackPricePerTonne: number | null;
   minimumWeight: number | null;
   minimumFee: number | null;
   maximumWeight: number | null;
@@ -61,6 +62,7 @@ export interface PricingRule {
 export interface UpsertPricingRulePayload {
   wasteType: string;
   pricePerTonne: number;
+  buybackPricePerTonne?: number | null;
   minimumWeight?: number | null;
   minimumFee?: number | null;
   maximumWeight?: number | null;

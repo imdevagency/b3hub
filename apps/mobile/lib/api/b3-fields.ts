@@ -21,6 +21,8 @@ export interface ApiMobileB3Field {
   openingHours: Record<string, { open: string; close: string } | null>;
   active: boolean;
   notes?: string | null;
+  /** Linked recycling centre (set when the field has a processing facility) */
+  recyclingCenter?: { id: string; name: string; acceptedWasteTypes: string[] } | null;
 }
 
 export interface ApiPickupSlotMobile {
