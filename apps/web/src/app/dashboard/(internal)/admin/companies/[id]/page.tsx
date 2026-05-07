@@ -17,7 +17,7 @@ import {
   ShoppingBag,
   DollarSign,
   HardHat,
-  Recycle,
+  RefreshCcw,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { adminGetCompanyById, adminUpdateCompany, type AdminCompanyDetail } from '@/lib/api/admin';
@@ -29,6 +29,23 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { fmtDate } from '@/lib/format';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -69,6 +86,8 @@ export default function AdminCompanyDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [commissionInput, setCommissionInput] = useState('');
   const [commissionEditing, setCommissionEditing] = useState(false);
+  const [reclassifyOpen, setReclassifyOpen] = useState(false);
+  const [reclassifyType, setReclassifyType] = useState('');
 
   const load = useCallback(async () => {
     if (!token || !id) return;
@@ -105,13 +124,15 @@ export default function AdminCompanyDetailPage() {
   async function toggleFeature(feature: string, enabled: boolean) {
     if (!token || !company) return;
     setSaving(true);
+    setError(null);
     try {
       const current: string[] = company.features ?? [];
       const next = enabled ? [...current, feature] : current.filter((f) => f !== feature);
       const updated = await adminUpdateCompany(company.id, { features: next }, token);
       setCompany((c) => (c ? { ...c, features: updated.features ?? next } : c));
-    } catch {
-      setError('Neizdevās saglabāt funkcionalitāti.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Nezināma kļūda';
+      setError(`Neizdevās saglabāt funkcionalitāti: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -131,6 +152,20 @@ export default function AdminCompanyDetailPage() {
       setCommissionEditing(false);
     } catch {
       setError('Neizdevās saglabāt komisiju.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function reclassifyCompany() {
+    if (!token || !company || !reclassifyType || reclassifyType === company.companyType) return;
+    setSaving(true);
+    try {
+      const updated = await adminUpdateCompany(company.id, { companyType: reclassifyType }, token);
+      setCompany((c) => (c ? { ...c, companyType: updated.companyType ?? reclassifyType } : c));
+      setReclassifyOpen(false);
+    } catch {
+      setError('Neizdevās mainīt uzņēmuma tipu.');
     } finally {
       setSaving(false);
     }
@@ -189,9 +224,21 @@ export default function AdminCompanyDetailPage() {
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
               Tips
             </p>
-            <Badge variant="secondary">
-              {COMPANY_TYPE_LABELS[company.companyType] ?? company.companyType}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {COMPANY_TYPE_LABELS[company.companyType] ?? company.companyType}
+              </Badge>
+              <button
+                onClick={() => {
+                  setReclassifyType(company.companyType);
+                  setReclassifyOpen(true);
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
+              >
+                <RefreshCcw className="h-3 w-3" />
+                Mainīt
+              </button>
+            </div>
           </div>
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
@@ -337,53 +384,29 @@ export default function AdminCompanyDetailPage() {
       </Card>
 
       {/* Feature flags */}
-      {['CONSTRUCTION', 'RECYCLER', 'HYBRID'].includes(company.companyType) && (
+      {['CONSTRUCTION', 'HYBRID'].includes(company.companyType) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">SaaS moļuļi</CardTitle>
+            <CardTitle className="text-base">SaaS moduļi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {['CONSTRUCTION', 'HYBRID'].includes(company.companyType) && (
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label
-                    htmlFor="feat-construction"
-                    className="font-medium flex items-center gap-2"
-                  >
-                    <HardHat className="h-4 w-4 text-blue-600" />
-                    Celtniecības vadība
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Projekti, DPR, darba laiks, apakšuzņēmēji, piedāvājumi
-                  </p>
-                </div>
-                <Switch
-                  id="feat-construction"
-                  checked={(company.features ?? []).includes('CONSTRUCTION_MANAGEMENT')}
-                  onCheckedChange={(v) => toggleFeature('CONSTRUCTION_MANAGEMENT', v)}
-                  disabled={saving}
-                />
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="feat-construction" className="font-medium flex items-center gap-2">
+                  <HardHat className="h-4 w-4 text-blue-600" />
+                  Celtniecības vadība
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Projekti, DPR, darba laiks, apakšuzņēmēji, piedāvājumi
+                </p>
               </div>
-            )}
-            {['RECYCLER', 'HYBRID'].includes(company.companyType) && (
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="feat-recycling" className="font-medium flex items-center gap-2">
-                    <Recycle className="h-4 w-4 text-emerald-600" />
-                    Reciklēšanas vadība
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    APUS ziņošana, atkritumu sertifikāti, pārstrādes ieraksti
-                  </p>
-                </div>
-                <Switch
-                  id="feat-recycling"
-                  checked={(company.features ?? []).includes('RECYCLING_MANAGEMENT')}
-                  onCheckedChange={(v) => toggleFeature('RECYCLING_MANAGEMENT', v)}
-                  disabled={saving}
-                />
-              </div>
-            )}
+              <Switch
+                id="feat-construction"
+                checked={(company.features ?? []).includes('CONSTRUCTION_MANAGEMENT')}
+                onCheckedChange={(v) => toggleFeature('CONSTRUCTION_MANAGEMENT', v)}
+                disabled={saving}
+              />
+            </div>
           </CardContent>
         </Card>
       )}
@@ -495,6 +518,44 @@ export default function AdminCompanyDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Reclassify company dialog */}
+      <AlertDialog open={reclassifyOpen} onOpenChange={setReclassifyOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mainīt uzņēmuma tipu</AlertDialogTitle>
+            <AlertDialogDescription>
+              Pašreizējais tips:{' '}
+              <strong>{COMPANY_TYPE_LABELS[company.companyType] ?? company.companyType}</strong>.
+              Mainot tipu, var tikt ietekmētas iespējotās SaaS funkcijas un lietotāju piekļuves
+              tiesības. Pārliecinieties, ka izmaiņas ir nepieciešamas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Select value={reclassifyType || company.companyType} onValueChange={setReclassifyType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Izvēlieties jauno tipu" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(COMPANY_TYPE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Atcelt</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={reclassifyCompany}
+              disabled={saving || reclassifyType === company.companyType}
+            >
+              Apstiprināt
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

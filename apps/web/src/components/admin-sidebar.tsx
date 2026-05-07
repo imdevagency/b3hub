@@ -17,7 +17,6 @@ import {
   BarChart2,
   BarChart3,
   BookOpen,
-  BookText,
   Box,
   Boxes,
   Building2,
@@ -29,7 +28,6 @@ import {
   Flag,
   FolderKanban,
   Gavel,
-  Globe2,
   HardHat,
   History,
   KeyRound,
@@ -41,7 +39,6 @@ import {
   MapPin,
   Megaphone,
   MessageSquare,
-  Navigation,
   Package,
   Percent,
   Receipt,
@@ -119,30 +116,6 @@ type Scope = 'b3hub';
 
 const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
   { id: 'b3hub', label: 'APP', href: '/dashboard/admin' },
-];
-
-// ─── B3 Group navigation (cross-BU overview) ────────────────────────────────
-
-const GROUP_NAV: NavSection[] = [
-  {
-    id: 'overview',
-    label: 'Pārskats',
-    items: [{ label: 'Grupas pārskats', href: '/dashboard/group', icon: Globe2 }],
-  },
-  {
-    id: 'shared',
-    label: 'Kopīgie resursi',
-    items: [
-      { label: 'Flote', href: '/dashboard/group/fleet', icon: Navigation },
-      { label: 'Tehnika', href: '/dashboard/group/equipment', icon: Wrench },
-      { label: 'Komanda', href: '/dashboard/group/team', icon: Users },
-    ],
-  },
-  {
-    id: 'finance',
-    label: 'Finanses',
-    items: [{ label: 'Grāmatvedība', href: '/dashboard/group/accounting', icon: BookText }],
-  },
 ];
 
 // ─── B3Hub navigation (marketplace admin) ────────────────────────────────────

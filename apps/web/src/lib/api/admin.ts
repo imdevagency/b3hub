@@ -389,7 +389,7 @@ export async function adminCreateCompany(
 
 export async function adminUpdateCompany(
   id: string,
-  data: Partial<{ verified: boolean; payoutEnabled: boolean; commissionRate: number; features: string[] }>,
+  data: Partial<{ verified: boolean; payoutEnabled: boolean; commissionRate: number; features: string[]; companyType: string }>,
   token: string,
 ): Promise<AdminCompany> {
   return apiFetch<AdminCompany>(`/admin/companies/${id}`, {

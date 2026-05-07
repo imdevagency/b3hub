@@ -6,6 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   adminGetCompanies,
@@ -486,7 +487,12 @@ export default function AdminCompaniesPage() {
                       <td className="px-4 py-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-900">{c.name}</p>
+                            <Link
+                              href={`/dashboard/admin/companies/${c.id}`}
+                              className="font-semibold text-gray-900 hover:text-blue-600 hover:underline"
+                            >
+                              {c.name}
+                            </Link>
                             {c.isFirstParty && (
                               <Badge className="gap-1 bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs">
                                 <Shield className="h-3 w-3" /> B3 Grupa

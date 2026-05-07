@@ -430,6 +430,11 @@ export class AdminService {
     adminId: string,
   ) {
     this.logger.log(`Admin ${adminId} creating company ${data.name} (${data.companyType})`);
+    const autoFeatures =
+      data.companyType === 'RECYCLER' || data.companyType === 'HYBRID'
+        ? ['RECYCLING_MANAGEMENT']
+        : [];
+    const features = [...new Set([...(data.features ?? []), ...autoFeatures])];
     return this.prisma.company.create({
       data: {
         name: data.name,
@@ -445,7 +450,7 @@ export class AdminService {
         postalCode: data.postalCode ?? '',
         country: data.country ?? 'LV',
         verified: data.verified ?? false,
-        features: { set: (data.features ?? []) as any[] },
+        features: { set: features as any[] },
       },
       select: {
         id: true,
@@ -473,6 +478,7 @@ export class AdminService {
       carrierCommissionRate?: number;
       payoutEnabled?: boolean;
       features?: string[];
+      companyType?: string;
     },
     adminId: string,
   ) {
@@ -489,14 +495,31 @@ export class AdminService {
     });
     if (!company) throw new NotFoundException('Company not found');
     this.logger.log(`Admin ${adminId} updated company ${id}`);
-    // Strip features from the Prisma update payload so we can set it separately
-    // (Prisma scalar-list assignment uses `set:`)
-    const { features, ...scalarData } = data;
+    // Strip features and companyType from the Prisma update payload so we can handle them separately
+    // (Prisma scalar-list assignment uses `set:`; companyType must be cast to its enum)
+    const { features, companyType, ...scalarData } = data;
+
+    // When reclassifying, auto-adjust RECYCLING_MANAGEMENT
+    let resolvedFeatures = features;
+    if (companyType !== undefined) {
+      const current: string[] = company.features ?? [];
+      const needsRecycling = companyType === 'RECYCLER' || companyType === 'HYBRID';
+      const base = resolvedFeatures ?? current;
+      if (needsRecycling && !base.includes('RECYCLING_MANAGEMENT')) {
+        resolvedFeatures = [...base, 'RECYCLING_MANAGEMENT'];
+      } else if (!needsRecycling) {
+        resolvedFeatures = (resolvedFeatures ?? current).filter(
+          (f) => f !== 'RECYCLING_MANAGEMENT',
+        );
+      }
+    }
+
     const result = await this.prisma.company.update({
       where: { id },
       data: {
         ...scalarData,
-        ...(features !== undefined ? { features: { set: features as any[] } } : {}),
+        ...(companyType !== undefined ? { companyType: companyType as any } : {}),
+        ...(resolvedFeatures !== undefined ? { features: { set: resolvedFeatures as any[] } } : {}),
       },
       select: {
         id: true,

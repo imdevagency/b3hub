@@ -1076,26 +1076,42 @@ export default function AdminUsersPage() {
                         />
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => toggleStatus(u)}
-                          disabled={updating === u.id + 'status' || u.userType === 'ADMIN'}
-                          title={u.userType === 'ADMIN' ? 'Nevar deaktivizēt adminu' : undefined}
-                          className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2.5 py-1 transition-colors ${
-                            u.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-red-100 text-red-700 hover:bg-red-200'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {u.status === 'ACTIVE' ? (
-                            <>
-                              <CheckCircle className="h-3 w-3" /> Aktīvs
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-3 w-3" /> {u.status}
-                            </>
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2 py-0.5 ${
+                              u.status === 'ACTIVE'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {u.status === 'ACTIVE' ? (
+                              <>
+                                <CheckCircle className="h-3 w-3" /> Aktīvs
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-3 w-3" /> Suspendēts
+                              </>
+                            )}
+                          </span>
+                          {u.userType !== 'ADMIN' && (
+                            <button
+                              onClick={() => toggleStatus(u)}
+                              disabled={updating === u.id + 'status'}
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors disabled:opacity-40 ${
+                                u.status === 'ACTIVE'
+                                  ? 'text-red-600 hover:bg-red-50'
+                                  : 'text-green-600 hover:bg-green-50'
+                              }`}
+                            >
+                              {updating === u.id + 'status'
+                                ? '...'
+                                : u.status === 'ACTIVE'
+                                  ? 'Suspendēt'
+                                  : 'Aktivizēt'}
+                            </button>
                           )}
-                        </button>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button

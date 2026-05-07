@@ -77,6 +77,7 @@ class UpdateCompanyDto {
   @IsOptional() @IsBoolean() payoutEnabled?: boolean;
   @IsOptional() @IsNumber() @Min(0) @Max(100) commissionRate?: number;
   @IsOptional() @IsArray() @IsString({ each: true }) features?: string[];
+  @IsOptional() @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID']) companyType?: string;
 }
 
 class AdminCreateCompanyDto {

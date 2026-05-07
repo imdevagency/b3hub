@@ -62,6 +62,7 @@ export * from './recycler';
 export * from './toilet-cabins';
 
 export * from './fuel';
+export * from './construction';
 
 // Re-export the helper and error class for consumers that need them directly
 
@@ -112,6 +113,7 @@ import { analyticsApi } from './analytics';
 import { toiletCabinsApi } from './toilet-cabins';
 
 import { fuelApi } from './fuel';
+import { constructionApi } from './construction';
 
 
 
@@ -234,4 +236,8 @@ export const api = {
   // ── Fuel price rates (public, no auth) ──────────────────────────────
 
   ...fuelApi,
+
+  // ── Construction ERP ─────────────────────────────────────────────────
+
+  construction: constructionApi,
 };
