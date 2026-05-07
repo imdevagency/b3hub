@@ -592,7 +592,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     : '?';
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" className="border-r border-gray-200" {...props}>
       {/* Brand */}
       <SidebarHeader>
         <SidebarMenu>

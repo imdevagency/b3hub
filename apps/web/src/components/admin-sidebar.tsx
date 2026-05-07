@@ -425,7 +425,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     badges.pendingApplications + badges.openDisputes + badges.openSupport + badges.openExceptions;
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" className="border-r border-gray-200" {...props}>
       {/* Brand + scope icon */}
       <SidebarHeader>
         <SidebarMenu>

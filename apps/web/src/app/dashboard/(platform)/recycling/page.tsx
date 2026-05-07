@@ -126,29 +126,69 @@ export default function RecyclingHomePage() {
     .slice(0, 3);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 space-y-10">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Sveiki, {user.firstName}!</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {user.company?.name ?? 'Jūsu uzņēmums'} — pārstrādes portāls
-        </p>
+    <div className="w-full h-full pb-20 space-y-10">
+      {/* HEADER SECTION */}
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+            Sveiki, {user.firstName}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+            {user.company?.name ?? 'Jūsu uzņēmums'} — pārstrādes portāls
+          </p>
+        </div>
+
+        {/* QUICK STATS STRIP */}
+        <div className="grid grid-cols-3 border border-gray-200 rounded-xl bg-white divide-x divide-gray-200 overflow-hidden">
+          <div className="px-5 py-4">
+            <QuickStat variant="minimal" label="Aktīvie darbi" value={n(activeJobs.length)} />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat
+              variant="minimal"
+              label="Pabeigti šomēnes"
+              value={n(completedThisMonth.length)}
+            />
+          </div>
+          <div className="px-5 py-4">
+            <QuickStat variant="minimal" label="Atkritumu rekordi" value={n(records.length)} />
+          </div>
+        </div>
       </div>
 
-      {/* Quick stats */}
-      {!loading && (
-        <div className="grid grid-cols-3 gap-3">
-          <QuickStat label="Aktīvie darbi" value={n(activeJobs.length)} />
-          <QuickStat label="Pabeigti šomēnes" value={n(completedThisMonth.length)} />
-          <QuickStat label="Atkritumu rekordi" value={n(records.length)} />
+      {/* MAIN BANNER ACTION */}
+      <Link
+        href="/dashboard/recycling/jobs"
+        className="block relative overflow-hidden rounded-xl bg-foreground text-background p-6 sm:p-8 transition-transform active:scale-[0.98] hover:shadow-lg"
+      >
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background/20 text-xs font-medium mb-3">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              {activeJobs.length > 0
+                ? `${activeJobs.length} aktīvi darbi`
+                : 'Izskati pieprasījumus'}
+            </div>
+            <h2 className="text-xl sm:text-2xl font-semibold">Ienākošie Darbi</h2>
+            <p className="text-background/70 text-sm mt-1">
+              Apstrādā transporta uzdevumus ar atkritumus uz jūsu centriem
+            </p>
+          </div>
+          <div className="h-12 w-12 rounded-full bg-background/10 flex items-center justify-center shrink-0">
+            <ArrowRight className="h-6 w-6 text-background" />
+          </div>
         </div>
-      )}
+        <div className="absolute -right-10 -top-10 w-48 h-48 bg-background/5 rounded-full blur-3xl pointer-events-none" />
+      </Link>
 
       {/* Recent jobs */}
       {!loading && recentJobs.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Pēdējie darbi
             </h2>
             <Link
@@ -158,11 +198,11 @@ export default function RecyclingHomePage() {
               Skatīt visus <ArrowRight className="size-3" />
             </Link>
           </div>
-          <div className="space-y-2">
+          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
             {recentJobs.map((job) => (
               <div
                 key={job.id}
-                className="flex items-center justify-between px-4 py-3 rounded-xl bg-muted/50"
+                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
@@ -199,12 +239,12 @@ export default function RecyclingHomePage() {
         </div>
       )}
 
-      {/* Quick actions */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Ātrās darbības
+      {/* QUICK ACTIONS */}
+      <div className="pt-4">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+          Ātrās Darbības
         </h2>
-        <div className="space-y-1">
+        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
           {ACTIONS.map((action) => (
             <ActionListItem
               key={action.href}
