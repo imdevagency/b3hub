@@ -21,6 +21,8 @@ import {
   Zap,
   FlameKindling,
   CircleDot,
+  Trees,
+  Package,
   Trophy,
   MapPin,
   CheckCircle2,
@@ -72,6 +74,20 @@ const MATERIAL_OPTIONS: MaterialOption[] = [
     hint: 'Satur metālu',
   },
   {
+    id: 'WOOD',
+    label: 'Koks / Biomasa',
+    desc: 'Tīrs kokmateriāls, dēļi, sijas, kokskaidas',
+    Icon: Trees,
+    hint: 'Biomasa',
+  },
+  {
+    id: 'PACKAGING_WASTE',
+    label: 'Iepakojums / Kartons',
+    desc: 'Kartona kastes, paletes, papīrs',
+    Icon: Package,
+    hint: 'Otrreizēji',
+  },
+  {
     id: 'OIL_WASTE',
     label: 'Eļļošanas atkritumi',
     desc: 'Motoreļļa, hidraulika, smērvielas',
@@ -88,6 +104,8 @@ const MATERIAL_OPTIONS: MaterialOption[] = [
 const MATERIAL_LABELS: Record<string, string> = {
   METAL: 'Metāls / Dzelzslūžņi',
   WEEE: 'Elektroatkritumi',
+  WOOD: 'Koks / Biomasa',
+  PACKAGING_WASTE: 'Iepakojums / Kartons',
   OIL_WASTE: 'Eļļošanas atkritumi',
   TIRES: 'Lietotas riepas',
 };
@@ -404,7 +422,8 @@ function StepMaterial({
     >
       <View style={s.payoutBanner}>
         <Text style={s.payoutBannerText}>
-          💶 Nododiet metāllūžņus un saņemiet samaksu no licencētiem pārstrādātājiem
+          💶 Nododiet otrreizējos materiālus — metālu, koku, kartonu — un saņemiet samaksu no
+          licencētiem pārstrādātājiem
         </Text>
       </View>
 

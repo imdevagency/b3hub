@@ -754,6 +754,57 @@ export default function DisposalWizard() {
             ))}
 
             <SectionLabel label="Aptuvenais svars *" style={{ marginTop: 20 }} />
+            {selectedWastes.length === 1 && selectedWastes[0] === 'METAL' && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#fef9c3',
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+                onPress={() => router.push('/scrap-buyback' as never)}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 18 }}>💰</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#92400e' }}>
+                    Metāls var nest peļņu!
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#a16207', marginTop: 2 }}>
+                    Izmantojiet Metāllūžņu atpirkšanu — saņemiet samaksu, nevis maksājiet par
+                    izvešanu →
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            {selectedWastes.includes('SOIL') && !selectedWastes.some((w) => w !== 'SOIL') && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#f0fdf4',
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+                onPress={() => router.push('/(buyer)/catalog' as never)}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 18 }}>🌱</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#166534' }}>
+                    Tīra grunts var būt pārdodama
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#15803d', marginTop: 2 }}>
+                    Z0/Z1 grunts tiek meklēta citiem projektiem. Pārdodiet katalogā →
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
             <TextInputField
               placeholder="Svars tonnās (piem. 5)"
               value={weightText}

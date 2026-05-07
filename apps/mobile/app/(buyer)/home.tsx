@@ -89,7 +89,7 @@ const SERVICES = [
     icon: Trash2,
     label: 'Utilizācija',
     sub: 'Būvgruži, zeme',
-    route: '/utilization',
+    route: '/disposal',
   },
   {
     id: 'scrap-buyback',
