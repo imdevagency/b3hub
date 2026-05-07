@@ -13,7 +13,6 @@ import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -33,106 +32,6 @@ import {
   type ApiWeighingSlip,
   type ApiFieldPass,
 } from '@/lib/api';
-
-// ─── Slip row ─────────────────────────────────────────────────────────────────
-
-function SlipRow({
-  slip,
-  onVoid,
-}: {
-  slip: ApiWeighingSlip;
-  onVoid: (s: ApiWeighingSlip) => void;
-}) {
-  const voided = Boolean(slip.voidedAt);
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex items-start gap-3 min-w-0">
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
-                voided ? 'bg-red-50 text-red-400' : 'bg-emerald-50 text-emerald-600'
-              }`}
-            >
-              <Scale className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm">{slip.slipNumber}</span>
-                {voided ? (
-                  <Badge variant="destructive" className="text-xs">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    Anulēts
-                  </Badge>
-                ) : (
-                  <Badge variant="default" className="text-xs bg-emerald-600">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Derīgs
-                  </Badge>
-                )}
-              </div>
-              {slip.fieldPass && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Caurlaide: {slip.fieldPass.passNumber} · {slip.fieldPass.vehiclePlate}
-                  {slip.fieldPass.driverName ? ` · ${slip.fieldPass.driverName}` : ''}
-                </p>
-              )}
-              {slip.operatorName && (
-                <p className="text-xs text-muted-foreground">
-                  Operators: {slip.operatorName}
-                  {slip.operatorCompany ? ` (${slip.operatorCompany})` : ''}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {!voided && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => onVoid(slip)}
-              >
-                <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                Anulēt
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Weight breakdown */}
-        <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-          <div className="rounded bg-muted px-2 py-1.5">
-            <p className="text-muted-foreground">Bruto</p>
-            <p className="font-semibold text-sm">{slip.grossTonnes.toFixed(3)} t</p>
-          </div>
-          <div className="rounded bg-muted px-2 py-1.5">
-            <p className="text-muted-foreground">Tara</p>
-            <p className="font-semibold text-sm">{slip.tareTonnes.toFixed(3)} t</p>
-          </div>
-          <div className="rounded bg-emerald-50 px-2 py-1.5">
-            <p className="text-emerald-600">Neto</p>
-            <p className="font-semibold text-sm text-emerald-700">{slip.netTonnes.toFixed(3)} t</p>
-          </div>
-        </div>
-
-        {/* Footer row */}
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-          <span>Reģistrēts: {fmtDate(slip.createdAt)}</span>
-          {slip.voidedAt && (
-            <span className="text-destructive">
-              Anulēts: {fmtDate(slip.voidedAt)}
-              {slip.voidedReason ? ` — ${slip.voidedReason}` : ''}
-            </span>
-          )}
-          {slip.notes && <span>Piezīme: {slip.notes}</span>}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 // ─── Create dialog ────────────────────────────────────────────────────────────
 
@@ -474,10 +373,128 @@ export default function AdminWeighingSlipsPage() {
           description="Reģistrējiet pirmo aktu, nospiežot pogu augšā."
         />
       ) : (
-        <div className="space-y-3">
-          {filtered.map((s) => (
-            <SlipRow key={s.id} slip={s} onVoid={setVoidSlip} />
-          ))}
+        <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Akts
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Caurlaide / Auto
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Operators
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Bruto (t)
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Tara (t)
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Neto (t)
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Datums
+                  </th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((s) => {
+                  const voided = Boolean(s.voidedAt);
+                  return (
+                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-gray-900 font-mono text-xs">
+                          {s.slipNumber}
+                        </p>
+                        {voided ? (
+                          <Badge variant="destructive" className="text-xs mt-1">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Anulēts
+                          </Badge>
+                        ) : (
+                          <Badge variant="default" className="text-xs bg-emerald-600 mt-1">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Derīgs
+                          </Badge>
+                        )}
+                        {s.notes && (
+                          <p className="text-xs text-muted-foreground italic mt-1 max-w-32 truncate">
+                            {s.notes}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {s.fieldPass ? (
+                          <>
+                            <p className="text-sm font-medium text-gray-900 font-mono">
+                              {s.fieldPass.passNumber}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {s.fieldPass.vehiclePlate}
+                              {s.fieldPass.driverName ? ` · ${s.fieldPass.driverName}` : ''}
+                            </p>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {s.operatorName ? (
+                          <>
+                            <p className="text-sm text-gray-900">{s.operatorName}</p>
+                            {s.operatorCompany && (
+                              <p className="text-xs text-muted-foreground">{s.operatorCompany}</p>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-sm">
+                        {s.grossTonnes.toFixed(3)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-sm">
+                        {s.tareTonnes.toFixed(3)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-mono text-sm font-semibold text-emerald-700">
+                          {s.netTonnes.toFixed(3)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                        {fmtDate(s.createdAt)}
+                        {s.voidedAt && (
+                          <p className="text-destructive">Anulēts: {fmtDate(s.voidedAt)}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {!voided && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setVoidSlip(s)}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Anulēt
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-2 border-t bg-muted/20 text-xs text-muted-foreground flex items-center justify-between">
+            <span>{filtered.length} akti</span>
+            <span className="font-semibold">Neto kopā: {totalNet.toFixed(3)} t</span>
+          </div>
         </div>
       )}
 

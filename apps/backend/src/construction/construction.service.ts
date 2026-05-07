@@ -16,6 +16,10 @@ import {
   ProjectStatus,
   DailyReportStatus,
   ClientInvoiceStatus,
+  EquipmentType,
+  EquipmentStatus,
+  BuContext,
+  ProjectSiteType,
   Prisma,
 } from '@prisma/client';
 
@@ -157,32 +161,6 @@ export class ConstructionService {
         ...(endDate ? { endDate: new Date(endDate) } : {}),
       },
     });
-  }
-
-  // ─── Project Documents ────────────────────────────────────────────────────────
-
-  async getProjectDocuments(projectId: string, companyId: string) {
-    await this.assertProjectOwnership(projectId, companyId);
-    return this.prisma.projectDocument.findMany({
-      where: { projectId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async createProjectDocument(
-    projectId: string,
-    companyId: string,
-    data: { title: string; fileUrl: string; documentType?: string },
-  ) {
-    await this.assertProjectOwnership(projectId, companyId);
-    return this.prisma.projectDocument.create({
-      data: { projectId, ...data },
-    });
-  }
-
-  async deleteProjectDocument(projectId: string, docId: string, companyId: string) {
-    await this.assertProjectOwnership(projectId, companyId);
-    await this.prisma.projectDocument.delete({ where: { id: docId } });
   }
 
   // ─── Budget Lines ─────────────────────────────────────────────────────────────
@@ -331,6 +309,19 @@ export class ConstructionService {
         ...rest,
         ...(status ? { status: status as DailyReportStatus } : {}),
       },
+    });
+  }
+
+  async approveDailyReport(id: string, companyId: string, approverId: string) {
+    const report = await this.prisma.dailyReport.findUnique({
+      where: { id },
+      select: { project: { select: { companyId: true } }, status: true },
+    });
+    if (!report) throw new NotFoundException('Report not found');
+    if (report.project.companyId !== companyId) throw new ForbiddenException('Access denied');
+    return this.prisma.dailyReport.update({
+      where: { id },
+      data: { status: DailyReportStatus.APPROVED, approvedById: approverId },
     });
   }
 
@@ -812,7 +803,7 @@ export class ConstructionService {
         contractValue: true,
         budgetAmount: true,
         status: true,
-        budgetLines: { select: { costCode: true, budgetAmount: true } },
+        budgetLines: { select: { costCode: true, amount: true } },
       },
     });
 
@@ -858,6 +849,106 @@ export class ConstructionService {
           : 0,
       })),
     };
+  }
+
+  // ─── Project Sites ────────────────────────────────────────────────────────────
+
+  async getProjectSites(projectId: string, companyId: string) {
+    await this.assertProjectOwnership(projectId, companyId);
+    return this.prisma.projectSite.findMany({
+      where: { projectId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async createProjectSite(
+    projectId: string,
+    companyId: string,
+    data: { label: string; address: string; lat?: number; lng?: number; type?: string; isDefault?: boolean },
+  ) {
+    await this.assertProjectOwnership(projectId, companyId);
+    const { type, ...rest } = data;
+    return this.prisma.projectSite.create({
+      data: {
+        projectId,
+        ...rest,
+        ...(type ? { type: type as ProjectSiteType } : {}),
+      },
+    });
+  }
+
+  async deleteProjectSite(siteId: string, projectId: string, companyId: string) {
+    await this.assertProjectOwnership(projectId, companyId);
+    const site = await this.prisma.projectSite.findUnique({
+      where: { id: siteId },
+      select: { projectId: true },
+    });
+    if (!site) throw new NotFoundException('Site not found');
+    if (site.projectId !== projectId) throw new ForbiddenException('Access denied');
+    await this.prisma.projectSite.delete({ where: { id: siteId } });
+  }
+
+  // ─── Equipment ────────────────────────────────────────────────────────────────
+
+  async getEquipment(params: { status?: string; page?: number; limit?: number } = {}) {
+    const { status, page = 1, limit = 100 } = params;
+    const skip = (page - 1) * limit;
+    const where: Prisma.ConstructionEquipmentWhereInput = {
+      buContext: BuContext.CONSTRUCTION,
+      ...(status ? { status: status as EquipmentStatus } : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.constructionEquipment.findMany({
+        where,
+        orderBy: [{ status: 'asc' }, { name: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.constructionEquipment.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  async createEquipment(data: {
+    name: string;
+    type: string;
+    licensePlate: string;
+    yearManufactured: number;
+    status?: string;
+    hourlyRate?: number;
+    assignedProject?: string;
+    notes?: string;
+  }) {
+    return this.prisma.constructionEquipment.create({
+      data: {
+        ...data,
+        type: data.type as EquipmentType,
+        status: (data.status as EquipmentStatus) ?? EquipmentStatus.IDLE,
+        buContext: BuContext.CONSTRUCTION,
+      },
+    });
+  }
+
+  async updateEquipment(
+    id: string,
+    data: Partial<{ name: string; status: string; hourlyRate: number; assignedProject: string; notes: string }>,
+  ) {
+    const eq = await this.prisma.constructionEquipment.findUnique({ where: { id }, select: { id: true } });
+    if (!eq) throw new NotFoundException('Equipment not found');
+    const { status, ...rest } = data;
+    return this.prisma.constructionEquipment.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(status ? { status: status as EquipmentStatus } : {}),
+      },
+    });
+  }
+
+  async deleteEquipment(id: string) {
+    const eq = await this.prisma.constructionEquipment.findUnique({ where: { id }, select: { id: true } });
+    if (!eq) throw new NotFoundException('Equipment not found');
+    await this.prisma.constructionEquipment.delete({ where: { id } });
   }
 
   // ─── Clients (unique client names from projects) ──────────────────────────────

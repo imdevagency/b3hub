@@ -8,7 +8,7 @@ import { apiFetch } from './common';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
-export type DailyReportStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+export type DailyReportStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED';
 export type ClientInvoiceStatus =
   | 'DRAFT'
   | 'ISSUED'
@@ -550,6 +550,121 @@ export async function getConstructionProfitability(
 
 export async function getConstructionClients(token: string): Promise<{ name: string }[]> {
   return apiFetch('/construction/clients', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Equipment ────────────────────────────────────────────────────────────────
+
+export type EquipmentType = 'EXCAVATOR' | 'DUMPER' | 'ROLLER' | 'COMPACTOR' | 'CRANE' | 'OTHER';
+export type EquipmentStatus = 'ACTIVE' | 'MAINTENANCE' | 'IDLE';
+
+export interface ConstructionEquipment {
+  id: string;
+  name: string;
+  type: EquipmentType;
+  licensePlate: string;
+  yearManufactured: number;
+  status: EquipmentStatus;
+  hourlyRate: number;
+  assignedProject?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export async function getConstructionEquipment(
+  token: string,
+  params: { status?: string; page?: number; limit?: number } = {},
+): Promise<Paginated<ConstructionEquipment>> {
+  const q = new URLSearchParams();
+  if (params.status) q.set('status', params.status);
+  if (params.page) q.set('page', String(params.page));
+  if (params.limit) q.set('limit', String(params.limit));
+  return apiFetch(`/construction/equipment?${q}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function createConstructionEquipment(
+  data: Omit<ConstructionEquipment, 'id' | 'createdAt'>,
+  token: string,
+): Promise<ConstructionEquipment> {
+  return apiFetch('/construction/equipment', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateConstructionEquipment(
+  id: string,
+  data: Partial<ConstructionEquipment>,
+  token: string,
+): Promise<ConstructionEquipment> {
+  return apiFetch(`/construction/equipment/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteConstructionEquipment(id: string, token: string): Promise<void> {
+  return apiFetch(`/construction/equipment/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Project Sites ─────────────────────────────────────────────────────────────
+
+export type ProjectSiteType = 'LOADING' | 'UNLOADING' | 'BOTH';
+
+export interface ProjectSite {
+  id: string;
+  projectId: string;
+  label: string;
+  address: string;
+  lat?: number | null;
+  lng?: number | null;
+  type: ProjectSiteType;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export async function getProjectSites(projectId: string, token: string): Promise<ProjectSite[]> {
+  return apiFetch(`/construction/projects/${projectId}/sites`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function createProjectSite(
+  projectId: string,
+  data: { label: string; address: string; lat?: number; lng?: number; type?: ProjectSiteType; isDefault?: boolean },
+  token: string,
+): Promise<ProjectSite> {
+  return apiFetch(`/construction/projects/${projectId}/sites`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteProjectSite(
+  projectId: string,
+  siteId: string,
+  token: string,
+): Promise<void> {
+  return apiFetch(`/construction/projects/${projectId}/sites/${siteId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── DPR Approve ──────────────────────────────────────────────────────────────
+
+export async function approveDailyReport(id: string, token: string): Promise<DailyReport> {
+  return apiFetch(`/construction/daily-reports/${id}/approve`, {
+    method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
   });
 }

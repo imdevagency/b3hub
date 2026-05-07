@@ -327,6 +327,12 @@ export class AdminController {
     return this.service.getSupplierPerformance();
   }
 
+  /** GET /admin/demand-gaps — unfulfilled RFQs + dormant supplier/carrier churn signals */
+  @Get('demand-gaps')
+  getDemandGaps() {
+    return this.service.getDemandGaps();
+  }
+
   /** GET /admin/surcharges — surcharges pending admin approval */
   @Get('surcharges')
   getPendingSurcharges() {

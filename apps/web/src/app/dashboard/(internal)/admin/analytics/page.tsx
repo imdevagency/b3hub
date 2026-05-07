@@ -179,6 +179,57 @@ export default function AdminAnalyticsPage() {
   const maxGmv = useMemo(() => Math.max(...trends.map((t) => t.gmv), 1), [trends]);
   const maxOrders = useMemo(() => Math.max(...trends.map((t) => t.orders), 1), [trends]);
 
+  // ── Demand forecast (simple linear projection from last 6 months) ────────────
+  const forecast = useMemo(() => {
+    const recent = trends.slice(-6);
+    if (recent.length < 2) return null;
+
+    function linProject(values: number[], n: number): number[] {
+      const m = values.length;
+      const xMean = (m - 1) / 2;
+      const yMean = values.reduce((a, b) => a + b, 0) / m;
+      const num = values.reduce((sum, y, i) => sum + (i - xMean) * (y - yMean), 0);
+      const den = values.reduce((sum, _, i) => sum + (i - xMean) ** 2, 0);
+      const b = den > 0 ? num / den : 0;
+      const a = yMean - b * xMean;
+      return Array.from({ length: n }, (_, i) => Math.max(0, Math.round(a + b * (m + i))));
+    }
+
+    const projGmv = linProject(
+      recent.map((t) => t.gmv),
+      3,
+    );
+    const projOrders = linProject(
+      recent.map((t) => t.orders),
+      3,
+    );
+
+    // Compute next 3 month keys
+    const last = recent[recent.length - 1].month;
+    const [yr, mo] = last.split('-').map(Number);
+    const futureMonths = Array.from({ length: 3 }, (_, i) => {
+      const d = new Date(yr, mo - 1 + i + 1, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+
+    return futureMonths.map((month, i) => ({
+      month,
+      gmv: projGmv[i],
+      orders: projOrders[i],
+      isForecast: true,
+    }));
+  }, [trends]);
+
+  const forecastMaxGmv = useMemo(() => {
+    if (!forecast) return maxGmv;
+    return Math.max(maxGmv, ...forecast.map((f) => f.gmv), 1);
+  }, [maxGmv, forecast]);
+
+  const forecastMaxOrders = useMemo(() => {
+    if (!forecast) return maxOrders;
+    return Math.max(maxOrders, ...forecast.map((f) => f.orders), 1);
+  }, [maxOrders, forecast]);
+
   const pipelineTotal = useMemo(
     () => Object.values(stats?.orderPipeline ?? {}).reduce((s, v) => s + v, 0),
     [stats],
@@ -297,6 +348,7 @@ export default function AdminAnalyticsPage() {
               <TabsTrigger value="revenue">Ieņēmumu sadalījums</TabsTrigger>
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="circular">Aprite ♻️</TabsTrigger>
+              <TabsTrigger value="forecast">Prognoze 📈</TabsTrigger>
             </TabsList>
 
             {/* ── GMV trends ── */}
@@ -646,6 +698,97 @@ export default function AdminAnalyticsPage() {
                   )}
                 </div>
               )}
+            </TabsContent>
+
+            {/* ── Demand Forecast ── */}
+            <TabsContent value="forecast" className="pt-4 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">
+                    GMV prognoze — nākamie 3 mēneši (lineārā ekstrapolācija no pēdējiem 6 mēnešiem)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {trends.length < 2 && (
+                    <p className="text-sm text-muted-foreground">
+                      Nepietiek datu prognozei (vajadzīgi vismaz 2 mēneši).
+                    </p>
+                  )}
+                  {/* Historical */}
+                  {trends.slice(-6).map((t) => (
+                    <HBar
+                      key={t.month}
+                      label={monthLabel(t.month)}
+                      value={t.gmv}
+                      max={forecastMaxGmv}
+                      formatValue={eur}
+                      color="bg-green-500"
+                    />
+                  ))}
+                  {/* Divider */}
+                  {forecast && forecast.length > 0 && (
+                    <div className="flex items-center gap-3 py-1">
+                      <span className="w-32 shrink-0 text-xs text-muted-foreground/60">
+                        Prognozētais
+                      </span>
+                      <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                    </div>
+                  )}
+                  {/* Forecast */}
+                  {forecast?.map((f) => (
+                    <HBar
+                      key={f.month}
+                      label={`${monthLabel(f.month)} *`}
+                      value={f.gmv}
+                      max={forecastMaxGmv}
+                      formatValue={eur}
+                      color="bg-blue-400"
+                    />
+                  ))}
+                  {forecast && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      * Prognoze balstīta uz lineāras tendences aprēķinu no pēdējiem 6 mēnešiem.
+                      Reālie rezultāti var atšķirties.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">
+                    Pasūtījumu skaita prognoze — nākamie 3 mēneši
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {trends.slice(-6).map((t) => (
+                    <HBar
+                      key={t.month}
+                      label={monthLabel(t.month)}
+                      value={t.orders}
+                      max={forecastMaxOrders}
+                      color="bg-blue-500"
+                    />
+                  ))}
+                  {forecast && forecast.length > 0 && (
+                    <div className="flex items-center gap-3 py-1">
+                      <span className="w-32 shrink-0 text-xs text-muted-foreground/60">
+                        Prognozētais
+                      </span>
+                      <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                    </div>
+                  )}
+                  {forecast?.map((f) => (
+                    <HBar
+                      key={f.month}
+                      label={`${monthLabel(f.month)} *`}
+                      value={f.orders}
+                      max={forecastMaxOrders}
+                      color="bg-purple-400"
+                    />
+                  ))}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </>

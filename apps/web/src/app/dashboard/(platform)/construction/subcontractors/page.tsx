@@ -47,8 +47,7 @@ import { Switch } from '@/components/ui/switch';
 import { Briefcase, Plus, RefreshCw, MoreHorizontal } from 'lucide-react';
 
 export default function SubcontractorsPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
 
   const [subs, setSubs] = useState<ConstructionSubcontractor[]>([]);
   const [loading, setLoading] = useState(true);

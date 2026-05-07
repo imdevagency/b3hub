@@ -37,8 +37,7 @@ function fmtPct(n: number) {
 }
 
 export default function ProfitabilityPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
 
   const [projects, setProjects] = useState<ProfitabilityProject[]>([]);
   const [loading, setLoading] = useState(true);

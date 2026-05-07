@@ -145,44 +145,74 @@ export default function AdminDisputesPage() {
           <p className="text-sm text-muted-foreground">Nav sūdzību šajā kategorijā</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => setSelected(d)}
-              className="w-full text-left rounded-2xl border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getDisputeStatusColor(d.status)}`}
-                    >
-                      {DISPUTE_STATUS_LABELS[d.status]}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
+        <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Pasūtījums
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Iemesls
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Iesniedzējs
+                  </th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Statuss
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Datums
+                  </th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((d) => (
+                  <tr
+                    key={d.id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => setSelected(d)}
+                  >
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-gray-900">#{d.order.orderNumber}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-40">
+                        {d.order.deliveryAddress}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
                       {DISPUTE_REASON_LABELS[d.reason]}
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold truncate">
-                    Pasūtījums #{d.order.orderNumber}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {d.raisedBy.firstName} {d.raisedBy.lastName} · {d.order.deliveryAddress}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                    {d.description}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(d.createdAt).toLocaleDateString('lv-LV')}
-                  </span>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </div>
-              </div>
-            </button>
-          ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-gray-900">
+                        {d.raisedBy.firstName} {d.raisedBy.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground line-clamp-1 max-w-48">
+                        {d.description}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getDisputeStatusColor(d.status)}`}
+                      >
+                        {DISPUTE_STATUS_LABELS[d.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                      {new Date(d.createdAt).toLocaleDateString('lv-LV')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-2 border-t bg-muted/20 text-xs text-muted-foreground">
+            {filtered.length} sūdzības
+          </div>
         </div>
       )}
 

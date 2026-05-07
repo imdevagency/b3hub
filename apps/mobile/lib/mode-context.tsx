@@ -18,17 +18,12 @@ function defaultModeForUser(
     canTransport: boolean;
     canRecycle?: boolean;
     isCompany: boolean;
-    companyFeatures?: string[];
-    company?: { companyType?: string };
+    company?: { companyType?: string; features?: string[] };
   } | null,
 ): AppMode {
   if (!user) return 'BUYER';
   if (user.canRecycle && !user.canSell && !user.canTransport) return 'RECYCLER';
-  if (
-    user.company?.companyType === 'CONSTRUCTION' &&
-    (user.companyFeatures ?? []).includes('CONSTRUCTION_MANAGEMENT')
-  )
-    return 'CONSTRUCTION';
+  if ((user.company?.features ?? []).includes('CONSTRUCTION_MANAGEMENT')) return 'CONSTRUCTION';
   if (user.canTransport && !user.canSell) return 'CARRIER';
   if (user.canSell && !user.canTransport) return 'SUPPLIER';
   return 'BUYER';
@@ -48,15 +43,14 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const availableModes = useMemo<AppMode[]>(() => {
     const modes: AppMode[] = [];
-    const companyFeatures: string[] = (user as any)?.companyFeatures ?? [];
+    const companyFeatures: string[] = (user as any)?.company?.features ?? [];
     const companyType: string | undefined = (user as any)?.company?.companyType;
     const isPureTransportIndividual = !!(user?.canTransport && !user?.canSell && !user?.isCompany);
     if (!isPureTransportIndividual) modes.push('BUYER');
     if (user?.canSell) modes.push('SUPPLIER');
     if (user?.canTransport) modes.push('CARRIER');
     if ((user as any)?.canRecycle) modes.push('RECYCLER');
-    if (companyType === 'CONSTRUCTION' && companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
-      modes.push('CONSTRUCTION');
+    if (companyFeatures.includes('CONSTRUCTION_MANAGEMENT')) modes.push('CONSTRUCTION');
     if (modes.length === 0) modes.push('BUYER'); // fallback
     return modes;
   }, [
@@ -64,7 +58,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     user?.canTransport,
     (user as any)?.canRecycle,
     user?.isCompany,
-    (user as any)?.companyFeatures,
+    (user as any)?.company?.features,
     (user as any)?.company?.companyType,
   ]);
 
@@ -80,7 +74,6 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
               canTransport: user.canTransport,
               canRecycle: (user as any).canRecycle,
               isCompany: user.isCompany,
-              companyFeatures: (user as any).companyFeatures,
               company: (user as any).company,
             }
           : null,

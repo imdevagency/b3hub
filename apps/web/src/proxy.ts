@@ -16,15 +16,11 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-pa
 // All routes that are only accessible to ADMIN users (internal staff dashboards)
 const INTERNAL_PATH_PREFIXES = [
   '/dashboard/admin',
-  '/dashboard/b3-construction',
   '/dashboard/b3-recycling',
-  '/dashboard/group',
 ];
 const ADMIN_ALLOWED_PREFIXES = [
   '/dashboard/admin',
-  '/dashboard/group',
   '/dashboard/b3-recycling',
-  '/dashboard/b3-construction',
   '/dashboard/settings',
   '/dashboard/notifications',
   '/dashboard/chat',
@@ -57,16 +53,14 @@ export default function proxy(request: NextRequest) {
   // ── APP_MODE: admin deployment route guard ────────────────────────────────
   if (IS_ADMIN_APP) {
     if (pathname === '/' || pathname === '/dashboard') {
-      return NextResponse.redirect(new URL('/dashboard/group', request.url));
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
     }
     if (pathname.startsWith('/register')) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     const isPermitted =
       pathname.startsWith('/dashboard/admin') ||
-      pathname.startsWith('/dashboard/group') ||
       pathname.startsWith('/dashboard/b3-recycling') ||
-      pathname.startsWith('/dashboard/b3-construction') ||
       pathname.startsWith('/dashboard/settings') ||
       pathname.startsWith('/dashboard/notifications') ||
       pathname.startsWith('/dashboard/chat') ||
@@ -75,12 +69,11 @@ export default function proxy(request: NextRequest) {
       pathname.startsWith('/reset-password') ||
       pathname.startsWith('/api/');
     if (pathname.startsWith('/dashboard') && !isPermitted) {
-      return NextResponse.redirect(new URL('/dashboard/group', request.url));
+      return NextResponse.redirect(new URL('/dashboard/admin', request.url));
     }
   } else {
     // ── APP_MODE: marketplace deployment — block internal routes for non-admins.
-    // This covers /dashboard/admin, /dashboard/b3-construction,
-    // /dashboard/b3-recycling, and /dashboard/group.
+    // This covers /dashboard/admin and /dashboard/b3-recycling.
     // Admins can still access them so local dev (no APP_MODE set) works.
     if (INTERNAL_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
       const token = request.cookies.get('b3hub_token')?.value;
@@ -131,7 +124,7 @@ export default function proxy(request: NextRequest) {
     const payload = decodeJwtPayload(token);
     if (payload?.userType === 'ADMIN') {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard/group';
+      url.pathname = '/dashboard/admin';
       return NextResponse.redirect(url);
     }
   }

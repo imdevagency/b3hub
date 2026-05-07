@@ -574,6 +574,53 @@ export async function adminGetSupplierPerformance(
   });
 }
 
+// ─── Demand Gaps (unfulfilled demand + churn signals) ────────────────────────
+
+export interface AdminDemandGapsRfq {
+  id: string;
+  requestNumber: string;
+  materialCategory: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  deliveryCity: string;
+  status: string;
+  createdAt: string;
+  buyerName: string;
+}
+
+export interface AdminDormantSupplier {
+  id: string;
+  name: string;
+  activeListings: number;
+  lastOrderAt: string | null;
+  daysSinceLastOrder: number | null;
+}
+
+export interface AdminDormantCarrier {
+  id: string;
+  name: string;
+  lastJobAt: string | null;
+  daysSinceLastJob: number | null;
+}
+
+export interface AdminDemandGaps {
+  unfulfilledRfqs: AdminDemandGapsRfq[];
+  dormantSuppliers: AdminDormantSupplier[];
+  dormantCarriers: AdminDormantCarrier[];
+  summary: {
+    unfulfilledRfqCount: number;
+    dormantSupplierCount: number;
+    dormantCarrierCount: number;
+  };
+}
+
+export async function adminGetDemandGaps(token: string): Promise<AdminDemandGaps> {
+  return apiFetch<AdminDemandGaps>('/admin/demand-gaps', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // ─── Surcharge Approvals ──────────────────────────────────────────────────────
 
 export interface AdminSurcharge {

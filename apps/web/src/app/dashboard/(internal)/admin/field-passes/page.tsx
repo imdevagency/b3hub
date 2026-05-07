@@ -10,7 +10,6 @@ import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,89 +42,6 @@ const STATUS_META: Record<
   EXPIRED: { label: 'Beigusies', variant: 'secondary', icon: Clock },
   REVOKED: { label: 'Atcelta', variant: 'destructive', icon: XCircle },
 };
-
-// ─── Pass row ─────────────────────────────────────────────────────────────────
-
-function PassRow({ pass, onRevoke }: { pass: ApiFieldPass; onRevoke: (p: ApiFieldPass) => void }) {
-  const now = new Date();
-  const expired = pass.status === 'ACTIVE' && new Date(pass.validTo) < now;
-  const effectiveStatus: FieldPassStatus = expired ? 'EXPIRED' : pass.status;
-  const meta = STATUS_META[effectiveStatus];
-  const Icon = meta.icon;
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sky-100 text-sky-600">
-              <Ticket className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm">{pass.passNumber}</span>
-                <Badge variant={meta.variant} className="text-xs">
-                  <Icon className="h-3 w-3 mr-1" />
-                  {meta.label}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {pass.vehiclePlate}
-                {pass.driverName ? ` · ${pass.driverName}` : ''}
-              </p>
-              {pass.company && <p className="text-xs text-muted-foreground">{pass.company.name}</p>}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {pass.fileUrl && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={pass.fileUrl} target="_blank" rel="noopener noreferrer">
-                  PDF
-                </a>
-              </Button>
-            )}
-            {pass.status === 'ACTIVE' && !expired && (
-              <Button variant="destructive" size="sm" onClick={() => onRevoke(pass)}>
-                <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                Atcelt
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
-          <div>
-            <span className="font-medium text-foreground/70">No: </span>
-            {fmtDate(pass.validFrom)}
-          </div>
-          <div>
-            <span className="font-medium text-foreground/70">Līdz: </span>
-            {fmtDate(pass.validTo)}
-          </div>
-          {pass.wasteClassCode && (
-            <div>
-              <span className="font-medium text-foreground/70">Kods: </span>
-              {pass.wasteClassCode}
-            </div>
-          )}
-          {pass.unloadingPoint && (
-            <div>
-              <span className="font-medium text-foreground/70">Izkraušana: </span>
-              {pass.unloadingPoint}
-            </div>
-          )}
-          {pass.revokedReason && (
-            <div className="col-span-2 mt-1 pt-1.5 border-t text-destructive">
-              <span className="font-medium">Atcelšanas iemesls: </span>
-              {pass.revokedReason}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -180,6 +96,114 @@ export default function AdminFieldPassesPage() {
   const active = passes.filter((p) => p.status === 'ACTIVE' && new Date(p.validTo) >= new Date());
   const past = passes.filter((p) => p.status !== 'ACTIVE' || new Date(p.validTo) < new Date());
 
+  const renderTable = (rows: ApiFieldPass[], title: string) => (
+    <section>
+      <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        {title} ({rows.length})
+      </h2>
+      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  Caurlaide
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  Auto / Šoferis
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  Uzņēmums
+                </th>
+                <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  Statuss
+                </th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  No
+                </th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  Līdz
+                </th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                  Kods
+                </th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.map((pass) => {
+                const now = new Date();
+                const expired = pass.status === 'ACTIVE' && new Date(pass.validTo) < now;
+                const effectiveStatus: FieldPassStatus = expired ? 'EXPIRED' : pass.status;
+                const meta = STATUS_META[effectiveStatus];
+                const Icon = meta.icon;
+                return (
+                  <tr key={pass.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold font-mono text-xs text-gray-900">
+                        {pass.passNumber}
+                      </p>
+                      {pass.revokedReason && (
+                        <p className="text-xs text-destructive italic mt-0.5 max-w-40 truncate">
+                          {pass.revokedReason}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-gray-900">{pass.vehiclePlate}</p>
+                      {pass.driverName && (
+                        <p className="text-xs text-muted-foreground">{pass.driverName}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {pass.company?.name ?? <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge variant={meta.variant} className="text-xs">
+                        <Icon className="h-3 w-3 mr-1" />
+                        {meta.label}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                      {fmtDate(pass.validFrom)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                      {fmtDate(pass.validTo)}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
+                      {pass.wasteClassCode ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center gap-2 justify-end">
+                        {pass.fileUrl && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={pass.fileUrl} target="_blank" rel="noopener noreferrer">
+                              PDF
+                            </a>
+                          </Button>
+                        )}
+                        {pass.status === 'ACTIVE' && !expired && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setRevokeTarget(pass)}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Atcelt
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+
   return (
     <>
       <PageHeader
@@ -199,30 +223,8 @@ export default function AdminFieldPassesPage() {
         />
       ) : (
         <div className="space-y-6">
-          {active.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Aktīvās ({active.length})
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {active.map((p) => (
-                  <PassRow key={p.id} pass={p} onRevoke={setRevokeTarget} />
-                ))}
-              </div>
-            </section>
-          )}
-          {past.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Vēsture ({past.length})
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {past.map((p) => (
-                  <PassRow key={p.id} pass={p} onRevoke={setRevokeTarget} />
-                ))}
-              </div>
-            </section>
-          )}
+          {active.length > 0 && renderTable(active, 'Aktīvās')}
+          {past.length > 0 && renderTable(past, 'Vēsture')}
         </div>
       )}
 

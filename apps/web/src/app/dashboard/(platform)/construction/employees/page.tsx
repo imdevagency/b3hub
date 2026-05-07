@@ -46,8 +46,7 @@ import { Switch } from '@/components/ui/switch';
 import { Users, Plus, RefreshCw, MoreHorizontal } from 'lucide-react';
 
 export default function EmployeesPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
 
   const [employees, setEmployees] = useState<ConstructionEmployee[]>([]);
   const [loading, setLoading] = useState(true);

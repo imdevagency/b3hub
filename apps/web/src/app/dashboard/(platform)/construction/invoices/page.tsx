@@ -87,10 +87,9 @@ function fmtEur(n: number) {
 }
 
 function InvoicesContent() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = session?.access_token ?? '';
 
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [projects, setProjects] = useState<ConstructionProject[]>([]);

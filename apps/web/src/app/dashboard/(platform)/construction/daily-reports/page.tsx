@@ -65,10 +65,9 @@ function fmtEur(n: number) {
 }
 
 function DailyReportsContent() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = session?.access_token ?? '';
 
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [projects, setProjects] = useState<ConstructionProject[]>([]);

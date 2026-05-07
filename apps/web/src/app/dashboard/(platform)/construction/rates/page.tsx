@@ -85,8 +85,7 @@ function fmtEur(n: number) {
 }
 
 export default function RatesPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
   const { user } = useAuthCtx();
   const companyId = user?.company?.id;
 

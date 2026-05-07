@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/lib/auth-context';
 import { getSupplierLoadingSchedule, SupplierLoadingEntry } from '@/lib/api/orders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

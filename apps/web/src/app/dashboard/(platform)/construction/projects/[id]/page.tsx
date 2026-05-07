@@ -14,11 +14,16 @@ import {
   getDailyReports,
   getClientInvoices,
   getSubcontractorEngagements,
+  getProjectSites,
+  createProjectSite,
+  deleteProjectSite,
   type ConstructionProject,
   type ProjectStatus,
   type DailyReport,
   type ClientInvoice,
   type ProjectBudgetLine,
+  type ProjectSite,
+  type ProjectSiteType,
 } from '@/lib/api/construction';
 import { PageHeader } from '@/components/ui/page-header';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +38,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FolderKanban, ArrowLeft, ClipboardList, Receipt, TrendingUp, Users2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  FolderKanban,
+  ArrowLeft,
+  ClipboardList,
+  Receipt,
+  TrendingUp,
+  MapPin,
+  ShoppingCart,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { format } from 'date-fns';
 
 const STATUS_LABELS: Record<ProjectStatus, string> = {
@@ -64,34 +88,45 @@ function fmtEur(n: number) {
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
 
   const [project, setProject] = useState<ConstructionProject | null>(null);
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [budgetLines, setBudgetLines] = useState<ProjectBudgetLine[]>([]);
+  const [sites, setSites] = useState<ProjectSite[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [addSiteOpen, setAddSiteOpen] = useState(false);
+  const [savingSite, setSavingSite] = useState(false);
+  const [siteForm, setSiteForm] = useState({
+    label: '',
+    address: '',
+    type: 'BOTH' as ProjectSiteType,
+  });
 
   const load = useCallback(async () => {
     if (!token || !id) return;
     setLoading(true);
     try {
-      const [proj, reps, invs, bLines] = await Promise.all([
+      const [proj, reps, invs, bLines, projSites] = await Promise.all([
         getConstructionProjectById(id, token),
         getDailyReports(token, { projectId: id, limit: 10 }),
         getClientInvoices(token, { projectId: id }),
         getProjectBudgetLines(id, token),
+        getProjectSites(id, token),
       ]);
       setProject(proj);
       setReports(reps.data);
       setInvoices(invs.data);
       setBudgetLines(bLines);
+      setSites(projSites);
+    } catch {
+      router.replace('/dashboard/construction/projects');
     } finally {
       setLoading(false);
     }
-  }, [token, id]);
+  }, [token, id, router]);
 
   useEffect(() => {
     load();
@@ -110,6 +145,24 @@ export default function ProjectDetailPage() {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const handleAddSite = async () => {
+    if (!siteForm.label || !siteForm.address) return;
+    setSavingSite(true);
+    try {
+      const site = await createProjectSite(id, siteForm, token);
+      setSites((prev) => [...prev, site]);
+      setAddSiteOpen(false);
+      setSiteForm({ label: '', address: '', type: 'BOTH' });
+    } finally {
+      setSavingSite(false);
+    }
+  };
+
+  const handleDeleteSite = async (siteId: string) => {
+    await deleteProjectSite(id, siteId, token);
+    setSites((prev) => prev.filter((s) => s.id !== siteId));
   };
 
   if (loading) {
@@ -136,6 +189,13 @@ export default function ProjectDetailPage() {
         icon={FolderKanban}
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/catalog?projectId=${id}`)}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Pasūtīt materiālus
+            </Button>
             <Button variant="outline" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Atpakaļ
@@ -201,6 +261,10 @@ export default function ProjectDetailPage() {
           <TabsTrigger value="budget">
             <TrendingUp className="h-4 w-4 mr-2" />
             Budžets ({budgetLines.length})
+          </TabsTrigger>
+          <TabsTrigger value="sites">
+            <MapPin className="h-4 w-4 mr-2" />
+            Vietas ({sites.length})
           </TabsTrigger>
         </TabsList>
 
@@ -328,7 +392,122 @@ export default function ProjectDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="sites" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Piegādes vietas</CardTitle>
+              <Button size="sm" onClick={() => setAddSiteOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Pievienot vietu
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {sites.length === 0 ? (
+                <p className="text-muted-foreground text-sm p-6">Nav pievienotu vietu.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium">Nosaukums</th>
+                      <th className="text-left p-3 font-medium">Adrese</th>
+                      <th className="text-left p-3 font-medium">Tips</th>
+                      <th className="w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sites.map((site) => (
+                      <tr key={site.id} className="border-b">
+                        <td className="p-3 font-medium">
+                          {site.label}
+                          {site.isDefault && (
+                            <Badge variant="secondary" className="ml-2 text-xs">
+                              Noklusējuma
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-3 text-muted-foreground">{site.address}</td>
+                        <td className="p-3">
+                          <Badge variant="outline">
+                            {site.type === 'LOADING'
+                              ? 'Iekraušana'
+                              : site.type === 'UNLOADING'
+                                ? 'Izkraušana'
+                                : 'Abas'}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteSite(site.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Add site dialog */}
+      <Dialog open={addSiteOpen} onOpenChange={setAddSiteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pievienot piegādes vietu</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nosaukums *</Label>
+              <Input
+                value={siteForm.label}
+                onChange={(e) => setSiteForm((f) => ({ ...f, label: e.target.value }))}
+                placeholder="Objekts A"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Adrese *</Label>
+              <Input
+                value={siteForm.address}
+                onChange={(e) => setSiteForm((f) => ({ ...f, address: e.target.value }))}
+                placeholder="Iela 1, Rīga"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tips</Label>
+              <Select
+                value={siteForm.type}
+                onValueChange={(v) => setSiteForm((f) => ({ ...f, type: v as ProjectSiteType }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOADING">Iekraušana</SelectItem>
+                  <SelectItem value="UNLOADING">Izkraušana</SelectItem>
+                  <SelectItem value="BOTH">Abas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddSiteOpen(false)}>
+              Atcelt
+            </Button>
+            <Button
+              onClick={handleAddSite}
+              disabled={savingSite || !siteForm.label || !siteForm.address}
+            >
+              {savingSite ? 'Saglabā...' : 'Pievienot'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

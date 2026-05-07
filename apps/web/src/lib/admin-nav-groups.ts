@@ -82,6 +82,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Tirgus dzinējs', href: '/dashboard/admin/marketplace' },
       { label: 'Tirgus veselība', href: '/dashboard/admin/market-health' },
       { label: 'Tirgus atbilstība', href: '/dashboard/admin/market-match' },
+      { label: 'Pieprasījuma trūkumi', href: '/dashboard/admin/demand-gaps' },
       { label: 'Projekti', href: '/dashboard/admin/projects' },
       { label: 'Aprites signāli', href: '/dashboard/admin/waste-signals' },
     ],

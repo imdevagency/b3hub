@@ -1157,6 +1157,167 @@ export class AdminService {
     });
   }
 
+  /**
+   * GET /admin/demand-gaps
+   * Unfulfilled demand (expired/cancelled RFQs) + dormant supplier/carrier churn signals.
+   * "Dormant" = had activity 30–90 days ago but nothing in the last 30 days.
+   */
+  async getDemandGaps() {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+    // ── 1. Unfulfilled RFQs ──────────────────────────────────────────────────
+    const unfulfilledRfqs = await this.prisma.quoteRequest.findMany({
+      where: {
+        status: { in: ['EXPIRED', 'CANCELLED'] },
+        createdAt: { gte: ninetyDaysAgo },
+      },
+      select: {
+        id: true,
+        requestNumber: true,
+        materialCategory: true,
+        materialName: true,
+        quantity: true,
+        unit: true,
+        deliveryCity: true,
+        status: true,
+        createdAt: true,
+        buyer: { select: { firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    // ── 2. Dormant suppliers ─────────────────────────────────────────────────
+    const [recentOrderItems, historicOrderItems] = await Promise.all([
+      this.prisma.orderItem.findMany({
+        where: { order: { createdAt: { gte: thirtyDaysAgo } } },
+        select: { material: { select: { supplierId: true } } },
+      }),
+      this.prisma.orderItem.findMany({
+        where: { order: { createdAt: { gte: ninetyDaysAgo, lt: thirtyDaysAgo } } },
+        select: {
+          material: { select: { supplierId: true } },
+          order: { select: { createdAt: true } },
+        },
+      }),
+    ]);
+
+    const activeSupplierIds = new Set(recentOrderItems.map((oi) => oi.material.supplierId));
+    const supplierLastOrderMap = new Map<string, Date>();
+    for (const oi of historicOrderItems) {
+      const sid = oi.material.supplierId;
+      const curr = supplierLastOrderMap.get(sid);
+      if (!curr || oi.order.createdAt > curr) supplierLastOrderMap.set(sid, oi.order.createdAt);
+    }
+    const dormantSupplierIds = [...supplierLastOrderMap.keys()].filter(
+      (id) => !activeSupplierIds.has(id),
+    );
+
+    const dormantSupplierDetails =
+      dormantSupplierIds.length > 0
+        ? await this.prisma.company.findMany({
+            where: { id: { in: dormantSupplierIds } },
+            select: {
+              id: true,
+              name: true,
+              _count: { select: { materials: { where: { active: true } } } },
+            },
+          })
+        : [];
+
+    const dormantSuppliers = dormantSupplierDetails
+      .map((c) => {
+        const lastDate = supplierLastOrderMap.get(c.id);
+        return {
+          id: c.id,
+          name: c.name,
+          activeListings: c._count.materials,
+          lastOrderAt: lastDate?.toISOString() ?? null,
+          daysSinceLastOrder: lastDate
+            ? Math.floor((Date.now() - lastDate.getTime()) / 86_400_000)
+            : null,
+        };
+      })
+      .sort((a, b) => (b.daysSinceLastOrder ?? 0) - (a.daysSinceLastOrder ?? 0));
+
+    // ── 3. Dormant carriers ──────────────────────────────────────────────────
+    const [recentJobs, historicJobs] = await Promise.all([
+      this.prisma.transportJob.findMany({
+        where: {
+          carrierId: { not: null },
+          updatedAt: { gte: thirtyDaysAgo },
+          status: { not: 'AVAILABLE' },
+        },
+        select: { carrierId: true },
+      }),
+      this.prisma.transportJob.findMany({
+        where: {
+          carrierId: { not: null },
+          updatedAt: { gte: ninetyDaysAgo, lt: thirtyDaysAgo },
+          status: { not: 'AVAILABLE' },
+        },
+        select: { carrierId: true, updatedAt: true },
+      }),
+    ]);
+
+    const activeCarrierIds = new Set(recentJobs.map((j) => j.carrierId!));
+    const carrierLastJobMap = new Map<string, Date>();
+    for (const j of historicJobs) {
+      if (!j.carrierId) continue;
+      const curr = carrierLastJobMap.get(j.carrierId);
+      if (!curr || j.updatedAt > curr) carrierLastJobMap.set(j.carrierId, j.updatedAt);
+    }
+    const dormantCarrierIds = [...carrierLastJobMap.keys()].filter(
+      (id) => !activeCarrierIds.has(id),
+    );
+
+    const dormantCarrierDetails =
+      dormantCarrierIds.length > 0
+        ? await this.prisma.company.findMany({
+            where: { id: { in: dormantCarrierIds }, companyType: 'CARRIER' },
+            select: { id: true, name: true },
+          })
+        : [];
+
+    const dormantCarriers = dormantCarrierDetails
+      .map((c) => {
+        const lastDate = carrierLastJobMap.get(c.id);
+        return {
+          id: c.id,
+          name: c.name,
+          lastJobAt: lastDate?.toISOString() ?? null,
+          daysSinceLastJob: lastDate
+            ? Math.floor((Date.now() - lastDate.getTime()) / 86_400_000)
+            : null,
+        };
+      })
+      .sort((a, b) => (b.daysSinceLastJob ?? 0) - (a.daysSinceLastJob ?? 0));
+
+    return {
+      unfulfilledRfqs: unfulfilledRfqs.map((r) => ({
+        id: r.id,
+        requestNumber: r.requestNumber,
+        materialCategory: r.materialCategory,
+        materialName: r.materialName,
+        quantity: r.quantity,
+        unit: r.unit,
+        deliveryCity: r.deliveryCity,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+        buyerName:
+          `${r.buyer.firstName} ${r.buyer.lastName}`.trim() || (r.buyer.email ?? 'Nav zināms'),
+      })),
+      dormantSuppliers,
+      dormantCarriers,
+      summary: {
+        unfulfilledRfqCount: unfulfilledRfqs.length,
+        dormantSupplierCount: dormantSuppliers.length,
+        dormantCarrierCount: dormantCarriers.length,
+      },
+    };
+  }
+
   /** GET /admin/surcharges — surcharges pending admin approval */
   async getPendingSurcharges() {
     return this.prisma.orderSurcharge.findMany({

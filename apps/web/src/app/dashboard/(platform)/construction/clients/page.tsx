@@ -16,9 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Building2, RefreshCw, ExternalLink } from 'lucide-react';
 
 export default function ClientsPage() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
-  const token = session?.access_token ?? '';
 
   const [clients, setClients] = useState<{ name: string }[]>([]);
   const [loading, setLoading] = useState(true);

@@ -3357,10 +3357,10 @@ export class OrdersService {
             deliveryCity: true,
             cargoWeight: true,
             driver: { select: { id: true, firstName: true, lastName: true, phone: true } },
-            vehicle: { select: { id: true, registrationNumber: true, vehicleType: true } },
+            vehicle: { select: { id: true, licensePlate: true, vehicleType: true } },
           },
         },
-        buyer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        buyer: { select: { id: true, name: true, phone: true } },
       },
     });
 

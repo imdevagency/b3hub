@@ -394,7 +394,7 @@ export class AuthService {
     // Generic BUYER mode follows as a secondary access level.
     if (companyType === 'RECYCLER' || (user as any).canRecycle)
       modes.push('RECYCLER');
-    if (companyType === 'CONSTRUCTION' && companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
+    if (companyFeatures.includes('CONSTRUCTION_MANAGEMENT'))
       modes.push('CONSTRUCTION');
     if (user.userType === 'BUYER' && !isPureTransportIndividual)
       modes.push('BUYER');

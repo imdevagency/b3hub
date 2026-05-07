@@ -34,8 +34,7 @@ function fmtEur(n: number) {
 }
 
 export default function DprTemplatesPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
 
   const [templates, setTemplates] = useState<DprTemplate[]>([]);
   const [loading, setLoading] = useState(true);

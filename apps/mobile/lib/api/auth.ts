@@ -34,6 +34,7 @@ export interface User {
     id: string;
     name: string;
     companyType: string;
+    features?: string[];
   };
 }
 

@@ -3,15 +3,27 @@
 
 ## What this product is
 
-**B3 Group** is the parent company. Three business units share a unified admin dashboard:
+**B3 Group** is the parent company. Two business units share a unified admin dashboard:
 
 | Business unit | What it is | Admin scope |
 |---|---|---|
-| **B3Hub** | Construction logistics marketplace (this platform) | `/dashboard/admin/*` — marketplace ERP |
+| **B3Hub** | Construction logistics marketplace (this platform) | `/dashboard/admin/*` — marketplace platform |
 | **B3 Recycling** | Licensed construction waste recycling facility in Gulbene | `/dashboard/b3-recycling` — ✅ built |
-| **B3 Construction** | Groundworks subcontracting company | `/dashboard/b3-construction` — ✅ built |
 
-The three scopes are separate operations (different customers, staff, finances) but share the same platform infrastructure. The admin dashboard has a **4-tab scope switcher** in the sidebar header: **Grupa | APP | Recycle | Būve**. "Grupa" (`/dashboard/group`) is a cross-BU overview. Each tab shows its own nav sections. Active scope is auto-detected from the URL pathname.
+B3Hub is a **pure marketplace platform** — there is no longer a separate B3 Construction internal business unit. The admin dashboard has a **3-tab scope switcher** in the sidebar header: **Grupa | APP | Recycle**. "Grupa" (`/dashboard/group`) is a cross-BU overview. Each tab shows its own nav sections. Active scope is auto-detected from the URL pathname.
+
+### Construction ERP feature bundle
+
+**Construction ERP** (`CONSTRUCTION_MANAGEMENT`) is a **marketplace feature module** that platform admins can grant to any external construction company account. It is not an internal B3 business unit — it is a SaaS add-on sold to construction companies (buyers) on the platform.
+
+Workflow:
+1. A construction company (e.g. `daniels.ragelis@gmail.com`) requests the ERP bundle
+2. Platform admin goes to `/dashboard/admin/companies/[id]` and toggles **"Celtniecības vadība"** ON and sets `companyType = CONSTRUCTION`
+3. On the user's next login the JWT includes `company.features: ['CONSTRUCTION_MANAGEMENT']`
+4. The mobile app unlocks the `(construction)` tab group — Projects, Budgets, Daily Reports, Estimating
+5. The `mode-context.tsx` adds `'CONSTRUCTION'` to `availableModes`; a prominent ERP banner appears on buyer home for easy switching
+
+`CONSTRUCTION_MANAGEMENT` company features live entirely under the **Platform** admin scope — not under any separate BU route.
 
 **B3Hub** is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
 
@@ -118,6 +130,8 @@ export interface RequestingUser {
 ```
 <!-- END GEN -->
 
+> ⚠️ **Important**: The `/auth/me` and login API responses return company features as `user.company.features` (nested), **not** as a flat `user.companyFeatures`. Mobile `mode-context.tsx` reads `user.company.features` accordingly. Never read `user.companyFeatures` directly in mobile code.
+
 ### User roles
 
 `UserType` has only two values — the business role is determined by **capability flags** and **CompanyType**:
@@ -176,6 +190,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 <!-- GEN:mobile-routes -->
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
+- `(construction)` — home, projects, daily-reports, messages, more — **Construction ERP bundle** (requires `CONSTRUCTION_MANAGEMENT` feature + `companyType: CONSTRUCTION`)
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
 - `(gate)` — fields
 - `(recycler)` — home, incoming, messages, more, records
@@ -219,14 +234,15 @@ Prefer hooks over inline `useEffect` + `fetch` in components.
 
 ## Admin dashboard — scope boundaries and integration ownership
 
-The admin dashboard has **four scopes** (sidebar tabs). Code, routes, and integrations must not bleed across scope lines.
+The admin dashboard has **three scopes** (sidebar tabs). Code, routes, and integrations must not bleed across scope lines.
 
 | Scope | Tab | Routes | Serves |
 |---|---|---|---|
-| **Platform** | `APP` | `/dashboard/admin/*` | The B3Hub marketplace — buyers, sellers, carriers, platform operators |
+| **Platform** | `APP` | `/dashboard/admin/*` | The B3Hub marketplace — buyers, sellers, carriers, Construction ERP accounts, platform operators |
 | **B3 Recycling** | `Recycle` | `/dashboard/b3-recycling/*` | B3 Recycling facility internal team |
-| **B3 Construction** | `Būve` | `/dashboard/b3-construction/*` | B3 Construction internal team |
 | **Group** | `Grupa` | `/dashboard/group/*` | Cross-BU read-only aggregates |
+
+> ⚠️ There is **no** `Būve` tab and **no** `/dashboard/b3-construction` route. Those were removed. Do not recreate them.
 
 ### Integration ownership — the one decision rule
 
@@ -234,14 +250,12 @@ The admin dashboard has **four scopes** (sidebar tabs). Code, routes, and integr
 
 | End user | Integration lives under |
 |---|---|
-| Marketplace users (buyers, sellers, carriers) | **Platform** — `/dashboard/admin/integrations/*` |
-| B3 Construction internal staff | **Būve** — `/dashboard/b3-construction/*` |
+| Marketplace users (buyers, sellers, carriers, construction ERP accounts) | **Platform** — `/dashboard/admin/integrations/*` |
 | B3 Recycling internal staff | **Recycle** — `/dashboard/b3-recycling/*` |
 
 **Concrete examples:**
 - `Lursoft` — company registry auto-fill for B2B registration, buyer/seller risk checks → **Platform** (`/dashboard/admin/integrations/lursoft`)
-- `BIS` — construction company registry lookup for B3 Construction subcontractor vetting → **Būve** (`/dashboard/b3-construction/bis`)
-- `Jumis` — B3 Group internal accounting → **Būve** or **Grupa**
+- Construction ERP company management — grant/revoke `CONSTRUCTION_MANAGEMENT` feature, manage projects → **Platform** (`/dashboard/admin/companies/[id]`)
 - Payment processor, SMS, email, maps — serve marketplace transactions/notifications → **Platform**
 
 ### Platform integrations hub
@@ -254,10 +268,10 @@ All platform integrations are registered in `/dashboard/admin/integrations/page.
 ### Backend module ownership signal
 
 Backend is flat (`apps/backend/src/`). Ownership is signalled by the **controller route prefix**:
-- Platform integrations: `/api/v1/<name>/*` (e.g. `/api/v1/lursoft/*`)
-- BU-specific tools: `/api/v1/admin/bis/*`, `/api/v1/admin/jumis/*`
+- Platform features: `/api/v1/<name>/*` (e.g. `/api/v1/lursoft/*`, `/api/v1/construction/*`)
+- Recycling internal tools: `/api/v1/admin/recycling/*`
 
-**Never add platform marketplace logic to a BU-specific module, and vice versa.**
+**Never add platform marketplace logic to a Recycling-scoped module, and vice versa.**
 
 ---
 
@@ -317,7 +331,7 @@ Key rules:
 | `STATUS.md`                                                  | **Feature status matrix** — what is built, connected, or missing across all three apps  |
 | `ARCHITECTURE.md`                                            | System architecture overview — ⚠️ partially stale, see stale notice at file top         |
 | `PRODUCT.md`                                                 | Product description, user personas, and full order flow                                 |
-| `apps/web/src/components/admin-sidebar.tsx`                  | 4-scope admin sidebar with BU tab switcher (Grupa / APP / Recycle / Būve)               |
+| `apps/web/src/components/admin-sidebar.tsx`                  | 3-scope admin sidebar with tab switcher (Grupa / APP / Recycle) — no Būve tab           |
 | `apps/web/src/components/sidebar-switch.tsx`                 | Picks AdminSidebar vs AppSidebar based on `user.userType`                               |
 | `apps/web/src/proxy.ts`                                      | Next.js middleware — route guards for admin and marketplace deployments                 |
 | `.github/instructions/backend-schema.instructions.md`        | All 30 DB models, enums, Prisma workflow, migration checklist                           |

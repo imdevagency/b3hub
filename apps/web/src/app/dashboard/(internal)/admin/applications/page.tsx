@@ -15,7 +15,6 @@ import {
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -27,18 +26,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  Building,
-  Phone,
-  Mail,
-  RefreshCw,
-  ShieldCheck,
-  Truck,
-  Package,
-} from 'lucide-react';
+import { CheckCircle, XCircle, Clock, RefreshCw, ShieldCheck, Truck, Package } from 'lucide-react';
 
 // ── Type label helpers ─────────────────────────────────────────
 
@@ -72,123 +60,6 @@ function StatusBadge({ status }: { status: ProviderApplication['status'] }) {
       <Icon className="h-3 w-3" />
       {label}
     </span>
-  );
-}
-
-// ── Application card ──────────────────────────────────────────
-
-function ApplicationCard({
-  app,
-  onApprove,
-  onReject,
-  loadingId,
-}: {
-  app: ProviderApplication;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  loadingId: string | null;
-}) {
-  const busy = loadingId === app.id;
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <CardTitle className="text-base">
-              {app.firstName} {app.lastName}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <Building className="h-3.5 w-3.5" />
-              {app.companyName}
-              {app.regNumber && <span className="text-xs">· {app.regNumber}</span>}
-            </p>
-          </div>
-          <StatusBadge status={app.status} />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Contact */}
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Mail className="h-3.5 w-3.5" />
-            {app.email}
-          </span>
-          <span className="flex items-center gap-1">
-            <Phone className="h-3.5 w-3.5" />
-            {app.phone}
-          </span>
-        </div>
-
-        {/* Applies for */}
-        <div className="flex gap-2">
-          {app.appliesForSell && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-xs font-medium text-blue-700">
-              <Package className="h-3 w-3" />
-              Piegādātājs
-            </span>
-          )}
-          {app.appliesForTransport && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-medium text-purple-700">
-              <Truck className="h-3 w-3" />
-              Pārvadātājs
-            </span>
-          )}
-        </div>
-
-        {/* Description */}
-        {app.description && (
-          <p className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-            {app.description}
-          </p>
-        )}
-
-        {/* Review note */}
-        {app.reviewNote && (
-          <p className="text-sm italic text-muted-foreground">Piezīme: {app.reviewNote}</p>
-        )}
-
-        {/* Date */}
-        <p className="text-xs text-muted-foreground">
-          Iesniegts: {new Date(app.createdAt).toLocaleDateString('lv-LV')}
-        </p>
-
-        {/* Actions */}
-        {app.status === 'PENDING' && (
-          <>
-            <Separator />
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                onClick={() => onReject(app.id)}
-                disabled={!!loadingId}
-              >
-                {busy ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <XCircle className="h-4 w-4 mr-1" />
-                )}
-                Noraidīt
-              </Button>
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => onApprove(app.id)}
-                disabled={!!loadingId}
-              >
-                {busy ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                )}
-                Apstiprināt
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
@@ -328,23 +199,123 @@ export default function AdminApplicationsPage() {
           <p className="text-sm">Nav pieteikumu šajā kategorijā.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {apps.map((app) => (
-            <ApplicationCard
-              key={app.id}
-              app={app}
-              onApprove={(id) => {
-                setActionError('');
-                setConfirmApprove(apps.find((a) => a.id === id) ?? null);
-              }}
-              onReject={(id) => {
-                setActionError('');
-                setRejectReason('');
-                setConfirmReject(apps.find((a) => a.id === id) ?? null);
-              }}
-              loadingId={loadingId}
-            />
-          ))}
+        <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Iesniedzējs
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Uzņēmums
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Loma
+                  </th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Statuss
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Datums
+                  </th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {apps.map((app) => {
+                  const busy = loadingId === app.id;
+                  return (
+                    <tr key={app.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-gray-900">
+                          {app.firstName} {app.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{app.email}</p>
+                        {app.phone && <p className="text-xs text-muted-foreground">{app.phone}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm font-medium text-gray-900">{app.companyName}</p>
+                        {app.regNumber && (
+                          <p className="text-xs text-muted-foreground font-mono">{app.regNumber}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col gap-1">
+                          {app.appliesForSell && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-xs font-medium text-blue-700 w-fit">
+                              <Package className="h-3 w-3" />
+                              Piegādātājs
+                            </span>
+                          )}
+                          {app.appliesForTransport && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 border border-purple-200 px-2 py-0.5 text-xs font-medium text-purple-700 w-fit">
+                              <Truck className="h-3 w-3" />
+                              Pārvadātājs
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <StatusBadge status={app.status} />
+                        {app.reviewNote && (
+                          <p className="text-xs text-muted-foreground italic mt-1 max-w-40 mx-auto truncate">
+                            {app.reviewNote}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                        {new Date(app.createdAt).toLocaleDateString('lv-LV')}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {app.status === 'PENDING' && (
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => {
+                                setActionError('');
+                                setRejectReason('');
+                                setConfirmReject(app);
+                              }}
+                              disabled={!!loadingId}
+                            >
+                              {busy ? (
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <XCircle className="h-3.5 w-3.5 mr-1" />
+                              )}
+                              Noraidīt
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => {
+                                setActionError('');
+                                setConfirmApprove(app);
+                              }}
+                              disabled={!!loadingId}
+                            >
+                              {busy ? (
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                              )}
+                              Apstiprināt
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-4 py-2 border-t bg-muted/20 text-xs text-muted-foreground">
+            {apps.length} pieteikumi
+          </div>
         </div>
       )}
 

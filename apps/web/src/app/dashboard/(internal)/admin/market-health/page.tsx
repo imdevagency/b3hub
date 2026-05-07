@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import {
   adminGetMarketHealth,
+  adminBroadcastNotification,
   type MarketHealthData,
   type MarketCategoryCoverage,
 } from '@/lib/api/admin';
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
 import {
   AlertTriangle,
+  Bell,
   CheckCircle2,
   Loader2,
   Package,
@@ -108,6 +110,8 @@ export default function MarketHealthPage() {
   const [data, setData] = useState<MarketHealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activating, setActivating] = useState(false);
+  const [activateResult, setActivateResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && (!user || user.userType !== 'ADMIN')) {
@@ -131,6 +135,26 @@ export default function MarketHealthPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function activateSuppliers() {
+    if (!token) return;
+    setActivating(true);
+    setActivateResult(null);
+    try {
+      const thinList = data?.supply.thinCategories?.join(', ') ?? 'dažādās kategorijās';
+      const res = await adminBroadcastNotification(
+        'B3Hub — nepieciešami piegādātāji',
+        `Platformā ir paaugstināts pieprasījums pēc materiāliem (${thinList}). Piesakieties un pievienojiet savus sludinājumus, lai saņemtu jaunus pasūtījumus.`,
+        'SELLERS',
+        token,
+      );
+      setActivateResult(`Paziņojums nosūtīts ${res.sent} piegādātājiem.`);
+    } catch {
+      setActivateResult('Nosūtīšana neizdevās.');
+    } finally {
+      setActivating(false);
+    }
+  }
 
   // ── Derived health scores ─────────────────────────────────────────────────
   const supplyHealth: 'ok' | 'warn' | 'bad' = !data
@@ -320,6 +344,25 @@ export default function MarketHealthPage() {
                           </Badge>
                         </Link>
                       ))}
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 border-red-300 bg-white text-red-800 hover:bg-red-50 text-xs"
+                        disabled={activating}
+                        onClick={activateSuppliers}
+                      >
+                        {activating ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Bell className="h-3.5 w-3.5" />
+                        )}
+                        Aktivizēt piegādātājus
+                      </Button>
+                      {activateResult && (
+                        <span className="text-xs text-red-800 font-medium">{activateResult}</span>
+                      )}
                     </div>
                   </AlertBox>
                 )}

@@ -67,32 +67,6 @@ export class ConstructionController {
     return this.service.updateProject(id, user.companyId!, body);
   }
 
-  // ─── Project Documents ─────────────────────────────────────────────────────
-
-  @Get('projects/:id/documents')
-  getProjectDocuments(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
-    return this.service.getProjectDocuments(id, user.companyId!);
-  }
-
-  @Post('projects/:id/documents')
-  createProjectDocument(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-    @Body() body: any,
-  ) {
-    return this.service.createProjectDocument(id, user.companyId!, body);
-  }
-
-  @Delete('projects/:id/documents/:docId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteProjectDocument(
-    @Param('id') id: string,
-    @Param('docId') docId: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
-    return this.service.deleteProjectDocument(id, docId, user.companyId!);
-  }
-
   // ─── Budget Lines ──────────────────────────────────────────────────────────
 
   @Get('projects/:id/budget-lines')
@@ -150,6 +124,68 @@ export class ConstructionController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteDailyReport(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.deleteDailyReport(id, user.companyId!);
+  }
+
+  @Patch('daily-reports/:id/approve')
+  approveDailyReport(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.approveDailyReport(id, user.companyId!, user.userId);
+  }
+
+  // ─── Project Sites ─────────────────────────────────────────────────────────
+
+  @Get('projects/:id/sites')
+  getProjectSites(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+    return this.service.getProjectSites(id, user.companyId!);
+  }
+
+  @Post('projects/:id/sites')
+  createProjectSite(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+    @Body() body: any,
+  ) {
+    return this.service.createProjectSite(id, user.companyId!, body);
+  }
+
+  @Delete('projects/:id/sites/:siteId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteProjectSite(
+    @Param('id') id: string,
+    @Param('siteId') siteId: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.service.deleteProjectSite(siteId, id, user.companyId!);
+  }
+
+  // ─── Equipment ─────────────────────────────────────────────────────────────
+
+  @Get('equipment')
+  getEquipment(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getEquipment({
+      status,
+      page: page ? Number(page) : 1,
+      limit: limit ? Math.min(Number(limit), 200) : 100,
+    });
+  }
+
+  @Post('equipment')
+  createEquipment(@Body() body: any) {
+    return this.service.createEquipment(body);
+  }
+
+  @Patch('equipment/:id')
+  updateEquipment(@Param('id') id: string, @Body() body: any) {
+    return this.service.updateEquipment(id, body);
+  }
+
+  @Delete('equipment/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteEquipment(@Param('id') id: string) {
+    return this.service.deleteEquipment(id);
   }
 
   // ─── DPR Templates ─────────────────────────────────────────────────────────

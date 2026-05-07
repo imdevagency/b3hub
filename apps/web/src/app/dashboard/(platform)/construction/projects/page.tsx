@@ -73,9 +73,8 @@ function fmtEur(n: number) {
 }
 
 export default function ConstructionProjectsPage() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
-  const token = session?.access_token ?? '';
 
   const [projects, setProjects] = useState<ConstructionProject[]>([]);
   const [loading, setLoading] = useState(true);

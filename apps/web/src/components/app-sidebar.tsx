@@ -46,6 +46,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Wrench,
   Zap,
 } from 'lucide-react';
 
@@ -223,11 +224,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           href: '/dashboard/construction/daily-reports',
           icon: ClipboardList,
         },
-        {
-          label: 'DPR Veidnes',
-          href: '/dashboard/construction/dpr-templates',
-          icon: ScrollText,
-        },
       ],
     },
     {
@@ -263,6 +259,11 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           icon: Users,
         },
         {
+          label: 'Tehnika',
+          href: '/dashboard/construction/equipment',
+          icon: Wrench,
+        },
+        {
           label: 'Apakšuzņēmēji',
           href: '/dashboard/construction/subcontractors',
           icon: Briefcase,
@@ -271,6 +272,11 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           label: 'Izmaksu likmes',
           href: '/dashboard/construction/rates',
           icon: Euro,
+        },
+        {
+          label: 'Komanda',
+          href: '/dashboard/company/team',
+          icon: Users,
         },
       ],
     },
@@ -340,6 +346,14 @@ const MODE_LABEL: Record<Mode, string> = {
   CARRIER: 'Pārvadātājs',
   CONSTRUCTION: 'Celtniecība',
   RECYCLER: 'Pārstrāde',
+};
+
+const MODE_ICON: Record<Mode, React.ElementType> = {
+  BUYER: Box,
+  SUPPLIER: Package,
+  CARRIER: Truck,
+  CONSTRUCTION: Building2,
+  RECYCLER: Recycle,
 };
 
 const ACTIVE_JOB_STATUSES = new Set([
@@ -598,26 +612,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        {availableModes.length > 1 && (
-          <div className="px-2 pb-2 flex gap-1 group-data-[collapsible=icon]:hidden">
-            {availableModes.map((mode) => (
-              <button
-                key={mode}
-                onClick={() => {
-                  setActiveMode(mode);
-                  router.push(ROLE_HOME[mode]);
-                }}
-                className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                  activeMode === mode
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                {MODE_LABEL[mode]}
-              </button>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const visibleModes = availableModes.filter(
+            (mode) =>
+              // Hide BUYER tab for construction ERP companies — clicking it just redirects back
+              !(mode === 'BUYER' && availableModes.includes('CONSTRUCTION')),
+          );
+          return (
+            visibleModes.length > 1 && (
+              <div className="px-2 pb-2 flex gap-1 group-data-[collapsible=icon]:hidden">
+                {visibleModes.map((mode) => {
+                  const Icon = MODE_ICON[mode];
+                  return (
+                    <button
+                      key={mode}
+                      title={MODE_LABEL[mode]}
+                      onClick={() => {
+                        setActiveMode(mode);
+                        router.push(ROLE_HOME[mode]);
+                      }}
+                      className={`flex-1 flex items-center justify-center py-1.5 rounded-lg transition-colors ${
+                        activeMode === mode
+                          ? 'bg-gray-900 text-white'
+                          : 'text-gray-400 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className="size-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            )
+          );
+        })()}
       </SidebarHeader>
 
       <SidebarContent>

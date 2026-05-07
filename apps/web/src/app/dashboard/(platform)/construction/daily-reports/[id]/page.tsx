@@ -11,6 +11,7 @@ import {
   getDailyReportById,
   updateDailyReport,
   deleteDailyReport,
+  approveDailyReport,
   type DailyReportDetail,
   type DailyReportStatus,
 } from '@/lib/api/construction';
@@ -44,14 +45,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, ClipboardList, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Trash2, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const STATUS_LABELS: Record<DailyReportStatus, string> = {
   DRAFT: 'Melnraksts',
   SUBMITTED: 'Iesniegts',
   APPROVED: 'Apstiprināts',
-  REJECTED: 'Noraidīts',
 };
 
 const STATUS_VARIANTS: Record<
@@ -61,7 +61,6 @@ const STATUS_VARIANTS: Record<
   DRAFT: 'secondary',
   SUBMITTED: 'default',
   APPROVED: 'outline',
-  REJECTED: 'destructive',
 };
 
 function fmtEur(n: number) {
@@ -75,24 +74,26 @@ function fmtEur(n: number) {
 export default function DailyReportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
 
   const [report, setReport] = useState<DailyReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   const load = useCallback(async () => {
     if (!token || !id) return;
     setLoading(true);
     try {
       setReport(await getDailyReportById(id, token));
+    } catch {
+      router.replace('/dashboard/construction/daily-reports');
     } finally {
       setLoading(false);
     }
-  }, [token, id]);
+  }, [token, id, router]);
 
   useEffect(() => {
     load();
@@ -106,6 +107,17 @@ export default function DailyReportDetailPage() {
       setReport({ ...report, status: status as DailyReportStatus });
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!report) return;
+    setApproving(true);
+    try {
+      await approveDailyReport(id, token);
+      setReport({ ...report, status: 'APPROVED' });
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -142,6 +154,12 @@ export default function DailyReportDetailPage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Atpakaļ
             </Button>
+            {report.status === 'SUBMITTED' && (
+              <Button onClick={handleApprove} disabled={approving}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {approving ? 'Apstiprina...' : 'Apstiprināt'}
+              </Button>
+            )}
             <Select
               value={report.status}
               onValueChange={handleStatusChange}
