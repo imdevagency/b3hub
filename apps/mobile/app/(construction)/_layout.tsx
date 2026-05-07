@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
-import { Home, FolderKanban, FileText, MoreHorizontal, MessageCircle } from 'lucide-react-native';
+import { Home, FolderKanban, MoreHorizontal, MessageCircle } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -28,9 +28,8 @@ function ConstructionLayoutContent() {
       return;
     }
     if (!isLoading && user) {
-      const companyFeatures: string[] = (user as any).companyFeatures ?? [];
-      const companyType: string | undefined = (user as any).company?.companyType;
-      if (companyType !== 'CONSTRUCTION' || !companyFeatures.includes('CONSTRUCTION_MANAGEMENT')) {
+      const companyFeatures: string[] = (user as any).company?.features ?? [];
+      if (!companyFeatures.includes('CONSTRUCTION_MANAGEMENT')) {
         router.replace('/(buyer)/home');
       }
     }
@@ -83,13 +82,6 @@ function ConstructionLayoutContent() {
           }}
         />
         <Tabs.Screen
-          name="daily-reports"
-          options={{
-            title: 'Atskaites',
-            tabBarIcon: ({ color }) => <FileText size={22} color={color} />,
-          }}
-        />
-        <Tabs.Screen
           name="messages"
           options={{
             title: 'Ziņojumi',
@@ -104,8 +96,6 @@ function ConstructionLayoutContent() {
             tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
-        {/* Hidden screens */}
-        <Tabs.Screen name="daily-report-new" options={{ href: null }} />
       </Tabs>
     </View>
   );

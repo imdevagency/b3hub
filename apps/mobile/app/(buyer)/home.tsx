@@ -21,7 +21,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { useHeaderConfig } from '@/lib/header-context';
 import { useToast } from '@/components/ui/Toast';
-import { useMode, MODE_HOME } from '@/lib/mode-context';
+import { useMode } from '@/lib/mode-context';
 
 // ── Status maps ───────────────────────────────────────────────────────────
 
@@ -97,7 +97,6 @@ export default function HomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
   const { setConfig } = useHeaderConfig();
-  const { availableModes, setMode } = useMode();
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
@@ -415,64 +414,6 @@ export default function HomeScreen() {
               </Text>
             </View>
             <ChevronRight size={18} color="#2563eb" />
-          </TouchableOpacity>
-        )}
-
-        {/* Construction ERP switcher — shown when user has CONSTRUCTION mode but is browsing as buyer */}
-        {availableModes.includes('CONSTRUCTION') && (
-          <TouchableOpacity
-            style={{
-              marginHorizontal: 20,
-              marginBottom: 20,
-              backgroundColor: '#111827',
-              borderRadius: 24,
-              padding: 20,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 16,
-            }}
-            activeOpacity={0.85}
-            onPress={() => {
-              haptics.medium();
-              setMode('CONSTRUCTION');
-              router.replace(MODE_HOME.CONSTRUCTION as never);
-            }}
-          >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
-                backgroundColor: '#1f2937',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <HardHat size={24} color="#facc15" strokeWidth={2} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  fontSize: 15,
-                  color: '#f9fafb',
-                  marginBottom: 2,
-                }}
-              >
-                B3 Celtniecība ERP
-              </Text>
-              <Text
-                style={{
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 13,
-                  color: '#9ca3af',
-                }}
-              >
-                Projekti, budžeti un ikdienas atskaites
-              </Text>
-            </View>
-            <ChevronRight size={20} color="#6b7280" />
           </TouchableOpacity>
         )}
 

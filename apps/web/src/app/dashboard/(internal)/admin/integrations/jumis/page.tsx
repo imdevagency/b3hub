@@ -8,9 +8,6 @@
  *
  * Šī integrācija ir paredzēta B3Hub SIA kā juridiskai personai:
  * tirgu rēķini, piegādātāju un pārvadātāju norēķini.
- *
- * B3 Construction SIA saviem grāmatvedības nolūkiem izmanto
- * atsevišķu Jumis kontu → /dashboard/b3-construction/jumis
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -25,7 +22,6 @@ import {
   EyeOff,
   Info,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -176,14 +172,7 @@ export default function PlatformJumisPage() {
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <div>
-          <strong>B3Hub SIA</strong> Jumis konts. B3 Construction SIA izmanto{' '}
-          <Link
-            href="/dashboard/b3-construction/jumis"
-            className="underline underline-offset-4 hover:text-blue-900"
-          >
-            atsevišķu kontu
-          </Link>
-          .
+          <strong>B3Hub SIA</strong> Jumis konts — apkopo tirgus rēķinus un apakšuzņēmēju norēķinus.
         </div>
       </div>
 

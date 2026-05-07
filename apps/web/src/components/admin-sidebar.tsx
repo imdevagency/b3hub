@@ -14,25 +14,19 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   AlertTriangle,
   Banknote,
-  BarChart2,
   BarChart3,
-  BookOpen,
   Box,
   Boxes,
   Building2,
   ClipboardList,
-  Clock,
   CreditCard,
   DollarSign,
   FileText,
   Flag,
   FolderKanban,
-  Gavel,
-  HardHat,
   History,
   KeyRound,
   LayoutDashboard,
-  LayoutTemplate,
   Layers,
   ListChecks,
   LogOut,
@@ -41,7 +35,6 @@ import {
   MessageSquare,
   Package,
   Percent,
-  Receipt,
   Recycle,
   Scale,
   ScrollText,
@@ -259,63 +252,6 @@ const RECYCLING_NAV: NavSection[] = [
         href: '/dashboard/admin/b3-fields',
         icon: MapPin,
       },
-    ],
-  },
-];
-
-// ─── B3 Construction navigation ───────────────────────────────────────────────
-
-const CONSTRUCTION_NAV: NavSection[] = [
-  {
-    id: 'overview',
-    label: 'Pārskats',
-    items: [
-      { label: 'Vadības panelis', href: '/dashboard/b3-construction', icon: LayoutDashboard },
-    ],
-  },
-  {
-    id: 'projects',
-    label: 'Projekti',
-    items: [
-      { label: 'Visi projekti', href: '/dashboard/b3-construction/projects', icon: FolderKanban },
-      {
-        label: 'Dienas atskaites',
-        href: '/dashboard/b3-construction/daily-reports',
-        icon: ClipboardList,
-      },
-      { label: 'Piedāvājumi', href: '/dashboard/b3-construction/tenders', icon: Gavel },
-    ],
-  },
-  {
-    id: 'finance',
-    label: 'Finanses',
-    items: [
-      { label: 'Rentabilitāte', href: '/dashboard/b3-construction/profitability', icon: BarChart2 },
-      { label: 'Darba laiks', href: '/dashboard/b3-construction/labour-hours', icon: Clock },
-      { label: 'Nosūtītie rēķini', href: '/dashboard/b3-construction/invoices', icon: Receipt },
-      { label: 'Apakšuzņēmēji', href: '/dashboard/b3-construction/subcontractors', icon: HardHat },
-      { label: 'Atkritumu izvešana', href: '/dashboard/b3-construction/disposal', icon: Truck },
-    ],
-  },
-  {
-    id: 'config',
-    label: 'Iestatījumi',
-    items: [
-      { label: 'Klienti', href: '/dashboard/b3-construction/clients', icon: Building2 },
-      { label: 'Izmaksu likmes', href: '/dashboard/b3-construction/rates', icon: BookOpen },
-      {
-        label: 'DPR Veidnes',
-        href: '/dashboard/b3-construction/dpr-templates',
-        icon: LayoutTemplate,
-      },
-    ],
-  },
-  {
-    id: 'bis',
-    label: 'Integrācijas',
-    items: [
-      { label: 'BIS Reģistri', href: '/dashboard/b3-construction/bis', icon: Link2 },
-      { label: 'Jumis', href: '/dashboard/b3-construction/jumis', icon: BookOpen },
     ],
   },
 ];

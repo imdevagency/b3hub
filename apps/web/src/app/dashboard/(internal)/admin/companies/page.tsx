@@ -368,30 +368,6 @@ export default function AdminCompaniesPage() {
               />
             </div>
 
-            {createForm.companyType === 'CONSTRUCTION' && (
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="text-sm font-medium">Celtniecības vadība (ERP)</p>
-                  <p className="text-xs text-muted-foreground">
-                    Piešķir piekļuvi projektu, DPR un apakšuzņēmēju modulim
-                  </p>
-                </div>
-                <Switch
-                  checked={(createForm.features ?? []).includes('CONSTRUCTION_MANAGEMENT')}
-                  onCheckedChange={(v) =>
-                    setCreateForm({
-                      ...createForm,
-                      features: v
-                        ? [...(createForm.features ?? []), 'CONSTRUCTION_MANAGEMENT']
-                        : (createForm.features ?? []).filter(
-                            (f) => f !== 'CONSTRUCTION_MANAGEMENT',
-                          ),
-                    })
-                  }
-                />
-              </div>
-            )}
-
             {createError && <p className="text-sm text-destructive">{createError}</p>}
           </div>
           <DialogFooter>

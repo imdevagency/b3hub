@@ -35,10 +35,6 @@ import {
   LogOut,
   Building2,
   ArrowUpDown,
-  Euro,
-  Handshake,
-  FileCheck,
-  FolderKanban,
   HardHat,
   Recycle,
   CreditCard,
@@ -127,7 +123,7 @@ function ListRow({
 
 export default function MoreScreen() {
   const { user, isLoading } = useAuth();
-  const { mode, isMultiRole } = useMode();
+  const { isMultiRole } = useMode();
   const router = useRouter();
 
   const requireAuth = useRequireAuth();
@@ -189,16 +185,6 @@ export default function MoreScreen() {
   const isBusinessUser = !!(user?.isCompany || user?.company?.id);
   const companyTiles: TileItem[] = isBusinessUser
     ? [
-        ...(user.company?.companyType === 'CONSTRUCTION'
-          ? [
-              {
-                icon: FolderKanban,
-                label: 'Projekti',
-                onPress: () =>
-                  Linking.openURL('https://b3hub.lv/dashboard/projects').catch(() => null),
-              },
-            ]
-          : []),
         {
           icon: BarChart2,
           label: 'Analītika',
@@ -218,56 +204,6 @@ export default function MoreScreen() {
         },
       ]
     : [];
-
-  // ── Seller/carrier mode tiles (if multi-role) ─────────────────
-  const roleTiles: TileItem[] =
-    mode === 'SUPPLIER'
-      ? [
-          {
-            icon: Package,
-            label: 'Katalogs',
-            onPress: () => router.push('/(seller)/catalog'),
-          },
-          {
-            icon: Euro,
-            label: 'Izpeļņa',
-            onPress: () => router.push('/(seller)/earnings'),
-          },
-          {
-            icon: Handshake,
-            label: 'Līgumi',
-            onPress: () => router.push('/(seller)/framework-contracts'),
-          },
-          {
-            icon: FileCheck,
-            label: 'Dokumenti',
-            onPress: () => router.push('/(seller)/documents'),
-          },
-        ]
-      : mode === 'CARRIER'
-        ? [
-            {
-              icon: Euro,
-              label: 'Izpeļņa',
-              onPress: () => router.push('/(driver)/earnings'),
-            },
-            {
-              icon: Truck,
-              label: 'Transporti',
-              onPress: () => router.push('/(driver)/vehicles'),
-            },
-            {
-              icon: Package,
-              label: 'Konteineri',
-              onPress: () => router.push('/(driver)/skips'),
-            },
-            {
-              icon: FileCheck,
-              label: 'Dokumenti',
-              onPress: () => router.push('/(driver)/documents'),
-            },
-          ]
-        : [];
 
   // ── Become-a-partner tiles — any authenticated user can apply ─
   // A homeowner who buys a truck should be able to apply as a carrier.
@@ -329,14 +265,6 @@ export default function MoreScreen() {
           <>
             <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
             <TileGrid tiles={companyTiles} />
-          </>
-        )}
-
-        {/* ── Role tiles (supplier / carrier) ────────────────── */}
-        {roleTiles.length > 0 && (
-          <>
-            <Text style={s.sectionLabel}>MANA LOMA</Text>
-            <TileGrid tiles={roleTiles} />
           </>
         )}
 

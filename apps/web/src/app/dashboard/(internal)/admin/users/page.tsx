@@ -61,15 +61,7 @@ import {
 
 // ── Role presets ──────────────────────────────────────────────────────────────
 
-type RolePreset =
-  | 'b2c'
-  | 'construction'
-  | 'supplier'
-  | 'carrier'
-  | 'driver'
-  | 'recycler'
-  | 'skiphire'
-  | 'admin';
+type RolePreset = 'b2c' | 'supplier' | 'carrier' | 'driver' | 'recycler' | 'skiphire' | 'admin';
 
 const PRESETS: { value: RolePreset; label: string; apply: Partial<CreateUserForm> }[] = [
   {
@@ -82,19 +74,6 @@ const PRESETS: { value: RolePreset; label: string; apply: Partial<CreateUserForm
       canSkipHire: false,
       canRecycle: false,
       isCompany: false,
-    },
-  },
-  {
-    value: 'construction',
-    label: 'Celtniecības uzņēmums (B2B)',
-    apply: {
-      userType: 'BUYER',
-      canSell: false,
-      canTransport: false,
-      canSkipHire: false,
-      canRecycle: false,
-      isCompany: true,
-      companyType: 'CONSTRUCTION',
     },
   },
   {

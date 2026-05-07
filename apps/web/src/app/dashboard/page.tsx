@@ -14,7 +14,6 @@ const ROLE_HOME: Record<Mode, string> = {
   BUYER: '/dashboard/buyer',
   SUPPLIER: '/dashboard/supplier',
   CARRIER: '/dashboard/transporter',
-  CONSTRUCTION: '/dashboard/construction',
   RECYCLER: '/dashboard/recycling',
 };
 

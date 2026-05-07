@@ -189,9 +189,9 @@ export default function RecyclerRecordsScreen() {
     return (
       <ScreenContainer>
         <EmptyState
-          icon="file-text"
+          icon={<FileText size={32} color="#9ca3af" />}
           title="Nav ierakstu"
-          description="Atkritumu pieņemšanas ieraksti parādīsies šeit"
+          subtitle="Atkritumu pieņemšanas ieraksti parādīsīsies šeit"
         />
       </ScreenContainer>
     );

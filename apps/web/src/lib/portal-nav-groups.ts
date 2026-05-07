@@ -11,7 +11,7 @@
  * show role-correct tabs (buyer orders ≠ supplier incoming orders).
  */
 
-export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'CONSTRUCTION' | 'RECYCLER';
+export type Mode = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER';
 
 export type PortalNavTab = {
   label: string;
@@ -127,30 +127,6 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/earnings',
       tabs: [
         { label: 'Ienākumi', href: '/dashboard/earnings' },
-        { label: 'Dokumenti', href: '/dashboard/documents' },
-        { label: 'Analītika', href: '/dashboard/analytics' },
-      ],
-    },
-  ],
-
-  // ── Construction ───────────────────────────────────────────────────────────
-  CONSTRUCTION: [
-    {
-      id: 'projects',
-      label: 'Projekti',
-      primaryHref: '/dashboard/projects',
-      tabs: [
-        { label: 'Projekti', href: '/dashboard/projects' },
-        { label: 'Pasūtījumi', href: '/dashboard/orders' },
-        { label: 'Katalogs', href: '/dashboard/catalog' },
-      ],
-    },
-    {
-      id: 'finance',
-      label: 'Finanses',
-      primaryHref: '/dashboard/invoices',
-      tabs: [
-        { label: 'Rēķini', href: '/dashboard/invoices' },
         { label: 'Dokumenti', href: '/dashboard/documents' },
         { label: 'Analītika', href: '/dashboard/analytics' },
       ],

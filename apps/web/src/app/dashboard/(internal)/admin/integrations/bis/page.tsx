@@ -6,11 +6,11 @@
  * BIS (Būvniecības informācijas sistēma) — Platformas integrācija
  * https://bis.gov.lv
  *
- * Pārvalda BIS OAuth2 savienojumu, ko izmanto visa B3Hub platforma:
+ * Pārvalda BIS OAuth2 savienojumu, ko izmanto B3Hub platforma:
  *   • Tirgus pasūtījumos — BIS projektu numuru validācija
- *   • B3 Construction iekšējai lietošanai → /dashboard/b3-construction/bis
+ *   • Lursoft/BIS apvienota pārbaude B2B reģistrācijai
  *
- * Savienojums ir kopīgs — viena OAuth2 klienta atslēga abiem nolūkiem.
+ * Savienojums ir kopīgs — viena OAuth2 klienta atslēga.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -20,7 +20,6 @@ import {
   Loader2,
   ExternalLink,
   RefreshCw,
-  HardHat,
   Wifi,
   WifiOff,
   Eye,
@@ -230,21 +229,15 @@ export default function PlatformBisPage() {
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <div>
-          Šis savienojums ir <strong>kopīgs</strong> — to izmanto arī B3 Construction reģistru
-          meklēšanai.{' '}
-          <Link
-            href="/dashboard/b3-construction/bis"
-            className="underline underline-offset-4 hover:text-blue-900"
-          >
-            B3 Construction / BIS
-          </Link>
+          BIS OAuth2 savienojums ir vienots visai platformai — to izmanto gan tirgus pasūtījumu
+          validācijai, gan B2B reģistrācijas pārbaudei.
         </div>
       </div>
 
       <Tabs defaultValue="marketplace">
         <TabsList>
           <TabsTrigger value="marketplace" className="gap-1.5">
-            <HardHat className="h-3.5 w-3.5" /> Tirgus izmantojums
+            <Info className="h-3.5 w-3.5" /> Tirgus izmantojums
           </TabsTrigger>
           <TabsTrigger value="connection" className="gap-1.5">
             {isConnected ? (

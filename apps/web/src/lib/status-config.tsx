@@ -154,23 +154,6 @@ export function StatusBadgeTw({ cfg }: { cfg: TwBadgeCfg | undefined }) {
   );
 }
 
-// ── Construction project statuses ─────────────────────────────────────────────
-
-export const CONSTRUCTION_PROJECT_STATUS: Record<string, TwBadgeCfg> = {
-  PLANNING: { label: 'Plānošana', className: 'bg-gray-100 text-gray-600' },
-  ACTIVE: { label: 'Aktīvs', className: 'bg-blue-100 text-blue-700' },
-  COMPLETED: { label: 'Pabeigts', className: 'bg-green-100 text-green-700' },
-  ON_HOLD: { label: 'Apturēts', className: 'bg-amber-100 text-amber-700' },
-};
-
-// ── Daily-report (DPR) statuses ───────────────────────────────────────────────
-
-export const DPR_STATUS: Record<string, TwBadgeCfg> = {
-  DRAFT: { label: 'Melnraksts', className: 'bg-gray-100 text-gray-600' },
-  SUBMITTED: { label: 'Iesniegts', className: 'bg-blue-100 text-blue-700' },
-  APPROVED: { label: 'Apstiprināts', className: 'bg-green-100 text-green-700' },
-};
-
 // ── Skip-hire order statuses (Tailwind) ───────────────────────────────────────
 // (SKIP_STATUS above uses hex colours for the mobile app; this set uses Tailwind for web tables)
 

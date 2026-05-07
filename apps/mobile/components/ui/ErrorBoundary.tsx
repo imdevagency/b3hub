@@ -25,6 +25,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
+    this.reset = this.reset.bind(this);
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -52,7 +53,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
     console.error('[ErrorBoundary]', error.message, info.componentStack);
   }
 
-  reset = () => this.setState({ hasError: false, error: null });
+  reset() {
+    this.setState({ hasError: false, error: null });
+  }
 
   render() {
     if (this.state.hasError) {
@@ -124,11 +127,11 @@ const styles = StyleSheet.create({
   },
   devErrorText: {
     fontSize: 11,
-    color: colors.textSecondary,
+    color: colors?.textSecondary ?? '#374151',
     fontFamily: 'Courier New',
   },
   button: {
-    backgroundColor: colors.danger,
+    backgroundColor: colors?.danger ?? '#dc2626',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 32,

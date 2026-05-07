@@ -42,9 +42,6 @@ export default function BuyerDashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardStats | null>(null);
 
-  // Construction companies have their own portal — redirect them there
-  const isConstructionCompany = user?.company?.features?.includes('CONSTRUCTION_MANAGEMENT');
-
   // Sync sidebar mode to BUYER
   useEffect(() => {
     setActiveMode('BUYER');
@@ -56,10 +53,7 @@ export default function BuyerDashboardPage() {
       router.replace('/login');
       return;
     }
-    if (isConstructionCompany) {
-      router.replace('/dashboard/construction');
-    }
-  }, [user, isLoading, isConstructionCompany, router]);
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     if (!user || !token) return;
@@ -70,11 +64,6 @@ export default function BuyerDashboardPage() {
   }, [user, token]);
 
   if (isLoading || !user) {
-    return <PageSpinner className="min-h-[60vh]" />;
-  }
-
-  // Construction companies see a spinner while redirect fires
-  if (isConstructionCompany) {
     return <PageSpinner className="min-h-[60vh]" />;
   }
 

@@ -39,7 +39,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AlertTriangle, CheckCircle2, Clock, RefreshCw, SendHorizonal } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  RefreshCw,
+  SendHorizonal,
+} from 'lucide-react';
 import { format } from 'date-fns';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -206,6 +213,7 @@ export default function ApusPage() {
         </div>
       ) : records.length === 0 ? (
         <EmptyState
+          icon={ClipboardList}
           title="Nav atkritumu ierakstu"
           description="Kad tiks reģistrēta pirmā atkritumu pieņemšana, ieraksti parādīsies šeit."
         />

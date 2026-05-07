@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  Linking,
+} from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { AvatarImage } from '@/components/ui/AvatarImage';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useMode } from '@/lib/mode-context';
+import { RoleSheet } from '@/components/ui/RoleSheet';
 import { haptics } from '@/lib/haptics';
 import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { colors } from '@/lib/theme';
@@ -21,6 +31,9 @@ import {
   HelpCircle,
   ChevronRight,
   LogOut,
+  ArrowUpDown,
+  Users,
+  Building2,
 } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -98,8 +111,10 @@ function ListRow({
 
 export default function DriverMoreScreen() {
   const { user, updateUser } = useAuth();
+  const { isMultiRole } = useMode();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatar ?? null);
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   const { pick: pickAvatar, uploading: avatarUploading } = useAvatarUpload({
     type: 'user',
@@ -112,6 +127,11 @@ export default function DriverMoreScreen() {
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
 
   const handleLogout = useLogoutConfirm();
+
+  const canManageTeam =
+    user?.companyRole === 'OWNER' ||
+    user?.companyRole === 'MANAGER' ||
+    (user?.permManageTeam ?? false);
 
   const tiles: TileItem[] = [
     { icon: Truck, label: 'Transporti', onPress: () => router.push('/(driver)/vehicles') },
@@ -175,6 +195,45 @@ export default function DriverMoreScreen() {
         {/* Main tiles */}
         <TileGrid tiles={tiles} />
 
+        {/* Company — visible to owner / manager only */}
+        {canManageTeam && (
+          <>
+            <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
+            <View style={s.listCard}>
+              <ListRow
+                icon={Building2}
+                label="Uzņēmuma profils"
+                onPress={() =>
+                  Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null)
+                }
+              />
+              <ListRow
+                icon={Users}
+                label="Komanda"
+                last
+                onPress={() =>
+                  Linking.openURL('https://b3hub.lv/dashboard/company/team').catch(() => null)
+                }
+              />
+            </View>
+          </>
+        )}
+
+        {/* Role switcher */}
+        {isMultiRole && (
+          <>
+            <Text style={s.sectionLabel}>LOMA</Text>
+            <View style={s.listCard}>
+              <ListRow
+                icon={ArrowUpDown}
+                label="Mainīt lomu"
+                last
+                onPress={() => setRoleSheetOpen(true)}
+              />
+            </View>
+          </>
+        )}
+
         {/* Help */}
         <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
         <View style={s.listCard}>
@@ -194,6 +253,8 @@ export default function DriverMoreScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
     </ScreenContainer>
   );
 }

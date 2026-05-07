@@ -6,14 +6,11 @@
  * Platform Integration Hub — all external services wired into the B3Hub marketplace.
  *
  * ── OWNERSHIP RULE ────────────────────────────────────────────────────────────
- * This section is for integrations that serve the MARKETPLACE and its users
- * (buyers, sellers, carriers). If an integration serves B3 Group's internal
- * business operations (B3 Construction, B3 Recycling), it lives under that BU's
- * own admin section (/dashboard/b3-construction/*, /dashboard/b3-recycling/*).
+ * This section is for integrations that serve the B3Hub MARKETPLACE and its users
+ * (buyers, sellers, carriers, construction ERP accounts).
  *
  * Decision rule: "Who is the end user of this integration's data?"
  *   → Marketplace users (auto-fill, risk signals, payments, notifications) = here
- *   → B3 Construction internal staff (BIS, Jumis)         = /dashboard/b3-construction
  *   → B3 Recycling internal staff                         = /dashboard/b3-recycling
  * ──────────────────────────────────────────────────────────────────────────────
  */
@@ -28,11 +25,9 @@ import {
   Clock,
   CreditCard,
   ExternalLink,
-  HardHat,
   Mail,
   MapPin,
   MessageSquare,
-  Receipt,
   Recycle,
   WifiOff,
 } from 'lucide-react';
@@ -149,29 +144,6 @@ const INTEGRATIONS: PlatformIntegration[] = [
     category: 'maps',
     scope: 'marketplace',
     planned: true,
-  },
-  // ─────────────────────────── B3 CONSTRUCTION INTERNAL ──────────────────────
-  {
-    id: 'internal-bis',
-    label: 'BIS',
-    scopeLabel: 'B3 Construction',
-    description:
-      'Reģistru meklētājs iekšējai lietošanai — būvkomersantu un speciālistu vetting. Izmanto kopīgo BIS OAuth2 savienojumu.',
-    href: '/dashboard/b3-construction/bis',
-    icon: HardHat,
-    category: 'data',
-    scope: 'internal',
-  },
-  {
-    id: 'internal-jumis',
-    label: 'Jumis',
-    scopeLabel: 'B3 Construction SIA',
-    description:
-      'B3 Construction SIA atsevišķais Jumis grāmatvedības konts — darbu akti, iekšējie norēķini',
-    href: '/dashboard/b3-construction/jumis',
-    icon: Receipt,
-    category: 'accounting',
-    scope: 'internal',
   },
 ];
 

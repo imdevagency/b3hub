@@ -150,9 +150,9 @@ export default function RecyclerIncomingScreen() {
     return (
       <ScreenContainer>
         <EmptyState
-          icon="inbox"
+          icon={<Truck size={32} color="#9ca3af" />}
           title="Nav ienākošo piegāžu"
-          description="Šeit parādīsies transporta darbi, kas ved atkritumus uz jūsu centru"
+          subtitle="Šeit parādīsīsies transporta darbi, kas ved atkritumu uz jūsu centru"
         />
       </ScreenContainer>
     );

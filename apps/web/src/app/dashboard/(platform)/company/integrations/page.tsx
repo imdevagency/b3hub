@@ -57,7 +57,6 @@ import {
   ShieldCheck,
   Clock,
   Zap,
-  HardHat,
   Recycle,
   CreditCard,
   Map,
@@ -286,24 +285,6 @@ interface ModuleDef {
 }
 
 const MODULES: ModuleDef[] = [
-  {
-    id: 'CONSTRUCTION_MANAGEMENT',
-    icon: HardHat,
-    title: 'Celtniecības vadība',
-    description:
-      'Projektu vadība, DPR (dienas ražošanas pārskati), darba laika uzskaite, apakšuzņēmēji un piedāvājumu pārvaldība.',
-    features: [
-      'Projekti un apakšprojekti',
-      'DPR veidnes un aizpildīšana',
-      'Laiks un tehnika',
-      'Apakšuzņēmēju pārvaldība',
-    ],
-    links: [
-      { label: 'Projekti', href: '/dashboard/construction/projects' },
-      { label: 'DPR', href: '/dashboard/construction/dpr' },
-    ],
-    companyTypes: ['CONSTRUCTION', 'HYBRID'],
-  },
   {
     id: 'RECYCLING_MANAGEMENT',
     icon: Recycle,

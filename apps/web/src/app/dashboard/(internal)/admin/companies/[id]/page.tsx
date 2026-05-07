@@ -16,7 +16,6 @@ import {
   Users,
   ShoppingBag,
   DollarSign,
-  HardHat,
   RefreshCcw,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -116,23 +115,6 @@ export default function AdminCompanyDetailPage() {
       setCompany((c) => (c ? { ...c, ...updated } : c));
     } catch {
       setError('Neizdevās saglabāt izmaiņas.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function toggleFeature(feature: string, enabled: boolean) {
-    if (!token || !company) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const current: string[] = company.features ?? [];
-      const next = enabled ? [...current, feature] : current.filter((f) => f !== feature);
-      const updated = await adminUpdateCompany(company.id, { features: next }, token);
-      setCompany((c) => (c ? { ...c, features: updated.features ?? next } : c));
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Nezināma kļūda';
-      setError(`Neizdevās saglabāt funkcionalitāti: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -382,34 +364,6 @@ export default function AdminCompanyDetailPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Feature flags */}
-      {['CONSTRUCTION', 'HYBRID'].includes(company.companyType) && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">SaaS moduļi</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="feat-construction" className="font-medium flex items-center gap-2">
-                  <HardHat className="h-4 w-4 text-blue-600" />
-                  Celtniecības vadība
-                </Label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Projekti, DPR, darba laiks, apakšuzņēmēji, piedāvājumi
-                </p>
-              </div>
-              <Switch
-                id="feat-construction"
-                checked={(company.features ?? []).includes('CONSTRUCTION_MANAGEMENT')}
-                onCheckedChange={(v) => toggleFeature('CONSTRUCTION_MANAGEMENT', v)}
-                disabled={saving}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Team */}
       {company.users && company.users.length > 0 && (

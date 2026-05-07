@@ -1,31 +1,32 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { useAuth } from './auth-context';
 
-export type AppMode = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER' | 'CONSTRUCTION';
+export type AppMode = 'BUYER' | 'SUPPLIER' | 'CARRIER' | 'RECYCLER';
 
 export const MODE_HOME: Record<AppMode, string> = {
   BUYER: '/(buyer)/home',
   SUPPLIER: '/(seller)/home',
   CARRIER: '/(driver)/home',
   RECYCLER: '/(recycler)/home',
-  CONSTRUCTION: '/(construction)/home',
 };
 
-/** Derive the best default mode from the user's role flags. */
+/**
+ * Priority order: RECYCLER > SUPPLIER > CARRIER > BUYER
+ * This ensures every user type lands in their primary context on first open.
+ */
 function defaultModeForUser(
   user: {
     canSell: boolean;
     canTransport: boolean;
     canRecycle?: boolean;
     isCompany: boolean;
-    company?: { companyType?: string; features?: string[] };
+    company?: { features?: string[] };
   } | null,
 ): AppMode {
   if (!user) return 'BUYER';
-  if (user.canRecycle && !user.canSell && !user.canTransport) return 'RECYCLER';
-  if ((user.company?.features ?? []).includes('CONSTRUCTION_MANAGEMENT')) return 'CONSTRUCTION';
-  if (user.canTransport && !user.canSell) return 'CARRIER';
-  if (user.canSell && !user.canTransport) return 'SUPPLIER';
+  if (user.canRecycle) return 'RECYCLER';
+  if (user.canSell) return 'SUPPLIER'; // hybrid (canSell+canTransport) → prefer SUPPLIER
+  if (user.canTransport) return 'CARRIER';
   return 'BUYER';
 }
 
@@ -44,22 +45,28 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
   const availableModes = useMemo<AppMode[]>(() => {
     const modes: AppMode[] = [];
     const companyFeatures: string[] = (user as any)?.company?.features ?? [];
-    const companyType: string | undefined = (user as any)?.company?.companyType;
-    const isPureTransportIndividual = !!(user?.canTransport && !user?.canSell && !user?.isCompany);
-    if (!isPureTransportIndividual) modes.push('BUYER');
+    const isConstructionErp = companyFeatures.includes('CONSTRUCTION_MANAGEMENT');
+    // BUYER = zero-specialist identity. Once a user is approved for any role on the platform
+    // their primary experience is that role. A supplier sells, a carrier drives, a recycler
+    // operates a facility — none of them need the general buyer marketplace tab.
+    const hasSpecialistRole = !!(
+      user?.canSell ||
+      user?.canTransport ||
+      (user as any)?.canRecycle ||
+      isConstructionErp
+    );
+    if (!hasSpecialistRole) modes.push('BUYER');
     if (user?.canSell) modes.push('SUPPLIER');
     if (user?.canTransport) modes.push('CARRIER');
     if ((user as any)?.canRecycle) modes.push('RECYCLER');
-    if (companyFeatures.includes('CONSTRUCTION_MANAGEMENT')) modes.push('CONSTRUCTION');
-    if (modes.length === 0) modes.push('BUYER'); // fallback
+    if (isConstructionErp) modes.push('CONSTRUCTION');
+    if (modes.length === 0) modes.push('BUYER'); // fallback for unauthenticated/edge cases
     return modes;
   }, [
     user?.canSell,
     user?.canTransport,
     (user as any)?.canRecycle,
-    user?.isCompany,
     (user as any)?.company?.features,
-    (user as any)?.company?.companyType,
   ]);
 
   const [mode, setModeState] = useState<AppMode>(() => defaultModeForUser(user));

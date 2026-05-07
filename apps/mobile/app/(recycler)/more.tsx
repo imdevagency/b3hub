@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useMode } from '@/lib/mode-context';
+import { RoleSheet } from '@/components/ui/RoleSheet';
 import { haptics } from '@/lib/haptics';
 import { useLogoutConfirm } from '@/lib/use-logout-confirm';
 import { colors } from '@/lib/theme';
@@ -16,6 +18,7 @@ import {
   LogOut,
   Building2,
   Recycle,
+  ArrowUpDown,
 } from 'lucide-react-native';
 
 function ListRow({
@@ -51,7 +54,9 @@ function ListRow({
 
 export default function RecyclerMoreScreen() {
   const { user } = useAuth();
+  const { isMultiRole } = useMode();
   const router = useRouter();
+  const [roleSheetOpen, setRoleSheetOpen] = useState(false);
 
   const handleLogout = useLogoutConfirm();
 
@@ -127,12 +132,28 @@ export default function RecyclerMoreScreen() {
           </View>
         </View>
 
+        {isMultiRole && (
+          <View style={ls.section}>
+            <Text style={ls.sectionLabel}>Loma</Text>
+            <View style={ls.card}>
+              <ListRow
+                icon={ArrowUpDown}
+                label="Mainīt lomu"
+                onPress={() => setRoleSheetOpen(true)}
+                last
+              />
+            </View>
+          </View>
+        )}
+
         <View style={ls.section}>
           <View style={ls.card}>
             <ListRow icon={LogOut} label="Iziet" onPress={handleLogout} isDestructive last />
           </View>
         </View>
       </ScrollView>
+
+      {isMultiRole && <RoleSheet visible={roleSheetOpen} onClose={() => setRoleSheetOpen(false)} />}
     </ScreenContainer>
   );
 }

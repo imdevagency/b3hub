@@ -207,80 +207,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
       ],
     },
   ],
-  CONSTRUCTION: [
-    {
-      id: 'construction-main',
-      label: '',
-      icon: LayoutDashboard,
-      items: [
-        { label: 'Sākumlapa', href: '/dashboard/construction', icon: LayoutDashboard },
-        {
-          label: 'Projekti',
-          href: '/dashboard/construction/projects',
-          icon: FolderKanban,
-        },
-        {
-          label: 'Dienas atskaites',
-          href: '/dashboard/construction/daily-reports',
-          icon: ClipboardList,
-        },
-      ],
-    },
-    {
-      id: 'construction-finance',
-      label: 'Finanses',
-      icon: Receipt,
-      items: [
-        {
-          label: 'Rentabilitāte',
-          href: '/dashboard/construction/profitability',
-          icon: BarChart3,
-        },
-        {
-          label: 'Izrakstītie rēķini',
-          href: '/dashboard/construction/invoices',
-          icon: Receipt,
-        },
-      ],
-    },
-    {
-      id: 'construction-settings',
-      label: 'Iestatījumi',
-      icon: Settings,
-      items: [
-        {
-          label: 'Klienti',
-          href: '/dashboard/construction/clients',
-          icon: Building2,
-        },
-        {
-          label: 'Darbinieki',
-          href: '/dashboard/construction/employees',
-          icon: Users,
-        },
-        {
-          label: 'Tehnika',
-          href: '/dashboard/construction/equipment',
-          icon: Wrench,
-        },
-        {
-          label: 'Apakšuzņēmēji',
-          href: '/dashboard/construction/subcontractors',
-          icon: Briefcase,
-        },
-        {
-          label: 'Izmaksu likmes',
-          href: '/dashboard/construction/rates',
-          icon: Euro,
-        },
-        {
-          label: 'Komanda',
-          href: '/dashboard/company/team',
-          icon: Users,
-        },
-      ],
-    },
-  ],
   RECYCLER: [
     {
       id: 'recycler-main',
@@ -325,7 +251,6 @@ const ROLE_HOME: Record<Mode, string> = {
   BUYER: '/dashboard/buyer',
   SUPPLIER: '/dashboard/supplier',
   CARRIER: '/dashboard/transporter',
-  CONSTRUCTION: '/dashboard/construction',
   RECYCLER: '/dashboard/recycling',
 };
 
@@ -344,7 +269,6 @@ const MODE_LABEL: Record<Mode, string> = {
   BUYER: 'Pasūtītājs',
   SUPPLIER: 'Piegādātājs',
   CARRIER: 'Pārvadātājs',
-  CONSTRUCTION: 'Celtniecība',
   RECYCLER: 'Pārstrāde',
 };
 
@@ -352,7 +276,6 @@ const MODE_ICON: Record<Mode, React.ElementType> = {
   BUYER: Box,
   SUPPLIER: Package,
   CARRIER: Truck,
-  CONSTRUCTION: Building2,
   RECYCLER: Recycle,
 };
 
@@ -394,7 +317,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       '/dashboard/buyer',
       '/dashboard/supplier',
       '/dashboard/transporter',
-      '/dashboard/construction',
       '/dashboard/recycling',
     ]),
     [pathname],
@@ -613,11 +535,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
         {(() => {
-          const visibleModes = availableModes.filter(
-            (mode) =>
-              // Hide BUYER tab for construction ERP companies — clicking it just redirects back
-              !(mode === 'BUYER' && availableModes.includes('CONSTRUCTION')),
-          );
+          const visibleModes = availableModes;
           return (
             visibleModes.length > 1 && (
               <div className="px-2 pb-2 flex gap-1 group-data-[collapsible=icon]:hidden">
