@@ -4,7 +4,7 @@ import { Check } from 'lucide-react-native';
 import type { SkipWasteCategory } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
-import { WASTE_TYPES, WASTE_ICONS } from './_types';
+import { SKIP_WASTE_CATEGORIES, SKIP_WASTE_LABELS, WASTE_ICONS } from './_types';
 import { colors } from '@/lib/theme';
 
 export function SkipWasteStep({
@@ -21,8 +21,8 @@ export function SkipWasteStep({
     onSelect(id);
   };
 
-  const content = WASTE_TYPES.map((id) => {
-    const info = t.skipHire.step2.types[id];
+  const content = SKIP_WASTE_CATEGORIES.map((id) => {
+    const info = SKIP_WASTE_LABELS[id];
     const isSelected = selected === id;
     const Icon = WASTE_ICONS[id];
     return (
@@ -43,7 +43,7 @@ export function SkipWasteStep({
             strokeWidth={selected === id ? 2.5 : 1.5}
           />
           <Text style={[s2.label, isSelected && s2.labelSelected]}>{info.label}</Text>
-          <Text style={[s2.desc, isSelected && s2.descSelected]}>{info.desc}</Text>
+          <Text style={[s2.desc, isSelected && s2.descSelected]}>{info.sub}</Text>
         </TouchableOpacity>
       </View>
     );

@@ -43,6 +43,8 @@ import {
   ShieldCheck,
   Star,
   Ticket,
+  Trash2,
+  Toilet,
   Truck,
   Users,
   Wallet,
@@ -313,12 +315,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
 
   const isRouteActive = React.useMemo(
-    () => makeIsRouteActive(pathname, [
-      '/dashboard/buyer',
-      '/dashboard/supplier',
-      '/dashboard/transporter',
-      '/dashboard/recycling',
-    ]),
+    () =>
+      makeIsRouteActive(pathname, [
+        '/dashboard/buyer',
+        '/dashboard/supplier',
+        '/dashboard/transporter',
+        '/dashboard/recycling',
+      ]),
     [pathname],
   );
 
@@ -374,6 +377,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             (item) => item.href !== '/dashboard/transporter' && item.href !== '/dashboard/jobs',
           ),
         }));
+      }
+
+      // Skip hire + toilet cabin operator — add fleet management sections
+      if ((user as any)?.canSkipHire) {
+        sections = sections.map((section) => {
+          if (section.id !== 'carrier-main') return section;
+          return {
+            ...section,
+            items: [
+              ...section.items,
+              {
+                label: 'Konteineri',
+                href: '/dashboard/skip-hire/fleet',
+                icon: Trash2,
+              },
+              {
+                label: 'Tualetes kabīnes',
+                href: '/dashboard/toilet-cabins',
+                icon: Toilet,
+              },
+            ],
+          };
+        });
       }
     }
 

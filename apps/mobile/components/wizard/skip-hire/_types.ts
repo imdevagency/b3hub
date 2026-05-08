@@ -3,7 +3,14 @@
  */
 
 import { Dimensions } from 'react-native';
-import type { SkipSize, SkipSizeDefinition, SkipWasteCategory } from '@/lib/api';
+import type { SkipSize, SkipSizeDefinition } from '@/lib/api';
+import {
+  SKIP_WASTE_CATEGORIES,
+  SKIP_WASTE_LABELS,
+  type SkipWasteCategory,
+} from '@b3hub/shared';
+export type { SkipWasteCategory };
+export { SKIP_WASTE_CATEGORIES, SKIP_WASTE_LABELS };
 import type { LucideIcon } from 'lucide-react-native';
 import { Container, TreePine, Hammer } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
@@ -21,17 +28,12 @@ export const MAP_SMALL = Math.round(SCREEN_H * 0.22);
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 export const WASTE_ICONS: Partial<Record<SkipWasteCategory, LucideIcon>> = {
-  MIXED: Container,         // Būvgružu konteineru noma
-  WOOD: TreePine,           // Koka atkritumi
-  CONCRETE_RUBBLE: Hammer,  // Tīri būvgruži
+  MIXED: Container,
+  WOOD: TreePine,
+  CONCRETE_RUBBLE: Hammer,
 };
 
-/** Only the 3 construction-relevant waste streams shown in the wizard. */
-export const WASTE_TYPES: SkipWasteCategory[] = [
-  'MIXED',
-  'WOOD',
-  'CONCRETE_RUBBLE',
-];
+// WASTE_TYPES and labels re-exported from @b3hub/shared above.
 
 export const SIZES: Array<{ id: SkipSize; price: number; color: string; heightPct: number }> = [
   { id: 'MINI', price: 89, color: colors.textSecondary, heightPct: 0.28 },

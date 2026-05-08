@@ -25,12 +25,8 @@ import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/Web
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import type { DateRange } from 'react-day-picker';
-import {
-  createSkipHireOrder,
-  mapWasteCategory,
-  mapSkipSize,
-  type SkipHireOrder,
-} from '@/lib/api/skip-hire';
+import { createSkipHireOrder, mapSkipSize, type SkipHireOrder } from '@/lib/api/skip-hire';
+import { SKIP_WASTE_CATEGORIES, SKIP_WASTE_LABELS, type SkipWasteCategory } from '@b3hub/shared';
 import { createGuestOrder } from '@/lib/api';
 import type { User } from '@/lib/api';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
@@ -74,13 +70,7 @@ const SIZES = [
   },
 ];
 
-const WASTE_TYPES = [
-  { id: 'mixed', label: 'Jaukti atkritumi', sub: 'Dažādu veidu celtniecības atkritumi' },
-  { id: 'rubble', label: 'Betons / Ķieģeļi', sub: 'Smagi būvgruži un plāksnes' },
-  { id: 'green', label: 'Zaļā masa', sub: 'Koki, zari, lapas, dārza atkritumi' },
-  { id: 'wood', label: 'Koksne', sub: 'Dēļi, sijas, logi, durvis' },
-  { id: 'metal', label: 'Metāls', sub: 'Stiegrojums, profili, metāllūžņi' },
-];
+// SKIP_WASTE_CATEGORIES + SKIP_WASTE_LABELS imported from @b3hub/shared — single source of truth with mobile.
 
 const DURATIONS = [
   { days: 7, label: '1 nedēļa' },
@@ -129,7 +119,7 @@ export function SkipHireWizard({ mode }: Props) {
 
   const [step, setStep] = useState<WizardStep>('waste');
   const [size, setSize] = useState('');
-  const [wasteType, setWasteType] = useState('');
+  const [wasteType, setWasteType] = useState<SkipWasteCategory | ''>('');
   const [address, setAddress] = useState('');
   const [lat, setLat] = useState<number | undefined>();
   const [lng, setLng] = useState<number | undefined>();
@@ -348,7 +338,7 @@ export function SkipHireWizard({ mode }: Props) {
       const result = await createSkipHireOrder(
         {
           location: address,
-          wasteCategory: mapWasteCategory(wasteType),
+          wasteCategory: wasteType as SkipWasteCategory,
           skipSize: mapSkipSize(size),
           deliveryDate,
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
@@ -421,22 +411,25 @@ export function SkipHireWizard({ mode }: Props) {
             </p>
           )}
           <div className="flex flex-col gap-2">
-            {WASTE_TYPES.map((w) => (
-              <button
-                key={w.id}
-                onClick={() => {
-                  setWasteType(w.id);
-                  setStep('size');
-                }}
-                className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-emerald-300 hover:shadow-sm transition-all group"
-              >
-                <div>
-                  <p className="font-semibold text-foreground">{w.label}</p>
-                  <p className="text-sm text-muted-foreground">{w.sub}</p>
-                </div>
-                <ArrowRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
-              </button>
-            ))}
+            {SKIP_WASTE_CATEGORIES.map((id) => {
+              const w = SKIP_WASTE_LABELS[id];
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setWasteType(id);
+                    setStep('size');
+                  }}
+                  className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-emerald-300 hover:shadow-sm transition-all group"
+                >
+                  <div>
+                    <p className="font-semibold text-foreground">{w.label}</p>
+                    <p className="text-sm text-muted-foreground">{w.sub}</p>
+                  </div>
+                  <ArrowRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

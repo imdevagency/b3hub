@@ -12,7 +12,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { differenceInCalendarDays } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
@@ -22,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
+import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
+import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,6 +35,7 @@ import {
   CheckCircle2,
   Loader2,
   Mail,
+  MapPin,
   Minus,
   Phone,
   Plus,
@@ -66,6 +69,53 @@ export function ToiletCabinWizard({ mode }: Props) {
   const [city, setCity] = useState('');
   const [lat, setLat] = useState<number | undefined>();
   const [lng, setLng] = useState<number | undefined>();
+
+  // ── Map ───────────────────────────────────────────────────────────────────
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const apiKey = getGoogleMapsPublicKey();
+    if (!apiKey) return;
+    loadGoogleMapsScript(apiKey, () => {
+      const google = window.google;
+      if (!google || !mapDivRef.current || mapInstanceRef.current) return;
+      const map = new google.maps.Map(mapDivRef.current, {
+        center: { lat: 56.946, lng: 24.1059 },
+        zoom: 11,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: 'greedy',
+      });
+      mapInstanceRef.current = map;
+    });
+  }, []);
+
+  const updateMapPin = useCallback((newLat: number, newLng: number) => {
+    const google = window.google;
+    if (!google || !mapInstanceRef.current) return;
+    const position = { lat: newLat, lng: newLng };
+    if (markerRef.current) {
+      markerRef.current.setPosition(position);
+    } else {
+      markerRef.current = new google.maps.Marker({
+        position,
+        map: mapInstanceRef.current,
+        animation: google.maps.Animation.DROP,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#10b981',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      });
+    }
+    mapInstanceRef.current.panTo(position);
+    mapInstanceRef.current.setZoom(16);
+  }, []);
 
   // Step 3 — delivery
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -317,6 +367,7 @@ export function ToiletCabinWizard({ mode }: Props) {
               setLat(la);
               setLng(ln);
               if (ct) setCity(ct);
+              if (la && ln) updateMapPin(la, ln);
             }}
           />
         </div>
@@ -452,69 +503,91 @@ export function ToiletCabinWizard({ mode }: Props) {
 
   // ── Right panel ────────────────────────────────────────────────────────────
 
+  const showMap = step === 1;
+
   const rightPanel = (
     <div
       className={
         mode === 'public'
-          ? 'hidden lg:flex flex-1 flex-col gap-8 justify-center sticky top-28 h-150 rounded-3xl bg-muted/5 border border-border/40 shadow-xl px-10 py-10'
-          : 'hidden lg:flex flex-1 flex-col gap-8 justify-center bg-muted/5 sticky top-0 h-[calc(100svh-4rem)] px-10 py-10'
+          ? 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-150 rounded-3xl shadow-xl ring-1 ring-border/40'
+          : 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
-      <div>
-        <p className="text-2xl font-bold text-foreground mb-2">Tualetes kabīnes</p>
-        <p className="text-sm text-muted-foreground">
-          Pārvietojamās tualetes būvlaukumiem, pasākumiem un renovācijām. Regulāra apkope iekļauta.
-        </p>
-      </div>
+      {/* Map — always rendered so Google Maps initialises; hidden on non-address steps */}
+      <div
+        ref={mapDivRef}
+        className={`absolute inset-0 transition-opacity duration-300 ${showMap ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      />
 
-      <div className="flex flex-col gap-3">
-        {[
-          {
-            icon: '🚚',
-            label: 'Piegāde un uzstādīšana',
-            sub: 'Piegādājam un novietojam norādītājā vietā',
-          },
-          {
-            icon: '🧹',
-            label: 'Apkope 1× nedēļā',
-            sub: 'Tīrīšana, dezinfekcija un atkritumu izvešana',
-          },
-          {
-            icon: '🔄',
-            label: 'Savākšana nomas beigās',
-            sub: 'Atbraucam un novācam kabīni bez piemaksas',
-          },
-          {
-            icon: '📋',
-            label: 'Rēķins un dokumenti',
-            sub: 'Piegādājam visus nepie-ciešamos dokumentus',
-          },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="flex items-start gap-3 rounded-2xl bg-background/60 border border-border/40 px-4 py-3"
-          >
-            <span className="text-xl shrink-0">{item.icon}</span>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{item.label}</p>
-              <p className="text-xs text-muted-foreground">{item.sub}</p>
-            </div>
+      {showMap && address && (
+        <div className="absolute top-4 left-4 z-10">
+          <div className="bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-xs font-medium text-foreground flex items-center gap-1.5">
+            <MapPin className="size-3.5 shrink-0" />
+            <span className="truncate max-w-55">{address}</span>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {estimatedPrice > 0 && (
-        <div className="rounded-2xl bg-foreground text-background px-6 py-4 flex items-center justify-between">
+      {!showMap && (
+        <div className="flex flex-1 flex-col gap-8 justify-center px-10 py-10">
           <div>
-            <p className="text-xs font-medium opacity-70 mb-0.5">Orientējoša cena</p>
-            <p className="text-3xl font-bold">€{estimatedPrice.toFixed(0)}</p>
-          </div>
-          <div className="text-right text-xs opacity-70">
-            <p>
-              {cabinCount} kab. × {effectiveDays || '?'} d.
+            <p className="text-2xl font-bold text-foreground mb-2">Tualetes kabīnes</p>
+            <p className="text-sm text-muted-foreground">
+              Pārvietojamās tualetes būvlaukumiem, pasākumiem un renovācijām. Regulāra apkope
+              iekļauta.
             </p>
-            <p>€{PRICE_PER_CABIN_PER_DAY}/kab./dienā</p>
           </div>
+
+          <div className="flex flex-col gap-3">
+            {[
+              {
+                icon: '🚚',
+                label: 'Piegāde un uzstādīšana',
+                sub: 'Piegādājam un novietojam norādītājā vietā',
+              },
+              {
+                icon: '🧹',
+                label: 'Apkope 1× nedēļā',
+                sub: 'Tīrīšana, dezinfekcija un atkritumu izvešana',
+              },
+              {
+                icon: '🔄',
+                label: 'Savākšana nomas beigās',
+                sub: 'Atbraucam un novācam kabīni bez piemaksas',
+              },
+              {
+                icon: '📋',
+                label: 'Rēķins un dokumenti',
+                sub: 'Piegādājam visus nepieciešamos dokumentus',
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-start gap-3 rounded-2xl bg-background/60 border border-border/40 px-4 py-3"
+              >
+                <span className="text-xl shrink-0">{item.icon}</span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {estimatedPrice > 0 && (
+            <div className="rounded-2xl bg-foreground text-background px-6 py-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium opacity-70 mb-0.5">Orientējoša cena</p>
+                <p className="text-3xl font-bold">€{estimatedPrice.toFixed(0)}</p>
+              </div>
+              <div className="text-right text-xs opacity-70">
+                <p>
+                  {cabinCount} kab. × {effectiveDays || '?'} d.
+                </p>
+                <p>€{PRICE_PER_CABIN_PER_DAY}/kab./dienā</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

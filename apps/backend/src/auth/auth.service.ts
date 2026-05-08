@@ -399,7 +399,7 @@ export class AuthService {
     if (user.userType === 'BUYER' && !isPureTransportIndividual)
       modes.push('BUYER');
     if (user.canSell) modes.push('SUPPLIER');
-    if (isTransport) modes.push('CARRIER');
+    if (isTransport || (user as any).canSkipHire) modes.push('CARRIER');
 
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
   }

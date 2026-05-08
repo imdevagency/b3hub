@@ -39,3 +39,56 @@ export async function createToiletCabinOrder(
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 }
+
+// ── Carrier-side ──────────────────────────────────────────────────────────────
+
+export type ToiletCabinStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'DELIVERED'
+  | 'IN_USE'
+  | 'COLLECTED'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export interface CarrierToiletCabinOrder {
+  id: string;
+  orderNumber: string;
+  address: string;
+  city: string;
+  lat?: number | null;
+  lng?: number | null;
+  cabinCount: number;
+  hireDays: number;
+  deliveryDate: string;
+  deliveryWindow?: string | null;
+  price: number;
+  currency: string;
+  status: ToiletCabinStatus;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export async function getCarrierToiletCabinOrders(
+  token: string,
+  status?: string,
+): Promise<CarrierToiletCabinOrder[]> {
+  const qs = status && status !== 'ALL' ? `?status=${status}` : '';
+  return apiFetch<CarrierToiletCabinOrder[]>(`/toilet-cabins/carrier/orders${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function updateToiletCabinCarrierStatus(
+  id: string,
+  status: ToiletCabinStatus,
+  token: string,
+): Promise<void> {
+  return apiFetch<void>(`/toilet-cabins/${id}/carrier-status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
