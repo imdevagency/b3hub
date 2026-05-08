@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -513,6 +514,58 @@ export default function CatalogScreen() {
         </ScrollView>
       </View>
 
+      {/* Location context strip — shows delivery address or prompt to enable live pricing */}
+      <View style={{ paddingHorizontal: 20, marginTop: 4, marginBottom: 10 }}>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={handleNearMeToggle}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: nearMe || savedDelivery ? '#f0fdf4' : '#f9fafb',
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            paddingVertical: 11,
+            borderWidth: 1,
+            borderColor: nearMe || savedDelivery ? '#bbf7d0' : '#e5e7eb',
+          }}
+        >
+          {nearMeLoading ? (
+            <ActivityIndicator size="small" color="#166534" />
+          ) : (
+            <MapPin
+              size={15}
+              color={nearMe || savedDelivery ? '#166534' : '#9ca3af'}
+              strokeWidth={2}
+            />
+          )}
+          <Text
+            style={{
+              flex: 1,
+              fontSize: 13,
+              fontFamily: 'Inter_500Medium',
+              color: nearMe || savedDelivery ? '#166534' : '#6b7280',
+            }}
+            numberOfLines={1}
+          >
+            {nearMe
+              ? 'Cenas pēc GPS atrašanās vietas'
+              : savedDelivery
+                ? `Cenas uz: ${savedDelivery.address}`
+                : 'Norādīt adresi — redzēt cenas ar piegādi'}
+          </Text>
+          {livePricesLoading && !nearMeLoading ? (
+            <ActivityIndicator size="small" color="#166534" style={{ marginRight: 4 }} />
+          ) : null}
+          {nearMe ? (
+            <X size={14} color="#166534" strokeWidth={2.5} />
+          ) : (
+            <ChevronRight size={14} color={savedDelivery ? '#166534' : '#9ca3af'} />
+          )}
+        </TouchableOpacity>
+      </View>
+
       {/* Other services — quick access to non-material wizards */}
       <View style={{ marginBottom: 12 }}>
         <ScrollView
@@ -627,9 +680,11 @@ export default function CatalogScreen() {
         }}
         renderItem={({ item: cat }) => {
           const catData = categoryData[cat];
+          const live = liveData[cat];
           const hasRecycled = catData?.hasRecycled ?? false;
-          const supCount = catData?.supplierCount ?? 0;
-          const minPrice = catData?.minPrice ?? null;
+          // Prefer live offer prices (calculated to delivery location) over base catalogue prices
+          const supCount = live?.supplierCount ?? catData?.supplierCount ?? 0;
+          const minPrice = live?.minPrice ?? catData?.minPrice ?? null;
 
           return (
             <CategoryCard

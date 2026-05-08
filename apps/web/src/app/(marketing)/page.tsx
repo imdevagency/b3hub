@@ -41,24 +41,20 @@ export default function HomePage() {
 
       {/* ── 1. HERO ── */}
       <Hero
-        eyebrow="Latvija · Baltija"
+        align="center"
+        eyebrow="B3Hub · Latvija"
         title={
           <>
-            Materiāli.
+            Digitālā platforma visai
             <br />
-            Transports.
-            <br />
-            Dokumenti.
+            <span className="text-[#999999]">celtniecības loģistikai</span>
           </>
         }
-        subtitle="Digitālā platforma, kas savieno karjerus, pārvadātājus un būvniekus — no pasūtījuma līdz rēķinam, automātiski."
+        subtitle="Izvēlieties izdevīgāko piedāvājumu būvmateriāliem, transportam un atkritumu konteineriem no licencētiem pakalpojumu sniedzējiem Latvijā."
         pricingNote="Pircējiem — bezmaksas. Piegādātājiem no 6%. Pārvadātājiem no 8%."
         actions={
-          <div className="flex flex-col gap-4 w-full max-w-xl">
+          <div className="flex flex-col items-center gap-6 w-full mt-4">
             <HeroAddressSearch />
-            <CTAButton href={'#uznemumiem'} variant="secondary" size="lg" className="self-start">
-              Uzzināt vairāk →
-            </CTAButton>
           </div>
         }
       />

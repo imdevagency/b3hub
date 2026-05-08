@@ -54,12 +54,16 @@ export function Hero({
             </div>
           )}
 
-          <h1 className="text-6xl md:text-7xl lg:text-[5rem] font-bold tracking-tighter text-foreground leading-[0.95]">
+          <h1 className="text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tighter text-foreground leading-[0.9]">
             {title}
           </h1>
 
           {subtitle && (
-            <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-lg tracking-tight leading-snug">
+            <p
+              className={`text-xl md:text-2xl text-muted-foreground font-light tracking-tight leading-snug ${
+                align === 'center' && !hasRightSide ? 'max-w-2xl mx-auto' : 'max-w-lg'
+              }`}
+            >
               {subtitle}
             </p>
           )}

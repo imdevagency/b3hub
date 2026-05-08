@@ -253,7 +253,7 @@ export function AddressAutocomplete({
   return (
     <div className="relative w-full group" ref={containerRef}>
       <div className="relative flex items-center">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none z-10 shrink-0" />
+        <Search className="absolute left-6 sm:left-8 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none z-10 shrink-0" />
         <Input
           id={id}
           type="text"
@@ -267,7 +267,7 @@ export function AddressAutocomplete({
           }}
           placeholder={placeholder}
           required={required}
-          className={`pl-11 pr-10 bg-transparent ${className ?? ''}`}
+          className={`pl-14 sm:pl-16 pr-10 bg-transparent ${className ?? ''}`}
           autoComplete="new-password"
         />
         {loading && (

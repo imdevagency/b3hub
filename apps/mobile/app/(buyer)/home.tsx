@@ -772,6 +772,143 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* ── Popular materials — quick-start for users with no orders yet ── */}
+        {!loading &&
+          !activeItem &&
+          recentOrders.length === 0 &&
+          (!user?.companyRole || (user?.permManageOrders ?? false)) && (
+            <View style={{ marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  fontSize: 20,
+                  letterSpacing: -0.4,
+                  color: '#111827',
+                  paddingHorizontal: 20,
+                  marginBottom: 14,
+                }}
+              >
+                Populārākie materiāli
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {[
+                  {
+                    cat: 'GRAVEL',
+                    label: 'Grants',
+                    sub: 'Ceļu un pamatu būvei',
+                    color: '#e2e8f0',
+                    accent: '#475569',
+                  },
+                  {
+                    cat: 'SAND',
+                    label: 'Smiltis',
+                    sub: 'Būvēm un apzaļum',
+                    color: '#fef3c7',
+                    accent: '#d97706',
+                  },
+                  {
+                    cat: 'STONE',
+                    label: 'Šķembas',
+                    sub: 'Drēnāžai un ceļiem',
+                    color: '#dde1e8',
+                    accent: '#334155',
+                  },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.cat}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      haptics.light();
+                      router.push({
+                        pathname: '/(wizards)/material-order' as never,
+                        params: { initialCategory: item.cat },
+                      } as never);
+                    }}
+                    style={{
+                      width: 160,
+                      backgroundColor: item.color,
+                      borderRadius: 24,
+                      padding: 18,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_700Bold',
+                        fontWeight: '700',
+                        fontSize: 17,
+                        color: '#111827',
+                        letterSpacing: -0.3,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_400Regular',
+                        fontSize: 12,
+                        color: '#6b7280',
+                        marginBottom: 16,
+                        lineHeight: 17,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {item.sub}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text
+                        style={{
+                          fontFamily: 'Inter_600SemiBold',
+                          fontWeight: '600',
+                          fontSize: 13,
+                          color: item.accent,
+                        }}
+                      >
+                        Pasūdīt
+                      </Text>
+                      <ArrowRight size={12} color={item.accent} />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    haptics.light();
+                    router.push('/(buyer)/catalog' as any);
+                  }}
+                  style={{
+                    width: 120,
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: 24,
+                    padding: 18,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                      fontSize: 14,
+                      color: '#374151',
+                      textAlign: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Viss katalogs
+                  </Text>
+                  <ArrowRight size={16} color="#374151" />
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          )}
+
         {/* ── Empty State / Actions Grid ── */}
         {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
           <View style={{ paddingHorizontal: 20 }}>
@@ -817,7 +954,7 @@ export default function HomeScreen() {
                   flex: 1,
                 }}
               >
-                Meklēt materiālus...
+                Ko nepiecieams piegādāt?
               </Text>
             </TouchableOpacity>
 

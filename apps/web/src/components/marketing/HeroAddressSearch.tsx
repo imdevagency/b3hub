@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, ArrowRight, Loader2 } from 'lucide-react';
+import { Search, ArrowRight, Loader2 } from 'lucide-react';
 import {
   AddressAutocomplete,
   loadGoogleMapsScript,
@@ -55,25 +55,28 @@ export function HeroAddressSearch() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 w-full max-w-xl">
-      <div className="relative flex-1">
+    <form
+      onSubmit={handleSubmit}
+      className="relative flex flex-col sm:flex-row items-center gap-3 sm:gap-0 w-full max-w-2xl mx-auto sm:rounded-full bg-transparent sm:bg-background sm:border sm:border-[#E5E5E5] sm:shadow-sm sm:p-2"
+    >
+      <div className="relative w-full sm:flex-1 bg-background sm:bg-transparent border border-[#E5E5E5] sm:border-0 rounded-full sm:rounded-none shadow-sm sm:shadow-none overflow-hidden">
         {mapsReady ? (
           <AddressAutocomplete
             value={address}
             onChange={setAddress}
             onSelect={handleSelect}
             placeholder="Ievadiet piegādes adresi..."
-            className="h-14 text-base rounded-2xl border-border/60 bg-background shadow-sm"
+            className="h-14 sm:h-[56px] text-base sm:text-lg border-0 shadow-none outline-none focus-visible:ring-0 bg-transparent font-light"
           />
         ) : (
-          <div className="relative flex items-center">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none z-10" />
+          <div className="relative flex items-center w-full">
+            <Search className="absolute left-6 sm:left-8 top-1/2 -translate-y-1/2 size-5 sm:size-5 text-muted-foreground pointer-events-none z-10" />
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Ievadiet piegādes adresi..."
-              className="w-full pl-11 pr-4 h-14 text-base rounded-2xl border border-border/60 bg-background shadow-sm outline-none focus:ring-2 focus:ring-foreground/20 font-medium"
+              className="w-full pl-14 sm:pl-16 pr-6 h-14 sm:h-[56px] text-base sm:text-lg border-0 shadow-none outline-none focus:ring-0 bg-transparent font-light"
             />
           </div>
         )}
@@ -81,13 +84,13 @@ export function HeroAddressSearch() {
       <button
         type="submit"
         disabled={loading || !address.trim()}
-        className="h-14 px-6 rounded-2xl bg-foreground text-background font-bold text-base flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0 whitespace-nowrap"
+        className="w-full sm:w-auto h-14 sm:h-[56px] px-8 sm:px-12 rounded-full bg-[#E0E0E0] text-white font-medium text-base sm:text-[17px] flex items-center justify-center gap-2.5 hover:bg-[#D4D4D4] transition-colors disabled:opacity-50 shrink-0 whitespace-nowrap"
       >
         {loading ? (
           <Loader2 className="size-5 animate-spin" />
         ) : (
           <>
-            Skatīt piedāvājumus
+            Tālāk
             <ArrowRight className="size-5" />
           </>
         )}
