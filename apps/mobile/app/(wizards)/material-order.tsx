@@ -12,7 +12,15 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Alert,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -24,6 +32,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
+import { Check, CheckCircle2 } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -50,8 +59,8 @@ const STEP_TITLES: Record<Step, string> = {
   specs: 'Ko pasūtīt?',
   fulfillment: 'Kā saņemt?',
   field: 'Izvēlies punktu',
-  when: 'Kad piegādāt?',
-  offers: 'Piedāvājumi',
+  when: 'Apstiprināt',
+  offers: 'Salīdzini piedāvājumus',
 };
 
 type WizardDraft = {
@@ -108,7 +117,7 @@ export default function OrderRequestWizard() {
   const STEPS: Step[] =
     fulfillmentType === 'PICKUP'
       ? ['specs', 'field', 'offers']
-      : ['specs', 'address', 'when', 'offers'];
+      : ['specs', 'address', 'offers', 'when'];
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -178,6 +187,8 @@ export default function OrderRequestWizard() {
   const [orderId, setOrderId] = useState('');
   const [rfqNumber, setRfqNumber] = useState('');
   const [rfqId, setRfqId] = useState('');
+  /** Offer selected in the compare step; used for submission in the confirm step. */
+  const [selectedOffer, setSelectedOffer] = useState<SupplierOffer | null>(null);
 
   // ── Contact (mutable — can be overridden for site contact)
   const [contactName, setContactName] = useState(() =>
@@ -638,7 +649,11 @@ export default function OrderRequestWizard() {
         : step === 'field'
           ? !!pickupFieldId && !!pickupSlotId
           : step === 'when'
-            ? !!deliveryDate
+            ? !!deliveryDate &&
+              !!selectedOffer &&
+              !!contactName.trim() &&
+              !!contactPhone.trim() &&
+              termsAccepted
             : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
@@ -649,7 +664,9 @@ export default function OrderRequestWizard() {
         : 'Apmaksāt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
-      : 'Turpināt';
+      : step === 'when'
+        ? 'Pasūtīt'
+        : 'Turpināt';
 
   const handleCTA = submitted
     ? submitted === 'rfq'
@@ -659,7 +676,9 @@ export default function OrderRequestWizard() {
         : () => router.replace(`/(buyer)/order/${orderId}` as never)
     : step === 'offers'
       ? handleSendRFQ
-      : goNext;
+      : step === 'when' && selectedOffer
+        ? () => handleSelectOffer(selectedOffer)
+        : goNext;
 
   const unitLabel =
     orderType === 'BY_VOLUME' ? 'm³' : orderType === 'BY_LOAD' ? 'kravas' : 'tonnas';
@@ -752,17 +771,284 @@ export default function OrderRequestWizard() {
           handlePickSitePhoto={handlePickSitePhoto}
         />
       )}
-      {step === 'when' && (
-        <WhenStep
-          deliveryDate={deliveryDate}
-          onDateChange={setDeliveryDate}
-          deliveryWindow={deliveryWindow}
-          onWindowChange={setDeliveryWindow}
-          truckCount={truckCount}
-          onTruckCountChange={setTruckCount}
-          truckIntervalMinutes={truckIntervalMinutes}
-          onTruckIntervalChange={setTruckIntervalMinutes}
-        />
+      {step === 'when' && submitted === 'order' && (
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }}>
+          <View style={{ alignItems: 'center', paddingVertical: 32, gap: 12 }}>
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: '#166534',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CheckCircle2 size={36} color="#fff" />
+            </View>
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: '700',
+                color: colors.textPrimary,
+                fontFamily: 'Inter_700Bold',
+              }}
+            >
+              Pasūtījums izveidots!
+            </Text>
+            <Text style={{ fontSize: 16, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}>
+              Nr. {orderNumber}
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: colors.textSecondary,
+                textAlign: 'center',
+                lineHeight: 20,
+              }}
+            >
+              Piegādātājs saņēma jūsu pasūtījumu. Lai to apstiprinātu, veiciet apmaksu.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.primary,
+              borderRadius: 14,
+              paddingVertical: 16,
+              alignItems: 'center',
+            }}
+            onPress={() => {
+              if (!orderId) return;
+              if (orderId.startsWith('guest:')) router.replace('/(buyer)/home' as never);
+              else router.replace(`/(buyer)/order/${orderId}` as never);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '600',
+                color: '#fff',
+                fontFamily: 'Inter_600SemiBold',
+              }}
+            >
+              {orderId.startsWith('guest:') ? 'Atgriezties uz sākumu' : 'Apmaksāt pasūtījumu'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+      {step === 'when' && submitted !== 'order' && (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
+          <WhenStep
+            deliveryDate={deliveryDate}
+            onDateChange={setDeliveryDate}
+            deliveryWindow={deliveryWindow}
+            onWindowChange={setDeliveryWindow}
+            truckCount={truckCount}
+            onTruckCountChange={setTruckCount}
+            truckIntervalMinutes={truckIntervalMinutes}
+            onTruckIntervalChange={setTruckIntervalMinutes}
+          />
+          {/* ── Confirm form ── */}
+          <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24, gap: 12 }}>
+            {selectedOffer && (
+              <View
+                style={{
+                  backgroundColor: '#f9fafb',
+                  borderRadius: 12,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  gap: 4,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 13, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}
+                >
+                  Izvēlētais piegādātājs
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: '600',
+                    color: colors.textPrimary,
+                    fontFamily: 'Inter_600SemiBold',
+                  }}
+                >
+                  {selectedOffer.supplier?.name}
+                </Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                  €{selectedOffer.totalPrice?.toFixed(2)} kopā
+                </Text>
+              </View>
+            )}
+
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '600',
+                color: colors.textPrimary,
+                fontFamily: 'Inter_600SemiBold',
+                marginTop: 4,
+              }}
+            >
+              Kontaktinformācija
+            </Text>
+            <TextInput
+              value={contactName}
+              onChangeText={setContactName}
+              placeholder="Kontaktpersona"
+              placeholderTextColor={colors.textDisabled}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                color: colors.textPrimary,
+                fontFamily: 'Inter_400Regular',
+                backgroundColor: '#fff',
+              }}
+            />
+            <TextInput
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              placeholder="Tālrunis"
+              placeholderTextColor={colors.textDisabled}
+              keyboardType="phone-pad"
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                color: colors.textPrimary,
+                fontFamily: 'Inter_400Regular',
+                backgroundColor: '#fff',
+              }}
+            />
+            <TextInput
+              value={bisNumber}
+              onChangeText={setBisNumber}
+              placeholder="BIS numurs (neobligāts)"
+              placeholderTextColor={colors.textDisabled}
+              autoCapitalize="characters"
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                color: colors.textPrimary,
+                fontFamily: 'Inter_400Regular',
+                backgroundColor: '#fff',
+              }}
+            />
+
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '600',
+                color: colors.textPrimary,
+                fontFamily: 'Inter_600SemiBold',
+                marginTop: 4,
+              }}
+            >
+              Apmaksas veids
+            </Text>
+            {(['CARD', 'INVOICE'] as const).map((method) => (
+              <TouchableOpacity
+                key={method}
+                activeOpacity={0.8}
+                onPress={() => setPaymentMethod(method)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  borderWidth: 1.5,
+                  borderColor: paymentMethod === method ? '#111827' : colors.border,
+                  borderRadius: 12,
+                  padding: 12,
+                  gap: 10,
+                  backgroundColor: paymentMethod === method ? '#f9fafb' : '#fff',
+                }}
+              >
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: paymentMethod === method ? '#111827' : '#d1d5db',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {paymentMethod === method && (
+                    <View
+                      style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' }}
+                    />
+                  )}
+                </View>
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
+                    {method === 'CARD' ? 'Karte (Paysera)' : 'Rēķins (NET 30)'}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                    {method === 'CARD'
+                      ? 'Tūlītēja apmaksa ar bankas karti'
+                      : 'Rēķins tiks izrakstīts pēc piegādes'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 4 }}
+              onPress={() => setTermsAccepted((v) => !v)}
+              activeOpacity={0.7}
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  borderWidth: 1.5,
+                  borderColor: termsAccepted ? '#111827' : '#d1d5db',
+                  backgroundColor: termsAccepted ? '#111827' : '#fff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 1,
+                }}
+              >
+                {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+              </View>
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter_400Regular',
+                  lineHeight: 20,
+                }}
+              >
+                Piekrītu <Text style={{ color: colors.primary }}>lietošanas noteikumiem</Text> un{' '}
+                <Text style={{ color: colors.primary }}>privātuma politikai</Text>
+              </Text>
+            </TouchableOpacity>
+
+            {submitError ? (
+              <Text style={{ fontSize: 14, color: colors.danger, fontFamily: 'Inter_500Medium' }}>
+                {submitError}
+              </Text>
+            ) : null}
+          </View>
+        </ScrollView>
       )}
       {step === 'offers' && (
         <OffersStep
@@ -810,6 +1096,14 @@ export default function OrderRequestWizard() {
           onNavigateToRFQ={() => {
             if (rfqId) router.replace(`/(buyer)/rfq/${rfqId}` as never);
           }}
+          onOfferChosen={
+            fulfillmentType === 'DELIVERY'
+              ? (offer) => {
+                  setSelectedOffer(offer);
+                  goNext();
+                }
+              : undefined
+          }
         />
       )}
     </WizardLayout>

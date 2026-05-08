@@ -1,11 +1,11 @@
 /**
  * Container / Skip-Hire wizard — full-screen step pages.
  *
- * Step order mirrors the web flow (waste first, then size):
- *   Step 1 – Waste type      (SkipWasteStep)
- *   Step 2 – Container size  (SkipSizeStep)
- *   Step 3 – Delivery address (InlineAddressStep)
- *   Step 4 – Date + Contact + Confirm
+ * Clean 4-step flow: Ko → Kur → Kad → Pārskatīt
+ *   Step 1 (Ko?)       – Waste type + container size (size revealed after waste is picked)
+ *   Step 2 (Kur?)      – Delivery address
+ *   Step 3 (Kad?)      – Hire period + delivery date + delivery window
+ *   Step 4 (Pārskatīt) – Summary + contact + payment + terms + submit
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';

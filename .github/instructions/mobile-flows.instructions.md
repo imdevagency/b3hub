@@ -154,13 +154,59 @@ Used for: `order/[id]/details.tsx`, `skip-order/[id]/details.tsx`, `transport-jo
 
 **When to use:** multi-step order creation (material order, skip hire, transport, disposal)
 
-**Rules:**
+### Standard 4-step template
+
+Every B3Hub wizard follows the same 4-step structure, matching best-in-class UX (Bolt, Wolt, Zolt):
+
+```
+Step 1 — WHAT    : service / product / waste type selection (pick from list, no free text)
+Step 2 — WHERE   : delivery or pickup address (inline map, single action)
+Step 3 — COMPARE : supplier offers or pricing comparison (buyer picks one)
+Step 4 — CONFIRM : date, contact, review summary, submit
+```
+
+> Never add a step that can be merged into an adjacent step. If a step has only one decision — it should be one screen.
+
+### Current wizard step maps
+
+| Wizard             | Step 1                 | Step 2         | Step 3      | Step 4              | Extra          |
+| ------------------ | ---------------------- | -------------- | ----------- | ------------------- | -------------- |
+| **material-order** | Specs (Ko?)            | Address (Kur?) | When (Kad?) | Offers → pick       | —              |
+| **skip-hire**      | Waste type             | Container size | Address     | Date+Quotes+Confirm | —              |
+| **transport**      | Pickup+Dropoff address | Vehicle+cargo  | Date+route  | Contact+submit      | —              |
+| **disposal**       | Waste type             | Location       | Volume      | Date+confirm        | Compare (opt.) |
+
+### Rules
 
 - Each wizard has its own context file: `lib/order-context.tsx`, `lib/disposal-context.tsx`, `lib/transport-context.tsx`
-- Steps are separate screens navigated via `router.push` — not tabs or swipeable pagers
-- Step 1 always sets the order type / primary selection
-- Final step is always a review + confirm screen before API call
+- Steps are separate screens rendered inside `WizardLayout` — **not** tabs, swipeable pagers, or BottomSheets
+- The `WizardLayout` shell (thin progress bar + large bold left-aligned title + pill CTA) **must** be used for all steps — never build a custom shell
+- Step 1 always sets the order type / primary selection — must never ask for address first
+- The "compare offers / pick a supplier" step **always comes before** the confirmation step
+- Final step is always a review + confirm before the API call
 - On success → `router.replace('/(buyer)/orders')` or the new order's tracking screen
+- Maximum **4 steps** for any wizard path. Conditional branches (e.g. material `fulfillment` or `field`) are only inserted when the user's selection unlocks them — they must not increase the perceived depth for the default path
+
+### WizardLayout chrome
+
+`components/wizard/WizardLayout.tsx` provides the full shell. Always pass:
+
+```tsx
+<WizardLayout
+  title="Kur piegādāt?" // large left-aligned step title
+  step={2} // 1-based
+  totalSteps={4} // drives progress bar fill
+  onBack={handleBack}
+  ctaLabel="Turpināt"
+  onCTA={handleNext}
+  ctaDisabled={!isValid}
+  stepKey={step} // triggers slide-in animation on step change
+>
+  {/* step content */}
+</WizardLayout>
+```
+
+Progress bar fills proportionally from primary colour. CTA button is full-width pill, disabled = muted gray.
 
 **Never build a wizard inside a BottomSheet** if a `(wizards)/` directory already covers that flow.
 

@@ -76,6 +76,12 @@ export type OffersStepProps = {
   guestToken?: string;
   onNavigateToOrder: () => void;
   onNavigateToRFQ: () => void;
+  /**
+   * When provided, the offers step works in "compare-only" mode:
+   * - Contact/payment/terms UI is hidden (moved to a separate confirm step)
+   * - Tapping the sticky CTA calls this callback instead of submitting
+   */
+  onOfferChosen?: (offer: SupplierOffer) => void;
 };
 
 export function OffersStep({
@@ -114,6 +120,7 @@ export function OffersStep({
   guestToken,
   onNavigateToOrder,
   onNavigateToRFQ,
+  onOfferChosen,
 }: OffersStepProps) {
   const router = useRouter();
   // ── Internal filter/sort state ──
@@ -628,7 +635,7 @@ export function OffersStep({
         ) : null}
 
         {/* Contact — always editable so site contact can differ from account */}
-        {isAuthenticated && (
+        {!onOfferChosen && isAuthenticated && (
           <View style={{ gap: 8 }}>
             <TextInput
               value={prefilledContactName ?? ''}
@@ -669,7 +676,7 @@ export function OffersStep({
         )}
 
         {/* Payment method — authenticated users only */}
-        {isAuthenticated && (
+        {!onOfferChosen && isAuthenticated && (
           <View style={{ gap: 8 }}>
             <Text
               style={{
@@ -764,66 +771,68 @@ export function OffersStep({
           </View>
         )}
 
-        {/* BIS number + terms — fixed above the scrollable offer list */}
-        <View style={{ gap: 10 }}>
-          <TextInput
-            value={bisNumber}
-            onChangeText={onBisNumberChange}
-            placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
-            placeholderTextColor={colors.textDisabled}
-            autoCapitalize="characters"
-            style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 12,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              fontSize: 14,
-              color: colors.textPrimary,
-              fontFamily: 'Inter_400Regular',
-              backgroundColor: '#fff',
-            }}
-          />
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
-            onPress={() => onTermsAcceptedChange(!termsAccepted)}
-            activeOpacity={0.7}
-          >
-            <View
+        {/* BIS number + terms — hidden in compare-only mode (moved to confirm step) */}
+        {!onOfferChosen && (
+          <View style={{ gap: 10 }}>
+            <TextInput
+              value={bisNumber}
+              onChangeText={onBisNumberChange}
+              placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
+              placeholderTextColor={colors.textDisabled}
+              autoCapitalize="characters"
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: 6,
-                borderWidth: 1.5,
-                borderColor: termsAccepted ? '#111827' : '#d1d5db',
-                backgroundColor: termsAccepted ? '#111827' : '#fff',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 1,
-              }}
-            >
-              {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 13,
-                color: colors.textSecondary,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 14,
+                color: colors.textPrimary,
                 fontFamily: 'Inter_400Regular',
-                lineHeight: 20,
+                backgroundColor: '#fff',
               }}
+            />
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+              onPress={() => onTermsAcceptedChange(!termsAccepted)}
+              activeOpacity={0.7}
             >
-              Piekrītu{' '}
-              <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
-                lietošanas noteikumiem
-              </Text>{' '}
-              un{' '}
-              <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
-                privātuma politikai
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  borderWidth: 1.5,
+                  borderColor: termsAccepted ? '#111827' : '#d1d5db',
+                  backgroundColor: termsAccepted ? '#111827' : '#fff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 1,
+                }}
+              >
+                {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+              </View>
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter_400Regular',
+                  lineHeight: 20,
+                }}
+              >
+                Piekrītu{' '}
+                <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
+                  lietošanas noteikumiem
+                </Text>{' '}
+                un{' '}
+                <Text style={{ color: colors.primary, fontFamily: 'Inter_500Medium' }}>
+                  privātuma politikai
+                </Text>
               </Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView
@@ -891,7 +900,7 @@ export function OffersStep({
         </View>
       </ScrollView>
 
-      {/* Sticky Bottom Bar for Submission */}
+      {/* Sticky Bottom Bar for Submission / Advancing */}
       {selectedOffer && (
         <View
           style={{
@@ -911,20 +920,19 @@ export function OffersStep({
             elevation: 10,
           }}
         >
-          <TouchableOpacity
-            style={{
-              backgroundColor: termsAccepted ? colors.primary : '#d1d5db',
-              borderRadius: 14,
-              paddingVertical: 16,
-              alignItems: 'center',
-            }}
-            disabled={submitting || !termsAccepted}
-            activeOpacity={0.85}
-            onPress={() => requireAuth(() => onSelectOffer(selectedOffer), selectedOffer)}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
+          {onOfferChosen ? (
+            // Compare-only mode: advance to confirm step
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary,
+                borderRadius: 14,
+                paddingVertical: 16,
+                alignItems: 'center',
+              }}
+              disabled={submitting}
+              activeOpacity={0.85}
+              onPress={() => onOfferChosen(selectedOffer)}
+            >
               <Text
                 style={{
                   fontSize: 16,
@@ -933,12 +941,40 @@ export function OffersStep({
                   fontFamily: 'Inter_600SemiBold',
                 }}
               >
-                {!termsAccepted
-                  ? 'Piekrītiet noteikumiem'
-                  : `Cena €${selectedOffer.totalPrice.toFixed(2)} — Apstiprināt`}
+                {`€${selectedOffer.totalPrice.toFixed(2)} — Turpināt`}
               </Text>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+          ) : (
+            // Submit mode: place order immediately
+            <TouchableOpacity
+              style={{
+                backgroundColor: termsAccepted ? colors.primary : '#d1d5db',
+                borderRadius: 14,
+                paddingVertical: 16,
+                alignItems: 'center',
+              }}
+              disabled={submitting || !termsAccepted}
+              activeOpacity={0.85}
+              onPress={() => requireAuth(() => onSelectOffer(selectedOffer), selectedOffer)}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: '#fff',
+                    fontFamily: 'Inter_600SemiBold',
+                  }}
+                >
+                  {!termsAccepted
+                    ? 'Piekrītiet noteikumiem'
+                    : `Cena €${selectedOffer.totalPrice.toFixed(2)} — Apstiprināt`}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       )}
 

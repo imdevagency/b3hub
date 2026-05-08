@@ -6,7 +6,7 @@
  * Self-contained material order wizard. Receives a pre-selected category
  * (from the URL) and starts directly at the specs step — no category picker.
  *
- * Steps: specs → where → when → contact → offers / rfq-sent / order-confirmed
+ * Steps: specs → where → offers → when → contact / rfq-sent / order-confirmed
  *
  * Auth gate fires only when guest tries to select an offer or send an RFQ.
  */
@@ -190,18 +190,18 @@ const UNIT_LABEL: Record<MaterialUnit, string> = {
 type WizardStep =
   | 'specs'
   | 'where'
+  | 'offers'
   | 'when'
   | 'contact'
-  | 'offers'
   | 'rfq-sent'
   | 'order-confirmed';
 
 const STEP_INDEX: Record<WizardStep, number> = {
   specs: 0,
   where: 1,
-  when: 2,
-  contact: 3,
-  offers: 4,
+  offers: 2,
+  when: 3,
+  contact: 4,
   'rfq-sent': 4,
   'order-confirmed': 4,
 };
@@ -461,6 +461,7 @@ export function MaterialOrderWizard({
   });
 
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<SupplierOffer | null>(null);
   const [offersLoading, setOffersLoading] = useState(false);
   const [offersError, setOffersError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -981,8 +982,8 @@ export function MaterialOrderWizard({
             onAddressChange={handleAddressChange}
             title="Kur piegādāt materiālus?"
             subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"
-            nextLabel="Tālāk — izvēlēties datumu"
-            onNext={() => setStep('when')}
+            nextLabel="Tālāk — skatīt piedāvājumus"
+            onNext={goToOffers}
             onBack={() => setStep('specs')}
           />
         </div>
@@ -1003,14 +1004,29 @@ export function MaterialOrderWizard({
             truckIntervalMinutes={form.truckIntervalMinutes}
             onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
             onNext={() => setStep('contact')}
-            onBack={() => setStep('where')}
+            onBack={() => setStep('offers')}
           />
         </div>
       )}
 
-      {/* ── Step 4: Contact ───────────────────────────────────────── */}
+      {/* ── Step 4 (new step 5): Contact + Confirm ──────────────── */}
       {step === 'contact' && (
         <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+          {selectedOffer && (
+            <div className="rounded-2xl bg-muted/40 border border-border/50 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Izvēlētais piedāvājums
+                </p>
+                <p className="text-sm font-bold text-foreground truncate mt-0.5">
+                  {selectedOffer.supplier.name}
+                </p>
+              </div>
+              <p className="text-lg font-bold text-foreground shrink-0">
+                €{selectedOffer.totalPrice.toFixed(2)}
+              </p>
+            </div>
+          )}
           <div>
             <h2 className="text-lg font-bold">Objekta kontaktpersona</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -1083,17 +1099,21 @@ export function MaterialOrderWizard({
               Atpakaļ
             </button>
             <button
-              onClick={goToOffers}
+              onClick={() =>
+                requireAuth((tok) =>
+                  selectedOffer ? execSelectOffer(selectedOffer, tok) : execSendRFQ(tok),
+                )
+              }
               disabled={!form.siteContactPhone.trim()}
               className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Skatīt piedāvājumus
+              {selectedOffer ? 'Apstiprināt pasūtījumu' : 'Nosūtīt pieprasījumu'}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Step 5: Offers ────────────────────────────────────────── */}
+      {/* ── Step 3 (new): Offers / Compare ────────────────────────── */}
       {step === 'offers' && (
         <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
           {offersLoading ? (
@@ -1114,7 +1134,10 @@ export function MaterialOrderWizard({
               <RFQPanel
                 submitting={submitting}
                 error={submitError}
-                onSend={() => requireAuth((tok) => execSendRFQ(tok))}
+                onSend={() => {
+                  setSelectedOffer(null);
+                  setStep('when');
+                }}
               />
             </div>
           ) : (
@@ -1138,7 +1161,10 @@ export function MaterialOrderWizard({
                     orderedQty={form.quantity}
                     isCheapest={idx === 0}
                     submitting={submitting}
-                    onSelect={() => requireAuth((tok) => execSelectOffer(offer, tok))}
+                    onSelect={() => {
+                      setSelectedOffer(offer);
+                      setStep('when');
+                    }}
                   />
                 ))}
               <div className="pt-2 border-t border-border/50">
@@ -1149,22 +1175,13 @@ export function MaterialOrderWizard({
                   compact
                   submitting={submitting}
                   error=""
-                  onSend={() => requireAuth((tok) => execSendRFQ(tok))}
+                  onSend={() => {
+                    setSelectedOffer(null);
+                    setStep('when');
+                  }}
                 />
               </div>
             </div>
-          )}
-          {mode === 'public' && (
-            <p className="text-xs text-center text-muted-foreground">
-              Pasūtīt var bez konta ·{' '}
-              <button
-                type="button"
-                onClick={() => openLoginGate((tok) => execSendRFQ(tok))}
-                className="underline font-semibold hover:text-foreground transition-colors"
-              >
-                Jau ir konts? Ieiet
-              </button>
-            </p>
           )}
         </div>
       )}

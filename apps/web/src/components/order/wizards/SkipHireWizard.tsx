@@ -5,7 +5,7 @@
  * Used by both the public marketing site (/order/skip-hire) and the
  * authenticated dashboard (/dashboard/order/skip-hire).
  *
- * Flow: size → waste → address → details (date + hire period + time window + contact)
+ * Flow: waste → size → address → details (date + hire period + time window + contact)
  *
  * Conditional last step:
  *  mode="public"     → contact fields collected from guest → auth gate fires on submit
@@ -106,11 +106,11 @@ const MAP_STYLES = [
 const DRAFT_KEY = 'b3hub_skiphire_wizard_draft';
 const DRAFT_TTL = 7 * 24 * 60 * 60 * 1000;
 
-type WizardStep = 'size' | 'waste' | 'address' | 'details' | 'confirmed';
+type WizardStep = 'waste' | 'size' | 'address' | 'details' | 'confirmed';
 
 const STEP_INDEX: Record<WizardStep, number> = {
-  size: 1,
-  waste: 2,
+  waste: 1,
+  size: 2,
   address: 3,
   details: 4,
   confirmed: 4,
@@ -126,7 +126,7 @@ export function SkipHireWizard({ mode }: Props) {
   const { token, user, setAuth } = useAuth();
   const router = useRouter();
 
-  const [step, setStep] = useState<WizardStep>('size');
+  const [step, setStep] = useState<WizardStep>('waste');
   const [size, setSize] = useState('');
   const [wasteType, setWasteType] = useState('');
   const [address, setAddress] = useState('');
@@ -188,7 +188,7 @@ export function SkipHireWizard({ mode }: Props) {
       if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow);
       if (d.hireDays) setHireDays(d.hireDays);
       if (d.notes) setNotes(d.notes);
-      if (d.step && d.step !== 'confirmed') setStep(d.step);
+      if (d.step && d.step !== 'confirmed') setStep(d.step as WizardStep);
     } catch {
       /* ignore corrupt draft */
     } finally {
@@ -373,10 +373,10 @@ export function SkipHireWizard({ mode }: Props) {
 
   function getOnBack(): (() => void) | undefined {
     if (isConfirmed) return undefined;
-    if (step === 'size')
+    if (step === 'waste')
       return mode === 'dashboard' ? () => router.push('/dashboard/order') : undefined;
-    if (step === 'waste') return () => setStep('size');
-    if (step === 'address') return () => setStep('waste');
+    if (step === 'size') return () => setStep('waste');
+    if (step === 'address') return () => setStep('size');
     if (step === 'details') return () => setStep('address');
     return undefined;
   }
@@ -393,13 +393,13 @@ export function SkipHireWizard({ mode }: Props) {
       onClose={mode === 'public' && !isConfirmed ? () => router.push('/order') : undefined}
       innerScroll={mode === 'dashboard'}
     >
-      {/* ── Step 1: Container size ── */}
-      {step === 'size' && (
+      {/* ── Step 1: Waste type ── */}
+      {step === 'waste' && (
         <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
           <div>
-            <p className="text-xl font-bold text-foreground">Kādu konteinerus vajag?</p>
+            <p className="text-xl font-bold text-foreground">Kādi atkritumi?</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Izvēlieties izmēru pēc atkritumu daudzuma
+              Tas ietekmē konteinera veidu un pieņemšanas vietu
             </p>
           </div>
 
@@ -409,6 +409,36 @@ export function SkipHireWizard({ mode }: Props) {
               sek.
             </p>
           )}
+          <div className="flex flex-col gap-2">
+            {WASTE_TYPES.map((w) => (
+              <button
+                key={w.id}
+                onClick={() => {
+                  setWasteType(w.id);
+                  setStep('size');
+                }}
+                className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-emerald-300 hover:shadow-sm transition-all group"
+              >
+                <div>
+                  <p className="font-semibold text-foreground">{w.label}</p>
+                  <p className="text-sm text-muted-foreground">{w.sub}</p>
+                </div>
+                <ArrowRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 2: Container size ── */}
+      {step === 'size' && (
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+          <div>
+            <p className="text-xl font-bold text-foreground">Kādu konteinerus vajag?</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Izvēlieties izmēru pēc atkritumu daudzuma
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {SIZES.map((s) => (
@@ -416,7 +446,7 @@ export function SkipHireWizard({ mode }: Props) {
                 key={s.id}
                 onClick={() => {
                   setSize(s.id);
-                  setStep('waste');
+                  setStep('address');
                 }}
                 className="group text-left rounded-2xl border border-border/60 bg-card p-5 hover:border-emerald-300 hover:shadow-sm transition-all active:scale-[0.98]"
               >
@@ -428,36 +458,6 @@ export function SkipHireWizard({ mode }: Props) {
                   <p className="text-lg font-bold text-foreground shrink-0">no €{s.fromPrice}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">{s.capacity}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 2: Waste type ── */}
-      {step === 'waste' && (
-        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-          <div>
-            <p className="text-xl font-bold text-foreground">Kādi atkritumi?</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Tas ietekmē konteinera veidu un pieņemšanas vietu
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {WASTE_TYPES.map((w) => (
-              <button
-                key={w.id}
-                onClick={() => {
-                  setWasteType(w.id);
-                  setStep('address');
-                }}
-                className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-emerald-300 hover:shadow-sm transition-all group"
-              >
-                <div>
-                  <p className="font-semibold text-foreground">{w.label}</p>
-                  <p className="text-sm text-muted-foreground">{w.sub}</p>
-                </div>
-                <ArrowRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
               </button>
             ))}
           </div>
@@ -481,7 +481,7 @@ export function SkipHireWizard({ mode }: Props) {
             subtitle="Ievadiet precīzu adresi — šoferis atbrauks ar konteinerus uz šo vietu"
             nextLabel="Tālāk — datums un kontakti"
             onNext={() => setStep('details')}
-            onBack={() => setStep('waste')}
+            onBack={() => setStep('size')}
           />
         </div>
       )}

@@ -104,34 +104,39 @@ function CategoryCard({
 
   return (
     <TouchableOpacity
-      className="bg-white mx-5 py-4 border-b border-gray-100 flex-row items-center"
+      className="bg-white mx-5 py-4 flex-row items-center border-b border-gray-100"
       onPress={() => {
         haptics.light();
         onPress();
       }}
       activeOpacity={0.7}
     >
-      <View className="bg-gray-100 h-12 w-12 rounded-full items-center justify-center mr-4">
-        <Icon size={22} color="#111827" strokeWidth={2} />
+      <View
+        className="h-12 w-12 rounded-2xl items-center justify-center mr-4"
+        style={{ backgroundColor: meta.bg }}
+      >
+        <Icon size={22} color={meta.accent} strokeWidth={2.5} />
       </View>
 
       <View className="flex-1 justify-center pr-2">
-        <Text
-          className="text-gray-900 font-semibold tracking-tight mb-0.5 line-clamp-1"
-          style={{ fontSize: 17 }}
-        >
-          {CATEGORY_LABELS[category]}
-        </Text>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mb-0.5">
+          <Text
+            className="text-gray-900 font-bold tracking-tight line-clamp-1"
+            style={{ fontSize: 17 }}
+          >
+            {CATEGORY_LABELS[category]}
+          </Text>
+        </View>
+        <View className="flex-row items-center mt-1">
           <Text className="text-gray-500 font-medium text-sm line-clamp-1">
             {supplierCount > 0 ? `${supplierCount} piegādātāji` : description}
           </Text>
           {hasRecycled && (
-            <View className="ml-2 bg-green-100 px-1.5 py-0.5 rounded flex-row items-center">
-              <Leaf size={10} color="#166534" className="mr-1" />
+            <View className="ml-2 bg-emerald-50 px-1.5 py-0.5 rounded flex-row items-center border border-emerald-100">
+              <Leaf size={10} color="#059669" className="mr-1" />
               <Text
-                className="font-semibold text-green-800 uppercase tracking-widest"
-                style={{ fontSize: 10 }}
+                className="font-bold text-emerald-700 uppercase"
+                style={{ fontSize: 9, letterSpacing: 0.5 }}
               >
                 Eco
               </Text>
@@ -140,16 +145,13 @@ function CategoryCard({
         </View>
       </View>
 
-      <View className="items-end justify-center ml-2">
-        {minPrice != null ? (
-          <View className="bg-gray-100 px-3 py-1.5 rounded-full">
-            <Text className="text-gray-900 font-semibold tracking-tight" style={{ fontSize: 13 }}>
-              no €{minPrice.toFixed(2)}
-            </Text>
-          </View>
-        ) : (
-          <ChevronRight size={20} color="#d1d5db" />
+      <View className="items-end justify-center ml-2 flex-row gap-2">
+        {minPrice != null && (
+          <Text className="text-gray-900 font-bold tracking-tight" style={{ fontSize: 15 }}>
+            no €{minPrice.toFixed(2)}
+          </Text>
         )}
+        <ChevronRight size={18} color="#d1d5db" />
       </View>
     </TouchableOpacity>
   );
@@ -433,8 +435,8 @@ export default function CatalogScreen() {
       <View className="px-5 pt-0 pb-2">
         {/* Flat Search */}
         <View
-          className={`flex-row items-center bg-gray-100 rounded-2xl px-4 py-3.5 ${
-            searchFocused ? 'bg-gray-200' : ''
+          className={`flex-row items-center bg-white border border-gray-200 rounded-2xl px-4 py-4 shadow-sm ${
+            searchFocused ? 'border-gray-400' : ''
           }`}
         >
           <Search size={20} color={searchFocused ? '#111827' : '#9ca3af'} className="mr-3" />
@@ -443,7 +445,7 @@ export default function CatalogScreen() {
             className="flex-1 text-gray-900"
             style={{ fontSize: 17, fontFamily: 'Inter_500Medium', paddingVertical: 2 }}
             placeholder="Meklēt kategoriju..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor="#6b7280"
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
@@ -476,7 +478,7 @@ export default function CatalogScreen() {
         >
           <TouchableOpacity
             className={`px-4 py-2.5 rounded-full flex-row items-center ${
-              filterMode === 'ALL' ? 'bg-[#166534]' : 'bg-gray-100'
+              filterMode === 'ALL' ? 'bg-gray-900' : 'bg-gray-100'
             }`}
             onPress={() => {
               haptics.light();
@@ -492,7 +494,7 @@ export default function CatalogScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             className={`px-4 py-2.5 rounded-full flex-row items-center ${
-              filterMode === 'RECYCLED' ? 'bg-green-700' : 'bg-gray-100'
+              filterMode === 'RECYCLED' ? 'bg-[#d1fae5]' : 'bg-gray-100'
             }`}
             onPress={() => {
               haptics.light();
@@ -502,11 +504,11 @@ export default function CatalogScreen() {
           >
             <Leaf
               size={16}
-              color={filterMode === 'RECYCLED' ? '#ffffff' : '#111827'}
+              color={filterMode === 'RECYCLED' ? '#065f46' : '#111827'}
               className="mr-2"
             />
             <Text
-              className={`font-semibold ${filterMode === 'RECYCLED' ? 'text-white' : 'text-gray-900'}`}
+              className={`font-semibold ${filterMode === 'RECYCLED' ? 'text-emerald-900' : 'text-gray-900'}`}
             >
               Pārstrādāts
             </Text>
@@ -523,12 +525,12 @@ export default function CatalogScreen() {
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
-            backgroundColor: nearMe || savedDelivery ? '#f0fdf4' : '#f9fafb',
+            backgroundColor: nearMe || savedDelivery ? '#eff6ff' : '#f9fafb',
             borderRadius: 14,
             paddingHorizontal: 14,
             paddingVertical: 11,
             borderWidth: 1,
-            borderColor: nearMe || savedDelivery ? '#bbf7d0' : '#e5e7eb',
+            borderColor: nearMe || savedDelivery ? '#dbeafe' : '#e5e7eb',
           }}
         >
           {nearMeLoading ? (
@@ -536,7 +538,7 @@ export default function CatalogScreen() {
           ) : (
             <MapPin
               size={15}
-              color={nearMe || savedDelivery ? '#166534' : '#9ca3af'}
+              color={nearMe || savedDelivery ? '#1e40af' : '#9ca3af'}
               strokeWidth={2}
             />
           )}
@@ -545,7 +547,7 @@ export default function CatalogScreen() {
               flex: 1,
               fontSize: 13,
               fontFamily: 'Inter_500Medium',
-              color: nearMe || savedDelivery ? '#166534' : '#6b7280',
+              color: nearMe || savedDelivery ? '#1e40af' : '#6b7280',
             }}
             numberOfLines={1}
           >
@@ -556,12 +558,12 @@ export default function CatalogScreen() {
                 : 'Norādīt adresi — redzēt cenas ar piegādi'}
           </Text>
           {livePricesLoading && !nearMeLoading ? (
-            <ActivityIndicator size="small" color="#166534" style={{ marginRight: 4 }} />
+            <ActivityIndicator size="small" color="#1e40af" style={{ marginRight: 4 }} />
           ) : null}
           {nearMe ? (
-            <X size={14} color="#166534" strokeWidth={2.5} />
+            <X size={14} color="#1e40af" strokeWidth={2.5} />
           ) : (
-            <ChevronRight size={14} color={savedDelivery ? '#166534' : '#9ca3af'} />
+            <ChevronRight size={14} color={savedDelivery ? '#1e40af' : '#9ca3af'} />
           )}
         </TouchableOpacity>
       </View>
