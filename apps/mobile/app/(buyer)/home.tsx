@@ -243,6 +243,17 @@ export default function HomeScreen() {
     [orders, skipOrders, transportOrders],
   );
 
+  // Recent completed/cancelled material orders — shown as "order again" strip
+  const recentOrders = useMemo(
+    () =>
+      orders
+        .filter(
+          (o) => (o.status === 'COMPLETED' || o.status === 'DELIVERED') && o.items?.length > 0,
+        )
+        .slice(0, 3),
+    [orders],
+  );
+
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
       <ScrollView
@@ -521,6 +532,110 @@ export default function HomeScreen() {
               </View>
             </View>
           </TouchableOpacity>
+        )}
+
+        {/* ── Recent Orders — quick reorder ── */}
+        {recentOrders.length > 0 && (!user?.companyRole || (user?.permManageOrders ?? false)) && (
+          <View style={{ marginBottom: 32 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 20,
+                marginBottom: 14,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontWeight: '700',
+                  fontSize: 20,
+                  letterSpacing: -0.4,
+                  color: '#111827',
+                }}
+              >
+                Pasūtīt vēlreiz
+              </Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+            >
+              {recentOrders.map((order) => {
+                const firstItem = order.items[0];
+                return (
+                  <TouchableOpacity
+                    key={order.id}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      haptics.light();
+                      router.push({
+                        pathname: '/(wizards)/material-order' as never,
+                        params: {
+                          initialCategory: firstItem?.material?.category ?? undefined,
+                          prefillAddress: order.deliveryAddress ?? undefined,
+                          prefillCity: order.deliveryCity ?? undefined,
+                        },
+                      } as never);
+                    }}
+                    style={{
+                      width: 180,
+                      backgroundColor: '#f9fafb',
+                      borderRadius: 20,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_700Bold',
+                        fontWeight: '700',
+                        fontSize: 14,
+                        color: '#111827',
+                        marginBottom: 4,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {firstItem?.material?.name ?? '—'}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_400Regular',
+                        fontSize: 12,
+                        color: '#6b7280',
+                        marginBottom: 14,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {order.deliveryCity ?? order.deliveryAddress ?? '—'}
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: 'Inter_600SemiBold',
+                          fontWeight: '600',
+                          fontSize: 13,
+                          color: '#166534',
+                        }}
+                      >
+                        Atkārtot
+                      </Text>
+                      <ArrowRight size={12} color="#166534" />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         )}
 
         {/* ── Project Quick-Order ── */}

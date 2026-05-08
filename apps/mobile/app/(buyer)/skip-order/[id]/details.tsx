@@ -34,10 +34,11 @@ import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
 
 const WASTE_LABEL: Record<string, string> = {
-  MIXED: 'Jaukti atkritumi',
+  MIXED: 'Būvgružu konteineru noma',
+  CONCRETE_RUBBLE: 'Tīri būvgruži',
+  WOOD: 'Koka atkritumi',
+  // Legacy values — may appear on older orders
   GREEN_GARDEN: 'Zaļie atkritumi',
-  CONCRETE_RUBBLE: 'Gruži',
-  WOOD: 'Koks',
   METAL_SCRAP: 'Metāls',
   ELECTRONICS_WEEE: 'Elektronika',
 };

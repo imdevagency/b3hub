@@ -2,11 +2,18 @@ import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
+/**
+ * Active skip-hire waste streams offered in the wizard.
+ * Legacy values (GREEN_GARDEN, METAL_SCRAP, ELECTRONICS_WEEE) may appear on
+ * historical orders fetched from the API — include them as a wider read type
+ * but only the 3 active values are shown in the picker.
+ */
 export type SkipWasteCategory =
-  | 'MIXED'
+  | 'MIXED'           // Būvgružu konteineru noma — mixed construction waste
+  | 'CONCRETE_RUBBLE' // Tīri būvgruži — clean sorted concrete/brick
+  | 'WOOD'            // Koka atkritumi — structural timber, pallets
+  // Legacy — not offered in wizard, may appear on old orders:
   | 'GREEN_GARDEN'
-  | 'CONCRETE_RUBBLE'
-  | 'WOOD'
   | 'METAL_SCRAP'
   | 'ELECTRONICS_WEEE';
 

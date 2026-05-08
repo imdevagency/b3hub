@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Linking, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Linking, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -24,6 +24,7 @@ import { BaseMap, RouteLayer, useRoute, PinLayer, AnimatedDriverMarker } from '@
 import type { CameraRefHandle } from '@/components/map';
 
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useOrderDetail } from '@/lib/use-order-detail';
 import { useLiveUpdates } from '@/lib/use-live-updates';
@@ -524,26 +525,60 @@ export default function OrderTrackingScreen() {
               >
                 Detaļas
               </Button>
-              {order.status === 'COMPLETED' && order.items?.length > 0 && (
+              {order.status === 'PENDING' && token && (
                 <Button
-                  variant="primary"
+                  variant="destructive"
                   size="lg"
                   className="flex-1"
                   onPress={() => {
                     haptics.medium();
-                    router.push({
-                      pathname: '/(wizards)/material-order' as never,
-                      params: {
-                        initialCategory: order.items[0]?.material?.category ?? undefined,
-                        prefillAddress: order.deliveryAddress ?? undefined,
-                        prefillCity: order.deliveryCity ?? undefined,
-                      },
-                    } as never);
+                    Alert.alert(
+                      'Atcelt pasūtījumu?',
+                      'Šī darbība ir neatgriezeniska. Pasūtījums tiks atcelts.',
+                      [
+                        { text: 'Palikt', style: 'cancel' },
+                        {
+                          text: 'Atcelt pasūtījumu',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              const updated = await api.orders.cancel(id, token);
+                              setOrder(updated);
+                              haptics.success();
+                            } catch {
+                              haptics.error();
+                              Alert.alert('Kļūda', 'Neizdevās atcelt pasūtījumu');
+                            }
+                          },
+                        },
+                      ],
+                    );
                   }}
                 >
-                  Pasūtīt vēlreiz
+                  Atcelt
                 </Button>
               )}
+              {(order.status === 'COMPLETED' || order.status === 'CANCELLED') &&
+                order.items?.length > 0 && (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="flex-1"
+                    onPress={() => {
+                      haptics.medium();
+                      router.push({
+                        pathname: '/(wizards)/material-order' as never,
+                        params: {
+                          initialCategory: order.items[0]?.material?.category ?? undefined,
+                          prefillAddress: order.deliveryAddress ?? undefined,
+                          prefillCity: order.deliveryCity ?? undefined,
+                        },
+                      } as never);
+                    }}
+                  >
+                    Pasūtīt vēlreiz
+                  </Button>
+                )}
             </View>
           </View>
         </View>

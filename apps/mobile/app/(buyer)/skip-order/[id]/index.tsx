@@ -63,6 +63,7 @@ export default function SkipOrderTrackingScreen() {
   const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const [requestingPickup, setRequestingPickup] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
 
   useEffect(() => {
     if (!order || !ACTIVE_STATUSES.has(order.status)) return;
@@ -332,6 +333,43 @@ export default function SkipOrderTrackingScreen() {
               >
                 Detaļas
               </Button>
+              {(order.status === 'PENDING' || order.status === 'CONFIRMED') && token && (
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="flex-1 ml-2"
+                  disabled={cancellingOrder}
+                  onPress={() => {
+                    haptics.medium();
+                    Alert.alert(
+                      'Atcelt pasūtījumu?',
+                      'Šī darbība ir neatgriezeniska. Pasūtījums tiks atcelts.',
+                      [
+                        { text: 'Palikt', style: 'cancel' },
+                        {
+                          text: 'Atcelt pasūtījumu',
+                          style: 'destructive',
+                          onPress: async () => {
+                            setCancellingOrder(true);
+                            try {
+                              await api.skipHire.cancel(id, token);
+                              reload();
+                              haptics.success();
+                            } catch {
+                              haptics.error();
+                              Alert.alert('Kļūda', 'Neizdevās atcelt pasūtījumu');
+                            } finally {
+                              setCancellingOrder(false);
+                            }
+                          },
+                        },
+                      ],
+                    );
+                  }}
+                >
+                  {cancellingOrder ? 'Atceļ...' : 'Atcelt'}
+                </Button>
+              )}
               {order.status === 'DELIVERED' && token && (
                 <Button
                   variant="default"

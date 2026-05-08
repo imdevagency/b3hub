@@ -173,23 +173,23 @@ export default function OrdersScreen() {
       {/* ── Segmented Control (Minimal) ───────────────────────── */}
       <View className="flex-row px-4 border-b border-gray-100 pt-2 bg-white">
         <TouchableOpacity
-          onPress={() => handleTabChange('done')}
-          className={`mr-6 py-3 border-b-2 ${activeTab === 'done' ? 'border-[#166534]' : 'border-transparent'}`}
-        >
-          <Text
-            className={`font-semibold ${activeTab === 'done' ? 'text-gray-900' : 'text-gray-500'}`}
-          >
-            Vēsture
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           onPress={() => handleTabChange('active')}
-          className={`py-3 border-b-2 ${activeTab === 'active' ? 'border-[#166534]' : 'border-transparent'}`}
+          className={`mr-6 py-3 border-b-2 ${activeTab === 'active' ? 'border-[#166534]' : 'border-transparent'}`}
         >
           <Text
             className={`font-semibold ${activeTab === 'active' ? 'text-gray-900' : 'text-gray-500'}`}
           >
             Aktīvie
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleTabChange('done')}
+          className={`py-3 border-b-2 ${activeTab === 'done' ? 'border-[#166534]' : 'border-transparent'}`}
+        >
+          <Text
+            className={`font-semibold ${activeTab === 'done' ? 'text-gray-900' : 'text-gray-500'}`}
+          >
+            Vēsture
           </Text>
         </TouchableOpacity>
       </View>
