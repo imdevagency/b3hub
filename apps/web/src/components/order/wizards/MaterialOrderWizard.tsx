@@ -36,6 +36,7 @@ import {
 import {
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
+  CATEGORY_FRACTIONS,
   DEFAULT_MATERIAL_NAMES,
   UNIT_SHORT,
 } from '@b3hub/shared';
@@ -55,6 +56,7 @@ import {
   Clock,
   Droplets,
   Hexagon,
+  Info,
   Layers,
   Leaf,
   Loader2,
@@ -163,26 +165,21 @@ const CATEGORY_META: Record<
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_META) as MaterialCategory[];
 
-const CATEGORY_FRACTIONS: Record<MaterialCategory, string[]> = {
-  SAND: ['Smalkā', 'Rupjā', 'Betonsmilts', '0–4 mm', 'Nav norādīts'],
-  GRAVEL: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', 'Nav norādīts'],
-  STONE: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', '63+ mm', 'Nav norādīts'],
-  CONCRETE: ['B15', 'B20', 'B22.5', 'B25', 'B30', 'Nav norādīts'],
-  SOIL: ['Izmestā augsne', 'Melnzeme', 'Dārza zeme', 'Nav norādīts'],
-  RECYCLED_CONCRETE: ['0–8 mm', '8–32 mm', '32–63 mm', 'Nav norādīts'],
-  RECYCLED_SOIL: ['Nav norādīts'],
-  ASPHALT: ['Karstais asfalts', 'Aukstais asfalts', 'Nav norādīts'],
-  CLAY: ['Nav norādīts'],
-  OTHER: ['Nav norādīts'],
-};
+// CATEGORY_FRACTIONS imported from @b3hub/shared — edit packages/shared/src/materials.ts to change.
 
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
-const UNIT_LABEL: Record<MaterialUnit, string> = {
-  TONNE: 'tonne',
-  M3: 'm³',
-  PIECE: 'gb.',
-  LOAD: 'krāvums',
+const getUnitLabel = (unit: MaterialUnit, quantity?: number): string => {
+  if (unit === 'TONNE') {
+    return quantity === 1 ? 'tonna' : 'tonnas';
+  }
+  const labels: Record<MaterialUnit, string> = {
+    TONNE: 'tonnas',
+    M3: 'm³',
+    PIECE: 'gb.',
+    LOAD: 'kravas', // Pluralized generically, or "krāvums"
+  };
+  return labels[unit] || unit;
 };
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -681,7 +678,7 @@ export function MaterialOrderWizard({
   }
 
   // ── Google Map ────────────────────────────────────────────────────────────
-   
+
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -732,7 +729,6 @@ export function MaterialOrderWizard({
       }
     });
     // Run once on mount — category is already selected
-     
   }, []);
 
   const updateMapPin = useCallback((newLat: number, newLng: number) => {
@@ -788,7 +784,7 @@ export function MaterialOrderWizard({
       }
     >
       {/* Order summary pill */}
-      {step !== 'rfq-sent' && step !== 'order-confirmed' && (
+      {step !== 'specs' && step !== 'rfq-sent' && step !== 'order-confirmed' && (
         <div className="mb-6 rounded-2xl bg-gray-100 p-4">
           <div className="flex items-center gap-3">
             <Package className="size-5 text-gray-700 shrink-0" />
@@ -821,10 +817,15 @@ export function MaterialOrderWizard({
           </div>
 
           {mode === 'public' && (
-            <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2.5 border border-border/40">
-              Pasūtīšanai nepieciešama reģistrācija — aizņem mazāk nekā 30 sek. Cenas var aplūkot
-              bez pieteikšanās.
-            </p>
+            <div className="flex items-start gap-3 rounded-xl bg-primary/5 border border-primary/20 p-3.5">
+              <div className="size-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                <Info className="size-3 text-primary stroke-3" />
+              </div>
+              <p className="text-[13px] leading-relaxed text-primary/90 font-medium">
+                Pasūtīšanai nepieciešama reģistrācija — aizņem mazāk nekā 30 sek. Cenas var aplūkot
+                bez pieteikšanās.
+              </p>
+            </div>
           )}
 
           <div className="space-y-4">
@@ -868,83 +869,93 @@ export function MaterialOrderWizard({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground">Frakcija</label>
-              <div className="flex gap-2 flex-wrap">
-                {CATEGORY_FRACTIONS[form.category].map((fraction) => (
-                  <button
-                    key={fraction}
-                    onClick={() => {
-                      const catLabel = CATEGORY_META[form.category].label;
-                      const name =
-                        fraction !== 'Nav norādīts' ? `${catLabel} ${fraction}` : catLabel;
-                      patch({ selectedFraction: fraction, materialName: name });
-                    }}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                      form.selectedFraction === fraction
-                        ? 'bg-foreground text-background'
-                        : 'bg-muted/50 text-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    {fraction}
-                  </button>
-                ))}
-              </div>
+              <Select
+                value={form.selectedFraction}
+                onValueChange={(fraction) => {
+                  const catLabel = CATEGORY_META[form.category].label;
+                  const name = fraction !== 'Nav norādīts' ? `${catLabel} ${fraction}` : catLabel;
+                  patch({ selectedFraction: fraction, materialName: name });
+                }}
+              >
+                <SelectTrigger className="w-full rounded-2xl h-13 bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {CATEGORY_FRACTIONS[form.category].map((fraction) => (
+                    <SelectItem
+                      key={fraction}
+                      value={fraction}
+                      className="rounded-lg py-3 cursor-pointer"
+                    >
+                      <span className="font-medium">{fraction}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Daudzums</label>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() =>
-                  patch({
-                    quantity: Math.max(
-                      form.unit === 'PIECE' ? 1 : 0.5,
-                      parseFloat((form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2)),
-                    ),
-                  })
-                }
-                className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
-              >
-                <Minus className="size-5" />
-              </button>
-              <input
-                type="number"
-                value={form.quantity}
-                min={form.unit === 'PIECE' ? 1 : 0.5}
-                step={form.unit === 'PIECE' ? 1 : 0.5}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v) && v > 0) patch({ quantity: v });
-                }}
-                className="flex-1 min-w-0 text-center bg-transparent border-0 px-2 py-2 text-4xl font-bold tracking-tighter focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <button
-                onClick={() =>
-                  patch({
-                    quantity: parseFloat(
-                      (form.quantity + (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
-                    ),
-                  })
-                }
-                className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
-              >
-                <Plus className="size-5" />
-              </button>
-            </div>
-            <div className="flex gap-2 flex-wrap mt-3">
-              {UNITS.map((u) => (
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-foreground">Daudzums un mērvienība</label>
+            <div className="bg-muted/30 border border-border/50 rounded-[2rem] p-5 flex flex-col gap-5 shadow-sm">
+              <div className="flex items-center justify-between gap-4">
                 <button
-                  key={u}
-                  onClick={() => patch({ unit: u })}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                    form.unit === u
-                      ? 'bg-foreground text-background'
-                      : 'bg-muted/50 text-foreground hover:bg-muted/80'
-                  }`}
+                  onClick={() =>
+                    patch({
+                      quantity: Math.max(
+                        form.unit === 'PIECE' ? 1 : 0.5,
+                        parseFloat((form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2)),
+                      ),
+                    })
+                  }
+                  className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-background border border-border/50 shadow-sm hover:bg-muted/80 transition-colors text-foreground"
                 >
-                  {UNIT_LABEL[u]}
+                  <Minus className="size-6" />
                 </button>
-              ))}
+                <div className="flex flex-col items-center justify-center w-full">
+                  <input
+                    type="number"
+                    value={form.quantity}
+                    min={form.unit === 'PIECE' ? 1 : 0.5}
+                    step={form.unit === 'PIECE' ? 1 : 0.5}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      if (!isNaN(v) && v > 0) patch({ quantity: v });
+                    }}
+                    className="w-full text-center bg-transparent border-0 px-2 py-0 text-5xl font-extrabold tracking-tighter focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-foreground"
+                  />
+                  <span className="text-sm font-semibold text-muted-foreground mt-1 tracking-wide uppercase">
+                    {getUnitLabel(form.unit, form.quantity)}
+                  </span>
+                </div>
+                <button
+                  onClick={() =>
+                    patch({
+                      quantity: parseFloat(
+                        (form.quantity + (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
+                      ),
+                    })
+                  }
+                  className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-background border border-border/50 shadow-sm hover:bg-muted/80 transition-colors text-foreground"
+                >
+                  <Plus className="size-6" />
+                </button>
+              </div>
+              <div className="flex gap-2 justify-center flex-wrap pt-4 border-t border-border/40">
+                {UNITS.map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => patch({ unit: u })}
+                    className={`rounded-xl px-5 py-2.5 text-[13px] font-bold transition-all shadow-sm ${
+                      form.unit === u
+                        ? 'bg-foreground text-background scale-[1.02]'
+                        : 'bg-background text-muted-foreground border border-border/50 hover:bg-muted/60'
+                    }`}
+                  >
+                    {getUnitLabel(u)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

@@ -91,6 +91,23 @@ export const MATERIAL_CATEGORIES: MaterialCategory[] = [
 
 export const MATERIAL_UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
+// ── Fractions per material category ───────────────────────────────────────
+// Single source of truth for fraction options shown in order wizards.
+// Update here to affect both the web wizard and mobile wizard simultaneously.
+
+export const CATEGORY_FRACTIONS: Record<MaterialCategory, string[]> = {
+  SAND: ['Smalkā', 'Rupjā', 'Betonsmilts', '0–4 mm', 'Nav norādīts'],
+  GRAVEL: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', 'Nav norādīts'],
+  STONE: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', '63+ mm', 'Nav norādīts'],
+  CONCRETE: ['B15', 'B20', 'B22.5', 'B25', 'B30', 'Nav norādīts'],
+  SOIL: ['Izmestā augsne', 'Melnzeme', 'Dārza zeme', 'Nav norādīts'],
+  RECYCLED_CONCRETE: ['0–8 mm', '8–32 mm', '32–63 mm', 'Nav norādīts'],
+  RECYCLED_SOIL: ['Nav norādīts'],
+  ASPHALT: ['Karstais asfalts', 'Aukstais asfalts', 'Nav norādīts'],
+  CLAY: ['Nav norādīts'],
+  OTHER: ['Nav norādīts'],
+};
+
 // ── Default material names ─────────────────────────────────────────────────
 // Canonical Latvian names used to pre-fill the material name input when a
 // seller creates a new listing. Single source of truth for both web and mobile.

@@ -2,7 +2,9 @@
  * Shared constants and types for the material order wizard.
  * Consumed by the wizard root (app/order-request-new.tsx) and individual steps.
  */
-import type { MaterialCategory, MaterialUnit } from '@/lib/materials';
+import type { MaterialUnit } from '@/lib/materials';
+import { CATEGORY_FRACTIONS as _CATEGORY_FRACTIONS } from '@b3hub/shared';
+import type { MaterialCategory } from '@b3hub/shared';
 import type { TruckType } from '@/components/ui/TruckIllustration';
 
 // ── Order type ─────────────────────────────────────────────────────────────
@@ -56,19 +58,9 @@ export const TRUCK_OPTIONS: TruckOption[] = [
 ];
 
 // ── Fractions per material category ────────────────────────────────────────
+// Re-exported from @b3hub/shared — edit packages/shared/src/materials.ts to change.
 
-export const CATEGORY_FRACTIONS: Record<MaterialCategory, string[]> = {
-  SAND: ['Smalkā', 'Rupjā', 'Betonsmilts', '0–4 mm', 'Nav norādīts'],
-  GRAVEL: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', 'Nav norādīts'],
-  STONE: ['0–4 mm', '4–8 mm', '8–16 mm', '16–32 mm', '32–63 mm', '63+ mm', 'Nav norādīts'],
-  CONCRETE: ['B15', 'B20', 'B22.5', 'B25', 'B30', 'Nav norādīts'],
-  SOIL: ['Izmestā augsne', 'Melnzeme', 'Dārza zeme', 'Nav norādīts'],
-  RECYCLED_CONCRETE: ['0–8 mm', '8–32 mm', '32–63 mm', 'Nav norādīts'],
-  RECYCLED_SOIL: ['Nav norādīts'],
-  ASPHALT: ['Karstais asfalts', 'Aukstais asfalts', 'Nav norādīts'],
-  CLAY: ['Nav norādīts'],
-  OTHER: ['Nav norādīts'],
-};
+export const CATEGORY_FRACTIONS = _CATEGORY_FRACTIONS;
 
 // ── Bulk density t/m³ for volume → weight conversion ──────────────────────
 
