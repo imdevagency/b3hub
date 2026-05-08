@@ -62,7 +62,8 @@ const SERVICES: ServiceDef[] = [
     href: '/order/scrap-buyback',
     icon: FlameKindling,
     title: 'Metāllūžņi',
-    description: 'Nododiet metāllūžņus oficiālos pieņemšanas punktos (Tolmets u.c.). Aktuālās cenas un ātra apmaksa.',
+    description:
+      'Nododiet metāllūžņus oficiālos pieņemšanas punktos (Tolmets u.c.). Aktuālās cenas un ātra apmaksa.',
   },
   {
     id: 'transport',
@@ -108,15 +109,15 @@ export function OrderServiceGrid({ dashboard = false, className, addressQuery }:
           <Link
             key={s.id}
             href={s.href}
-            className="bg-[#f4f5f4] rounded-[2rem] p-10 flex flex-col group transition-transform hover:-translate-y-1"
+            className="bg-[#f4f5f4] rounded-[2rem] p-10 flex flex-col group"
           >
             <div className="flex justify-between items-start mb-14">
               <div className="flex items-center gap-2 font-bold text-foreground">
                 <Icon className="w-5 h-5 text-foreground" strokeWidth={1.5} />
                 <span>{s.title}</span>
               </div>
-              {s.badge && (
-                s.badgeVariant === 'restricted' ? (
+              {s.badge &&
+                (s.badgeVariant === 'restricted' ? (
                   <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     <Lock className="size-3 shrink-0" />
                     {s.badge}
@@ -125,8 +126,7 @@ export function OrderServiceGrid({ dashboard = false, className, addressQuery }:
                   <span className="bg-[#1a362a] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     {s.badge}
                   </span>
-                )
-              )}
+                ))}
             </div>
             <h2 className="text-[2rem] leading-[1.1] font-bold mb-4 tracking-tight">{s.title}</h2>
             <p className="text-muted-foreground text-sm leading-relaxed mb-10 flex-1">

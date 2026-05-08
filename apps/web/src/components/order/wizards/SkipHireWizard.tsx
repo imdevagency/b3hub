@@ -24,6 +24,7 @@ import { Step2Address } from '@/components/order/steps/Step2Address';
 import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
+import type { DateRange } from 'react-day-picker';
 import {
   createSkipHireOrder,
   mapWasteCategory,
@@ -134,6 +135,7 @@ export function SkipHireWizard({ mode }: Props) {
   const [lng, setLng] = useState<number | undefined>();
   const [deliveryDate, setDeliveryDate] = useState('');
   const [hireDays, setHireDays] = useState(14);
+  const [hireRange, setHireRange] = useState<DateRange | undefined>();
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [contactName, setContactName] = useState('');
@@ -184,7 +186,16 @@ export function SkipHireWizard({ mode }: Props) {
       if (d.size) setSize(d.size);
       if (d.wasteType) setWasteType(d.wasteType);
       if (d.address) setAddress(d.address);
-      if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
+      if (d.deliveryDate) {
+        setDeliveryDate(d.deliveryDate);
+        // Restore hireRange from saved deliveryDate + hireDays
+        const days = d.hireDays ?? 14;
+        const [y, mo, dy] = d.deliveryDate.split('-').map(Number);
+        const from = new Date(y, mo - 1, dy);
+        const to = new Date(y, mo - 1, dy);
+        to.setDate(to.getDate() + days - 1);
+        setHireRange({ from, to });
+      }
       if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow);
       if (d.hireDays) setHireDays(d.hireDays);
       if (d.notes) setNotes(d.notes);
@@ -228,7 +239,7 @@ export function SkipHireWizard({ mode }: Props) {
   ]);
 
   // ── Map ───────────────────────────────────────────────────────────────────
-   
+
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -506,63 +517,63 @@ export function SkipHireWizard({ mode }: Props) {
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <CalendarDays className="size-4" /> Piegādes datums
+              <CalendarDays className="size-4" /> Piegādes un nodošanas datumi
             </label>
+            <p className="text-xs text-muted-foreground">
+              Izvēlieties piegādes datumu un klikšķiniet uz nodošanas datuma.
+            </p>
             <div className="rounded-2xl border overflow-hidden">
               <Calendar
-                mode="single"
-                selected={
-                  deliveryDate
-                    ? (() => {
-                        const [y, m, d] = deliveryDate.split('-').map(Number);
-                        return new Date(y, m - 1, d);
-                      })()
-                    : undefined
-                }
-                onSelect={(d) => {
-                  if (!d) return;
-                  const y = d.getFullYear();
-                  const m = String(d.getMonth() + 1).padStart(2, '0');
-                  const day = String(d.getDate()).padStart(2, '0');
-                  setDeliveryDate(`${y}-${m}-${day}`);
+                mode="range"
+                selected={hireRange}
+                onSelect={(range) => {
+                  setHireRange(range);
+                  if (range?.from) {
+                    const f = range.from;
+                    const y = f.getFullYear();
+                    const m = String(f.getMonth() + 1).padStart(2, '0');
+                    const day = String(f.getDate()).padStart(2, '0');
+                    setDeliveryDate(`${y}-${m}-${day}`);
+                  } else {
+                    setDeliveryDate('');
+                  }
+                  if (range?.from && range?.to) {
+                    const diff =
+                      Math.round((range.to.getTime() - range.from.getTime()) / 86400000) + 1;
+                    setHireDays(Math.max(1, diff));
+                  }
                 }}
                 disabled={{ before: new Date(Date.now() + 86400000) }}
                 className="p-3"
               />
             </div>
-            {deliveryDate && (
+            {hireRange?.from && (
               <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
                 <CalendarDays className="size-4 text-black shrink-0" />
-                <span className="text-sm font-semibold text-primary">
-                  Piegāde:{' '}
-                  {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold text-primary">
+                    Piegāde:{' '}
+                    {hireRange.from.toLocaleDateString('lv-LV', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  {hireRange.to && hireRange.to.getTime() !== hireRange.from.getTime() && (
+                    <span className="text-xs font-medium text-primary/70">
+                      Nodošana:{' '}
+                      {hireRange.to.toLocaleDateString('lv-LV', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}{' '}
+                      · {hireDays} dienas
+                    </span>
+                  )}
+                </div>
               </div>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Nomas periods</label>
-            <div className="flex gap-2">
-              {DURATIONS.map((d) => (
-                <button
-                  key={d.days}
-                  onClick={() => setHireDays(d.days)}
-                  className={`flex-1 rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-                    hireDays === d.days
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'border-border text-muted-foreground hover:border-foreground/40'
-                  }`}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="space-y-2">
@@ -813,8 +824,8 @@ export function SkipHireWizard({ mode }: Props) {
     <div
       className={
         mode === 'public'
-          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-[600px] rounded-3xl shadow-xl ring-1 ring-border/40'
-          : 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
+          ? 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-150 rounded-3xl shadow-xl ring-1 ring-border/40'
+          : 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
       <div

@@ -227,35 +227,26 @@ export function ScrapBuybackWizard({ mode }: Props) {
     const apiKey = getGoogleMapsPublicKey();
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
-      requestAnimationFrame(() => {
-        const google = window.google;
-        if (!google || !mapDivRef.current || mapInstanceRef.current) return;
-        if (!(mapDivRef.current instanceof Element)) return;
-        const style = window.getComputedStyle(mapDivRef.current);
-        if (style.display === 'none' || style.visibility === 'hidden') return;
-        try {
-          const map = new google.maps.Map(mapDivRef.current, {
-            center: { lat: 56.9496, lng: 24.1052 },
-            zoom: 12,
-            disableDefaultUI: true,
-            zoomControl: true,
-            styles: MAP_STYLES,
-          });
-          mapInstanceRef.current = map;
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                map.setZoom(14);
-              },
-              () => {},
-              { timeout: 8000 },
-            );
-          }
-        } catch {
-          // Non-fatal
-        }
+      const google = window.google;
+      if (!google || !mapDivRef.current || mapInstanceRef.current) return;
+      const map = new google.maps.Map(mapDivRef.current, {
+        center: { lat: 56.9496, lng: 24.1052 },
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: MAP_STYLES,
       });
+      mapInstanceRef.current = map;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            map.setZoom(14);
+          },
+          () => {},
+          { timeout: 8000 },
+        );
+      }
     });
   }, []);
 

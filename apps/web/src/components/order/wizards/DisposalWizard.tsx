@@ -40,21 +40,40 @@ import {
   Send,
   User as UserIcon,
   Weight,
+  Blocks,
+  BrickWall,
+  Trees,
+  Wrench,
+  Mountain,
+  Layers,
+  Flame,
+  Check,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const WASTE_TYPES: { id: WasteType; label: string; sub: string; hazardous?: true }[] = [
-  { id: 'CONCRETE', label: 'Betons / Bruģis', sub: 'Plāksnes, pamatnes, bruģakmens' },
-  { id: 'BRICK', label: 'Ķieģeļi / Būvgruži', sub: 'Sienu materiāli, apmetums, flīzes' },
-  { id: 'WOOD', label: 'Koksne', sub: 'Koka sijas, dēļi, logi, durvis' },
-  { id: 'METAL', label: 'Metāls', sub: 'Stiegrojums, profili, metāllūžņi' },
-  { id: 'SOIL', label: 'Zeme / Augsne', sub: 'Izrakta augsne, šķembas' },
-  { id: 'MIXED', label: 'Jaukti būvatkritumi', sub: 'Dažādu veidu atkritumu maisījums' },
+const WASTE_TYPES: { id: WasteType; label: string; sub: string; icon: any; hazardous?: true }[] = [
+  { id: 'CONCRETE', label: 'Betons / Bruģis', sub: 'Plāksnes, pamatnes, bruģakmens', icon: Blocks },
+  {
+    id: 'BRICK',
+    label: 'Ķieģeļi / Būvgruži',
+    sub: 'Sienu materiāli, apmetums, flīzes',
+    icon: BrickWall,
+  },
+  { id: 'WOOD', label: 'Koksne', sub: 'Koka sijas, dēļi, logi, durvis', icon: Trees },
+  { id: 'METAL', label: 'Metāls', sub: 'Stiegrojums, profili, metāllūžņi', icon: Wrench },
+  { id: 'SOIL', label: 'Zeme / Augsne', sub: 'Izrakta augsne, šķembas', icon: Mountain },
+  {
+    id: 'MIXED',
+    label: 'Jaukti būvatkritumi',
+    sub: 'Dažādu veidu atkritumu maisījums',
+    icon: Layers,
+  },
   {
     id: 'HAZARDOUS',
     label: 'Bīstami atkritumi',
     sub: 'Azbestos, krāsas, šķīdinātāji',
+    icon: Flame,
     hazardous: true,
   },
 ];
@@ -207,7 +226,7 @@ export function DisposalWizard({ mode }: Props) {
   }, [wasteType, weightT, address, city, date, timeWindow, hasTruckAccess, notes, step, refNumber]);
 
   // ── Map ───────────────────────────────────────────────────────────────────
-   
+
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -218,38 +237,26 @@ export function DisposalWizard({ mode }: Props) {
     const apiKey = getGoogleMapsPublicKey();
     if (!apiKey) return;
     loadGoogleMapsScript(apiKey, () => {
-      // Defer one frame so layout is settled (avoids IntersectionObserver errors
-      // in WebKit when the map container's ancestor has display:none)
-      requestAnimationFrame(() => {
-        const google = window.google;
-        if (!google || !mapDivRef.current || mapInstanceRef.current) return;
-        if (!(mapDivRef.current instanceof Element)) return;
-        // Skip init when the panel is hidden (e.g. mobile, display:none ancestor)
-        const style = window.getComputedStyle(mapDivRef.current);
-        if (style.display === 'none' || style.visibility === 'hidden') return;
-        try {
-          const map = new google.maps.Map(mapDivRef.current, {
-            center: { lat: 56.9496, lng: 24.1052 },
-            zoom: 12,
-            disableDefaultUI: true,
-            zoomControl: true,
-            styles: MAP_STYLES,
-          });
-          mapInstanceRef.current = map;
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                map.setZoom(14);
-              },
-              () => {},
-              { timeout: 8000 },
-            );
-          }
-        } catch {
-          // Map init failed (e.g. element not visible) — non-fatal
-        }
+      const google = window.google;
+      if (!google || !mapDivRef.current || mapInstanceRef.current) return;
+      const map = new google.maps.Map(mapDivRef.current, {
+        center: { lat: 56.9496, lng: 24.1052 },
+        zoom: 12,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: MAP_STYLES,
       });
+      mapInstanceRef.current = map;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            map.setZoom(14);
+          },
+          () => {},
+          { timeout: 8000 },
+        );
+      }
     });
   }, []);
 
@@ -394,11 +401,11 @@ export function DisposalWizard({ mode }: Props) {
     >
       {/* ── Step 1: Waste type + weight ── */}
       {step === 'waste' && (
-        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
           <div>
-            <p className="text-xl font-bold text-foreground">Kādi atkritumi?</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Izvēlieties atkritumu veidu un norādiet aptuvenais svars
+            <p className="text-xl font-extrabold text-foreground tracking-tight">Kādi atkritumi?</p>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
+              Izvēlieties atkritumu veidu un norādiet aptuveno svaru.
             </p>
           </div>
 
@@ -409,57 +416,110 @@ export function DisposalWizard({ mode }: Props) {
             </p>
           )}
 
-          <div className="flex flex-col gap-2">
-            {WASTE_TYPES.map((w) => (
-              <button
-                key={w.id}
-                onClick={() => setWasteType(w.id)}
-                className={`flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 transition-all group ${
-                  wasteType === w.id
-                    ? 'border-foreground bg-transparent'
-                    : 'border-border/60 bg-transparent hover:border-foreground/40'
-                } ${w.hazardous ? 'border-amber-300 hover:border-amber-500' : ''}`}
-              >
-                <div>
-                  <p
-                    className={`font-semibold ${w.hazardous ? 'text-amber-800' : 'text-foreground'}`}
-                  >
-                    {w.label}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{w.sub}</p>
-                  {wasteType === w.id && priceBand && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Indikatīvā cena: €{priceBand.from}–€{priceBand.to}/t
-                    </p>
-                  )}
-                </div>
-                <div
-                  className={`size-5 rounded-full border-2 shrink-0 ml-3 flex items-center justify-center transition-colors ${wasteType === w.id ? 'border-foreground bg-foreground' : 'border-border'}`}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {WASTE_TYPES.map((w) => {
+              const selected = wasteType === w.id;
+              const Icon = w.icon;
+              return (
+                <button
+                  key={w.id}
+                  onClick={() => setWasteType(w.id)}
+                  className={`relative flex flex-col text-left rounded-2xl border-2 p-4 transition-all group ${
+                    selected
+                      ? 'border-primary bg-primary/5 shadow-sm'
+                      : 'border-border/60 bg-transparent hover:border-primary/30'
+                  } ${w.hazardous && !selected ? 'border-amber-200 bg-amber-50/20 hover:border-amber-300' : ''} ${
+                    w.hazardous && selected ? 'border-amber-500 bg-amber-100/30' : ''
+                  }`}
                 >
-                  {wasteType === w.id && <div className="size-2 rounded-full bg-background" />}
-                </div>
-              </button>
-            ))}
+                  <div className="flex w-full items-start justify-between mb-2.5">
+                    <div
+                      className={`p-2.5 rounded-xl transition-colors ${
+                        selected
+                          ? w.hazardous
+                            ? 'bg-amber-500 text-white shadow-sm'
+                            : 'bg-primary text-white shadow-sm'
+                          : w.hazardous
+                            ? 'bg-amber-100 text-amber-700 group-hover:bg-amber-200'
+                            : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'
+                      }`}
+                    >
+                      <Icon className="size-5" strokeWidth={2.5} />
+                    </div>
+                    <div
+                      className={`size-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                        selected
+                          ? w.hazardous
+                            ? 'border-amber-500 bg-amber-500'
+                            : 'border-primary bg-primary'
+                          : w.hazardous
+                            ? 'border-amber-300'
+                            : 'border-border/60 group-hover:border-primary/40'
+                      }`}
+                    >
+                      {selected && <Check className="size-3 text-white" strokeWidth={3.5} />}
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <p
+                      className={`font-extrabold ${w.hazardous ? 'text-amber-900' : 'text-foreground'}`}
+                    >
+                      {w.label}
+                    </p>
+                    <p
+                      className={`text-xs mt-1 leading-snug line-clamp-2 ${
+                        selected ? 'text-foreground/80 font-medium' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {w.sub}
+                    </p>
+                  </div>
+                  {/* Price pushed to bottom */}
+                  {selected && priceBand && (
+                    <div className="mt-3 pt-3 border-t border-border/40 w-full">
+                      <p
+                        className={`text-xs font-extrabold ${w.hazardous ? 'text-amber-700' : 'text-primary'}`}
+                      >
+                        ~ €{priceBand.from}–€{priceBand.to}{' '}
+                        <span className="font-semibold opacity-70">/ t</span>
+                      </p>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="space-y-2 pt-4 border-t border-border/40">
-            <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <Weight className="size-4" /> Aptuvens svars (tonnās)
+          <div className="pt-2 border-t border-border/40 space-y-4">
+            <label className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              Kāds ir aptuvenais svars?
             </label>
-            <Input
-              type="number"
-              min={0.5}
-              step={0.5}
-              placeholder="piem. 5"
-              value={weightT}
-              onChange={(e) => setWeightT(e.target.value)}
-              className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
-            />
+            <div className="relative w-full max-w-sm">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <Weight className="size-5 text-muted-foreground" />
+              </div>
+              <Input
+                type="number"
+                min={0.5}
+                step={0.5}
+                placeholder="piem. 5"
+                value={weightT}
+                onChange={(e) => setWeightT(e.target.value)}
+                className="pl-12 pr-16 h-14 text-lg font-bold rounded-2xl bg-muted/30 border-2 border-transparent hover:border-primary/40 focus-visible:ring-0 focus-visible:border-primary transition-all shadow-none"
+                style={{ WebkitAppearance: 'none', margin: 0 }}
+              />
+              <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
+                <span className="text-muted-foreground font-extrabold">tonnas</span>
+              </div>
+            </div>
             {priceBand && weightT && (
-              <p className="text-xs text-muted-foreground">
-                Indikatīvā kopējā cena: €{(priceBand.from * (parseFloat(weightT) || 0)).toFixed(0)}
-                –€{(priceBand.to * (parseFloat(weightT) || 0)).toFixed(0)} (galīgā cena — pēc
-                svēršanas)
+              <p className="text-xs font-semibold text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/40">
+                Indikatīvā kopējā cena:{' '}
+                <span className="text-foreground font-bold">
+                  €{(priceBand.from * (parseFloat(weightT) || 0)).toFixed(0)}–€
+                  {(priceBand.to * (parseFloat(weightT) || 0)).toFixed(0)}
+                </span>{' '}
+                (galīgā cena tiek noteikta pēc svēršanas)
               </p>
             )}
           </div>
