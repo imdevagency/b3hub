@@ -2670,6 +2670,14 @@ export class OrdersService {
         currency: 'EUR',
         projectId: dto.projectId ?? null,
         status: TransportJobStatus.AVAILABLE,
+        // Site coordination fields
+        notes: dto.notes ?? null,
+        siteContactName: dto.siteContactName ?? null,
+        siteContactPhone: dto.siteContactPhone ?? null,
+        bisNumber: dto.bisNumber ?? null,
+        loadingBy: dto.loadingBy ?? null,
+        contactWillBePresent: dto.contactWillBePresent ?? null,
+        wasteReadiness: dto.wasteReadiness ?? null,
       },
     });
 

@@ -1130,6 +1130,16 @@ model TransportJob {
   driverRating        DriverRating?
   carrierPayout       CarrierPayout?          @relation("JobCarrierPayout")
 
+  // Site coordination — set for WASTE_COLLECTION (disposal) jobs
+  notes                String?  // driver instructions / access notes
+  siteContactName      String?  // on-site contact (foreman, site manager)
+  siteContactPhone     String?  // on-site contact phone
+  bisNumber            String?  // BIS case reference (construction waste tracking)
+  // Loading coordination
+  loadingBy            String?  // 'BUYER_CREW' | 'DRIVER_HANDS' | 'NEEDS_MACHINERY'
+  contactWillBePresent Boolean? // site contact confirmed to be present during pickup
+  wasteReadiness       String?  // 'PILED' | 'NEEDS_PREP' — state of waste at site
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

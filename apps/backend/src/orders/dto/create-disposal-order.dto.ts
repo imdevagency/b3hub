@@ -1,12 +1,13 @@
 import {
+  IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Min,
-  IsIn,
 } from 'class-validator';
 import { WasteType } from '@prisma/client';
 
@@ -81,6 +82,23 @@ export class CreateDisposalOrderDto {
   @IsString()
   @IsOptional()
   bisNumber?: string;
+
+  /** Who is responsible for loading the waste onto the truck. */
+  @IsString()
+  @IsIn(['BUYER_CREW', 'DRIVER_HANDS', 'NEEDS_MACHINERY'])
+  @IsOptional()
+  loadingBy?: string;
+
+  /** Whether the site contact will be physically present during the pickup window. */
+  @IsBoolean()
+  @IsOptional()
+  contactWillBePresent?: boolean;
+
+  /** Readiness of the waste at the pickup site. */
+  @IsString()
+  @IsIn(['PILED', 'NEEDS_PREP'])
+  @IsOptional()
+  wasteReadiness?: string;
 
   @IsNumber()
   @Min(0)

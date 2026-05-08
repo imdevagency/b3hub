@@ -45,6 +45,14 @@ export interface CreateDisposalOrderInput {
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  /** BIS (Būvniecības informācijas sistēma) case reference for construction-site waste. */
+  bisNumber?: string;
+  /** Who loads the waste onto the truck. */
+  loadingBy?: 'BUYER_CREW' | 'DRIVER_HANDS' | 'NEEDS_MACHINERY';
+  /** Whether the site contact will be physically present during the pickup window. */
+  contactWillBePresent?: boolean;
+  /** Readiness of the waste at the pickup site. */
+  wasteReadiness?: 'PILED' | 'NEEDS_PREP';
   /** Displayed price shown to buyer (fromPrice × truckCount) */
   quotedRate?: number;
   /** Optional project tag for P&L roll-up */

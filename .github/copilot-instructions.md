@@ -52,9 +52,7 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
-
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
-
 <!-- END GEN -->
 
 ### Module anatomy
@@ -82,7 +80,6 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
-
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -108,7 +105,6 @@ export interface RequestingUser {
   companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }
 ```
-
 <!-- END GEN -->
 
 > ⚠️ **Important**: The `/auth/me` and login API responses return company features as `user.company.features` (nested), **not** as a flat `user.companyFeatures`. Mobile `mode-context.tsx` reads `user.company.features` accordingly. Never read `user.companyFeatures` directly in mobile code.
@@ -169,7 +165,6 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
-
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
@@ -177,7 +172,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 - `(recycler)` — documents, home, incoming, messages, more, profile, records
 - `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
 - `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, language, messages, notification/, notifications, review/, settings, support-chat
-- `(wizards)` — disposal/, material-order, skip-hire/, toilet-cabin/, transport/, utilization/
+- `(wizards)` — disposal/, material-order, scrap-buyback/, skip-hire/, toilet-cabin/, transport/, utilization/
 <!-- END GEN -->
 
 ### Styling

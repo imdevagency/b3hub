@@ -282,6 +282,11 @@ export default function DisposalWizard() {
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
   const [bisNumber, setBisNumber] = useState('');
+  const [loadingBy, setLoadingBy] = useState<'BUYER_CREW' | 'DRIVER_HANDS' | 'NEEDS_MACHINERY'>(
+    'BUYER_CREW',
+  );
+  const [contactWillBePresent, setContactWillBePresent] = useState(true);
+  const [wasteReadiness, setWasteReadiness] = useState<'PILED' | 'NEEDS_PREP'>('PILED');
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
 
   // Recycling centre comparison (populated from disposal-quote when >1 center exists)
@@ -447,6 +452,10 @@ export default function DisposalWizard() {
           siteContactName: contactName || undefined,
           siteContactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          bisNumber: bisNumber.trim() || undefined,
+          loadingBy: loadingBy || undefined,
+          contactWillBePresent,
+          wasteReadiness: wasteReadiness || undefined,
           quotedRate: derived.fromPrice,
           projectId: projectId || undefined,
           preferredRecyclingCenterId: preferredRecyclingCenterId || undefined,
@@ -584,6 +593,24 @@ export default function DisposalWizard() {
     // Step 1 hazardous gate
     if (step === 1) {
       if (selectedWastes.includes('HAZARDOUS')) {
+        const nonHazardous = selectedWastes.filter((w) => w !== 'HAZARDOUS');
+        const continueWithoutBtn =
+          nonHazardous.length > 0
+            ? [
+                {
+                  text: 'Turpināt bez bīstamajiem',
+                  onPress: () => {
+                    // Remove HAZARDOUS and proceed
+                    setSelectedWastes(nonHazardous);
+                    const resolved =
+                      nonHazardous.length > 1 ? ('MIXED' as WasteType) : nonHazardous[0];
+                    if (resolved) setWasteType(resolved);
+                    haptics.medium();
+                    setStep((s) => (s + 1) as Step);
+                  },
+                },
+              ]
+            : [];
         Alert.alert(
           'Bīstami atkritumi',
           'Azbesta, krāsu un šķidājinātāju utilizācijai nepieciešama īpaša atļauja.\n\nSazinieties ar mums tieši:',
@@ -593,6 +620,7 @@ export default function DisposalWizard() {
               text: 'E-pasts: info@b3hub.lv',
               onPress: () => Linking.openURL('mailto:info@b3hub.lv'),
             },
+            ...continueWithoutBtn,
             { text: 'Aizvert', style: 'cancel' },
           ],
         );
@@ -1010,6 +1038,124 @@ export default function DisposalWizard() {
                 autoCapitalize="characters"
               />
             </View>
+
+            {/* ── Loading coordination ── */}
+            <SectionLabel label="Kraušanas koordinācija" style={{ marginTop: 20 }} />
+            <Text style={s.stepSub}>
+              Palīdziet autovadītājam sagatavoties — norādiet, kas veic kraušanu un vai krava ir
+              gatava.
+            </Text>
+
+            <Text
+              style={[
+                s.stepSub,
+                { marginTop: 12, marginBottom: 6, color: '#111827', fontWeight: '600' },
+              ]}
+            >
+              Kas veic kraušanu?
+            </Text>
+            <View style={{ gap: 8, marginBottom: 4 }}>
+              {(
+                [
+                  [
+                    'BUYER_CREW',
+                    '🚜 Mūsu komanda / tehnika',
+                    'Ekskavators vai iekrāvējs pieejams objektā',
+                  ],
+                  [
+                    'DRIVER_HANDS',
+                    '👷 Autovadītājs kravā ar rokām',
+                    'Piemērots nelieliem apjomiem',
+                  ],
+                  [
+                    'NEEDS_MACHINERY',
+                    '⚠️ Nepieciešams ekskavators',
+                    'Pasūtītājs nodrošinās tehnikas pieejamību',
+                  ],
+                ] as const
+              ).map(([val, label, sub]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.payMethodRow, loadingBy === val && s.payMethodRowActive]}
+                  onPress={() => setLoadingBy(val)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[s.payMethodRadio, loadingBy === val && s.payMethodRadioActive]}>
+                    {loadingBy === val && <View style={s.payMethodRadioDot} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.payMethodLabel, loadingBy === val && s.payMethodLabelActive]}>
+                      {label}
+                    </Text>
+                    <Text style={s.payMethodSub}>{sub}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text
+              style={[
+                s.stepSub,
+                { marginTop: 12, marginBottom: 6, color: '#111827', fontWeight: '600' },
+              ]}
+            >
+              Kravas gatavība objektā
+            </Text>
+            <View style={{ gap: 8, marginBottom: 4 }}>
+              {(
+                [
+                  [
+                    'PILED',
+                    '✅ Salikts kaudzē, gatavs kraušanai',
+                    'Autovadītājs var sākt kraušanu nekavējoties',
+                  ],
+                  [
+                    'NEEDS_PREP',
+                    '🔄 Jāsavāc (izkliedēts pa laukumu)',
+                    'Nepieciešams laiks pirms kraušanas',
+                  ],
+                ] as const
+              ).map(([val, label, sub]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.payMethodRow, wasteReadiness === val && s.payMethodRowActive]}
+                  onPress={() => setWasteReadiness(val)}
+                  activeOpacity={0.75}
+                >
+                  <View
+                    style={[s.payMethodRadio, wasteReadiness === val && s.payMethodRadioActive]}
+                  >
+                    {wasteReadiness === val && <View style={s.payMethodRadioDot} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[s.payMethodLabel, wasteReadiness === val && s.payMethodLabelActive]}
+                    >
+                      {label}
+                    </Text>
+                    <Text style={s.payMethodSub}>{sub}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[s.payMethodRow, { marginTop: 8 }]}
+              onPress={() => setContactWillBePresent((v) => !v)}
+              activeOpacity={0.75}
+            >
+              <View style={[s.payMethodRadio, contactWillBePresent && s.payMethodRadioActive]}>
+                {contactWillBePresent && <View style={s.payMethodRadioDot} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.payMethodLabel, contactWillBePresent && s.payMethodLabelActive]}>
+                  Kontaktpersona būs klāt objektā
+                </Text>
+                <Text style={s.payMethodSub}>
+                  Norādītā persona atradīsies objektā kraušanas laikā
+                </Text>
+              </View>
+            </TouchableOpacity>
 
             <SectionLabel label="Maksājuma veids" style={{ marginTop: 20 }} />
             <View style={{ gap: 10, marginBottom: 8 }}>

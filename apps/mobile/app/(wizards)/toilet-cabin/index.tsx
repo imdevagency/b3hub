@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Building2 } from 'lucide-react-native';
@@ -30,6 +31,26 @@ import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
 
 // ── Types ──────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
+
+// ── Draft persistence ──────────────────────────────────────────────
+const TOILET_CABIN_DRAFT_KEY = '@b3hub_toilet_cabin_draft';
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface ToiletCabinDraft {
+  step: Step;
+  cabinCount: number;
+  hireDays: number;
+  picked: PickedAddress | null;
+  selectedDay: string | null;
+  deliveryWindow: 'ANY' | 'AM' | 'PM';
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  notes: string;
+  paymentMethod: 'CARD' | 'INVOICE';
+  servicingFrequency: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | null;
+  savedAt: number;
+}
 
 const today = new Date();
 const MIN_DATE = toISO(addDays(today, 1));
@@ -88,6 +109,9 @@ export default function ToiletCabinWizard() {
   const [contactEmail, setContactEmail] = useState(() => user?.email ?? '');
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
+  const [servicingFrequency, setServicingFrequency] = useState<
+    'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | null
+  >(null);
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
@@ -95,6 +119,7 @@ export default function ToiletCabinWizard() {
     null,
   );
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const draftLoadedRef = useRef(false);
 
   // End-of-hire ISO date (derived from delivery date + hireDays)
   const collectionDay = selectedDay
@@ -109,6 +134,78 @@ export default function ToiletCabinWizard() {
     if (!contactPhone.trim()) setContactPhone(user.phone ?? '');
     if (!contactEmail.trim()) setContactEmail(user.email ?? '');
   }, [user?.id]);
+
+  // Draft load on mount
+  useEffect(() => {
+    AsyncStorage.getItem(TOILET_CABIN_DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const d: ToiletCabinDraft = JSON.parse(raw);
+          if (d.savedAt && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(TOILET_CABIN_DRAFT_KEY).catch(() => {});
+            draftLoadedRef.current = true;
+            return;
+          }
+          if (d.step) setStep(d.step);
+          if (d.cabinCount) setCabinCount(d.cabinCount);
+          if (d.hireDays) setHireDays(d.hireDays);
+          if (d.picked) setPicked(d.picked);
+          if (d.selectedDay) setSelectedDay(d.selectedDay);
+          if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow);
+          if (d.contactName !== undefined) setContactName(d.contactName);
+          if (d.contactPhone !== undefined) setContactPhone(d.contactPhone);
+          if (d.contactEmail !== undefined) setContactEmail(d.contactEmail);
+          if (d.notes !== undefined) setNotes(d.notes);
+          if (d.paymentMethod) setPaymentMethod(d.paymentMethod);
+          if (d.servicingFrequency !== undefined) setServicingFrequency(d.servicingFrequency);
+        } catch {
+          /* ignore corrupt draft */
+        }
+        draftLoadedRef.current = true;
+      })
+      .catch(() => {
+        draftLoadedRef.current = true;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Draft save on state change
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const draft: ToiletCabinDraft = {
+      step,
+      cabinCount,
+      hireDays,
+      picked,
+      selectedDay,
+      deliveryWindow,
+      contactName,
+      contactPhone,
+      contactEmail,
+      notes,
+      paymentMethod,
+      servicingFrequency,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(TOILET_CABIN_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    step,
+    cabinCount,
+    hireDays,
+    picked,
+    selectedDay,
+    deliveryWindow,
+    contactName,
+    contactPhone,
+    contactEmail,
+    notes,
+    paymentMethod,
+    servicingFrequency,
+  ]);
 
   const estimatedPrice = cabinCount * hireDays * BASE_PRICE_PER_CABIN_PER_DAY;
 
@@ -129,6 +226,15 @@ export default function ToiletCabinWizard() {
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
+      const servicingNote =
+        servicingFrequency === 'WEEKLY'
+          ? 'Tīrīšana: katru nedēļu'
+          : servicingFrequency === 'BIWEEKLY'
+            ? 'Tīrīšana: reizi 2 nedēļās'
+            : servicingFrequency === 'MONTHLY'
+              ? 'Tīrīšana: reizi mēnesī'
+              : null;
+      const combinedNotes = [servicingNote, notes].filter(Boolean).join('. ');
       try {
         const result = await api.guestOrders.create({
           category: 'TOILET_CABIN',
@@ -146,8 +252,9 @@ export default function ToiletCabinWizard() {
           contactName: contact.name,
           contactPhone: contact.phone,
           contactEmail: contact.email,
-          notes: notes || undefined,
+          notes: combinedNotes || undefined,
         });
+        AsyncStorage.removeItem(TOILET_CABIN_DRAFT_KEY).catch(() => {});
         haptics.success();
         await addGuestOrder({
           token: result.token,
@@ -167,7 +274,16 @@ export default function ToiletCabinWizard() {
         setLoading(false);
       }
     },
-    [picked, selectedDay, cabinCount, hireDays, collectionDay, deliveryWindow, notes],
+    [
+      picked,
+      selectedDay,
+      cabinCount,
+      hireDays,
+      collectionDay,
+      deliveryWindow,
+      notes,
+      servicingFrequency,
+    ],
   );
 
   // ── Submit ────────────────────────────────────────────────────────
@@ -176,6 +292,15 @@ export default function ToiletCabinWizard() {
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
+      const servicingNote =
+        servicingFrequency === 'WEEKLY'
+          ? 'Tīrīšana: katru nedēļu'
+          : servicingFrequency === 'BIWEEKLY'
+            ? 'Tīrīšana: reizi 2 nedēļās'
+            : servicingFrequency === 'MONTHLY'
+              ? 'Tīrīšana: reizi mēnesī'
+              : null;
+      const combinedNotes = [servicingNote, notes].filter(Boolean).join('. ');
       try {
         const result = await api.createToiletCabinOrder(
           {
@@ -190,11 +315,12 @@ export default function ToiletCabinWizard() {
             contactName,
             contactPhone,
             contactEmail,
-            notes,
+            notes: combinedNotes || undefined,
             paymentMethod,
           },
           authToken,
         );
+        AsyncStorage.removeItem(TOILET_CABIN_DRAFT_KEY).catch(() => {});
         haptics.success();
         setConfirmedOrderNumber(result.orderNumber);
       } catch (err: unknown) {
@@ -215,6 +341,7 @@ export default function ToiletCabinWizard() {
       contactPhone,
       contactEmail,
       notes,
+      servicingFrequency,
     ],
   );
 
@@ -241,19 +368,6 @@ export default function ToiletCabinWizard() {
   }, [step, router]);
 
   // ── Success screen ─────────────────────────────────────────────
-  // ── Success screen ─────────────────────────────────────────────
-  if (guestResult) {
-    return (
-      <GuestOrderSuccess
-        orderNumber={guestResult.orderNumber}
-        guestToken={guestResult.token}
-        contactEmail={contactEmail || undefined}
-        onBack={() => router.replace('/(buyer)/home' as never)}
-        category="TOILET_CABIN"
-      />
-    );
-  }
-
   if (guestResult) {
     return (
       <GuestOrderSuccess
@@ -447,6 +561,39 @@ export default function ToiletCabinWizard() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Servicing schedule — shown for hires ≥ 14 days */}
+            {hireDays >= 14 && (
+              <>
+                <SectionLabel label="Tīrīšanas biežums" style={{ marginTop: 16 }} />
+                <Text style={s.stepSub}>Kā bieži kabīne jātīra?</Text>
+                <View style={[s.periodGrid, { marginBottom: 16 }]}>
+                  {(
+                    [
+                      { value: 'WEEKLY' as const, label: 'Katru nedēļu' },
+                      { value: 'BIWEEKLY' as const, label: 'Reizi 2 nedēļās' },
+                      { value: 'MONTHLY' as const, label: 'Reizi mēnesī' },
+                    ] as const
+                  ).map((opt) => {
+                    const isSel = servicingFrequency === opt.value;
+                    return (
+                      <TouchableOpacity
+                        key={opt.value}
+                        style={[s.periodChip, isSel && s.periodChipSel]}
+                        onPress={() => {
+                          haptics.light();
+                          setServicingFrequency(opt.value);
+                        }}
+                      >
+                        <Text style={[s.periodChipText, isSel && s.periodChipTextSel]}>
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
           </ScrollView>
         )}
 
@@ -479,7 +626,24 @@ export default function ToiletCabinWizard() {
                         : 'Jebkurā laikā'
                   }
                 />
-                <DetailRow label="Aptuvena cena" value={`€${estimatedPrice} + PVN`} last />
+                <DetailRow
+                  label="Aptuvena cena"
+                  value={`€${estimatedPrice} + PVN`}
+                  last={!servicingFrequency || hireDays < 14}
+                />
+                {servicingFrequency && hireDays >= 14 && (
+                  <DetailRow
+                    label="Tīrīšana"
+                    value={
+                      servicingFrequency === 'WEEKLY'
+                        ? 'Katru nedēļu'
+                        : servicingFrequency === 'BIWEEKLY'
+                          ? 'Reizi 2 nedēļās'
+                          : 'Reizi mēnesī'
+                    }
+                    last
+                  />
+                )}
               </InfoSection>
             </View>
 

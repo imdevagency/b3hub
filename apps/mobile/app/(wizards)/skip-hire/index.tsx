@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -68,7 +69,36 @@ import { TextInputField } from '@/components/ui/TextInputField';
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
 
+// ── Draft persistence ──────────────────────────────────────────────
+const SKIP_HIRE_DRAFT_KEY = '@b3hub_skip_hire_draft';
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface SkipHireDraft {
+  step: Step;
+  selectedWaste: SkipWasteCategory | null;
+  selectedSize: SkipSize | null;
+  picked: PickedAddress | null;
+  selectedDay: string | null;
+  hireDays: number;
+  deliveryWindow: 'ANY' | 'AM' | 'PM';
+  paymentMethod: 'CARD' | 'INVOICE';
+  contactName: string;
+  contactPhone: string;
+  notes: string;
+  bisNumber: string;
+  savedAt: number;
+}
+
 const today = new Date();
+
+// Hire period options — user picks period, collection date auto-derived
+const SKIP_HIRE_PERIOD_OPTIONS: Array<{ days: number; label: string; sub: string }> = [
+  { days: 3, label: '3 d.', sub: '3 dienas' },
+  { days: 7, label: '1 ned.', sub: '7 dienas' },
+  { days: 14, label: '2 ned.', sub: '14 dienas' },
+  { days: 21, label: '3 ned.', sub: '21 diena' },
+  { days: 30, label: '1 mēn.', sub: '30 dienas' },
+];
 
 // ── Component ─────────────────────────────────────────────────────
 export default function OrderWizard() {
@@ -97,23 +127,13 @@ export default function OrderWizard() {
   );
   const [selectedSize, setSelectedSizeState] = useState<SkipSize | null>(state.skipSize);
   const [selectedDay, setSelectedDay] = useState<string | null>(() => toISO(addDays(today, 1)));
-  // collectionDay = end of hire period; defaults to +14 days.
-  const [collectionDay, setCollectionDay] = useState<string | null>(() =>
-    toISO(addDays(today, 15)),
-  );
+  // hireDays = user-selected hire period; collectionDay auto-derived.
+  const [hireDays, setHireDays] = useState(7);
+  // collectionDay derived from delivery date + hire period
+  const collectionDay = selectedDay
+    ? toISO(addDays(new Date(selectedDay + 'T00:00:00'), hireDays))
+    : null;
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
-  // Derived: days between delivery and collection (min 1). Falls back to 14 if not yet chosen.
-  const hireDays =
-    collectionDay && selectedDay
-      ? Math.max(
-          1,
-          Math.round(
-            (new Date(collectionDay + 'T00:00:00').getTime() -
-              new Date(selectedDay + 'T00:00:00').getTime()) /
-              86_400_000,
-          ),
-        )
-      : 14;
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [saveAddress, setSaveAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -145,6 +165,7 @@ export default function OrderWizard() {
   const [matOrdersLoading, setMatOrdersLoading] = useState(false);
   const [linkedMaterialOrderId, setLinkedMaterialOrderId] = useState<string | null>(null);
   const [showMatLink, setShowMatLink] = useState(false);
+  const draftLoadedRef = useRef(false);
 
   // Redirect to welcome if not authenticated
   // (removed — auth gate fires at commitment, not on mount)
@@ -156,6 +177,87 @@ export default function OrderWizard() {
       setContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
     if (!contactPhone.trim()) setContactPhone(user.phone ?? '');
   }, [user?.id]);
+
+  // Draft load on mount
+  useEffect(() => {
+    AsyncStorage.getItem(SKIP_HIRE_DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const d: SkipHireDraft = JSON.parse(raw);
+          if (d.savedAt && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(SKIP_HIRE_DRAFT_KEY).catch(() => {});
+            draftLoadedRef.current = true;
+            return;
+          }
+          if (d.step) setStep(d.step);
+          if (d.selectedWaste) {
+            setSelectedWasteState(d.selectedWaste);
+            setWasteCategory(d.selectedWaste);
+          }
+          if (d.selectedSize) {
+            setSelectedSizeState(d.selectedSize);
+            setSkipSize(d.selectedSize);
+          }
+          if (d.picked) {
+            setPicked(d.picked);
+            setLocationWithCoords(d.picked.address, d.picked.lat, d.picked.lng);
+          }
+          if (d.selectedDay) setSelectedDay(d.selectedDay);
+          if (d.hireDays) setHireDays(d.hireDays);
+          if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow);
+          if (d.paymentMethod) setPaymentMethod(d.paymentMethod);
+          if (d.contactName !== undefined) setContactName(d.contactName);
+          if (d.contactPhone !== undefined) setContactPhone(d.contactPhone);
+          if (d.notes !== undefined) setNotes(d.notes);
+          if (d.bisNumber !== undefined) setBisNumber(d.bisNumber);
+        } catch {
+          /* ignore corrupt draft */
+        }
+        draftLoadedRef.current = true;
+      })
+      .catch(() => {
+        draftLoadedRef.current = true;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Draft save on state change
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const draft: SkipHireDraft = {
+      step,
+      selectedWaste,
+      selectedSize,
+      picked,
+      selectedDay,
+      hireDays,
+      deliveryWindow,
+      paymentMethod,
+      contactName,
+      contactPhone,
+      notes,
+      bisNumber,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(SKIP_HIRE_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    step,
+    selectedWaste,
+    selectedSize,
+    picked,
+    selectedDay,
+    hireDays,
+    deliveryWindow,
+    paymentMethod,
+    contactName,
+    contactPhone,
+    notes,
+    bisNumber,
+  ]);
 
   // Fetch size catalogue on mount
   useEffect(() => {
@@ -246,15 +348,10 @@ export default function OrderWizard() {
         : `Pasūtīt — €${totalWithVat} (ar PVN)`
       : 'Turpināt';
 
-  const collectionAfterDelivery =
-    !selectedDay ||
-    !collectionDay ||
-    new Date(collectionDay + 'T00:00:00') > new Date(selectedDay + 'T00:00:00');
-
   const ctaDisabled =
     (step === 1 && (!selectedWaste || !selectedSize)) ||
     (step === 2 && !picked) ||
-    (step === 3 && (!selectedDay || !collectionDay || !collectionAfterDelivery)) ||
+    (step === 3 && !selectedDay) ||
     (step === 4 && (quotesLoading || !termsAccepted)) ||
     submitting;
 
@@ -319,6 +416,7 @@ export default function OrderWizard() {
           )
           .catch(() => {});
       }
+      AsyncStorage.removeItem(SKIP_HIRE_DRAFT_KEY).catch(() => {});
       haptics.success();
       setSkipPaymentUrl(order.paymentUrl ?? null);
       setConfirmedOrder(order);
@@ -445,6 +543,7 @@ export default function OrderWizard() {
           contactEmail: contact.email,
           notes: notes || undefined,
         });
+        AsyncStorage.removeItem(SKIP_HIRE_DRAFT_KEY).catch(() => {});
         haptics.success();
         setGuestResult({ token: result.token, orderNumber: result.orderNumber });
       } catch (err) {
@@ -624,13 +723,37 @@ export default function OrderWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 3 (Kad?): Delivery date + time window ── */}
+        {/* ── Step 3 (Kad?): Hire period + delivery date ── */}
         {step === 3 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.contentPad}
             showsVerticalScrollIndicator={false}
           >
+            {/* ── Hire period chips ── */}
+            <SectionLabel label="Nomas periods" />
+            <View style={s.periodRow}>
+              {SKIP_HIRE_PERIOD_OPTIONS.map((opt) => {
+                const isSel = hireDays === opt.days;
+                return (
+                  <TouchableOpacity
+                    key={opt.days}
+                    style={[s.periodChip, isSel && s.periodChipActive]}
+                    onPress={() => {
+                      haptics.light();
+                      setHireDays(opt.days);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[s.periodChipMain, isSel && s.periodChipTextActive]}>
+                      {opt.label}
+                    </Text>
+                    <Text style={[s.periodChipSub, isSel && s.periodChipSubActive]}>{opt.sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             {/* ── Date range summary bar ── */}
             <View style={s.rangeSummaryBar}>
               <View style={s.rangeSummaryCol}>
@@ -649,9 +772,7 @@ export default function OrderWizard() {
                 <Text style={s.rangeSummaryArrowText}>→</Text>
               </View>
               <View style={[s.rangeSummaryCol, { alignItems: 'flex-end' }]}>
-                <Text style={s.rangeSummaryLabel}>
-                  Savākšana{collectionDay ? ` · ${hireDays} d.` : ''}
-                </Text>
+                <Text style={s.rangeSummaryLabel}>Savākšana · {hireDays} d.</Text>
                 <Text style={[s.rangeSummaryDate, !collectionDay && s.rangeSummaryDateEmpty]}>
                   {collectionDay
                     ? new Date(collectionDay + 'T00:00:00').toLocaleDateString('lv-LV', {
@@ -659,38 +780,17 @@ export default function OrderWizard() {
                         day: 'numeric',
                         month: 'short',
                       })
-                    : 'Izvēlieties'}
+                    : '—'}
                 </Text>
               </View>
             </View>
 
-            {/* ── Calendar — two-tap range selection ── */}
-            {selectedDay && collectionDay && !collectionAfterDelivery && (
-              <View style={s.dateError}>
-                <Text style={s.dateErrorText}>
-                  Savākšanas dienai jābūt vēlāk par piegādes dienu.
-                </Text>
-              </View>
-            )}
+            {/* ── Calendar — single tap for delivery date ── */}
             <WizardCalendar
               selectedDate={selectedDay || ''}
-              onDateChange={(tapped) => {
-                // If both dates are already set, or no date is set, start over
-                if (!selectedDay || (selectedDay && collectionDay)) {
-                  setSelectedDay(tapped);
-                  setCollectionDay(null);
-                  return;
-                }
-
-                // At this point, selectedDay is set, but collectionDay is null
-                if (tapped < selectedDay) {
-                  // If tapped date is before the start date, shift the start date
-                  setSelectedDay(tapped);
-                  setCollectionDay(null);
-                } else {
-                  // Tapped date is >= start date: complete the range
-                  setCollectionDay(tapped);
-                }
+              onDateChange={(d) => {
+                haptics.light();
+                setSelectedDay(d);
               }}
               minDate={toISO(addDays(today, 1))}
               rangeEndDate={collectionDay ?? undefined}

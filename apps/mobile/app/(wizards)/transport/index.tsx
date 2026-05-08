@@ -501,7 +501,11 @@ export default function TransportWizard() {
     ],
   );
 
-  const step2Valid = selectedVehicle !== null;
+  const step2Valid =
+    selectedVehicle !== null &&
+    (activeDesc !== '' && activeDesc !== 'Cits'
+      ? true
+      : activeDesc === 'Cits' && otherText.trim() !== '');
   const step3Valid = !!selectedDay;
   const step4Valid = !!siteContactName.trim() && !!siteContactPhone.trim();
 
@@ -750,7 +754,7 @@ export default function TransportWizard() {
               })}
             </View>
 
-            <Text style={s.sectionTitle}>Kravas veids</Text>
+            <Text style={s.sectionTitle}>Kravas veids *</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}

@@ -6,7 +6,8 @@
  *   Step 3 – Compare offers (which center pays most?)
  *   Step 4 – Confirm + contact → submit
  */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -16,18 +17,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import {
-  Wrench,
-  Zap,
-  FlameKindling,
-  CircleDot,
-  Trees,
-  Package,
-  Trophy,
-  MapPin,
-  CheckCircle2,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { Wrench, Trophy, MapPin, CheckCircle2 } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
@@ -44,70 +34,32 @@ import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { haptics } from '@/lib/haptics';
 import { colors, spacing, radius } from '@/lib/theme';
 
+// ── Draft persistence ────────────────────────────────────────────
+const BUYBACK_DRAFT_KEY = '@b3hub_scrap_buyback_draft';
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface BuybackDraft {
+  step: Step;
+  weightText: string;
+  hasPhoto: boolean | null;
+  picked: PickedAddress | null;
+  notes: string;
+  pickupDate: string;
+  contactName: string;
+  contactPhone: string;
+  savedAt: number;
+}
+
 // ── Types ────────────────────────────────────────────────────────
 
 type Step = 1 | 2 | 3 | 4;
 
-interface MaterialOption {
-  id: WasteType;
-  label: string;
-  desc: string;
-  Icon: LucideIcon;
-  hint?: string; // shown as a payout hint (e.g. "Augsta vērtība")
-}
-
 // ── Constants ────────────────────────────────────────────────────
 
-const MATERIAL_OPTIONS: MaterialOption[] = [
-  {
-    id: 'METAL',
-    label: 'Metāls / Dzelzslūžņi',
-    desc: 'Stiegrojums, profili, skārds, dzelzs',
-    Icon: Wrench,
-    hint: 'Augsta vērtība',
-  },
-  {
-    id: 'WEEE',
-    label: 'Elektroatkritumi',
-    desc: 'Kabeļi, motori, sadzīves tehnika',
-    Icon: Zap,
-    hint: 'Satur metālu',
-  },
-  {
-    id: 'WOOD',
-    label: 'Koks / Biomasa',
-    desc: 'Tīrs kokmateriāls, dēļi, sijas, kokskaidas',
-    Icon: Trees,
-    hint: 'Biomasa',
-  },
-  {
-    id: 'PACKAGING_WASTE',
-    label: 'Iepakojums / Kartons',
-    desc: 'Kartona kastes, paletes, papīrs',
-    Icon: Package,
-    hint: 'Otrreizēji',
-  },
-  {
-    id: 'OIL_WASTE',
-    label: 'Eļļošanas atkritumi',
-    desc: 'Motoreļļa, hidraulika, smērvielas',
-    Icon: FlameKindling,
-  },
-  {
-    id: 'TIRES',
-    label: 'Lietotas riepas',
-    desc: 'Auto un tehnikas gumija',
-    Icon: CircleDot,
-  },
-];
-
+// Scrap buyback is METAL only — recycling centers pay you per tonne.
+// WEEE, OIL_WASTE, TIRES, WOOD, PACKAGING_WASTE belong in the Disposal wizard.
 const MATERIAL_LABELS: Record<string, string> = {
   METAL: 'Metāls / Dzelzslūžņi',
-  WEEE: 'Elektroatkritumi',
-  WOOD: 'Koks / Biomasa',
-  PACKAGING_WASTE: 'Iepakojums / Kartons',
-  OIL_WASTE: 'Eļļošanas atkritumi',
-  TIRES: 'Lietotas riepas',
 };
 
 const STEP_TITLES: Record<Step, string> = {
@@ -134,8 +86,8 @@ export default function ScrapBuybackWizard() {
 
   const [step, setStep] = useState<Step>(1);
 
-  // Step 1 — material + weight + photo
-  const [materialType, setMaterialType] = useState<WasteType | null>(null);
+  // Material type is always METAL — buyback only applies to scrap metal
+  const materialType: WasteType = 'METAL';
   const [weightText, setWeightText] = useState(''); // tonnes (master)
   const [hasPhoto, setHasPhoto] = useState<boolean | null>(null);
 
@@ -167,6 +119,58 @@ export default function ScrapBuybackWizard() {
       setContactName(`${user.firstName ?? ''} ${user.lastName ?? ''}`.trim());
     if (!contactPhone.trim()) setContactPhone(user.phone ?? '');
   }, [user?.id]);
+
+  // ── Draft: restore on mount ───────────────────────────────────
+  const draftLoadedRef = useRef(false);
+  useEffect(() => {
+    AsyncStorage.getItem(BUYBACK_DRAFT_KEY)
+      .then((raw) => {
+        if (!raw) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        try {
+          const d: BuybackDraft = JSON.parse(raw);
+          if (d.savedAt && Date.now() - d.savedAt > DRAFT_TTL_MS) {
+            AsyncStorage.removeItem(BUYBACK_DRAFT_KEY).catch(() => {});
+            draftLoadedRef.current = true;
+            return;
+          }
+          if (d.step) setStep(d.step);
+          if (d.weightText) setWeightText(d.weightText);
+          if (d.hasPhoto !== undefined) setHasPhoto(d.hasPhoto);
+          if (d.picked) setPicked(d.picked);
+          if (d.notes !== undefined) setNotes(d.notes);
+          if (d.pickupDate) setPickupDate(d.pickupDate);
+          if (d.contactName !== undefined) setContactName(d.contactName);
+          if (d.contactPhone !== undefined) setContactPhone(d.contactPhone);
+        } catch {
+          /* ignore corrupt draft */
+        }
+        draftLoadedRef.current = true;
+      })
+      .catch(() => {
+        draftLoadedRef.current = true;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Draft: save on state change ───────────────────────────────
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    const draft: BuybackDraft = {
+      step,
+      weightText,
+      hasPhoto,
+      picked,
+      notes,
+      pickupDate,
+      contactName,
+      contactPhone,
+      savedAt: Date.now(),
+    };
+    AsyncStorage.setItem(BUYBACK_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [step, weightText, hasPhoto, picked, notes, pickupDate, contactName, contactPhone]);
 
   const weightT = parseFloat(weightText);
   const validWeight = !isNaN(weightT) && weightT > 0;
@@ -268,6 +272,7 @@ export default function ScrapBuybackWizard() {
         token,
       );
       const jn = result?.jobNumber ?? '';
+      AsyncStorage.removeItem(BUYBACK_DRAFT_KEY).catch(() => {});
       router.replace({ pathname: '/(buyer)/orders' as never, params: { highlight: jn } });
       toast.success(`Pieprasījums ${jn} nosūtīts! Gaidiet izmaksu pēc savākšanas.`);
     } catch (err) {
@@ -294,7 +299,7 @@ export default function ScrapBuybackWizard() {
   ]);
 
   const ctaDisabled =
-    (step === 1 && (!materialType || !validWeight)) ||
+    (step === 1 && !validWeight) ||
     (step === 2 && !picked) ||
     (step === 3 && (!selectedCenterId || loadingOffers)) ||
     (step === 4 && (!contactName.trim() || !contactPhone.trim())) ||
@@ -315,8 +320,6 @@ export default function ScrapBuybackWizard() {
       >
         {step === 1 && (
           <StepMaterial
-            selected={materialType}
-            onSelect={setMaterialType}
             weightText={weightText}
             onWeightChange={setWeightText}
             hasPhoto={hasPhoto}
@@ -376,19 +379,16 @@ export default function ScrapBuybackWizard() {
   );
 }
 
-// ── Step 1: Material + weight + photo ────────────────────────────
+// ── Step 1: Weight + photo ────────────────────────────────────────
+// Material type is fixed to METAL — no picker needed.
 
 function StepMaterial({
-  selected,
-  onSelect,
   weightText,
   onWeightChange,
   hasPhoto,
   onHasPhotoChange,
 }: {
-  selected: WasteType | null;
-  onSelect: (id: WasteType) => void;
-  weightText: string; // tonnes (master)
+  weightText: string;
   onWeightChange: (t: string) => void;
   hasPhoto: boolean | null;
   onHasPhotoChange: (v: boolean) => void;
@@ -422,45 +422,32 @@ function StepMaterial({
     >
       <View style={s.payoutBanner}>
         <Text style={s.payoutBannerText}>
-          💶 Nododiet otrreizējos materiālus — metālu, koku, kartonu — un saņemiet samaksu no
-          licencētiem pārstrādātājiem
+          💶 Nododiet metāllūžņus — dzelzi, alumīniju, varu, nerūsējošo tēraudu — un saņemiet
+          samaksu no licencētiem pārstrādātājiem
         </Text>
       </View>
 
-      <SectionLabel label="Materiāla veids" style={s.sectionLabel} />
-      {MATERIAL_OPTIONS.map((opt) => {
-        const isSel = selected === opt.id;
-        const Icon = opt.Icon;
-        return (
-          <TouchableOpacity
-            key={opt.id}
-            style={[s.materialRow, isSel && s.materialRowSel]}
-            onPress={() => {
-              haptics.light();
-              onSelect(opt.id);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={[s.matIconWrap, isSel && s.matIconWrapSel]}>
-              <Icon size={22} color={isSel ? colors.white : colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.matLabel, isSel && s.matLabelSel]}>{opt.label}</Text>
-              <Text style={[s.matDesc, isSel && s.matDescSel]} numberOfLines={1}>
-                {opt.desc}
-              </Text>
-            </View>
-            {opt.hint && (
-              <View style={[s.hintBadge, isSel && s.hintBadgeSel]}>
-                <Text style={[s.hintText, isSel && s.hintTextSel]}>{opt.hint}</Text>
-              </View>
-            )}
-            {isSel && (
-              <CheckCircle2 size={20} color={colors.white} style={{ marginLeft: spacing.xs }} />
-            )}
-          </TouchableOpacity>
-        );
-      })}
+      {/* Fixed material card */}
+      <View style={[s.materialRow, s.materialRowSel]}>
+        <View style={[s.matIconWrap, s.matIconWrapSel]}>
+          <Wrench size={22} color={colors.white} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.matLabel, s.matLabelSel]}>Metāls / Dzelzslūžņi</Text>
+          <Text style={[s.matDesc, s.matDescSel]}>
+            Dzelzs, alumīnijs, varš, nerūsējošais tērauds, profili, stiegrojums
+          </Text>
+        </View>
+        <View style={[s.hintBadge, s.hintBadgeSel]}>
+          <Text style={[s.hintText, s.hintTextSel]}>Augsta vērtība</Text>
+        </View>
+        <CheckCircle2 size={20} color={colors.white} style={{ marginLeft: spacing.xs }} />
+      </View>
+
+      <Text style={[s.stepSub, { marginTop: spacing.sm, marginBottom: spacing.lg }]}>
+        Elektroatkritumus, riepas, eļļas vai celtniecības atkritumus — izvēlieties Atkritumu
+        izvešanu.
+      </Text>
 
       {/* ── Dual t / kg weight input ── */}
       <SectionLabel label="Daudzums" style={[s.sectionLabel, { marginTop: spacing.lg }]} />

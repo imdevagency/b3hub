@@ -206,7 +206,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Backend Modules
 
 <!-- GEN:status-backend-modules -->
-
 - admin
 - analytics
 - api-keys
@@ -264,7 +263,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Web Pages
 
 <!-- GEN:status-web-pages -->
-
 - (auth)/login
 - (auth)/register
 - (marketing)
@@ -441,7 +439,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 ### Mobile Screens
 
 <!-- GEN:status-mobile-screens -->
-
 - (auth)/apply-role
 - (auth)/forgot-password
 - (auth)/login
@@ -522,6 +519,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (wizards)/disposal/confirmation
 - (wizards)/disposal/index
 - (wizards)/material-order
+- (wizards)/scrap-buyback/index
 - (wizards)/skip-hire/confirmation
 - (wizards)/skip-hire/index
 - (wizards)/toilet-cabin/index
