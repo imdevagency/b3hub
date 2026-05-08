@@ -81,13 +81,16 @@ interface Props {
   dashboard?: boolean;
   /** Extra class on the grid wrapper */
   className?: string;
+  /** Raw query string (without ?) to append to each service href — e.g. from hero address search */
+  addressQuery?: string;
 }
 
-export function OrderServiceGrid({ dashboard = false, className }: Props) {
-  const services = SERVICES.map((s) => ({
-    ...s,
-    href: dashboard ? (DASHBOARD_HREFS[s.id] ?? s.href) : s.href,
-  }));
+export function OrderServiceGrid({ dashboard = false, className, addressQuery }: Props) {
+  const services = SERVICES.map((s) => {
+    const base = dashboard ? (DASHBOARD_HREFS[s.id] ?? s.href) : s.href;
+    const href = addressQuery ? `${base}?${addressQuery}` : base;
+    return { ...s, href };
+  });
 
   return (
     <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-4', className)}>

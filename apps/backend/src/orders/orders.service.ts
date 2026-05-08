@@ -29,6 +29,7 @@ import {
   TransportJobStatus,
   TransportJobType,
   CompanyType,
+  VehicleType,
   Prisma,
 } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
@@ -2564,14 +2565,15 @@ export class OrdersService {
   async createDisposalOrder(dto: CreateDisposalOrderDto, userId: string) {
     const TRUCK_LABELS: Record<
       string,
-      { label: string; capacity: number; volume: number }
+      { label: string; capacity: number; volume: number; vehicleEnum: VehicleType }
     > = {
-      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8 },
-      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12 },
+      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8, vehicleEnum: VehicleType.DUMP_TRUCK },
+      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12, vehicleEnum: VehicleType.DUMP_TRUCK },
       ARTICULATED_TIPPER: {
         label: 'Artikulētais pašizgāzējs 26t',
         capacity: 26,
         volume: 18,
+        vehicleEnum: VehicleType.SEMI_TRAILER,
       },
     };
 
@@ -2665,6 +2667,7 @@ export class OrdersService {
         cargoWeight: totalWeight,
         cargoVolume: truck.volume * dto.truckCount,
         requiredVehicleType: truck.label,
+        requiredVehicleEnum: truck.vehicleEnum,
         specialRequirements: dto.description ?? null,
         rate: dto.buybackPricePerTonne != null ? 0 : (dto.quotedRate ?? 0), // buyback = driver collects, buyer gets paid
         currency: 'EUR',
@@ -2730,17 +2733,18 @@ export class OrdersService {
   async createFreightOrder(dto: CreateFreightOrderDto, userId: string) {
     const VEHICLE_LABELS: Record<
       string,
-      { label: string; capacity: number; volume: number }
+      { label: string; capacity: number; volume: number; vehicleEnum: VehicleType }
     > = {
-      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8 },
-      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12 },
+      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8, vehicleEnum: VehicleType.DUMP_TRUCK },
+      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12, vehicleEnum: VehicleType.DUMP_TRUCK },
       ARTICULATED_TIPPER: {
         label: 'Artikulētais pašizgāzējs 26t',
         capacity: 26,
         volume: 22,
+        vehicleEnum: VehicleType.SEMI_TRAILER,
       },
-      FLATBED: { label: 'Platforma 20t', capacity: 20, volume: 0 },
-      BOX_TRUCK: { label: 'Kravas furgons 3.5t', capacity: 3.5, volume: 20 },
+      FLATBED: { label: 'Platforma 20t', capacity: 20, volume: 0, vehicleEnum: VehicleType.FLATBED_TRUCK },
+      BOX_TRUCK: { label: 'Kravas furgons 3.5t', capacity: 3.5, volume: 20, vehicleEnum: VehicleType.VAN },
     };
 
     const vehicle =
@@ -2770,6 +2774,7 @@ export class OrdersService {
       cargoWeight: dto.estimatedWeight ?? vehicle.capacity,
       cargoVolume: vehicle.volume,
       requiredVehicleType: vehicle.label,
+      requiredVehicleEnum: vehicle.vehicleEnum,
       specialRequirements: null,
       rate: dto.quotedRate,
       pricePerTonne: isPricingPerTonne ? dto.pricePerTonne : null,

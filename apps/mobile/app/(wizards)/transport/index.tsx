@@ -1072,6 +1072,10 @@ export default function TransportWizard() {
           setShowAuthGate(false);
           handleGuestSubmit(contact);
         }}
+        onRegister={() => {
+          setShowAuthGate(false);
+          router.push('/(auth)/register' as never);
+        }}
         prefilledName={siteContactName}
         prefilledPhone={siteContactPhone}
         onDismiss={() => setShowAuthGate(false)}

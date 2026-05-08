@@ -19,7 +19,13 @@ export type WasteType =
   | 'PLASTIC'
   | 'SOIL'
   | 'MIXED'
-  | 'HAZARDOUS';
+  | 'HAZARDOUS'
+  | 'ASPHALT'
+  | 'GREEN_WASTE'
+  | 'WEEE'
+  | 'OIL_WASTE'
+  | 'TIRES'
+  | 'PACKAGING_WASTE';
 
 // ── Vehicle / truck types ──────────────────────────────────────────────────
 // DisposalTruckType: tipper trucks used for waste removal orders.

@@ -24,9 +24,10 @@ const VALID_CATEGORIES: string[] = [
 
 interface Props {
   params: Promise<{ category: string }>;
+  searchParams: Promise<{ address?: string; lat?: string; lng?: string; city?: string }>;
 }
 
-export default async function MaterialOrderPage({ params }: Props) {
+export default async function MaterialOrderPage({ params, searchParams }: Props) {
   const { category: slug } = await params;
   // Convert URL slug (e.g. "recycled-concrete") → enum key (e.g. "RECYCLED_CONCRETE")
   const category = slug.toUpperCase().replace(/-/g, '_');
@@ -35,5 +36,16 @@ export default async function MaterialOrderPage({ params }: Props) {
     notFound();
   }
 
-  return <MaterialOrderWizard category={category as MaterialCategory} mode="public" />;
+  const sp = await searchParams;
+
+  return (
+    <MaterialOrderWizard
+      category={category as MaterialCategory}
+      mode="public"
+      initialAddress={sp.address}
+      initialCity={sp.city}
+      initialLat={sp.lat ? parseFloat(sp.lat) : undefined}
+      initialLng={sp.lng ? parseFloat(sp.lng) : undefined}
+    />
+  );
 }

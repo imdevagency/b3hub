@@ -734,6 +734,10 @@ export default function ToiletCabinWizard() {
           setShowAuthGate(false);
           handleGuestSubmit(contact);
         }}
+        onRegister={() => {
+          setShowAuthGate(false);
+          router.push('/(auth)/register' as never);
+        }}
         onDismiss={() => setShowAuthGate(false)}
         prefilledName={contactName}
         prefilledPhone={contactPhone}

@@ -270,7 +270,9 @@ function DocsTab() {
                   setFilter(tb.key);
                 }}
               >
-                <Text className={`font-semibold text-sm ${active ? 'text-white' : 'text-gray-900'}`}>
+                <Text
+                  className={`font-semibold text-sm ${active ? 'text-white' : 'text-gray-900'}`}
+                >
                   {tb.label}
                 </Text>
                 {count > 0 && (
@@ -631,6 +633,12 @@ const WASTE_TYPE_LABELS: Record<WasteType, string> = {
   SOIL: 'Zeme',
   MIXED: 'Jaukti',
   HAZARDOUS: 'Bīstami',
+  ASPHALT: 'Asfalta lauskas',
+  GREEN_WASTE: 'Zaļie atkritumi',
+  WEEE: 'Elektroatkritumi',
+  OIL_WASTE: 'Eļļošanas atkritumi',
+  TIRES: 'Riepas',
+  PACKAGING_WASTE: 'Iepakojums',
 };
 
 function RecordCard({ item }: { item: ApiWasteRecord }) {

@@ -16,6 +16,13 @@ interface FuelRates {
 
 type ServiceType = 'materials' | 'skip' | 'transport' | 'disposal';
 
+const SERVICE_HREFS: Record<ServiceType, string> = {
+  materials: '/order/materials',
+  skip: '/order/skip-hire',
+  transport: '/order/transport',
+  disposal: '/order/disposal',
+};
+
 const SERVICE_LABELS: Record<ServiceType, string> = {
   materials: 'Būvmateriāli',
   skip: 'Konteinera noma',
@@ -200,7 +207,7 @@ export function PriceEstimator({ variant = 'section' }: PriceEstimatorProps) {
 
         {/* CTA */}
         <Link
-          href="/order"
+          href={SERVICE_HREFS[service]}
           className="block w-full text-center bg-foreground text-background rounded-full py-3.5 text-sm font-bold hover:opacity-90 transition-opacity"
         >
           Pasūtīt tagad

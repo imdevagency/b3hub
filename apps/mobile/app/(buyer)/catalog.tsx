@@ -34,6 +34,10 @@ import {
   ChevronRight,
   MapPin,
   Calculator,
+  Truck,
+  Trash2,
+  Wrench,
+  Building2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
@@ -155,9 +159,20 @@ function CategoryCard({
 export default function CatalogScreen() {
   const router = useRouter();
   const { token } = useAuth();
-  const params = useLocalSearchParams<{ projectId?: string; schedule?: string }>();
+  const params = useLocalSearchParams<{ projectId?: string; schedule?: string; focus?: string }>();
   const projectId = params.projectId;
   const schedule = params.schedule;
+  const searchInputRef = React.useRef<TextInput>(null);
+
+  // Auto-focus search when navigated here with focus=1 (e.g. from home search shortcut)
+  useFocusEffect(
+    useCallback(() => {
+      if (params.focus === '1') {
+        const t = setTimeout(() => searchInputRef.current?.focus(), 200);
+        return () => clearTimeout(t);
+      }
+    }, [params.focus]),
+  );
 
   const [allMaterials, setAllMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -423,6 +438,7 @@ export default function CatalogScreen() {
         >
           <Search size={20} color={searchFocused ? '#111827' : '#9ca3af'} className="mr-3" />
           <TextInput
+            ref={searchInputRef}
             className="flex-1 text-gray-900"
             style={{ fontSize: 17, fontFamily: 'Inter_500Medium', paddingVertical: 2 }}
             placeholder="Meklēt kategoriju..."
@@ -494,6 +510,52 @@ export default function CatalogScreen() {
               Pārstrādāts
             </Text>
           </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* Other services — quick access to non-material wizards */}
+      <View style={{ marginBottom: 12 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {(
+            [
+              { icon: Truck, label: 'Transports', route: '/transport' },
+              { icon: Package, label: 'Konteineri', route: '/skip-hire' },
+              { icon: Trash2, label: 'Utilizācija', route: '/disposal' },
+              { icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
+              { icon: Building2, label: 'Tualetes', route: '/toilet-cabin' },
+            ] as const
+          ).map((svc) => {
+            const Icon = svc.icon;
+            return (
+              <TouchableOpacity
+                key={svc.route}
+                onPress={() => {
+                  haptics.light();
+                  router.push(svc.route as never);
+                }}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: 999,
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                }}
+              >
+                <Icon size={15} color="#374151" strokeWidth={2} />
+                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#111827' }}>
+                  {svc.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 

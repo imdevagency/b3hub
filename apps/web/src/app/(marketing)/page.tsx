@@ -2,6 +2,7 @@ import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { RoleTabs } from '@/components/marketing/layout/RoleTabs';
 import { PriceEstimator } from '@/components/marketing/PriceEstimator';
+import { HeroAddressSearch } from '@/components/marketing/HeroAddressSearch';
 import {
   ArrowRight,
   Truck,
@@ -53,18 +54,14 @@ export default function HomePage() {
         subtitle="Digitālā platforma, kas savieno karjerus, pārvadātājus un būvniekus — no pasūtījuma līdz rēķinam, automātiski."
         pricingNote="Pircējiem — bezmaksas. Piegādātājiem no 6%. Pārvadātājiem no 8%."
         actions={
-          <>
-            <CTAButton href={'/order'} variant="primary" size="lg">
-              Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-2" />
-            </CTAButton>
-            <CTAButton href={'#uznemumiem'} variant="secondary" size="lg">
+          <div className="flex flex-col gap-4 w-full max-w-xl">
+            <HeroAddressSearch />
+            <CTAButton href={'#uznemumiem'} variant="secondary" size="lg" className="self-start">
               Uzzināt vairāk →
             </CTAButton>
-          </>
+          </div>
         }
-      >
-        <PriceEstimator variant="card" />
-      </Hero>
+      />
 
       {/* ── 2. WHO WE SERVE — B2C / B2B / Driver / Supplier merged ── */}
       <section id="uznemumiem" className="w-full bg-neutral-50">
@@ -224,6 +221,9 @@ export default function HomePage() {
           </div>
         </Container>
       </section>
+
+      {/* ── 3b. PRICE ESTIMATOR ── */}
+      <PriceEstimator />
 
       {/* ── 4. HOW IT WORKS ── */}
       <section className="w-full bg-background">

@@ -16,6 +16,7 @@ import {
   Building2,
   FolderOpen,
   Wrench,
+  Search,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -789,6 +790,37 @@ export default function HomeScreen() {
               </Text>
             )}
 
+            {/* Tappable search shortcut — routes to Catalog with search focused */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                haptics.light();
+                router.push({ pathname: '/(buyer)/catalog', params: { focus: '1' } } as never);
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#f3f4f6',
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                paddingVertical: 13,
+                marginBottom: 20,
+                gap: 10,
+              }}
+            >
+              <Search size={18} color="#9ca3af" strokeWidth={2} />
+              <Text
+                style={{
+                  fontFamily: 'Inter_400Regular',
+                  fontSize: 16,
+                  color: '#9ca3af',
+                  flex: 1,
+                }}
+              >
+                Meklēt materiālus...
+              </Text>
+            </TouchableOpacity>
+
             <Text
               style={{
                 fontFamily: 'Inter_700Bold',
@@ -799,7 +831,7 @@ export default function HomeScreen() {
                 marginBottom: 20,
               }}
             >
-              Katalogs
+              Pakalpojumi
             </Text>
             <View
               style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}

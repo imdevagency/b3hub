@@ -371,6 +371,10 @@ export default function ScrapBuybackWizard() {
             handleCTA();
           }
         }}
+        onRegister={() => {
+          setShowAuthGate(false);
+          router.push('/(auth)/register' as never);
+        }}
         onDismiss={() => setShowAuthGate(false)}
         prefilledName={contactName}
         prefilledPhone={contactPhone}

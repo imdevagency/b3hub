@@ -1212,6 +1212,10 @@ export default function DisposalWizard() {
           setShowAuthGate(false);
           handleGuestSubmit(contact);
         }}
+        onRegister={() => {
+          setShowAuthGate(false);
+          router.push('/(auth)/register' as never);
+        }}
         prefilledName={contactName}
         prefilledPhone={contactPhone}
         onDismiss={() => setShowAuthGate(false)}

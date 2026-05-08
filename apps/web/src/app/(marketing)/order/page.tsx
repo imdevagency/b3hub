@@ -4,12 +4,33 @@
  * Intent-first service picker: user selects the type of service they need,
  * then continues to the appropriate wizard where they can explore details and
  * pricing before being asked to create an account (Airbnb pattern).
+ *
+ * When ?address= is present (set by HeroAddressSearch), the address is shown
+ * as a context chip and forwarded to each service via addressQuery.
  */
-import { ShieldCheck, Clock, FileText } from 'lucide-react';
+import { ShieldCheck, Clock, FileText, MapPin } from 'lucide-react';
 import { Container } from '@/components/marketing/layout/Container';
 import { OrderServiceGrid } from '@/components/order/OrderServiceGrid';
 
-export default function OrderHubPage() {
+interface Props {
+  searchParams: Promise<{ address?: string; lat?: string; lng?: string; city?: string }>;
+}
+
+export default async function OrderHubPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const address = sp.address ?? null;
+
+  // Build the raw query string to thread through to service pages
+  const addressQuery = address
+    ? new URLSearchParams(
+        Object.fromEntries(
+          Object.entries({ address: sp.address, lat: sp.lat, lng: sp.lng, city: sp.city }).filter(
+            ([, v]) => Boolean(v),
+          ) as [string, string][],
+        ),
+      ).toString()
+    : undefined;
+
   return (
     <div className="min-h-screen bg-background">
       <Container className="py-16 md:py-32 max-w-6xl">
@@ -23,9 +44,16 @@ export default function OrderHubPage() {
             Pasūtiet celtniecības pakalpojumus un materiālus. Cenas redzamas uzreiz, pavadzīmes
             automātiski.
           </p>
+
+          {address && (
+            <div className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-border/60 bg-muted/50 px-4 py-2.5 text-sm font-semibold text-foreground">
+              <MapPin className="size-4 text-muted-foreground shrink-0" />
+              <span className="truncate max-w-xs">{address}</span>
+            </div>
+          )}
         </div>
 
-        <OrderServiceGrid />
+        <OrderServiceGrid addressQuery={addressQuery} />
 
         <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12 pt-16 border-t border-border/50 text-foreground">
           <div>

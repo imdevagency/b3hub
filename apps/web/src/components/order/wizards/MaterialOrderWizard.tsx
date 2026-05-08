@@ -407,11 +407,23 @@ interface Props {
   /** Pre-selected material category (from URL param). */
   category: MaterialCategory;
   mode?: 'public' | 'dashboard';
+  /** Pre-filled delivery address from hero search — skips address step if set */
+  initialAddress?: string;
+  initialCity?: string;
+  initialLat?: number;
+  initialLng?: number;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
+export function MaterialOrderWizard({
+  category,
+  mode = 'public',
+  initialAddress,
+  initialCity,
+  initialLat,
+  initialLng,
+}: Props) {
   const { token, setAuth, isLoading } = useAuth();
   const router = useRouter();
 
@@ -430,9 +442,11 @@ export function MaterialOrderWizard({ category, mode = 'public' }: Props) {
       selectedFraction: firstFraction,
       quantity: 5,
       unit: meta.defaultUnit,
-      address: '',
-      city: '',
+      address: initialAddress ?? '',
+      city: initialCity ?? '',
       postal: '',
+      lat: initialLat,
+      lng: initialLng,
       deliveryDate: '',
       deliveryWindow: 'ANY',
       asap: false,

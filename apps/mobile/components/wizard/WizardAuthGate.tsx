@@ -27,7 +27,7 @@ import {
 } from 'react-native';
 import { X, Eye, EyeOff, ChevronRight } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, usePathname } from 'expo-router';
+
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -54,6 +54,8 @@ interface WizardAuthGateProps {
    */
   onGuestContact?: (info: GuestContactInfo) => void;
   onDismiss: () => void;
+  /** Called when the user taps "Register". Parent handles navigation to avoid Modal context issues. */
+  onRegister?: () => void;
   /** Pre-populate guest form fields from the wizard's on-site contact fields. */
   prefilledName?: string;
   prefilledPhone?: string;
@@ -67,14 +69,13 @@ export function WizardAuthGate({
   onAuthenticated,
   onGuestContact,
   onDismiss,
+  onRegister,
   prefilledName,
   prefilledPhone,
   prefilledEmail,
 }: WizardAuthGateProps) {
   const insets = useSafeAreaInsets();
   const { setAuth } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
 
   const [mode, setMode] = useState<Mode>('choice');
 
@@ -108,10 +109,7 @@ export function WizardAuthGate({
 
   const handleGoToRegister = () => {
     onDismiss();
-    router.push({
-      pathname: '/(auth)/register' as never,
-      params: { returnTo: pathname },
-    } as never);
+    onRegister?.();
   };
 
   const handleLogin = async () => {
