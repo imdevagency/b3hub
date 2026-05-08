@@ -5,6 +5,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Bookmark, ChevronDown, ChevronUp, Loader2, MapPin, Star } from 'lucide-react';
 import { AddressAutocomplete, type PlaceAddress } from '@/components/ui/AddressAutocomplete';
 import { getSavedAddresses, type SavedAddress } from '@/lib/api/saved-addresses';
@@ -28,6 +29,8 @@ interface Props {
   subtitle?: string;
   /** Override the "Next" button label */
   nextLabel?: string;
+  /** Optional content rendered between the confirmed-address pill and nav buttons */
+  extra?: ReactNode;
 }
 
 export function Step2Address({
@@ -40,6 +43,7 @@ export function Step2Address({
   title,
   subtitle,
   nextLabel,
+  extra,
 }: Props) {
   const [input, setInput] = useState(value);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -73,8 +77,10 @@ export function Step2Address({
     <div className="flex flex-col space-y-5 animate-in fade-in slide-in-from-bottom-2">
       {(title !== '' || subtitle !== '') && (
         <div>
-          <h2 className="text-lg font-bold">{title ?? 'Kur piegādāt konteineru?'}</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h2 className="text-2xl font-extrabold text-foreground">
+            {title ?? 'Kur piegādāt konteineru?'}
+          </h2>
+          <p className="text-sm font-medium text-muted-foreground mt-1.5">
             {subtitle ?? 'Ievadiet precīzu adresi vai izmantojiet GPS'}
           </p>
         </div>
@@ -149,6 +155,8 @@ export function Step2Address({
         </div>
       )}
 
+      {extra}
+
       {/* Nav buttons */}
       {(onNext || onBack) && (
         <div className="flex gap-3 pt-4">
@@ -164,7 +172,7 @@ export function Step2Address({
             <button
               onClick={onNext}
               disabled={!isValid}
-              className="flex-[2] rounded-full bg-foreground py-3.5 text-base font-bold text-background shadow-md hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+              className="flex-2 rounded-full bg-foreground py-3.5 text-base font-bold text-background shadow-md hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
             >
               {nextLabel ?? 'Rādīt piedāvājumus'}
             </button>
