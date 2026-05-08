@@ -173,6 +173,7 @@ export default function TransportWizard() {
   const [siteContactPhone, setSiteContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
   const [offeredRateText, setOfferedRateText] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
 
   // ── Route (for step 3 summary) ────────────────────────────────
   const { route } = useRoute(
@@ -362,6 +363,7 @@ export default function TransportWizard() {
               : undefined,
           truckCount: truckCount > 1 ? truckCount : undefined,
           projectId: projectId || undefined,
+          paymentMethod,
         },
         token,
       );
@@ -997,6 +999,48 @@ export default function TransportWizard() {
               )}
             </View>
             <View style={{ height: 16 }} />
+            {/* Payment method */}
+            <SectionLabel label="Maksājuma veids" />
+            <View style={{ gap: 10, marginBottom: 8 }}>
+              {(
+                [
+                  [
+                    'CARD',
+                    '💳 Ar karti (Paysera)',
+                    'Tūlītējs maksājums ar debetkarti vai kredītkarti',
+                  ],
+                  ...(user
+                    ? [
+                        [
+                          'INVOICE',
+                          '🧾 Priekšapmaksas rēķins',
+                          'Rēķins tiks nosūtīts uz e-pastu',
+                        ] as const,
+                      ]
+                    : []),
+                ] as const
+              ).map(([val, label, sub]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
+                  onPress={() => setPaymentMethod(val)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
+                    {paymentMethod === val && <View style={s.payMethodRadioDot} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
+                    >
+                      {label}
+                    </Text>
+                    <Text style={s.payMethodSub}>{sub}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={{ height: 16 }} />
             {/* Footnote: this is a request, not an instant booking */}
             <View style={{ paddingHorizontal: 4, paddingBottom: 8 }}>
               <Text
@@ -1399,4 +1443,34 @@ const s = StyleSheet.create({
     backgroundColor: '#d1d5db',
     marginHorizontal: 10,
   },
+  payMethodRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: '#fff',
+  },
+  payMethodRowActive: { borderColor: '#166534', backgroundColor: '#f0fdf4' },
+  payMethodRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payMethodRadioActive: { borderColor: '#166534' },
+  payMethodRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#166534',
+  },
+  payMethodLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#111827' },
+  payMethodLabelActive: { color: '#166534' },
+  payMethodSub: { fontSize: 12, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_400Regular' },
 });

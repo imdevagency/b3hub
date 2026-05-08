@@ -18,6 +18,10 @@ export type WhenStepProps = {
   onDateChange: (date: string) => void;
   deliveryWindow: 'ANY' | 'AM' | 'PM';
   onWindowChange: (w: 'ANY' | 'AM' | 'PM') => void;
+  truckCount?: number;
+  onTruckCountChange?: (n: number) => void;
+  truckIntervalMinutes?: number;
+  onTruckIntervalChange?: (n: number) => void;
 };
 
 export function WhenStep({
@@ -25,6 +29,10 @@ export function WhenStep({
   onDateChange,
   deliveryWindow,
   onWindowChange,
+  truckCount = 1,
+  onTruckCountChange,
+  truckIntervalMinutes = 60,
+  onTruckIntervalChange,
 }: WhenStepProps) {
   return (
     <View className="px-6 pt-5 pb-12">
@@ -44,7 +52,7 @@ export function WhenStep({
       </View>
 
       {/* Time window selection */}
-      <View className="mb-10">
+      <View className="mb-6">
         <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
           Dienas laiks
         </Text>
@@ -81,6 +89,72 @@ export function WhenStep({
           })}
         </View>
       </View>
+
+      {/* Truck count stepper — only shown when prop is wired */}
+      {onTruckCountChange && (
+        <View className="mb-10">
+          <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
+            Kravas auto skaits
+          </Text>
+          <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 py-3 gap-4">
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                onTruckCountChange(Math.max(1, truckCount - 1));
+              }}
+              activeOpacity={0.7}
+              className="w-10 h-10 rounded-xl bg-white items-center justify-center"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb' }}
+            >
+              <Text className="text-gray-900 text-xl font-semibold">−</Text>
+            </TouchableOpacity>
+            <Text className="flex-1 text-center text-gray-900 text-base font-semibold">
+              {truckCount} {truckCount === 1 ? 'auto' : 'auto'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                onTruckCountChange(Math.min(5, truckCount + 1));
+              }}
+              activeOpacity={0.7}
+              className="w-10 h-10 rounded-xl bg-white items-center justify-center"
+              style={{ borderWidth: 1, borderColor: '#e5e7eb' }}
+            >
+              <Text className="text-gray-900 text-xl font-semibold">+</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Interval chips — only visible when >1 truck */}
+          {truckCount > 1 && onTruckIntervalChange && (
+            <View className="mt-3">
+              <Text className="text-gray-500 text-xs mb-2 ml-1">Intervāls starp automašīnām</Text>
+              <View className="flex-row gap-2">
+                {([30, 60, 90, 120] as const).map((mins) => {
+                  const active = truckIntervalMinutes === mins;
+                  return (
+                    <TouchableOpacity
+                      key={mins}
+                      onPress={() => {
+                        haptics.light();
+                        onTruckIntervalChange(mins);
+                      }}
+                      activeOpacity={0.75}
+                      className={`flex-1 rounded-xl py-2 items-center ${active ? 'bg-[#166534]' : 'bg-gray-50'}`}
+                      style={active ? undefined : { borderWidth: 1, borderColor: '#e5e7eb' }}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-500'}`}
+                      >
+                        {mins} min
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 }

@@ -87,6 +87,7 @@ export default function ToiletCabinWizard() {
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [contactEmail, setContactEmail] = useState(() => user?.email ?? '');
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
@@ -190,6 +191,7 @@ export default function ToiletCabinWizard() {
             contactPhone,
             contactEmail,
             notes,
+            paymentMethod,
           },
           authToken,
         );
@@ -510,6 +512,48 @@ export default function ToiletCabinWizard() {
                 numberOfLines={3}
               />
             </View>
+
+            {/* Payment method */}
+            <SectionLabel label="Maksājuma veids" style={{ marginTop: 16 }} />
+            <View style={{ gap: 10, marginBottom: 8 }}>
+              {(
+                [
+                  [
+                    'CARD',
+                    '💳 Ar karti (Paysera)',
+                    'Tūlītējs maksājums ar debetkarti vai kredītkarti',
+                  ],
+                  ...(user
+                    ? [
+                        [
+                          'INVOICE',
+                          '🧾 Priekšapmaksas rēķins',
+                          'Rēķins tiks nosūtīts uz e-pastu',
+                        ] as const,
+                      ]
+                    : []),
+                ] as const
+              ).map(([val, label, sub]) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
+                  onPress={() => setPaymentMethod(val)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
+                    {paymentMethod === val && <View style={s.payMethodRadioDot} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
+                    >
+                      {label}
+                    </Text>
+                    <Text style={s.payMethodSub}>{sub}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           </ScrollView>
         )}
       </WizardLayout>
@@ -700,4 +744,29 @@ const s = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Inter_600SemiBold',
   },
+  payMethodRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: '#fff',
+  },
+  payMethodRowActive: { borderColor: '#166534', backgroundColor: '#f0fdf4' },
+  payMethodRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payMethodRadioActive: { borderColor: '#166534' },
+  payMethodRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#166534' },
+  payMethodLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#111827' },
+  payMethodLabelActive: { color: '#166534' },
+  payMethodSub: { fontSize: 12, color: '#6b7280', marginTop: 2, fontFamily: 'Inter_400Regular' },
 });

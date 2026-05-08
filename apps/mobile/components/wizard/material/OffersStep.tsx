@@ -53,6 +53,8 @@ export type OffersStepProps = {
   onBisNumberChange: (v: string) => void;
   termsAccepted: boolean;
   onTermsAcceptedChange: (v: boolean) => void;
+  paymentMethod: 'CARD' | 'INVOICE';
+  onPaymentMethodChange: (v: 'CARD' | 'INVOICE') => void;
   onSelectOffer: (offer: SupplierOffer) => void;
   onSendRFQ: () => void;
   /**
@@ -98,6 +100,8 @@ export function OffersStep({
   onBisNumberChange,
   termsAccepted,
   onTermsAcceptedChange,
+  paymentMethod,
+  onPaymentMethodChange,
   onSelectOffer,
   onSendRFQ,
   onGuestContact,
@@ -661,6 +665,102 @@ export function OffersStep({
                 backgroundColor: '#fff',
               }}
             />
+          </View>
+        )}
+
+        {/* Payment method — authenticated users only */}
+        {isAuthenticated && (
+          <View style={{ gap: 8 }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.textSecondary,
+                marginBottom: 2,
+              }}
+            >
+              Apmaksas veids
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => onPaymentMethodChange('CARD')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1.5,
+                borderColor: paymentMethod === 'CARD' ? '#111827' : colors.border,
+                borderRadius: 12,
+                padding: 12,
+                gap: 10,
+                backgroundColor: paymentMethod === 'CARD' ? '#f9fafb' : '#fff',
+              }}
+            >
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor: paymentMethod === 'CARD' ? '#111827' : '#d1d5db',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {paymentMethod === 'CARD' && (
+                  <View
+                    style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' }}
+                  />
+                )}
+              </View>
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
+                  Karte (Paysera)
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                  Tūlītēja apmaksa ar bankas karti
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => onPaymentMethodChange('INVOICE')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1.5,
+                borderColor: paymentMethod === 'INVOICE' ? '#111827' : colors.border,
+                borderRadius: 12,
+                padding: 12,
+                gap: 10,
+                backgroundColor: paymentMethod === 'INVOICE' ? '#f9fafb' : '#fff',
+              }}
+            >
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor: paymentMethod === 'INVOICE' ? '#111827' : '#d1d5db',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {paymentMethod === 'INVOICE' && (
+                  <View
+                    style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' }}
+                  />
+                )}
+              </View>
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
+                  Rēķins (NET 30)
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                  Rēķins tiks izrakstīts pēc piegādes
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
         )}
 

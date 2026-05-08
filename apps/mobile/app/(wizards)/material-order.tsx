@@ -160,8 +160,9 @@ export default function OrderRequestWizard() {
     return d.toISOString().split('T')[0];
   });
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
-  const [truckCount] = useState(1);
-  const [truckIntervalMinutes] = useState(60);
+  const [truckCount, setTruckCount] = useState(1);
+  const [truckIntervalMinutes, setTruckIntervalMinutes] = useState(60);
+  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [repeatEnabled] = useState(() => params.schedule === '1');
   const [repeatInterval] = useState<7 | 14 | 30>(7);
 
@@ -490,6 +491,7 @@ export default function OrderRequestWizard() {
           fulfillmentType,
           pickupFieldId: pickupFieldId || undefined,
           pickupSlotId: pickupSlotId || undefined,
+          paymentMethod,
         },
         currentToken,
       );
@@ -756,6 +758,10 @@ export default function OrderRequestWizard() {
           onDateChange={setDeliveryDate}
           deliveryWindow={deliveryWindow}
           onWindowChange={setDeliveryWindow}
+          truckCount={truckCount}
+          onTruckCountChange={setTruckCount}
+          truckIntervalMinutes={truckIntervalMinutes}
+          onTruckIntervalChange={setTruckIntervalMinutes}
         />
       )}
       {step === 'offers' && (
@@ -784,6 +790,8 @@ export default function OrderRequestWizard() {
           onSelectOffer={handleSelectOffer}
           onSendRFQ={handleSendRFQ}
           onGuestContact={handleGuestSelectOffer}
+          paymentMethod={paymentMethod}
+          onPaymentMethodChange={setPaymentMethod}
           prefilledContactName={contactName}
           prefilledContactPhone={contactPhone}
           prefilledContactEmail={user?.email}

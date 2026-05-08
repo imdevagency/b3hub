@@ -70,6 +70,7 @@ export interface CreateToiletCabinInput {
   contactPhone?: string;
   notes?: string;
   carrierId?: string;
+  paymentMethod?: 'CARD' | 'INVOICE';
 }
 
 export interface SetToiletCabinSettingsInput {

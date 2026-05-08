@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Linking, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Linking, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   Package,
@@ -8,7 +8,8 @@ import {
   Star,
   Truck,
   CheckCircle2,
-  ChevronLeft, MessageCircle,
+  ChevronLeft,
+  MessageCircle,
   X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,8 @@ import { haptics } from '@/lib/haptics';
 import { useSkipOrder } from '@/lib/use-skip-order';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
+import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 
 const SKIP_STEPS = [
   { key: 'PENDING', label: 'Saņemts' },
@@ -58,6 +61,8 @@ export default function SkipOrderTrackingScreen() {
   const { order, loading, reload } = useSkipOrder(id);
   const cameraRef = useRef<CameraRefHandle | null>(null);
   const insets = useSafeAreaInsets();
+  const { token } = useAuth();
+  const [requestingPickup, setRequestingPickup] = useState(false);
 
   useEffect(() => {
     if (!order || !ACTIVE_STATUSES.has(order.status)) return;
@@ -123,12 +128,7 @@ export default function SkipOrderTrackingScreen() {
         </BaseMap>
 
         {/* Minimal Bolt-style Top Pill */}
-        <View
-          style={[
-            styles.topPill,
-            { top: Math.max(insets.top, 24) + 12 },
-          ]}
-        >
+        <View style={[styles.topPill, { top: Math.max(insets.top, 24) + 12 }]}>
           <TouchableOpacity
             style={styles.headerBtn}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/(buyer)/orders'))}
@@ -136,11 +136,11 @@ export default function SkipOrderTrackingScreen() {
           >
             <ChevronLeft size={24} color="#111827" />
           </TouchableOpacity>
-          
+
           <Text style={styles.headerTitle} numberOfLines={1}>
             {order.skipSize} konteiners
           </Text>
-          
+
           <TouchableOpacity
             style={styles.headerBtn}
             activeOpacity={0.7}
@@ -149,7 +149,7 @@ export default function SkipOrderTrackingScreen() {
               router.push('/(shared)/help' as never);
             }}
           >
-             <MessageCircle size={22} color="#111827" />
+            <MessageCircle size={22} color="#111827" />
           </TouchableOpacity>
         </View>
 
@@ -332,6 +332,32 @@ export default function SkipOrderTrackingScreen() {
               >
                 Detaļas
               </Button>
+              {order.status === 'DELIVERED' && token && (
+                <Button
+                  variant="default"
+                  size="lg"
+                  className="flex-1 ml-2"
+                  disabled={requestingPickup}
+                  onPress={async () => {
+                    haptics.medium();
+                    setRequestingPickup(true);
+                    try {
+                      await api.skipHire.requestPickup(id, token);
+                      reload();
+                      Alert.alert(
+                        'Pieprasījums nosūtīts',
+                        'Pārvadātājs sazināsies ar jums par savākšanas laiku.',
+                      );
+                    } catch {
+                      Alert.alert('Kļūda', 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.');
+                    } finally {
+                      setRequestingPickup(false);
+                    }
+                  }}
+                >
+                  {requestingPickup ? 'Sūta...' : 'Lūgt savākšanu'}
+                </Button>
+              )}
               {isTerminal && (
                 <Button
                   variant="default"

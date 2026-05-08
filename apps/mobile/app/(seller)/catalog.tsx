@@ -22,6 +22,10 @@ import {
   Switch,
   Linking,
   Alert,
+  Modal,
+  Pressable,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -35,17 +39,20 @@ import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiMaterial } from '@/lib/api';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
-import { PackageSearch, ExternalLink, Leaf } from 'lucide-react-native';
+import { PackageSearch, ExternalLink, Leaf, CalendarOff } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
+import type { ApiAvailabilityBlock } from '@/lib/api/materials';
 
 const WEB_CATALOG_URL = 'https://b3hub.lv/dashboard/materials';
 
 function MaterialRow({
   item,
   onToggleStock,
+  onBlockDates,
 }: {
   item: ApiMaterial;
   onToggleStock: (id: string, next: boolean) => void;
+  onBlockDates: (item: ApiMaterial) => void;
 }) {
   const categoryLabel = CATEGORY_LABELS[item.category] ?? item.category;
   const unit = UNIT_SHORT[item.unit] ?? item.unit;
@@ -95,6 +102,14 @@ function MaterialRow({
         trackColor={{ false: '#e5e7eb', true: '#86efac' }}
         thumbColor={item.inStock ? '#16a34a' : '#f3f4f6'}
       />
+      <TouchableOpacity
+        style={s.blockBtn}
+        onPress={() => onBlockDates(item)}
+        activeOpacity={0.75}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <CalendarOff size={18} color={colors.textMuted} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -106,6 +121,13 @@ export default function SellerCatalogScreen() {
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [blockTarget, setBlockTarget] = useState<ApiMaterial | null>(null);
+  const [blockStart, setBlockStart] = useState('');
+  const [blockEnd, setBlockEnd] = useState('');
+  const [blockNote, setBlockNote] = useState('');
+  const [savingBlock, setSavingBlock] = useState(false);
+  const [blocks, setBlocks] = useState<ApiAvailabilityBlock[]>([]);
+  const [loadingBlocks, setLoadingBlocks] = useState(false);
 
   const fetchMaterials = useCallback(
     async (mode: 'initial' | 'refresh' = 'initial') => {
@@ -149,6 +171,64 @@ export default function SellerCatalogScreen() {
     [materials, token, toast],
   );
 
+  const openBlockDates = useCallback(
+    async (item: ApiMaterial) => {
+      if (!token) return;
+      haptics.light();
+      setBlockTarget(item);
+      setBlockStart('');
+      setBlockEnd('');
+      setBlockNote('');
+      setLoadingBlocks(true);
+      try {
+        const res = await api.materials.getAvailability(item.id, token);
+        setBlocks(res);
+      } catch {
+        setBlocks([]);
+      } finally {
+        setLoadingBlocks(false);
+      }
+    },
+    [token],
+  );
+
+  const saveBlock = useCallback(async () => {
+    if (!token || !blockTarget || !blockStart || !blockEnd) return;
+    setSavingBlock(true);
+    try {
+      const newBlock = await api.materials.addAvailabilityBlock(
+        blockTarget.id,
+        { startDate: blockStart, endDate: blockEnd, note: blockNote.trim() || undefined },
+        token,
+      );
+      setBlocks((prev) => [...prev, newBlock]);
+      setBlockStart('');
+      setBlockEnd('');
+      setBlockNote('');
+      haptics.success();
+      toast.success('Bloķēšana pievienota');
+    } catch {
+      haptics.error();
+      toast.error('Neizdevās pievienot bloķēšanu');
+    } finally {
+      setSavingBlock(false);
+    }
+  }, [token, blockTarget, blockStart, blockEnd, blockNote, toast]);
+
+  const removeBlock = useCallback(
+    async (blockId: string) => {
+      if (!token || !blockTarget) return;
+      try {
+        await api.materials.removeAvailabilityBlock(blockTarget.id, blockId, token);
+        setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+        haptics.light();
+      } catch {
+        toast.error('Neizdevās dzēst bloķēšanu');
+      }
+    },
+    [token, blockTarget, toast],
+  );
+
   const openWeb = useCallback(async () => {
     haptics.light();
     const supported = await Linking.canOpenURL(WEB_CATALOG_URL);
@@ -160,53 +240,143 @@ export default function SellerCatalogScreen() {
   }, []);
 
   return (
-    <ScreenContainer bg="white">
-      <ScreenHeader title="Mans katalogs" />
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => fetchMaterials('refresh')}
-            tintColor={colors.textMuted}
-          />
-        }
-        showsVerticalScrollIndicator={false}
+    <>
+      <ScreenContainer bg="white">
+        <ScreenHeader title="Mans katalogs" />
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchMaterials('refresh')}
+              tintColor={colors.textMuted}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Info banner */}
+          <View style={s.banner}>
+            <Text style={s.bannerTitle}>Pārvaldiet katalogu tīmeklī</Text>
+            <Text style={s.bannerSub}>
+              Lai pievienotu vai rediģētu materiālus, cenu līmeņus un fotoattēlus, izmantojiet
+              portālu b3hub.lv. Šeit varat ātri mainīt pieejamību.
+            </Text>
+            <TouchableOpacity style={s.bannerBtn} onPress={openWeb} activeOpacity={0.85}>
+              <Text style={s.bannerBtnText}>Atvērt portālu</Text>
+              <ExternalLink size={14} color={colors.white} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <View style={s.list}>
+              {[0, 1, 2, 3].map((i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </View>
+          ) : materials.length === 0 ? (
+            <EmptyState
+              icon={<PackageSearch size={32} color={colors.textMuted} strokeWidth={1.5} />}
+              title="Nav materiālu"
+              subtitle="Jūsu uzņēmumam vēl nav pievienotu materiālu. Pievienojiet tos tīmekļa portālā."
+            />
+          ) : (
+            <View style={s.list}>
+              {materials.map((item) => (
+                <MaterialRow
+                  key={item.id}
+                  item={item}
+                  onToggleStock={toggleStock}
+                  onBlockDates={openBlockDates}
+                />
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </ScreenContainer>
+
+      {/* Availability block modal */}
+      <Modal
+        visible={!!blockTarget}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setBlockTarget(null)}
       >
-        {/* Info banner */}
-        <View style={s.banner}>
-          <Text style={s.bannerTitle}>Pārvaldiet katalogu tīmeklī</Text>
-          <Text style={s.bannerSub}>
-            Lai pievienotu vai rediģētu materiālus, cenu līmeņus un fotoattēlus, izmantojiet portālu
-            b3hub.lv. Šeit varat ātri mainīt pieejamību.
+        <Pressable style={s.modalBackdrop} onPress={() => setBlockTarget(null)} />
+        <View style={s.modalSheet}>
+          <View style={s.modalHandle} />
+          <Text style={s.modalTitle}>Bloķēt datumus — {blockTarget?.name}</Text>
+          <Text style={s.modalSub}>
+            Norādiet periodu, kad materiāls nav pieejams (piem., karantīnas apkope)
           </Text>
-          <TouchableOpacity style={s.bannerBtn} onPress={openWeb} activeOpacity={0.85}>
-            <Text style={s.bannerBtnText}>Atvērt portālu</Text>
-            <ExternalLink size={14} color={colors.white} strokeWidth={2} />
+
+          {loadingBlocks ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.textMuted}
+              style={{ marginVertical: 12 }}
+            />
+          ) : blocks.length > 0 ? (
+            <View style={{ gap: 6, marginBottom: 8 }}>
+              {blocks.map((b) => (
+                <View key={b.id} style={s.blockRow}>
+                  <Text style={s.blockText}>
+                    {b.startDate} → {b.endDate}
+                    {b.note ? ` (${b.note})` : ''}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => removeBlock(b.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={s.blockRemove}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={s.blockEmpty}>Nav aktīvu bloķēšanu</Text>
+          )}
+
+          <Text style={s.modalLabel}>Sākuma datums (GGGG-MM-DD)</Text>
+          <TextInput
+            style={s.modalInput}
+            value={blockStart}
+            onChangeText={setBlockStart}
+            placeholder="2025-01-01"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numbers-and-punctuation"
+          />
+          <Text style={[s.modalLabel, { marginTop: 10 }]}>Beigu datums (GGGG-MM-DD)</Text>
+          <TextInput
+            style={s.modalInput}
+            value={blockEnd}
+            onChangeText={setBlockEnd}
+            placeholder="2025-01-07"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numbers-and-punctuation"
+          />
+          <Text style={[s.modalLabel, { marginTop: 10 }]}>Iemesls (neobligāts)</Text>
+          <TextInput
+            style={s.modalInput}
+            value={blockNote}
+            onChangeText={setBlockNote}
+            placeholder="Piem., iekārtu apkope"
+            placeholderTextColor={colors.textMuted}
+          />
+          <TouchableOpacity
+            style={[s.modalSaveBtn, (!blockStart || !blockEnd || savingBlock) && { opacity: 0.5 }]}
+            onPress={saveBlock}
+            disabled={!blockStart || !blockEnd || savingBlock}
+            activeOpacity={0.8}
+          >
+            {savingBlock ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.modalSaveBtnText}>Pievienot bloķēšanu</Text>
+            )}
           </TouchableOpacity>
         </View>
-
-        {loading ? (
-          <View style={s.list}>
-            {[0, 1, 2, 3].map((i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </View>
-        ) : materials.length === 0 ? (
-          <EmptyState
-            icon={<PackageSearch size={32} color={colors.textMuted} strokeWidth={1.5} />}
-            title="Nav materiālu"
-            subtitle="Jūsu uzņēmumam vēl nav pievienotu materiālu. Pievienojiet tos tīmekļa portālā."
-          />
-        ) : (
-          <View style={s.list}>
-            {materials.map((item) => (
-              <MaterialRow key={item.id} item={item} onToggleStock={toggleStock} />
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </ScreenContainer>
+      </Modal>
+    </>
   );
 }
 
@@ -299,4 +469,58 @@ const s = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: '500',
   },
+  blockBtn: { padding: 4, marginLeft: 4 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 36,
+    gap: 4,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e5e7eb',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  modalSub: { fontSize: 13, color: colors.textMuted, lineHeight: 18, marginBottom: 8 },
+  modalLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 },
+  modalInput: {
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: colors.textPrimary,
+    backgroundColor: '#fff',
+  },
+  modalSaveBtn: {
+    backgroundColor: '#166534',
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  modalSaveBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  blockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  blockText: { fontSize: 13, color: colors.textPrimary, flex: 1 },
+  blockRemove: { fontSize: 15, color: '#ef4444', paddingLeft: 8 },
+  blockEmpty: { fontSize: 13, color: colors.textMuted, fontStyle: 'italic', marginBottom: 4 },
 });

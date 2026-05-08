@@ -81,6 +81,7 @@ export interface UpdateWasteRecordInput {
   apusSubmissionId?: string;
   apusNote?: string;
   processedDate?: string;
+  weighbridgeTicketRef?: string;
 }
 
 /** PATCH /recycling-centers/:centerId/waste-records/:recordId */

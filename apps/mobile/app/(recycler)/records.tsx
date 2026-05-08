@@ -112,6 +112,9 @@ export default function RecyclerRecordsScreen() {
   const [apusStatus, setApusStatus] = useState('');
   const [apusId, setApusId] = useState('');
   const [savingApus, setSavingApus] = useState(false);
+  const [pendingProcessedRecord, setPendingProcessedRecord] = useState<WasteRecord | null>(null);
+  const [weighbridgeRef, setWeighbridgeRef] = useState('');
+  const [savingWeighbridge, setSavingWeighbridge] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -143,6 +146,12 @@ export default function RecyclerRecordsScreen() {
   async function handleAdvanceStage(record: WasteRecord) {
     const nextStage = STAGE_SEQUENCE[record.processingStage ?? ''];
     if (!nextStage || !token || !record.recyclingCenterId) return;
+    // When advancing to PROCESSED, prompt for weighbridge ticket reference first
+    if (nextStage === 'PROCESSED') {
+      setWeighbridgeRef('');
+      setPendingProcessedRecord(record);
+      return;
+    }
     setAdvancing(true);
     try {
       const updated = await updateWasteRecord(token, record.recyclingCenterId, record.id, {
@@ -172,6 +181,29 @@ export default function RecyclerRecordsScreen() {
       Alert.alert('Kļūda', 'Neizdevās saglabāt APUS statusu.');
     } finally {
       setSavingApus(false);
+    }
+  }
+
+  async function handleConfirmProcessed() {
+    if (!pendingProcessedRecord || !token || !pendingProcessedRecord.recyclingCenterId) return;
+    setSavingWeighbridge(true);
+    try {
+      const updated = await updateWasteRecord(
+        token,
+        pendingProcessedRecord.recyclingCenterId,
+        pendingProcessedRecord.id,
+        {
+          processingStage: 'PROCESSED',
+          weighbridgeTicketRef: weighbridgeRef.trim() || undefined,
+        },
+      );
+      setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      setSelectedRecord(updated);
+      setPendingProcessedRecord(null);
+    } catch {
+      Alert.alert('Kļūda', 'Neizdevās mainīt posmu. Mēģiniet vēlreiz.');
+    } finally {
+      setSavingWeighbridge(false);
     }
   }
 
@@ -365,6 +397,51 @@ export default function RecyclerRecordsScreen() {
           </View>
         )}
       </Modal>
+
+      {/* Weighbridge prompt — shown when advancing to PROCESSED */}
+      <Modal
+        visible={!!pendingProcessedRecord}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPendingProcessedRecord(null)}
+      >
+        <Pressable style={ls.backdrop} onPress={() => setPendingProcessedRecord(null)} />
+        <View style={ls.weighbridgeSheet}>
+          <Text style={ls.weighbridgeTitle}>Apstrādāts — svara talons</Text>
+          <Text style={ls.weighbridgeSub}>
+            Ievadiet svara talona numuru (neobligāts, bet ieteicams dokumentācijai)
+          </Text>
+          <TextInput
+            style={ls.weighbridgeInput}
+            value={weighbridgeRef}
+            onChangeText={setWeighbridgeRef}
+            placeholder="Piem., WT-2024-00123"
+            placeholderTextColor={colors.textMuted}
+            autoFocus
+          />
+          <View style={ls.weighbridgeBtns}>
+            <TouchableOpacity
+              style={ls.weighbridgeBtnSecondary}
+              onPress={() => setPendingProcessedRecord(null)}
+              activeOpacity={0.75}
+            >
+              <Text style={ls.weighbridgeBtnSecondaryText}>Atcelt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={ls.weighbridgeBtnPrimary}
+              onPress={handleConfirmProcessed}
+              disabled={savingWeighbridge}
+              activeOpacity={0.8}
+            >
+              {savingWeighbridge ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={ls.weighbridgeBtnPrimaryText}>Apstiprināt</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -502,4 +579,46 @@ const ls = StyleSheet.create({
     marginTop: 4,
   },
   saveApusBtnText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  weighbridgeSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    gap: 12,
+  },
+  weighbridgeTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  weighbridgeSub: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
+  weighbridgeInput: {
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: colors.textPrimary,
+    backgroundColor: '#fff',
+    marginTop: 4,
+  },
+  weighbridgeBtns: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  weighbridgeBtnSecondary: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  weighbridgeBtnSecondaryText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  weighbridgeBtnPrimary: {
+    flex: 2,
+    backgroundColor: '#166534',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  weighbridgeBtnPrimaryText: { fontSize: 14, fontWeight: '600', color: '#fff' },
 });
