@@ -22,9 +22,9 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import {
   adminGetUserById,
+  type AdminUserFullDetail,
   adminUpdateUser,
   adminGetCompanies,
-  type AdminUserDetail,
   type AdminCompany,
 } from '@/lib/api/admin';
 import { PageHeader } from '@/components/ui/page-header';
@@ -82,7 +82,7 @@ export default function AdminUserDetailPage() {
   const { token: rawToken } = useAuth();
   const token = rawToken ?? '';
 
-  const [user, setUser] = useState<AdminUserDetail | null>(null);
+  const [user, setUser] = useState<AdminUserFullDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export default function AdminUserDetailPage() {
     load();
   }, [load]);
 
-  async function toggle(field: 'canSell' | 'canTransport' | 'canSkipHire', value: boolean) {
+  async function toggle(field: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRecycle', value: boolean) {
     if (!token || !user) return;
     setSaving(true);
     try {
@@ -459,7 +459,7 @@ export default function AdminUserDetailPage() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
                 Tips
               </p>
-              {COMPANY_TYPE_LABELS[user.company.companyType] ?? user.company.companyType}
+              {user.company?.companyType ? COMPANY_TYPE_LABELS[user.company.companyType] ?? user.company.companyType : '—'}
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
@@ -481,13 +481,13 @@ export default function AdminUserDetailPage() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
                 Komisija
               </p>
-              {user.company.commissionRate}%
+              {(user.company?.commissionRate ?? 0)}%
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
                 Izmaksa iespējota
               </p>
-              {user.company.payoutEnabled ? (
+              {user.company?.payoutEnabled ? (
                 <span className="text-emerald-600 font-medium">Jā</span>
               ) : (
                 <span className="text-muted-foreground">Nē</span>

@@ -11,7 +11,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, MaterialCategory, WasteType, TransportJobStatus } from '@prisma/client';
+import {
+  Prisma,
+  MaterialCategory,
+  WasteType,
+  TransportJobStatus,
+} from '@prisma/client';
 import { CreateRecyclingCenterDto } from './dto/create-recycling-center.dto';
 import { UpdateRecyclingCenterDto } from './dto/update-recycling-center.dto';
 import { QueryRecyclingCentersDto } from './dto/query-recycling-centers.dto';
@@ -155,7 +160,8 @@ export class RecyclingCentersService {
     if (dto.active !== undefined) data.active = dto.active;
     if (dto.licensed !== undefined) data.licensed = dto.licensed;
     if (dto.licenceNumber !== undefined) data.licenceNumber = dto.licenceNumber;
-    if (dto.apusRegistrationId !== undefined) data.apusRegistrationId = dto.apusRegistrationId;
+    if (dto.apusRegistrationId !== undefined)
+      data.apusRegistrationId = dto.apusRegistrationId;
 
     return this.prisma.recyclingCenter.update({ where: { id }, data });
   }
@@ -311,7 +317,10 @@ export class RecyclingCentersService {
     });
 
     const totalWeight = records.reduce((s, r) => s + (r.weight ?? 0), 0);
-    const totalRecycled = records.reduce((s, r) => s + (r.recyclableWeight ?? 0), 0);
+    const totalRecycled = records.reduce(
+      (s, r) => s + (r.recyclableWeight ?? 0),
+      0,
+    );
     const certifiedCount = records.filter((r) => !!r.certificateUrl).length;
     const co2DiversionTonnes = parseFloat((totalRecycled * 0.35).toFixed(2));
     const avgRecyclingRate =
@@ -324,19 +333,29 @@ export class RecyclingCentersService {
 
     // Monthly trend: last 6 months
     const now = new Date();
-    const monthlyTrend: { month: string; weight: number; recycled: number }[] = [];
+    const monthlyTrend: { month: string; weight: number; recycled: number }[] =
+      [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = d.toLocaleDateString('lv-LV', { month: 'short', year: '2-digit' });
+      const label = d.toLocaleDateString('lv-LV', {
+        month: 'short',
+        year: '2-digit',
+      });
       const monthRecords = records.filter((r) => {
         const rd = new Date(r.createdAt);
-        return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth();
+        return (
+          rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth()
+        );
       });
       monthlyTrend.push({
         month: label,
-        weight: parseFloat(monthRecords.reduce((s, r) => s + (r.weight ?? 0), 0).toFixed(2)),
+        weight: parseFloat(
+          monthRecords.reduce((s, r) => s + (r.weight ?? 0), 0).toFixed(2),
+        ),
         recycled: parseFloat(
-          monthRecords.reduce((s, r) => s + (r.recyclableWeight ?? 0), 0).toFixed(2),
+          monthRecords
+            .reduce((s, r) => s + (r.recyclableWeight ?? 0), 0)
+            .toFixed(2),
         ),
       });
     }
@@ -347,7 +366,10 @@ export class RecyclingCentersService {
       totalRecycledTonnes: parseFloat(totalRecycled.toFixed(2)),
       certifiedCount,
       co2DiversionTonnes,
-      avgRecyclingRate: avgRecyclingRate != null ? parseFloat(avgRecyclingRate.toFixed(1)) : null,
+      avgRecyclingRate:
+        avgRecyclingRate != null
+          ? parseFloat(avgRecyclingRate.toFixed(1))
+          : null,
       monthlyTrend,
     };
   }
@@ -378,10 +400,13 @@ export class RecyclingCentersService {
     if (dto.recyclableWeight !== undefined)
       data.recyclableWeight = dto.recyclableWeight;
     if (dto.recyclingRate !== undefined) data.recyclingRate = dto.recyclingRate;
-    if (dto.processingStage !== undefined) data.processingStage = dto.processingStage;
+    if (dto.processingStage !== undefined)
+      data.processingStage = dto.processingStage;
     if (dto.rcGrade !== undefined) data.rcGrade = dto.rcGrade;
-    if (dto.weighbridgeTicketRef !== undefined) data.weighbridgeTicketRef = dto.weighbridgeTicketRef;
-    if (dto.weighbridgePhotoUrl !== undefined) data.weighbridgePhotoUrl = dto.weighbridgePhotoUrl;
+    if (dto.weighbridgeTicketRef !== undefined)
+      data.weighbridgeTicketRef = dto.weighbridgeTicketRef;
+    if (dto.weighbridgePhotoUrl !== undefined)
+      data.weighbridgePhotoUrl = dto.weighbridgePhotoUrl;
     if (dto.producedMaterialId !== undefined)
       data.producedMaterialId = dto.producedMaterialId;
     if (dto.certificateUrl !== undefined)
@@ -394,7 +419,8 @@ export class RecyclingCentersService {
         data.apusSubmittedAt = new Date();
       }
     }
-    if (dto.apusSubmissionId !== undefined) data.apusSubmissionId = dto.apusSubmissionId;
+    if (dto.apusSubmissionId !== undefined)
+      data.apusSubmissionId = dto.apusSubmissionId;
     if (dto.apusNote !== undefined) data.apusNote = dto.apusNote;
 
     return this.prisma.wasteRecord.update({ where: { id: recordId }, data });
@@ -413,14 +439,20 @@ export class RecyclingCentersService {
     const record = await this.prisma.wasteRecord.findUnique({
       where: { id: recordId },
       include: {
-        recyclingCenter: { select: { id: true, name: true, city: true, companyId: true } },
+        recyclingCenter: {
+          select: { id: true, name: true, city: true, companyId: true },
+        },
       },
     });
     if (!record) throw new NotFoundException('Waste record not found');
     if (record.recyclingCenter.companyId !== companyId)
-      throw new ForbiddenException('This waste record does not belong to your facility');
+      throw new ForbiddenException(
+        'This waste record does not belong to your facility',
+      );
     if (record.producedMaterialId)
-      throw new BadRequestException('A supply listing already exists for this waste record');
+      throw new BadRequestException(
+        'A supply listing already exists for this waste record',
+      );
     if (!record.recyclableWeight || record.recyclableWeight <= 0)
       throw new BadRequestException(
         'Cannot create a listing: recyclable weight is not set or is zero',
@@ -496,7 +528,9 @@ export class RecyclingCentersService {
         requester: {
           select: { id: true, firstName: true, lastName: true, phone: true },
         },
-        vehicle: { select: { id: true, licensePlate: true, vehicleType: true } },
+        vehicle: {
+          select: { id: true, licensePlate: true, vehicleType: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -535,7 +569,12 @@ export class RecyclingCentersService {
   ) {
     await this.assertOwns(centerId, companyId);
     return this.prisma.recyclingCenterPricingRule.upsert({
-      where: { recyclingCenterId_wasteType: { recyclingCenterId: centerId, wasteType: dto.wasteType } },
+      where: {
+        recyclingCenterId_wasteType: {
+          recyclingCenterId: centerId,
+          wasteType: dto.wasteType,
+        },
+      },
       create: {
         recyclingCenterId: centerId,
         wasteType: dto.wasteType,
@@ -613,11 +652,19 @@ export class RecyclingCentersService {
 
     const results = centers.map((center) => {
       const rule = center.pricingRules[0] ?? null;
-      const coords = center.coordinates as { lat?: number; lng?: number } | null;
+      const coords = center.coordinates as {
+        lat?: number;
+        lng?: number;
+      } | null;
 
       // Distance (Haversine straight-line, km)
       let distanceKm: number | null = null;
-      if (query.lat != null && query.lng != null && coords?.lat != null && coords?.lng != null) {
+      if (
+        query.lat != null &&
+        query.lng != null &&
+        coords?.lat != null &&
+        coords?.lng != null
+      ) {
         const R = 6371;
         const dLat = ((coords.lat - query.lat) * Math.PI) / 180;
         const dLng = ((coords.lng - query.lng) * Math.PI) / 180;
@@ -626,7 +673,9 @@ export class RecyclingCentersService {
           Math.cos((query.lat * Math.PI) / 180) *
             Math.cos((coords.lat * Math.PI) / 180) *
             Math.sin(dLng / 2) ** 2;
-        distanceKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+        distanceKm =
+          Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) /
+          10;
       }
 
       // Price calculation
@@ -634,10 +683,17 @@ export class RecyclingCentersService {
       let priceNote: string | null = null;
       if (rule && rule.accepted) {
         const grossPrice = rule.pricePerTonne * weightTonnes;
-        if (rule.minimumWeight != null && weightTonnes < rule.minimumWeight && rule.minimumFee != null) {
+        if (
+          rule.minimumWeight != null &&
+          weightTonnes < rule.minimumWeight &&
+          rule.minimumFee != null
+        ) {
           disposalFeeEur = rule.minimumFee;
           priceNote = `Minimālā maksa (${rule.minimumWeight} t)`;
-        } else if (rule.maximumWeight != null && weightTonnes > rule.maximumWeight) {
+        } else if (
+          rule.maximumWeight != null &&
+          weightTonnes > rule.maximumWeight
+        ) {
           disposalFeeEur = null;
           priceNote = `Pārsniedz maks. svaru (${rule.maximumWeight} t)`;
         } else {
@@ -666,7 +722,12 @@ export class RecyclingCentersService {
 
     // Sort: accepted+priced (cheapest first) → accepted+no-price → not accepted
     results.sort((a, b) => {
-      if (a.accepted && a.disposalFeeEur != null && b.accepted && b.disposalFeeEur != null)
+      if (
+        a.accepted &&
+        a.disposalFeeEur != null &&
+        b.accepted &&
+        b.disposalFeeEur != null
+      )
         return a.disposalFeeEur - b.disposalFeeEur;
       if (a.accepted && a.disposalFeeEur != null) return -1;
       if (b.accepted && b.disposalFeeEur != null) return 1;
@@ -675,7 +736,11 @@ export class RecyclingCentersService {
       return 1;
     });
 
-    return { data: results, weightKg: query.weightKg, wasteType: query.wasteType };
+    return {
+      data: results,
+      weightKg: query.weightKg,
+      wasteType: query.wasteType,
+    };
   }
 
   /** Internal helper: verify center belongs to company */
@@ -684,7 +749,8 @@ export class RecyclingCentersService {
       where: { id: centerId, companyId },
       select: { id: true },
     });
-    if (!center) throw new ForbiddenException('Center not found or access denied');
+    if (!center)
+      throw new ForbiddenException('Center not found or access denied');
   }
 
   // ── Buyback Quote ─────────────────────────────────────────────────────────
@@ -718,14 +784,26 @@ export class RecyclingCentersService {
     const results = centers
       .filter((c) => {
         const rule = c.pricingRules[0];
-        return rule && rule.buybackPricePerTonne != null && rule.buybackPricePerTonne > 0;
+        return (
+          rule &&
+          rule.buybackPricePerTonne != null &&
+          rule.buybackPricePerTonne > 0
+        );
       })
       .map((center) => {
-        const rule = center.pricingRules[0]!;
-        const coords = center.coordinates as { lat?: number; lng?: number } | null;
+        const rule = center.pricingRules[0];
+        const coords = center.coordinates as {
+          lat?: number;
+          lng?: number;
+        } | null;
 
         let distanceKm: number | null = null;
-        if (query.lat != null && query.lng != null && coords?.lat != null && coords?.lng != null) {
+        if (
+          query.lat != null &&
+          query.lng != null &&
+          coords?.lat != null &&
+          coords?.lng != null
+        ) {
           const R = 6371;
           const dLat = ((coords.lat - query.lat) * Math.PI) / 180;
           const dLng = ((coords.lng - query.lng) * Math.PI) / 180;
@@ -734,11 +812,15 @@ export class RecyclingCentersService {
             Math.cos((query.lat * Math.PI) / 180) *
               Math.cos((coords.lat * Math.PI) / 180) *
               Math.sin(dLng / 2) ** 2;
-          distanceKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+          distanceKm =
+            Math.round(
+              R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10,
+            ) / 10;
         }
 
         const buybackPricePerTonne = rule.buybackPricePerTonne!;
-        const totalPayoutEur = Math.round(buybackPricePerTonne * weightTonnes * 100) / 100;
+        const totalPayoutEur =
+          Math.round(buybackPricePerTonne * weightTonnes * 100) / 100;
 
         return {
           centerId: center.id,
@@ -757,7 +839,11 @@ export class RecyclingCentersService {
     // Sort: highest payout first
     results.sort((a, b) => b.totalPayoutEur - a.totalPayoutEur);
 
-    return { data: results, weightKg: query.weightKg, wasteType: query.wasteType };
+    return {
+      data: results,
+      weightKg: query.weightKg,
+      wasteType: query.wasteType,
+    };
   }
 
   /**

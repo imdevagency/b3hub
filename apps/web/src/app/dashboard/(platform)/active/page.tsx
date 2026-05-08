@@ -404,7 +404,7 @@ export default function ActiveDashboardPage() {
 
   const fetchJobs = useCallback(
     async (silent = false) => {
-      // eslint-disable-line @typescript-eslint/no-unused-vars
+       
       if (!token || !user) return;
       if (!silent) setLoading(true);
       try {

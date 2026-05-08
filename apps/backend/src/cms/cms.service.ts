@@ -59,7 +59,9 @@ export class CmsService {
   }
 
   async getArticleBySlug(slug: string) {
-    const article = await this.prisma.cmsArticle.findUnique({ where: { slug } });
+    const article = await this.prisma.cmsArticle.findUnique({
+      where: { slug },
+    });
     if (!article) throw new NotFoundException(`Article "${slug}" not found`);
     return article;
   }
@@ -69,7 +71,8 @@ export class CmsService {
       where: { slug: dto.slug },
       select: { id: true },
     });
-    if (existing) throw new ConflictException(`Slug "${dto.slug}" already in use`);
+    if (existing)
+      throw new ConflictException(`Slug "${dto.slug}" already in use`);
 
     return this.prisma.cmsArticle.create({
       data: {
@@ -87,9 +90,13 @@ export class CmsService {
         where: { slug: dto.slug, NOT: { id } },
         select: { id: true },
       });
-      if (conflict) throw new ConflictException(`Slug "${dto.slug}" already in use`);
+      if (conflict)
+        throw new ConflictException(`Slug "${dto.slug}" already in use`);
     }
-    const current = await this.prisma.cmsArticle.findUnique({ where: { id }, select: { status: true, publishedAt: true } });
+    const current = await this.prisma.cmsArticle.findUnique({
+      where: { id },
+      select: { status: true, publishedAt: true },
+    });
     return this.prisma.cmsArticle.update({
       where: { id },
       data: {
@@ -236,12 +243,18 @@ export class CmsService {
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private async assertArticle(id: string) {
-    const a = await this.prisma.cmsArticle.findUnique({ where: { id }, select: { id: true } });
+    const a = await this.prisma.cmsArticle.findUnique({
+      where: { id },
+      select: { id: true },
+    });
     if (!a) throw new NotFoundException(`Article ${id} not found`);
   }
 
   private async assertAnnouncement(id: string) {
-    const a = await this.prisma.cmsAnnouncement.findUnique({ where: { id }, select: { id: true } });
+    const a = await this.prisma.cmsAnnouncement.findUnique({
+      where: { id },
+      select: { id: true },
+    });
     if (!a) throw new NotFoundException(`Announcement ${id} not found`);
   }
 }

@@ -806,39 +806,41 @@ export class AnalyticsService {
       this.prisma,
       'refreshSupplierStats',
       async () => {
-    const suppliers = await this.prisma.company.findMany({
-      where: { materials: { some: { active: true } } },
-      select: { id: true },
-      take: 500,
-    });
+        const suppliers = await this.prisma.company.findMany({
+          where: { materials: { some: { active: true } } },
+          select: { id: true },
+          take: 500,
+        });
 
-    for (const supplier of suppliers) {
-      const [totalOrders, completedOrders, onTimeRate] = await Promise.all([
-        this.prisma.order.count({
-          where: { items: { some: { material: { supplierId: supplier.id } } } },
-        }),
-        this.prisma.order.count({
-          where: {
-            status: OrderStatus.COMPLETED,
-            items: { some: { material: { supplierId: supplier.id } } },
-          },
-        }),
-        this.getOnTimeDeliveryRate(supplier.id),
-      ]);
+        for (const supplier of suppliers) {
+          const [totalOrders, completedOrders, onTimeRate] = await Promise.all([
+            this.prisma.order.count({
+              where: {
+                items: { some: { material: { supplierId: supplier.id } } },
+              },
+            }),
+            this.prisma.order.count({
+              where: {
+                status: OrderStatus.COMPLETED,
+                items: { some: { material: { supplierId: supplier.id } } },
+              },
+            }),
+            this.getOnTimeDeliveryRate(supplier.id),
+          ]);
 
-      const fulfillmentPct =
-        totalOrders > 0
-          ? Math.round((completedOrders / totalOrders) * 100)
-          : null;
+          const fulfillmentPct =
+            totalOrders > 0
+              ? Math.round((completedOrders / totalOrders) * 100)
+              : null;
 
-      await this.prisma.company.update({
-        where: { id: supplier.id },
-        data: {
-          onTimePct: onTimeRate > 0 ? onTimeRate : null,
-          fulfillmentPct,
-        },
-      });
-    }
+          await this.prisma.company.update({
+            where: { id: supplier.id },
+            data: {
+              onTimePct: onTimeRate > 0 ? onTimeRate : null,
+              fulfillmentPct,
+            },
+          });
+        }
       },
       this.logger,
     );

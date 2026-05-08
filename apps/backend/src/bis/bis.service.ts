@@ -93,7 +93,9 @@ export class BisService {
     const map: Record<string, string> = {};
     for (const row of rows) map[row.key] = row.value;
 
-    const secretRow = await this.prisma.platformSetting.findUnique({ where: { key: 'bis.clientSecret' } });
+    const secretRow = await this.prisma.platformSetting.findUnique({
+      where: { key: 'bis.clientSecret' },
+    });
 
     return {
       clientId: map['bis.clientId'] ?? '',
@@ -104,7 +106,10 @@ export class BisService {
     };
   }
 
-  async updateSettings(dto: UpdateBisSettingsDto, adminId: string): Promise<{ ok: boolean }> {
+  async updateSettings(
+    dto: UpdateBisSettingsDto,
+    adminId: string,
+  ): Promise<{ ok: boolean }> {
     const upserts = [
       { key: 'bis.clientId', value: dto.clientId },
       { key: 'bis.clientSecret', value: dto.clientSecret },
@@ -131,23 +136,32 @@ export class BisService {
     try {
       const token = await this.getAccessToken();
       if (!token) {
-        return { ok: false, message: 'Nav konfigurēti BIS API akreditācijas dati' };
+        return {
+          ok: false,
+          message: 'Nav konfigurēti BIS API akreditācijas dati',
+        };
       }
       // Verify the token works by calling a lightweight endpoint
       const settings = await this.getSettings();
       const base = settings.apiBaseUrl || BIS_DEFAULT_API_BASE;
-      const res = await fetch(`${base}/api/v1/construction_companies?per_page=1`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
+      const res = await fetch(
+        `${base}/api/v1/construction_companies?per_page=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+          signal: AbortSignal.timeout(10_000),
         },
-        signal: AbortSignal.timeout(10_000),
-      });
+      );
       if (res.ok || res.status === 401) {
         // 401 = wrong scope/token; still proves the server responded
         return res.ok
           ? { ok: true, message: 'Savienojums veiksmīgs' }
-          : { ok: false, message: `BIS atbildēja ar ${res.status} — pārbaudiet client_id/secret` };
+          : {
+              ok: false,
+              message: `BIS atbildēja ar ${res.status} — pārbaudiet client_id/secret`,
+            };
       }
       return { ok: false, message: `BIS atbildēja ar kļūdu: ${res.status}` };
     } catch (err) {
@@ -166,7 +180,16 @@ export class BisService {
     }
 
     const rows = await this.prisma.platformSetting.findMany({
-      where: { key: { in: ['bis.clientId', 'bis.clientSecret', 'bis.apiBaseUrl', 'bis.enabled'] } },
+      where: {
+        key: {
+          in: [
+            'bis.clientId',
+            'bis.clientSecret',
+            'bis.apiBaseUrl',
+            'bis.enabled',
+          ],
+        },
+      },
     });
     const map: Record<string, string> = {};
     for (const row of rows) map[row.key] = row.value;
@@ -200,7 +223,10 @@ export class BisService {
         return null;
       }
 
-      const data = (await res.json()) as { access_token: string; expires_in?: number };
+      const data = (await res.json()) as {
+        access_token: string;
+        expires_in?: number;
+      };
       const expiresIn = data.expires_in ?? 3600;
       this.tokenCache = {
         token: data.access_token,
@@ -217,7 +243,9 @@ export class BisService {
 
   async searchCompanies(query: string): Promise<BisCompany[]> {
     if (!query || query.trim().length < 2) {
-      throw new BadRequestException('Meklēšanas vaicājumam jābūt vismaz 2 rakstzīmes');
+      throw new BadRequestException(
+        'Meklēšanas vaicājumam jābūt vismaz 2 rakstzīmes',
+      );
     }
 
     const cacheKey = `bis.company.search.${query.trim().toLowerCase()}`;
@@ -244,7 +272,9 @@ export class BisService {
 
   async searchSpecialists(query: string): Promise<BisSpecialist[]> {
     if (!query || query.trim().length < 2) {
-      throw new BadRequestException('Meklēšanas vaicājumam jābūt vismaz 2 rakstzīmes');
+      throw new BadRequestException(
+        'Meklēšanas vaicājumam jābūt vismaz 2 rakstzīmes',
+      );
     }
 
     const cacheKey = `bis.specialist.search.${query.trim().toLowerCase()}`;
@@ -283,7 +313,11 @@ export class BisService {
     ];
   }
 
-  private async fetchCompaniesApi(query: string, isRegNr: boolean, token: string): Promise<BisCompany[]> {
+  private async fetchCompaniesApi(
+    query: string,
+    isRegNr: boolean,
+    token: string,
+  ): Promise<BisCompany[]> {
     const settings = await this.getSettings();
     const base = settings.apiBaseUrl || BIS_DEFAULT_API_BASE;
     const paramKey = isRegNr ? 'reg_nr' : 'company_name';
@@ -334,7 +368,9 @@ export class BisService {
           status: String(r.status ?? r.statuss ?? 'AKTĪVS'),
           validFrom: (r.valid_from ?? r.validFrom ?? null) as string | null,
           validTo: (r.valid_to ?? r.validTo ?? null) as string | null,
-          activities: Array.isArray(r.activities) ? r.activities.map(String) : [],
+          activities: Array.isArray(r.activities)
+            ? r.activities.map(String)
+            : [],
           profileUrl: `${base}/lv/construction_companies/${r.id ?? ''}`,
         },
       ];
@@ -363,7 +399,10 @@ export class BisService {
     ];
   }
 
-  private async fetchSpecialistsApi(query: string, token: string): Promise<BisSpecialist[]> {
+  private async fetchSpecialistsApi(
+    query: string,
+    token: string,
+  ): Promise<BisSpecialist[]> {
     const settings = await this.getSettings();
     const base = settings.apiBaseUrl || BIS_DEFAULT_API_BASE;
     const url = `${base}/api/v1/specialist_certificates?name=${encodeURIComponent(query)}`;
@@ -391,7 +430,10 @@ export class BisService {
     }
   }
 
-  private normaliseSpecialistResponse(body: unknown, base: string): BisSpecialist[] {
+  private normaliseSpecialistResponse(
+    body: unknown,
+    base: string,
+  ): BisSpecialist[] {
     const items: unknown[] = Array.isArray(body)
       ? body
       : Array.isArray((body as Record<string, unknown>)?.data)
@@ -421,7 +463,9 @@ export class BisService {
 
   private async getCached<T>(key: string): Promise<T | undefined> {
     try {
-      const row = await this.prisma.platformSetting.findUnique({ where: { key } });
+      const row = await this.prisma.platformSetting.findUnique({
+        where: { key },
+      });
       if (!row) return undefined;
       const payload = JSON.parse(row.value) as { data: T; cachedAt: number };
       if (Date.now() - payload.cachedAt > CACHE_TTL_MS) return undefined;
@@ -446,7 +490,9 @@ export class BisService {
 
   async clearCacheForKey(key: string): Promise<void> {
     try {
-      await this.prisma.platformSetting.deleteMany({ where: { key: { startsWith: key } } });
+      await this.prisma.platformSetting.deleteMany({
+        where: { key: { startsWith: key } },
+      });
     } catch {
       // ignore
     }

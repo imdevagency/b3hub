@@ -184,8 +184,12 @@ export class PayseraService {
 
     if (!res.ok) {
       const errBody = await res.text();
-      this.logger.error(`Paysera createOrder failed (${res.status}): ${errBody}`);
-      throw new BadRequestException(`Paysera order creation failed: ${errBody}`);
+      this.logger.error(
+        `Paysera createOrder failed (${res.status}): ${errBody}`,
+      );
+      throw new BadRequestException(
+        `Paysera order creation failed: ${errBody}`,
+      );
     }
 
     const data = (await res.json()) as PayseraOrder;
@@ -229,8 +233,12 @@ export class PayseraService {
 
     if (!res.ok) {
       const errBody = await res.text();
-      this.logger.error(`Paysera createPaymentLink failed (${res.status}): ${errBody}`);
-      throw new BadRequestException(`Paysera payment link creation failed: ${errBody}`);
+      this.logger.error(
+        `Paysera createPaymentLink failed (${res.status}): ${errBody}`,
+      );
+      throw new BadRequestException(
+        `Paysera payment link creation failed: ${errBody}`,
+      );
     }
 
     const data = (await res.json()) as {
@@ -422,7 +430,9 @@ export class PayseraService {
 
     if (!res.ok) {
       const errBody = await res.text();
-      this.logger.error(`Paysera sendTransfer failed (${res.status}): ${errBody}`);
+      this.logger.error(
+        `Paysera sendTransfer failed (${res.status}): ${errBody}`,
+      );
       throw new BadRequestException(`Paysera transfer failed: ${errBody}`);
     }
 

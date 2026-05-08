@@ -13,7 +13,7 @@ export type RecyclerJobStatus =
   | 'COMPLETED'
   | 'CANCELLED';
 
-export interface RecyclerIncomingJob {
+interface RecyclerIncomingJob {
   id: string;
   status: RecyclerJobStatus;
   jobType: string;
@@ -24,7 +24,7 @@ export interface RecyclerIncomingJob {
   vehicle?: { id: string; licensePlate: string; vehicleType: string } | null;
 }
 
-export interface RecyclerWasteRecord {
+interface RecyclerWasteRecord {
   id: string;
   wasteType: string;
   weightKg?: number | null;

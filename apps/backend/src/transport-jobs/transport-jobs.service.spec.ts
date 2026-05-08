@@ -144,8 +144,17 @@ describe('TransportJobsService', () => {
     jest.spyOn(service, 'getDocumentReadiness').mockResolvedValue({
       transportJobId: 'job1',
       status: TransportJobStatus.AT_DELIVERY,
-      requires: { deliveryProof: true, weighingSlip: true, wasteTransportNote: false },
-      has: { deliveryProof: false, weighingSlip: false, deliveryNote: false, wasteTransportNote: false },
+      requires: {
+        deliveryProof: true,
+        weighingSlip: true,
+        wasteTransportNote: false,
+      },
+      has: {
+        deliveryProof: false,
+        weighingSlip: false,
+        deliveryNote: false,
+        wasteTransportNote: false,
+      },
       canMarkDelivered: false,
       missing: ['DELIVERY_PROOF', 'WEIGHING_SLIP'],
     });
@@ -171,8 +180,17 @@ describe('TransportJobsService', () => {
     jest.spyOn(service, 'getDocumentReadiness').mockResolvedValue({
       transportJobId: 'job1',
       status: TransportJobStatus.AT_DELIVERY,
-      requires: { deliveryProof: true, weighingSlip: true, wasteTransportNote: false },
-      has: { deliveryProof: false, weighingSlip: true, deliveryNote: false, wasteTransportNote: false },
+      requires: {
+        deliveryProof: true,
+        weighingSlip: true,
+        wasteTransportNote: false,
+      },
+      has: {
+        deliveryProof: false,
+        weighingSlip: true,
+        deliveryNote: false,
+        wasteTransportNote: false,
+      },
       canMarkDelivered: false,
       missing: ['DELIVERY_PROOF'],
     });

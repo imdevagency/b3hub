@@ -291,7 +291,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     pendingGuestOrders: 0,
   });
 
-  const isActive = React.useCallback(makeIsRouteActive(pathname, ['/dashboard/admin']), [pathname]);
+  const isActive = React.useMemo(() => makeIsRouteActive(pathname, ['/dashboard/admin']), [pathname]);
 
   // Live badge refresh — only runs for B3Hub scope (where badges are meaningful)
   React.useEffect(() => {

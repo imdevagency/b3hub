@@ -145,9 +145,7 @@ export class CompanyService {
       if (!record) return null;
 
       const name = record.name ?? '';
-      const active =
-        !record.terminated &&
-        (record.closed ?? '').trim() === '';
+      const active = !record.terminated && (record.closed ?? '').trim() === '';
 
       return {
         name,
@@ -218,7 +216,9 @@ export class CompanyService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.legalName !== undefined && { legalName: dto.legalName }),
-        ...(dto.registrationNum !== undefined && { registrationNum: dto.registrationNum }),
+        ...(dto.registrationNum !== undefined && {
+          registrationNum: dto.registrationNum,
+        }),
         ...(dto.vatId !== undefined && { taxId: dto.vatId }),
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
@@ -231,7 +231,9 @@ export class CompanyService {
         ...(dto.logo !== undefined && { logo: dto.logo }),
         ...(resolvedLat !== undefined && { lat: resolvedLat }),
         ...(resolvedLng !== undefined && { lng: resolvedLng }),
-        ...(dto.paymentTermsDays !== undefined && { paymentTermsDays: dto.paymentTermsDays }),
+        ...(dto.paymentTermsDays !== undefined && {
+          paymentTermsDays: dto.paymentTermsDays,
+        }),
         ...(dto.ibanNumber !== undefined && { ibanNumber: dto.ibanNumber }),
       },
       select: COMPANY_SELECT,
@@ -400,7 +402,10 @@ export class CompanyService {
     mimeType: string,
     currentUser: RequestingUser,
   ): Promise<{ logoUrl: string }> {
-    if (currentUser.companyId !== companyId && currentUser.userType !== 'ADMIN') {
+    if (
+      currentUser.companyId !== companyId &&
+      currentUser.userType !== 'ADMIN'
+    ) {
       throw new ForbiddenException('You do not have access to this company');
     }
     if (!this.supabase) {

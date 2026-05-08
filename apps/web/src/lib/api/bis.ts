@@ -59,7 +59,7 @@ export interface BisSpecialist {
 // ─── Settings ──────────────────────────────────────────────────────────────
 
 export async function getBisSettings(token: string): Promise<BisSettings> {
-  const data = await apiFetch<{ data: BisSettings }>('/admin/bis/settings', { token });
+  const data = await apiFetch<{ data: BisSettings }>('/admin/bis/settings', { headers: { Authorization: `Bearer ${token}` } });
   return data.data;
 }
 
@@ -68,7 +68,7 @@ export async function updateBisSettings(
   dto: UpdateBisSettingsDto,
 ): Promise<{ ok: boolean }> {
   return apiFetch<{ ok: boolean }>('/admin/bis/settings', {
-    token,
+    headers: { Authorization: `Bearer ${token}` },
     method: 'PUT',
     body: JSON.stringify(dto),
   });
@@ -76,7 +76,7 @@ export async function updateBisSettings(
 
 export async function bisTestConnection(token: string): Promise<{ ok: boolean; message: string }> {
   return apiFetch<{ ok: boolean; message: string }>('/admin/bis/test-connection', {
-    token,
+    headers: { Authorization: `Bearer ${token}` },
     method: 'POST',
   });
 }
@@ -89,7 +89,7 @@ export async function bisSearchCompanies(
 ): Promise<BisCompany[]> {
   const data = await apiFetch<{ data: BisCompany[] }>(
     `/admin/bis/companies?q=${encodeURIComponent(query)}`,
-    { token },
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return data.data;
 }
@@ -100,7 +100,7 @@ export async function bisGetCompanyByRegNr(
 ): Promise<BisCompany | null> {
   const data = await apiFetch<{ data: BisCompany | null }>(
     `/admin/bis/company?regNr=${encodeURIComponent(regNr)}`,
-    { token },
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return data.data;
 }
@@ -113,7 +113,7 @@ export async function bisSearchSpecialists(
 ): Promise<BisSpecialist[]> {
   const data = await apiFetch<{ data: BisSpecialist[] }>(
     `/admin/bis/specialists?q=${encodeURIComponent(query)}`,
-    { token },
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return data.data;
 }
@@ -125,5 +125,5 @@ export async function bisClearCache(
   prefix?: string,
 ): Promise<void> {
   const qs = prefix ? `?prefix=${encodeURIComponent(prefix)}` : '';
-  await apiFetch<{ ok: boolean }>(`/admin/bis/cache/clear${qs}`, { token });
+  await apiFetch<{ ok: boolean }>(`/admin/bis/cache/clear${qs}`, { headers: { Authorization: `Bearer ${token}` } });
 }

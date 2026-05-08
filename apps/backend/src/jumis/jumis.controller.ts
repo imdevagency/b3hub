@@ -34,10 +34,7 @@ export class JumisController {
 
   /** POST /api/v1/admin/jumis/sync — push data to Jumis (invoices or partners) */
   @Post('sync')
-  sync(
-    @Body() dto: JumisSyncRequestDto,
-    @CurrentUser() admin: RequestingUser,
-  ) {
+  sync(@Body() dto: JumisSyncRequestDto, @CurrentUser() admin: RequestingUser) {
     return this.jumisService.syncData(dto, admin.userId);
   }
 

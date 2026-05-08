@@ -34,7 +34,7 @@ export interface JumisSyncLogEntry {
 // ─── Settings ──────────────────────────────────────────────────────────────
 
 export async function jumisGetSettings(token: string): Promise<JumisSettings> {
-  return apiFetch('/admin/jumis/settings', { token });
+  return apiFetch('/admin/jumis/settings', { headers: { Authorization: `Bearer ${token}` } });
 }
 
 export async function jumisUpdateSettings(
@@ -43,8 +43,8 @@ export async function jumisUpdateSettings(
 ): Promise<{ ok: boolean }> {
   return apiFetch('/admin/jumis/settings', {
     method: 'POST',
-    body: data,
-    token,
+    body: JSON.stringify(data),
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -53,7 +53,7 @@ export async function jumisUpdateSettings(
 export async function jumisTestConnection(
   token: string,
 ): Promise<{ ok: boolean; message: string }> {
-  return apiFetch('/admin/jumis/test', { method: 'POST', body: {}, token });
+  return apiFetch('/admin/jumis/test', { method: 'POST', body: JSON.stringify({}), headers: { Authorization: `Bearer ${token}` } });
 }
 
 // ─── Sync ───────────────────────────────────────────────────────────────────
@@ -65,11 +65,11 @@ export async function jumisSyncData(
 ): Promise<{ ok: boolean; pushed: number; message: string }> {
   return apiFetch('/admin/jumis/sync', {
     method: 'POST',
-    body: { syncType, since },
-    token,
+    body: JSON.stringify({ syncType, since }),
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function jumisGetSyncLog(token: string): Promise<JumisSyncLogEntry[]> {
-  return apiFetch('/admin/jumis/sync/log', { token });
+  return apiFetch('/admin/jumis/sync/log', { headers: { Authorization: `Bearer ${token}` } });
 }

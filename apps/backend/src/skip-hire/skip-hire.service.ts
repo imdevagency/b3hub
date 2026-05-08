@@ -21,7 +21,13 @@ import { PaymentsService } from '../payments/payments.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateSkipHireDto } from './dto/create-skip-hire.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
-import { CompanyType, SkipHireStatus, Prisma, TransportJobStatus, TransportJobType } from '@prisma/client';
+import {
+  CompanyType,
+  SkipHireStatus,
+  Prisma,
+  TransportJobStatus,
+  TransportJobType,
+} from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 
 const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
@@ -114,7 +120,8 @@ export class SkipHireService {
       if (!carrierData) {
         throw new BadRequestException('Selected carrier not found');
       }
-      const platformBasePrice = sizeDef?.basePrice ?? SKIP_PRICES[dto.skipSize] ?? 0;
+      const platformBasePrice =
+        sizeDef?.basePrice ?? SKIP_PRICES[dto.skipSize] ?? 0;
       const coverage = this.carrierCoverage(
         carrierData,
         dto.location.toLowerCase().trim(),
@@ -320,7 +327,12 @@ export class SkipHireService {
       if (!pricing) continue;
 
       // Coverage check: zones → radius → national fallback
-      const coverage = this.carrierCoverage(carrier, locationLower, buyerLat, buyerLng);
+      const coverage = this.carrierCoverage(
+        carrier,
+        locationLower,
+        buyerLat,
+        buyerLng,
+      );
       if (!coverage.covered) continue;
 
       const price = pricing.price + coverage.surcharge;
@@ -348,7 +360,9 @@ export class SkipHireService {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+        carrier: {
+          select: { id: true, name: true, phone: true, rating: true },
+        },
       },
     });
   }
@@ -358,7 +372,9 @@ export class SkipHireService {
     const order = await this.prisma.skipHireOrder.findUnique({
       where: { id },
       include: {
-        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+        carrier: {
+          select: { id: true, name: true, phone: true, rating: true },
+        },
       },
     });
     if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
@@ -391,7 +407,9 @@ export class SkipHireService {
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
-        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+        carrier: {
+          select: { id: true, name: true, phone: true, rating: true },
+        },
       },
     });
   }
@@ -446,7 +464,10 @@ export class SkipHireService {
       where: { id },
       data: {
         status: dto.status,
-        statusTimestamps: { ...existingTimestamps, [dto.status]: new Date().toISOString() },
+        statusTimestamps: {
+          ...existingTimestamps,
+          [dto.status]: new Date().toISOString(),
+        },
       },
     });
     // Release funds to carrier when order reaches terminal COMPLETED state
@@ -511,7 +532,10 @@ export class SkipHireService {
       where: { id },
       data: {
         status: SkipHireStatus.CANCELLED,
-        statusTimestamps: { ...existingTs, CANCELLED: new Date().toISOString() },
+        statusTimestamps: {
+          ...existingTs,
+          CANCELLED: new Date().toISOString(),
+        },
       },
     });
 
@@ -646,7 +670,10 @@ export class SkipHireService {
       where: { id },
       data: {
         status: newStatus,
-        statusTimestamps: { ...existingTs2, [newStatus]: new Date().toISOString() },
+        statusTimestamps: {
+          ...existingTs2,
+          [newStatus]: new Date().toISOString(),
+        },
       },
     });
     if (order.userId) {
@@ -693,7 +720,14 @@ export class SkipHireService {
     const carrier = skipOrder.carrierId
       ? await this.prisma.company.findUnique({
           where: { id: skipOrder.carrierId },
-          select: { street: true, city: true, state: true, postalCode: true, lat: true, lng: true },
+          select: {
+            street: true,
+            city: true,
+            state: true,
+            postalCode: true,
+            lat: true,
+            lng: true,
+          },
         })
       : null;
 
@@ -701,7 +735,9 @@ export class SkipHireService {
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const ms = (Date.now() % 100_000).toString().padStart(5, '0');
-    const rand = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    const rand = Math.floor(Math.random() * 100)
+      .toString()
+      .padStart(2, '0');
     const jobNumber = `SKP${year}${month}${ms}${rand}`;
 
     await this.prisma.transportJob.create({
@@ -729,7 +765,9 @@ export class SkipHireService {
         specialRequirements: skipRef,
         rate: skipOrder.price,
         currency: skipOrder.currency,
-        status: skipOrder.carrierId ? TransportJobStatus.ASSIGNED : TransportJobStatus.AVAILABLE,
+        status: skipOrder.carrierId
+          ? TransportJobStatus.ASSIGNED
+          : TransportJobStatus.AVAILABLE,
       },
     });
 
@@ -753,14 +791,18 @@ export class SkipHireService {
       select: { companyId: true, canSkipHire: true },
     });
     if (!user?.canSkipHire)
-      throw new ForbiddenException('Skip hire access not enabled for this account');
+      throw new ForbiddenException(
+        'Skip hire access not enabled for this account',
+      );
     if (!user.companyId)
       throw new ForbiddenException('User is not associated with a company');
 
     const order = await this.prisma.skipHireOrder.findUnique({ where: { id } });
     if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
     if (order.carrierId !== user.companyId)
-      throw new ForbiddenException('This order does not belong to your company');
+      throw new ForbiddenException(
+        'This order does not belong to your company',
+      );
     if (order.status !== SkipHireStatus.DELIVERED)
       throw new BadRequestException(
         'Overdue invoice can only be issued for DELIVERED (active) skip orders',
@@ -832,103 +874,116 @@ export class SkipHireService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async billingOverdueSkipOrders(): Promise<void> {
-    await withCronLock(this.prisma, 'billingOverdueSkipOrders', async () => {      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      // Find all DELIVERED skip hire orders
-      const delivered = await this.prisma.skipHireOrder.findMany({
-        where: { status: SkipHireStatus.DELIVERED },
-        select: {
-          id: true,
-          orderNumber: true,
-          userId: true,
-          carrierId: true,
-          hireDays: true,
-          deliveryDate: true,
-          statusTimestamps: true,
-        },
-      });
-
-      for (const order of delivered) {
-        const hireDays = order.hireDays ?? DEFAULT_HIRE_DAYS;
-        const ts = order.statusTimestamps as Record<string, string> | null;
-        const deliveredAt = ts?.DELIVERED ? new Date(ts.DELIVERED) : order.deliveryDate;
-        const hireEndMs = deliveredAt.getTime() + hireDays * 24 * 60 * 60 * 1000;
-        const overdueDays = Math.max(
-          0,
-          Math.floor((Date.now() - hireEndMs) / (24 * 60 * 60 * 1000)),
+    await withCronLock(
+      this.prisma,
+      'billingOverdueSkipOrders',
+      async () => {
+        const now = new Date();
+        const todayStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
         );
-        if (overdueDays === 0) continue;
 
-        // Idempotency: skip if an overdue invoice was already created today for this order
-        const existingToday = await this.prisma.invoice.findFirst({
-          where: {
-            invoiceNumber: { startsWith: `OVD-${order.orderNumber}-` },
-            createdAt: { gte: todayStart },
+        // Find all DELIVERED skip hire orders
+        const delivered = await this.prisma.skipHireOrder.findMany({
+          where: { status: SkipHireStatus.DELIVERED },
+          select: {
+            id: true,
+            orderNumber: true,
+            userId: true,
+            carrierId: true,
+            hireDays: true,
+            deliveryDate: true,
+            statusTimestamps: true,
           },
-          select: { id: true },
         });
-        if (existingToday) continue;
 
-        const overdueFeeEur = overdueDays * OVERDUE_DAILY_RATE_EUR;
-        const VAT_RATE = 0.21;
-        const subtotal = Math.round(overdueFeeEur * 100) / 100;
-        const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
-        const total = Math.round((subtotal + tax) * 100) / 100;
-        const suffix = Date.now().toString().slice(-4);
-        const invoiceNumber = `OVD-${order.orderNumber}-${suffix}`;
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 14);
+        for (const order of delivered) {
+          const hireDays = order.hireDays ?? DEFAULT_HIRE_DAYS;
+          const ts = order.statusTimestamps as Record<string, string> | null;
+          const deliveredAt = ts?.DELIVERED
+            ? new Date(ts.DELIVERED)
+            : order.deliveryDate;
+          const hireEndMs =
+            deliveredAt.getTime() + hireDays * 24 * 60 * 60 * 1000;
+          const overdueDays = Math.max(
+            0,
+            Math.floor((Date.now() - hireEndMs) / (24 * 60 * 60 * 1000)),
+          );
+          if (overdueDays === 0) continue;
 
-        let buyerCompanyId: string | null = null;
-        if (order.userId) {
-          const buyer = await this.prisma.user.findUnique({
-            where: { id: order.userId },
-            select: { companyId: true },
-          });
-          buyerCompanyId = buyer?.companyId ?? null;
-        }
-
-        try {
-          await this.prisma.invoice.create({
-            data: {
-              invoiceNumber,
-              subtotal,
-              tax,
-              total,
-              currency: 'EUR',
-              dueDate,
-              paymentStatus: 'PENDING',
-              ...(buyerCompanyId ? { buyerCompanyId } : {}),
+          // Idempotency: skip if an overdue invoice was already created today for this order
+          const existingToday = await this.prisma.invoice.findFirst({
+            where: {
+              invoiceNumber: { startsWith: `OVD-${order.orderNumber}-` },
+              createdAt: { gte: todayStart },
             },
+            select: { id: true },
           });
-          this.logger.log(
-            `[billingOverdue] Invoice ${invoiceNumber} for skip order ${order.orderNumber}: ${overdueDays}d × €${OVERDUE_DAILY_RATE_EUR} = €${total} incl. VAT`,
-          );
+          if (existingToday) continue;
 
-          // Notify buyer
+          const overdueFeeEur = overdueDays * OVERDUE_DAILY_RATE_EUR;
+          const VAT_RATE = 0.21;
+          const subtotal = Math.round(overdueFeeEur * 100) / 100;
+          const tax = Math.round(subtotal * VAT_RATE * 100) / 100;
+          const total = Math.round((subtotal + tax) * 100) / 100;
+          const suffix = Date.now().toString().slice(-4);
+          const invoiceNumber = `OVD-${order.orderNumber}-${suffix}`;
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 14);
+
+          let buyerCompanyId: string | null = null;
           if (order.userId) {
-            this.notifications
-              .create({
-                userId: order.userId,
-                type: NotificationType.SYSTEM_ALERT,
-                title: '📋 Kavēšanās maksa — konteiners jāatdod',
-                message: `Jūsu konteinera nomas termiņš ir beidzies (${overdueDays} diena${overdueDays !== 1 ? 's' : ''}). Papildu maksa €${total} tika iekļauta rēķinā ${invoiceNumber}.`,
-                data: { skipOrderId: order.id, invoiceNumber },
-              })
-              .catch((err: unknown) =>
-                this.logger.warn(
-                  `billingOverdue notif failed for order ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
-                ),
-              );
+            const buyer = await this.prisma.user.findUnique({
+              where: { id: order.userId },
+              select: { companyId: true },
+            });
+            buyerCompanyId = buyer?.companyId ?? null;
           }
-        } catch (err: unknown) {
-          this.logger.error(
-            `[billingOverdue] Failed to create invoice for skip order ${order.orderNumber}: ${err instanceof Error ? err.message : String(err)}`,
-          );
+
+          try {
+            await this.prisma.invoice.create({
+              data: {
+                invoiceNumber,
+                subtotal,
+                tax,
+                total,
+                currency: 'EUR',
+                dueDate,
+                paymentStatus: 'PENDING',
+                ...(buyerCompanyId ? { buyerCompanyId } : {}),
+              },
+            });
+            this.logger.log(
+              `[billingOverdue] Invoice ${invoiceNumber} for skip order ${order.orderNumber}: ${overdueDays}d × €${OVERDUE_DAILY_RATE_EUR} = €${total} incl. VAT`,
+            );
+
+            // Notify buyer
+            if (order.userId) {
+              this.notifications
+                .create({
+                  userId: order.userId,
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '📋 Kavēšanās maksa — konteiners jāatdod',
+                  message: `Jūsu konteinera nomas termiņš ir beidzies (${overdueDays} diena${overdueDays !== 1 ? 's' : ''}). Papildu maksa €${total} tika iekļauta rēķinā ${invoiceNumber}.`,
+                  data: { skipOrderId: order.id, invoiceNumber },
+                })
+                .catch((err: unknown) =>
+                  this.logger.warn(
+                    `billingOverdue notif failed for order ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
+                  ),
+                );
+            }
+          } catch (err: unknown) {
+            this.logger.error(
+              `[billingOverdue] Failed to create invoice for skip order ${order.orderNumber}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
         }
-      }
-    }, this.logger);
+      },
+      this.logger,
+    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -939,7 +994,11 @@ export class SkipHireService {
    */
   private carrierCoverage(
     carrier: {
-      serviceZones: { city: string; postcode: string | null; surcharge: number }[];
+      serviceZones: {
+        city: string;
+        postcode: string | null;
+        surcharge: number;
+      }[];
       lat: number | null;
       lng: number | null;
       serviceRadiusKm: number | null;
@@ -965,12 +1024,20 @@ export class SkipHireService {
       buyerLat != null &&
       buyerLng != null
     ) {
-      const distKm = this.haversineKm(carrier.lat, carrier.lng, buyerLat, buyerLng);
+      const distKm = this.haversineKm(
+        carrier.lat,
+        carrier.lng,
+        buyerLat,
+        buyerLng,
+      );
       return { covered: distKm <= carrier.serviceRadiusKm, surcharge: 0 };
     }
 
     // 3. Radius set but no buyer coords → assume covered (carrier can decline)
-    if (carrier.serviceRadiusKm !== null && (buyerLat == null || buyerLng == null)) {
+    if (
+      carrier.serviceRadiusKm !== null &&
+      (buyerLat == null || buyerLng == null)
+    ) {
       return { covered: true, surcharge: 0 };
     }
 
@@ -983,7 +1050,12 @@ export class SkipHireService {
   }
 
   /** Haversine great-circle distance in kilometres. */
-  private haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  private haversineKm(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
     const R = 6371;
     const toRad = (d: number) => (d * Math.PI) / 180;
     const dLat = toRad(lat2 - lat1);
@@ -1012,7 +1084,9 @@ export class SkipHireService {
     const carriers = await this.prisma.company.findMany({
       where: { verified: true, companyType: { in: CARRIER_TYPES } },
       select: {
-        serviceZones: { select: { city: true, postcode: true, surcharge: true } },
+        serviceZones: {
+          select: { city: true, postcode: true, surcharge: true },
+        },
         lat: true,
         lng: true,
         serviceRadiusKm: true,
@@ -1025,7 +1099,12 @@ export class SkipHireService {
 
     const recipientIds: string[] = [];
     for (const carrier of carriers) {
-      const coverage = this.carrierCoverage(carrier, locationLower, buyerLat, buyerLng);
+      const coverage = this.carrierCoverage(
+        carrier,
+        locationLower,
+        buyerLat,
+        buyerLng,
+      );
       if (!coverage.covered) continue;
       for (const u of carrier.users) recipientIds.push(u.id);
     }
@@ -1154,7 +1233,13 @@ export class SkipHireService {
   async amend(
     id: string,
     userId: string,
-    data: { deliveryDate?: string; deliveryWindow?: string; notes?: string; contactName?: string; contactPhone?: string },
+    data: {
+      deliveryDate?: string;
+      deliveryWindow?: string;
+      notes?: string;
+      contactName?: string;
+      contactPhone?: string;
+    },
   ) {
     const order = await this.findOne(id, userId);
     if (
@@ -1168,14 +1253,24 @@ export class SkipHireService {
     const updated = await this.prisma.skipHireOrder.update({
       where: { id },
       data: {
-        ...(data.deliveryDate ? { deliveryDate: new Date(data.deliveryDate) } : {}),
-        ...(data.deliveryWindow !== undefined ? { deliveryWindow: data.deliveryWindow } : {}),
+        ...(data.deliveryDate
+          ? { deliveryDate: new Date(data.deliveryDate) }
+          : {}),
+        ...(data.deliveryWindow !== undefined
+          ? { deliveryWindow: data.deliveryWindow }
+          : {}),
         ...(data.notes !== undefined ? { notes: data.notes } : {}),
-        ...(data.contactName !== undefined ? { contactName: data.contactName } : {}),
-        ...(data.contactPhone !== undefined ? { contactPhone: data.contactPhone } : {}),
+        ...(data.contactName !== undefined
+          ? { contactName: data.contactName }
+          : {}),
+        ...(data.contactPhone !== undefined
+          ? { contactPhone: data.contactPhone }
+          : {}),
       },
       include: {
-        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+        carrier: {
+          select: { id: true, name: true, phone: true, rating: true },
+        },
       },
     });
 
@@ -1191,7 +1286,9 @@ export class SkipHireService {
         .catch(() => null);
     }
 
-    this.logger.log(`Skip order ${order.orderNumber} amended by user ${userId}`);
+    this.logger.log(
+      `Skip order ${order.orderNumber} amended by user ${userId}`,
+    );
     return updated;
   }
 
@@ -1221,7 +1318,10 @@ export class SkipHireService {
     await this.prisma.skipHireOrder.update({
       where: { id },
       data: {
-        statusTimestamps: { ...existingTs, PICKUP_REQUESTED: new Date().toISOString() },
+        statusTimestamps: {
+          ...existingTs,
+          PICKUP_REQUESTED: new Date().toISOString(),
+        },
       },
     });
 
@@ -1229,7 +1329,10 @@ export class SkipHireService {
     if (order.carrierId) {
       // Find any user belonging to the carrier company (owner/manager)
       const carrierUsers = await this.prisma.user.findMany({
-        where: { companyId: order.carrierId, companyRole: { in: ['OWNER', 'MANAGER'] } },
+        where: {
+          companyId: order.carrierId,
+          companyRole: { in: ['OWNER', 'MANAGER'] },
+        },
         select: { id: true },
         take: 5,
       });
@@ -1248,8 +1351,13 @@ export class SkipHireService {
       );
     }
 
-    this.logger.log(`Pickup requested for skip order ${order.orderNumber} by user ${userId}`);
-    return { ok: true, message: 'Savākšanas pieprasījums nosūtīts pārvadātājam' };
+    this.logger.log(
+      `Pickup requested for skip order ${order.orderNumber} by user ${userId}`,
+    );
+    return {
+      ok: true,
+      message: 'Savākšanas pieprasījums nosūtīts pārvadātājam',
+    };
   }
 
   /**
@@ -1259,8 +1367,14 @@ export class SkipHireService {
    * the carrier will issue a supplementary invoice manually.
    */
   async extendHire(id: string, userId: string, additionalDays: number) {
-    if (!Number.isInteger(additionalDays) || additionalDays < 1 || additionalDays > 90) {
-      throw new BadRequestException('additionalDays must be an integer between 1 and 90');
+    if (
+      !Number.isInteger(additionalDays) ||
+      additionalDays < 1 ||
+      additionalDays > 90
+    ) {
+      throw new BadRequestException(
+        'additionalDays must be an integer between 1 and 90',
+      );
     }
 
     const order = await this.findOne(id, userId);
@@ -1277,7 +1391,9 @@ export class SkipHireService {
       where: { id },
       data: { hireDays: newHireDays },
       include: {
-        carrier: { select: { id: true, name: true, phone: true, rating: true } },
+        carrier: {
+          select: { id: true, name: true, phone: true, rating: true },
+        },
       },
     });
 

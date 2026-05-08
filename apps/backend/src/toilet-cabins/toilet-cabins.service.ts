@@ -47,7 +47,7 @@ export class ToiletCabinsService {
     const orderNumber = this.generateOrderNumber();
 
     let price: number;
-    let carrierId: string | null = dto.carrierId ?? null;
+    const carrierId: string | null = dto.carrierId ?? null;
 
     if (carrierId) {
       // Re-derive price server-side from carrier's own settings
@@ -90,7 +90,11 @@ export class ToiletCabinsService {
 
     // If no carrier pre-selected, broadcast to eligible carriers in the city
     if (!carrierId) {
-      this.broadcastToEligibleCarriers(order.id, order.orderNumber, dto.city).catch((err) =>
+      this.broadcastToEligibleCarriers(
+        order.id,
+        order.orderNumber,
+        dto.city,
+      ).catch((err) =>
         this.logger.warn(
           `Toilet cabin broadcast failed for ${order.orderNumber}: ${(err as Error).message}`,
         ),
@@ -116,7 +120,9 @@ export class ToiletCabinsService {
 
   // ── Single ─────────────────────────────────────────────────────
   async findOne(id: string, user: RequestingUser) {
-    const order = await this.prisma.toiletCabinOrder.findUnique({ where: { id } });
+    const order = await this.prisma.toiletCabinOrder.findUnique({
+      where: { id },
+    });
     if (!order) throw new NotFoundException('Toilet cabin order not found');
     if (
       user.userType !== 'ADMIN' &&
@@ -129,8 +135,14 @@ export class ToiletCabinsService {
   }
 
   // ── Update status (admin only) ─────────────────────────────────
-  async updateStatus(id: string, dto: UpdateToiletCabinStatusDto, user: RequestingUser) {
-    const order = await this.prisma.toiletCabinOrder.findUnique({ where: { id } });
+  async updateStatus(
+    id: string,
+    dto: UpdateToiletCabinStatusDto,
+    user: RequestingUser,
+  ) {
+    const order = await this.prisma.toiletCabinOrder.findUnique({
+      where: { id },
+    });
     if (!order) throw new NotFoundException('Toilet cabin order not found');
 
     if (user.userType !== 'ADMIN') {
@@ -154,19 +166,29 @@ export class ToiletCabinsService {
    * Carriers advance their own assigned orders through the delivery lifecycle.
    * Allowed transitions: CONFIRMED → DELIVERED, DELIVERED → IN_USE, IN_USE → COLLECTED.
    */
-  async updateCarrierStatus(id: string, status: ToiletCabinStatus, userId: string) {
+  async updateCarrierStatus(
+    id: string,
+    status: ToiletCabinStatus,
+    userId: string,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { companyId: true, canSkipHire: true },
     });
     if (!user?.companyId || !user.canSkipHire) {
-      throw new ForbiddenException('Only approved carriers can update toilet cabin orders');
+      throw new ForbiddenException(
+        'Only approved carriers can update toilet cabin orders',
+      );
     }
 
-    const order = await this.prisma.toiletCabinOrder.findUnique({ where: { id } });
+    const order = await this.prisma.toiletCabinOrder.findUnique({
+      where: { id },
+    });
     if (!order) throw new NotFoundException('Toilet cabin order not found');
     if (order.carrierId !== user.companyId) {
-      throw new ForbiddenException('This order is not assigned to your company');
+      throw new ForbiddenException(
+        'This order is not assigned to your company',
+      );
     }
 
     const ALLOWED: Partial<Record<ToiletCabinStatus, ToiletCabinStatus[]>> = {
@@ -200,7 +222,9 @@ export class ToiletCabinsService {
       select: { companyId: true, canSkipHire: true },
     });
     if (!user?.companyId || !user.canSkipHire) {
-      throw new ForbiddenException('Only approved carriers can view toilet cabin orders');
+      throw new ForbiddenException(
+        'Only approved carriers can view toilet cabin orders',
+      );
     }
 
     const where: Record<string, unknown> = { carrierId: user.companyId };
@@ -219,7 +243,9 @@ export class ToiletCabinsService {
       select: { companyId: true, canSkipHire: true },
     });
     if (!user?.companyId || !user.canSkipHire) {
-      throw new ForbiddenException('Only approved carriers can access these settings');
+      throw new ForbiddenException(
+        'Only approved carriers can access these settings',
+      );
     }
 
     const settings = await this.prisma.carrierToiletCabinSettings.findUnique({
@@ -234,13 +260,17 @@ export class ToiletCabinsService {
       select: { companyId: true, canSkipHire: true },
     });
     if (!user?.companyId || !user.canSkipHire) {
-      throw new ForbiddenException('Only approved carriers can update these settings');
+      throw new ForbiddenException(
+        'Only approved carriers can update these settings',
+      );
     }
     if (dto.pricePerCabinPerDay <= 0) {
       throw new BadRequestException('Price must be greater than zero');
     }
 
-    const normCities = dto.serviceCities.map((c) => c.toLowerCase().trim()).filter(Boolean);
+    const normCities = dto.serviceCities
+      .map((c) => c.toLowerCase().trim())
+      .filter(Boolean);
 
     return this.prisma.carrierToiletCabinSettings.upsert({
       where: { carrierId: user.companyId },

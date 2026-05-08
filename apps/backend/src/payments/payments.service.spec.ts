@@ -1,5 +1,9 @@
 import { Test } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
@@ -247,7 +251,11 @@ describe('PaymentsService', () => {
 
     it('throws ForbiddenException when caller is not the buyer', async () => {
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
-        makeOrder({ status: 'DELIVERED', buyerId: 'other-company', createdById: 'other-user' }),
+        makeOrder({
+          status: 'DELIVERED',
+          buyerId: 'other-company',
+          createdById: 'other-user',
+        }),
       );
       await expect(
         service.reportDispute('order-1', 'wrong qty', undefined, makeUser()),
@@ -265,13 +273,19 @@ describe('PaymentsService', () => {
 
     it('allows dispute when caller belongs to buyer company', async () => {
       (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
-        makeOrder({ status: 'DELIVERED', buyerId: 'company-1', createdById: 'other-user' }),
+        makeOrder({
+          status: 'DELIVERED',
+          buyerId: 'company-1',
+          createdById: 'other-user',
+        }),
       );
       (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
       (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([]);
 
       const result = await service.reportDispute(
-        'order-1', 'wrong qty', 'Delivered 10t instead of 20t',
+        'order-1',
+        'wrong qty',
+        'Delivered 10t instead of 20t',
         makeUser({ companyId: 'company-1' }),
       );
       expect(result.ok).toBe(true);
@@ -282,12 +296,22 @@ describe('PaymentsService', () => {
         makeOrder({ status: 'DELIVERED', buyerId: 'company-1' }),
       );
       (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
-      (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([{ id: 'admin-1' }, { id: 'admin-2' }]);
+      (prisma.user.findMany as jest.Mock<any>).mockResolvedValue([
+        { id: 'admin-1' },
+        { id: 'admin-2' },
+      ]);
 
-      await service.reportDispute('order-1', 'short delivery', undefined, makeUser());
+      await service.reportDispute(
+        'order-1',
+        'short delivery',
+        undefined,
+        makeUser(),
+      );
       expect(notifications.createForMany).toHaveBeenCalledWith(
         ['admin-1', 'admin-2'],
-        expect.objectContaining({ data: expect.objectContaining({ orderId: 'order-1' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ orderId: 'order-1' }),
+        }),
       );
     });
   });
@@ -311,10 +335,14 @@ describe('PaymentsService', () => {
       };
       (paysera.parseWebhook as jest.Mock<any>).mockReturnValue(event);
       (prisma.payment.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prisma.skipHireOrder.findUnique as jest.Mock<any>).mockResolvedValue(
+        null,
+      );
       (prisma.guestOrder.findFirst as jest.Mock<any>).mockResolvedValue(null);
       (prisma.invoice.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(makeOrder());
+      (prisma.order.findUnique as jest.Mock<any>).mockResolvedValue(
+        makeOrder(),
+      );
       (prisma.payment.upsert as jest.Mock<any>).mockResolvedValue({});
       (prisma.order.update as jest.Mock<any>).mockResolvedValue({});
 

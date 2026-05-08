@@ -132,7 +132,11 @@ export class ToiletCabinsController {
     @Body('status') status: ToiletCabinStatus,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
-    return this.toiletCabinsService.updateCarrierStatus(id, status, req.user.userId);
+    return this.toiletCabinsService.updateCarrierStatus(
+      id,
+      status,
+      req.user.userId,
+    );
   }
 
   /**
@@ -141,7 +145,9 @@ export class ToiletCabinsController {
    */
   @Get('carrier/settings')
   @UseGuards(JwtAuthGuard)
-  getCarrierSettings(@Request() req: Express.Request & { user: RequestingUser }) {
+  getCarrierSettings(
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
     return this.toiletCabinsService.getCarrierSettings(req.user.userId);
   }
 

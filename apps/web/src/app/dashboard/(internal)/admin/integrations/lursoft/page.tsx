@@ -229,8 +229,8 @@ function CompanyCard({ company }: { company: LursoftCompany }) {
 // ─── Page component ──────────────────────────────────────────────────────────
 
 export default function LursoftPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token: authTok } = useAuth();
+  const token = authTok ?? '';
 
   // Connection tab state
   const [settings, setSettings] = useState<LursoftSettings | null>(null);

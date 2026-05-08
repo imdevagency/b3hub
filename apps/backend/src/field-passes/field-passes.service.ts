@@ -346,7 +346,14 @@ export class FieldPassesService {
 
           // QR code — top-right corner of the pass
           doc.image(qrBuffer, 430, 100, { width: 110 });
-          doc.fontSize(8).font('Helvetica').fillColor('#666666').text('Skenēt pie vārtiem', 430, 213, { width: 110, align: 'center' });
+          doc
+            .fontSize(8)
+            .font('Helvetica')
+            .fillColor('#666666')
+            .text('Skenēt pie vārtiem', 430, 213, {
+              width: 110,
+              align: 'center',
+            });
           doc.fillColor('#000000');
 
           // ── Company block ──
@@ -398,9 +405,15 @@ export class FieldPassesService {
           if (pass.wasteClassCode)
             rows.push(['Atkritumu kods / Waste code', pass.wasteClassCode]);
           if (pass.wasteDescription)
-            rows.push(['Atkritumu apraksts / Description', pass.wasteDescription]);
+            rows.push([
+              'Atkritumu apraksts / Description',
+              pass.wasteDescription,
+            ]);
           if (pass.unloadingPoint)
-            rows.push(['Izkraušanas vieta / Unloading point', pass.unloadingPoint]);
+            rows.push([
+              'Izkraušanas vieta / Unloading point',
+              pass.unloadingPoint,
+            ]);
           if (pass.estimatedTonnes)
             rows.push([
               'Paredzamais svars / Est. weight',

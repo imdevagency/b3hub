@@ -17,12 +17,7 @@ import {
   ForbiddenException,
   Res,
 } from '@nestjs/common';
-import {
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { Response } from 'express';
 import { OrdersService } from './orders.service';
@@ -77,7 +72,9 @@ export class OrdersController {
       throw new BadRequestException('File storage is not configured');
     }
     const mimeType = dto.mimeType ?? 'image/jpeg';
-    const raw = dto.base64.includes(',') ? dto.base64.split(',')[1] : dto.base64;
+    const raw = dto.base64.includes(',')
+      ? dto.base64.split(',')[1]
+      : dto.base64;
     const buffer = Buffer.from(raw, 'base64');
     const ext = mimeType === 'image/png' ? 'png' : 'jpg';
     const path = `site-photos/${user.userId}/${Date.now()}.${ext}`;

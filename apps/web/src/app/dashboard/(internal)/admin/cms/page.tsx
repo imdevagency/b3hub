@@ -904,8 +904,8 @@ function AnnouncementsTab({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CmsPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token } = useAuth();
+  const safeToken = token ?? '';
 
   const [tab, setTab] = useState('articles');
   const [refresh, setRefresh] = useState(0);
@@ -965,17 +965,17 @@ export default function CmsPage() {
         </TabsList>
 
         <TabsContent value="articles" className="mt-4">
-          <ArticlesTab token={token} refresh={refresh} onEdit={setArticleSheetId} />
+          <ArticlesTab token={safeToken} refresh={refresh} onEdit={setArticleSheetId} />
         </TabsContent>
 
         <TabsContent value="announcements" className="mt-4">
-          <AnnouncementsTab token={token} refresh={refresh} onEdit={openEditAnnouncement} />
+          <AnnouncementsTab token={safeToken} refresh={refresh} onEdit={openEditAnnouncement} />
         </TabsContent>
       </Tabs>
 
       <ArticleSheet
         articleId={articleSheetId}
-        token={token}
+        token={safeToken}
         onClose={() => setArticleSheetId(null)}
         onSaved={doRefresh}
       />
@@ -983,7 +983,7 @@ export default function CmsPage() {
       <AnnouncementDialog
         open={announcementDialog}
         editing={editingAnnouncement}
-        token={token}
+        token={safeToken}
         onClose={() => setAnnouncementDialog(false)}
         onSaved={doRefresh}
       />

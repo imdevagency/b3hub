@@ -218,7 +218,10 @@ export class ProjectsController {
 
   /** GET /projects/:id/waste-declarations */
   @Get(':id/waste-declarations')
-  getWasteDeclarations(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+  getWasteDeclarations(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.service.getWasteDeclarations(id, user.companyId);
   }
 
@@ -230,7 +233,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project data');
+      throw new ForbiddenException(
+        'You do not have permission to manage project data',
+      );
     }
     return this.service.addWasteDeclaration(id, dto, user.companyId);
   }
@@ -243,16 +248,25 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project data');
+      throw new ForbiddenException(
+        'You do not have permission to manage project data',
+      );
     }
-    return this.service.deleteWasteDeclaration(id, declarationId, user.companyId);
+    return this.service.deleteWasteDeclaration(
+      id,
+      declarationId,
+      user.companyId,
+    );
   }
 
   // ── Material needs ────────────────────────────────────────────────────────
 
   /** GET /projects/:id/material-needs */
   @Get(':id/material-needs')
-  getMaterialNeeds(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
+  getMaterialNeeds(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
     return this.service.getMaterialNeeds(id, user.companyId);
   }
 
@@ -264,7 +278,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project data');
+      throw new ForbiddenException(
+        'You do not have permission to manage project data',
+      );
     }
     return this.service.addMaterialNeed(id, dto, user.companyId);
   }
@@ -277,7 +293,9 @@ export class ProjectsController {
     @CurrentUser() user: RequestingUser,
   ) {
     if (!isOwnerOrManager(user)) {
-      throw new ForbiddenException('You do not have permission to manage project data');
+      throw new ForbiddenException(
+        'You do not have permission to manage project data',
+      );
     }
     return this.service.deleteMaterialNeed(id, needId, user.companyId);
   }

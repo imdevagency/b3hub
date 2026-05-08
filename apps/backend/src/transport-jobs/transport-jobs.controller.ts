@@ -607,10 +607,7 @@ export class TransportJobsController {
    * Buyer (job requester) cancels an AVAILABLE job before a driver is assigned.
    */
   @Patch(':id/buyer-cancel')
-  buyerCancel(
-    @Param('id') id: string,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  buyerCancel(@Param('id') id: string, @CurrentUser() user: RequestingUser) {
     return this.service.buyerCancel(id, user.userId);
   }
 

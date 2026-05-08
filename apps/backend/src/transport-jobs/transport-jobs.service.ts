@@ -280,9 +280,20 @@ export class TransportJobsService {
     const sla = this.getSlaState(job);
 
     // Flatten supplier contact from order.items[0].material.supplier
-    let mappedOrder: (Omit<NonNullable<T['order']>, 'items'> & { supplierName: string | null; supplierPhone: string | null }) | null = null;
+    let mappedOrder:
+      | (Omit<NonNullable<T['order']>, 'items'> & {
+          supplierName: string | null;
+          supplierPhone: string | null;
+        })
+      | null = null;
     if (job.order) {
-      const { items, ...orderRest } = job.order as NonNullable<T['order']> & { items?: Array<{ material?: { supplier?: { name: string; phone: string } | null } | null }> };
+      const { items, ...orderRest } = job.order as NonNullable<T['order']> & {
+        items?: Array<{
+          material?: {
+            supplier?: { name: string; phone: string } | null;
+          } | null;
+        }>;
+      };
       const supplier = items?.[0]?.material?.supplier ?? null;
       mappedOrder = {
         ...orderRest,
@@ -603,7 +614,11 @@ export class TransportJobsService {
     // If we know the driver, restrict to jobs their vehicles can handle.
     // Jobs with no requiredVehicleEnum are visible to everyone.
     let vehicleTypeFilter:
-      | { requiredVehicleEnum: null | { in: import('@prisma/client').VehicleType[] } }
+      | {
+          requiredVehicleEnum: null | {
+            in: import('@prisma/client').VehicleType[];
+          };
+        }
       | undefined;
 
     let zoneCities: string[] | undefined;
@@ -613,7 +628,10 @@ export class TransportJobsService {
         this.prisma.vehicle.findMany({
           where: {
             status: { in: ['ACTIVE', 'IN_USE'] },
-            OR: [{ ownerId: driverId }, { company: { users: { some: { id: driverId } } } }],
+            OR: [
+              { ownerId: driverId },
+              { company: { users: { some: { id: driverId } } } },
+            ],
           },
           select: { vehicleType: true },
         }),
@@ -640,7 +658,10 @@ export class TransportJobsService {
     }
 
     const vehicleCondition = vehicleTypeFilter
-      ? [{ requiredVehicleEnum: null }, { requiredVehicleEnum: vehicleTypeFilter.requiredVehicleEnum }]
+      ? [
+          { requiredVehicleEnum: null },
+          { requiredVehicleEnum: vehicleTypeFilter.requiredVehicleEnum },
+        ]
       : null;
     const zoneCondition =
       zoneCities && zoneCities.length > 0
@@ -653,15 +674,16 @@ export class TransportJobsService {
     const baseWhere = {
       status: TransportJobStatus.AVAILABLE,
       ...(updatedSince ? { updatedAt: { gte: new Date(updatedSince) } } : {}),
-      AND: [
-        ...(vehicleCondition ? [{ OR: vehicleCondition }] : []),
-        ...(zoneCondition ? [{ OR: zoneCondition }] : []),
-      ].length > 0
-        ? [
-            ...(vehicleCondition ? [{ OR: vehicleCondition }] : []),
-            ...(zoneCondition ? [{ OR: zoneCondition }] : []),
-          ]
-        : undefined,
+      AND:
+        [
+          ...(vehicleCondition ? [{ OR: vehicleCondition }] : []),
+          ...(zoneCondition ? [{ OR: zoneCondition }] : []),
+        ].length > 0
+          ? [
+              ...(vehicleCondition ? [{ OR: vehicleCondition }] : []),
+              ...(zoneCondition ? [{ OR: zoneCondition }] : []),
+            ]
+          : undefined,
     };
     const [jobs, total] = await Promise.all([
       this.prisma.transportJob.findMany({
@@ -860,7 +882,8 @@ export class TransportJobsService {
       .filter((j) => {
         // Exclude AVAILABLE jobs with no driver — these are dispatch failures,
         // not driver delays. They are tracked separately by alertJobsWithNoDriver.
-        if (j.status === TransportJobStatus.AVAILABLE && !j.driverId) return false;
+        if (j.status === TransportJobStatus.AVAILABLE && !j.driverId)
+          return false;
         return j.sla.isOverdue;
       })
       .sort((a, b) => b.sla.overdueMinutes - a.sla.overdueMinutes);
@@ -907,50 +930,51 @@ export class TransportJobsService {
     const requiresDeliveryProof = true;
     const requiresWasteTransportNote = job.jobType === 'WASTE_COLLECTION';
 
-    const [deliveryProof, weighingSlip, deliveryNote, wasteTransportNote] = await Promise.all([
-      this.prisma.deliveryProof.findUnique({
-        where: { transportJobId: id },
-        select: { id: true },
-      }),
-      requiresWeighingSlip
-        ? job.orderId
+    const [deliveryProof, weighingSlip, deliveryNote, wasteTransportNote] =
+      await Promise.all([
+        this.prisma.deliveryProof.findUnique({
+          where: { transportJobId: id },
+          select: { id: true },
+        }),
+        requiresWeighingSlip
+          ? job.orderId
+            ? this.prisma.document.findFirst({
+                where: {
+                  orderId: job.orderId,
+                  type: DocumentType.WEIGHING_SLIP,
+                  status: { not: 'ARCHIVED' },
+                },
+                select: { id: true },
+              })
+            : // Standalone disposal/freight job — weighing slip is linked to the job directly
+              this.prisma.document.findFirst({
+                where: {
+                  transportJobId: id,
+                  type: DocumentType.WEIGHING_SLIP,
+                  status: { not: 'ARCHIVED' },
+                },
+                select: { id: true },
+              })
+          : Promise.resolve(null),
+        this.prisma.document.findFirst({
+          where: {
+            transportJobId: id,
+            type: DocumentType.DELIVERY_NOTE,
+            status: { not: 'ARCHIVED' },
+          },
+          select: { id: true },
+        }),
+        requiresWasteTransportNote
           ? this.prisma.document.findFirst({
               where: {
-                orderId: job.orderId,
-                type: DocumentType.WEIGHING_SLIP,
-                status: { not: 'ARCHIVED' },
-              },
-              select: { id: true },
-            })
-          : // Standalone disposal/freight job — weighing slip is linked to the job directly
-            this.prisma.document.findFirst({
-              where: {
                 transportJobId: id,
-                type: DocumentType.WEIGHING_SLIP,
-                status: { not: 'ARCHIVED' },
+                type: DocumentType.WASTE_TRANSPORT_NOTE,
+                status: { in: ['ISSUED', 'SIGNED'] },
               },
               select: { id: true },
             })
-        : Promise.resolve(null),
-      this.prisma.document.findFirst({
-        where: {
-          transportJobId: id,
-          type: DocumentType.DELIVERY_NOTE,
-          status: { not: 'ARCHIVED' },
-        },
-        select: { id: true },
-      }),
-      requiresWasteTransportNote
-        ? this.prisma.document.findFirst({
-            where: {
-              transportJobId: id,
-              type: DocumentType.WASTE_TRANSPORT_NOTE,
-              status: { in: ['ISSUED', 'SIGNED'] },
-            },
-            select: { id: true },
-          })
-        : Promise.resolve(null),
-    ]);
+          : Promise.resolve(null),
+      ]);
 
     const hasDeliveryProof = !!deliveryProof;
     const hasWeighingSlip = !!weighingSlip;
@@ -1049,7 +1073,10 @@ export class TransportJobsService {
         where: {
           vehicleType: job.requiredVehicleEnum,
           status: { in: ['ACTIVE', 'IN_USE'] },
-          OR: [{ ownerId: driverId }, { company: { users: { some: { id: driverId } } } }],
+          OR: [
+            { ownerId: driverId },
+            { company: { users: { some: { id: driverId } } } },
+          ],
         },
         select: {
           id: true,
@@ -1075,8 +1102,10 @@ export class TransportJobsService {
       if (!compliantVehicle) {
         const v = matchingVehicles[0];
         const expired: string[] = [];
-        if (v.insuranceExpiry && v.insuranceExpiry <= now) expired.push('apdrošināšana');
-        if (v.inspectionExpiry && v.inspectionExpiry <= now) expired.push('tehniskā apskate');
+        if (v.insuranceExpiry && v.insuranceExpiry <= now)
+          expired.push('apdrošināšana');
+        if (v.inspectionExpiry && v.inspectionExpiry <= now)
+          expired.push('tehniskā apskate');
         throw new BadRequestException(
           `Transportlīdzeklim ${v.licensePlate} ir beigusies: ${expired.join(', ')}. Atjauniniet dokumentus, lai pieņemtu darbus.`,
         );
@@ -1383,7 +1412,11 @@ export class TransportJobsService {
       if (anyRemainingOnline === 0) {
         // No eligible drivers remain — alert platform admins
         this.prisma.user
-          .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+          .findMany({
+            where: { userType: 'ADMIN' },
+            select: { id: true },
+            take: 50,
+          })
           .then((admins) => {
             if (admins.length === 0) return;
             return this.notifications.createForMany(
@@ -1906,7 +1939,10 @@ export class TransportJobsService {
       where: { id },
       data: {
         status: dto.status,
-        statusTimestamps: { ...existingTimestamps, [dto.status]: new Date().toISOString() },
+        statusTimestamps: {
+          ...existingTimestamps,
+          [dto.status]: new Date().toISOString(),
+        },
         ...(dto.status === TransportJobStatus.LOADED && dto.weightKg
           ? { actualWeightKg: dto.weightKg }
           : {}),
@@ -2269,7 +2305,11 @@ export class TransportJobsService {
 
           // Alert admins for manual intervention
           this.prisma.user
-            .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+            .findMany({
+              where: { userType: 'ADMIN' },
+              select: { id: true },
+              take: 50,
+            })
             .then((admins) => {
               if (admins.length === 0) return;
               return this.notifications.createForMany(
@@ -4000,7 +4040,9 @@ export class TransportJobsService {
       'resetStuckJobDeclines',
       async () => {
         const now = new Date();
-        const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        const fortyEightHoursAgo = new Date(
+          now.getTime() - 48 * 60 * 60 * 1000,
+        );
 
         const stuck = await this.prisma.transportJob.findMany({
           where: {
@@ -4219,7 +4261,11 @@ export class TransportJobsService {
 
         // Alert admins to review the driver's account
         this.prisma.user
-          .findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 })
+          .findMany({
+            where: { userType: 'ADMIN' },
+            select: { id: true },
+            take: 50,
+          })
           .then((admins) => {
             if (admins.length === 0) return;
             return this.notifications.createForMany(

@@ -236,8 +236,8 @@ export default function AdminAnalyticsPage() {
   );
 
   const revenueByType = useMemo(() => {
-    if (!finance?.revenueByType) return [];
-    return Object.entries(finance.revenueByType).sort(([, a], [, b]) => b - a);
+    if (!finance || !('revenueByType' in finance) || !(finance as any).revenueByType) return [];
+    return Object.entries((finance as any).revenueByType as Record<string, number>).sort(([, a], [, b]) => b - a);
   }, [finance]);
 
   const maxTypeRevenue = useMemo(
@@ -245,9 +245,9 @@ export default function AdminAnalyticsPage() {
     [revenueByType],
   );
 
-  const monthlyRevenue = useMemo(() => finance?.monthlyRevenue ?? [], [finance]);
+  const monthlyRevenue = useMemo(() => (finance as any)?.monthlyRevenue ?? [], [finance]);
   const maxMonthlyRevenue = useMemo(
-    () => Math.max(...monthlyRevenue.map((m) => m.revenue ?? m.amount ?? 0), 1),
+    () => Math.max(...monthlyRevenue.map((m: any) => m.revenue ?? m.amount ?? 0), 1),
     [monthlyRevenue],
   );
 
@@ -437,7 +437,7 @@ export default function AdminAnalyticsPage() {
                                 Kopējie ieņēmumi
                               </TableCell>
                               <TableCell className="text-right font-medium tabular-nums">
-                                {eur(finance.totalRevenue)}
+                                {eur((finance as any)?.totalRevenue ?? 0)}
                               </TableCell>
                             </TableRow>
                             <TableRow>
@@ -445,7 +445,7 @@ export default function AdminAnalyticsPage() {
                                 Platforma maksas
                               </TableCell>
                               <TableCell className="text-right font-medium tabular-nums">
-                                {eur(finance.platformFees)}
+                                {eur((finance as any)?.platformFees ?? 0)}
                               </TableCell>
                             </TableRow>
                             <TableRow>
@@ -453,7 +453,7 @@ export default function AdminAnalyticsPage() {
                                 Gaida izmaksas
                               </TableCell>
                               <TableCell className="text-right font-medium tabular-nums text-amber-600">
-                                {eur(finance.pendingPayouts)}
+                                {eur((finance as any)?.pendingPayouts ?? 0)}
                               </TableCell>
                             </TableRow>
                             <TableRow>
@@ -461,7 +461,7 @@ export default function AdminAnalyticsPage() {
                                 Pabeigtas izmaksas
                               </TableCell>
                               <TableCell className="text-right font-medium tabular-nums text-green-600">
-                                {eur(finance.completedPayouts)}
+                                {eur((finance as any)?.completedPayouts ?? 0)}
                               </TableCell>
                             </TableRow>
                           </TableBody>
@@ -477,7 +477,7 @@ export default function AdminAnalyticsPage() {
                       <CardTitle className="text-sm font-medium">Mēneša ieņēmumi</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
-                      {monthlyRevenue.slice(-12).map((m) => (
+                      {monthlyRevenue.slice(-12).map((m: any) => (
                         <HBar
                           key={m.month}
                           label={monthLabel(m.month)}

@@ -40,4 +40,6 @@ export class CreateInventoryItemDto {
   notes?: string;
 }
 
-export class UpdateInventoryItemDto extends PartialType(CreateInventoryItemDto) {}
+export class UpdateInventoryItemDto extends PartialType(
+  CreateInventoryItemDto,
+) {}

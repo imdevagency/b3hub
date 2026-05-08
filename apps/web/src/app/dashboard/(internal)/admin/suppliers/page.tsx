@@ -352,7 +352,7 @@ export default function AdminSuppliersPage() {
                               onClick={async () => {
                                 if (!token || !confirm(`Apturēt ${s.name}?`)) return;
                                 await adminUpdateCompany(s.id, { verified: false }, token);
-                                load();
+                                fetchData();
                               }}
                             >
                               <ShieldOff className="h-4 w-4" />

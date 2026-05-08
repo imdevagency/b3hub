@@ -1,8 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
  * Payload for the public PATCH /track/:token/delivery endpoint.

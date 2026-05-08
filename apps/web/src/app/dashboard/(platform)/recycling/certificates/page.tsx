@@ -75,7 +75,7 @@ export default function CertificatesPage() {
       <PageHeader
         title="Sertifikāti"
         description="Izsniegto atkritumu pārstrādes sertifikātu saraksts"
-        actions={
+        action={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
             Atjaunot
@@ -128,7 +128,7 @@ export default function CertificatesPage() {
                       {WASTE_TYPE_LABELS[r.wasteType] ?? r.wasteType}
                     </TableCell>
                     <TableCell className="text-right text-sm font-medium">
-                      {r.weightKg != null ? (r.weightKg / 1000).toFixed(3) : '—'}
+                      {(r as any).weightKg != null ? ((r as any).weightKg / 1000).toFixed(3) : '—'}
                     </TableCell>
                     <TableCell className="text-right text-sm text-emerald-700 font-medium">
                       {r.recyclableWeight != null ? r.recyclableWeight.toFixed(3) : '—'}

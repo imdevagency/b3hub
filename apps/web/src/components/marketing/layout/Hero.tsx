@@ -48,19 +48,19 @@ export function Hero({
               className={`flex items-center gap-4 ${align === 'center' && !hasRightSide ? 'justify-center w-full' : ''}`}
             >
               <div className="h-0.5 w-12 bg-foreground" />
-              <span className="text-sm font-bold tracking-widest uppercase text-foreground">
+              <span className="text-sm font-bold tracking-widest uppercase text-inherit">
                 {eyebrow}
               </span>
             </div>
           )}
 
-          <h1 className="text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tighter text-foreground leading-[0.9]">
+          <h1 className="text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tighter text-inherit leading-[0.9]">
             {title}
           </h1>
 
           {subtitle && (
             <p
-              className={`text-xl md:text-2xl text-muted-foreground font-light tracking-tight leading-snug ${
+              className={`text-xl md:text-2xl text-inherit opacity-80 font-light tracking-tight leading-snug ${
                 align === 'center' && !hasRightSide ? 'max-w-2xl mx-auto' : 'max-w-lg'
               }`}
             >
@@ -80,7 +80,7 @@ export function Hero({
                 </div>
               )}
               {pricingNote && (
-                <p className="text-sm text-muted-foreground font-light">{pricingNote}</p>
+                <p className="text-sm text-inherit opacity-80 font-light">{pricingNote}</p>
               )}
             </div>
           )}

@@ -56,10 +56,7 @@ export class EquipmentController {
   /** POST /api/v1/equipment */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @CurrentUser() user: RequestingUser,
-    @Body() dto: CreateEquipmentDto,
-  ) {
+  create(@CurrentUser() user: RequestingUser, @Body() dto: CreateEquipmentDto) {
     if (user.userType !== 'ADMIN') {
       throw new ForbiddenException('Admin access required');
     }

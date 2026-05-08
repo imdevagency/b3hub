@@ -12,9 +12,9 @@
 // ── Palette ───────────────────────────────────────────────────────────────────
 const colors = {
   // Brand / primary
-  primary: '#166534',
-  primaryDark: '#14532d',
-  primaryMid: '#15803d',
+  primary: '#00d084',
+  primaryDark: '#00b373',
+  primaryMid: '#1a362a',
 
   // Backgrounds
   bgScreen: '#f2f2f7',

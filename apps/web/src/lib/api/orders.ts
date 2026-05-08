@@ -287,6 +287,10 @@ export interface CreateDisposalOrderInput {
   siteContactName?: string;
   siteContactPhone?: string;
   notes?: string;
+  /** Scrap metal buyback: preferred recycling center */
+  preferredRecyclingCenterId?: string;
+  /** Scrap metal buyback: agreed EUR/tonne payout rate */
+  buybackPricePerTonne?: number;
 }
 
 export interface CreateTransportOrderInput {

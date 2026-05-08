@@ -98,7 +98,8 @@ export class AuthService {
         phone,
         userType: 'BUYER',
         isCompany: isCompany ?? roles.some((r) => r !== 'BUYER'),
-        personalCode: !isCompany && personalCode?.trim() ? personalCode.trim() : undefined,
+        personalCode:
+          !isCompany && personalCode?.trim() ? personalCode.trim() : undefined,
         termsAcceptedAt: new Date(),
         emailVerifyToken: hashedVerifyToken,
         emailVerifyExpiry: verifyExpiry,
@@ -383,7 +384,9 @@ export class AuthService {
 
     const modes: string[] = [];
     const isTransport = user.canTransport;
-    const companyType = (user as any).company?.companyType as string | undefined;
+    const companyType = (user as any).company?.companyType as
+      | string
+      | undefined;
 
     // A pure-transport individual (driver with no company/sell) doesn't get buyer mode
     const isPureTransportIndividual =
@@ -835,9 +838,7 @@ export class AuthService {
     }
 
     // Generate 6-digit numeric code
-    const rawCode = String(
-      Math.floor(100000 + Math.random() * 900000),
-    );
+    const rawCode = String(Math.floor(100000 + Math.random() * 900000));
     const hashed = crypto.createHash('sha256').update(rawCode).digest('hex');
     const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
@@ -911,13 +912,24 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { phone },
       include: {
-        company: { select: { id: true, name: true, companyType: true, payoutEnabled: true, features: true } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            companyType: true,
+            payoutEnabled: true,
+            features: true,
+          },
+        },
       },
     });
 
     if (existingUser) {
       // --- Returning user: login ---
-      if (existingUser.status !== 'ACTIVE' && existingUser.status !== 'PENDING') {
+      if (
+        existingUser.status !== 'ACTIVE' &&
+        existingUser.status !== 'PENDING'
+      ) {
         throw new UnauthorizedException('Account is not active');
       }
 
@@ -956,7 +968,9 @@ export class AuthService {
       );
 
       const { password: _pw, ...userWithoutPassword } = existingUser;
-      const { rawToken: refreshToken } = await this.issueRefreshToken(existingUser.id);
+      const { rawToken: refreshToken } = await this.issueRefreshToken(
+        existingUser.id,
+      );
 
       this.logger.log(
         `PHONE_AUTH_SUCCESS userId=${existingUser.id} phone=${phone} ip=${ip ?? 'unknown'}`,
@@ -1005,7 +1019,9 @@ export class AuthService {
         permManageTeam: true,
         tokenVersion: true,
         status: true,
-        company: { select: { id: true, name: true, payoutEnabled: true, features: true } },
+        company: {
+          select: { id: true, name: true, payoutEnabled: true, features: true },
+        },
       },
     });
 

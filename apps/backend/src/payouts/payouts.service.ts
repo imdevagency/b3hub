@@ -59,7 +59,9 @@ export class PayoutsService {
     const statusFilter = status ? { status } : undefined;
     const overdueFilter = overdue
       ? {
-          status: { in: [PayoutStatus.PENDING, PayoutStatus.FAILED] as PayoutStatus[] },
+          status: {
+            in: [PayoutStatus.PENDING, PayoutStatus.FAILED] as PayoutStatus[],
+          },
           dueDate: { lt: now },
         }
       : undefined;
@@ -74,7 +76,14 @@ export class PayoutsService {
               where,
               include: {
                 order: { select: { orderNumber: true } },
-                supplier: { select: { id: true, name: true, legalName: true, ibanNumber: true } },
+                supplier: {
+                  select: {
+                    id: true,
+                    name: true,
+                    legalName: true,
+                    ibanNumber: true,
+                  },
+                },
               },
               orderBy: { dueDate: 'asc' },
               skip: type === 'supplier' ? skip : 0,
@@ -86,20 +95,39 @@ export class PayoutsService {
               where,
               include: {
                 order: { select: { orderNumber: true } },
-                carrier: { select: { id: true, name: true, legalName: true, ibanNumber: true } },
-                driver: { select: { id: true, firstName: true, lastName: true } },
+                carrier: {
+                  select: {
+                    id: true,
+                    name: true,
+                    legalName: true,
+                    ibanNumber: true,
+                  },
+                },
+                driver: {
+                  select: { id: true, firstName: true, lastName: true },
+                },
               },
               orderBy: { dueDate: 'asc' },
               skip: type === 'carrier' ? skip : 0,
               take: type === 'carrier' ? limit : 200,
             }),
-        type === 'carrier' ? Promise.resolve(0) : this.prisma.supplierPayout.count({ where }),
-        type === 'supplier' ? Promise.resolve(0) : this.prisma.carrierPayout.count({ where }),
+        type === 'carrier'
+          ? Promise.resolve(0)
+          : this.prisma.supplierPayout.count({ where }),
+        type === 'supplier'
+          ? Promise.resolve(0)
+          : this.prisma.carrierPayout.count({ where }),
       ]);
 
     return {
-      supplierPayouts: supplierPayouts.map((p) => ({ ...p, payoutType: 'supplier' })),
-      carrierPayouts: carrierPayouts.map((p) => ({ ...p, payoutType: 'carrier' })),
+      supplierPayouts: supplierPayouts.map((p) => ({
+        ...p,
+        payoutType: 'supplier',
+      })),
+      carrierPayouts: carrierPayouts.map((p) => ({
+        ...p,
+        payoutType: 'carrier',
+      })),
       meta: { supplierTotal, carrierTotal, page, limit },
     };
   }
@@ -110,10 +138,26 @@ export class PayoutsService {
 
     const [supplierPending, carrierPending, supplierOverdue, carrierOverdue] =
       await Promise.all([
-        this.prisma.supplierPayout.aggregate({ where: { status: PayoutStatus.PENDING }, _sum: { amount: true }, _count: true }),
-        this.prisma.carrierPayout.aggregate({ where: { status: PayoutStatus.PENDING }, _sum: { amount: true }, _count: true }),
-        this.prisma.supplierPayout.aggregate({ where: { status: PayoutStatus.PENDING, dueDate: { lt: now } }, _sum: { amount: true }, _count: true }),
-        this.prisma.carrierPayout.aggregate({ where: { status: PayoutStatus.PENDING, dueDate: { lt: now } }, _sum: { amount: true }, _count: true }),
+        this.prisma.supplierPayout.aggregate({
+          where: { status: PayoutStatus.PENDING },
+          _sum: { amount: true },
+          _count: true,
+        }),
+        this.prisma.carrierPayout.aggregate({
+          where: { status: PayoutStatus.PENDING },
+          _sum: { amount: true },
+          _count: true,
+        }),
+        this.prisma.supplierPayout.aggregate({
+          where: { status: PayoutStatus.PENDING, dueDate: { lt: now } },
+          _sum: { amount: true },
+          _count: true,
+        }),
+        this.prisma.carrierPayout.aggregate({
+          where: { status: PayoutStatus.PENDING, dueDate: { lt: now } },
+          _sum: { amount: true },
+          _count: true,
+        }),
       ]);
 
     return {
@@ -122,14 +166,18 @@ export class PayoutsService {
         supplierCount: supplierPending._count,
         carrierAmount: carrierPending._sum.amount ?? 0,
         carrierCount: carrierPending._count,
-        totalAmount: (supplierPending._sum.amount ?? 0) + (carrierPending._sum.amount ?? 0),
+        totalAmount:
+          (supplierPending._sum.amount ?? 0) +
+          (carrierPending._sum.amount ?? 0),
       },
       overdue: {
         supplierAmount: supplierOverdue._sum.amount ?? 0,
         supplierCount: supplierOverdue._count,
         carrierAmount: carrierOverdue._sum.amount ?? 0,
         carrierCount: carrierOverdue._count,
-        totalAmount: (supplierOverdue._sum.amount ?? 0) + (carrierOverdue._sum.amount ?? 0),
+        totalAmount:
+          (supplierOverdue._sum.amount ?? 0) +
+          (carrierOverdue._sum.amount ?? 0),
       },
     };
   }
@@ -150,7 +198,8 @@ export class PayoutsService {
     });
 
     if (!payout) throw new NotFoundException('Supplier payout not found');
-    if (payout.status === PayoutStatus.PAID) throw new BadRequestException('Payout already paid');
+    if (payout.status === PayoutStatus.PAID)
+      throw new BadRequestException('Payout already paid');
 
     if (!payout.supplier.ibanNumber) {
       throw new BadRequestException(
@@ -175,10 +224,16 @@ export class PayoutsService {
 
     await this.prisma.supplierPayout.update({
       where: { id: payoutId },
-      data: { status: PayoutStatus.PAID, paidAt: new Date(), payseraTransferId: resolvedTransferId },
+      data: {
+        status: PayoutStatus.PAID,
+        paidAt: new Date(),
+        payseraTransferId: resolvedTransferId,
+      },
     });
 
-    this.logger.log(`SupplierPayout ${payoutId} PAID — €${payout.amount.toFixed(2)} to ${payout.supplier.name}`);
+    this.logger.log(
+      `SupplierPayout ${payoutId} PAID — €${payout.amount.toFixed(2)} to ${payout.supplier.name}`,
+    );
     return { success: true, payoutId };
   }
 
@@ -199,7 +254,8 @@ export class PayoutsService {
     });
 
     if (!payout) throw new NotFoundException('Carrier payout not found');
-    if (payout.status === PayoutStatus.PAID) throw new BadRequestException('Payout already paid');
+    if (payout.status === PayoutStatus.PAID)
+      throw new BadRequestException('Payout already paid');
 
     if (!payout.carrier?.ibanNumber) {
       throw new BadRequestException('Carrier has no IBAN number configured');
@@ -222,7 +278,11 @@ export class PayoutsService {
 
     await this.prisma.carrierPayout.update({
       where: { id: payoutId },
-      data: { status: PayoutStatus.PAID, paidAt: new Date(), payseraTransferId: resolvedTransferId },
+      data: {
+        status: PayoutStatus.PAID,
+        paidAt: new Date(),
+        payseraTransferId: resolvedTransferId,
+      },
     });
 
     if (payout.driverId) {
@@ -235,10 +295,14 @@ export class PayoutsService {
           message: `Jūsu atalgojums €${payout.amount.toFixed(2)} par pasūtījumu #${orderRef} ir pārskaitīts.`,
           data: { payoutId, orderId: payout.orderId },
         })
-        .catch((e: unknown) => this.logger.warn(`Notification failed: ${(e as Error).message}`));
+        .catch((e: unknown) =>
+          this.logger.warn(`Notification failed: ${(e as Error).message}`),
+        );
     }
 
-    this.logger.log(`CarrierPayout ${payoutId} PAID — €${payout.amount.toFixed(2)}`);
+    this.logger.log(
+      `CarrierPayout ${payoutId} PAID — €${payout.amount.toFixed(2)}`,
+    );
     return { success: true, payoutId };
   }
 
@@ -261,7 +325,10 @@ export class PayoutsService {
       if (!payout.supplier.ibanNumber) {
         await this.prisma.supplierPayout.update({
           where: { id: payout.id },
-          data: { status: PayoutStatus.FAILED, notes: 'No IBAN number configured' },
+          data: {
+            status: PayoutStatus.FAILED,
+            notes: 'No IBAN number configured',
+          },
         });
         failed++;
         continue;
@@ -271,7 +338,8 @@ export class PayoutsService {
         // Auto-transfer via Paysera Mass Payments when enabled
         let transferId: string | undefined;
         if (this.paysera.enabled) {
-          const orderRef = payout.order?.orderNumber ?? payout.orderId ?? payout.id;
+          const orderRef =
+            payout.order?.orderNumber ?? payout.orderId ?? payout.id;
           const transfer = await this.paysera.sendTransfer({
             iban: payout.supplier.ibanNumber,
             beneficiaryName: payout.supplier.name,
@@ -285,7 +353,11 @@ export class PayoutsService {
 
         await this.prisma.supplierPayout.update({
           where: { id: payout.id },
-          data: { status: PayoutStatus.PAID, paidAt: new Date(), payseraTransferId: transferId ?? null },
+          data: {
+            status: PayoutStatus.PAID,
+            paidAt: new Date(),
+            payseraTransferId: transferId ?? null,
+          },
         });
 
         const supplierUsers = await this.prisma.user.findMany({
@@ -303,7 +375,9 @@ export class PayoutsService {
                 data: { payoutId: payout.id, orderId: payout.orderId },
               },
             )
-            .catch((e: unknown) => this.logger.warn(`Notification failed: ${(e as Error).message}`));
+            .catch((e: unknown) =>
+              this.logger.warn(`Notification failed: ${(e as Error).message}`),
+            );
         }
         processed++;
       } catch (err) {
@@ -328,7 +402,10 @@ export class PayoutsService {
       if (!payout.carrier?.ibanNumber) {
         await this.prisma.carrierPayout.update({
           where: { id: payout.id },
-          data: { status: PayoutStatus.FAILED, notes: 'No IBAN number configured' },
+          data: {
+            status: PayoutStatus.FAILED,
+            notes: 'No IBAN number configured',
+          },
         });
         failed++;
         continue;
@@ -338,7 +415,8 @@ export class PayoutsService {
         // Auto-transfer via Paysera Mass Payments when enabled
         let transferId: string | undefined;
         if (this.paysera.enabled && payout.carrier?.ibanNumber) {
-          const orderRef = payout.order?.orderNumber ?? payout.orderId ?? payout.id;
+          const orderRef =
+            payout.order?.orderNumber ?? payout.orderId ?? payout.id;
           const transfer = await this.paysera.sendTransfer({
             iban: payout.carrier.ibanNumber,
             beneficiaryName: payout.carrier.name,
@@ -352,11 +430,16 @@ export class PayoutsService {
 
         await this.prisma.carrierPayout.update({
           where: { id: payout.id },
-          data: { status: PayoutStatus.PAID, paidAt: new Date(), payseraTransferId: transferId ?? null },
+          data: {
+            status: PayoutStatus.PAID,
+            paidAt: new Date(),
+            payseraTransferId: transferId ?? null,
+          },
         });
 
         if (payout.driverId) {
-          const orderRef = payout.order?.orderNumber ?? payout.orderId ?? payout.id;
+          const orderRef =
+            payout.order?.orderNumber ?? payout.orderId ?? payout.id;
           this.notifications
             .create({
               userId: payout.driverId,
@@ -365,7 +448,9 @@ export class PayoutsService {
               message: `Jūsu atalgojums €${payout.amount.toFixed(2)} par pasūtījumu #${orderRef} ir pārskaitīts.`,
               data: { payoutId: payout.id, orderId: payout.orderId },
             })
-            .catch((e: unknown) => this.logger.warn(`Notification failed: ${(e as Error).message}`));
+            .catch((e: unknown) =>
+              this.logger.warn(`Notification failed: ${(e as Error).message}`),
+            );
         }
         processed++;
       } catch (err) {
@@ -377,19 +462,32 @@ export class PayoutsService {
       }
     }
 
-    this.logger.log(`executeDuePayouts: processed=${processed}, failed=${failed}`);
+    this.logger.log(
+      `executeDuePayouts: processed=${processed}, failed=${failed}`,
+    );
 
     if (failed > 0) {
-      const admins = await this.prisma.user.findMany({ where: { userType: 'ADMIN' }, select: { id: true }, take: 50 });
+      const admins = await this.prisma.user.findMany({
+        where: { userType: 'ADMIN' },
+        select: { id: true },
+        take: 50,
+      });
       if (admins.length > 0) {
         this.notifications
-          .createForMany(admins.map((u) => u.id), {
-            type: NotificationType.SYSTEM_ALERT,
-            title: '🚨 Izmaksu partija — kļūdas',
-            message: `Automātiskā izmaksu partija: ${processed} veiksmīgas, ${failed} neizdevušās.`,
-            data: { processed, failed },
-          })
-          .catch((e: unknown) => this.logger.warn(`Admin notification failed: ${(e as Error).message}`));
+          .createForMany(
+            admins.map((u) => u.id),
+            {
+              type: NotificationType.SYSTEM_ALERT,
+              title: '🚨 Izmaksu partija — kļūdas',
+              message: `Automātiskā izmaksu partija: ${processed} veiksmīgas, ${failed} neizdevušās.`,
+              data: { processed, failed },
+            },
+          )
+          .catch((e: unknown) =>
+            this.logger.warn(
+              `Admin notification failed: ${(e as Error).message}`,
+            ),
+          );
       }
     }
 
@@ -399,15 +497,23 @@ export class PayoutsService {
   async cancelOrderPayouts(orderId: string): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.supplierPayout.updateMany({
-        where: { orderId, status: { in: [PayoutStatus.PENDING, PayoutStatus.FAILED] } },
+        where: {
+          orderId,
+          status: { in: [PayoutStatus.PENDING, PayoutStatus.FAILED] },
+        },
         data: { status: PayoutStatus.CANCELLED },
       }),
       this.prisma.carrierPayout.updateMany({
-        where: { orderId, status: { in: [PayoutStatus.PENDING, PayoutStatus.FAILED] } },
+        where: {
+          orderId,
+          status: { in: [PayoutStatus.PENDING, PayoutStatus.FAILED] },
+        },
         data: { status: PayoutStatus.CANCELLED },
       }),
     ]);
-    this.logger.log(`cancelOrderPayouts: voided payout obligations for order ${orderId}`);
+    this.logger.log(
+      `cancelOrderPayouts: voided payout obligations for order ${orderId}`,
+    );
   }
 
   @Cron('0 8 * * 1-5')

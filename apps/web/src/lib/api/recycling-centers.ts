@@ -48,29 +48,33 @@ export interface RecyclerIncomingJob {
   status: string;
   jobType: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   scheduledAt?: string | null;
   notes?: string | null;
-  recyclingCenter?: { id: string; name: string; address: string | null } | null;
-  requester?: { id: string; firstName: string; lastName: string; phone: string | null } | null;
+  recyclingCenter?: { id: string; name: string; address?: string | null } | null;
+  requester?: { id: string; firstName: string; lastName: string; phone?: string | null } | null;
   vehicle?: { id: string; licensePlate: string; vehicleType: string } | null;
 }
 
 export interface RecyclerWasteRecord {
   id: string;
   wasteType: string;
-  weight: number | null;
-  volume: number | null;
-  recyclableWeight: number | null;
-  recyclingRate: number | null;
-  processingStage: string;
-  rcGrade: string;
-  certificateUrl: string | null;
-  processedDate: string | null;
-  apusStatus: string;
-  apusSubmissionId: string | null;
-  apusNote: string | null;
-  apusSubmittedAt: string | null;
+  weight?: number | null;
+  volume?: number | null;
+  weightKg?: number | null;
+  recyclableWeight?: number | null;
+  recyclingRate?: number | null;
+  processingStage?: string | null;
+  rcGrade?: string | null;
+  certificateUrl?: string | null;
+  processedDate?: string | null;
+  apusStatus?: string | null;
+  apusSubmissionId?: string | null;
+  apusNote?: string | null;
+  apusSubmittedAt?: string | null;
+  weighbridgeTicketRef?: string | null;
+  producedMaterialId?: string | null;
+  processingStatus?: string | null;
   createdAt: string;
   recyclingCenter?: { id: string; name: string } | null;
   containerOrder?: { id: string; order: { id: string; createdAt: string } } | null;
@@ -90,4 +94,42 @@ export async function getRecyclerWasteRecords(token: string): Promise<RecyclerWa
   return apiFetch<RecyclerWasteRecord[]>('/recycling-centers/waste-records/mine', {
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+// ─── Buyback quote ─────────────────────────────────────────────────────────
+
+export interface BuybackQuoteResult {
+  centerId: string;
+  name: string;
+  address: string;
+  city: string;
+  licensed: boolean;
+  certifications: string[];
+  distanceKm: number | null;
+  buybackPricePerTonne: number;
+  totalPayoutEur: number;
+  centerNotes: string | null;
+}
+
+export interface BuybackQuoteResponse {
+  data: BuybackQuoteResult[];
+  weightKg: number;
+  wasteType: string;
+}
+
+/**
+ * GET /recycling-centers/buyback-quote
+ * Returns recycling centers that offer a buyback price for the given waste type + weight.
+ * Sorted by highest payout. Public endpoint — no auth required.
+ */
+export async function getBuybackQuote(
+  wasteType: string,
+  weightKg: number,
+  lat?: number,
+  lng?: number,
+): Promise<BuybackQuoteResponse> {
+  const params = new URLSearchParams({ wasteType, weightKg: String(weightKg) });
+  if (lat != null) params.set('lat', String(lat));
+  if (lng != null) params.set('lng', String(lng));
+  return apiFetch<BuybackQuoteResponse>(`/recycling-centers/buyback-quote?${params}`);
 }

@@ -3,19 +3,13 @@ import { Container } from '@/components/marketing/layout/Container';
 import { RoleTabs } from '@/components/marketing/layout/RoleTabs';
 import { PriceEstimator } from '@/components/marketing/PriceEstimator';
 import { HeroAddressSearch } from '@/components/marketing/HeroAddressSearch';
+import { OrderServiceGrid } from '@/components/order/OrderServiceGrid';
 import {
   ArrowRight,
-  Truck,
-  Pickaxe,
   Check,
-  Building2,
   FileText,
   MapPin,
   Banknote,
-  Package,
-  Recycle,
-  Trash2,
-  FlameKindling,
   Leaf,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -84,137 +78,10 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* ── 2. SERVICES GRID (Moved Up) ── */}
-      <section className="w-full bg-neutral-50">
-        <Container className="py-24">
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
-            Pakalpojumi
-          </p>
-          <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mb-16 max-w-xl">
-            Viss, ko var pasūtīt
-            <br />
-            vienā platformā.
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* Materials */}
-            <Link
-              href="/order/materials"
-              className="group bg-white hover:bg-white border border-border rounded-3xl p-8 flex flex-col gap-5 transition-all shadow-sm hover:shadow-md"
-            >
-              <div className="p-3 bg-neutral-50 w-fit rounded-2xl border border-border">
-                <Pickaxe className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium tracking-tight mb-1.5">Būvmateriāli</h3>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Grants, smilts, šķembas, dolomīts no reģionālajiem karjeriem. Cenas redzamas
-                  uzreiz.
-                </p>
-              </div>
-              <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
-                Pasūtīt <ArrowRight className="w-4 h-4" />
-              </span>
-            </Link>
-
-            {/* Transport */}
-            <Link
-              href="/order/transport"
-              className="group bg-white hover:bg-white border border-border rounded-3xl p-8 flex flex-col gap-5 transition-all shadow-sm hover:shadow-md"
-            >
-              <div className="p-3 bg-neutral-50 w-fit rounded-2xl border border-border">
-                <Truck className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium tracking-tight mb-1.5">
-                  Transporta pakalpojumi
-                </h3>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Zemes darbi, mašīnu noma, kravas pārvadājumi pa visu Latviju. GPS izsekošana
-                  reāllaikā.
-                </p>
-              </div>
-              <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
-                Pasūtīt <ArrowRight className="w-4 h-4" />
-              </span>
-            </Link>
-
-            {/* Skip Hire */}
-            <Link
-              href="/order/skip-hire"
-              className="group bg-white hover:bg-white border border-border rounded-3xl p-8 flex flex-col gap-5 transition-all shadow-sm hover:shadow-md"
-            >
-              <div className="p-3 bg-neutral-50 w-fit rounded-2xl border border-border">
-                <Trash2 className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium tracking-tight mb-1.5">Konteineru noma</h3>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Skip, Big-Bag un konteinerus atkritumu savākšanai. Piegāde un savākšana iekļauta.
-                </p>
-              </div>
-              <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
-                Pasūtīt <ArrowRight className="w-4 h-4" />
-              </span>
-            </Link>
-
-            {/* Disposal */}
-            <Link
-              href="/order/disposal"
-              className="group bg-white hover:bg-white border border-border rounded-3xl p-8 flex flex-col gap-5 transition-all shadow-sm hover:shadow-md md:col-span-2 lg:col-span-2"
-            >
-              <div className="p-3 bg-neutral-50 w-fit rounded-2xl border border-border">
-                <Recycle className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium tracking-tight mb-1.5">Būvgružu izvešana</h3>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed mb-4">
-                  Rezervējiet nodošanu licencētā atkritumu pieņemšanas punktā. Izvešanas un
-                  nodošanas sertifikāts automātiski.
-                </p>
-                {/* Waste groups */}
-                <div className="flex flex-wrap gap-3">
-                  <div className="flex items-center gap-2 bg-neutral-50 border border-border rounded-full px-4 py-1.5 text-xs font-medium">
-                    <Package className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-                    Celtniecības atkritumi
-                    <span className="text-muted-foreground/60 hidden sm:inline">
-                      — betons, ķieģeļi, koks
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-neutral-50 border border-border rounded-full px-4 py-1.5 text-xs font-medium">
-                    <FlameKindling className="w-3.5 h-3.5 text-orange-500" strokeWidth={1.5} />
-                    Bīstami / Licencēti
-                  </div>
-                  <div className="flex items-center gap-2 bg-neutral-50 border border-border rounded-full px-4 py-1.5 text-xs font-medium">
-                    <Leaf className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} />
-                    Otrreizēji izejmateriāli
-                  </div>
-                </div>
-              </div>
-              <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
-                Rezervēt nodošanu <ArrowRight className="w-4 h-4" />
-              </span>
-            </Link>
-
-            {/* Toilet Cabin */}
-            <Link
-              href="/order/toilet-cabin"
-              className="group bg-white hover:bg-white border border-border rounded-3xl p-8 flex flex-col gap-5 transition-all shadow-sm hover:shadow-md"
-            >
-              <div className="p-3 bg-neutral-50 w-fit rounded-2xl border border-border">
-                <Building2 className="w-6 h-6 text-foreground" strokeWidth={1.5} />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium tracking-tight mb-1.5">Tualetes kabīnes</h3>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  Mobilās tualetes noma būvlaukumiem un pasākumiem. Piegāde un iekļauta apkalpošana.
-                </p>
-              </div>
-              <span className="text-sm font-semibold flex items-center gap-1.5 mt-auto group-hover:gap-2.5 transition-all">
-                Pasūtīt <ArrowRight className="w-4 h-4" />
-              </span>
-            </Link>
-          </div>
+      {/* ── 2. SERVICES GRID ── */}
+      <section className="w-full bg-white">
+        <Container className="py-24 max-w-7xl mx-auto">
+          <OrderServiceGrid />
         </Container>
       </section>
 

@@ -228,7 +228,7 @@ export function SkipHireWizard({ mode }: Props) {
   ]);
 
   // ── Map ───────────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);

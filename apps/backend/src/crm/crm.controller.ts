@@ -18,7 +18,11 @@ import { ForbiddenException } from '@nestjs/common';
 import { CrmService } from './crm.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
-import { CreateNoteDto, CreateTaskDto, UpdateTaskDto } from './dto/note-task.dto';
+import {
+  CreateNoteDto,
+  CreateTaskDto,
+  UpdateTaskDto,
+} from './dto/note-task.dto';
 
 function assertAdmin(user: RequestingUser) {
   if (user.userType !== 'ADMIN') throw new ForbiddenException();
@@ -58,10 +62,7 @@ export class CrmController {
 
   @Post('leads')
   @HttpCode(201)
-  createLead(
-    @CurrentUser() user: RequestingUser,
-    @Body() dto: CreateLeadDto,
-  ) {
+  createLead(@CurrentUser() user: RequestingUser, @Body() dto: CreateLeadDto) {
     assertAdmin(user);
     return this.crmService.createLead(dto, user.id);
   }

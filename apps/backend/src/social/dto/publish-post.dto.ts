@@ -8,7 +8,12 @@ import {
 
 export type SocialPlatform = 'META' | 'LINKEDIN' | 'GOOGLE' | 'TIKTOK';
 
-const VALID_PLATFORMS: SocialPlatform[] = ['META', 'LINKEDIN', 'GOOGLE', 'TIKTOK'];
+const VALID_PLATFORMS: SocialPlatform[] = [
+  'META',
+  'LINKEDIN',
+  'GOOGLE',
+  'TIKTOK',
+];
 
 export class PublishSocialPostDto {
   @IsString()

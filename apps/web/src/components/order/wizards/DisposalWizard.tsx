@@ -207,7 +207,7 @@ export function DisposalWizard({ mode }: Props) {
   }, [wasteType, weightT, address, city, date, timeWindow, hasTruckAccess, notes, step, refNumber]);
 
   // ── Map ───────────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);

@@ -35,7 +35,9 @@ export class JumisService {
 
   async getSettings() {
     const rows = await this.prisma.platformSetting.findMany({
-      where: { key: { in: ['jumis.username', 'jumis.database', 'jumis.enabled'] } },
+      where: {
+        key: { in: ['jumis.username', 'jumis.database', 'jumis.enabled'] },
+      },
     });
 
     const map: Record<string, string> = {};
@@ -111,7 +113,11 @@ export class JumisService {
     }
 
     if (pushed === 0) {
-      return { ok: true, pushed: 0, message: 'Nav jaunu ierakstu sinhronizācijai' };
+      return {
+        ok: true,
+        pushed: 0,
+        message: 'Nav jaunu ierakstu sinhronizācijai',
+      };
     }
 
     let responseData: unknown;
@@ -144,10 +150,16 @@ export class JumisService {
     });
 
     if (!success) {
-      throw new BadRequestException(`Jumis sinhronizācija neizdevās: ${errorMessage}`);
+      throw new BadRequestException(
+        `Jumis sinhronizācija neizdevās: ${errorMessage}`,
+      );
     }
 
-    return { ok: true, pushed, message: `${pushed} ieraksti nosūtīti uz Jumis` };
+    return {
+      ok: true,
+      pushed,
+      message: `${pushed} ieraksti nosūtīti uz Jumis`,
+    };
   }
 
   async getSyncLog() {
@@ -173,7 +185,14 @@ export class JumisService {
   private async loadCredentials() {
     const rows = await this.prisma.platformSetting.findMany({
       where: {
-        key: { in: ['jumis.username', 'jumis.password', 'jumis.database', 'jumis.enabled'] },
+        key: {
+          in: [
+            'jumis.username',
+            'jumis.password',
+            'jumis.database',
+            'jumis.enabled',
+          ],
+        },
       },
     });
 
@@ -182,7 +201,11 @@ export class JumisService {
       map[row.key] = row.value;
     }
 
-    if (!map['jumis.username'] || !map['jumis.password'] || !map['jumis.database']) {
+    if (
+      !map['jumis.username'] ||
+      !map['jumis.password'] ||
+      !map['jumis.database']
+    ) {
       throw new BadRequestException(
         'Jumis savienojums nav konfigurēts. Aizpildiet iestatījumus.',
       );
@@ -221,7 +244,9 @@ export class JumisService {
     });
 
     if (!response.ok) {
-      throw new Error(`Jumis API atbildēja ar kļūdu: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Jumis API atbildēja ar kļūdu: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response.json();
@@ -230,9 +255,7 @@ export class JumisService {
   /** Load companies from B3Hub for partner sync */
   private async loadPartners(since?: string) {
     return this.prisma.company.findMany({
-      where: since
-        ? { updatedAt: { gte: new Date(since) } }
-        : {},
+      where: since ? { updatedAt: { gte: new Date(since) } } : {},
       select: {
         id: true,
         legalName: true,
@@ -252,9 +275,7 @@ export class JumisService {
   /** Load invoices from B3Hub for financial document sync */
   private async loadInvoices(since?: string) {
     return this.prisma.invoice.findMany({
-      where: since
-        ? { createdAt: { gte: new Date(since) } }
-        : {},
+      where: since ? { createdAt: { gte: new Date(since) } } : {},
       include: {
         buyerCompany: {
           select: {

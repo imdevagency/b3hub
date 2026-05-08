@@ -309,7 +309,7 @@ export default function EarningsPage() {
       .catch(() => {
         /* ignore */
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [token, isCarrier, isDispatcher]);
 
   useEffect(() => {

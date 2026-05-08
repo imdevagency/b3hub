@@ -92,7 +92,14 @@ export class ChatService {
           driverId: true,
           requestedById: true,
           driver: { select: { id: true, firstName: true, lastName: true } },
-          order: { select: { createdById: true, createdBy: { select: { id: true, firstName: true, lastName: true } } } },
+          order: {
+            select: {
+              createdById: true,
+              createdBy: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+            },
+          },
           chatMessages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
@@ -138,8 +145,8 @@ export class ChatService {
     const jobRooms = jobs.map((j) => {
       const iAmDriver = j.driverId === userId;
       const other = iAmDriver
-        ? j.order?.createdBy ?? null
-        : j.driver ?? null;
+        ? (j.order?.createdBy ?? null)
+        : (j.driver ?? null);
       const otherParticipantId = other?.id ?? null;
       const otherParticipantName = other
         ? `${other.firstName} ${other.lastName}`.trim()
@@ -308,8 +315,17 @@ export class ChatService {
   ) {
     if (room.transportJobId) {
       await this.prisma.chatLastRead.upsert({
-        where: { userId_transportJobId: { userId, transportJobId: room.transportJobId } },
-        create: { userId, transportJobId: room.transportJobId, lastReadAt: new Date() },
+        where: {
+          userId_transportJobId: {
+            userId,
+            transportJobId: room.transportJobId,
+          },
+        },
+        create: {
+          userId,
+          transportJobId: room.transportJobId,
+          lastReadAt: new Date(),
+        },
         update: { lastReadAt: new Date() },
       });
     } else if (room.orderId) {
@@ -345,14 +361,17 @@ export class ChatService {
 
     // For each room, count messages from others after lastReadAt
     const checks = rooms.map(async (room) => {
-      const roomKey = 'jobId' in room ? room.jobId : ('orderId' in room ? room.orderId : null);
+      const roomKey =
+        'jobId' in room ? room.jobId : 'orderId' in room ? room.orderId : null;
       if (!roomKey) return 0;
 
       const lastReadAt = lastReadMap.get(roomKey) ?? null;
 
       const count = await this.prisma.chatMessage.count({
         where: {
-          ...('jobId' in room ? { transportJobId: room.jobId } : { orderId: (room as any).orderId }),
+          ...('jobId' in room
+            ? { transportJobId: room.jobId }
+            : { orderId: (room as any).orderId }),
           senderId: { not: userId },
           ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
         },

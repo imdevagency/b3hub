@@ -7,7 +7,11 @@ import { BuContext, LeadStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
-import { CreateNoteDto, CreateTaskDto, UpdateTaskDto } from './dto/note-task.dto';
+import {
+  CreateNoteDto,
+  CreateTaskDto,
+  UpdateTaskDto,
+} from './dto/note-task.dto';
 
 @Injectable()
 export class CrmService {
@@ -89,10 +93,18 @@ export class CrmService {
     });
   }
 
-  async deleteNote(leadId: string, noteId: string, requesterId: string, isAdmin: boolean) {
-    const note = await this.prisma.crmNote.findUnique({ where: { id: noteId } });
+  async deleteNote(
+    leadId: string,
+    noteId: string,
+    requesterId: string,
+    isAdmin: boolean,
+  ) {
+    const note = await this.prisma.crmNote.findUnique({
+      where: { id: noteId },
+    });
     if (!note || note.leadId !== leadId) throw new NotFoundException();
-    if (!isAdmin && note.authorId !== requesterId) throw new ForbiddenException();
+    if (!isAdmin && note.authorId !== requesterId)
+      throw new ForbiddenException();
     await this.prisma.crmNote.delete({ where: { id: noteId } });
   }
 
@@ -111,20 +123,29 @@ export class CrmService {
   }
 
   async updateTask(leadId: string, taskId: string, dto: UpdateTaskDto) {
-    const task = await this.prisma.crmTask.findUnique({ where: { id: taskId } });
+    const task = await this.prisma.crmTask.findUnique({
+      where: { id: taskId },
+    });
     if (!task || task.leadId !== leadId) throw new NotFoundException();
     return this.prisma.crmTask.update({
       where: { id: taskId },
       data: {
         ...dto,
         dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
-        doneAt: dto.done === true ? new Date() : dto.done === false ? null : undefined,
+        doneAt:
+          dto.done === true
+            ? new Date()
+            : dto.done === false
+              ? null
+              : undefined,
       },
     });
   }
 
   async deleteTask(leadId: string, taskId: string) {
-    const task = await this.prisma.crmTask.findUnique({ where: { id: taskId } });
+    const task = await this.prisma.crmTask.findUnique({
+      where: { id: taskId },
+    });
     if (!task || task.leadId !== leadId) throw new NotFoundException();
     await this.prisma.crmTask.delete({ where: { id: taskId } });
   }

@@ -537,8 +537,8 @@ function LeadSheet({ leadId, token, onClose, onUpdated }: LeadSheetProps) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function CrmPage() {
-  const { session } = useAuth();
-  const token = session?.access_token ?? '';
+  const { token: authToken } = useAuth();
+  const token = authToken ?? '';
 
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [pipeline, setPipeline] = useState<PipelineItem[]>([]);

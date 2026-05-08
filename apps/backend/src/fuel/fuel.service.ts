@@ -6,17 +6,17 @@ import { PrismaService } from '../prisma/prisma.service';
 const BASELINE_DIESEL_LV = 1.45;
 
 /** Fraction of transport cost attributable to fuel (used for multiplier) */
-const FUEL_COST_SHARE = 0.30;
+const FUEL_COST_SHARE = 0.3;
 
 /** Assumed fuel consumption for a loaded dump truck (L/100 km) */
 export const TRUCK_L_PER_100KM = 35;
 
 export interface FuelRates {
-  diesel: number;           // EUR per litre, current Latvia retail
-  fuelMultiplier: number;   // factor to apply to transport estimates (1.0 = no change)
-  truckLPer100km: number;   // published assumption for UI transparency
-  source: string;           // "eurostat" | "manual" | "seed"
-  updatedAt: string;        // ISO-8601 date of the last reading
+  diesel: number; // EUR per litre, current Latvia retail
+  fuelMultiplier: number; // factor to apply to transport estimates (1.0 = no change)
+  truckLPer100km: number; // published assumption for UI transparency
+  source: string; // "eurostat" | "manual" | "seed"
+  updatedAt: string; // ISO-8601 date of the last reading
 }
 
 @Injectable()
@@ -68,7 +68,9 @@ export class FuelService {
         this.logger.log(`Stored Latvia diesel price: €${price}/L`);
       }
     } catch (err) {
-      this.logger.warn(`Fuel price fetch failed, keeping last value. Error: ${String(err)}`);
+      this.logger.warn(
+        `Fuel price fetch failed, keeping last value. Error: ${String(err)}`,
+      );
     }
   }
 
@@ -108,17 +110,24 @@ export class FuelService {
 
     // Eurostat reports in EUR per litre — sanity-check range (€0.80 – €3.00)
     if (first < 0.8 || first > 3.0) {
-      this.logger.warn(`Eurostat returned unexpected value: ${first} — ignoring`);
+      this.logger.warn(
+        `Eurostat returned unexpected value: ${first} — ignoring`,
+      );
       return null;
     }
 
     return Math.round(first * 1000) / 1000; // 3 decimal places
   }
 
-  private toRates(record: { pricePerLitre: number; source: string; date: Date }): FuelRates {
+  private toRates(record: {
+    pricePerLitre: number;
+    source: string;
+    date: Date;
+  }): FuelRates {
     const diesel = record.pricePerLitre;
     const multiplier =
-      1 + ((diesel - BASELINE_DIESEL_LV) / BASELINE_DIESEL_LV) * FUEL_COST_SHARE;
+      1 +
+      ((diesel - BASELINE_DIESEL_LV) / BASELINE_DIESEL_LV) * FUEL_COST_SHARE;
 
     return {
       diesel,

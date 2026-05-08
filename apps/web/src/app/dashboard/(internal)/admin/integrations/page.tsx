@@ -21,6 +21,8 @@ import {
   AlertCircle,
   ArrowRight,
   Building2,
+  HardHat,
+  Receipt,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -205,8 +207,8 @@ function StatusBadge({ status, planned }: { status?: IntegrationStatus; planned?
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function IntegrationsHubPage() {
-  const { session, token } = useAuth();
-  const accessToken = session?.access_token ?? token ?? '';
+  const { token } = useAuth();
+  const accessToken = token ?? '';
 
   const [statuses, setStatuses] = useState<Record<string, IntegrationStatus>>({});
   const [companies, setCompanies] = useState<AdminCompany[]>([]);

@@ -26,11 +26,15 @@ export async function withCronLock(
 ): Promise<void> {
   await (prisma as any).$transaction(
     async (tx: PrismaService) => {
-      const [{ acquired }] = await (tx as any).$queryRaw<[{ acquired: boolean }]>`
+      const [{ acquired }] = await (tx as any).$queryRaw<
+        [{ acquired: boolean }]
+      >`
         SELECT pg_try_advisory_xact_lock(hashtext(${lockName})::bigint) AS acquired
       `;
       if (!acquired) {
-        logger.warn(`Cron "${lockName}" skipped — lock held by another instance`);
+        logger.warn(
+          `Cron "${lockName}" skipped — lock held by another instance`,
+        );
         return;
       }
       // Lock is held for the lifetime of this transaction — released automatically on commit/rollback.

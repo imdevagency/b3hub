@@ -63,7 +63,7 @@ export interface LursoftRiskCheck {
 // ─── Admin: settings ────────────────────────────────────────────────────────
 
 export async function getLursoftSettings(token: string): Promise<LursoftSettings> {
-  const data = await apiFetch<{ data: LursoftSettings }>('/lursoft/settings', { token });
+  const data = await apiFetch<{ data: LursoftSettings }>('/lursoft/settings', { headers: { Authorization: `Bearer ${token}` } });
   return data.data;
 }
 
@@ -74,14 +74,14 @@ export async function updateLursoftSettings(
   return apiFetch<{ ok: boolean }>('/lursoft/settings', {
     method: 'PUT',
     body: JSON.stringify(dto),
-    token,
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
 export async function lursoftTestConnection(token: string): Promise<{ ok: boolean; message: string }> {
   return apiFetch<{ ok: boolean; message: string }>('/lursoft/test-connection', {
     method: 'POST',
-    token,
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -93,13 +93,13 @@ export async function lursoftSearchCompanies(
 ): Promise<LursoftCompany[]> {
   const data = await apiFetch<{ data: LursoftCompany[] }>(
     `/lursoft/companies?q=${encodeURIComponent(q)}`,
-    { token },
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return data.data ?? [];
 }
 
 export async function lursoftClearCache(token: string): Promise<void> {
-  await apiFetch<{ ok: boolean }>('/lursoft/cache/clear', { token });
+  await apiFetch<{ ok: boolean }>('/lursoft/cache/clear', { headers: { Authorization: `Bearer ${token}` } });
 }
 
 // ─── Platform: company by reg.nr (registration auto-fill) ──────────────────
@@ -110,7 +110,7 @@ export async function lursoftGetCompany(
 ): Promise<LursoftCompany | null> {
   const data = await apiFetch<{ data: LursoftCompany | null }>(
     `/lursoft/company/${encodeURIComponent(regNr)}`,
-    token ? { token } : {},
+    token ? { headers: { Authorization: `Bearer ${token}` } } : {},
   );
   return data.data ?? null;
 }
@@ -123,7 +123,7 @@ export async function lursoftRiskCheck(
 ): Promise<LursoftRiskCheck | null> {
   const data = await apiFetch<{ data: LursoftRiskCheck | null }>(
     `/lursoft/risk/${encodeURIComponent(regNr)}`,
-    { token },
+    { headers: { Authorization: `Bearer ${token}` } },
   );
   return data.data ?? null;
 }

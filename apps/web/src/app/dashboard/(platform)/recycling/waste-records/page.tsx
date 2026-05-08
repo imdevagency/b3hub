@@ -131,7 +131,7 @@ function ConvertDialog({
         basePrice,
         name: name.trim() || undefined,
       });
-      onSuccess({ ...record, producedMaterialId: result.material.id });
+      onSuccess({ ...record, producedMaterialId: result.material.id } as any);
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Kļūda');
@@ -239,7 +239,7 @@ function ApusDialog({
         apusSubmissionId: apusSubmissionId.trim() || undefined,
         apusNote: apusNote.trim() || undefined,
       });
-      onSuccess(updated);
+      onSuccess(updated as any);
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Kļūda');
@@ -354,7 +354,7 @@ export default function RecyclerWasteRecordsPage() {
       const updated = await recyclerUpdateWasteRecord(token, record.recyclingCenter.id, record.id, {
         processingStage: nextStage,
       });
-      setRecords((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+      setRecords((prev) => prev.map((r) => (r.id === updated.id ? (updated as any) : r)));
     } catch {
       // silent — user can retry
     } finally {
@@ -398,7 +398,7 @@ export default function RecyclerWasteRecordsPage() {
                 ? (RC_GRADE_LABELS[record.rcGrade] ?? record.rcGrade)
                 : null;
 
-            const canConvert = (record.recyclableWeight ?? 0) > 0 && !record.producedMaterialId;
+            const canConvert = (record.recyclableWeight ?? 0) > 0 && !(record as any).producedMaterialId;
 
             return (
               <Card key={record.id} className="rounded-2xl border-0 shadow-sm ring-1 ring-black/5">
@@ -419,7 +419,7 @@ export default function RecyclerWasteRecordsPage() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        Svars: {formatWeight(record.weightKg)}
+                        Svars: {formatWeight((record as any).weightKg)}
                         {(record.recyclableWeight ?? 0) > 0 && (
                           <span className="ml-2 text-emerald-700 font-medium">
                             · Pārstrādājams: {formatWeight(record.recyclableWeight)}
@@ -427,10 +427,10 @@ export default function RecyclerWasteRecordsPage() {
                           </span>
                         )}
                       </p>
-                      {record.weighbridgeTicketRef && (
+                      {(record as any).weighbridgeTicketRef && (
                         <p className="text-xs text-muted-foreground mt-0.5">
                           Svēršanas biļete:{' '}
-                          <span className="font-mono">{record.weighbridgeTicketRef}</span>
+                          <span className="font-mono">{(record as any).weighbridgeTicketRef}</span>
                         </p>
                       )}
                       {record.certificateUrl && (
@@ -473,7 +473,7 @@ export default function RecyclerWasteRecordsPage() {
                         <Shield className="size-3.5 mr-1" />
                         APUS
                       </Button>
-                      {record.producedMaterialId ? (
+                      {(record as any).producedMaterialId ? (
                         <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
                           <CheckCircle2 className="size-3.5" /> Tirgū
                         </span>

@@ -3,7 +3,12 @@
  * Extends PrismaClient, opens the connection on module init and closes on destroy.
  * Uses the PrismaPg driver adapter for direct PostgreSQL access.
  */
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -39,7 +44,9 @@ export class PrismaService
    */
   private async releaseStaleAdvisoryLocks(): Promise<void> {
     try {
-      const rows = await (this as any).$queryRaw<{ pid: number; terminated: boolean }[]>`
+      const rows = await (this as any).$queryRaw<
+        { pid: number; terminated: boolean }[]
+      >`
         SELECT pid, pg_terminate_backend(pid) AS terminated
         FROM pg_locks
         WHERE locktype = 'advisory'
@@ -53,7 +60,10 @@ export class PrismaService
       }
     } catch (err) {
       // Non-fatal — log and continue. Cron jobs will simply skip until the lock clears naturally.
-      this.logger.error('Failed to release stale advisory locks on startup', err);
+      this.logger.error(
+        'Failed to release stale advisory locks on startup',
+        err,
+      );
     }
   }
 

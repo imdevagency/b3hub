@@ -260,6 +260,10 @@ export class SkipHireController {
     @Body() dto: ExtendSkipHireDto,
     @Request() req: Express.Request & { user: RequestingUser },
   ) {
-    return this.skipHireService.extendHire(id, req.user.userId, dto.additionalDays);
+    return this.skipHireService.extendHire(
+      id,
+      req.user.userId,
+      dto.additionalDays,
+    );
   }
 }

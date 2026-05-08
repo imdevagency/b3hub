@@ -153,11 +153,7 @@ describe('SkipHireService', () => {
   describe('getQuotes', () => {
     it('returns empty array when no carrier pricing exists', async () => {
       (prisma.carrierPricing.findMany as jest.Mock<any>).mockResolvedValue([]);
-      const result = await service.getQuotes(
-        'MIDI',
-        'Riga',
-        '2026-06-01',
-      );
+      const result = await service.getQuotes('MIDI', 'Riga', '2026-06-01');
       expect(result).toEqual([]);
     });
 
@@ -179,11 +175,7 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(
-        'MIDI',
-        'Riga',
-        '2026-06-01',
-      );
+      const result = await service.getQuotes('MIDI', 'Riga', '2026-06-01');
       expect(result).toHaveLength(0);
     });
 
@@ -205,11 +197,7 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(
-        'MIDI',
-        'Riga',
-        '2026-06-01',
-      );
+      const result = await service.getQuotes('MIDI', 'Riga', '2026-06-01');
       expect(result).toHaveLength(0);
     });
 
@@ -231,11 +219,7 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(
-        'MIDI',
-        'Riga',
-        '2026-06-01',
-      );
+      const result = await service.getQuotes('MIDI', 'Riga', '2026-06-01');
       expect(result).toHaveLength(0);
     });
 
@@ -271,11 +255,7 @@ describe('SkipHireService', () => {
         },
       ]);
 
-      const result = await service.getQuotes(
-        'MIDI',
-        'Riga',
-        '2026-06-01',
-      );
+      const result = await service.getQuotes('MIDI', 'Riga', '2026-06-01');
       expect(result).toHaveLength(2);
       expect(result[0].price).toBe(119);
       expect(result[1].price).toBe(149);

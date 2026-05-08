@@ -4,6 +4,7 @@
  * Construction project management — group orders, track P&L against contract value.
  */
 import { apiFetch } from './common';
+import type { WasteType } from '@b3hub/shared';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -240,11 +241,6 @@ export function removeProjectSite(
 }
 
 // ─── Waste declarations ─────────────────────────────────────────────────────
-
-export type WasteType =
-  | 'CONCRETE' | 'BRICK' | 'WOOD' | 'METAL' | 'PLASTIC'
-  | 'SOIL' | 'MIXED' | 'HAZARDOUS' | 'ASPHALT' | 'GREEN_WASTE'
-  | 'WEEE' | 'OIL_WASTE' | 'TIRES' | 'PACKAGING_WASTE';
 
 export interface ApiWasteDeclaration {
   id: string;

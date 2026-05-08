@@ -386,7 +386,13 @@ export class MaterialsService {
         );
       }
       // Strip internal lat/lng from the response payload
-      const { lat: _lat, lng: _lng, onTimePct, fulfillmentPct, ...supplierPublic } = m.supplier;
+      const {
+        lat: _lat,
+        lng: _lng,
+        onTimePct,
+        fulfillmentPct,
+        ...supplierPublic
+      } = m.supplier;
       // Apply volume price tier if the material has any
       const effectivePrice = this.resolvePrice(
         m.basePrice,

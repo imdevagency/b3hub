@@ -22,9 +22,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
-import { PublishSocialPostDto, type SocialPlatform } from './dto/publish-post.dto';
+import {
+  PublishSocialPostDto,
+  type SocialPlatform,
+} from './dto/publish-post.dto';
 
-const VALID_PLATFORMS: SocialPlatform[] = ['META', 'LINKEDIN', 'GOOGLE', 'TIKTOK'];
+const VALID_PLATFORMS: SocialPlatform[] = [
+  'META',
+  'LINKEDIN',
+  'GOOGLE',
+  'TIKTOK',
+];
 
 @Controller('social')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -70,7 +78,11 @@ export class SocialController {
     @Query('state') state: string,
   ) {
     const p = platform.toUpperCase() as SocialPlatform;
-    const redirectPath = this.socialService.handleOAuthCallback(p, code ?? '', state ?? '');
+    const redirectPath = this.socialService.handleOAuthCallback(
+      p,
+      code ?? '',
+      state ?? '',
+    );
     return { url: redirectPath };
   }
 

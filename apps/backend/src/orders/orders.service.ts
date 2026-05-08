@@ -857,7 +857,11 @@ export class OrdersService {
     };
   }
 
-  private buildOrderWhere(currentUser: RequestingUser, status?: OrderStatus, sellerView: boolean = false) {
+  private buildOrderWhere(
+    currentUser: RequestingUser,
+    status?: OrderStatus,
+    sellerView: boolean = false,
+  ) {
     const statusFilter = status ? { status } : {};
 
     // Admins see everything
@@ -1116,7 +1120,9 @@ export class OrdersService {
       currentUser.userType !== 'ADMIN' &&
       order.createdById !== currentUser.userId
     ) {
-      throw new ForbiddenException('Only the buyer who placed the order can amend it');
+      throw new ForbiddenException(
+        'Only the buyer who placed the order can amend it',
+      );
     }
 
     if (!['PENDING', 'CONFIRMED'].includes(order.status)) {
@@ -1156,7 +1162,10 @@ export class OrdersService {
    * If the order is already in the target status, returns silently (idempotent).
    * Throws BadRequestException for invalid transitions.
    */
-  async advanceOrderStatus(orderId: string, newStatus: OrderStatus): Promise<void> {
+  async advanceOrderStatus(
+    orderId: string,
+    newStatus: OrderStatus,
+  ): Promise<void> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       select: { status: true },
@@ -1210,10 +1219,14 @@ export class OrdersService {
       );
     }
 
-    const prevTs = (order.statusTimestamps as Record<string, string> | null) ?? {};
+    const prevTs =
+      (order.statusTimestamps as Record<string, string> | null) ?? {};
     const updated = await this.prisma.order.update({
       where: { id },
-      data: { status, statusTimestamps: { ...prevTs, [status]: new Date().toISOString() } },
+      data: {
+        status,
+        statusTimestamps: { ...prevTs, [status]: new Date().toISOString() },
+      },
     });
 
     // Auto-create an invoice on CONFIRMED (or DELIVERED as fallback), unless one already exists
@@ -1246,7 +1259,10 @@ export class OrdersService {
     }
 
     // Auto-generate a FieldPass when a PICKUP order is confirmed by the seller.
-    if (status === OrderStatus.CONFIRMED && order.fulfillmentType === 'PICKUP') {
+    if (
+      status === OrderStatus.CONFIRMED &&
+      order.fulfillmentType === 'PICKUP'
+    ) {
       this.b3Fields
         .autoCreatePickupPass(id, order.buyerId, order.createdById)
         .catch((err) =>
@@ -1542,7 +1558,11 @@ export class OrdersService {
           select: { material: { select: { supplierId: true } } },
         })
         .then(async (items) => {
-          const companyIds = [...new Set(items.map((i) => i.material?.supplierId).filter(Boolean))] as string[];
+          const companyIds = [
+            ...new Set(
+              items.map((i) => i.material?.supplierId).filter(Boolean),
+            ),
+          ] as string[];
           if (companyIds.length === 0) return;
           const users = await this.prisma.user.findMany({
             where: { companyId: { in: companyIds }, canSell: true },
@@ -1765,11 +1785,17 @@ export class OrdersService {
     }
 
     // Stamp the CANCELLED timestamp (non-fatal if it fails)
-    const sellerCancelPrevTs = (order.statusTimestamps as Record<string, string> | null) ?? {};
+    const sellerCancelPrevTs =
+      (order.statusTimestamps as Record<string, string> | null) ?? {};
     await this.prisma.order
       .update({
         where: { id },
-        data: { statusTimestamps: { ...sellerCancelPrevTs, CANCELLED: new Date().toISOString() } },
+        data: {
+          statusTimestamps: {
+            ...sellerCancelPrevTs,
+            CANCELLED: new Date().toISOString(),
+          },
+        },
       })
       .catch((err) =>
         this.logger.warn(
@@ -2019,11 +2045,17 @@ export class OrdersService {
     }
 
     // Stamp the CANCELLED timestamp (non-fatal if it fails)
-    const cancelPrevTs = (order.statusTimestamps as Record<string, string> | null) ?? {};
+    const cancelPrevTs =
+      (order.statusTimestamps as Record<string, string> | null) ?? {};
     await this.prisma.order
       .update({
         where: { id },
-        data: { statusTimestamps: { ...cancelPrevTs, CANCELLED: new Date().toISOString() } },
+        data: {
+          statusTimestamps: {
+            ...cancelPrevTs,
+            CANCELLED: new Date().toISOString(),
+          },
+        },
       })
       .catch((err) =>
         this.logger.warn(
@@ -2439,7 +2471,11 @@ export class OrdersService {
     // Auto-geocode supplier if lat/lng is missing — needed for tour mode and return-trip matching
     let supplierLat = supplier.lat;
     let supplierLng = supplier.lng;
-    if ((supplierLat == null || supplierLng == null) && supplier.street && supplier.city) {
+    if (
+      (supplierLat == null || supplierLng == null) &&
+      supplier.street &&
+      supplier.city
+    ) {
       try {
         const geocoded = await this.maps.forwardGeocode(
           `${supplier.street}, ${supplier.city}, Latvia`,
@@ -2565,10 +2601,25 @@ export class OrdersService {
   async createDisposalOrder(dto: CreateDisposalOrderDto, userId: string) {
     const TRUCK_LABELS: Record<
       string,
-      { label: string; capacity: number; volume: number; vehicleEnum: VehicleType }
+      {
+        label: string;
+        capacity: number;
+        volume: number;
+        vehicleEnum: VehicleType;
+      }
     > = {
-      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8, vehicleEnum: VehicleType.DUMP_TRUCK },
-      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12, vehicleEnum: VehicleType.DUMP_TRUCK },
+      TIPPER_SMALL: {
+        label: 'Pašizgāzējs 10t',
+        capacity: 10,
+        volume: 8,
+        vehicleEnum: VehicleType.DUMP_TRUCK,
+      },
+      TIPPER_LARGE: {
+        label: 'Pašizgāzējs 18t',
+        capacity: 18,
+        volume: 12,
+        vehicleEnum: VehicleType.DUMP_TRUCK,
+      },
       ARTICULATED_TIPPER: {
         label: 'Artikulētais pašizgāzējs 26t',
         capacity: 26,
@@ -2684,7 +2735,8 @@ export class OrdersService {
       },
     });
 
-    const isBuyback = dto.buybackPricePerTonne != null && dto.buybackPricePerTonne > 0;
+    const isBuyback =
+      dto.buybackPricePerTonne != null && dto.buybackPricePerTonne > 0;
     const buyerPayoutAmount = isBuyback
       ? Math.round(dto.buybackPricePerTonne! * dto.estimatedWeight * 100) / 100
       : undefined;
@@ -2702,19 +2754,19 @@ export class OrdersService {
     // Generate invoice + Stripe Payment Link for the quoted rate (fire-and-forget)
     // Buyback orders have €0 charge so skip invoice generation
     if (!isBuyback) {
-    this.invoices
-      .createForCallOff({
-        id: job.id,
-        jobNumber: job.jobNumber,
-        rate: dto.quotedRate ?? 0,
-        currency: 'EUR',
-        requestedById: userId,
-      })
-      .catch((err) =>
-        this.logger.error(
-          `Invoice creation failed for disposal job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
-        ),
-      );
+      this.invoices
+        .createForCallOff({
+          id: job.id,
+          jobNumber: job.jobNumber,
+          rate: dto.quotedRate ?? 0,
+          currency: 'EUR',
+          requestedById: userId,
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Invoice creation failed for disposal job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
     }
 
     // Notify all active drivers about the new job (fire-and-forget)
@@ -2733,18 +2785,43 @@ export class OrdersService {
   async createFreightOrder(dto: CreateFreightOrderDto, userId: string) {
     const VEHICLE_LABELS: Record<
       string,
-      { label: string; capacity: number; volume: number; vehicleEnum: VehicleType }
+      {
+        label: string;
+        capacity: number;
+        volume: number;
+        vehicleEnum: VehicleType;
+      }
     > = {
-      TIPPER_SMALL: { label: 'Pašizgāzējs 10t', capacity: 10, volume: 8, vehicleEnum: VehicleType.DUMP_TRUCK },
-      TIPPER_LARGE: { label: 'Pašizgāzējs 18t', capacity: 18, volume: 12, vehicleEnum: VehicleType.DUMP_TRUCK },
+      TIPPER_SMALL: {
+        label: 'Pašizgāzējs 10t',
+        capacity: 10,
+        volume: 8,
+        vehicleEnum: VehicleType.DUMP_TRUCK,
+      },
+      TIPPER_LARGE: {
+        label: 'Pašizgāzējs 18t',
+        capacity: 18,
+        volume: 12,
+        vehicleEnum: VehicleType.DUMP_TRUCK,
+      },
       ARTICULATED_TIPPER: {
         label: 'Artikulētais pašizgāzējs 26t',
         capacity: 26,
         volume: 22,
         vehicleEnum: VehicleType.SEMI_TRAILER,
       },
-      FLATBED: { label: 'Platforma 20t', capacity: 20, volume: 0, vehicleEnum: VehicleType.FLATBED_TRUCK },
-      BOX_TRUCK: { label: 'Kravas furgons 3.5t', capacity: 3.5, volume: 20, vehicleEnum: VehicleType.VAN },
+      FLATBED: {
+        label: 'Platforma 20t',
+        capacity: 20,
+        volume: 0,
+        vehicleEnum: VehicleType.FLATBED_TRUCK,
+      },
+      BOX_TRUCK: {
+        label: 'Kravas furgons 3.5t',
+        capacity: 3.5,
+        volume: 20,
+        vehicleEnum: VehicleType.VAN,
+      },
     };
 
     const vehicle =
@@ -2846,7 +2923,6 @@ export class OrdersService {
       { type: NotificationType.SYSTEM_ALERT, title, message },
     );
   }
-
 
   private generateOrderNumber(): string {
     const date = new Date();
@@ -3353,7 +3429,9 @@ export class OrdersService {
     dateTo?: string,
   ) {
     if (!currentUser.canSell || !currentUser.companyId) {
-      throw new ForbiddenException('Only approved sellers can access loading schedule');
+      throw new ForbiddenException(
+        'Only approved sellers can access loading schedule',
+      );
     }
     const from = dateFrom ? new Date(dateFrom) : new Date();
     from.setHours(0, 0, 0, 0);
@@ -3374,7 +3452,11 @@ export class OrdersService {
       include: {
         items: {
           where: { material: { supplierId: currentUser.companyId } },
-          include: { material: { select: { id: true, name: true, category: true, unit: true } } },
+          include: {
+            material: {
+              select: { id: true, name: true, category: true, unit: true },
+            },
+          },
         },
         transportJobs: {
           select: {
@@ -3386,8 +3468,17 @@ export class OrdersService {
             deliveryAddress: true,
             deliveryCity: true,
             cargoWeight: true,
-            driver: { select: { id: true, firstName: true, lastName: true, phone: true } },
-            vehicle: { select: { id: true, licensePlate: true, vehicleType: true } },
+            driver: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+              },
+            },
+            vehicle: {
+              select: { id: true, licensePlate: true, vehicleType: true },
+            },
           },
         },
         buyer: { select: { id: true, name: true, phone: true } },
@@ -3758,7 +3849,9 @@ export class OrdersService {
       currentUser.userType !== 'ADMIN' &&
       order.createdById !== currentUser.userId
     ) {
-      throw new ForbiddenException('Only the order creator can share this order');
+      throw new ForbiddenException(
+        'Only the order creator can share this order',
+      );
     }
 
     let token = order.trackingToken;

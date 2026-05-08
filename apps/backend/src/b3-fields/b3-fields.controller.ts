@@ -22,7 +22,10 @@ import { B3FieldsService } from './b3-fields.service';
 import { CreateB3FieldDto } from './dto/create-b3-field.dto';
 import { UpdateB3FieldDto } from './dto/update-b3-field.dto';
 import { CreatePickupSlotDto } from './dto/create-pickup-slot.dto';
-import { CreateInventoryItemDto, UpdateInventoryItemDto } from './dto/create-inventory-item.dto';
+import {
+  CreateInventoryItemDto,
+  UpdateInventoryItemDto,
+} from './dto/create-inventory-item.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
@@ -69,10 +72,7 @@ export class B3FieldsController {
   /** POST /b3-fields — admin: create a field */
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(
-    @Body() dto: CreateB3FieldDto,
-    @CurrentUser() user: RequestingUser,
-  ) {
+  create(@Body() dto: CreateB3FieldDto, @CurrentUser() user: RequestingUser) {
     if (user.userType !== 'ADMIN') throw new ForbiddenException();
     return this.service.create(dto);
   }

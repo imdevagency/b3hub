@@ -49,8 +49,11 @@ export class AdminService {
   } as const;
 
   async createUser(dto: CreateAdminUserDto, adminId: string) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (existing) throw new ConflictException('User with this email already exists');
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (existing)
+      throw new ConflictException('User with this email already exists');
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
     const isCompany = dto.isCompany ?? !!dto.company;
@@ -106,11 +109,20 @@ export class AdminService {
         where: { id: user.id },
         select: this.userSelect,
       });
-      this.logAdminAction(adminId, 'CREATE_USER', 'User', user.id, {}, dto).catch(() => {});
+      this.logAdminAction(
+        adminId,
+        'CREATE_USER',
+        'User',
+        user.id,
+        {},
+        dto,
+      ).catch(() => {});
       return full;
     }
 
-    this.logAdminAction(adminId, 'CREATE_USER', 'User', user.id, {}, dto).catch(() => {});
+    this.logAdminAction(adminId, 'CREATE_USER', 'User', user.id, {}, dto).catch(
+      () => {},
+    );
     return user;
   }
 
@@ -135,12 +147,24 @@ export class AdminService {
         ...this.userSelect,
         company: {
           select: {
-            id: true, name: true, legalName: true, companyType: true,
-            verified: true, payoutEnabled: true, commissionRate: true,
+            id: true,
+            name: true,
+            legalName: true,
+            companyType: true,
+            verified: true,
+            payoutEnabled: true,
+            commissionRate: true,
           },
         },
         ordersCreated: {
-          select: { id: true, orderNumber: true, status: true, total: true, currency: true, createdAt: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            total: true,
+            currency: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: 'desc' },
           take: 20,
         },
@@ -154,18 +178,44 @@ export class AdminService {
     const company = await this.prisma.company.findUnique({
       where: { id },
       select: {
-        id: true, name: true, legalName: true, companyType: true,
-        email: true, phone: true, city: true, country: true, street: true,
-        registrationNum: true, taxId: true,
-        verified: true, payoutEnabled: true, commissionRate: true,
+        id: true,
+        name: true,
+        legalName: true,
+        companyType: true,
+        email: true,
+        phone: true,
+        city: true,
+        country: true,
+        street: true,
+        registrationNum: true,
+        taxId: true,
+        verified: true,
+        payoutEnabled: true,
+        commissionRate: true,
         features: true,
         createdAt: true,
         users: {
-          select: { id: true, firstName: true, lastName: true, email: true, companyRole: true, status: true, canSell: true, canTransport: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            companyRole: true,
+            status: true,
+            canSell: true,
+            canTransport: true,
+          },
           orderBy: { createdAt: 'asc' },
         },
         orders: {
-          select: { id: true, orderNumber: true, status: true, total: true, currency: true, createdAt: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            total: true,
+            currency: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: 'desc' },
           take: 20,
         },
@@ -180,21 +230,40 @@ export class AdminService {
     const order = await this.prisma.order.findUnique({
       where: { id },
       select: {
-        id: true, orderNumber: true, orderType: true, status: true,
-        paymentStatus: true, total: true, currency: true,
-        deliveryAddress: true, deliveryCity: true, deliveryDate: true,
-        notes: true, createdAt: true, updatedAt: true,
+        id: true,
+        orderNumber: true,
+        orderType: true,
+        status: true,
+        paymentStatus: true,
+        total: true,
+        currency: true,
+        deliveryAddress: true,
+        deliveryCity: true,
+        deliveryDate: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
         buyer: { select: { id: true, name: true, email: true } },
         items: {
           select: {
-            id: true, quantity: true, unitPrice: true, total: true, unit: true,
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            total: true,
+            unit: true,
             material: { select: { id: true, name: true, category: true } },
           },
         },
         transportJobs: {
           select: {
-            id: true, jobNumber: true, status: true, jobType: true,
-            pickupDate: true, deliveryDate: true, rate: true, currency: true,
+            id: true,
+            jobNumber: true,
+            status: true,
+            jobType: true,
+            pickupDate: true,
+            deliveryDate: true,
+            rate: true,
+            currency: true,
             driver: { select: { id: true, firstName: true, lastName: true } },
             carrier: { select: { id: true, name: true } },
           },
@@ -209,18 +278,40 @@ export class AdminService {
     const job = await this.prisma.transportJob.findUnique({
       where: { id },
       select: {
-        id: true, jobNumber: true, jobType: true, status: true,
-        cargoType: true, cargoWeight: true, rate: true, pricePerTonne: true,
-        currency: true, pickupAddress: true, pickupCity: true,
-        deliveryAddress: true, deliveryCity: true,
-        pickupDate: true, deliveryDate: true, specialRequirements: true,
-        createdAt: true, updatedAt: true,
+        id: true,
+        jobNumber: true,
+        jobType: true,
+        status: true,
+        cargoType: true,
+        cargoWeight: true,
+        rate: true,
+        pricePerTonne: true,
+        currency: true,
+        pickupAddress: true,
+        pickupCity: true,
+        deliveryAddress: true,
+        deliveryCity: true,
+        pickupDate: true,
+        deliveryDate: true,
+        specialRequirements: true,
+        createdAt: true,
+        updatedAt: true,
         order: { select: { id: true, orderNumber: true, status: true } },
         carrier: { select: { id: true, name: true } },
-        driver: { select: { id: true, firstName: true, lastName: true, phone: true } },
-        vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+        driver: {
+          select: { id: true, firstName: true, lastName: true, phone: true },
+        },
+        vehicle: {
+          select: { id: true, make: true, model: true, licensePlate: true },
+        },
         exceptions: {
-          select: { id: true, type: true, status: true, notes: true, createdAt: true },
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            notes: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -258,7 +349,10 @@ export class AdminService {
 
     // Validate companyId if provided (non-null)
     if (data.companyId) {
-      const company = await this.prisma.company.findUnique({ where: { id: data.companyId }, select: { id: true } });
+      const company = await this.prisma.company.findUnique({
+        where: { id: data.companyId },
+        select: { id: true },
+      });
       if (!company) throw new NotFoundException('Company not found');
     }
 
@@ -280,7 +374,9 @@ export class AdminService {
           userType: data.userType,
         }),
         ...(data.companyId !== undefined && { companyId: data.companyId }),
-        ...(data.companyRole !== undefined && { companyRole: data.companyRole }),
+        ...(data.companyRole !== undefined && {
+          companyRole: data.companyRole,
+        }),
         // Invalidate in-flight JWTs when capabilities or role change.
         ...(capabilityChanged && { tokenVersion: { increment: 1 } }),
       },
@@ -429,7 +525,9 @@ export class AdminService {
     },
     adminId: string,
   ) {
-    this.logger.log(`Admin ${adminId} creating company ${data.name} (${data.companyType})`);
+    this.logger.log(
+      `Admin ${adminId} creating company ${data.name} (${data.companyType})`,
+    );
     const autoFeatures =
       data.companyType === 'RECYCLER' || data.companyType === 'HYBRID'
         ? ['RECYCLING_MANAGEMENT']
@@ -503,7 +601,8 @@ export class AdminService {
     let resolvedFeatures = features;
     if (companyType !== undefined) {
       const current: string[] = company.features ?? [];
-      const needsRecycling = companyType === 'RECYCLER' || companyType === 'HYBRID';
+      const needsRecycling =
+        companyType === 'RECYCLER' || companyType === 'HYBRID';
       const base = resolvedFeatures ?? current;
       if (needsRecycling && !base.includes('RECYCLING_MANAGEMENT')) {
         resolvedFeatures = [...base, 'RECYCLING_MANAGEMENT'];
@@ -518,8 +617,12 @@ export class AdminService {
       where: { id },
       data: {
         ...scalarData,
-        ...(companyType !== undefined ? { companyType: companyType as any } : {}),
-        ...(resolvedFeatures !== undefined ? { features: { set: resolvedFeatures as any[] } } : {}),
+        ...(companyType !== undefined
+          ? { companyType: companyType as any }
+          : {}),
+        ...(resolvedFeatures !== undefined
+          ? { features: { set: resolvedFeatures as any[] } }
+          : {}),
       },
       select: {
         id: true,
@@ -629,7 +732,9 @@ export class AdminService {
       // Order pipeline: counts per active status
       this.prisma.order.groupBy({
         by: ['status'],
-        where: { status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'DELIVERED'] } },
+        where: {
+          status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'DELIVERED'] },
+        },
         _count: { id: true },
       }),
       // Today's scheduled deliveries
@@ -710,7 +815,10 @@ export class AdminService {
 
     // Build order pipeline map
     const pipelineMap: Record<string, number> = {
-      PENDING: 0, CONFIRMED: 0, IN_PROGRESS: 0, DELIVERED: 0,
+      PENDING: 0,
+      CONFIRMED: 0,
+      IN_PROGRESS: 0,
+      DELIVERED: 0,
     };
     for (const row of pipelineCounts) {
       pipelineMap[row.status] = row._count.id;
@@ -731,10 +839,14 @@ export class AdminService {
     }));
 
     const pendingPayoutsCount =
-      (pendingSupplierPayouts._count.id ?? 0) + (pendingCarrierPayouts._count.id ?? 0);
-    const pendingPayoutsTotal = Math.round(
-      ((pendingSupplierPayouts._sum.amount ?? 0) + (pendingCarrierPayouts._sum.amount ?? 0)) * 100,
-    ) / 100;
+      (pendingSupplierPayouts._count.id ?? 0) +
+      (pendingCarrierPayouts._count.id ?? 0);
+    const pendingPayoutsTotal =
+      Math.round(
+        ((pendingSupplierPayouts._sum.amount ?? 0) +
+          (pendingCarrierPayouts._sum.amount ?? 0)) *
+          100,
+      ) / 100;
 
     return {
       totalUsers,
@@ -936,8 +1048,15 @@ export class AdminService {
     const material = await this.prisma.material.findUnique({
       where: { id },
       select: {
-        id: true, name: true, category: true, subCategory: true,
-        basePrice: true, unit: true, inStock: true, stockQty: true, featured: true,
+        id: true,
+        name: true,
+        category: true,
+        subCategory: true,
+        basePrice: true,
+        unit: true,
+        inStock: true,
+        stockQty: true,
+        featured: true,
       },
     });
     if (!material) throw new NotFoundException('Material not found');
@@ -955,9 +1074,16 @@ export class AdminService {
         ...(dto.featured !== undefined && { featured: dto.featured }),
       },
       select: {
-        id: true, name: true, category: true, subCategory: true,
-        basePrice: true, unit: true, inStock: true, stockQty: true,
-        active: true, featured: true,
+        id: true,
+        name: true,
+        category: true,
+        subCategory: true,
+        basePrice: true,
+        unit: true,
+        inStock: true,
+        stockQty: true,
+        active: true,
+        featured: true,
         supplier: { select: { id: true, name: true, verified: true } },
         _count: { select: { orderItems: true } },
       },
@@ -1195,7 +1321,9 @@ export class AdminService {
         select: { material: { select: { supplierId: true } } },
       }),
       this.prisma.orderItem.findMany({
-        where: { order: { createdAt: { gte: ninetyDaysAgo, lt: thirtyDaysAgo } } },
+        where: {
+          order: { createdAt: { gte: ninetyDaysAgo, lt: thirtyDaysAgo } },
+        },
         select: {
           material: { select: { supplierId: true } },
           order: { select: { createdAt: true } },
@@ -1203,12 +1331,15 @@ export class AdminService {
       }),
     ]);
 
-    const activeSupplierIds = new Set(recentOrderItems.map((oi) => oi.material.supplierId));
+    const activeSupplierIds = new Set(
+      recentOrderItems.map((oi) => oi.material.supplierId),
+    );
     const supplierLastOrderMap = new Map<string, Date>();
     for (const oi of historicOrderItems) {
       const sid = oi.material.supplierId;
       const curr = supplierLastOrderMap.get(sid);
-      if (!curr || oi.order.createdAt > curr) supplierLastOrderMap.set(sid, oi.order.createdAt);
+      if (!curr || oi.order.createdAt > curr)
+        supplierLastOrderMap.set(sid, oi.order.createdAt);
     }
     const dormantSupplierIds = [...supplierLastOrderMap.keys()].filter(
       (id) => !activeSupplierIds.has(id),
@@ -1239,7 +1370,9 @@ export class AdminService {
             : null,
         };
       })
-      .sort((a, b) => (b.daysSinceLastOrder ?? 0) - (a.daysSinceLastOrder ?? 0));
+      .sort(
+        (a, b) => (b.daysSinceLastOrder ?? 0) - (a.daysSinceLastOrder ?? 0),
+      );
 
     // ── 3. Dormant carriers ──────────────────────────────────────────────────
     const [recentJobs, historicJobs] = await Promise.all([
@@ -1266,7 +1399,8 @@ export class AdminService {
     for (const j of historicJobs) {
       if (!j.carrierId) continue;
       const curr = carrierLastJobMap.get(j.carrierId);
-      if (!curr || j.updatedAt > curr) carrierLastJobMap.set(j.carrierId, j.updatedAt);
+      if (!curr || j.updatedAt > curr)
+        carrierLastJobMap.set(j.carrierId, j.updatedAt);
     }
     const dormantCarrierIds = [...carrierLastJobMap.keys()].filter(
       (id) => !activeCarrierIds.has(id),
@@ -1306,7 +1440,8 @@ export class AdminService {
         status: r.status,
         createdAt: r.createdAt.toISOString(),
         buyerName:
-          `${r.buyer.firstName} ${r.buyer.lastName}`.trim() || (r.buyer.email ?? 'Nav zināms'),
+          `${r.buyer.firstName} ${r.buyer.lastName}`.trim() ||
+          (r.buyer.email ?? 'Nav zināms'),
       })),
       dormantSuppliers,
       dormantCarriers,
@@ -1460,7 +1595,12 @@ export class AdminService {
         status: status as never,
         statusUpdatedAt: new Date(),
       },
-      select: { id: true, jobNumber: true, status: true, statusUpdatedAt: true },
+      select: {
+        id: true,
+        jobNumber: true,
+        status: true,
+        statusUpdatedAt: true,
+      },
     });
 
     await this.logAdminAction(
@@ -1638,9 +1778,7 @@ export class AdminService {
     });
     if (!job) throw new NotFoundException('Transport job not found');
     if (['COMPLETED', 'CANCELLED'].includes(job.status))
-      throw new BadRequestException(
-        `Cannot reassign a ${job.status} job`,
-      );
+      throw new BadRequestException(`Cannot reassign a ${job.status} job`);
 
     const newDriver = await this.prisma.user.findUnique({
       where: { id: driverId },
@@ -1654,7 +1792,9 @@ export class AdminService {
     });
     if (!newDriver) throw new NotFoundException('Driver not found');
     if (!newDriver.canTransport)
-      throw new BadRequestException('User does not have canTransport capability');
+      throw new BadRequestException(
+        'User does not have canTransport capability',
+      );
 
     const updated = await this.prisma.transportJob.update({
       where: { id: jobId },
@@ -1774,9 +1914,10 @@ export class AdminService {
    */
   async getExceptions(page = 1, limit = 50, statusFilter?: string) {
     const skip = (page - 1) * limit;
-    const where = statusFilter && statusFilter !== 'ALL'
-      ? { status: statusFilter as any }
-      : undefined;
+    const where =
+      statusFilter && statusFilter !== 'ALL'
+        ? { status: statusFilter as any }
+        : undefined;
 
     const [data, total] = await Promise.all([
       this.prisma.transportJobException.findMany({
@@ -1924,7 +2065,9 @@ export class AdminService {
         include: {
           buyer: { select: { id: true, name: true } },
           supplier: { select: { id: true, name: true } },
-          positions: { select: { id: true, agreedQty: true, unitPrice: true, unit: true } },
+          positions: {
+            select: { id: true, agreedQty: true, unitPrice: true, unit: true },
+          },
           _count: { select: { callOffJobs: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -1945,7 +2088,8 @@ export class AdminService {
     adminId: string,
   ) {
     let where: Record<string, unknown> = {};
-    if (audience === 'BUYERS') where = { userType: 'BUYER', canSell: false, canTransport: false };
+    if (audience === 'BUYERS')
+      where = { userType: 'BUYER', canSell: false, canTransport: false };
     if (audience === 'SELLERS') where = { canSell: true };
     if (audience === 'CARRIERS') where = { canTransport: true };
 
@@ -1971,22 +2115,42 @@ export class AdminService {
     const tokens = pushRows.map((r) => r.pushToken).filter(Boolean) as string[];
     if (tokens.length > 0) {
       const chunks: string[][] = [];
-      for (let i = 0; i < tokens.length; i += 100) chunks.push(tokens.slice(i, i + 100));
+      for (let i = 0; i < tokens.length; i += 100)
+        chunks.push(tokens.slice(i, i + 100));
       for (const chunk of chunks) {
         await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(chunk.map((token) => ({ to: token, sound: 'default', title, body: message }))),
-        }).catch((err: Error) => this.logger.warn(`Broadcast push chunk error: ${err.message}`));
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(
+            chunk.map((token) => ({
+              to: token,
+              sound: 'default',
+              title,
+              body: message,
+            })),
+          ),
+        }).catch((err: Error) =>
+          this.logger.warn(`Broadcast push chunk error: ${err.message}`),
+        );
       }
     }
 
-    await this.logAdminAction(adminId, 'BROADCAST_NOTIFICATION', 'Notification', 'bulk', {}, {
-      title,
-      message,
-      audience,
-      recipientCount: users.length,
-    });
+    await this.logAdminAction(
+      adminId,
+      'BROADCAST_NOTIFICATION',
+      'Notification',
+      'bulk',
+      {},
+      {
+        title,
+        message,
+        audience,
+        recipientCount: users.length,
+      },
+    );
 
     return { sent: users.length, audience };
   }
@@ -2062,8 +2226,12 @@ export class AdminService {
         ...(data.labelLv !== undefined && { labelLv: data.labelLv }),
         ...(data.volumeM3 !== undefined && { volumeM3: data.volumeM3 }),
         ...(data.category !== undefined && { category: data.category as any }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.descriptionLv !== undefined && { descriptionLv: data.descriptionLv }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
+        ...(data.descriptionLv !== undefined && {
+          descriptionLv: data.descriptionLv,
+        }),
         ...(data.heightPct !== undefined && { heightPct: data.heightPct }),
         ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
         ...(data.currency !== undefined && { currency: data.currency }),
@@ -2115,7 +2283,12 @@ export class AdminService {
             select: { id: true, city: true, postcode: true, surcharge: true },
           },
           carrierPricing: {
-            select: { skipSize: true, price: true, currency: true, updatedAt: true },
+            select: {
+              skipSize: true,
+              price: true,
+              currency: true,
+              updatedAt: true,
+            },
           },
           availabilityBlocks: {
             where: { blockedDate: { gte: today, lt: tomorrow } },
@@ -2157,7 +2330,9 @@ export class AdminService {
       this.prisma.quoteRequest.findMany({
         where,
         include: {
-          buyer: { select: { id: true, firstName: true, lastName: true, email: true } },
+          buyer: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
           responses: {
             select: {
               id: true,
@@ -2228,7 +2403,8 @@ export class AdminService {
         state: body.state,
         postalCode: body.postalCode,
         coordinates: body.coordinates ?? undefined,
-        acceptedWasteTypes: body.acceptedWasteTypes as import('@prisma/client').WasteType[],
+        acceptedWasteTypes:
+          body.acceptedWasteTypes as import('@prisma/client').WasteType[],
         capacity: body.capacity,
         certifications: body.certifications ?? [],
         operatingHours: body.operatingHours,
@@ -2442,7 +2618,13 @@ export class AdminService {
       b3Field: pickupField ?? null,
     }));
 
-    return { data: normalised, total, page, limit, pages: Math.ceil(total / limit) };
+    return {
+      data: normalised,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   /**
@@ -2453,9 +2635,8 @@ export class AdminService {
   async adminGetRecyclingWasteRecords(page = 1, limit = 50, centerId?: string) {
     const skip = (page - 1) * limit;
 
-    const where: import('@prisma/client').Prisma.WasteRecordWhereInput = centerId
-      ? { recyclingCenterId: centerId }
-      : {};
+    const where: import('@prisma/client').Prisma.WasteRecordWhereInput =
+      centerId ? { recyclingCenterId: centerId } : {};
 
     const [data, total] = await Promise.all([
       this.prisma.wasteRecord.findMany({
@@ -2465,7 +2646,13 @@ export class AdminService {
           containerOrder: {
             select: {
               id: true,
-              order: { select: { id: true, orderNumber: true, buyer: { select: { id: true, name: true } } } },
+              order: {
+                select: {
+                  id: true,
+                  orderNumber: true,
+                  buyer: { select: { id: true, name: true } },
+                },
+              },
             },
           },
         },
@@ -2493,12 +2680,15 @@ export class AdminService {
       select: { id: true, orderType: true, status: true },
     });
     if (!order) throw new NotFoundException('Order not found');
-    if (order.orderType !== 'DISPOSAL') throw new NotFoundException('Order is not a disposal job');
+    if (order.orderType !== 'DISPOSAL')
+      throw new NotFoundException('Order is not a disposal job');
 
     const updated = await this.prisma.order.update({
       where: { id },
       data: {
-        ...(data.status ? { status: data.status as import('@prisma/client').OrderStatus } : {}),
+        ...(data.status
+          ? { status: data.status as import('@prisma/client').OrderStatus }
+          : {}),
         ...(data.notes ? { internalNotes: data.notes } : {}),
       },
       select: {
@@ -2537,7 +2727,9 @@ export class AdminService {
         wasteType: data.wasteType as import('@prisma/client').WasteType,
         weight: data.weight,
         volume: data.volume,
-        processedDate: data.processedDate ? new Date(data.processedDate) : new Date(),
+        processedDate: data.processedDate
+          ? new Date(data.processedDate)
+          : new Date(),
         recyclableWeight: data.recyclableWeight,
         recyclingRate: data.recyclingRate,
       },
@@ -2561,12 +2753,16 @@ export class AdminService {
     const record = await this.prisma.wasteRecord.findUnique({
       where: { id },
       include: {
-        recyclingCenter: { select: { id: true, name: true, city: true, companyId: true } },
+        recyclingCenter: {
+          select: { id: true, name: true, city: true, companyId: true },
+        },
       },
     });
     if (!record) throw new NotFoundException('Waste record not found');
     if (record.producedMaterialId) {
-      throw new BadRequestException('A supply listing already exists for this waste record');
+      throw new BadRequestException(
+        'A supply listing already exists for this waste record',
+      );
     }
     if (!record.recyclableWeight || record.recyclableWeight <= 0) {
       throw new BadRequestException(
@@ -2575,7 +2771,10 @@ export class AdminService {
     }
 
     // Map WasteType → MaterialCategory
-    const CATEGORY_MAP: Record<string, import('@prisma/client').MaterialCategory> = {
+    const CATEGORY_MAP: Record<
+      string,
+      import('@prisma/client').MaterialCategory
+    > = {
       CONCRETE: 'RECYCLED_CONCRETE',
       BRICK: 'RECYCLED_CONCRETE',
       SOIL: 'RECYCLED_SOIL',
@@ -2587,7 +2786,8 @@ export class AdminService {
     };
     const category = CATEGORY_MAP[record.wasteType] ?? 'OTHER';
 
-    const defaultName = data.name?.trim() || `RC materiāls — ${record.recyclingCenter.name}`;
+    const defaultName =
+      data.name?.trim() || `RC materiāls — ${record.recyclingCenter.name}`;
 
     const [material] = await this.prisma.$transaction([
       this.prisma.material.create({
@@ -2618,7 +2818,13 @@ export class AdminService {
         containerOrder: {
           select: {
             id: true,
-            order: { select: { id: true, orderNumber: true, buyer: { select: { id: true, name: true } } } },
+            order: {
+              select: {
+                id: true,
+                orderNumber: true,
+                buyer: { select: { id: true, name: true } },
+              },
+            },
           },
         },
       },
@@ -2676,7 +2882,10 @@ export class AdminService {
       : [];
     const ownerMap = Object.fromEntries(owners.map((u) => [u.id, u]));
 
-    const data = docs.map((d) => ({ ...d, owner: ownerMap[d.ownerId] ?? null }));
+    const data = docs.map((d) => ({
+      ...d,
+      owner: ownerMap[d.ownerId] ?? null,
+    }));
 
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
@@ -2693,7 +2902,13 @@ export class AdminService {
   ) {
     const doc = await this.prisma.document.findUnique({
       where: { id },
-      select: { id: true, title: true, type: true, status: true, isGenerated: true },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        isGenerated: true,
+      },
     });
     if (!doc) throw new NotFoundException('Document not found');
 
@@ -2770,10 +2985,14 @@ export class AdminService {
               firstName: true,
               lastName: true,
               phone: true,
-              driverProfile: { select: { isOnline: true, currentLocation: true, rating: true } },
+              driverProfile: {
+                select: { isOnline: true, currentLocation: true, rating: true },
+              },
             },
           },
-          vehicle: { select: { id: true, make: true, model: true, licensePlate: true } },
+          vehicle: {
+            select: { id: true, make: true, model: true, licensePlate: true },
+          },
           exceptions: { where: { status: 'OPEN' }, select: { id: true } },
         },
         orderBy: { updatedAt: 'desc' },
@@ -2822,13 +3041,19 @@ export class AdminService {
     const carrierOnlineMap = new Map<string, number>();
     for (const j of jobs) {
       if (j.carrier?.id) {
-        carrierJobMap.set(j.carrier.id, (carrierJobMap.get(j.carrier.id) ?? 0) + 1);
+        carrierJobMap.set(
+          j.carrier.id,
+          (carrierJobMap.get(j.carrier.id) ?? 0) + 1,
+        );
       }
     }
     for (const d of onlineDrivers) {
       const companyId = d.user.company?.id;
       if (companyId) {
-        carrierOnlineMap.set(companyId, (carrierOnlineMap.get(companyId) ?? 0) + 1);
+        carrierOnlineMap.set(
+          companyId,
+          (carrierOnlineMap.get(companyId) ?? 0) + 1,
+        );
       }
     }
 
@@ -2863,7 +3088,15 @@ export class AdminService {
     // Month boundaries
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const lastMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
     const nonCancelled = { status: { notIn: ['CANCELLED', 'DRAFT'] as any[] } };
@@ -2897,7 +3130,10 @@ export class AdminService {
       // GMV last month
       this.prisma.order.aggregate({
         _sum: { total: true },
-        where: { ...nonCancelled, createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+        where: {
+          ...nonCancelled,
+          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+        },
       }),
       // Commission all-time (sum of platformFee on payments)
       this.prisma.payment.aggregate({
@@ -2926,7 +3162,10 @@ export class AdminService {
       }),
       // Order count last month
       this.prisma.order.count({
-        where: { ...nonCancelled, createdAt: { gte: lastMonthStart, lte: lastMonthEnd } },
+        where: {
+          ...nonCancelled,
+          createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+        },
       }),
       // GMV by order type (all-time)
       this.prisma.order.groupBy({
@@ -2974,7 +3213,10 @@ export class AdminService {
     ]);
 
     // Build 12-month trend
-    const monthMap: Record<string, { gmv: number; commission: number; orders: number }> = {};
+    const monthMap: Record<
+      string,
+      { gmv: number; commission: number; orders: number }
+    > = {};
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -3002,7 +3244,8 @@ export class AdminService {
       orders: v.orders,
     }));
 
-    const r = (n: number | null | undefined) => Math.round((n ?? 0) * 100) / 100;
+    const r = (n: number | null | undefined) =>
+      Math.round((n ?? 0) * 100) / 100;
 
     return {
       gmv: {
@@ -3026,7 +3269,10 @@ export class AdminService {
         supplierCount: pendingSupplier._count.id,
         carrierAmount: r(pendingCarrier._sum.amount),
         carrierCount: pendingCarrier._count.id,
-        total: r((pendingSupplier._sum.amount ?? 0) + (pendingCarrier._sum.amount ?? 0)),
+        total: r(
+          (pendingSupplier._sum.amount ?? 0) +
+            (pendingCarrier._sum.amount ?? 0),
+        ),
         totalCount: pendingSupplier._count.id + pendingCarrier._count.id,
       },
       byOrderType: byTypeRaw.map((row) => ({
@@ -3046,14 +3292,32 @@ export class AdminService {
    */
   async adminGetApusStats(centerId?: string) {
     const where = centerId ? { recyclingCenterId: centerId } : {};
-    const [pending, submitted, accepted, rejected, notRequired] = await Promise.all([
-      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'PENDING' } }),
-      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'SUBMITTED' } }),
-      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'ACCEPTED' } }),
-      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'REJECTED' } }),
-      this.prisma.wasteRecord.count({ where: { ...where, apusStatus: 'NOT_REQUIRED' } }),
-    ]);
-    return { pending, submitted, accepted, rejected, notRequired, total: pending + submitted + accepted + rejected + notRequired };
+    const [pending, submitted, accepted, rejected, notRequired] =
+      await Promise.all([
+        this.prisma.wasteRecord.count({
+          where: { ...where, apusStatus: 'PENDING' },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...where, apusStatus: 'SUBMITTED' },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...where, apusStatus: 'ACCEPTED' },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...where, apusStatus: 'REJECTED' },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...where, apusStatus: 'NOT_REQUIRED' },
+        }),
+      ]);
+    return {
+      pending,
+      submitted,
+      accepted,
+      rejected,
+      notRequired,
+      total: pending + submitted + accepted + rejected + notRequired,
+    };
   }
 
   /**
@@ -3089,7 +3353,9 @@ export class AdminService {
           bisNumber: true,
           certificateUrl: true,
           createdAt: true,
-          recyclingCenter: { select: { id: true, name: true, city: true, licensed: true } },
+          recyclingCenter: {
+            select: { id: true, name: true, city: true, licensed: true },
+          },
           order: { select: { id: true, orderNumber: true } },
           containerOrder: {
             select: {
@@ -3217,7 +3483,10 @@ export class AdminService {
       },
     });
 
-    const totalWasteInTonnes = allRecords.reduce((s, r) => s + (r.weight ?? 0), 0);
+    const totalWasteInTonnes = allRecords.reduce(
+      (s, r) => s + (r.weight ?? 0),
+      0,
+    );
     const totalRecyclableTonnes = allRecords.reduce(
       (s, r) => s + (r.recyclableWeight ?? 0),
       0,
@@ -3254,21 +3523,26 @@ export class AdminService {
     const [activeMaterialListings, soldFromRecycled] = await Promise.all([
       this.prisma.material.count({ where: { isRecycled: true, active: true } }),
       this.prisma.orderItem.aggregate({
-        where: { material: { isRecycled: true }, order: { status: 'COMPLETED' } },
+        where: {
+          material: { isRecycled: true },
+          order: { status: 'COMPLETED' },
+        },
         _sum: { total: true, quantity: true },
       }),
     ]);
 
     const revenueFromRecycledMaterials = parseFloat(
-      (Number(soldFromRecycled._sum.total ?? 0)).toFixed(2),
+      Number(soldFromRecycled._sum.total ?? 0).toFixed(2),
     );
     const quantitySoldTonnes = parseFloat(
-      (Number(soldFromRecycled._sum.quantity ?? 0)).toFixed(2),
+      Number(soldFromRecycled._sum.quantity ?? 0).toFixed(2),
     );
 
     // Monthly trend — last 6 months
-    const monthlyMap: Record<string, { wasteIn: number; recycled: number; converted: number }> =
-      {};
+    const monthlyMap: Record<
+      string,
+      { wasteIn: number; recycled: number; converted: number }
+    > = {};
     for (let i = 0; i <= 5; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -3281,9 +3555,13 @@ export class AdminService {
       if (!monthlyMap[key]) continue;
       monthlyMap[key].wasteIn += r.weight ?? 0;
       monthlyMap[key].recycled += r.recyclableWeight ?? 0;
-      if (r.producedMaterialId) monthlyMap[key].converted += r.recyclableWeight ?? 0;
+      if (r.producedMaterialId)
+        monthlyMap[key].converted += r.recyclableWeight ?? 0;
     }
-    const monthlyTrend = Object.entries(monthlyMap).map(([month, v]) => ({ month, ...v }));
+    const monthlyTrend = Object.entries(monthlyMap).map(([month, v]) => ({
+      month,
+      ...v,
+    }));
 
     return {
       totalWasteInTonnes: parseFloat(totalWasteInTonnes.toFixed(2)),
@@ -3361,7 +3639,9 @@ export class AdminService {
     const months: string[] = [];
     for (let i = 0; i < 6; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      months.push(
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      );
     }
 
     // ── Supply: project waste declarations ────────────────────────────────────
@@ -3468,39 +3748,72 @@ export class AdminService {
     for (const k of supplyMap.keys()) wasteTypes.add(k.split(':')[0]);
     for (const k of capacityMap.keys()) wasteTypes.add(k.split(':')[0]);
 
-    const wasteSignals = Array.from(wasteTypes).sort().map((wasteType) => {
-      const monthlyData = months.map((month) => {
-        const supplyTonnes = Math.round((supplyMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
-        const capacityTonnes = Math.round((capacityMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
-        const sellableTonnes = Math.round((sellableMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
-        const gap = Math.round((capacityTonnes - supplyTonnes) * 10) / 10; // positive = spare capacity, negative = overflow
-        let status: 'COVERED' | 'OVERCAPACITY' | 'GAP' | 'NO_DATA';
-        if (supplyTonnes === 0 && capacityTonnes === 0) status = 'NO_DATA';
-        else if (supplyTonnes === 0) status = 'OVERCAPACITY';
-        else if (capacityTonnes === 0) status = 'GAP';
-        else if (gap >= 0) status = 'COVERED';
-        else status = 'GAP';
-        return { month, supplyTonnes, capacityTonnes, sellableTonnes, gap, status };
+    const wasteSignals = Array.from(wasteTypes)
+      .sort()
+      .map((wasteType) => {
+        const monthlyData = months.map((month) => {
+          const supplyTonnes =
+            Math.round((supplyMap.get(`${wasteType}:${month}`) ?? 0) * 10) / 10;
+          const capacityTonnes =
+            Math.round((capacityMap.get(`${wasteType}:${month}`) ?? 0) * 10) /
+            10;
+          const sellableTonnes =
+            Math.round((sellableMap.get(`${wasteType}:${month}`) ?? 0) * 10) /
+            10;
+          const gap = Math.round((capacityTonnes - supplyTonnes) * 10) / 10; // positive = spare capacity, negative = overflow
+          let status: 'COVERED' | 'OVERCAPACITY' | 'GAP' | 'NO_DATA';
+          if (supplyTonnes === 0 && capacityTonnes === 0) status = 'NO_DATA';
+          else if (supplyTonnes === 0) status = 'OVERCAPACITY';
+          else if (capacityTonnes === 0) status = 'GAP';
+          else if (gap >= 0) status = 'COVERED';
+          else status = 'GAP';
+          return {
+            month,
+            supplyTonnes,
+            capacityTonnes,
+            sellableTonnes,
+            gap,
+            status,
+          };
+        });
+        const totalSupply = monthlyData.reduce((s, m) => s + m.supplyTonnes, 0);
+        const totalCapacity = monthlyData.reduce(
+          (s, m) => s + m.capacityTonnes,
+          0,
+        );
+        const totalSellable = monthlyData.reduce(
+          (s, m) => s + m.sellableTonnes,
+          0,
+        );
+        const hasGap = monthlyData.some((m) => m.status === 'GAP');
+        return {
+          wasteType,
+          totalSupply,
+          totalCapacity,
+          totalSellable,
+          hasGap,
+          monthlyData,
+        };
       });
-      const totalSupply = monthlyData.reduce((s, m) => s + m.supplyTonnes, 0);
-      const totalCapacity = monthlyData.reduce((s, m) => s + m.capacityTonnes, 0);
-      const totalSellable = monthlyData.reduce((s, m) => s + m.sellableTonnes, 0);
-      const hasGap = monthlyData.some((m) => m.status === 'GAP');
-      return { wasteType, totalSupply, totalCapacity, totalSellable, hasGap, monthlyData };
-    });
 
     // ── All material categories that have demand ──────────────────────────────
     const materialCategories = new Set<string>();
     for (const k of demandMap.keys()) materialCategories.add(k.split(':')[0]);
 
-    const materialSignals = Array.from(materialCategories).sort().map((cat) => {
-      const monthlyDemand = months.map((month) => ({
-        month,
-        demandTonnes: Math.round((demandMap.get(`${cat}:${month}`) ?? 0) * 10) / 10,
-      }));
-      const totalDemand = monthlyDemand.reduce((s, m) => s + m.demandTonnes, 0);
-      return { materialCategory: cat, totalDemand, monthlyDemand };
-    });
+    const materialSignals = Array.from(materialCategories)
+      .sort()
+      .map((cat) => {
+        const monthlyDemand = months.map((month) => ({
+          month,
+          demandTonnes:
+            Math.round((demandMap.get(`${cat}:${month}`) ?? 0) * 10) / 10,
+        }));
+        const totalDemand = monthlyDemand.reduce(
+          (s, m) => s + m.demandTonnes,
+          0,
+        );
+        return { materialCategory: cat, totalDemand, monthlyDemand };
+      });
 
     return {
       months,
@@ -3508,10 +3821,23 @@ export class AdminService {
       materialSignals,
       summary: {
         totalDeclarations: declarations.length,
-        totalDeclarationTonnes: Math.round(declarations.reduce((s, d) => s + d.estimatedTonnes, 0) * 10) / 10,
-        totalSellableTonnes: Math.round(declarations.filter((d) => d.willingToSell).reduce((s, d) => s + d.estimatedTonnes, 0) * 10) / 10,
-        totalMaterialNeedTonnes: Math.round(materialNeeds.reduce((s, n) => s + n.estimatedTonnes, 0) * 10) / 10,
-        wasteTypesWithGap: wasteSignals.filter((w) => w.hasGap).map((w) => w.wasteType),
+        totalDeclarationTonnes:
+          Math.round(
+            declarations.reduce((s, d) => s + d.estimatedTonnes, 0) * 10,
+          ) / 10,
+        totalSellableTonnes:
+          Math.round(
+            declarations
+              .filter((d) => d.willingToSell)
+              .reduce((s, d) => s + d.estimatedTonnes, 0) * 10,
+          ) / 10,
+        totalMaterialNeedTonnes:
+          Math.round(
+            materialNeeds.reduce((s, n) => s + n.estimatedTonnes, 0) * 10,
+          ) / 10,
+        wasteTypesWithGap: wasteSignals
+          .filter((w) => w.hasGap)
+          .map((w) => w.wasteType),
         activeCenters: centers.length,
       },
     };
@@ -3554,26 +3880,38 @@ export class AdminService {
       .map((c) => c.category);
 
     const [totalSuppliers, totalCarriers, totalRecyclers] = await Promise.all([
-      this.prisma.company.count({ where: { companyType: 'SUPPLIER', verified: true } }),
-      this.prisma.company.count({ where: { companyType: 'CARRIER', verified: true } }),
-      this.prisma.company.count({ where: { companyType: 'RECYCLER', verified: true } }),
+      this.prisma.company.count({
+        where: { companyType: 'SUPPLIER', verified: true },
+      }),
+      this.prisma.company.count({
+        where: { companyType: 'CARRIER', verified: true },
+      }),
+      this.prisma.company.count({
+        where: { companyType: 'RECYCLER', verified: true },
+      }),
     ]);
 
     // ── Demand ────────────────────────────────────────────────────────────────
-    const [rfqTotal, rfqPending, rfqExpired, rfqAccepted, rfqCancelled, rfqByCategory] =
-      await Promise.all([
-        this.prisma.quoteRequest.count(),
-        this.prisma.quoteRequest.count({ where: { status: 'PENDING' } }),
-        this.prisma.quoteRequest.count({ where: { status: 'EXPIRED' } }),
-        this.prisma.quoteRequest.count({ where: { status: 'ACCEPTED' } }),
-        this.prisma.quoteRequest.count({ where: { status: 'CANCELLED' } }),
-        this.prisma.quoteRequest.groupBy({
-          by: ['materialCategory'],
-          _count: { id: true },
-          orderBy: { _count: { id: 'desc' } },
-          take: 5,
-        }),
-      ]);
+    const [
+      rfqTotal,
+      rfqPending,
+      rfqExpired,
+      rfqAccepted,
+      rfqCancelled,
+      rfqByCategory,
+    ] = await Promise.all([
+      this.prisma.quoteRequest.count(),
+      this.prisma.quoteRequest.count({ where: { status: 'PENDING' } }),
+      this.prisma.quoteRequest.count({ where: { status: 'EXPIRED' } }),
+      this.prisma.quoteRequest.count({ where: { status: 'ACCEPTED' } }),
+      this.prisma.quoteRequest.count({ where: { status: 'CANCELLED' } }),
+      this.prisma.quoteRequest.groupBy({
+        by: ['materialCategory'],
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 5,
+      }),
+    ]);
 
     const matchDenominator = rfqAccepted + rfqCancelled + rfqExpired;
     const matchRate =
@@ -3593,29 +3931,33 @@ export class AdminService {
     });
 
     // ── Transport ─────────────────────────────────────────────────────────────
-    const [availableJobs, inProgressJobs, completedJobs30d, totalJobsCancelled] =
-      await Promise.all([
-        this.prisma.transportJob.count({ where: { status: 'AVAILABLE' } }),
-        this.prisma.transportJob.count({
-          where: {
-            status: {
-              in: [
-                'ASSIGNED',
-                'ACCEPTED',
-                'EN_ROUTE_PICKUP',
-                'AT_PICKUP',
-                'LOADED',
-                'EN_ROUTE_DELIVERY',
-                'AT_DELIVERY',
-              ],
-            },
+    const [
+      availableJobs,
+      inProgressJobs,
+      completedJobs30d,
+      totalJobsCancelled,
+    ] = await Promise.all([
+      this.prisma.transportJob.count({ where: { status: 'AVAILABLE' } }),
+      this.prisma.transportJob.count({
+        where: {
+          status: {
+            in: [
+              'ASSIGNED',
+              'ACCEPTED',
+              'EN_ROUTE_PICKUP',
+              'AT_PICKUP',
+              'LOADED',
+              'EN_ROUTE_DELIVERY',
+              'AT_DELIVERY',
+            ],
           },
-        }),
-        this.prisma.transportJob.count({
-          where: { status: 'DELIVERED', updatedAt: { gte: thirtyDaysAgo } },
-        }),
-        this.prisma.transportJob.count({ where: { status: 'CANCELLED' } }),
-      ]);
+        },
+      }),
+      this.prisma.transportJob.count({
+        where: { status: 'DELIVERED', updatedAt: { gte: thirtyDaysAgo } },
+      }),
+      this.prisma.transportJob.count({ where: { status: 'CANCELLED' } }),
+    ]);
 
     const totalJobsAssigned = await this.prisma.transportJob.count({
       where: { status: { not: 'AVAILABLE' } },
@@ -3623,18 +3965,27 @@ export class AdminService {
     const jobAcceptanceRate =
       totalJobsAssigned > 0
         ? parseFloat(
-            (((totalJobsAssigned - totalJobsCancelled) / totalJobsAssigned) * 100).toFixed(1),
+            (
+              ((totalJobsAssigned - totalJobsCancelled) / totalJobsAssigned) *
+              100
+            ).toFixed(1),
           )
         : 0;
 
     // ── Recycling ─────────────────────────────────────────────────────────────
     const pendingConversions = await this.prisma.wasteRecord.findMany({
-      where: { producedMaterialId: null, recyclableWeight: { gt: 0 }, processedDate: { not: null } },
+      where: {
+        producedMaterialId: null,
+        recyclableWeight: { gt: 0 },
+        processedDate: { not: null },
+      },
       select: { recyclableWeight: true },
     });
     const pendingConversionCount = pendingConversions.length;
     const pendingConversionTonnes = parseFloat(
-      pendingConversions.reduce((s, r) => s + (r.recyclableWeight ?? 0), 0).toFixed(2),
+      pendingConversions
+        .reduce((s, r) => s + (r.recyclableWeight ?? 0), 0)
+        .toFixed(2),
     );
 
     const [recyclingCenterCount, totalCapacity] = await Promise.all([
@@ -3679,7 +4030,9 @@ export class AdminService {
         pendingConversionCount,
         pendingConversionTonnes,
         totalRecyclingCenters: recyclingCenterCount,
-        totalCapacityTpd: parseFloat((Number(totalCapacity._sum.capacity ?? 0)).toFixed(1)),
+        totalCapacityTpd: parseFloat(
+          Number(totalCapacity._sum.capacity ?? 0).toFixed(1),
+        ),
       },
     };
   }
@@ -3695,12 +4048,27 @@ export class AdminService {
    */
   async adminGetMarketMatch() {
     const MATERIAL_CATEGORIES = [
-      'SAND', 'GRAVEL', 'STONE', 'CONCRETE', 'SOIL',
-      'RECYCLED_CONCRETE', 'RECYCLED_SOIL', 'ASPHALT', 'CLAY', 'OTHER',
+      'SAND',
+      'GRAVEL',
+      'STONE',
+      'CONCRETE',
+      'SOIL',
+      'RECYCLED_CONCRETE',
+      'RECYCLED_SOIL',
+      'ASPHALT',
+      'CLAY',
+      'OTHER',
     ] as const;
 
     const WASTE_TYPES = [
-      'CONCRETE', 'BRICK', 'WOOD', 'METAL', 'PLASTIC', 'SOIL', 'MIXED', 'HAZARDOUS',
+      'CONCRETE',
+      'BRICK',
+      'WOOD',
+      'METAL',
+      'PLASTIC',
+      'SOIL',
+      'MIXED',
+      'HAZARDOUS',
     ] as const;
 
     // ── 1. Material supply ─────────────────────────────────────────────────
@@ -3730,7 +4098,8 @@ export class AdminService {
     // ── Process material matching ──────────────────────────────────────────
     const matSuppliersByCat = new Map<string, Set<string>>();
     for (const m of activeMaterials) {
-      if (!matSuppliersByCat.has(m.category)) matSuppliersByCat.set(m.category, new Set());
+      if (!matSuppliersByCat.has(m.category))
+        matSuppliersByCat.set(m.category, new Set());
       matSuppliersByCat.get(m.category)!.add(m.supplierId);
     }
 
@@ -3744,18 +4113,28 @@ export class AdminService {
     const materialMatrix = MATERIAL_CATEGORIES.map((cat) => {
       const supplierSet = matSuppliersByCat.get(cat) ?? new Set<string>();
       const supplierCount = supplierSet.size;
-      const listingCount = activeMaterials.filter((m) => m.category === cat).length;
+      const listingCount = activeMaterials.filter(
+        (m) => m.category === cat,
+      ).length;
       const rfqTotal = rfqTotalMap.get(cat) ?? 0;
       const rfqPending = rfqPendingMap.get(cat) ?? 0;
       const status: 'COVERED' | 'THIN' | 'GAP' =
         supplierCount === 0 ? 'GAP' : supplierCount === 1 ? 'THIN' : 'COVERED';
-      return { category: cat, supplierCount, listingCount, rfqTotal, rfqPending, status };
+      return {
+        category: cat,
+        supplierCount,
+        listingCount,
+        rfqTotal,
+        rfqPending,
+        status,
+      };
     });
 
     // ── Process waste type matching ────────────────────────────────────────
-    const wasteCoverageMap = new Map<string, { centerCount: number; capacityTpd: number }>(
-      WASTE_TYPES.map((wt) => [wt, { centerCount: 0, capacityTpd: 0 }]),
-    );
+    const wasteCoverageMap = new Map<
+      string,
+      { centerCount: number; capacityTpd: number }
+    >(WASTE_TYPES.map((wt) => [wt, { centerCount: 0, capacityTpd: 0 }]));
     for (const center of activeCenters) {
       for (const wt of center.acceptedWasteTypes) {
         const entry = wasteCoverageMap.get(wt);
@@ -3779,7 +4158,9 @@ export class AdminService {
     });
 
     // ── Summary ────────────────────────────────────────────────────────────
-    const materialGaps = materialMatrix.filter((m) => m.status === 'GAP').length;
+    const materialGaps = materialMatrix.filter(
+      (m) => m.status === 'GAP',
+    ).length;
     const wasteGaps = wasteMatrix.filter((w) => w.status === 'GAP').length;
     const total = MATERIAL_CATEGORIES.length + WASTE_TYPES.length;
     const covered =
@@ -3791,11 +4172,14 @@ export class AdminService {
       wasteMatrix,
       summary: {
         totalMaterialCategories: MATERIAL_CATEGORIES.length,
-        coveredCategories: materialMatrix.filter((m) => m.status === 'COVERED').length,
-        thinCategories: materialMatrix.filter((m) => m.status === 'THIN').length,
+        coveredCategories: materialMatrix.filter((m) => m.status === 'COVERED')
+          .length,
+        thinCategories: materialMatrix.filter((m) => m.status === 'THIN')
+          .length,
         gapCategories: materialGaps,
         totalWasteTypes: WASTE_TYPES.length,
-        coveredWasteTypes: wasteMatrix.filter((w) => w.status === 'COVERED').length,
+        coveredWasteTypes: wasteMatrix.filter((w) => w.status === 'COVERED')
+          .length,
         thinWasteTypes: wasteMatrix.filter((w) => w.status === 'THIN').length,
         gapWasteTypes: wasteGaps,
         matchScore: parseFloat(((covered / total) * 100).toFixed(1)),
@@ -3803,4 +4187,3 @@ export class AdminService {
     };
   }
 }
-

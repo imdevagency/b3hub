@@ -618,7 +618,7 @@ export function MaterialOrderWizard({
         },
         tok,
       );
-      setOrderNumber(result.orderNumber ?? result.orders?.[0]?.orderNumber ?? '');
+      setOrderNumber(result.orderNumber ?? (result as any).orders?.[0]?.orderNumber ?? '');
       setStep('order-confirmed');
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
@@ -681,7 +681,7 @@ export function MaterialOrderWizard({
   }
 
   // ── Google Map ────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -732,7 +732,7 @@ export function MaterialOrderWizard({
       }
     });
     // Run once on mount — category is already selected
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const updateMapPin = useCallback((newLat: number, newLng: number) => {

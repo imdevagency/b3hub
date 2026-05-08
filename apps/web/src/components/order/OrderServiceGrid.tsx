@@ -9,7 +9,7 @@
  * each card is just a Link; auth is handled downstream in the wizard.
  */
 import Link from 'next/link';
-import { HardHat, Lock, Package, Truck, Building2, Recycle, ArrowRight } from 'lucide-react';
+import { HardHat, Lock, Package, Truck, Building2, Recycle, FlameKindling } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ServiceDef {
@@ -58,6 +58,13 @@ const SERVICES: ServiceDef[] = [
     badge: 'No €84/ned.',
   },
   {
+    id: 'scrap-buyback',
+    href: '/order/scrap-buyback',
+    icon: FlameKindling,
+    title: 'Metāllūžņi',
+    description: 'Nododiet metāllūžņus oficiālos pieņemšanas punktos (Tolmets u.c.). Aktuālās cenas un ātra apmaksa.',
+  },
+  {
     id: 'transport',
     href: '/dashboard/order/transport',
     icon: Truck,
@@ -73,6 +80,7 @@ const DASHBOARD_HREFS: Record<string, string> = {
   'skip-hire': '/dashboard/order/skip-hire',
   disposal: '/dashboard/order/disposal',
   'toilet-cabin': '/dashboard/order/toilet-cabin',
+  'scrap-buyback': '/dashboard/order/scrap-buyback',
   transport: '/dashboard/order/transport',
 };
 
@@ -93,45 +101,42 @@ export function OrderServiceGrid({ dashboard = false, className, addressQuery }:
   });
 
   return (
-    <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-4', className)}>
+    <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6', className)}>
       {services.map((s) => {
         const Icon = s.icon;
         return (
           <Link
             key={s.id}
             href={s.href}
-            className="group relative flex flex-col justify-between rounded-[1.75rem] bg-muted/40 hover:bg-muted/70 border border-transparent hover:border-border/40 p-7 md:p-9 transition-all duration-200 active:scale-[0.98]"
+            className="bg-[#f4f5f4] rounded-[2rem] p-10 flex flex-col group transition-transform hover:-translate-y-1"
           >
-            <div>
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-background shadow-sm group-hover:shadow-md transition-shadow">
-                  <Icon className="size-7 text-foreground" strokeWidth={1.5} />
-                </div>
-                <ArrowRight className="size-6 text-muted-foreground/50 transition-all group-hover:translate-x-1 group-hover:text-foreground" />
+            <div className="flex justify-between items-start mb-14">
+              <div className="flex items-center gap-2 font-bold text-foreground">
+                <Icon className="w-5 h-5 text-foreground" strokeWidth={1.5} />
+                <span>{s.title}</span>
               </div>
-
-              <h2 className="text-2xl font-extrabold text-foreground tracking-tight mb-2">
-                {s.title}
-              </h2>
-              <p className="text-[15px] font-medium text-muted-foreground leading-relaxed max-w-[90%]">
-                {s.description}
-              </p>
-            </div>
-
-            {s.badge && (
-              <div className="mt-8">
-                {s.badgeVariant === 'restricted' ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-[12px] font-bold text-amber-800">
+              {s.badge && (
+                s.badgeVariant === 'restricted' ? (
+                  <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     <Lock className="size-3 shrink-0" />
                     {s.badge}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-xl bg-background px-3 py-1.5 text-[12px] font-bold text-foreground shadow-sm">
+                  <span className="bg-[#1a362a] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     {s.badge}
                   </span>
-                )}
-              </div>
-            )}
+                )
+              )}
+            </div>
+            <h2 className="text-[2rem] leading-[1.1] font-bold mb-4 tracking-tight">{s.title}</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-10 flex-1">
+              {s.description}
+            </p>
+            <div className="mt-auto">
+              <span className="inline-flex border border-[#1a362a]/20 bg-transparent text-sm font-semibold rounded-full px-5 py-2.5 group-hover:bg-white group-hover:border-transparent group-hover:shadow-sm transition-all text-[#1a362a]">
+                Pasūtīt
+              </span>
+            </div>
           </Link>
         );
       })}

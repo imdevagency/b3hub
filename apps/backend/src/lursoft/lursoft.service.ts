@@ -90,14 +90,18 @@ export class LursoftService {
 
   async getSettings(): Promise<LursoftSettings> {
     const rows = await this.prisma.platformSetting.findMany({
-      where: { key: { in: ['lursoft.username', 'lursoft.baseUrl', 'lursoft.enabled'] } },
+      where: {
+        key: { in: ['lursoft.username', 'lursoft.baseUrl', 'lursoft.enabled'] },
+      },
     });
     const map: Record<string, string> = {};
     for (const row of rows) map[row.key] = row.value;
 
-    const hasPassword = !!(await this.prisma.platformSetting.findUnique({
-      where: { key: 'lursoft.password' },
-    }))?.value;
+    const hasPassword = !!(
+      await this.prisma.platformSetting.findUnique({
+        where: { key: 'lursoft.password' },
+      })
+    )?.value;
 
     return {
       username: map['lursoft.username'] ?? '',
@@ -107,7 +111,10 @@ export class LursoftService {
     };
   }
 
-  async updateSettings(dto: UpdateLursoftSettingsDto, adminId: string): Promise<{ ok: boolean }> {
+  async updateSettings(
+    dto: UpdateLursoftSettingsDto,
+    adminId: string,
+  ): Promise<{ ok: boolean }> {
     const upserts = [
       { key: 'lursoft.username', value: dto.username },
       { key: 'lursoft.password', value: dto.password },
@@ -131,19 +138,29 @@ export class LursoftService {
   async testConnection(): Promise<{ ok: boolean; message: string }> {
     const creds = await this.loadCredentials();
     if (!creds) {
-      return { ok: false, message: 'Nav konfigurēti Lursoft akreditācijas dati' };
+      return {
+        ok: false,
+        message: 'Nav konfigurēti Lursoft akreditācijas dati',
+      };
     }
 
     try {
       // Ping with a known Latvian reg.nr (Lursoft itself: 40003030799)
-      const res = await fetch(`${creds.base}/get_company_short_info?reģ_nr=40003030799`, {
-        headers: this.authHeaders(creds),
-        signal: AbortSignal.timeout(10_000),
-      });
+      const res = await fetch(
+        `${creds.base}/get_company_short_info?reģ_nr=40003030799`,
+        {
+          headers: this.authHeaders(creds),
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
 
       if (res.ok) return { ok: true, message: 'Savienojums veiksmīgs' };
-      if (res.status === 401) return { ok: false, message: 'Nepareizi akreditācijas dati (401)' };
-      return { ok: false, message: `Lursoft atbildēja ar kļūdu: ${res.status}` };
+      if (res.status === 401)
+        return { ok: false, message: 'Nepareizi akreditācijas dati (401)' };
+      return {
+        ok: false,
+        message: `Lursoft atbildēja ar kļūdu: ${res.status}`,
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn('Lursoft test connection failed', err);
@@ -221,9 +238,22 @@ export class LursoftService {
 
   // ─── Private helpers ─────────────────────────────────────────────────────────
 
-  private async loadCredentials(): Promise<{ base: string; username: string; password: string } | null> {
+  private async loadCredentials(): Promise<{
+    base: string;
+    username: string;
+    password: string;
+  } | null> {
     const rows = await this.prisma.platformSetting.findMany({
-      where: { key: { in: ['lursoft.username', 'lursoft.password', 'lursoft.baseUrl', 'lursoft.enabled'] } },
+      where: {
+        key: {
+          in: [
+            'lursoft.username',
+            'lursoft.password',
+            'lursoft.baseUrl',
+            'lursoft.enabled',
+          ],
+        },
+      },
     });
     const map: Record<string, string> = {};
     for (const row of rows) map[row.key] = row.value;
@@ -240,8 +270,13 @@ export class LursoftService {
     };
   }
 
-  private authHeaders(creds: { username: string; password: string }): Record<string, string> {
-    const encoded = Buffer.from(`${creds.username}:${creds.password}`).toString('base64');
+  private authHeaders(creds: {
+    username: string;
+    password: string;
+  }): Record<string, string> {
+    const encoded = Buffer.from(`${creds.username}:${creds.password}`).toString(
+      'base64',
+    );
     return {
       Authorization: `Basic ${encoded}`,
       Accept: 'application/json',
@@ -312,42 +347,65 @@ export class LursoftService {
    * Normalise a raw Lursoft API response to our LursoftCompany shape.
    * Lursoft API v1.3 returns camelCase JSON.
    */
-  private normaliseCompany(raw: unknown, fallbackRegNr: string): LursoftCompany | null {
+  private normaliseCompany(
+    raw: unknown,
+    fallbackRegNr: string,
+  ): LursoftCompany | null {
     if (typeof raw !== 'object' || raw === null) return null;
     const r = raw as Record<string, unknown>;
 
-    const regNr = String(r.regNr ?? r.reg_nr ?? r.registration_number ?? fallbackRegNr);
+    const regNr = String(
+      r.regNr ?? r.reg_nr ?? r.registration_number ?? fallbackRegNr,
+    );
     const name = String(r.name ?? r.companyName ?? r.nosaukums ?? '');
     if (!name && !regNr) return null;
 
-    const officials = (r.officials ?? r.board ?? r.boardMembers ?? []) as unknown[];
+    const officials = (r.officials ??
+      r.board ??
+      r.boardMembers ??
+      []) as unknown[];
     const board: string[] = Array.isArray(officials)
-      ? officials.map((o) => {
-          if (typeof o === 'string') return o;
-          if (typeof o === 'object' && o !== null) {
-            const p = o as Record<string, unknown>;
-            return String(p.name ?? p.fullName ?? p.vards ?? '');
-          }
-          return '';
-        }).filter(Boolean)
+      ? officials
+          .map((o) => {
+            if (typeof o === 'string') return o;
+            if (typeof o === 'object' && o !== null) {
+              const p = o as Record<string, unknown>;
+              return String(p.name ?? p.fullName ?? p.vards ?? '');
+            }
+            return '';
+          })
+          .filter(Boolean)
       : [];
 
     return {
       regNr,
       name,
-      legalForm: String(r.legalForm ?? r.legal_form ?? r.juridiskaisStatuss ?? ''),
+      legalForm: String(
+        r.legalForm ?? r.legal_form ?? r.juridiskaisStatuss ?? '',
+      ),
       status: String(r.status ?? r.statuss ?? 'AKTĪVS'),
-      registeredAt: (r.registrationDate ?? r.registration_date ?? r.registeredAt ?? null) as string | null,
+      registeredAt: (r.registrationDate ??
+        r.registration_date ??
+        r.registeredAt ??
+        null) as string | null,
       address: String(r.address ?? r.legalAddress ?? r.adrese ?? ''),
       vatNr: (r.vatNumber ?? r.vat_number ?? r.pvn ?? null) as string | null,
       nace: (r.naceCode ?? r.nace_code ?? r.nace ?? null) as string | null,
-      naceDescription: (r.naceDescription ?? r.nace_description ?? null) as string | null,
+      naceDescription: (r.naceDescription ?? r.nace_description ?? null) as
+        | string
+        | null,
       email: (r.email ?? null) as string | null,
       phone: (r.phone ?? r.telefons ?? null) as string | null,
       web: (r.web ?? r.website ?? r.www ?? null) as string | null,
-      hasInsolvency: Boolean(r.hasInsolvency ?? r.insolvency ?? r.maksatnespeja ?? false),
-      hasTaxDebt: Boolean(r.hasTaxDebt ?? r.taxDebt ?? r.nodesunu_paradi ?? false),
-      hasLiquidation: Boolean(r.hasLiquidation ?? r.liquidation ?? r.likvidacija ?? false),
+      hasInsolvency: Boolean(
+        r.hasInsolvency ?? r.insolvency ?? r.maksatnespeja ?? false,
+      ),
+      hasTaxDebt: Boolean(
+        r.hasTaxDebt ?? r.taxDebt ?? r.nodesunu_paradi ?? false,
+      ),
+      hasLiquidation: Boolean(
+        r.hasLiquidation ?? r.liquidation ?? r.likvidacija ?? false,
+      ),
       board,
       lursoftUrl: `https://lursoft.lv/lv/uznemums/${encodeURIComponent(name)}/${regNr}`,
     };
@@ -377,7 +435,9 @@ export class LursoftService {
 
   private async getCached<T>(key: string): Promise<T | undefined> {
     try {
-      const row = await this.prisma.platformSetting.findUnique({ where: { key } });
+      const row = await this.prisma.platformSetting.findUnique({
+        where: { key },
+      });
       if (!row) return undefined;
       const payload = JSON.parse(row.value) as { data: T; cachedAt: number };
       if (Date.now() - payload.cachedAt > CACHE_TTL_MS) return undefined;

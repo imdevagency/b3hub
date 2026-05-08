@@ -89,11 +89,21 @@ export class TrackingService {
     const updated = await this.prisma.order.update({
       where: { id: order.id },
       data: {
-        ...(dto.deliveryAddress !== undefined && { deliveryAddress: dto.deliveryAddress }),
-        ...(dto.deliveryCity !== undefined && { deliveryCity: dto.deliveryCity }),
-        ...(dto.deliveryPostal !== undefined && { deliveryPostal: dto.deliveryPostal }),
-        ...(dto.siteContactName !== undefined && { siteContactName: dto.siteContactName }),
-        ...(dto.siteContactPhone !== undefined && { siteContactPhone: dto.siteContactPhone }),
+        ...(dto.deliveryAddress !== undefined && {
+          deliveryAddress: dto.deliveryAddress,
+        }),
+        ...(dto.deliveryCity !== undefined && {
+          deliveryCity: dto.deliveryCity,
+        }),
+        ...(dto.deliveryPostal !== undefined && {
+          deliveryPostal: dto.deliveryPostal,
+        }),
+        ...(dto.siteContactName !== undefined && {
+          siteContactName: dto.siteContactName,
+        }),
+        ...(dto.siteContactPhone !== undefined && {
+          siteContactPhone: dto.siteContactPhone,
+        }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
       },
       select: {

@@ -131,13 +131,15 @@ export interface AdminUserOrder {
   createdAt: string;
 }
 
-export interface AdminUserDetail extends AdminUser {
+export interface AdminUserDetail extends Omit<AdminUser, 'company'> {
   company?: {
     id: string;
     name: string;
     legalName?: string;
     companyType?: string;
     verified?: boolean;
+    commissionRate?: number;
+    payoutEnabled?: boolean;
   } | null;
   ordersCreated: AdminUserOrder[];
 }
@@ -1437,7 +1439,7 @@ export async function adminUpdateDocumentStatus(
 
 // ── Detail views (GET by ID) ──────────────────────────────────────────────────
 
-export interface AdminUserDetail extends AdminUser {
+export interface AdminUserFullDetail extends AdminUser {
   company: {
     id: string; name: string; legalName: string; companyType: string;
     verified: boolean; payoutEnabled: boolean; commissionRate: number;
@@ -1445,8 +1447,8 @@ export interface AdminUserDetail extends AdminUser {
   orders: { id: string; orderNumber: string; status: string; total: number; currency: string; createdAt: string }[];
 }
 
-export async function adminGetUserById(id: string, token: string): Promise<AdminUserDetail> {
-  return apiFetch<AdminUserDetail>(`/admin/users/${id}`, {
+export async function adminGetUserById(id: string, token: string): Promise<AdminUserFullDetail> {
+  return apiFetch<AdminUserFullDetail>(`/admin/users/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

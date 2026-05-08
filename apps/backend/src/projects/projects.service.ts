@@ -573,7 +573,10 @@ export class ProjectsService {
 
   // ─── CO₂ Report PDF ────────────────────────────────────────────────────────
 
-  async generateCo2Report(projectId: string, companyId?: string): Promise<Buffer> {
+  async generateCo2Report(
+    projectId: string,
+    companyId?: string,
+  ): Promise<Buffer> {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, ...(companyId ? { companyId } : {}) },
       include: {
@@ -617,23 +620,51 @@ export class ProjectsService {
       doc.on('error', reject);
 
       // ── Header ──────────────────────────────────────────────────────────
-      doc.fontSize(24).font('Helvetica-Bold').fillColor('#111827').text('B3Hub', 50, 50);
-      doc.fontSize(10).font('Helvetica').fillColor('#6b7280').text('b3hub.lv  |  support@b3hub.lv', 50, 78);
-      doc.fontSize(18).font('Helvetica-Bold').fillColor('#111827').text('CO₂ Emisiju Pārskats', 0, 52, { align: 'right' });
-      doc.fontSize(10).font('Helvetica').fillColor('#6b7280').text(today, 0, 78, { align: 'right' });
+      doc
+        .fontSize(24)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('B3Hub', 50, 50);
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('b3hub.lv  |  support@b3hub.lv', 50, 78);
+      doc
+        .fontSize(18)
+        .font('Helvetica-Bold')
+        .fillColor('#111827')
+        .text('CO₂ Emisiju Pārskats', 0, 52, { align: 'right' });
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(today, 0, 78, { align: 'right' });
       doc.moveTo(50, 105).lineTo(545, 105).strokeColor('#e5e7eb').stroke();
 
       let y = 120;
 
       const row = (label: string, value: string, bold = false) => {
-        doc.fontSize(10).font(bold ? 'Helvetica-Bold' : 'Helvetica').fillColor('#374151').text(label, 50, y);
-        doc.fontSize(10).font(bold ? 'Helvetica-Bold' : 'Helvetica').fillColor('#111827').text(value, 0, y, { align: 'right' });
+        doc
+          .fontSize(10)
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .fillColor('#374151')
+          .text(label, 50, y);
+        doc
+          .fontSize(10)
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .fillColor('#111827')
+          .text(value, 0, y, { align: 'right' });
         y += 20;
       };
 
       const section = (title: string) => {
         y += 10;
-        doc.fontSize(13).font('Helvetica-Bold').fillColor('#111827').text(title, 50, y);
+        doc
+          .fontSize(13)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text(title, 50, y);
         y += 20;
         doc.moveTo(50, y).lineTo(545, y).strokeColor('#e5e7eb').stroke();
         y += 10;
@@ -648,30 +679,64 @@ export class ProjectsService {
 
       // ── CO₂ summary ─────────────────────────────────────────────────────
       section('CO₂ Emisijas (Aprēķinātās)');
-      row('Kopējā CO₂ (kg)', `${financials.co2Kg.toLocaleString('lv-LV')} kg`, true);
-      row('Kopējā CO₂ (tonnas)', `${financials.co2Tonnes.toLocaleString('lv-LV')} t`, true);
+      row(
+        'Kopējā CO₂ (kg)',
+        `${financials.co2Kg.toLocaleString('lv-LV')} kg`,
+        true,
+      );
+      row(
+        'Kopējā CO₂ (tonnas)',
+        `${financials.co2Tonnes.toLocaleString('lv-LV')} t`,
+        true,
+      );
       row('Iesaistītie pārvadājumi', `${allJobs.length}`);
-      row('Kopējais attālums', `${allJobs.reduce((s, j) => s + (j.distanceKm ?? 0), 0).toLocaleString('lv-LV')} km`);
+      row(
+        'Kopējais attālums',
+        `${allJobs.reduce((s, j) => s + (j.distanceKm ?? 0), 0).toLocaleString('lv-LV')} km`,
+      );
 
       y += 6;
-      doc.fontSize(9).font('Helvetica').fillColor('#6b7280')
-        .text('Aprēķins balstīts uz HBEFA 3.3 vidējiem emisijas koeficientiem (kg CO₂/km) pēc transportlīdzekļa tipa.', 50, y, { width: 495 });
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text(
+          'Aprēķins balstīts uz HBEFA 3.3 vidējiem emisijas koeficientiem (kg CO₂/km) pēc transportlīdzekļa tipa.',
+          50,
+          y,
+          { width: 495 },
+        );
       y += 30;
 
       // ── Per-job breakdown ────────────────────────────────────────────────
       if (allJobs.length > 0) {
         section('Transporta Darbu Sadalījums');
-        doc.fontSize(9).font('Helvetica-Bold').fillColor('#6b7280')
-          .text('Nr.', 50, y).text('Datums', 120, y).text('Attālums', 250, y).text('Veids', 340, y).text('CO₂ (kg)', 450, y);
+        doc
+          .fontSize(9)
+          .font('Helvetica-Bold')
+          .fillColor('#6b7280')
+          .text('Nr.', 50, y)
+          .text('Datums', 120, y)
+          .text('Attālums', 250, y)
+          .text('Veids', 340, y)
+          .text('CO₂ (kg)', 450, y);
         y += 16;
         doc.moveTo(50, y).lineTo(545, y).strokeColor('#f3f4f6').stroke();
         y += 6;
 
         for (const j of allJobs.slice(0, 30)) {
-          if (y > 740) { doc.addPage(); y = 50; }
+          if (y > 740) {
+            doc.addPage();
+            y = 50;
+          }
           const factor = CO2_FACTORS[j.vehicle?.vehicleType ?? ''] ?? 0.9;
-          const jobCo2 = j.distanceKm ? Math.round(j.distanceKm * factor * 10) / 10 : 0;
-          doc.fontSize(9).font('Helvetica').fillColor('#374151')
+          const jobCo2 = j.distanceKm
+            ? Math.round(j.distanceKm * factor * 10) / 10
+            : 0;
+          doc
+            .fontSize(9)
+            .font('Helvetica')
+            .fillColor('#374151')
             .text(j.jobNumber ?? '-', 50, y)
             .text(new Date(j.deliveryDate).toLocaleDateString('lv-LV'), 120, y)
             .text(j.distanceKm ? `${j.distanceKm} km` : '-', 250, y)
@@ -680,15 +745,26 @@ export class ProjectsService {
           y += 16;
         }
         if (allJobs.length > 30) {
-          doc.fontSize(9).font('Helvetica').fillColor('#6b7280')
+          doc
+            .fontSize(9)
+            .font('Helvetica')
+            .fillColor('#6b7280')
             .text(`... un vēl ${allJobs.length - 30} darbi`, 50, y);
           y += 16;
         }
       }
 
       // ── Footer ───────────────────────────────────────────────────────────
-      doc.fontSize(9).font('Helvetica').fillColor('#9ca3af')
-        .text('B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv', 50, 750, { align: 'center' });
+      doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#9ca3af')
+        .text(
+          'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+          50,
+          750,
+          { align: 'center' },
+        );
 
       doc.end();
     });
@@ -736,7 +812,9 @@ export class ProjectsService {
     if (!decl || decl.projectId !== projectId) {
       throw new NotFoundException('Declaration not found');
     }
-    await this.prisma.projectWasteDeclaration.delete({ where: { id: declarationId } });
+    await this.prisma.projectWasteDeclaration.delete({
+      where: { id: declarationId },
+    });
     return { deleted: 1 };
   }
 

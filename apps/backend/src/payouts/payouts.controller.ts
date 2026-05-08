@@ -11,14 +11,7 @@
  *   POST /admin/payouts/supplier/:id/execute — pay one supplier payout
  *   POST /admin/payouts/carrier/:id/execute  — pay one carrier payout
  */
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { PayoutsService } from './payouts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';

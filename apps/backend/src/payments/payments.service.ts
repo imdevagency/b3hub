@@ -18,7 +18,10 @@ import {
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto/create-notification.dto';
-import { PayseraService, PayseraWebhookPayload } from '../paysera/paysera.service';
+import {
+  PayseraService,
+  PayseraWebhookPayload,
+} from '../paysera/paysera.service';
 
 @Injectable()
 export class PaymentsService {
@@ -71,7 +74,8 @@ export class PaymentsService {
     }
 
     const amountCents = Math.round(order.total * 100);
-    const baseUrl = this.configService.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
+    const baseUrl =
+      this.configService.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
 
     const checkout = await this.paysera.createCheckout({
       reference: order.orderNumber,
@@ -173,7 +177,8 @@ export class PaymentsService {
     }
 
     const amountCents = Math.round(order.price * 100);
-    const baseUrl = this.configService.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
+    const baseUrl =
+      this.configService.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
 
     const checkout = await this.paysera.createCheckout({
       reference: order.orderNumber,
@@ -378,7 +383,9 @@ export class PaymentsService {
     const deliveredJob = order.transportJobs?.[0];
     const deliveryCents = Math.round(Number(order.deliveryFee) * 100);
     const carrierJobRecord = deliveredJob as
-      | (typeof deliveredJob & { carrier?: { carrierCommissionRate?: number | null } | null })
+      | (typeof deliveredJob & {
+          carrier?: { carrierCommissionRate?: number | null } | null;
+        })
       | null
       | undefined;
     const carrierRate =
@@ -414,7 +421,10 @@ export class PaymentsService {
           `releaseFunds: transport job ${deliveredJob.id} has no rate/pricePerTonne — falling back to full delivery pool for order ${orderId}`,
         );
       }
-      driverCents = Math.min(driverCents, Math.max(0, deliveryCents - transportFeeCents));
+      driverCents = Math.min(
+        driverCents,
+        Math.max(0, deliveryCents - transportFeeCents),
+      );
     }
     const sellerCents = payoutCents - driverCents;
 
@@ -453,39 +463,39 @@ export class PaymentsService {
           `releaseFunds: transport job ${deliveredJob.id} for order ${orderId} has no driverId — CarrierPayout skipped to avoid orphan record. Manual reconciliation required.`,
         );
       } else {
-      const driverCompanyId = deliveredJob.driver?.companyId;
-      if (driverCompanyId) {
-        const driverCompany = await this.prisma.company.findUnique({
-          where: { id: driverCompanyId },
-          select: { ibanNumber: true, name: true },
-        });
-        if (!driverCompany?.ibanNumber) {
-          this.logger.warn(
-            `releaseFunds: carrier company ${driverCompanyId} (${driverCompany?.name ?? 'unknown'}) has no IBAN — carrier payout obligation recorded but transfer will be blocked until IBAN is set`,
-          );
+        const driverCompanyId = deliveredJob.driver?.companyId;
+        if (driverCompanyId) {
+          const driverCompany = await this.prisma.company.findUnique({
+            where: { id: driverCompanyId },
+            select: { ibanNumber: true, name: true },
+          });
+          if (!driverCompany?.ibanNumber) {
+            this.logger.warn(
+              `releaseFunds: carrier company ${driverCompanyId} (${driverCompany?.name ?? 'unknown'}) has no IBAN — carrier payout obligation recorded but transfer will be blocked until IBAN is set`,
+            );
+          }
+        } else if (deliveredJob.driverId) {
+          const driverProfile = await this.prisma.driverProfile.findUnique({
+            where: { userId: deliveredJob.driverId },
+            select: { ibanNumber: true },
+          });
+          if (!driverProfile?.ibanNumber) {
+            this.logger.warn(
+              `releaseFunds: driver ${deliveredJob.driverId} has no IBAN — payout obligation recorded but transfer will be blocked until IBAN is set`,
+            );
+          }
         }
-      } else if (deliveredJob.driverId) {
-        const driverProfile = await this.prisma.driverProfile.findUnique({
-          where: { userId: deliveredJob.driverId },
-          select: { ibanNumber: true },
+        await this.prisma.carrierPayout.create({
+          data: {
+            orderId,
+            jobId: deliveredJob.id,
+            driverId: deliveredJob.driverId ?? undefined,
+            carrierId: deliveredJob.driver?.companyId ?? undefined,
+            amount: driverCents / 100,
+            currency: order.currency ?? 'EUR',
+            dueDate,
+          },
         });
-        if (!driverProfile?.ibanNumber) {
-          this.logger.warn(
-            `releaseFunds: driver ${deliveredJob.driverId} has no IBAN — payout obligation recorded but transfer will be blocked until IBAN is set`,
-          );
-        }
-      }
-      await this.prisma.carrierPayout.create({
-        data: {
-          orderId,
-          jobId: deliveredJob.id,
-          driverId: deliveredJob.driverId ?? undefined,
-          carrierId: deliveredJob.driver?.companyId ?? undefined,
-          amount: driverCents / 100,
-          currency: order.currency ?? 'EUR',
-          dueDate,
-        },
-      });
       } // end else (driverId guard)
     }
 
@@ -506,11 +516,14 @@ export class PaymentsService {
     });
 
     // ── Commission invoices ──────────────────────────────────────────────────
-    this.generateCommissionInvoices(orderId, supplierIds, supplierPayoutMap).catch(
-      (err) =>
-        this.logger.warn(
-          `Commission invoice generation failed for order ${orderId}: ${(err as Error).message}`,
-        ),
+    this.generateCommissionInvoices(
+      orderId,
+      supplierIds,
+      supplierPayoutMap,
+    ).catch((err) =>
+      this.logger.warn(
+        `Commission invoice generation failed for order ${orderId}: ${(err as Error).message}`,
+      ),
     );
 
     // Notify sellers
@@ -869,7 +882,12 @@ export class PaymentsService {
         // Find our order by reference (= orderNumber)
         const order = await this.prisma.order.findFirst({
           where: { orderNumber: payseraOrder.reference },
-          select: { id: true, orderNumber: true, status: true, createdById: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            createdById: true,
+          },
         });
 
         if (order) {
@@ -901,7 +919,14 @@ export class PaymentsService {
         // Check if it's a skip-hire order reference
         const skipOrder = await this.prisma.skipHireOrder.findFirst({
           where: { orderNumber: payseraOrder.reference },
-          select: { id: true, orderNumber: true, carrierId: true, location: true, deliveryDate: true, skipSize: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            carrierId: true,
+            location: true,
+            deliveryDate: true,
+            skipSize: true,
+          },
         });
 
         if (skipOrder) {
@@ -1415,9 +1440,8 @@ export class PaymentsService {
         where: { userId: user.userId },
         select: { ibanNumber: true, payoutEnabled: true },
       });
-      const payoutStatus: 'NOT_CONFIGURED' | 'ACTIVE' = driverProfile?.ibanNumber
-        ? 'ACTIVE'
-        : 'NOT_CONFIGURED';
+      const payoutStatus: 'NOT_CONFIGURED' | 'ACTIVE' =
+        driverProfile?.ibanNumber ? 'ACTIVE' : 'NOT_CONFIGURED';
 
       return {
         type: 'DRIVER',
@@ -1467,7 +1491,9 @@ export class PaymentsService {
     });
 
     if (!order) {
-      this.logger.warn(`releaseSkipHireFunds: skip order ${skipOrderId} not found`);
+      this.logger.warn(
+        `releaseSkipHireFunds: skip order ${skipOrderId} not found`,
+      );
       return;
     }
     if (!order.payseraOrderId) {
@@ -1515,11 +1541,19 @@ export class PaymentsService {
   async refundSkipHireOrder(skipOrderId: string): Promise<void> {
     const order = await this.prisma.skipHireOrder.findUnique({
       where: { id: skipOrderId },
-      select: { payseraOrderId: true, paymentStatus: true, orderNumber: true, price: true, currency: true },
+      select: {
+        payseraOrderId: true,
+        paymentStatus: true,
+        orderNumber: true,
+        price: true,
+        currency: true,
+      },
     });
 
     if (!order) {
-      this.logger.warn(`refundSkipHireOrder: skip order ${skipOrderId} not found`);
+      this.logger.warn(
+        `refundSkipHireOrder: skip order ${skipOrderId} not found`,
+      );
       return;
     }
 
@@ -1644,22 +1678,42 @@ export class PaymentsService {
 
     // Fetch the supplier-issued invoices already created for this order
     const supplierInvoices = await this.prisma.invoice.findMany({
-      where: { orderId, isCommissionInvoice: false, sellerCompanyId: { in: supplierIds } },
-      select: { id: true, sellerCompanyId: true, total: true, subtotal: true, currency: true },
+      where: {
+        orderId,
+        isCommissionInvoice: false,
+        sellerCompanyId: { in: supplierIds },
+      },
+      select: {
+        id: true,
+        sellerCompanyId: true,
+        total: true,
+        subtotal: true,
+        currency: true,
+      },
     });
 
     // Fetch order currency as fallback
-    const orderCurrency = (
-      await this.prisma.order.findUnique({ where: { id: orderId }, select: { currency: true } })
-    )?.currency ?? 'EUR';
+    const orderCurrency =
+      (
+        await this.prisma.order.findUnique({
+          where: { id: orderId },
+          select: { currency: true },
+        })
+      )?.currency ?? 'EUR';
 
     // Batch idempotency check — one query instead of N individual findFirst calls.
     const existingCommissions = await this.prisma.invoice.findMany({
-      where: { isCommissionInvoice: true, orderId, buyerCompanyId: { in: supplierIds } },
+      where: {
+        isCommissionInvoice: true,
+        orderId,
+        buyerCompanyId: { in: supplierIds },
+      },
       select: { buyerCompanyId: true },
     });
     const alreadyProcessed = new Set(
-      existingCommissions.map((e) => e.buyerCompanyId).filter(Boolean) as string[],
+      existingCommissions
+        .map((e) => e.buyerCompanyId)
+        .filter(Boolean) as string[],
     );
 
     for (const supplierId of supplierIds) {
@@ -1676,7 +1730,9 @@ export class PaymentsService {
         supplierInvoice?.subtotal != null
           ? Math.round(Number(supplierInvoice.subtotal) * 100)
           : (supplierPayoutMap.get(supplierId) ?? 0) +
-            Math.round(((supplierPayoutMap.get(supplierId) ?? 0) / (1 - 0.06)) * 0.06);
+            Math.round(
+              ((supplierPayoutMap.get(supplierId) ?? 0) / (1 - 0.06)) * 0.06,
+            );
       const payoutCents = supplierPayoutMap.get(supplierId) ?? 0;
       const feeCentsNet = Math.max(0, grossCents - payoutCents);
 
@@ -1688,7 +1744,9 @@ export class PaymentsService {
 
       const year = new Date().getFullYear().toString().slice(-2);
       const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-      const rand = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      const rand = Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, '0');
       const invoiceNumber = `COM${year}${month}${rand}`;
 
       const dueDate = new Date(Date.now() + 30 * 86_400_000); // NET-30 to supplier

@@ -48,7 +48,12 @@ export class CmsController {
     @Query('pageKey') pageKey?: string,
     @Query('translationKey') translationKey?: string,
   ) {
-    return this.cmsService.listPublicArticles({ locale, type, pageKey, translationKey });
+    return this.cmsService.listPublicArticles({
+      locale,
+      type,
+      pageKey,
+      translationKey,
+    });
   }
 
   @Get('public/articles/:slug')
@@ -89,7 +94,13 @@ export class CmsController {
     @Query('translationKey') translationKey?: string,
   ) {
     assertAdmin(user);
-    return this.cmsService.listArticles({ type, status, locale, pageKey, translationKey });
+    return this.cmsService.listArticles({
+      type,
+      status,
+      locale,
+      pageKey,
+      translationKey,
+    });
   }
 
   @Get('articles/:id')

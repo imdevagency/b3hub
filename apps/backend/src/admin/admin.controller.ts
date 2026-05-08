@@ -77,13 +77,16 @@ class UpdateCompanyDto {
   @IsOptional() @IsBoolean() payoutEnabled?: boolean;
   @IsOptional() @IsNumber() @Min(0) @Max(100) commissionRate?: number;
   @IsOptional() @IsArray() @IsString({ each: true }) features?: string[];
-  @IsOptional() @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID']) companyType?: string;
+  @IsOptional()
+  @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID'])
+  companyType?: string;
 }
 
 class AdminCreateCompanyDto {
   @IsString() name!: string;
   @IsString() legalName!: string;
-  @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID']) companyType!: string;
+  @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID'])
+  companyType!: string;
   @IsString() email!: string;
   @IsString() phone!: string;
   @IsOptional() @IsString() registrationNum?: string;
@@ -109,7 +112,10 @@ class UpsertSkipSizeDto {
   @IsOptional() @IsString() label?: string;
   @IsOptional() @IsString() labelLv?: string;
   @IsOptional() @IsNumber() volumeM3?: number;
-  @IsOptional() @IsString() @IsIn(['SKIP', 'BIG_BAG', 'CONTAINER']) category?: string;
+  @IsOptional()
+  @IsString()
+  @IsIn(['SKIP', 'BIG_BAG', 'CONTAINER'])
+  category?: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() descriptionLv?: string;
   @IsOptional() @IsNumber() @Min(0) @Max(1) heightPct?: number;
@@ -371,7 +377,11 @@ export class AdminController {
     @Body() body: CancelOrderDto,
     @CurrentUser() admin: RequestingUser,
   ) {
-    return this.service.cancelOrder(id, body.reason ?? 'Admin force-cancel', admin.userId);
+    return this.service.cancelOrder(
+      id,
+      body.reason ?? 'Admin force-cancel',
+      admin.userId,
+    );
   }
 
   /**
@@ -385,7 +395,11 @@ export class AdminController {
     @Body() body: RefundPaymentDto,
     @CurrentUser() admin: RequestingUser,
   ) {
-    return this.service.refundPayment(id, body.reason ?? 'Admin manual refund', admin.userId);
+    return this.service.refundPayment(
+      id,
+      body.reason ?? 'Admin manual refund',
+      admin.userId,
+    );
   }
 
   /**
@@ -440,13 +454,19 @@ export class AdminController {
   /** GET /admin/skip-hire — all skip hire orders (paginated) */
   @Get('skip-hire')
   getSkipHireOrders(@Query() pagination: PagePaginationDto) {
-    return this.service.getSkipHireOrders(pagination.page ?? 1, pagination.limit ?? 50);
+    return this.service.getSkipHireOrders(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+    );
   }
 
   /** GET /admin/toilet-cabins — all toilet cabin hire orders (paginated) */
   @Get('toilet-cabins')
   getToiletCabinOrders(@Query() pagination: PagePaginationDto) {
-    return this.service.getToiletCabinOrders(pagination.page ?? 1, pagination.limit ?? 50);
+    return this.service.getToiletCabinOrders(
+      pagination.page ?? 1,
+      pagination.limit ?? 50,
+    );
   }
 
   /**
@@ -576,10 +596,7 @@ export class AdminController {
 
   /** PUT /admin/skip-sizes/:code — create or update a size by code */
   @Put('skip-sizes/:code')
-  upsertSkipSize(
-    @Param('code') code: string,
-    @Body() dto: UpsertSkipSizeDto,
-  ) {
+  upsertSkipSize(@Param('code') code: string, @Body() dto: UpsertSkipSizeDto) {
     return this.service.adminUpsertSkipSize(code, dto);
   }
 
@@ -646,7 +663,11 @@ export class AdminController {
     @Body() body: { active: boolean },
     @CurrentUser() admin: RequestingUser,
   ) {
-    return this.service.adminToggleRecyclingCenter(id, body.active, admin.userId);
+    return this.service.adminToggleRecyclingCenter(
+      id,
+      body.active,
+      admin.userId,
+    );
   }
 
   /** GET /admin/recycling-centers/:id/pricing-rules */
@@ -699,7 +720,11 @@ export class AdminController {
     @Query('isGenerated') isGenerated?: string,
   ) {
     const gen =
-      isGenerated === 'true' ? true : isGenerated === 'false' ? false : undefined;
+      isGenerated === 'true'
+        ? true
+        : isGenerated === 'false'
+          ? false
+          : undefined;
     return this.service.getDocuments(
       pagination.page ?? 1,
       pagination.limit ?? 50,
@@ -721,7 +746,12 @@ export class AdminController {
     @Body() body: { status: string; note?: string },
     @CurrentUser() admin: RequestingUser,
   ) {
-    return this.service.updateDocumentStatus(id, body.status, admin.userId, body.note);
+    return this.service.updateDocumentStatus(
+      id,
+      body.status,
+      admin.userId,
+      body.note,
+    );
   }
 
   /**
@@ -880,4 +910,3 @@ export class AdminController {
     return this.service.adminGetAllProjects();
   }
 }
-

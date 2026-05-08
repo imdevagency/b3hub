@@ -143,11 +143,11 @@ export default function OrderDetailPage() {
     if (!order) return;
     setAmendForm({
       deliveryDate: order.deliveryDate ? order.deliveryDate.split('T')[0] : undefined,
-      deliveryWindow: order.deliveryWindow ?? undefined,
-      notes: order.notes ?? undefined,
-      siteContactName: order.siteContactName ?? undefined,
-      siteContactPhone: order.siteContactPhone ?? undefined,
-      poNumber: order.poNumber ?? undefined,
+      deliveryWindow: (order as any).deliveryWindow ?? undefined,
+      notes: (order as any).notes ?? undefined,
+      siteContactName: (order as any).siteContactName ?? undefined,
+      siteContactPhone: (order as any).siteContactPhone ?? undefined,
+      poNumber: (order as any).poNumber ?? undefined,
     });
     setAmendError(null);
     setAmendOpen(true);
@@ -167,6 +167,8 @@ export default function OrderDetailPage() {
       setAmendLoading(false);
     }
   };
+
+  const handleCopyShareUrl = () => {
     if (!shareUrl) return;
     navigator.clipboard.writeText(shareUrl).then(() => {
       setShareCopied(true);

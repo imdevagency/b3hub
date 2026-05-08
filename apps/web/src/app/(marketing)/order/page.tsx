@@ -33,7 +33,7 @@ export default async function OrderHubPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Container className="py-16 md:py-32 max-w-6xl">
+      <Container className="py-16 md:py-32 max-w-7xl">
         <div className="mb-16">
           <h1 className="text-5xl md:text-[5rem] font-extrabold tracking-tighter text-foreground leading-[1.05]">
             Ko jums

@@ -183,7 +183,7 @@ export default function ApusPage() {
       <PageHeader
         title="APUS"
         description="Atkritumu plūsmu uzskaites sistēma — VVD obligātā ziņošana"
-        actions={
+        action={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
@@ -245,7 +245,7 @@ export default function ApusPage() {
                       {WASTE_TYPE_LABELS[r.wasteType] ?? r.wasteType}
                     </TableCell>
                     <TableCell className="text-right text-sm font-medium">
-                      {r.weightKg != null ? (r.weightKg / 1000).toFixed(3) : '—'}
+                      {(r as any).weightKg != null ? ((r as any).weightKg / 1000).toFixed(3) : '—'}
                     </TableCell>
                     <TableCell>{apusBadge(r.apusStatus)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground font-mono">

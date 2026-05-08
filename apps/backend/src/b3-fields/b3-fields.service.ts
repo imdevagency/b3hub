@@ -9,7 +9,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateB3FieldDto } from './dto/create-b3-field.dto';
 import { UpdateB3FieldDto } from './dto/update-b3-field.dto';
 import { CreatePickupSlotDto } from './dto/create-pickup-slot.dto';
-import { CreateInventoryItemDto, UpdateInventoryItemDto } from './dto/create-inventory-item.dto';
+import {
+  CreateInventoryItemDto,
+  UpdateInventoryItemDto,
+} from './dto/create-inventory-item.dto';
 
 @Injectable()
 export class B3FieldsService {
@@ -151,10 +154,7 @@ export class B3FieldsService {
           },
         },
       },
-      orderBy: [
-        { pickupSlot: { slotStart: 'asc' } },
-        { deliveryDate: 'asc' },
-      ],
+      orderBy: [{ pickupSlot: { slotStart: 'asc' } }, { deliveryDate: 'asc' }],
     });
 
     // Waste disposal arrivals (field passes valid today)
@@ -270,7 +270,11 @@ export class B3FieldsService {
     });
   }
 
-  async updateInventoryItem(fieldId: string, itemId: string, dto: UpdateInventoryItemDto) {
+  async updateInventoryItem(
+    fieldId: string,
+    itemId: string,
+    dto: UpdateInventoryItemDto,
+  ) {
     const item = await this.prisma.b3FieldInventoryItem.findFirst({
       where: { id: itemId, fieldId },
     });
@@ -280,7 +284,9 @@ export class B3FieldsService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.unit !== undefined && { unit: dto.unit }),
-        ...(dto.pricePerUnit !== undefined && { pricePerUnit: dto.pricePerUnit }),
+        ...(dto.pricePerUnit !== undefined && {
+          pricePerUnit: dto.pricePerUnit,
+        }),
         ...(dto.stockQty !== undefined && { stockQty: dto.stockQty }),
         ...(dto.minStockQty !== undefined && { minStockQty: dto.minStockQty }),
         ...(dto.available !== undefined && { available: dto.available }),
@@ -319,7 +325,7 @@ export class B3FieldsService {
     fieldId: string,
     body: {
       startDate: string; // ISO date YYYY-MM-DD
-      endDate: string;   // ISO date YYYY-MM-DD
+      endDate: string; // ISO date YYYY-MM-DD
       slotTimes: string[]; // e.g. ['08:00', '10:00', '12:00']
       durationMinutes: number; // slot duration, e.g. 60
       capacity: number; // capacity per slot
@@ -329,8 +335,10 @@ export class B3FieldsService {
     await this.findOne(fieldId);
     const start = new Date(body.startDate);
     const end = new Date(body.endDate);
-    if (end < start) throw new BadRequestException('endDate must be >= startDate');
-    if (!body.slotTimes.length) throw new BadRequestException('slotTimes must not be empty');
+    if (end < start)
+      throw new BadRequestException('endDate must be >= startDate');
+    if (!body.slotTimes.length)
+      throw new BadRequestException('slotTimes must not be empty');
 
     const days = body.daysOfWeek?.length ? new Set(body.daysOfWeek) : null;
     const slots: Array<{
@@ -348,7 +356,9 @@ export class B3FieldsService {
           const [h, m] = time.split(':').map(Number);
           const slotStart = new Date(cursor);
           slotStart.setHours(h, m, 0, 0);
-          const slotEnd = new Date(slotStart.getTime() + body.durationMinutes * 60 * 1000);
+          const slotEnd = new Date(
+            slotStart.getTime() + body.durationMinutes * 60 * 1000,
+          );
           slots.push({
             fieldId,
             slotStart,
@@ -405,7 +415,8 @@ export class B3FieldsService {
     const slotStart = order.pickupSlot?.slotStart;
     const validFrom = slotStart ?? order.deliveryDate ?? new Date();
     const slotEnd = order.pickupSlot?.slotEnd;
-    const validTo = slotEnd ?? new Date(validFrom.getTime() + 24 * 60 * 60 * 1000);
+    const validTo =
+      slotEnd ?? new Date(validFrom.getTime() + 24 * 60 * 60 * 1000);
     const materialNames = order.items.map((i) => i.material.name).join(', ');
 
     await this.prisma.fieldPass.create({
@@ -448,11 +459,18 @@ export class B3FieldsService {
     const pass = await this.prisma.fieldPass.findUnique({
       where: { passNumber: passNumber.toUpperCase().trim() },
       include: {
-        company: { select: { name: true, legalName: true, registrationNum: true } },
+        company: {
+          select: { name: true, legalName: true, registrationNum: true },
+        },
         contract: { select: { contractNumber: true, title: true } },
         order: { select: { orderNumber: true } },
         weighingSlips: {
-          select: { id: true, slipNumber: true, netTonnes: true, createdAt: true },
+          select: {
+            id: true,
+            slipNumber: true,
+            netTonnes: true,
+            createdAt: true,
+          },
           orderBy: { createdAt: 'desc' },
           take: 5,
         },

@@ -15,7 +15,10 @@
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { PublishSocialPostDto, SocialPlatform } from './dto/publish-post.dto';
+import type {
+  PublishSocialPostDto,
+  SocialPlatform,
+} from './dto/publish-post.dto';
 
 export interface SocialConnectionStatus {
   platform: SocialPlatform;
@@ -73,7 +76,8 @@ export class SocialService {
    * credentials are configured.
    */
   getOAuthUrl(platform: SocialPlatform, adminId: string): string {
-    const callbackBase = this.config.get<string>('APP_URL') ?? 'https://yourdomain.com';
+    const callbackBase =
+      this.config.get<string>('APP_URL') ?? 'https://yourdomain.com';
     const redirect = `${callbackBase}/api/v1/social/oauth/${platform.toLowerCase()}/callback`;
 
     // TODO: replace stubs with real OAuth library (e.g. simple-oauth2)
@@ -91,19 +95,33 @@ export class SocialService {
    * Handles the OAuth callback from a social platform.
    * TODO: exchange code for tokens and persist in DB.
    */
-  handleOAuthCallback(platform: SocialPlatform, code: string, state: string): string {
-    this.logger.log(`OAuth callback for ${platform} (state=${state}) — code exchange not yet implemented`);
+  handleOAuthCallback(
+    platform: SocialPlatform,
+    code: string,
+    state: string,
+  ): string {
+    this.logger.log(
+      `OAuth callback for ${platform} (state=${state}) — code exchange not yet implemented`,
+    );
     // TODO: exchange `code` for access + refresh tokens, store encrypted in DB
     // Return redirect URL back to the admin dashboard
-    return '/dashboard/admin/marketing?tab=social&connected=' + platform.toLowerCase();
+    return (
+      '/dashboard/admin/marketing?tab=social&connected=' +
+      platform.toLowerCase()
+    );
   }
 
   /**
    * Removes stored OAuth tokens for a platform.
    * TODO: delete tokens from DB.
    */
-  disconnect(platform: SocialPlatform): { platform: SocialPlatform; disconnected: true } {
-    this.logger.log(`Disconnect request for ${platform} — DB deletion not yet implemented`);
+  disconnect(platform: SocialPlatform): {
+    platform: SocialPlatform;
+    disconnected: true;
+  } {
+    this.logger.log(
+      `Disconnect request for ${platform} — DB deletion not yet implemented`,
+    );
     // TODO: delete tokens from DB by platform + adminId
     return { platform, disconnected: true };
   }
@@ -122,7 +140,11 @@ export class SocialService {
         results.push(result);
       } catch (err) {
         this.logger.error(`Failed to publish to ${platform}`, err);
-        results.push({ platform, success: false, message: 'Publish failed — see logs' });
+        results.push({
+          platform,
+          success: false,
+          message: 'Publish failed — see logs',
+        });
       }
     }
 
@@ -136,21 +158,43 @@ export class SocialService {
     switch (platform) {
       case 'META':
         // TODO: POST https://graph.facebook.com/v20.0/{page-id}/feed
-        this.logger.log(`[META stub] Would publish: ${dto.text.slice(0, 60)}...`);
-        return { platform, success: false, message: 'META integration not yet configured' };
+        this.logger.log(
+          `[META stub] Would publish: ${dto.text.slice(0, 60)}...`,
+        );
+        return {
+          platform,
+          success: false,
+          message: 'META integration not yet configured',
+        };
 
       case 'LINKEDIN':
         // TODO: POST https://api.linkedin.com/v2/ugcPosts
-        this.logger.log(`[LINKEDIN stub] Would publish: ${dto.text.slice(0, 60)}...`);
-        return { platform, success: false, message: 'LinkedIn integration not yet configured' };
+        this.logger.log(
+          `[LINKEDIN stub] Would publish: ${dto.text.slice(0, 60)}...`,
+        );
+        return {
+          platform,
+          success: false,
+          message: 'LinkedIn integration not yet configured',
+        };
 
       case 'GOOGLE':
         // TODO: POST https://mybusiness.googleapis.com/v4/accounts/{accountId}/locations/{locationId}/localPosts
-        this.logger.log(`[GOOGLE stub] Would publish: ${dto.text.slice(0, 60)}...`);
-        return { platform, success: false, message: 'Google Business Profile integration not yet configured' };
+        this.logger.log(
+          `[GOOGLE stub] Would publish: ${dto.text.slice(0, 60)}...`,
+        );
+        return {
+          platform,
+          success: false,
+          message: 'Google Business Profile integration not yet configured',
+        };
 
       case 'TIKTOK':
-        return { platform, success: false, message: 'TikTok integration not supported yet' };
+        return {
+          platform,
+          success: false,
+          message: 'TikTok integration not supported yet',
+        };
 
       default:
         throw new NotFoundException(`Unknown platform: ${platform}`);

@@ -649,8 +649,7 @@ export default function AdminMarketingPage() {
       <PageHeader
         title="Mārketings"
         description="In-app paziņojumi, baneri un auditorijas pārvaldība"
-        icon={Megaphone}
-        actions={
+        action={
           <Button size="sm" variant="outline" onClick={() => loadStats()} disabled={statsLoading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${statsLoading ? 'animate-spin' : ''}`} />
             Atjaunot
@@ -938,14 +937,14 @@ export default function AdminMarketingPage() {
                 {
                   label: 'Piegādātāji',
                   icon: Store,
-                  value: stats.totalSuppliers ?? 0,
+                  value: (stats as any).totalSuppliers ?? 0,
                   desc: 'Apstiprinātie piegādātāji',
                   color: 'text-purple-600',
                 },
                 {
                   label: 'Pārvadātāji',
                   icon: Truck,
-                  value: stats.totalDrivers ?? 0,
+                  value: (stats as any).totalDrivers ?? 0,
                   desc: 'Aktīvie pārvadātāji',
                   color: 'text-amber-600',
                 },
@@ -1029,8 +1028,8 @@ export default function AdminMarketingPage() {
                   {
                     label: 'Apgrozījums (€)',
                     value:
-                      stats?.totalRevenue != null
-                        ? `€${Number(stats.totalRevenue).toLocaleString('lv-LV', { minimumFractionDigits: 2 })}`
+                      (stats as any)?.totalRevenue != null
+                        ? `€${Number((stats as any).totalRevenue).toLocaleString('lv-LV', { minimumFractionDigits: 2 })}`
                         : '—',
                     icon: TrendingUp,
                     color: 'text-emerald-600',

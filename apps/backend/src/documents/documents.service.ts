@@ -392,7 +392,11 @@ export class DocumentsService {
     }
 
     const linkEntity = orderId
-      ? { entityType: DocumentEntityType.ORDER, entityId: orderId, role: DocumentLinkRole.PRIMARY }
+      ? {
+          entityType: DocumentEntityType.ORDER,
+          entityId: orderId,
+          role: DocumentLinkRole.PRIMARY,
+        }
       : {
           entityType: DocumentEntityType.TRANSPORT_JOB,
           entityId: transportJobId ?? entityId,
@@ -502,7 +506,10 @@ export class DocumentsService {
       if (params.hasPickupPhoto) {
         doc.fontSize(10).font('Helvetica').fillColor('#111827');
         label('Svēršanas foto:', nextRow);
-        doc.fontSize(10).font('Helvetica').fillColor('#16a34a')
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .fillColor('#16a34a')
           .text('✓ Pieejams platformā', 220, y + nextRow * 22);
         doc.fillColor('#111827');
         nextRow++;
@@ -912,7 +919,9 @@ export class DocumentsService {
         .fontSize(22)
         .font('Helvetica-Bold')
         .fillColor('#111827')
-        .text(params.isInternational ? 'CMR NOTE' : 'KRAVAS PAVADZĪME', 0, 50, { align: 'right' });
+        .text(params.isInternational ? 'CMR NOTE' : 'KRAVAS PAVADZĪME', 0, 50, {
+          align: 'right',
+        });
 
       doc
         .fontSize(10)
@@ -1080,24 +1089,30 @@ export class DocumentsService {
     ownerId: string; // waste producer (buyer) userId
     driverOwnerId?: string;
     orderNumber?: string;
-    producerName?: string;    // waste producer company name
+    producerName?: string; // waste producer company name
     producerAddress?: string;
     transporterName?: string; // carrier company name
     transporterRegNo?: string;
-    receiverName?: string;    // recycling / waste management facility name
+    receiverName?: string; // recycling / waste management facility name
     receiverAddress?: string;
     receiverPermitNo?: string; // Atkritumu apsaimniekošanas atļaujas Nr.
-    ewcCode?: string;          // European Waste Catalogue code (e.g. 17 05 04)
+    ewcCode?: string; // European Waste Catalogue code (e.g. 17 05 04)
     wasteDescription?: string;
     estimatedWeightKg?: number;
     pickupDate?: Date;
   }) {
     const noteNumber = `ATP-${Date.now().toString(36).toUpperCase()}`;
-    const dateStr = (params.pickupDate ?? new Date()).toLocaleDateString('lv-LV');
+    const dateStr = (params.pickupDate ?? new Date()).toLocaleDateString(
+      'lv-LV',
+    );
 
     let fileUrl: string | undefined;
     try {
-      const pdfBuffer = await this.buildWasteTransportPdf({ ...params, noteNumber, dateStr });
+      const pdfBuffer = await this.buildWasteTransportPdf({
+        ...params,
+        noteNumber,
+        dateStr,
+      });
       const storagePath = `waste-transport/${params.orderId}.pdf`;
       await this.supabase.uploadFile('documents', storagePath, pdfBuffer);
       fileUrl = this.supabase.getPublicUrl('documents', storagePath);
@@ -1231,45 +1246,104 @@ export class DocumentsService {
         row++;
       };
 
-      label('Datums:'); value(params.dateStr);
-      if (params.orderNumber) { label('Pasūtījuma Nr.:'); value(`#${params.orderNumber}`); }
+      label('Datums:');
+      value(params.dateStr);
+      if (params.orderNumber) {
+        label('Pasūtījuma Nr.:');
+        value(`#${params.orderNumber}`);
+      }
 
       // EWC / waste type
-      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      doc
+        .moveTo(50, y + row * 20 + 4)
+        .lineTo(545, y + row * 20 + 4)
+        .strokeColor('#e5e7eb')
+        .stroke();
       row++;
-      doc.font('Helvetica-Bold').text('ATKRITUMI', 50, y + row * 20).font('Helvetica');
+      doc
+        .font('Helvetica-Bold')
+        .text('ATKRITUMI', 50, y + row * 20)
+        .font('Helvetica');
       row++;
-      if (params.ewcCode) { label('EWC kods:'); value(params.ewcCode); }
-      if (params.wasteDescription) { label('Atkritumu veids:'); value(params.wasteDescription); }
+      if (params.ewcCode) {
+        label('EWC kods:');
+        value(params.ewcCode);
+      }
+      if (params.wasteDescription) {
+        label('Atkritumu veids:');
+        value(params.wasteDescription);
+      }
       if (params.estimatedWeightKg !== undefined) {
         label('Paredzamais svars:');
         value(`${(params.estimatedWeightKg / 1000).toFixed(3)} t`);
       }
 
       // Producer
-      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      doc
+        .moveTo(50, y + row * 20 + 4)
+        .lineTo(545, y + row * 20 + 4)
+        .strokeColor('#e5e7eb')
+        .stroke();
       row++;
-      doc.font('Helvetica-Bold').text('ATKRITUMU RAŽOTĀJS', 50, y + row * 20).font('Helvetica');
+      doc
+        .font('Helvetica-Bold')
+        .text('ATKRITUMU RAŽOTĀJS', 50, y + row * 20)
+        .font('Helvetica');
       row++;
-      if (params.producerName) { label('Nosaukums:'); value(params.producerName); }
-      if (params.producerAddress) { label('Adrese:'); value(params.producerAddress); }
+      if (params.producerName) {
+        label('Nosaukums:');
+        value(params.producerName);
+      }
+      if (params.producerAddress) {
+        label('Adrese:');
+        value(params.producerAddress);
+      }
 
       // Transporter
-      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      doc
+        .moveTo(50, y + row * 20 + 4)
+        .lineTo(545, y + row * 20 + 4)
+        .strokeColor('#e5e7eb')
+        .stroke();
       row++;
-      doc.font('Helvetica-Bold').text('PĀRVADĀTĀJS', 50, y + row * 20).font('Helvetica');
+      doc
+        .font('Helvetica-Bold')
+        .text('PĀRVADĀTĀJS', 50, y + row * 20)
+        .font('Helvetica');
       row++;
-      if (params.transporterName) { label('Nosaukums:'); value(params.transporterName); }
-      if (params.transporterRegNo) { label('Reģ. Nr.:'); value(params.transporterRegNo); }
+      if (params.transporterName) {
+        label('Nosaukums:');
+        value(params.transporterName);
+      }
+      if (params.transporterRegNo) {
+        label('Reģ. Nr.:');
+        value(params.transporterRegNo);
+      }
 
       // Receiver
-      doc.moveTo(50, y + row * 20 + 4).lineTo(545, y + row * 20 + 4).strokeColor('#e5e7eb').stroke();
+      doc
+        .moveTo(50, y + row * 20 + 4)
+        .lineTo(545, y + row * 20 + 4)
+        .strokeColor('#e5e7eb')
+        .stroke();
       row++;
-      doc.font('Helvetica-Bold').text('SAŅĒMĒJS', 50, y + row * 20).font('Helvetica');
+      doc
+        .font('Helvetica-Bold')
+        .text('SAŅĒMĒJS', 50, y + row * 20)
+        .font('Helvetica');
       row++;
-      if (params.receiverName) { label('Nosaukums:'); value(params.receiverName); }
-      if (params.receiverAddress) { label('Adrese:'); value(params.receiverAddress); }
-      if (params.receiverPermitNo) { label('Atļaujas Nr.:'); value(params.receiverPermitNo); }
+      if (params.receiverName) {
+        label('Nosaukums:');
+        value(params.receiverName);
+      }
+      if (params.receiverAddress) {
+        label('Adrese:');
+        value(params.receiverAddress);
+      }
+      if (params.receiverPermitNo) {
+        label('Atļaujas Nr.:');
+        value(params.receiverPermitNo);
+      }
 
       // Footer
       doc

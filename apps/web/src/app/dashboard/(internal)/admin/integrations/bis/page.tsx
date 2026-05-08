@@ -93,7 +93,8 @@ function SaveRow({ saveState, onSave }: { saveState: SaveState; onSave: () => vo
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function PlatformBisPage() {
-  const { session } = useAuth();
+  const { token: authTok } = useAuth();
+  const token = authTok ?? '';
 
   // BIS OAuth2 connection
   const [bisSettings, setBisSettings] = useState<BisSettings | null>(null);
@@ -117,10 +118,10 @@ export default function PlatformBisPage() {
   // ─── load ────────────────────────────────────────────────────────────────
 
   const loadBis = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!token) return;
     setBisLoading(true);
     try {
-      const s = await getBisSettings(session.access_token);
+      const s = await getBisSettings(token);
       setBisSettings(s);
       setClientId(s.clientId);
       setClientSecret('');
@@ -131,17 +132,17 @@ export default function PlatformBisPage() {
     } finally {
       setBisLoading(false);
     }
-  }, [session?.access_token]);
+  }, [token]);
 
   const loadUsage = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!token) return;
     setUsageLoading(true);
     try {
-      setUsageSettings(await adminGetSettings(session.access_token));
+      setUsageSettings(await adminGetSettings(token));
     } finally {
       setUsageLoading(false);
     }
-  }, [session?.access_token]);
+  }, [token]);
 
   useEffect(() => {
     loadBis();
@@ -151,10 +152,10 @@ export default function PlatformBisPage() {
   // ─── save connection ─────────────────────────────────────────────────────
 
   async function saveConn() {
-    if (!session?.access_token) return;
+    if (!token) return;
     setConnSave('saving');
     try {
-      await updateBisSettings(session.access_token, {
+      await updateBisSettings(token, {
         clientId,
         clientSecret,
         apiBaseUrl: apiBaseUrl || undefined,
@@ -172,10 +173,10 @@ export default function PlatformBisPage() {
   // ─── test connection ─────────────────────────────────────────────────────
 
   async function testConn() {
-    if (!session?.access_token) return;
+    if (!token) return;
     setTestState('testing');
     try {
-      const res = await bisTestConnection(session.access_token);
+      const res = await bisTestConnection(token);
       setTestState(res.ok ? 'ok' : 'fail');
       setTestMsg(res.message);
     } catch {
@@ -187,12 +188,12 @@ export default function PlatformBisPage() {
   // ─── save usage settings ─────────────────────────────────────────────────
 
   async function saveUsage(keys: string[]) {
-    if (!session?.access_token || !usageSettings) return;
+    if (!token || !usageSettings) return;
     setUsageSave('saving');
     try {
       await adminUpdateSettings(
-        session.access_token,
         Object.fromEntries(keys.map((k) => [k, usageSettings[k] ?? ''])),
+        token,
       );
       setUsageSave('saved');
       setTimeout(() => setUsageSave('idle'), 2500);
@@ -214,16 +215,17 @@ export default function PlatformBisPage() {
       <PageHeader
         title="BIS — Platforma"
         description="Būvniecības informācijas sistēmas integrācija — BIS OAuth2 savienojums un tirgu izmantojums."
-      >
-        <a
-          href="https://bis.gov.lv"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          bis.gov.lv <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </PageHeader>
+        action={
+          <a
+            href="https://bis.gov.lv"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            bis.gov.lv <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        }
+      />
 
       {/* Scope notice */}
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">

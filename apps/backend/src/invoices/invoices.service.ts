@@ -402,7 +402,8 @@ export class InvoicesService {
           inv.order?.buyer?.legalName ??
           ([inv.order?.createdBy?.firstName, inv.order?.createdBy?.lastName]
             .filter(Boolean)
-            .join(' ') || '');
+            .join(' ') ||
+            '');
         const buyerReg =
           inv.buyerCompany?.registrationNum ??
           inv.order?.buyer?.registrationNum ??
@@ -635,7 +636,9 @@ export class InvoicesService {
         .fontSize(28)
         .font('Helvetica-Bold')
         .fillColor('#111827')
-        .text(isCreditNote ? 'KREDĪTRĒĶINS' : 'RĒĶINS', 0, 50, { align: 'right' });
+        .text(isCreditNote ? 'KREDĪTRĒĶINS' : 'RĒĶINS', 0, 50, {
+          align: 'right',
+        });
 
       doc
         .fontSize(11)
@@ -716,7 +719,9 @@ export class InvoicesService {
         });
 
       // ── Footer ────────────────────────────────────────────────────────────
-      const footerLines = ['B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv'];
+      const footerLines = [
+        'B3Hub SIA  |  Rīga, Latvija  |  support@b3hub.lv  |  b3hub.lv',
+      ];
       if (bankAccount) footerLines.push(`Bankas rekvizīti: ${bankAccount}`);
       doc
         .fontSize(9)
@@ -879,8 +884,12 @@ export class InvoicesService {
     }
 
     const deliveryFeeNet = Number(fullOrder?.deliveryFee ?? 0);
-    const agentSuppliers = [...supplierMap.values()].filter((s) => s.agentAgreed);
-    const platformSuppliers = [...supplierMap.values()].filter((s) => !s.agentAgreed);
+    const agentSuppliers = [...supplierMap.values()].filter(
+      (s) => s.agentAgreed,
+    );
+    const platformSuppliers = [...supplierMap.values()].filter(
+      (s) => !s.agentAgreed,
+    );
 
     const createdInvoiceIds: string[] = [];
 
@@ -915,25 +924,34 @@ export class InvoicesService {
     });
 
     const agentResults = await Promise.all(
-      agentPayloads.map(({ sup, invoiceNumber, subtotal, tax, total, taxPeriod, dueDate: supDueDate }) =>
-        this.prisma.invoice.create({
-          data: {
-            invoiceNumber,
-            orderId: order.id,
-            sellerCompanyId: sup.supplierId,
-            subtotal,
-            tax,
-            total,
-            currency: order.currency,
-            dueDate: supDueDate,
-            paymentStatus: PaymentStatus.PENDING,
-            supplierVatNumber: sup.supplierVat,
-            buyerVatNumber,
-            taxPeriod,
-            supplierBankAccount: sup.supplierIban,
-          },
-          select: { id: true },
-        }),
+      agentPayloads.map(
+        ({
+          sup,
+          invoiceNumber,
+          subtotal,
+          tax,
+          total,
+          taxPeriod,
+          dueDate: supDueDate,
+        }) =>
+          this.prisma.invoice.create({
+            data: {
+              invoiceNumber,
+              orderId: order.id,
+              sellerCompanyId: sup.supplierId,
+              subtotal,
+              tax,
+              total,
+              currency: order.currency,
+              dueDate: supDueDate,
+              paymentStatus: PaymentStatus.PENDING,
+              supplierVatNumber: sup.supplierVat,
+              buyerVatNumber,
+              taxPeriod,
+              supplierBankAccount: sup.supplierIban,
+            },
+            select: { id: true },
+          }),
       ),
     );
 
@@ -1145,7 +1163,8 @@ export class InvoicesService {
   ): Promise<void> {
     const amountCents = Math.round(order.total * 100);
     const currency = order.currency.toUpperCase();
-    const webBase = this.configService.get<string>('WEB_URL') ?? 'https://b3hub.lv';
+    const webBase =
+      this.configService.get<string>('WEB_URL') ?? 'https://b3hub.lv';
     const name = order.transportJobId
       ? `B3Hub Invoice — Job ${order.id.slice(-8).toUpperCase()}`
       : `B3Hub Invoice — Order ${order.id.slice(-8).toUpperCase()}`;
@@ -1168,7 +1187,9 @@ export class InvoicesService {
       },
     });
 
-    this.logger.log(`Paysera payment link created for invoice ${invoiceId}: ${paymentUrl}`);
+    this.logger.log(
+      `Paysera payment link created for invoice ${invoiceId}: ${paymentUrl}`,
+    );
   }
 
   /**
@@ -1299,7 +1320,9 @@ export class InvoicesService {
           // Batch-fetch all buyer users in one query
           const buyerIds = [
             ...new Set(
-              overdue.map((i) => i.order?.createdById).filter(Boolean) as string[],
+              overdue
+                .map((i) => i.order?.createdById)
+                .filter(Boolean) as string[],
             ),
           ];
           const buyers = await this.prisma.user.findMany({
@@ -1335,8 +1358,9 @@ export class InvoicesService {
                 this.emailService
                   .sendInvoiceOverdue(
                     buyer.email,
-                    [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') ||
-                      buyer.email,
+                    [buyer.firstName, buyer.lastName]
+                      .filter(Boolean)
+                      .join(' ') || buyer.email,
                     {
                       invoiceNumber:
                         inv.invoiceNumber ?? inv.id.slice(0, 8).toUpperCase(),
@@ -1380,7 +1404,9 @@ export class InvoicesService {
           // Batch-fetch all due-soon buyer users in one query
           const dueSoonBuyerIds = [
             ...new Set(
-              dueSoon.map((i) => i.order?.createdById).filter(Boolean) as string[],
+              dueSoon
+                .map((i) => i.order?.createdById)
+                .filter(Boolean) as string[],
             ),
           ];
           const dueSoonBuyers = await this.prisma.user.findMany({

@@ -81,7 +81,8 @@ function SaveRow({ saveState, onSave }: { saveState: SaveState; onSave: () => vo
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function PlatformJumisPage() {
-  const { session } = useAuth();
+  const { token: authTok } = useAuth();
+  const token = authTok ?? '';
 
   const [settings, setSettings] = useState<Record<string, string> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,17 +93,17 @@ export default function PlatformJumisPage() {
   const [showApiKey, setShowApiKey] = useState(false);
 
   const load = useCallback(async () => {
-    if (!session?.access_token) return;
+    if (!token) return;
     setLoading(true);
     setError(null);
     try {
-      setSettings(await adminGetSettings(session.access_token));
+      setSettings(await adminGetSettings(token));
     } catch {
       setError('Neizdevās ielādēt iestatījumus.');
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, [token]);
 
   useEffect(() => {
     load();
@@ -113,12 +114,12 @@ export default function PlatformJumisPage() {
   }
 
   async function save(keys: string[], setSave: (s: SaveState) => void) {
-    if (!session?.access_token || !settings) return;
+    if (!token || !settings) return;
     setSave('saving');
     try {
       await adminUpdateSettings(
-        session.access_token,
         Object.fromEntries(keys.map((k) => [k, settings[k] ?? ''])),
+        token
       );
       setSave('saved');
       setTimeout(() => setSave('idle'), 2500);
@@ -157,16 +158,17 @@ export default function PlatformJumisPage() {
       <PageHeader
         title="Jumis — Platforma"
         description="Jumis integrācija B3Hub SIA grāmatvedībai — tirgu rēķini, norēķini ar piegādātājiem un pārvadātājiem."
-      >
-        <a
-          href="https://www.jumis.lv"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          jumis.lv <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </PageHeader>
+        action={
+          <a
+            href="https://www.jumis.lv"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            jumis.lv <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        }
+      />
 
       {/* Scope notice */}
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">

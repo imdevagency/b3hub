@@ -312,8 +312,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     pendingSellerOrders: 0,
   });
 
-  const isRouteActive = React.useCallback(
-    makeIsRouteActive(pathname, [
+  const isRouteActive = React.useMemo(
+    () => makeIsRouteActive(pathname, [
       '/dashboard/buyer',
       '/dashboard/supplier',
       '/dashboard/transporter',
@@ -651,10 +651,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   asChild
                   tooltip="Paziņojumi"
                   isActive={isRouteActive({
-                    href: '/dashboard/notifications',
-                    label: 'Paziņojumi',
+                    title: 'Paziņojumi',
+                    url: '/dashboard/notifications',
                     icon: Bell,
-                  })}
+                  } as any)}
                   className="font-medium text-gray-600 hover:text-gray-900"
                 >
                   <Link href="/dashboard/notifications">
@@ -669,10 +669,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   asChild
                   tooltip="Ziņojumi"
                   isActive={isRouteActive({
-                    href: '/dashboard/chat',
-                    label: 'Ziņojumi',
+                    title: 'Ziņojumi',
+                    url: '/dashboard/chat',
                     icon: MessageSquare,
-                  })}
+                  } as any)}
                   className="font-medium text-gray-600 hover:text-gray-900"
                 >
                   <Link href="/dashboard/chat">

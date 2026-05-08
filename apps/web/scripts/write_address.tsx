@@ -126,7 +126,7 @@ export function AddressAutocomplete({
           componentRestrictions: { country: ['lv', 'lt', 'ee'] },
           types: ['address'],
           sessionToken: sessionToken.current,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
         },
         (results: any, status: any) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -159,7 +159,7 @@ export function AddressAutocomplete({
         placeId: prediction.place_id,
         fields: ['address_components', 'formatted_address', 'geometry'],
         sessionToken: sessionToken.current,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
       },
       (place: any, status: any) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

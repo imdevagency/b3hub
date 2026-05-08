@@ -199,7 +199,11 @@ export class RecyclingCentersController {
     assertIsRecycler(user);
     if (!user.companyId)
       throw new ForbiddenException('A linked company is required');
-    return this.service.createListingFromWasteRecord(recordId, body, user.companyId);
+    return this.service.createListingFromWasteRecord(
+      recordId,
+      body,
+      user.companyId,
+    );
   }
 
   // ── Disposal Quote (public) ─────────────────────────────────────────────
@@ -234,7 +238,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsRecycler(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.getPricingRules(centerId, user.companyId);
   }
 
@@ -246,7 +251,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsRecycler(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.upsertPricingRule(centerId, dto, user.companyId);
   }
 
@@ -258,7 +264,8 @@ export class RecyclingCentersController {
     @CurrentUser() user: RequestingUser,
   ) {
     assertIsRecycler(user);
-    if (!user.companyId) throw new ForbiddenException('A linked company is required');
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
     return this.service.deletePricingRule(centerId, wasteType, user.companyId);
   }
 

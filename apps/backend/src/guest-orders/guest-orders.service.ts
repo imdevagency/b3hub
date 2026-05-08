@@ -66,7 +66,9 @@ export class GuestOrdersService {
         skipSize: dto.skipSize,
         skipWasteCategory: dto.skipWasteCategory,
         hireDays: dto.hireDays,
-        collectionDate: dto.collectionDate ? new Date(dto.collectionDate) : undefined,
+        collectionDate: dto.collectionDate
+          ? new Date(dto.collectionDate)
+          : undefined,
         // TRANSPORT specific
         pickupAddress: dto.pickupAddress,
         pickupCity: dto.pickupCity,
@@ -122,7 +124,9 @@ export class GuestOrdersService {
             disposalVolume: dto.disposalVolume,
             deliveryAddress: dto.deliveryAddress,
             deliveryCity: dto.deliveryCity,
-            deliveryDate: dto.deliveryDate ? new Date(dto.deliveryDate) : undefined,
+            deliveryDate: dto.deliveryDate
+              ? new Date(dto.deliveryDate)
+              : undefined,
             deliveryWindow: dto.deliveryWindow,
           },
         )
@@ -132,7 +136,9 @@ export class GuestOrdersService {
         });
     }
 
-    this.logger.log(`Guest order created: ${orderNumber} category=${category} (token: ${token})`);
+    this.logger.log(
+      `Guest order created: ${orderNumber} category=${category} (token: ${token})`,
+    );
 
     return {
       orderNumber: guestOrder.orderNumber,
@@ -242,7 +248,12 @@ export class GuestOrdersService {
    */
   async claimByToken(
     token: string,
-    payload: { email: string; password: string; firstName?: string; lastName?: string },
+    payload: {
+      email: string;
+      password: string;
+      firstName?: string;
+      lastName?: string;
+    },
   ) {
     const guestOrder = await this.prisma.guestOrder.findUnique({
       where: { token },
@@ -255,7 +266,8 @@ export class GuestOrdersService {
     const nameParts = (guestOrder.contactName ?? '').trim().split(/\s+/);
     const firstName = payload.firstName?.trim() || nameParts[0] || 'Klients';
     const lastName =
-      payload.lastName?.trim() || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+      payload.lastName?.trim() ||
+      (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
 
     const result = await this.auth.register({
       email: payload.email.trim().toLowerCase(),
@@ -304,7 +316,11 @@ export class GuestOrdersService {
 
     return this.prisma.guestOrder.update({
       where: { id },
-      data: { quotedAmount, quotedCurrency, status: GuestOrderStatus.CONTACTED },
+      data: {
+        quotedAmount,
+        quotedCurrency,
+        status: GuestOrderStatus.CONTACTED,
+      },
     });
   }
 
@@ -317,7 +333,9 @@ export class GuestOrdersService {
    * Returns a Paysera payment URL the guest opens to complete payment.
    */
   async createPaymentIntent(id: string) {
-    const guestOrder = await this.prisma.guestOrder.findUnique({ where: { id } });
+    const guestOrder = await this.prisma.guestOrder.findUnique({
+      where: { id },
+    });
     if (!guestOrder) throw new NotFoundException('Guest order not found');
 
     if (!guestOrder.quotedAmount || guestOrder.quotedAmount <= 0) {
@@ -340,8 +358,10 @@ export class GuestOrdersService {
 
     const amountCents = Math.round(guestOrder.quotedAmount * 100);
     const currency = guestOrder.quotedCurrency ?? 'EUR';
-    const baseUrl = this.config.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
-    const apiUrl = this.config.get<string>('API_URL') ?? 'https://api.b3hub.app';
+    const baseUrl =
+      this.config.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
+    const apiUrl =
+      this.config.get<string>('API_URL') ?? 'https://api.b3hub.app';
 
     const checkout = await this.paysera.createCheckout({
       reference: guestOrder.orderNumber,
@@ -437,4 +457,3 @@ export class GuestOrdersService {
     );
   }
 }
-
