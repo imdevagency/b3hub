@@ -189,6 +189,11 @@ export class TransportJobsService {
     statusTimestamps: true,
     createdAt: true,
     requestedById: true,
+    // Site coordination — populated for WASTE_COLLECTION (disposal) jobs
+    bisNumber: true,
+    loadingBy: true,
+    contactWillBePresent: true,
+    wasteReadiness: true,
   } as const;
 
   private statusSortOrder: Record<TransportJobStatus, number> = {

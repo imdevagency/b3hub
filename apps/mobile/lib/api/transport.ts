@@ -65,6 +65,11 @@ export interface ApiTransportJob {
     supplierName: string | null;
     supplierPhone: string | null;
   } | null;
+  // Site coordination — present on WASTE_COLLECTION (disposal) jobs
+  bisNumber?: string | null;
+  loadingBy?: 'BUYER_CREW' | 'DRIVER_HANDS' | 'NEEDS_MACHINERY' | string | null;
+  contactWillBePresent?: boolean | null;
+  wasteReadiness?: 'PILED' | 'NEEDS_PREP' | string | null;
 }
 
 export interface JobLocation {

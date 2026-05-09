@@ -35,6 +35,14 @@ export interface ApiPickupSlotMobile {
   available: number;
 }
 
+export interface ApiFieldInventoryItem {
+  id: string;
+  name: string;
+  unit: string;
+  pricePerUnit: number;
+  stockQty: number;
+}
+
 export interface ApiPassScanResult {
   pass: {
     id: string;
@@ -86,6 +94,13 @@ export const b3Fields = {
    */
   getSlots: (fieldId: string, date: string): Promise<ApiPickupSlotMobile[]> =>
     apiFetch<ApiPickupSlotMobile[]>(`/b3-fields/${fieldId}/slots?date=${date}`),
+
+  /**
+   * Get publicly visible inventory items for a field (no auth required).
+   * Used in mobile to show what materials are in stock before placing a pickup order.
+   */
+  getPublicInventory: (fieldId: string): Promise<ApiFieldInventoryItem[]> =>
+    apiFetch<ApiFieldInventoryItem[]>(`/b3-fields/${fieldId}/inventory/public`),
 
   /**
    * Gate: validate a FieldPass by pass number (QR scan or manual entry).

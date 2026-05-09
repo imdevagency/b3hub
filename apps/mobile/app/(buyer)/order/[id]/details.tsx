@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   content: {
-    paddingBottom: 120,
+    paddingBottom: 20,
   },
   cardSection: {
     paddingHorizontal: 20,

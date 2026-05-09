@@ -308,7 +308,7 @@ export default function NotificationsScreen() {
       ) : (
         <ScrollView
           className="flex-1 bg-white"
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#111827" />

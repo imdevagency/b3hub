@@ -3,9 +3,23 @@
  */
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { MapPin, Clock, ChevronRight, Package, Recycle, Truck } from 'lucide-react-native';
+import {
+  MapPin,
+  Clock,
+  ChevronRight,
+  Package,
+  Recycle,
+  Truck,
+  AlertTriangle,
+  CheckCircle,
+} from 'lucide-react-native';
 import { colors, radius, spacing } from '@/lib/theme';
-import { b3Fields, type ApiMobileB3Field, type ApiPickupSlotMobile } from '@/lib/api';
+import {
+  b3Fields,
+  type ApiMobileB3Field,
+  type ApiPickupSlotMobile,
+  type ApiFieldInventoryItem,
+} from '@/lib/api';
 
 const SERVICE_LABELS: Record<string, string> = {
   MATERIAL_PICKUP: 'Paņemšana',
@@ -25,6 +39,8 @@ interface Props {
   onFieldChange: (fieldId: string) => void;
   onSlotChange: (slotId: string) => void;
   onPickupDateChange: (date: string) => void;
+  /** When provided, shows stock availability check per field */
+  requestedQty?: number;
 }
 
 // Next 7 days for slot selection
@@ -52,12 +68,15 @@ export function FieldPickerStep({
   onFieldChange,
   onSlotChange,
   onPickupDateChange,
+  requestedQty,
 }: Props) {
   const [fields, setFields] = useState<ApiMobileB3Field[]>([]);
   const [loadingFields, setLoadingFields] = useState(true);
   const [slots, setSlots] = useState<ApiPickupSlotMobile[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [inventory, setInventory] = useState<ApiFieldInventoryItem[]>([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
   const days = getNextDays(7);
 
   useEffect(() => {
@@ -76,6 +95,19 @@ export function FieldPickerStep({
       .then(setSlots)
       .finally(() => setLoadingSlots(false));
   }, [selectedFieldId, selectedDate]);
+
+  useEffect(() => {
+    if (!selectedFieldId) {
+      setInventory([]);
+      return;
+    }
+    setLoadingInventory(true);
+    b3Fields
+      .getPublicInventory(selectedFieldId)
+      .then(setInventory)
+      .catch(() => setInventory([]))
+      .finally(() => setLoadingInventory(false));
+  }, [selectedFieldId]);
 
   const handleDateSelect = (iso: string) => {
     setSelectedDate(iso);
@@ -222,6 +254,111 @@ export function FieldPickerStep({
               </Pressable>
             );
           })}
+        </View>
+      )}
+
+      {/* Inventory availability panel */}
+      {selectedFieldId && (
+        <View
+          style={{
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.bgCard,
+            padding: spacing.base,
+            marginBottom: spacing.xl,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_600SemiBold',
+              color: colors.textMuted,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              marginBottom: spacing.sm,
+            }}
+          >
+            Krājumi šajā punktā
+          </Text>
+          {loadingInventory ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : inventory.length === 0 ? (
+            <Text
+              style={{ fontSize: 13, color: colors.textDisabled, fontFamily: 'Inter_400Regular' }}
+            >
+              Informācija par krājumiem nav pieejama
+            </Text>
+          ) : (
+            <View style={{ gap: 8 }}>
+              {inventory.map((item) => {
+                const hasEnough = requestedQty == null || item.stockQty >= requestedQty;
+                const stockColor =
+                  item.stockQty === 0
+                    ? (colors.error ?? '#ef4444')
+                    : !hasEnough
+                      ? '#f59e0b'
+                      : '#16a34a';
+                return (
+                  <View
+                    key={item.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+                  >
+                    {item.stockQty > 0 && hasEnough ? (
+                      <CheckCircle size={14} color={stockColor} />
+                    ) : (
+                      <AlertTriangle size={14} color={stockColor} />
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontFamily: 'Inter_500Medium',
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        {item.name}
+                      </Text>
+                    </View>
+                    <Text
+                      style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: stockColor }}
+                    >
+                      {item.stockQty} {item.unit}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                      €{item.pricePerUnit}/{item.unit}
+                    </Text>
+                  </View>
+                );
+              })}
+              {requestedQty != null &&
+                inventory.some((i) => i.stockQty > 0 && i.stockQty < requestedQty) && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 4,
+                      backgroundColor: '#fffbeb',
+                      borderRadius: radius.sm,
+                      padding: 8,
+                    }}
+                  >
+                    <AlertTriangle size={13} color="#d97706" />
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: '#92400e',
+                        fontFamily: 'Inter_500Medium',
+                        flex: 1,
+                      }}
+                    >
+                      Dažiem materiāliem krājumi ir mazāki par pieprasīto daudzumu ({requestedQty})
+                    </Text>
+                  </View>
+                )}
+            </View>
+          )}
         </View>
       )}
 

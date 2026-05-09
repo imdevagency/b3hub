@@ -237,7 +237,7 @@ const s = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
     paddingTop: 8,
   },
   hero: {

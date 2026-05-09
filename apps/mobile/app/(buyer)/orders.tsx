@@ -215,7 +215,7 @@ export default function OrdersScreen() {
         ItemSeparatorComponent={() => (
           <View className="h-[1px] bg-gray-100" style={{ marginLeft: 64 }} />
         )}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={

@@ -274,7 +274,7 @@ export default function BuyerFrameworkContractsScreen() {
 const s = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
     paddingTop: 8,
   },
   emptyScroll: {

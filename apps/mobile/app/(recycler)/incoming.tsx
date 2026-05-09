@@ -20,13 +20,22 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useHeaderConfig } from '@/lib/header-context';
 import { colors } from '@/lib/theme';
 import { getRecyclerJobStatus } from '@/lib/status';
-import { Truck, Calendar, MapPin, FileText, XCircle } from 'lucide-react-native';
+import {
+  Truck,
+  Calendar,
+  MapPin,
+  FileText,
+  XCircle,
+  Scale,
+  Phone,
+  Package,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function JobCard({ job, onPress }: { job: IncomingJob; onPress: () => void }) {
   const statusMeta = getRecyclerJobStatus(job.status);
-  const pickupDate = job.scheduledPickupAt
-    ? new Date(job.scheduledPickupAt).toLocaleDateString('lv-LV', {
+  const pickupDate = job.pickupDate
+    ? new Date(job.pickupDate).toLocaleDateString('lv-LV', {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
@@ -43,6 +52,15 @@ function JobCard({ job, onPress }: { job: IncomingJob; onPress: () => void }) {
         </View>
       </View>
 
+      {job.cargoType && (
+        <View style={ls.row}>
+          <Package size={14} color={colors.textMuted} />
+          <Text style={ls.rowText}>
+            {job.cargoType}
+            {job.cargoWeight ? ` · ${job.cargoWeight} t` : ''}
+          </Text>
+        </View>
+      )}
       {job.requester && (
         <View style={ls.row}>
           <Truck size={14} color={colors.textMuted} />
@@ -62,7 +80,7 @@ function JobCard({ job, onPress }: { job: IncomingJob; onPress: () => void }) {
         <View style={ls.row}>
           <Truck size={14} color={colors.textMuted} />
           <Text style={ls.rowText}>
-            {job.vehicle.plateNumber} · {job.vehicle.type}
+            {job.vehicle.licensePlate} · {job.vehicle.vehicleType}
           </Text>
         </View>
       )}
@@ -183,8 +201,8 @@ export default function RecyclerIncomingScreen() {
         {selectedJob &&
           (() => {
             const meta = getRecyclerJobStatus(selectedJob.status);
-            const pickupDate = selectedJob.scheduledPickupAt
-              ? new Date(selectedJob.scheduledPickupAt).toLocaleDateString('lv-LV', {
+            const pickupDate = selectedJob.pickupDate
+              ? new Date(selectedJob.pickupDate).toLocaleDateString('lv-LV', {
                   weekday: 'short',
                   day: '2-digit',
                   month: 'long',
@@ -209,6 +227,50 @@ export default function RecyclerIncomingScreen() {
                     </Text>
                   </View>
                 )}
+                {selectedJob.cargoType && (
+                  <View style={ls.row}>
+                    <Package size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>
+                      {selectedJob.cargoType}
+                      {selectedJob.cargoWeight ? ` · ~${selectedJob.cargoWeight} t` : ''}
+                    </Text>
+                  </View>
+                )}
+                {selectedJob.bisNumber && (
+                  <View style={ls.row}>
+                    <FileText size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>BIS: {selectedJob.bisNumber}</Text>
+                  </View>
+                )}
+                {(selectedJob.siteContactName || selectedJob.siteContactPhone) && (
+                  <View style={ls.row}>
+                    <Phone size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>
+                      {[selectedJob.siteContactName, selectedJob.siteContactPhone]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  </View>
+                )}
+                {selectedJob.loadingBy && (
+                  <View style={ls.row}>
+                    <Scale size={14} color={colors.textMuted} />
+                    <Text style={ls.rowText}>
+                      {selectedJob.loadingBy === 'BUYER_CREW'
+                        ? 'Klients krauj pats'
+                        : selectedJob.loadingBy === 'DRIVER_HANDS'
+                          ? 'Kraušana ar rokām (vadītājs)'
+                          : selectedJob.loadingBy === 'NEEDS_MACHINERY'
+                            ? 'Nepieciešama tehnika'
+                            : selectedJob.loadingBy}
+                      {selectedJob.wasteReadiness === 'PILED'
+                        ? ' · Sablietēts'
+                        : selectedJob.wasteReadiness === 'NEEDS_PREP'
+                          ? ' · Nepieciešama sagatavošana'
+                          : ''}
+                    </Text>
+                  </View>
+                )}
                 {pickupDate && (
                   <View style={ls.row}>
                     <Calendar size={14} color={colors.textMuted} />
@@ -219,14 +281,14 @@ export default function RecyclerIncomingScreen() {
                   <View style={ls.row}>
                     <Truck size={14} color={colors.textMuted} />
                     <Text style={ls.rowText}>
-                      {selectedJob.vehicle.plateNumber} · {selectedJob.vehicle.type}
+                      {selectedJob.vehicle.licensePlate} · {selectedJob.vehicle.vehicleType}
                     </Text>
                   </View>
                 )}
-                {(selectedJob as any).pickupAddress && (
+                {selectedJob.pickupAddress && (
                   <View style={ls.row}>
                     <MapPin size={14} color={colors.textMuted} />
-                    <Text style={ls.rowText}>{(selectedJob as any).pickupAddress}</Text>
+                    <Text style={ls.rowText}>{selectedJob.pickupAddress}</Text>
                   </View>
                 )}
                 {selectedJob.notes && (

@@ -734,6 +734,7 @@ export default function OrderRequestWizard() {
           onFieldChange={setPickupFieldId}
           onSlotChange={setPickupSlotId}
           onPickupDateChange={setPickupDate}
+          requestedQty={quantity}
         />
       )}
       {step === 'address' && (
@@ -746,8 +747,6 @@ export default function OrderRequestWizard() {
           }}
           onConfirm={goNext}
           contextLabel="Piegādes adrese"
-          pricePreviewCategory={selectedCategory}
-          pricePreviewQuantity={quantity}
         />
       )}
       {step === 'specs' && (

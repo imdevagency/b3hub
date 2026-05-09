@@ -259,7 +259,7 @@ export default function HomeScreen() {
     <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

@@ -131,7 +131,7 @@ export default function DisputesScreen() {
 const s = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   emptyScroll: {
     flexGrow: 1,

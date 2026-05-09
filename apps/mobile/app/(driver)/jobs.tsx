@@ -1308,7 +1308,7 @@ const styles = StyleSheet.create({
     borderColor: colors.white,
   },
 
-  scrollContent: { paddingBottom: 120, paddingHorizontal: 20, paddingTop: 8, gap: 16 },
+  scrollContent: { paddingBottom: 20, paddingHorizontal: 20, paddingTop: 8, gap: 16 },
 
   activePill: {
     flexDirection: 'row',

@@ -18,11 +18,40 @@ export interface IncomingJob {
   id: string;
   jobType: string;
   status: string;
-  scheduledPickupAt?: string;
+  /** ISO date — when the driver picks up waste at buyer's site. */
+  pickupDate?: string;
   notes?: string;
+  // Pickup origin
+  pickupAddress?: string;
+  pickupCity?: string;
+  // Waste / cargo metadata — critical for recycler pre-planning
+  cargoType?: string;          // waste type / material type
+  cargoWeight?: number;        // estimated weight in tonnes
+  requiredVehicleType?: string;
+  // Site coordination
+  bisNumber?: string;
+  loadingBy?: 'BUYER_CREW' | 'DRIVER_HANDS' | 'NEEDS_MACHINERY' | string;
+  contactWillBePresent?: boolean;
+  wasteReadiness?: 'PILED' | 'NEEDS_PREP' | string;
+  siteContactName?: string;
+  siteContactPhone?: string;
+  /** rate === 0 means this is a scrap buyback — recycler owes the buyer a payout. */
+  rate?: number;
   recyclingCenter?: { id: string; name: string; address: string };
   requester?: { id: string; firstName: string; lastName: string; phone?: string };
-  vehicle?: { id: string; plateNumber: string; type: string };
+  vehicle?: { id: string; licensePlate: string; vehicleType: string };
+  /** Order-level fields (present when job was created via the disposal order flow). */
+  order?: {
+    id: string;
+    orderNumber: string;
+    bisNumber?: string | null;
+    createdBy?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      phone?: string | null;
+    } | null;
+  } | null;
   createdAt: string;
 }
 

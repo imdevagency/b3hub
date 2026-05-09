@@ -23,7 +23,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 // react-native-maps is not bundled in Expo Go — guard the import so the
 // component loads in Expo Go instead of crashing the JS runtime.
@@ -103,6 +103,7 @@ export function InlineAddressStep({
   const activeSearchText = useRef<string>('');
   const isSelectingRef = useRef<boolean>(false);
   const mapRef = useRef<any>(null);
+  const insets = useSafeAreaInsets();
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
   const { token } = useAuth();
 
@@ -377,7 +378,7 @@ export function InlineAddressStep({
         </SafeAreaView>
 
         {/* Bottom panel */}
-        <View style={s.mapPanel}>
+        <View style={[s.mapPanel, { paddingBottom: Math.max(insets.bottom || 24, 24) }]}>
           <View style={s.mapPanelRow}>
             <View style={s.mapPinIconWrap}>
               <MapPin size={18} color="#000" />
@@ -699,7 +700,7 @@ const s = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    // paddingBottom is overridden via style prop
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 16,

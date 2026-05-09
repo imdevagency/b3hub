@@ -261,6 +261,7 @@ export interface ApiOrder {
   siteContactName?: string | null;
   siteContactPhone?: string | null;
   sitePhotoUrl?: string | null;
+  bisNumber?: string | null;
   truckCount?: number | null;
   scheduleIntervalMinutes?: number | null;
   statusTimestamps?: Record<string, string> | null;

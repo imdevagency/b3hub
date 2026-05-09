@@ -139,6 +139,10 @@ function InventoryTab({ fieldId, token }: { fieldId: string; token: string }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // Quick stock adjust state: { [itemId]: { qty: string, saving: boolean, saved: boolean } }
+  const [quickAdj, setQuickAdj] = useState<
+    Record<string, { qty: string; saving: boolean; saved: boolean }>
+  >({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -218,6 +222,28 @@ function InventoryTab({ fieldId, token }: { fieldId: string; token: string }) {
     }
   };
 
+  const saveQuickAdj = async (item: ApiInventoryItem) => {
+    const adj = quickAdj[item.id];
+    if (!adj) return;
+    const newQty = parseFloat(adj.qty);
+    if (isNaN(newQty) || newQty < 0) return;
+    setQuickAdj((p) => ({ ...p, [item.id]: { ...p[item.id], saving: true, saved: false } }));
+    try {
+      await updateInventoryItem(token, fieldId, item.id, { stockQty: newQty });
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, stockQty: newQty } : i)));
+      setQuickAdj((p) => ({
+        ...p,
+        [item.id]: { qty: String(newQty), saving: false, saved: true },
+      }));
+      setTimeout(
+        () => setQuickAdj((p) => ({ ...p, [item.id]: { ...p[item.id], saved: false } })),
+        2000,
+      );
+    } catch {
+      setQuickAdj((p) => ({ ...p, [item.id]: { ...p[item.id], saving: false } }));
+    }
+  };
+
   const lowStock = (item: ApiInventoryItem) =>
     item.minStockQty > 0 && item.stockQty <= item.minStockQty;
 
@@ -250,59 +276,96 @@ function InventoryTab({ fieldId, token }: { fieldId: string; token: string }) {
         />
       ) : (
         <div className="space-y-2">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className={cn(
-                'flex items-center gap-4 rounded-xl border p-4',
-                !item.available && 'opacity-60',
-                lowStock(item) && 'border-amber-400/60 bg-amber-50/40',
-              )}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-sm text-foreground">{item.name}</p>
-                  {!item.available && (
-                    <Badge variant="secondary" className="text-xs">
-                      Nav pieejams
-                    </Badge>
-                  )}
-                  {lowStock(item) && (
-                    <Badge variant="outline" className="text-xs border-amber-400 text-amber-700">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Maz krājuma
-                    </Badge>
-                  )}
+          {items.map((item) => {
+            const adj = quickAdj[item.id];
+            const adjQty = adj?.qty ?? String(item.stockQty);
+            return (
+              <div
+                key={item.id}
+                className={cn(
+                  'flex items-start gap-4 rounded-xl border p-4',
+                  !item.available && 'opacity-60',
+                  lowStock(item) && 'border-amber-400/60 bg-amber-50/40',
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm text-foreground">{item.name}</p>
+                    {!item.available && (
+                      <Badge variant="secondary" className="text-xs">
+                        Nav pieejams
+                      </Badge>
+                    )}
+                    {lowStock(item) && (
+                      <Badge variant="outline" className="text-xs border-amber-400 text-amber-700">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Maz krājuma
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    €{item.pricePerUnit}/{item.unit}
+                  </p>
+                  {/* Inline quick stock adjust */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      className="h-7 w-28 text-sm"
+                      value={adjQty}
+                      onChange={(e) =>
+                        setQuickAdj((p) => ({
+                          ...p,
+                          [item.id]: { qty: e.target.value, saving: false, saved: false },
+                        }))
+                      }
+                      onKeyDown={(e) => e.key === 'Enter' && saveQuickAdj(item)}
+                    />
+                    <span className="text-xs text-muted-foreground">{item.unit}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => saveQuickAdj(item)}
+                      disabled={adj?.saving}
+                    >
+                      {adj?.saving ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : adj?.saved ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
+                      ) : (
+                        'Saglabāt'
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {item.stockQty} {item.unit} krājumā · €{item.pricePerUnit}/{item.unit}
-                </p>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => openEdit(item)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(item)}
+                    disabled={deleting === item.id}
+                  >
+                    {deleting === item.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => openEdit(item)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(item)}
-                  disabled={deleting === item.id}
-                >
-                  {deleting === item.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

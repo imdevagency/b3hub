@@ -53,6 +53,7 @@ interface IncomingOrder {
   notes?: string;
   siteContactName?: string;
   siteContactPhone?: string;
+  bisNumber?: string;
   price: number;
   status: OrderStatus;
   paymentStatus?: string;
@@ -94,6 +95,7 @@ function mapApiOrder(o: ApiOrder): IncomingOrder {
     truckCount: o.truckCount ?? undefined,
     siteContactName: o.siteContactName ?? undefined,
     siteContactPhone: o.siteContactPhone ?? undefined,
+    bisNumber: o.bisNumber ?? undefined,
   };
 }
 
@@ -333,6 +335,16 @@ function OrderCard({
               numberOfLines={1}
             >
               {order.notes}
+            </Text>
+          </View>
+        )}
+
+        {/* BIS number (waste permit / building info system) */}
+        {order.bisNumber && (
+          <View className="flex-row items-center mt-1.5" style={{ gap: 4 }}>
+            <FileText size={11} color="#9ca3af" />
+            <Text className="text-gray-500" style={{ fontSize: 13 }}>
+              BIS: {order.bisNumber}
             </Text>
           </View>
         )}

@@ -523,13 +523,49 @@ export class RecyclingCentersService {
         recyclingCenterId: { in: centerIds },
         jobType: 'WASTE_COLLECTION',
       },
-      include: {
+      select: {
+        id: true,
+        jobType: true,
+        status: true,
+        pickupDate: true,
+        pickupAddress: true,
+        pickupCity: true,
+        notes: true,
+        createdAt: true,
+        // Waste / cargo metadata — critical for recycler pre-planning
+        cargoType: true,       // wasteType
+        cargoWeight: true,     // estimated weight in tonnes
+        requiredVehicleType: true,
+        truckIndex: true,
+        // Site coordination fields
+        bisNumber: true,
+        loadingBy: true,
+        contactWillBePresent: true,
+        wasteReadiness: true,
+        siteContactName: true,
+        siteContactPhone: true,
+        // Buyback: rate=0 means buyer gets paid; the agreed payout is on the
+        // linked Order. We expose `rate` so the recycler can infer buyback
+        // status (rate === 0) without a separate join.
+        rate: true,
+        // Relations
         recyclingCenter: { select: { id: true, name: true, address: true } },
         requester: {
           select: { id: true, firstName: true, lastName: true, phone: true },
         },
         vehicle: {
           select: { id: true, licensePlate: true, vehicleType: true },
+        },
+        // Link back to Order for bisNumber (material orders) and buyback payout
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            bisNumber: true,
+            createdBy: {
+              select: { id: true, firstName: true, lastName: true, phone: true },
+            },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },

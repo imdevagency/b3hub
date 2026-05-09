@@ -623,7 +623,7 @@ export default function CatalogScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
         }
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+        contentContainerStyle={{ paddingBottom: 20, paddingTop: 8 }}
         ListHeaderComponent={
           resumeDraft ? (
             <TouchableOpacity

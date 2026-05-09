@@ -73,6 +73,8 @@ export interface SkipHireOrder {
   overdueFeeEur?: number;
   createdAt: string;
   updatedAt: string;
+  /** BIS (Building Information System) reference number — optional, entered by buyer. */
+  bisNumber?: string | null;
 }
 
 export interface OverdueInvoiceResult {
