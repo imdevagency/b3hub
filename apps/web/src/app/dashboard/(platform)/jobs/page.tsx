@@ -45,7 +45,7 @@ import {
 } from '@/lib/api';
 import { useAvailableJobs } from '@/hooks/use-available-jobs';
 import { CarrierHistoryView } from '../orders/page';
-import { API_URL } from '@/lib/api/common';
+import { API_URL, apiFetch } from '@/lib/api/common';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, Users, CircleCheck, CornerDownLeft } from 'lucide-react';
 
@@ -167,23 +167,17 @@ async function geocodeCity(
 ): Promise<{ lat: number; lng: number } | null> {
   if (!city.trim()) return null;
   try {
-    const url = `${API_URL}/maps/autocomplete?input=${encodeURIComponent(city + ', Latvia')}`;
-    const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      suggestions?: Array<{ place_id: string; description: string }>;
-    };
+    const data = await apiFetch<{ suggestions?: Array<{ place_id: string; description: string }> }>(
+      `/maps/autocomplete?input=${encodeURIComponent(city + ', Latvia')}`,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+    );
     const first = data.suggestions?.[0];
     if (!first) return null;
     // Resolve the place_id to lat/lng
-    const detailsUrl = `${API_URL}/maps/place-details?place_id=${encodeURIComponent(first.place_id)}`;
-    const detailsRes = await fetch(detailsUrl, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!detailsRes.ok) return null;
-    const details = (await detailsRes.json()) as { location?: { lat: number; lng: number } };
+    const details = await apiFetch<{ location?: { lat: number; lng: number } }>(
+      `/maps/place-details?place_id=${encodeURIComponent(first.place_id)}`,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+    );
     return details.location ?? null;
   } catch {
     // silent
@@ -298,9 +292,8 @@ export default function JobsPage() {
   // Live diesel price
   const [fuelDiesel, setFuelDiesel] = useState<number | null>(null);
   useEffect(() => {
-    fetch(`${API_URL}/public/price-rates`)
-      .then((r) => r.json())
-      .then((d: { diesel: number }) => setFuelDiesel(d.diesel))
+    apiFetch<{ diesel: number }>('/public/price-rates')
+      .then((d) => setFuelDiesel(d.diesel))
       .catch(() => {});
   }, []);
 

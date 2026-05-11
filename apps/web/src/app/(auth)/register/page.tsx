@@ -1,6 +1,6 @@
 /**
  * Register page — /register
- * New account form supporting buyer, supplier, and carrier role selection.
+ * New account form: Step 1 = account type + contact, Step 2 = role, Step 3 = name + password.
  */
 'use client';
 
@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Building2, HardHat, Loader2, Truck } from 'lucide-react';
+import { ArrowLeft, Building2, HardHat, Loader2, Truck, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -44,8 +44,8 @@ const USER_TYPE_META: {
 ];
 
 const ACCOUNT_KIND_META = [
-  { value: true, label: 'Uzņēmums' },
-  { value: false, label: 'Privātpersona' },
+  { value: true, label: 'Uzņēmums', desc: 'SIA, AS vai IK', icon: Building2 },
+  { value: false, label: 'Privātpersona', desc: 'Fiziska persona', icon: User },
 ];
 
 const schema = z
@@ -55,9 +55,15 @@ const schema = z
     email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
     phone: z.string().optional(),
     userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER'] as const),
-    isCompany: z.boolean().optional(),
+    isCompany: z.boolean(),
+    companyName: z.string().optional(),
+    regNumber: z.string().optional(),
     password: z.string().min(8, 'Parolei jābūt vismaz 8 rakstzīmēm'),
     confirmPassword: z.string(),
+  })
+  .refine((d) => !d.isCompany || (d.companyName && d.companyName.trim().length >= 2), {
+    message: 'Nepieciešams uzņēmuma nosaukums',
+    path: ['companyName'],
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Paroles nesakrīt',
@@ -65,6 +71,9 @@ const schema = z
   });
 
 type FormData = z.infer<typeof schema>;
+
+const inputCls =
+  'h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500';
 
 function RegisterPageInner() {
   const router = useRouter();
@@ -95,12 +104,16 @@ function RegisterPageInner() {
       email: '',
       phone: '',
       userType: initialUserType,
-      isCompany: true,
+      isCompany: false,
+      companyName: '',
+      regNumber: '',
       password: '',
       confirmPassword: '',
     },
-    mode: 'onTouched', // Important for validation without submitting the whole form
+    mode: 'onTouched',
   });
+
+  const isCompany = form.watch('isCompany');
 
   const nextStep = async (fieldsToValidate: (keyof FormData)[]) => {
     const isValid = await form.trigger(fieldsToValidate);
@@ -110,13 +123,14 @@ function RegisterPageInner() {
   const onSubmit = async (data: FormData) => {
     setError(null);
     try {
-      const { confirmPassword: _, userType, ...rest } = data;
-      const payload = {
+      const { confirmPassword: _, userType, companyName, regNumber, ...rest } = data;
+      const res = await registerUser({
         ...rest,
         roles: [userType],
+        companyName: companyName?.trim() || undefined,
+        regNumber: regNumber?.trim() || undefined,
         termsAccepted: true,
-      };
-      const res = await registerUser(payload);
+      });
       setAuth(res.user, res.token, res.refreshToken);
       router.push(redirectTo);
     } catch (err) {
@@ -158,24 +172,104 @@ function RegisterPageInner() {
 
           <Form {...form}>
             <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* --- STEP 1 --- */}
+              {/* ── STEP 1 — Account type + contact ── */}
               {step === 1 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="mb-8">
                     <h1 className="text-4xl font-medium text-gray-900 tracking-tight mb-3">
-                      Sāksim ar e-pastu
+                      Izveidojiet kontu
                     </h1>
                     <p className="text-[15px] text-gray-500">
-                      Ievadiet e-pastu un tālruni, lai izveidotu kontu.
+                      Izvēlieties konta veidu un ievadiet kontaktinformāciju.
                     </p>
                   </div>
 
-                  {error && (
-                    <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-100 mb-4">
-                      {error}
+                  {/* Business / Personal toggle */}
+                  <FormField
+                    control={form.control}
+                    name="isCompany"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex gap-3">
+                          {ACCOUNT_KIND_META.map((kind) => {
+                            const Icon = kind.icon;
+                            const active = field.value === kind.value;
+                            return (
+                              <button
+                                key={String(kind.value)}
+                                type="button"
+                                onClick={() => field.onChange(kind.value)}
+                                className={`flex-1 flex flex-col items-start p-4 rounded-xl border-2 transition-all text-left ${
+                                  active
+                                    ? 'border-black bg-[#f8f8f8]'
+                                    : 'border-transparent bg-gray-100 hover:bg-gray-200'
+                                }`}
+                              >
+                                <div
+                                  className={`p-2 rounded-full mb-2 transition-colors ${active ? 'bg-black text-white' : 'bg-white text-gray-600 shadow-sm'}`}
+                                >
+                                  <Icon className="w-4 h-4" />
+                                </div>
+                                <span
+                                  className={`text-[14px] font-medium ${active ? 'text-black' : 'text-gray-900'}`}
+                                >
+                                  {kind.label}
+                                </span>
+                                <span className="text-[12px] text-gray-500 mt-0.5">
+                                  {kind.desc}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Company fields — shown only when isCompany */}
+                  {isCompany && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <FormField
+                        control={form.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                placeholder="Uzņēmuma nosaukums"
+                                autoCapitalize="words"
+                                maxLength={100}
+                                className={inputCls}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="regNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                placeholder="Reģistrācijas numurs (piem. 40003009497)"
+                                inputMode="numeric"
+                                maxLength={12}
+                                className={inputCls}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   )}
 
+                  {/* Email */}
                   <FormField
                     control={form.control}
                     name="email"
@@ -185,7 +279,7 @@ function RegisterPageInner() {
                           <Input
                             type="email"
                             placeholder="E-pasts (piem., janis@uznemums.lv)"
-                            className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
+                            className={inputCls}
                             {...field}
                           />
                         </FormControl>
@@ -194,6 +288,7 @@ function RegisterPageInner() {
                     )}
                   />
 
+                  {/* Phone */}
                   <FormField
                     control={form.control}
                     name="phone"
@@ -203,7 +298,7 @@ function RegisterPageInner() {
                           <Input
                             type="tel"
                             placeholder="Tālrunis (nav obligāti)"
-                            className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
+                            className={inputCls}
                             {...field}
                           />
                         </FormControl>
@@ -214,7 +309,13 @@ function RegisterPageInner() {
 
                   <Button
                     type="button"
-                    onClick={() => nextStep(['email', 'phone'])}
+                    onClick={() =>
+                      nextStep(
+                        isCompany
+                          ? ['isCompany', 'companyName', 'email', 'phone']
+                          : ['isCompany', 'email', 'phone'],
+                      )
+                    }
                     className="w-full h-13 bg-black hover:bg-gray-800 text-white rounded-xl text-[15px] font-medium mt-2 transition-colors"
                   >
                     Turpināt
@@ -222,7 +323,7 @@ function RegisterPageInner() {
                 </div>
               )}
 
-              {/* --- STEP 2 --- */}
+              {/* ── STEP 2 — Role ── */}
               {step === 2 && (
                 <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="mb-8">
@@ -276,38 +377,9 @@ function RegisterPageInner() {
                     )}
                   />
 
-                  {/* Company Toggle for Buyer */}
-                  {form.watch('userType') === 'BUYER' && (
-                    <FormField
-                      control={form.control}
-                      name="isCompany"
-                      render={({ field }) => (
-                        <FormItem className="mt-6 pt-6 animate-in fade-in duration-300">
-                          <div className="flex gap-3">
-                            {ACCOUNT_KIND_META.map((kind) => (
-                              <button
-                                key={String(kind.value)}
-                                type="button"
-                                onClick={() => field.onChange(kind.value)}
-                                className={`flex-1 py-3 px-4 rounded-xl text-[14px] font-medium transition-all ${
-                                  field.value === kind.value
-                                    ? 'bg-black text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                              >
-                                {kind.label}
-                              </button>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
                   <Button
                     type="button"
-                    onClick={() => nextStep(['userType', 'isCompany'])}
+                    onClick={() => nextStep(['userType'])}
                     className="w-full h-13 bg-black hover:bg-gray-800 text-white rounded-xl text-[15px] font-medium mt-6 transition-colors"
                   >
                     Turpināt
@@ -315,7 +387,7 @@ function RegisterPageInner() {
                 </div>
               )}
 
-              {/* --- STEP 3 --- */}
+              {/* ── STEP 3 — Name + password ── */}
               {step === 3 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="mb-6">
@@ -327,6 +399,12 @@ function RegisterPageInner() {
                     </p>
                   </div>
 
+                  {error && (
+                    <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-100 mb-4">
+                      {error}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
@@ -334,11 +412,7 @@ function RegisterPageInner() {
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <Input
-                              placeholder="Vārds"
-                              className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
-                              {...field}
-                            />
+                            <Input placeholder="Vārds" className={inputCls} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -350,11 +424,7 @@ function RegisterPageInner() {
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <Input
-                              placeholder="Uzvārds"
-                              className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
-                              {...field}
-                            />
+                            <Input placeholder="Uzvārds" className={inputCls} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -371,7 +441,7 @@ function RegisterPageInner() {
                           <Input
                             type="password"
                             placeholder="Parole (min. 8 rakstzīmes)"
-                            className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
+                            className={inputCls}
                             {...field}
                           />
                         </FormControl>
@@ -389,7 +459,7 @@ function RegisterPageInner() {
                           <Input
                             type="password"
                             placeholder="Atkārtojiet paroli"
-                            className="h-13 px-4 text-[15px] bg-gray-100 border-transparent hover:bg-gray-200 focus:bg-white focus:border-black focus:ring-black focus:ring-2 rounded-xl transition-all placeholder:text-gray-500"
+                            className={inputCls}
                             {...field}
                           />
                         </FormControl>

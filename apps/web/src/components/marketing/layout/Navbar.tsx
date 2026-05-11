@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Container } from './Container';
@@ -17,6 +17,8 @@ const navItems = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -74,53 +76,55 @@ export function Navbar() {
         </Container>
       </header>
 
-      {/* Mobile menu — sibling of header so backdrop-filter doesn't trap fixed positioning */}
-      <div
-        className={cn(
-          'md:hidden fixed inset-0 top-20 bg-background z-50 flex flex-col transition-all duration-300',
-          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-        )}
-      >
-        <nav className="px-6 pb-8 pt-4 flex flex-col gap-6 overflow-y-auto h-full">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-2xl font-medium tracking-tight text-foreground"
-              onClick={() => setMobileOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <div className="flex flex-col gap-4 mt-4 pt-8 border-t border-border">
-            <Link
-              href={`/login`}
-              className="text-xl font-medium text-foreground"
-              onClick={() => setMobileOpen(false)}
-            >
-              Ienākt
-            </Link>
-            <CTAButton
-              href={`/order`}
-              variant="primary"
-              size="lg"
-              className="text-center w-full mt-2"
-              onClick={() => setMobileOpen(false)}
-            >
-              Pasūtīt tagad
-            </CTAButton>
-            <CTAButton
-              href={`/register`}
-              variant="secondary"
-              size="lg"
-              className="text-center w-full"
-              onClick={() => setMobileOpen(false)}
-            >
-              Reģistrēt uzņēmumu
-            </CTAButton>
-          </div>
-        </nav>
-      </div>
+      {/* Mobile menu — only mounted client-side to avoid SSR/hydration fragment mismatch */}
+      {mounted && (
+        <div
+          className={cn(
+            'md:hidden fixed inset-0 top-20 bg-background z-50 flex flex-col transition-all duration-300',
+            mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+          )}
+        >
+          <nav className="px-6 pb-8 pt-4 flex flex-col gap-6 overflow-y-auto h-full">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-2xl font-medium tracking-tight text-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="flex flex-col gap-4 mt-4 pt-8 border-t border-border">
+              <Link
+                href={`/login`}
+                className="text-xl font-medium text-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                Ienākt
+              </Link>
+              <CTAButton
+                href={`/order`}
+                variant="primary"
+                size="lg"
+                className="text-center w-full mt-2"
+                onClick={() => setMobileOpen(false)}
+              >
+                Pasūtīt tagad
+              </CTAButton>
+              <CTAButton
+                href={`/register`}
+                variant="secondary"
+                size="lg"
+                className="text-center w-full"
+                onClick={() => setMobileOpen(false)}
+              >
+                Reģistrēt uzņēmumu
+              </CTAButton>
+            </div>
+          </nav>
+        </div>
+      )}
     </>
   );
 }

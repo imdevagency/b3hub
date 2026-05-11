@@ -79,6 +79,7 @@ export class AnalyticsService {
             quantity: true,
             material: { select: { category: true } },
           },
+          take: 2000,
         }),
         // Delivered transport jobs for CO2 estimate
         this.prisma.transportJob.findMany({
@@ -88,6 +89,7 @@ export class AnalyticsService {
             distanceKm: { not: null },
           },
           select: { distanceKm: true, requiredVehicleEnum: true },
+          take: 1000,
         }),
       ]);
 
@@ -133,6 +135,7 @@ export class AnalyticsService {
         order: buyerWhere,
       },
       select: { id: true, total: true, dueDate: true, paymentStatus: true },
+      take: 500,
     });
 
     const now = Date.now();
@@ -521,6 +524,7 @@ export class AnalyticsService {
               },
               deliveryDate: { gte: now, lte: sixWeeksOut },
             },
+            take: 200,
             select: {
               id: true,
               jobNumber: true,

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Send } from 'lucide-react-native';
@@ -77,12 +78,14 @@ export default function SupportChatScreen() {
     })();
   }, [token, fetchMessages]);
 
-  // Poll for new messages every 20 s
-  useEffect(() => {
-    if (!token) return;
-    pollRef.current = setInterval(fetchMessages, 20_000);
-    return () => clearInterval(pollRef.current);
-  }, [token, fetchMessages]);
+  // Poll for new messages every 20 s — paused when screen is unfocused
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      pollRef.current = setInterval(fetchMessages, 20_000);
+      return () => clearInterval(pollRef.current);
+    }, [token, fetchMessages]),
+  );
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {

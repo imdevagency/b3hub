@@ -17,6 +17,7 @@ import {
   type CompanyMember,
   type ApiTransportJob,
 } from '@/lib/api';
+import { blobFetch } from '@/lib/api/common';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertCircle,
@@ -216,12 +217,8 @@ export default function EarningsPage() {
     if (!token) return;
     setCsvLoading(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-      const endpoint = isCarrier ? 'transport-jobs/export/csv' : 'orders/export/csv';
-      const res = await fetch(`${API_URL}/${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Export failed');
+      const endpoint = isCarrier ? '/transport-jobs/export/csv' : '/orders/export/csv';
+      const res = await blobFetch(endpoint, token);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -309,7 +306,6 @@ export default function EarningsPage() {
       .catch(() => {
         /* ignore */
       });
-     
   }, [token, isCarrier, isDispatcher]);
 
   useEffect(() => {

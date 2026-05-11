@@ -102,3 +102,26 @@ export async function apiFetch<T>(
   const text = await res.text();
   return (text ? JSON.parse(text) : {}) as T;
 }
+
+/**
+ * Authenticated fetch for endpoints that return binary data (CSV, XML, PDF).
+ * Adds the Authorization header and returns the raw Response for .blob() calls.
+ * Throws on non-OK responses.
+ */
+export async function blobFetch(
+  endpoint: string,
+  token: string,
+  options?: RequestInit,
+): Promise<Response> {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options?.headers as Record<string, string> | undefined),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Export failed (HTTP ${res.status})`);
+  }
+  return res;
+}

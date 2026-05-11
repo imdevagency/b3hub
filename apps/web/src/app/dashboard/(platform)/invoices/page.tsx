@@ -15,6 +15,7 @@ import {
   type ApiInvoice,
   type ApiProject,
 } from '@/lib/api';
+import { blobFetch } from '@/lib/api/common';
 import {
   ChevronLeft,
   ChevronRight,
@@ -73,11 +74,7 @@ function InvoicesPageInner() {
     if (!token) return;
     setCsvLoading(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-      const res = await fetch(`${API_URL}/invoices/export/csv`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Export failed');
+      const res = await blobFetch('/invoices/export/csv', token);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -96,11 +93,7 @@ function InvoicesPageInner() {
     if (!token) return;
     setXmlLoading(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-      const res = await fetch(`${API_URL}/invoices/export/xml`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Export failed');
+      const res = await blobFetch('/invoices/export/xml', token);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

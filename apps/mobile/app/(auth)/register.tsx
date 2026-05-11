@@ -28,11 +28,16 @@ type RoleKey = 'BUYER' | 'SUPPLIER' | 'CARRIER';
 
 const TOTAL_STEPS = 3;
 
-const PARTNER_ROLES: {
+const ALL_ROLES: {
   value: RoleKey;
   title: string;
   desc: string;
 }[] = [
+  {
+    value: 'BUYER',
+    title: 'Pasūtītājs',
+    desc: 'Pasūtīt materiālus un piegādes',
+  },
   {
     value: 'SUPPLIER',
     title: 'Piegādātājs',
@@ -78,8 +83,8 @@ export default function RegisterScreen() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Partner flow: let user pick SUPPLIER or CARRIER; standard flow: always BUYER
-  const [partnerRoles, setPartnerRoles] = useState<Set<RoleKey>>(new Set<RoleKey>());
+  // Role selection — pre-select BUYER; partner flow typically selects SUPPLIER/CARRIER
+  const [partnerRoles, setPartnerRoles] = useState<Set<RoleKey>>(new Set<RoleKey>(['BUYER']));
   // Default to personal/B2C; business users self-select "Uzņēmums" on step 1
   const [isCompany, setIsCompany] = useState(isPartnerFlow ? true : false);
   const [firstName, setFirstName] = useState('');
@@ -105,7 +110,7 @@ export default function RegisterScreen() {
       if (!/^\S+@\S+\.\S+$/.test(email)) e.email = 'Nederīga e-pasta adrese';
       if (isCompany && companyName.trim().length < 2)
         e.companyName = 'Nepieciešams uzņēmuma nosaukums';
-      if (isPartnerFlow && partnerRoles.size === 0) e.roles = 'Izvēlieties vismaz vienu lomu';
+      if (partnerRoles.size === 0) e.roles = 'Izvēlieties vismaz vienu lomu';
     }
     if (step === 2) {
       if (firstName.trim().length < 2) e.firstName = 'Nepieciešams vārds';
@@ -149,7 +154,7 @@ export default function RegisterScreen() {
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
-        roles: isPartnerFlow && partnerRoles.size > 0 ? Array.from(partnerRoles) : ['BUYER'],
+        roles: partnerRoles.size > 0 ? Array.from(partnerRoles) : ['BUYER'],
         isCompany,
         companyName: companyName.trim() || undefined,
         regNumber: regNumber.trim() || undefined,
@@ -186,40 +191,38 @@ export default function RegisterScreen() {
         className="text-3xl text-black mb-2"
         style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
       >
-        {isPartnerFlow ? 'Pievienojieties kā partneris' : 'Izveidojiet kontu'}
+        {'Izveidojiet kontu'}
       </Text>
       <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
-        {isPartnerFlow ? 'Izvēlieties savu lomu un konta veidu.' : 'E-pasts un konta veids.'}
+        {'Izvēlieties lomu, konta veidu un ievadiet kontaktinformāciju.'}
       </Text>
 
-      {/* Partner role selection */}
-      {isPartnerFlow && (
-        <View style={[s.grid, { marginBottom: 24 }]}>
-          {PARTNER_ROLES.map((r) => {
-            const active = partnerRoles.has(r.value);
-            return (
-              <TouchableOpacity
-                key={r.value}
-                style={[s.blockOption, active && s.blockOptionActive]}
-                onPress={() => {
-                  haptics.light();
-                  setPartnerRoles((prev) => {
-                    const n = new Set(prev);
-                    if (n.has(r.value)) n.delete(r.value);
-                    else n.add(r.value);
-                    return n;
-                  });
-                }}
-                activeOpacity={0.9}
-              >
-                <Text style={[s.blockTitle, active && s.textWhite]}>{r.title}</Text>
-                <Text style={[s.blockDesc, active && s.textGray300]}>{r.desc}</Text>
-              </TouchableOpacity>
-            );
-          })}
-          {errors.roles && <Text style={s.err}>{errors.roles}</Text>}
-        </View>
-      )}
+      {/* Role selection — shown for all users */}
+      <View style={[s.grid, { marginBottom: 24 }]}>
+        {ALL_ROLES.map((r) => {
+          const active = partnerRoles.has(r.value);
+          return (
+            <TouchableOpacity
+              key={r.value}
+              style={[s.blockOption, active && s.blockOptionActive]}
+              onPress={() => {
+                haptics.light();
+                setPartnerRoles((prev) => {
+                  const n = new Set(prev);
+                  if (n.has(r.value)) n.delete(r.value);
+                  else n.add(r.value);
+                  return n;
+                });
+              }}
+              activeOpacity={0.9}
+            >
+              <Text style={[s.blockTitle, active && s.textWhite]}>{r.title}</Text>
+              <Text style={[s.blockDesc, active && s.textGray300]}>{r.desc}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        {errors.roles && <Text style={s.err}>{errors.roles}</Text>}
+      </View>
 
       {/* Account kind */}
       <View style={{ marginBottom: 20 }}>

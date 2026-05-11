@@ -1283,7 +1283,7 @@ export class SkipHireService {
           message: `Konteinera pasūtījums #${order.orderNumber} ir veiksmīgi atjaunināts.`,
           data: { orderId: id },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn(`amend: notification failed for order ${id}: ${(err as Error).message}`));
     }
 
     this.logger.log(
@@ -1346,7 +1346,7 @@ export class SkipHireService {
               message: `Pircējs pieprasa konteinera savākšanu pasūtījumam #${order.orderNumber}.`,
               data: { skipOrderId: id },
             })
-            .catch(() => null),
+            .catch((err) => this.logger.warn(`requestPickup: carrier notification failed for order ${id}: ${(err as Error).message}`)),
         ),
       );
     }
@@ -1406,7 +1406,7 @@ export class SkipHireService {
           message: `Konteinera nomas periods pasūtījumam #${order.orderNumber} pagarināts par ${additionalDays} d. (kopā ${newHireDays} d.).`,
           data: { orderId: id },
         })
-        .catch(() => null);
+        .catch((err) => this.logger.warn(`extendHire: notification failed for order ${id}: ${(err as Error).message}`));
     }
 
     this.logger.log(

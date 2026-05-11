@@ -116,12 +116,12 @@ export class AdminService {
         user.id,
         {},
         dto,
-      ).catch(() => {});
+      ).catch((err) => this.logger.warn(`createUser: audit log failed: ${(err as Error).message}`));
       return full;
     }
 
     this.logAdminAction(adminId, 'CREATE_USER', 'User', user.id, {}, dto).catch(
-      () => {},
+      (err) => this.logger.warn(`createUser: audit log failed: ${(err as Error).message}`),
     );
     return user;
   }
