@@ -27,17 +27,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Location from 'expo-location';
 // react-native-maps is not bundled in Expo Go — guard the import so the
 // component loads in Expo Go instead of crashing the JS runtime.
-let MapView: any = null;
-let Marker: any = null;
-let PROVIDER_GOOGLE: any = undefined;
-try {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-} catch {
-  /* Expo Go — react-native-maps not available */
-}
+
 import {
   ArrowLeft,
   Search,
@@ -48,8 +38,8 @@ import {
   Clock,
   TrendingDown,
 } from 'lucide-react-native';
-import { useGeocode } from '@/components/map';
-import type { GeocodeSuggestion } from '@/components/map';
+import { BaseMap, useGeocode } from '@/components/map';
+import type { GeocodeSuggestion, CameraRefHandle } from '@/components/map';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { SavedAddress, SupplierOffer, MaterialCategory } from '@/lib/api';
@@ -83,6 +73,7 @@ type Props = {
   /** When provided, a live price preview is shown in the map confirmation panel */
   pricePreviewCategory?: MaterialCategory;
   pricePreviewQuantity?: number;
+  hideHeader?: boolean;
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -98,11 +89,12 @@ export function InlineAddressStep({
   variant,
   pricePreviewCategory,
   pricePreviewQuantity,
+  hideHeader,
 }: Props) {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSearchText = useRef<string>('');
   const isSelectingRef = useRef<boolean>(false);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<CameraRefHandle | null>(null);
   const insets = useSafeAreaInsets();
   const { forwardGeocode, resolvePlace, reverseGeocodeWithCity } = useGeocode();
   const { token } = useAuth();
@@ -185,10 +177,11 @@ export function InlineAddressStep({
       onPick(addr);
       setMode('MAP_CONFIRM');
       setTimeout(() => {
-        mapRef.current?.animateToRegion(
-          { latitude: addr.lat, longitude: addr.lng, latitudeDelta: 0.005, longitudeDelta: 0.005 },
-          400,
-        );
+        mapRef.current?.setCamera({
+          centerCoordinate: [addr.lng, addr.lat],
+          zoomLevel: 16,
+          animationDuration: 400,
+        });
       }, 150);
     },
     [onPick],
@@ -306,9 +299,8 @@ export function InlineAddressStep({
 
   // ── Map-confirm handlers ──────────────────────────────────────────────────
 
-  const handleMarkerDragEnd = useCallback(
-    async (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
-      const { latitude, longitude } = e.nativeEvent.coordinate;
+  const handleRegionChangeComplete = useCallback(
+    async (latitude: number, longitude: number) => {
       setPin({ lat: latitude, lng: longitude });
       setReversing(true);
       try {
@@ -337,44 +329,39 @@ export function InlineAddressStep({
   // ── Render: MAP_CONFIRM ───────────────────────────────────────────────────
 
   if (mode === 'MAP_CONFIRM' && pin) {
-    if (!MapView) {
-      return (
-        <View style={[s.root, { alignItems: 'center', justifyContent: 'center' }]}>
-          <Text style={{ color: '#9ca3af', fontSize: 13 }}>Map not available in Expo Go</Text>
-        </View>
-      );
-    }
     return (
       <View style={s.root}>
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFillObject}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={{
-            latitude: pin.lat,
-            longitude: pin.lng,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
+        <BaseMap
+          cameraRef={mapRef}
+          center={[pin.lng, pin.lat]}
+          zoom={16}
+          onRegionChangeComplete={(center) => {
+            const { latitude, longitude } = center;
+            handleRegionChangeComplete(latitude, longitude);
           }}
           showsUserLocation
           showsMyLocationButton={false}
-        >
-          <Marker
-            coordinate={{ latitude: pin.lat, longitude: pin.lng }}
-            draggable
-            onDragEnd={handleMarkerDragEnd}
-          />
-        </MapView>
+        />
 
-        {/* Floating header */}
-        <SafeAreaView style={s.mapHeader} pointerEvents="box-none">
-          <View style={s.mapHeaderInner}>
-            <TouchableOpacity style={s.mapBackBtn} onPress={() => setMode('SEARCH')} hitSlop={12}>
-              <ArrowLeft size={22} color="#000" />
-            </TouchableOpacity>
-            <Text style={s.mapHeaderTitle}>{contextLabel}</Text>
-            <View style={{ width: 44 }} />
+        {/* Fixed Center Pin */}
+        <View style={s.centerPinContainer} pointerEvents="none">
+          <View style={s.uberPinShadow} />
+          <View style={s.uberPinMain}>
+            <View style={s.uberPinDot} />
           </View>
+          <View style={s.uberPinStick} />
+        </View>
+
+        {/* Floating back button */}
+        <SafeAreaView style={s.mapHeader} pointerEvents="box-none">
+          <TouchableOpacity
+            style={s.mapBackCircle}
+            onPress={() => setMode('SEARCH')}
+            hitSlop={12}
+            activeOpacity={0.8}
+          >
+            <ArrowLeft size={22} color="#111827" />
+          </TouchableOpacity>
         </SafeAreaView>
 
         {/* Bottom panel */}
@@ -522,12 +509,18 @@ export function InlineAddressStep({
           </View>
         ) : (
           <>
-            <View style={s.searchHeader}>
-              <Text style={s.headerTitle}>{contextLabel}</Text>
-              <TouchableOpacity style={s.headerCloseBtn} onPress={() => onCancel?.()} hitSlop={12}>
-                <X size={22} color="#000" />
-              </TouchableOpacity>
-            </View>
+            {!hideHeader && (
+              <View style={s.searchHeader}>
+                <Text style={s.headerTitle}>{contextLabel}</Text>
+                <TouchableOpacity
+                  style={s.headerCloseBtn}
+                  onPress={() => onCancel?.()}
+                  hitSlop={12}
+                >
+                  <X size={22} color="#000" />
+                </TouchableOpacity>
+              </View>
+            )}
             <View style={s.searchInputWrap}>
               <View style={s.searchIconLeft} pointerEvents="none">
                 <Search size={18} color="#9ca3af" />
@@ -586,6 +579,20 @@ export function InlineAddressStep({
             <Text style={s.actionText}>
               {locating ? 'Nosaka atrašanās vietu…' : 'Lietot manu šī brīža vietu'}
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.actionRow}
+            onPress={() => {
+              enterMapConfirm({ address: 'Rīga', lat: 56.9496, lng: 24.1052, city: 'Rīga' });
+            }}
+            activeOpacity={0.7}
+            disabled={locating || resolving}
+          >
+            <View style={s.actionIconWrap}>
+              <MapPin size={20} color="#6B7280" />
+            </View>
+            <Text style={s.actionText}>Izvēlēties kartē</Text>
           </TouchableOpacity>
 
           <View style={s.divider} />
@@ -934,5 +941,65 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     fontFamily: 'Inter_400Regular',
     marginTop: 12,
+  },
+  mapBackCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 16,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  centerPinContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uberPinShadow: {
+    position: 'absolute',
+    bottom: -2,
+    width: 8,
+    height: 4,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  uberPinMain: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#166534',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+    zIndex: 2,
+  },
+  uberPinDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+  },
+  uberPinStick: {
+    width: 4,
+    height: 18,
+    backgroundColor: '#111827',
+    marginTop: -2,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
   },
 });

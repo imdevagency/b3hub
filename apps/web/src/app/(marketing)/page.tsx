@@ -4,14 +4,7 @@ import { RoleTabs } from '@/components/marketing/layout/RoleTabs';
 import { PriceEstimator } from '@/components/marketing/PriceEstimator';
 import { HeroAddressSearch } from '@/components/marketing/HeroAddressSearch';
 import { OrderServiceGrid } from '@/components/order/OrderServiceGrid';
-import {
-  ArrowRight,
-  Check,
-  FileText,
-  MapPin,
-  Banknote,
-  Leaf,
-} from 'lucide-react';
+import { ArrowRight, Check, FileText, MapPin, Banknote, Leaf } from 'lucide-react';
 import Link from 'next/link';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 
@@ -80,7 +73,7 @@ export default function HomePage() {
 
       {/* ── 2. SERVICES GRID ── */}
       <section className="w-full bg-white">
-        <Container className="py-24 max-w-7xl mx-auto">
+        <Container className="py-24">
           <OrderServiceGrid />
         </Container>
       </section>
@@ -98,8 +91,8 @@ export default function HomePage() {
               Nekādu slēptu izmaksu.
             </h2>
             <p className="text-lg text-muted-foreground font-light">
-              B3Hub apvieno vadošos karjerus, transporta uzņēmumus un atkritumu pieņēmējus vienuviet.
-              Pasūtiet visu nepieciešamo ar pāris klikšķiem tieši no piegādātājiem.
+              B3Hub apvieno vadošos karjerus, transporta uzņēmumus un atkritumu pieņēmējus
+              vienuviet. Pasūtiet visu nepieciešamo ar pāris klikšķiem tieši no piegādātājiem.
             </p>
             <ul className="flex flex-col gap-3 mt-2">
               {[
@@ -107,7 +100,10 @@ export default function HomePage() {
                 'Plašs piedāvājums visā Latvijā',
                 'Elektroniskas un drošas pavadzīmes',
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-base text-foreground font-medium">
+                <li
+                  key={i}
+                  className="flex items-start gap-2.5 text-base text-foreground font-medium"
+                >
                   <Check className="w-5 h-5 text-primary shrink-0" />
                   {item}
                 </li>
@@ -134,7 +130,8 @@ export default function HomePage() {
             visai celtniecības loģistikai.
           </h2>
           <p className="text-lg text-muted-foreground font-light mb-16 max-w-xl">
-            Pasūtiet materiālus, pārdodiet no karjera vai vediet kravas — platforma darbojas visām pusēm vienlaikus.
+            Pasūtiet materiālus, pārdodiet no karjera vai vediet kravas — platforma darbojas visām
+            pusēm vienlaikus.
           </p>
 
           <RoleTabs />
@@ -158,7 +155,10 @@ export default function HomePage() {
                 body: 'Šoferi un piegādātāji saņem izmaksu garantēti. Nav jāgaida garie pēcapmaksas termiņi vai manuāli jāsaskaņo rēķini.',
               },
             ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="bg-white border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm">
+              <div
+                key={title}
+                className="bg-white border border-border rounded-3xl p-8 flex flex-col gap-6 shadow-sm"
+              >
                 <div className="p-4 bg-neutral-50 w-fit rounded-2xl border border-border">
                   <Icon className="w-6 h-6 text-foreground" strokeWidth={1.5} />
                 </div>
@@ -178,7 +178,9 @@ export default function HomePage() {
           <div>
             <h3 className="text-2xl font-medium tracking-tight mb-2">Maksa tikai par rezultātu</h3>
             <p className="text-muted-foreground font-light max-w-xl">
-              Pircējiem platforma ir pilnīgi <strong>bez maksas</strong>. Piegādātājiem un pārvadātājiem komisija no <strong>6% līdz 8%</strong> tikai par apmaksātiem pasūtījumiem.
+              Pircējiem platforma ir pilnīgi <strong>bez maksas</strong>. Piegādātājiem un
+              pārvadātājiem komisija no <strong>6% līdz 8%</strong> tikai par apmaksātiem
+              pasūtījumiem.
             </p>
           </div>
           <Link
@@ -191,55 +193,60 @@ export default function HomePage() {
       </section>
 
       {/* ── 6. FINAL CTA & APP BADGES ── */}
-      <section className="w-full py-24 md:py-32 bg-neutral-50 text-foreground">
+      <section className="w-full py-24 md:py-32 bg-[#203728] text-white">
         <Container className="flex flex-col md:flex-row items-center justify-between gap-16 md:gap-12">
           <div className="text-center md:text-left">
-            <h2 className="text-5xl md:text-7xl font-medium tracking-tighter leading-none mb-8">
+            <h2 className="text-5xl md:text-7xl font-medium tracking-tighter leading-none mb-8 text-white">
               Viss būvlaukumam —
               <br />
-              vienuviet.
+              <span className="text-[#4ade80]">vienuviet.</span>
             </h2>
-            
+
             <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
-              <CTAButton href={'/order'} variant="inverted" size="lg" className="w-full sm:w-auto">
+              <CTAButton
+                href={'/order'}
+                variant="inverted"
+                size="lg"
+                className="w-full sm:w-auto bg-[#22c55e] text-white hover:bg-[#16a34a] shadow-none"
+              >
                 Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-2" />
               </CTAButton>
               <CTAButton
                 href={'/register'}
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-[#FAF8F5]/20 text-foreground bg-primary hover:bg-primary/80 border-none font-bold transition-colors"
+                className="w-full sm:w-auto border border-white/20 text-white bg-transparent hover:bg-white/10 shadow-none"
               >
                 Kļūt par partneri
               </CTAButton>
             </div>
-            <p className="text-background/40 text-sm mt-6 hidden md:block">
+            <p className="text-white/40 text-sm mt-6 hidden md:block">
               Privātpersonām — pasūtīšana bez reģistrācijas
             </p>
           </div>
 
           {/* App badges in CTA */}
-          <div className="flex flex-col gap-4 border-t md:border-t-0 md:border-l border-[#FAF8F5]/20 pt-12 md:pt-0 md:pl-16 text-center md:text-left">
-            <p className="text-sm font-bold tracking-widest uppercase text-background/60">
+          <div className="flex flex-col gap-4 border-t md:border-t-0 md:border-l border-white/10 pt-12 md:pt-0 md:pl-16 text-center md:text-left">
+            <p className="text-sm font-bold tracking-widest uppercase text-white/40">
               Mobilā aplikācija
             </p>
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
-              <div
-                className="inline-flex items-center justify-center md:justify-start gap-3 bg-white/10 hover:bg-white/20 text-background px-6 py-3.5 rounded-full transition-colors cursor-pointer w-full"
-              >
+              <div className="inline-flex items-center justify-center md:justify-start gap-3 bg-white/10 hover:bg-white/20 text-white px-6 py-3.5 rounded-full transition-colors cursor-pointer w-full">
                 <AppIcon ios={true} />
                 <div className="flex flex-col leading-tight text-left">
-                  <span className="text-background/60 text-[10px] uppercase font-bold tracking-wider">Lejupielādēt</span>
-                  <span className="text-sm font-semibold">App Store</span>
+                  <span className="text-white/40 text-[10px] uppercase font-bold tracking-wider">
+                    Lejupielādēt
+                  </span>
+                  <span className="text-sm font-semibold text-white">App Store</span>
                 </div>
               </div>
-              <div
-                className="inline-flex items-center justify-center md:justify-start gap-3 bg-white/10 hover:bg-white/20 text-background px-6 py-3.5 rounded-full transition-colors cursor-pointer w-full"
-              >
+              <div className="inline-flex items-center justify-center md:justify-start gap-3 bg-white/10 hover:bg-white/20 text-white px-6 py-3.5 rounded-full transition-colors cursor-pointer w-full">
                 <AppIcon ios={false} />
                 <div className="flex flex-col leading-tight text-left">
-                  <span className="text-background/60 text-[10px] uppercase font-bold tracking-wider">Lejupielādēt</span>
-                  <span className="text-sm font-semibold">Google Play</span>
+                  <span className="text-white/40 text-[10px] uppercase font-bold tracking-wider">
+                    Lejupielādēt
+                  </span>
+                  <span className="text-sm font-semibold text-white">Google Play</span>
                 </div>
               </div>
             </div>

@@ -120,10 +120,10 @@ export function SpecsStep({
           <View
             style={{
               flexDirection: 'row',
-              backgroundColor: '#f3f4f6',
-              borderRadius: 14,
+              backgroundColor: colors.bgMuted || '#f3f4f6',
+              borderRadius: 999,
               padding: 4,
-              marginBottom: 20,
+              marginBottom: 24,
             }}
           >
             {(['DELIVERY', 'PICKUP'] as const).map((opt) => {
@@ -138,24 +138,27 @@ export function SpecsStep({
                   activeOpacity={0.8}
                   style={{
                     flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 10,
+                    paddingVertical: 12,
+                    borderRadius: 999,
                     alignItems: 'center',
-                    backgroundColor: active ? '#fff' : 'transparent',
+                    backgroundColor: active ? colors.bgCard || '#fff' : 'transparent',
                     shadowColor: '#000',
-                    shadowOpacity: active ? 0.06 : 0,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: active ? 0.05 : 0,
                     shadowRadius: active ? 4 : 0,
                     elevation: active ? 2 : 0,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 13,
-                      fontFamily: active ? 'Inter_600SemiBold' : 'Inter_500Medium',
-                      color: active ? '#111827' : '#9ca3af',
+                      fontSize: 14,
+                      fontFamily: active ? 'Inter_700Bold' : 'Inter_600SemiBold',
+                      color: active
+                        ? colors.textPrimary || '#111827'
+                        : colors.textMuted || '#9ca3af',
                     }}
                   >
-                    {opt === 'DELIVERY' ? '🚛  Piegāde' : '📍  Paņemšana'}
+                    {opt === 'DELIVERY' ? '🚛 Piegāde' : '📍 Paņemšana'}
                   </Text>
                 </TouchableOpacity>
               );
@@ -166,7 +169,7 @@ export function SpecsStep({
         {/* Material + Fraction pickers */}
         <View className="flex-row gap-4 mb-6">
           <TouchableOpacity
-            className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-200"
+            className="flex-1 bg-gray-100 rounded-2xl p-4"
             onPress={() => setCatPickerOpen(true)}
             activeOpacity={0.8}
           >
@@ -180,7 +183,7 @@ export function SpecsStep({
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 bg-gray-50 rounded-2xl p-4 border border-gray-200"
+            className="flex-1 bg-gray-100 rounded-2xl p-4"
             onPress={() => setFractionPickerOpen(true)}
             activeOpacity={0.8}
           >
@@ -196,7 +199,7 @@ export function SpecsStep({
 
         {/* Order type */}
         <TouchableOpacity
-          className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-6"
+          className="w-full bg-gray-100 rounded-2xl p-4 mb-6"
           onPress={() => setOrderTypePickerOpen(true)}
           activeOpacity={0.8}
         >
@@ -208,8 +211,8 @@ export function SpecsStep({
         </TouchableOpacity>
 
         {/* Quantity stepper */}
-        <View className="mb-6 items-center justify-center">
-          <Text className="text-gray-400 text-sm font-semibold tracking-widest uppercase mb-6">
+        <View className="mb-6 mt-2">
+          <Text className="text-gray-400 text-sm font-semibold tracking-widest uppercase mb-6 text-center">
             Kopējais apjoms
           </Text>
           <View className="flex-row items-center justify-center gap-6">
@@ -322,19 +325,18 @@ export function SpecsStep({
                 }}
                 activeOpacity={0.8}
                 style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 100,
-                  borderWidth: 1.5,
-                  borderColor: quantity === p ? '#111827' : '#e5e7eb',
-                  backgroundColor: quantity === p ? '#111827' : '#f9fafb',
+                  paddingHorizontal: 18,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor:
+                    quantity === p ? colors.primary || '#111827' : colors.bgMuted || '#f3f4f6',
                 }}
               >
                 <Text
                   style={{
                     fontSize: 13,
-                    fontFamily: 'Inter_600SemiBold',
-                    color: quantity === p ? '#fff' : '#374151',
+                    fontFamily: quantity === p ? 'Inter_700Bold' : 'Inter_600SemiBold',
+                    color: quantity === p ? '#fff' : colors.textPrimary || '#111827',
                   }}
                 >
                   {p} {ORDER_TYPE_UNIT_LABEL[orderType]}
@@ -345,8 +347,8 @@ export function SpecsStep({
         </View>
 
         {/* Truck load info */}
-        <View className="bg-gray-50 rounded-2xl p-4 mb-6 flex-row items-center border border-gray-200">
-          <View className="bg-white w-10 h-10 rounded-xl items-center justify-center mr-4 shadow-sm border border-gray-100">
+        <View className="bg-gray-100 rounded-2xl p-4 mb-6 flex-row items-center">
+          <View className="bg-white w-10 h-10 rounded-full items-center justify-center mr-4 shadow-sm">
             <Truck size={18} color="#111827" />
           </View>
           <View className="flex-1">
@@ -364,7 +366,7 @@ export function SpecsStep({
             Piezīmes (neobligāti)
           </Text>
           <TextInput
-            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 pt-4 text-gray-900 font-medium text-sm"
+            className="w-full bg-gray-100 rounded-2xl p-4 pt-4 text-gray-900 font-medium text-sm"
             placeholder="Ievadiet papildu informāciju piegādātājam..."
             placeholderTextColor="#9ca3af"
             value={notes}
@@ -411,7 +413,7 @@ export function SpecsStep({
             <TouchableOpacity
               onPress={handlePickSitePhoto}
               disabled={uploadingPhoto}
-              className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex-row items-center justify-center"
+              className="bg-gray-100 rounded-2xl p-4 flex-row items-center justify-center"
               activeOpacity={0.8}
               style={{ minHeight: 72 }}
             >

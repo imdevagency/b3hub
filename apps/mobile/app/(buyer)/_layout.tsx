@@ -32,6 +32,8 @@ function BuyerLayoutContent() {
   const pathname = usePathname();
   // Routes that run edge-to-edge and should hide the tab bar + top bar (tracking, live maps, etc.)
   const isFullScreenRoute = /\/(order|skip-order|transport-job)\/[^/]/.test(pathname);
+  // Catalog manages its own top safe-area via its custom header — no layout padding needed
+  const isCatalogScreen = pathname.endsWith('/catalog');
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback(
     (props: BottomTabBarProps) => (isFullScreenRoute ? null : <AnimatedTabBar {...props} />),
@@ -83,7 +85,7 @@ function BuyerLayoutContent() {
         paddingTop: isFullScreenRoute ? 0 : insets.top,
       }}
     >
-      {config !== null && !isFullScreenRoute && (
+      {config !== null && !isFullScreenRoute && !isCatalogScreen && (
         <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />
       )}
       <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>

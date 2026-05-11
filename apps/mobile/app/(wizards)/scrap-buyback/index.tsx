@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Wrench, Trophy, MapPin, CheckCircle2 } from 'lucide-react-native';
@@ -42,6 +43,7 @@ interface BuybackDraft {
   step: Step;
   weightText: string;
   hasPhoto: boolean | null;
+  transport: 'pickup' | 'self';
   picked: PickedAddress | null;
   notes: string;
   pickupDate: string;
@@ -60,13 +62,6 @@ type Step = 1 | 2 | 3 | 4;
 // WEEE, OIL_WASTE, TIRES, WOOD, PACKAGING_WASTE belong in the Disposal wizard.
 const MATERIAL_LABELS: Record<string, string> = {
   METAL: 'Metāls / Dzelzslūžņi',
-};
-
-const STEP_TITLES: Record<Step, string> = {
-  1: 'Kas jāatdod?',
-  2: 'Kur paņemt?',
-  3: 'Salīdzini cenas',
-  4: 'Apstiprinājums',
 };
 
 // Truck logic reused from utilization wizard
@@ -90,6 +85,7 @@ export default function ScrapBuybackWizard() {
   const materialType: WasteType = 'METAL';
   const [weightText, setWeightText] = useState(''); // tonnes (master)
   const [hasPhoto, setHasPhoto] = useState<boolean | null>(null);
+  const [transport, setTransport] = useState<'pickup' | 'self'>('pickup');
 
   // Step 2 — pickup address
   const [picked, setPicked] = useState<PickedAddress | null>(null);
@@ -139,6 +135,7 @@ export default function ScrapBuybackWizard() {
           if (d.step) setStep(d.step);
           if (d.weightText) setWeightText(d.weightText);
           if (d.hasPhoto !== undefined) setHasPhoto(d.hasPhoto);
+          if (d.transport) setTransport(d.transport);
           if (d.picked) setPicked(d.picked);
           if (d.notes !== undefined) setNotes(d.notes);
           if (d.pickupDate) setPickupDate(d.pickupDate);
@@ -162,6 +159,7 @@ export default function ScrapBuybackWizard() {
       step,
       weightText,
       hasPhoto,
+      transport,
       picked,
       notes,
       pickupDate,
@@ -170,7 +168,7 @@ export default function ScrapBuybackWizard() {
       savedAt: Date.now(),
     };
     AsyncStorage.setItem(BUYBACK_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
-  }, [step, weightText, hasPhoto, picked, notes, pickupDate, contactName, contactPhone]);
+  }, [step, weightText, hasPhoto, transport, picked, notes, pickupDate, contactName, contactPhone]);
 
   const weightT = parseFloat(weightText);
   const validWeight = !isNaN(weightT) && weightT > 0;
@@ -262,6 +260,7 @@ export default function ScrapBuybackWizard() {
             [
               notes,
               hasPhoto === true ? '📷 Ir pieejamas foto' : hasPhoto === false ? 'Nav foto' : '',
+              transport === 'self' ? 'Pircējs atvedīs pats — nav nepieciešams transports.' : '',
             ]
               .filter(Boolean)
               .join('. ') || undefined,
@@ -305,10 +304,42 @@ export default function ScrapBuybackWizard() {
     (step === 4 && (!contactName.trim() || !contactPhone.trim())) ||
     submitting;
 
+  const getStepProps = () => {
+    switch (step) {
+      case 1:
+        return {
+          title: 'Cik daudz metāla jums ir?',
+          description: 'Dzelzs, alumīnijs, varš, nerūsējošais tērauds — ievadiet aptuveno svaru.',
+        };
+      case 2:
+        return {
+          title: transport === 'self' ? 'Jūsu lokācija' : 'Kur atrodas metāls?',
+          description:
+            transport === 'self'
+              ? 'Norādiet atrašanās vietu, lai atrastu tuvākos punktus.'
+              : 'Mūsu auto ieradīsies apstiprinātajā adresē.',
+        };
+      case 3:
+        return {
+          title: 'Izvēlieties punktu',
+          description: `Cenas aprēķinātas par aptuveni ${validWeight ? weightT : 1} t`,
+        };
+      case 4:
+        return {
+          title: 'Pasūtījuma detaļas',
+          description: undefined,
+        };
+      default:
+        return { title: 'Pieprasījums', description: undefined };
+    }
+  };
+  const currentStepInfo = getStepProps();
+
   return (
     <>
       <WizardLayout
-        title={STEP_TITLES[step]}
+        title={currentStepInfo.title}
+        description={currentStepInfo.description}
         step={step}
         totalSteps={4}
         onBack={goBack}
@@ -324,6 +355,8 @@ export default function ScrapBuybackWizard() {
             onWeightChange={setWeightText}
             hasPhoto={hasPhoto}
             onHasPhotoChange={setHasPhoto}
+            transport={transport}
+            onTransportChange={setTransport}
           />
         )}
         {step === 2 && (
@@ -332,6 +365,7 @@ export default function ScrapBuybackWizard() {
             onPickChange={setPicked}
             notes={notes}
             onNotesChange={setNotes}
+            transport={transport}
           />
         )}
         {step === 3 && (
@@ -356,6 +390,7 @@ export default function ScrapBuybackWizard() {
             onContactNameChange={setContactName}
             contactPhone={contactPhone}
             onContactPhoneChange={setContactPhone}
+            transport={transport}
           />
         )}
       </WizardLayout>
@@ -391,32 +426,16 @@ function StepMaterial({
   onWeightChange,
   hasPhoto,
   onHasPhotoChange,
+  transport,
+  onTransportChange,
 }: {
   weightText: string;
   onWeightChange: (t: string) => void;
   hasPhoto: boolean | null;
   onHasPhotoChange: (v: boolean) => void;
+  transport: 'pickup' | 'self';
+  onTransportChange: (v: 'pickup' | 'self') => void;
 }) {
-  // Derive kg display from tonnes master
-  const kgValue = weightText
-    ? (() => {
-        const n = parseFloat(weightText);
-        return isNaN(n) ? '' : String(Math.round(n * 1000));
-      })()
-    : '';
-
-  function handleKgChange(val: string) {
-    if (!val) {
-      onWeightChange('');
-      return;
-    }
-    const n = parseFloat(val);
-    if (!isNaN(n)) {
-      const t = n / 1000;
-      onWeightChange(t % 1 === 0 ? String(t) : parseFloat(t.toFixed(3)).toString());
-    }
-  }
-
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -424,106 +443,93 @@ function StepMaterial({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={s.payoutBanner}>
-        <Text style={s.payoutBannerText}>
-          💶 Nododiet metāllūžņus — dzelzi, alumīniju, varu, nerūsējošo tēraudu — un saņemiet
-          samaksu no licencētiem pārstrādātājiem
-        </Text>
+      <View style={s.giantInputRow}>
+        <TextInput
+          value={weightText}
+          onChangeText={onWeightChange}
+          placeholder="0.0"
+          placeholderTextColor={colors.textDisabled}
+          keyboardType="decimal-pad"
+          style={s.giantInput}
+          maxLength={6}
+        />
+        <Text style={s.giantInputUnit}>tonnas</Text>
       </View>
-
-      {/* Fixed material card */}
-      <View style={[s.materialRow, s.materialRowSel]}>
-        <View style={[s.matIconWrap, s.matIconWrapSel]}>
-          <Wrench size={22} color={colors.white} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.matLabel, s.matLabelSel]}>Metāls / Dzelzslūžņi</Text>
-          <Text style={[s.matDesc, s.matDescSel]}>
-            Dzelzs, alumīnijs, varš, nerūsējošais tērauds, profili, stiegrojums
-          </Text>
-        </View>
-        <View style={[s.hintBadge, s.hintBadgeSel]}>
-          <Text style={[s.hintText, s.hintTextSel]}>Augsta vērtība</Text>
-        </View>
-        <CheckCircle2 size={20} color={colors.white} style={{ marginLeft: spacing.xs }} />
-      </View>
-
-      <Text style={[s.stepSub, { marginTop: spacing.sm, marginBottom: spacing.lg }]}>
-        Elektroatkritumus, riepas, eļļas vai celtniecības atkritumus — izvēlieties Atkritumu
-        izvešanu.
+      <Text style={s.uberHintCenter}>
+        Precīzs svars nav obligāts — galīgo summu noteiksim pēc svēršanas.
       </Text>
 
-      {/* ── Dual t / kg weight input ── */}
-      <SectionLabel label="Daudzums" style={[s.sectionLabel, { marginTop: spacing.lg }]} />
-      <Text style={s.weightSubLabel}>1 t = 1000 kg · Ievadiet tonnās vai kilogramos</Text>
-      <View style={s.weightRow}>
-        <View style={s.weightInputWrap}>
-          <TextInputField
-            label=""
-            value={weightText}
-            onChangeText={onWeightChange}
-            placeholder="0"
-            keyboardType="decimal-pad"
-          />
-          <Text style={s.weightUnitLabel}>t</Text>
-        </View>
-        <View style={s.weightSep} />
-        <View style={s.weightInputWrap}>
-          <TextInputField
-            label=""
-            value={kgValue}
-            onChangeText={handleKgChange}
-            placeholder="0"
-            keyboardType="decimal-pad"
-          />
-          <Text style={s.weightUnitLabel}>kg</Text>
-        </View>
-      </View>
-      <Text style={s.weightHint}>Precīzs svars nav obligāts — vadītājs izmēra uz vietas</Text>
+      <View style={s.uberDivider} />
 
-      {/* ── Photo availability ── */}
-      <SectionLabel
-        label="Vai Jums ir materiāla foto?"
-        style={[s.sectionLabel, { marginTop: spacing.lg }]}
-      />
-      <View style={s.toggleRow}>
+      <Text style={s.uberSectionTitle}>Vai jums ir materiāla foto?</Text>
+      <View style={s.uberPillGroup}>
         <TouchableOpacity
-          style={[s.toggleBtn, hasPhoto === true && s.toggleBtnSel]}
+          style={[s.uberPillBtn, hasPhoto === true && s.uberPillBtnSel]}
           onPress={() => {
             haptics.light();
             onHasPhotoChange(true);
           }}
-          activeOpacity={0.75}
+          activeOpacity={0.8}
         >
-          <Text style={[s.toggleBtnText, hasPhoto === true && s.toggleBtnTextSel]}>📷 Ir foto</Text>
+          <Text style={[s.uberPillText, hasPhoto === true && s.uberPillTextSel]}>📸 Ir foto</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[s.toggleBtn, hasPhoto === false && s.toggleBtnSel]}
+          style={[s.uberPillBtn, hasPhoto === false && s.uberPillBtnSel]}
           onPress={() => {
             haptics.light();
             onHasPhotoChange(false);
           }}
-          activeOpacity={0.75}
+          activeOpacity={0.8}
         >
-          <Text style={[s.toggleBtnText, hasPhoto === false && s.toggleBtnTextSel]}>Nav foto</Text>
+          <Text style={[s.uberPillText, hasPhoto === false && s.uberPillTextSel]}>Nav foto</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[s.uberSectionTitle, { marginTop: spacing.xl }]}>Kā vēlaties nodot?</Text>
+      <View style={s.uberPillGroup}>
+        <TouchableOpacity
+          style={[s.uberPillBtn, transport === 'pickup' && s.uberPillBtnSel]}
+          onPress={() => {
+            haptics.light();
+            onTransportChange('pickup');
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.uberPillText, transport === 'pickup' && s.uberPillTextSel]}>
+            🚛 Atbrauks paņemt
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.uberPillBtn, transport === 'self' && s.uberPillBtnSel]}
+          onPress={() => {
+            haptics.light();
+            onTransportChange('self');
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={[s.uberPillText, transport === 'self' && s.uberPillTextSel]}>
+            🚗 Atvedīšu pats
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
-// ── Step 2: Pickup address ────────────────────────────────────────
+// ── Step 2: Address ───────────────────────────────────────────────
 
 function StepAddress({
   picked,
   onPickChange,
   notes,
   onNotesChange,
+  transport,
 }: {
   picked: PickedAddress | null;
   onPickChange: (a: PickedAddress) => void;
   notes: string;
   onNotesChange: (t: string) => void;
+  transport: 'pickup' | 'self';
 }) {
   return (
     <ScrollView
@@ -532,22 +538,23 @@ function StepAddress({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={s.stepSub}>Kur atrodas materiāls? Mūsu auto ieradīsies, lai paņemtu.</Text>
       <AddressField
-        label="Savākšanas adrese"
+        label=""
         value={picked}
         onPick={onPickChange}
         placeholder="Ievadiet adresi vai izvēlieties kartē"
       />
-      <TextInputField
-        label="Papildu piezīmes (nav obligāti)"
-        value={notes}
-        onChangeText={onNotesChange}
-        placeholder="piem., metāls pagalmā aiz vārtiem"
-        multiline
-        numberOfLines={3}
-        style={{ marginTop: spacing.md }}
-      />
+      {transport === 'pickup' && picked && (
+        <TextInputField
+          label="Papildu piezīmes pārvadātājam"
+          value={notes}
+          onChangeText={onNotesChange}
+          placeholder="piem., vārti pa kreisi, zvanīt..."
+          multiline
+          numberOfLines={3}
+          containerStyle={{ marginTop: spacing.lg }}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -572,7 +579,7 @@ function StepOffers({
   if (loading) {
     return (
       <View style={s.loadingWrap}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.textPrimary} />
         <Text style={s.loadingText}>Meklē labākās cenas...</Text>
       </View>
     );
@@ -583,8 +590,7 @@ function StepOffers({
       <View style={s.emptyWrap}>
         <Text style={s.emptyTitle}>Šobrīd nav piedāvājumu</Text>
         <Text style={s.emptyDesc}>
-          Neviens pārstrādātājs šobrīd nepiedāvā atpirkšanas cenu {materialLabel} materiālam. Lūdzu,
-          mēģiniet vēlāk vai sazinieties ar mums.
+          Neviens pārstrādātājs šobrīd nepiedāvā atpirkšanas cenu. Lūdzu, mēģiniet vēlāk.
         </Text>
       </View>
     );
@@ -596,47 +602,44 @@ function StepOffers({
       contentContainerStyle={s.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={s.stepSub}>
-        Izvēlieties izdevīgāko piedāvājumu. Cenas aprēķinātas par ~{weightT} t.
-      </Text>
       {offers?.map((offer, idx) => {
         const isSel = offer.centerId === selectedId;
         const isBest = idx === 0;
         return (
           <TouchableOpacity
             key={offer.centerId}
-            style={[s.offerCard, isSel && s.offerCardSel]}
+            style={[s.uberOfferCard, isSel && s.uberOfferCardSel]}
             onPress={() => {
               haptics.light();
               onSelect(offer.centerId);
             }}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
           >
-            {isBest && (
-              <View style={s.bestBadge}>
-                <Trophy size={12} color={colors.white} />
-                <Text style={s.bestBadgeText}>Labākā cena</Text>
-              </View>
-            )}
             <View style={s.offerHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.offerName, isSel && s.offerNameSel]} numberOfLines={1}>
-                  {offer.name}
-                </Text>
-                <View style={s.offerLocation}>
-                  <MapPin size={12} color={isSel ? colors.white : colors.textMuted} />
-                  <Text style={[s.offerCity, isSel && s.offerCitySel]}>
-                    {offer.city}
-                    {offer.distanceKm != null ? ` · ${offer.distanceKm} km` : ''}
-                    {offer.licensed ? ' · Licencēts' : ''}
+              <View style={{ flex: 1, paddingRight: spacing.sm }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}
+                >
+                  <Text style={[s.uberOfferName, isSel && s.uberOfferNameSel]} numberOfLines={1}>
+                    {offer.name}
                   </Text>
+                  {isBest && (
+                    <View style={s.uberBestBadge}>
+                      <Text style={s.uberBestBadgeText}>Labākais</Text>
+                    </View>
+                  )}
                 </View>
+                <Text style={[s.uberOfferCity, isSel && s.uberOfferCitySel]}>
+                  {offer.city}
+                  {offer.distanceKm != null ? ` · ${offer.distanceKm} km` : ''}
+                  {offer.licensed ? ' · Licencēts' : ''}
+                </Text>
               </View>
               <View style={s.payoutWrap}>
-                <Text style={[s.payoutAmount, isSel && s.payoutAmountSel]}>
-                  +€{offer.totalPayoutEur.toFixed(2)}
+                <Text style={[s.uberOfferPayout, isSel && s.uberOfferPayoutSel]}>
+                  €{offer.totalPayoutEur.toFixed(2)}
                 </Text>
-                <Text style={[s.payoutRate, isSel && s.payoutRateSel]}>
+                <Text style={[s.uberOfferRate, isSel && s.uberOfferRateSel]}>
                   €{offer.buybackPricePerTonne.toFixed(0)}/t
                 </Text>
               </View>
@@ -646,12 +649,6 @@ function StepOffers({
                 {offer.centerNotes}
               </Text>
             ) : null}
-            {isSel && (
-              <View style={s.selectedCheck}>
-                <CheckCircle2 size={16} color={colors.white} />
-                <Text style={s.selectedCheckText}>Izvēlēts</Text>
-              </View>
-            )}
           </TouchableOpacity>
         );
       })}
@@ -672,6 +669,7 @@ function StepConfirm({
   onContactNameChange,
   contactPhone,
   onContactPhoneChange,
+  transport,
 }: {
   offer: BuybackQuoteCenterResult | null;
   materialLabel: string;
@@ -683,6 +681,7 @@ function StepConfirm({
   onContactNameChange: (t: string) => void;
   contactPhone: string;
   onContactPhoneChange: (t: string) => void;
+  transport: 'pickup' | 'self';
 }) {
   const minDate = (() => {
     const d = new Date();
@@ -698,37 +697,25 @@ function StepConfirm({
       keyboardShouldPersistTaps="handled"
     >
       {offer && (
-        <View style={s.payoutSummaryCard}>
-          <Text style={s.payoutSummaryLabel}>Paredzamā izmaksa</Text>
-          <Text style={s.payoutSummaryAmount}>+€{offer.totalPayoutEur.toFixed(2)}</Text>
-          <Text style={s.payoutSummaryNote}>
-            {offer.name} · €{offer.buybackPricePerTonne.toFixed(0)}/t
-          </Text>
-          <Text style={s.payoutSummaryDisclaimer}>
-            Galīgā summa tiks precizēta pēc faktiskā svara mērījuma
+        <View style={s.uberSummaryGiant}>
+          <Text style={s.uberSummaryGiantLabel}>Paredzamā izmaksa</Text>
+          <Text style={s.uberSummaryGiantAmount}>€{offer.totalPayoutEur.toFixed(2)}</Text>
+          <Text style={s.uberSummaryGiantNote}>
+            Gala summa atkarīga no mērījuma uz vietas ({offer.name})
           </Text>
         </View>
       )}
 
-      <SectionLabel label="Kopsavilkums" style={s.sectionLabel} />
-      <View style={s.summaryCard}>
-        <DetailRow label="Materiāls" value={materialLabel} />
-        <DetailRow label="Aptuvens svars" value={weightText ? `${weightText} t` : 'nav norādīts'} />
-        <DetailRow label="Adrese" value={picked?.address ?? '-'} />
-        {offer && <DetailRow label="Pārstrādātājs" value={offer.name} />}
-      </View>
-
-      <SectionLabel
-        label="Vēlamais savākšanas datums"
-        style={[s.sectionLabel, { marginTop: spacing.lg }]}
-      />
+      <Text style={[s.uberSectionTitle, { marginTop: spacing['2xl'] }]}>
+        {transport === 'self' ? 'Plānotais datums' : 'Savākšanas datums'}
+      </Text>
       <WizardCalendar
         selectedDate={pickupDate}
         onDateChange={onPickupDateChange}
         minDate={minDate}
       />
 
-      <SectionLabel label="Kontaktpersona" style={[s.sectionLabel, { marginTop: spacing.lg }]} />
+      <Text style={[s.uberSectionTitle, { marginTop: spacing['2xl'] }]}>Kontaktinformācija</Text>
       <TextInputField
         label="Vārds, uzvārds"
         value={contactName}
@@ -741,11 +728,15 @@ function StepConfirm({
         onChangeText={onContactPhoneChange}
         placeholder="+371 2000 0000"
         keyboardType="phone-pad"
-        style={{ marginTop: spacing.sm }}
+        containerStyle={{ marginTop: spacing.sm }}
       />
-      <Text style={s.submitHint}>
-        Pēc savākšanas un svara mērījuma tiks veikts pārskaitījums uz jūsu kontu.
-      </Text>
+
+      <View style={s.taxDisclaimerBox}>
+        <Text style={s.taxDisclaimerText}>
+          ⚠️ <Text style={{ fontWeight: '700' }}>Nodokļu informācija:</Text> fiziskām personām no
+          izmaksas ietur 10% IIN. Juridiskām personām piemēro PVN reverso shēmu.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -754,8 +745,9 @@ function StepConfirm({
 
 const s = StyleSheet.create({
   scrollContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: 48,
   },
   stepSub: {
     fontSize: 14,
@@ -768,7 +760,7 @@ const s = StyleSheet.create({
   },
   // Payout banner
   payoutBanner: {
-    backgroundColor: colors.successLight ?? '#d1fae5',
+    backgroundColor: colors.successBg,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
@@ -783,7 +775,7 @@ const s = StyleSheet.create({
   materialRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: colors.bgCard,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -799,7 +791,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.sm,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bgScreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -809,7 +801,7 @@ const s = StyleSheet.create({
   matLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 1,
   },
   matLabelSel: {
@@ -823,7 +815,7 @@ const s = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
   },
   hintBadge: {
-    backgroundColor: colors.successLight ?? '#d1fae5',
+    backgroundColor: colors.successBg,
     borderRadius: radius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -881,7 +873,7 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
-    backgroundColor: colors.card,
+    backgroundColor: colors.bgCard,
   },
   toggleBtnSel: {
     backgroundColor: colors.primary,
@@ -890,7 +882,7 @@ const s = StyleSheet.create({
   toggleBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   toggleBtnTextSel: {
     color: colors.white,
@@ -921,7 +913,7 @@ const s = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
@@ -933,7 +925,7 @@ const s = StyleSheet.create({
   },
   // Offer cards
   offerCard: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.bgCard,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -969,7 +961,7 @@ const s = StyleSheet.create({
   offerName: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   offerNameSel: {
@@ -1027,7 +1019,7 @@ const s = StyleSheet.create({
   },
   // Summary / confirm
   payoutSummaryCard: {
-    backgroundColor: colors.successLight ?? '#d1fae5',
+    backgroundColor: colors.successBg,
     borderRadius: radius.md,
     padding: spacing.lg,
     alignItems: 'center',
@@ -1057,7 +1049,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   summaryCard: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.bgCard,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1068,6 +1060,174 @@ const s = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.md,
     lineHeight: 18,
+    textAlign: 'center',
+  },
+  taxDisclaimerBox: {
+    marginTop: spacing.xl,
+    backgroundColor: colors.bgMuted,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  taxDisclaimerText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  // Uber-like Redesign
+  giantInputRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  giantInput: {
+    fontSize: 64,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    padding: 0,
+    margin: 0,
+    includeFontPadding: false,
+  },
+  giantInputUnit: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.textMuted,
+    paddingBottom: 8,
+  },
+  uberHintCenter: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: spacing['2xl'],
+    lineHeight: 20,
+  },
+  uberDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginBottom: spacing['2xl'],
+  },
+  uberSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  uberPillGroup: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgMuted,
+    borderRadius: 999,
+    padding: 4,
+  },
+  uberPillBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+  },
+  uberPillBtnSel: {
+    backgroundColor: colors.bgCard,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  uberPillText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  uberPillTextSel: {
+    color: colors.textPrimary,
+    fontWeight: '700',
+  },
+  // Step 3: Offers
+  uberOfferCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  uberOfferCardSel: {
+    borderColor: colors.textPrimary,
+    backgroundColor: colors.bgCard,
+  },
+  uberOfferName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  uberOfferNameSel: {
+    color: colors.textPrimary,
+  },
+  uberBestBadge: {
+    backgroundColor: colors.successBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  uberBestBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.success,
+    textTransform: 'uppercase',
+  },
+  uberOfferCity: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  uberOfferCitySel: {
+    color: colors.textMuted,
+  },
+  uberOfferPayout: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  uberOfferPayoutSel: {
+    color: colors.textPrimary,
+  },
+  uberOfferRate: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'right',
+  },
+  uberOfferRateSel: {
+    color: colors.textMuted,
+  },
+  // offerCards removed above
+  // Step 4: Confirm
+  uberSummaryGiant: {
+    backgroundColor: colors.bgMuted,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  uberSummaryGiantLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  uberSummaryGiantAmount: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  uberSummaryGiantNote: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 8,
     textAlign: 'center',
   },
 });

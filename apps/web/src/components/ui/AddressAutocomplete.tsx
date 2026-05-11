@@ -1,6 +1,6 @@
 /**
  * AddressAutocomplete UI component.
- * Text input wired to the Google Places AutocompleteService API for custom address search UI.
+ * Text input wired to the Google Places AutocompleteSuggestion API for custom address search UI.
  */
 'use client';
 
@@ -110,13 +110,12 @@ export function AddressAutocomplete({
 }: Props) {
   const [isOpen, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Google Maps services
-  const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
+  // Google Maps session token
   const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | undefined>(undefined);
 
   useEffect(() => {
@@ -127,7 +126,6 @@ export function AddressAutocomplete({
       const google = window.google;
       if (!google) return;
 
-      autocompleteService.current = new google.maps.places.AutocompleteService();
       sessionToken.current = new google.maps.places.AutocompleteSessionToken();
     });
   }, []);
@@ -178,44 +176,44 @@ export function AddressAutocomplete({
       return;
     }
 
-    if (!autocompleteService.current) return;
-
     setLoading(true);
-    const timeoutId = setTimeout(() => {
-      autocompleteService.current!.getPlacePredictions(
-        {
-          input: value,
-          componentRestrictions: { country: ['lv'] },
-          types: ['address'],
-          sessionToken: sessionToken.current,
-        },
-        (
-          results: google.maps.places.AutocompletePrediction[] | null,
-          status: google.maps.places.PlacesServiceStatus,
-        ) => {
-          const google = window.google;
-          setLoading(false);
-          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            setPredictions(results);
-            if (document.activeElement?.id === id || document.activeElement?.closest('#' + id)) {
-              setOpen(true);
-            }
-          } else {
-            setPredictions([]);
-          }
-        },
-      );
+    const timeoutId = setTimeout(async () => {
+      try {
+        const g = window.google;
+        if (!g?.maps?.places?.AutocompleteSuggestion) return;
+
+        const { suggestions } =
+          await g.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input: value,
+            includedRegionCodes: ['lv'],
+            types: ['address'],
+            sessionToken: sessionToken.current,
+          });
+
+        setLoading(false);
+        setPredictions(suggestions);
+        if (
+          suggestions.length > 0 &&
+          (document.activeElement?.id === id || document.activeElement?.closest('#' + id))
+        ) {
+          setOpen(true);
+        }
+      } catch {
+        setLoading(false);
+        setPredictions([]);
+      }
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [value, id]);
 
-  const handleSelect = async (prediction: google.maps.places.AutocompletePrediction) => {
+  const handleSelect = async (suggestion: google.maps.places.AutocompleteSuggestion) => {
     setOpen(false);
-    onChange(prediction.description);
+    const pp = suggestion.placePrediction!;
+    onChange(pp.text.text);
 
     try {
-      const place = new google.maps.places.Place({ id: prediction.place_id });
+      const place = pp.toPlace();
       await place.fetchFields({ fields: ['addressComponents', 'formattedAddress', 'location'] });
 
       let route = '';
@@ -243,7 +241,7 @@ export function AddressAutocomplete({
       onSelect({ address, city, postal, lat, lng });
     } catch {
       // fallback: use the description as-is
-      onSelect({ address: prediction.description, city: '', postal: '' });
+      onSelect({ address: pp.text.text, city: '', postal: '' });
     }
 
     // Reset session token after a selection
@@ -286,15 +284,16 @@ export function AddressAutocomplete({
             className="bg-background rounded-2xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <ul className="max-h-72 overflow-y-auto w-full divide-y divide-border/40 flex flex-col scrollbar-thin">
-              {predictions.map((p) => {
-                const mainText = p.structured_formatting?.main_text || p.description;
-                const secondaryText = p.structured_formatting?.secondary_text || '';
+              {predictions.map((s) => {
+                const pp = s.placePrediction!;
+                const mainText = pp.mainText?.text || pp.text.text;
+                const secondaryText = pp.secondaryText?.text || '';
                 return (
-                  <li key={p.place_id}>
+                  <li key={pp.placeId}>
                     <button
                       type="button"
                       className="w-full text-left px-4 py-3.5 hover:bg-muted/40 active:bg-muted transition-colors flex items-center gap-3.5 group/item focus:outline-none focus:bg-muted/60"
-                      onClick={() => handleSelect(p)}
+                      onClick={() => handleSelect(s)}
                     >
                       <div className="shrink-0 flex items-center justify-center bg-muted rounded-full h-10 w-10 group-hover/item:bg-foreground group-hover/item:text-background transition-colors text-muted-foreground">
                         <MapPin className="h-5 w-5" />

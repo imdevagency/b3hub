@@ -295,7 +295,7 @@ export function FieldPickerStep({
                 const hasEnough = requestedQty == null || item.stockQty >= requestedQty;
                 const stockColor =
                   item.stockQty === 0
-                    ? (colors.error ?? '#ef4444')
+                    ? (colors.danger ?? '#ef4444')
                     : !hasEnough
                       ? '#f59e0b'
                       : '#16a34a';

@@ -21,9 +21,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'B3Hub - Streamline Your Material Orders',
+  title: 'B3Hub — Celtniecības loģistikas platforma',
   description:
-    'Connect suppliers, customers, and managers on one powerful platform. Manage materials, track orders, and optimize your supply chain with B3Hub.',
+    'Pasūtiet celtniecības materiālus, konteinerus, transportu un utilizāciju. Cenas redzamas uzreiz, pavadzīmes automātiski.',
 };
 
 export default function RootLayout({
@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="lv">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
           <CartProvider>

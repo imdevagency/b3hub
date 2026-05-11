@@ -41,6 +41,7 @@ import {
   Building2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
+import { useHeaderConfig } from '@/lib/header-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { MaterialCategory, ApiMaterial } from '@/lib/api';
@@ -162,16 +163,34 @@ function CategoryCard({
 export default function CatalogScreen() {
   const router = useRouter();
   const { token } = useAuth();
+  const { setConfig } = useHeaderConfig();
   const params = useLocalSearchParams<{ projectId?: string; schedule?: string; focus?: string }>();
   const projectId = params.projectId;
   const schedule = params.schedule;
   const searchInputRef = React.useRef<TextInput>(null);
+  const isMounted = React.useRef(false);
+
+  React.useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Catalog owns its own header — hide the layout TopBar while this tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      setConfig(null);
+    }, [setConfig]),
+  );
 
   // Auto-focus search when navigated here with focus=1 (e.g. from home search shortcut)
   useFocusEffect(
     useCallback(() => {
       if (params.focus === '1') {
-        const t = setTimeout(() => searchInputRef.current?.focus(), 200);
+        const t = setTimeout(() => {
+          if (isMounted.current) searchInputRef.current?.focus();
+        }, 300);
         return () => clearTimeout(t);
       }
     }, [params.focus]),
@@ -181,7 +200,6 @@ export default function CatalogScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
   const [filterMode, setFilterMode] = useState<'ALL' | 'RECYCLED'>('ALL');
   const [nearMe, setNearMe] = useState(false);
   const [nearMeCoords, setNearMeCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -429,30 +447,76 @@ export default function CatalogScreen() {
   };
 
   return (
-    <ScreenContainer bg="#ffffff" noAnimation>
-      <ScreenHeader title="Katalogs" noBorder />
+    <ScreenContainer bg="#f9fafb" topInset={0} noAnimation>
+      {/* ── Sticky Header: Title + Location + Search ── */}
+      <View
+        className="px-5 pb-4 bg-white rounded-b-[24px] z-10"
+        style={{
+          paddingTop: 14,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.03,
+          shadowRadius: 8,
+          elevation: 2,
+        }}
+      >
+        <View className="flex-row items-center justify-between mb-4">
+          <Text
+            style={{
+              fontSize: 28,
+              fontFamily: 'Inter_700Bold',
+              color: '#111827',
+              letterSpacing: -0.5,
+            }}
+          >
+            Katalogs
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleNearMeToggle}
+            className={`flex-row items-center px-3 py-1.5 rounded-full ${
+              nearMe || savedDelivery ? 'bg-blue-50' : 'bg-gray-100'
+            }`}
+          >
+            {nearMeLoading ? (
+              <ActivityIndicator size="small" color="#1d4ed8" />
+            ) : (
+              <MapPin
+                size={14}
+                color={nearMe || savedDelivery ? '#1d4ed8' : '#6b7280'}
+                style={{ marginRight: 6 }}
+              />
+            )}
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: 'Inter_600SemiBold',
+                color: nearMe || savedDelivery ? '#1d4ed8' : '#4b5563',
+              }}
+              numberOfLines={1}
+            >
+              {nearMe
+                ? 'Tuvumā'
+                : savedDelivery
+                  ? savedDelivery.address.split(',')[0]
+                  : 'Norādīt adresi'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      <View className="px-5 pt-0 pb-2">
-        {/* Flat Search */}
-        <View
-          className={`flex-row items-center bg-white border border-gray-200 rounded-2xl px-4 py-4 shadow-sm ${
-            searchFocused ? 'border-gray-400' : ''
-          }`}
-        >
-          <Search size={20} color={searchFocused ? '#111827' : '#9ca3af'} className="mr-3" />
+        <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
+          <Search size={18} color="#9ca3af" style={{ marginRight: 10 }} />
           <TextInput
             ref={searchInputRef}
             className="flex-1 text-gray-900"
-            style={{ fontSize: 17, fontFamily: 'Inter_500Medium', paddingVertical: 2 }}
-            placeholder="Meklēt kategoriju..."
-            placeholderTextColor="#6b7280"
+            style={{ fontSize: 16, fontFamily: 'Inter_500Medium', paddingVertical: 0 }}
+            placeholder="Meklēt materiālu..."
+            placeholderTextColor="#9ca3af"
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
             autoCorrect={false}
             autoCapitalize="none"
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
           />
           {query.length > 0 && (
             <TouchableOpacity
@@ -460,158 +524,14 @@ export default function CatalogScreen() {
                 haptics.light();
                 setQuery('');
               }}
-              className="ml-2 bg-gray-300 p-1.5 rounded-full items-center justify-center"
+              hitSlop={14}
             >
-              <X size={14} color="#111827" strokeWidth={2.5} />
+              <View className="bg-gray-200 p-1 rounded-full">
+                <X size={12} color="#374151" strokeWidth={3} />
+              </View>
             </TouchableOpacity>
           )}
         </View>
-      </View>
-
-      {/* Flat Filter chips */}
-      <View className="mb-2 mt-4">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <TouchableOpacity
-            className={`px-4 py-2.5 rounded-full flex-row items-center ${
-              filterMode === 'ALL' ? 'bg-gray-900' : 'bg-gray-100'
-            }`}
-            onPress={() => {
-              haptics.light();
-              setFilterMode('ALL');
-            }}
-            activeOpacity={0.8}
-          >
-            <Text
-              className={`font-semibold ${filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}`}
-            >
-              Visi
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className={`px-4 py-2.5 rounded-full flex-row items-center ${
-              filterMode === 'RECYCLED' ? 'bg-[#d1fae5]' : 'bg-gray-100'
-            }`}
-            onPress={() => {
-              haptics.light();
-              setFilterMode('RECYCLED');
-            }}
-            activeOpacity={0.8}
-          >
-            <Leaf
-              size={16}
-              color={filterMode === 'RECYCLED' ? '#065f46' : '#111827'}
-              className="mr-2"
-            />
-            <Text
-              className={`font-semibold ${filterMode === 'RECYCLED' ? 'text-emerald-900' : 'text-gray-900'}`}
-            >
-              Pārstrādāts
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Location context strip — shows delivery address or prompt to enable live pricing */}
-      <View style={{ paddingHorizontal: 20, marginTop: 4, marginBottom: 10 }}>
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={handleNearMeToggle}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: nearMe || savedDelivery ? '#eff6ff' : '#f9fafb',
-            borderRadius: 14,
-            paddingHorizontal: 14,
-            paddingVertical: 11,
-            borderWidth: 1,
-            borderColor: nearMe || savedDelivery ? '#dbeafe' : '#e5e7eb',
-          }}
-        >
-          {nearMeLoading ? (
-            <ActivityIndicator size="small" color="#166534" />
-          ) : (
-            <MapPin
-              size={15}
-              color={nearMe || savedDelivery ? '#1e40af' : '#9ca3af'}
-              strokeWidth={2}
-            />
-          )}
-          <Text
-            style={{
-              flex: 1,
-              fontSize: 13,
-              fontFamily: 'Inter_500Medium',
-              color: nearMe || savedDelivery ? '#1e40af' : '#6b7280',
-            }}
-            numberOfLines={1}
-          >
-            {nearMe
-              ? 'Cenas pēc GPS atrašanās vietas'
-              : savedDelivery
-                ? `Cenas uz: ${savedDelivery.address}`
-                : 'Norādīt adresi — redzēt cenas ar piegādi'}
-          </Text>
-          {livePricesLoading && !nearMeLoading ? (
-            <ActivityIndicator size="small" color="#1e40af" style={{ marginRight: 4 }} />
-          ) : null}
-          {nearMe ? (
-            <X size={14} color="#1e40af" strokeWidth={2.5} />
-          ) : (
-            <ChevronRight size={14} color={savedDelivery ? '#1e40af' : '#9ca3af'} />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Other services — quick access to non-material wizards */}
-      <View style={{ marginBottom: 12 }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {(
-            [
-              { icon: Truck, label: 'Transports', route: '/transport' },
-              { icon: Package, label: 'Konteineri', route: '/skip-hire' },
-              { icon: Trash2, label: 'Utilizācija', route: '/disposal' },
-              { icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
-              { icon: Building2, label: 'Tualetes', route: '/toilet-cabin' },
-            ] as const
-          ).map((svc) => {
-            const Icon = svc.icon;
-            return (
-              <TouchableOpacity
-                key={svc.route}
-                onPress={() => {
-                  haptics.light();
-                  router.push(svc.route as never);
-                }}
-                activeOpacity={0.8}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  backgroundColor: '#f3f4f6',
-                  borderRadius: 999,
-                  paddingHorizontal: 14,
-                  paddingVertical: 9,
-                }}
-              >
-                <Icon size={15} color="#374151" strokeWidth={2} />
-                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#111827' }}>
-                  {svc.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
       </View>
 
       <FlatList
@@ -623,32 +543,147 @@ export default function CatalogScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#111827" />
         }
-        contentContainerStyle={{ paddingBottom: 20, paddingTop: 8 }}
+        contentContainerStyle={{ paddingBottom: 40, paddingTop: 16 }}
         ListHeaderComponent={
-          resumeDraft ? (
-            <TouchableOpacity
-              className="mx-5 mb-4 flex-row items-center bg-green-50 border border-green-200 rounded-2xl px-4 py-3.5"
-              activeOpacity={0.8}
-              onPress={() => {
-                haptics.light();
-                router.push({
-                  pathname: '/material-order',
-                  params: { resumeDraft: 'true', projectId: projectId || undefined },
-                });
-              }}
-            >
-              <Calculator size={18} color="#166534" style={{ marginRight: 10 }} />
-              <View style={{ flex: 1 }}>
-                <Text className="text-green-900 font-semibold" style={{ fontSize: 15 }}>
-                  Turpināt pasūtījumu
-                </Text>
-                <Text className="text-green-700 font-medium" style={{ fontSize: 13, marginTop: 1 }}>
-                  {resumeDraft.materialName} · {resumeDraft.quantity} {resumeDraft.unit}
-                </Text>
-              </View>
-              <ChevronRight size={18} color="#166534" />
-            </TouchableOpacity>
-          ) : null
+          <View>
+            {resumeDraft ? (
+              <TouchableOpacity
+                className="mx-5 mb-6 flex-row items-center bg-white border border-green-200 rounded-2xl px-4 py-3.5 shadow-sm"
+                activeOpacity={0.8}
+                onPress={() => {
+                  haptics.light();
+                  router.push({
+                    pathname: '/material-order',
+                    params: { resumeDraft: 'true', projectId: projectId || undefined },
+                  });
+                }}
+                style={{
+                  shadowColor: '#059669',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 12,
+                  elevation: 2,
+                }}
+              >
+                <View className="w-10 h-10 rounded-full bg-green-50 items-center justify-center mr-3">
+                  <Calculator size={18} color="#166534" />
+                </View>
+                <View className="flex-1">
+                  <Text
+                    className="text-gray-900"
+                    style={{ fontSize: 15, fontFamily: 'Inter_700Bold' }}
+                  >
+                    Turpināt pasūtījumu
+                  </Text>
+                  <Text
+                    className="text-gray-500 mt-0.5"
+                    style={{ fontSize: 13, fontFamily: 'Inter_500Medium' }}
+                  >
+                    {resumeDraft.materialName} · {resumeDraft.quantity} {resumeDraft.unit}
+                  </Text>
+                </View>
+                <ChevronRight size={18} color="#9ca3af" />
+              </TouchableOpacity>
+            ) : null}
+
+            {!query.trim() && (
+              <>
+                {/* Other Services */}
+                <View className="mb-6">
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {(
+                      [
+                        { icon: Truck, label: 'Transports', route: '/transport' },
+                        { icon: Package, label: 'Konteineri', route: '/skip-hire' },
+                        { icon: Trash2, label: 'Utilizācija', route: '/disposal' },
+                        { icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
+                        { icon: Building2, label: 'Tualetes', route: '/toilet-cabin' },
+                      ] as const
+                    ).map((svc) => {
+                      const Icon = svc.icon;
+                      return (
+                        <TouchableOpacity
+                          key={svc.route}
+                          onPress={() => {
+                            haptics.light();
+                            router.push(svc.route as never);
+                          }}
+                          activeOpacity={0.8}
+                          className="flex-row items-center bg-white border border-gray-100 rounded-[14px] px-4 py-3 gap-2 shadow-sm"
+                          style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.02,
+                            shadowRadius: 4,
+                            elevation: 1,
+                          }}
+                        >
+                          <Icon size={16} color="#374151" strokeWidth={2.5} />
+                          <Text
+                            style={{
+                              fontFamily: 'Inter_600SemiBold',
+                              fontSize: 14,
+                              color: '#111827',
+                            }}
+                          >
+                            {svc.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+
+                {/* Filters */}
+                <View className="px-5 flex-row gap-2 mb-4">
+                  <TouchableOpacity
+                    className={`px-4 py-2 rounded-full flex-row items-center ${
+                      filterMode === 'ALL' ? 'bg-gray-900' : 'bg-gray-100'
+                    }`}
+                    onPress={() => {
+                      haptics.light();
+                      setFilterMode('ALL');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold' }}
+                      className={filterMode === 'ALL' ? 'text-white' : 'text-gray-900'}
+                    >
+                      Visi
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className={`px-4 py-2 rounded-full flex-row items-center ${
+                      filterMode === 'RECYCLED' ? 'bg-emerald-100' : 'bg-gray-100'
+                    }`}
+                    onPress={() => {
+                      haptics.light();
+                      setFilterMode('RECYCLED');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Leaf
+                      size={14}
+                      color={filterMode === 'RECYCLED' ? '#065f46' : '#111827'}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold' }}
+                      className={filterMode === 'RECYCLED' ? 'text-emerald-900' : 'text-gray-900'}
+                    >
+                      Pārstrādāts
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
         }
         ListEmptyComponent={() => {
           if (loading) {
@@ -656,10 +691,10 @@ export default function CatalogScreen() {
               <View className="px-5 gap-4 mt-2">
                 {[1, 2, 3].map((i) => (
                   <View key={i} className="flex-row items-center py-4 border-b border-gray-100">
-                    <View className="w-12 h-12 rounded-full bg-gray-100 mr-4"></View>
+                    <View className="w-12 h-12 rounded-full bg-gray-100 mr-4" />
                     <View className="flex-1">
-                      <View className="w-3/4 h-5 bg-gray-100 rounded mb-2"></View>
-                      <View className="w-1/2 h-4 bg-gray-100 rounded"></View>
+                      <View className="w-3/4 h-5 bg-gray-100 rounded mb-2" />
+                      <View className="w-1/2 h-4 bg-gray-100 rounded" />
                     </View>
                   </View>
                 ))}
@@ -671,10 +706,16 @@ export default function CatalogScreen() {
               <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-4">
                 <Box size={28} color="#9ca3af" />
               </View>
-              <Text className="text-gray-900 font-semibold text-lg mb-1 text-center tracking-tight">
+              <Text
+                style={{ fontSize: 18, fontFamily: 'Inter_600SemiBold' }}
+                className="text-gray-900 mb-1 text-center tracking-tight"
+              >
                 Nekas nav atrasts
               </Text>
-              <Text className="text-gray-500 font-medium text-center " style={{ fontSize: 15 }}>
+              <Text
+                className="text-gray-500 text-center"
+                style={{ fontSize: 15, fontFamily: 'Inter_500Medium' }}
+              >
                 Mēģiniet mainīt meklēšanu vai filtru.
               </Text>
             </View>

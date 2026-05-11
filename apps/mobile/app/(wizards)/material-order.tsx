@@ -34,12 +34,13 @@ import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { Check, CheckCircle2 } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
-import { InlineAddressStep } from '@/components/wizard/InlineAddressStep';
+import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { SpecsStep } from '@/components/wizard/material/SpecsStep';
 import { WhenStep } from '@/components/wizard/material/WhenStep';
 import { OffersStep } from '@/components/wizard/material/OffersStep';
 import { FieldPickerStep } from '@/components/wizard/material/FieldPickerStep';
+import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 import {
   CATEGORY_FRACTIONS,
@@ -148,6 +149,7 @@ export default function OrderRequestWizard() {
   const [sitePhotoUri, setSitePhotoUri] = useState<string | null>(null);
   const [sitePhotoUrl, setSitePhotoUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [authGateVisible, setAuthGateVisible] = useState(false);
 
   const [selectedFraction, setSelectedFraction] = useState<string>(
     () => CATEGORY_FRACTIONS[(params.initialCategory as MaterialCategory) || 'GRAVEL'][0],
@@ -677,7 +679,13 @@ export default function OrderRequestWizard() {
     : step === 'offers'
       ? handleSendRFQ
       : step === 'when' && selectedOffer
-        ? () => handleSelectOffer(selectedOffer)
+        ? () => {
+            if (tokenRef.current) {
+              handleSelectOffer(selectedOffer);
+            } else {
+              setAuthGateVisible(true);
+            }
+          }
         : goNext;
 
   const unitLabel =
@@ -703,7 +711,7 @@ export default function OrderRequestWizard() {
       onCTA={handleCTA}
       ctaDisabled={!canProceed || submitting}
       ctaLoading={submitting && step !== 'offers'}
-      hideFooter={step === 'offers' || step === 'address'}
+      hideFooter={step === 'offers'}
       stepKey={step}
       footerLeft={
         step === 'specs' ? (
@@ -738,16 +746,23 @@ export default function OrderRequestWizard() {
         />
       )}
       {step === 'address' && (
-        <InlineAddressStep
-          picked={pickedAddress}
-          onPick={(p) => {
-            setPickedAddress(p);
-            setUnloadLat(null);
-            setUnloadLng(null);
-          }}
-          onConfirm={goNext}
-          contextLabel="Piegādes adrese"
-        />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <AddressField
+            label="Piegādes adrese"
+            value={pickedAddress}
+            onPick={(p) => {
+              setPickedAddress(p);
+              setUnloadLat(null);
+              setUnloadLng(null);
+            }}
+            placeholder="Ievadiet piegādes adresi"
+          />
+        </ScrollView>
       )}
       {step === 'specs' && (
         <SpecsStep
@@ -1105,6 +1120,29 @@ export default function OrderRequestWizard() {
           }
         />
       )}
+
+      {/* Auth gate — shown when a guest taps "Pasūtīt" on the when step */}
+      <WizardAuthGate
+        visible={authGateVisible}
+        onAuthenticated={() => {
+          setAuthGateVisible(false);
+          if (selectedOffer) {
+            handleSelectOffer(selectedOffer);
+          }
+        }}
+        onGuestContact={(info) => {
+          setAuthGateVisible(false);
+          if (selectedOffer) {
+            handleGuestSelectOffer(selectedOffer, info);
+          }
+        }}
+        prefilledName={contactName}
+        prefilledPhone={contactPhone}
+        prefilledEmail={user?.email}
+        onDismiss={() => {
+          setAuthGateVisible(false);
+        }}
+      />
     </WizardLayout>
   );
 }

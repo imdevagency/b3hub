@@ -115,6 +115,29 @@ export class RecyclingCentersController {
     return this.service.getMyWasteRecords(user.companyId);
   }
 
+  // ── Disposal / Buyback Quotes (public, static routes before :id) ──────────
+
+  /**
+   * GET /recycling-centers/disposal-quote
+   * Returns available centers with disposal fees for the given waste type + weight.
+   * Optional lat/lng for distance-sorted results.
+   */
+  @Get('disposal-quote')
+  getDisposalQuote(@Query() query: DisposalQuoteQueryDto) {
+    return this.service.getDisposalQuote(query);
+  }
+
+  /**
+   * GET /recycling-centers/buyback-quote
+   * Returns centers offering a buyback price for the given waste type + weight.
+   * Sorted by highest payout descending.
+   * Used by the scrap metal buyback wizard.
+   */
+  @Get('buyback-quote')
+  getBuybackQuote(@Query() query: DisposalQuoteQueryDto) {
+    return this.service.getBuybackQuote(query);
+  }
+
   /** GET /recycling-centers/:id — center detail */
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -204,29 +227,6 @@ export class RecyclingCentersController {
       body,
       user.companyId,
     );
-  }
-
-  // ── Disposal Quote (public) ─────────────────────────────────────────────
-
-  /**
-   * GET /recycling-centers/disposal-quote
-   * Returns available centers with disposal fees for the given waste type + weight.
-   * Optional lat/lng for distance-sorted results.
-   */
-  @Get('disposal-quote')
-  getDisposalQuote(@Query() query: DisposalQuoteQueryDto) {
-    return this.service.getDisposalQuote(query);
-  }
-
-  /**
-   * GET /recycling-centers/buyback-quote
-   * Returns centers offering a buyback price for the given waste type + weight.
-   * Sorted by highest payout descending.
-   * Used by the scrap metal buyback wizard.
-   */
-  @Get('buyback-quote')
-  getBuybackQuote(@Query() query: DisposalQuoteQueryDto) {
-    return this.service.getBuybackQuote(query);
   }
 
   // ── Pricing Rules (operator) ─────────────────────────────────────────

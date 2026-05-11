@@ -35,6 +35,8 @@ import { colors } from '@/lib/theme';
 export type WizardLayoutProps = {
   /** Step title shown below the header, large + left-aligned. */
   title: string;
+  /** Optional smaller description shown below the title. */
+  description?: string;
   /** 1-based current step index. */
   step: number;
   totalSteps: number;
@@ -60,6 +62,7 @@ export type WizardLayoutProps = {
 
 export function WizardLayout({
   title,
+  description,
   step,
   totalSteps,
   onBack,
@@ -107,9 +110,14 @@ export function WizardLayout({
         <Text style={wl.stepCaption}>
           Solis {step} no {totalSteps}
         </Text>
-        <Text style={wl.title} numberOfLines={2}>
+        <Text style={wl.title} numberOfLines={3}>
           {title}
         </Text>
+        {description ? (
+          <Text style={wl.description} numberOfLines={2}>
+            {description}
+          </Text>
+        ) : null}
       </View>
 
       {/* ── Content ── */}
@@ -202,6 +210,12 @@ const wl = StyleSheet.create({
     color: colors.textPrimary,
     letterSpacing: -1,
     lineHeight: 38,
+  },
+  description: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    lineHeight: 24,
+    marginTop: 8,
   },
 
   // content

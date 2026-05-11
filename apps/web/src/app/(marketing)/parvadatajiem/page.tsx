@@ -126,7 +126,7 @@ export default function ParvadatajemPage() {
         </Hero>
 
         {/* ── EARNINGS ── */}
-        <section className="w-full bg-foreground text-background">
+        <section className="w-full bg-[#203728] text-white">
           <Container className="py-32 flex flex-col">
             <div className="flex flex-col md:flex-row gap-12 border-b border-background/20 pb-16 mb-8">
               <div className="md:w-1/2">
@@ -195,70 +195,104 @@ export default function ParvadatajemPage() {
 
               {/* Right: Sticky Phone Mockup */}
               <div className="md:w-1/2 relative hidden md:block">
-                <div className="sticky top-32 w-full max-w-md mx-auto aspect-9/18 bg-foreground rounded-[4rem] p-4 flex flex-col gap-2 shadow-2xl ring-1 ring-border border-8 border-neutral-100">
+                <div className="sticky top-32 w-full max-w-sm mx-auto aspect-9/18 bg-white rounded-[4rem] p-4 flex flex-col shadow-2xl ring-1 ring-neutral-200 border-8 border-neutral-100">
                   {/* Notch */}
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-100 rounded-b-2xl z-20" />
 
-                  {/* App header */}
-                  <div className="w-full h-14 mt-4 flex gap-3 items-center px-4">
-                    <div className="w-8 h-8 rounded-full bg-background/20" />
-                    <div className="h-3 w-32 bg-background/20 rounded-full" />
-                    <div className="ml-auto w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  {/* Status bar */}
+                  <div className="w-full h-10 mt-4 flex items-center justify-between px-5">
+                    <span className="text-[10px] font-semibold text-neutral-400 tracking-wide">
+                      13:27
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-2 bg-neutral-300 rounded-sm" />
+                      <div className="w-3 h-2 bg-neutral-300 rounded-sm" />
                     </div>
                   </div>
 
                   {/* Internal UI */}
-                  <div className="flex-1 flex flex-col gap-4 py-4 px-2 overflow-hidden relative text-background">
-                    {/* Current Active Trip */}
-                    <div className="w-full bg-background/10 border border-background/10 rounded-3xl p-6 flex flex-col gap-5">
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs uppercase tracking-widest text-primary font-bold">
-                          AKTĪVS REISS
-                        </span>
-                        <span className="text-xl font-bold tracking-tight">€122.00</span>
-                      </div>
+                  <div className="flex-1 flex flex-col gap-3 py-2 px-2 overflow-hidden relative">
+                    {/* Page title */}
+                    <div className="px-2 pt-1 pb-2">
+                      <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">
+                        Aktīvais darbs
+                      </p>
+                      <p className="text-xl font-bold text-neutral-900 tracking-tight leading-tight">
+                        Atkritumu grants — 22 t
+                      </p>
+                    </div>
 
-                      <div className="flex flex-col gap-3">
-                        <div className="flex gap-4">
-                          <div className="flex flex-col items-center gap-1 mt-1">
-                            <div className="w-3 h-3 rounded-full bg-background border-2 border-primary" />
-                            <div className="w-0.5 h-10 bg-background/20 rounded-full" />
-                            <div className="w-3 h-3 rounded-full bg-primary" />
+                    {/* Active Trip Card */}
+                    <div className="w-full bg-neutral-50 border border-neutral-100 rounded-3xl p-4 flex flex-col gap-4">
+                      {/* Route */}
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center gap-0.5 mt-1 shrink-0">
+                          <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-neutral-400" />
+                          <div className="w-0.5 h-8 bg-neutral-200 rounded-full" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                        </div>
+                        <div className="flex flex-col justify-between">
+                          <div>
+                            <p className="text-xs font-semibold text-neutral-900">
+                              Karjers &quot;Liepa&quot;
+                            </p>
+                            <p className="text-[10px] text-neutral-400">Iekraušana</p>
                           </div>
-                          <div className="flex flex-col justify-between py-0.5">
-                            <div>
-                              <p className="text-sm font-bold">Karjers &quot;Liepa&quot;</p>
-                              <p className="text-xs text-background/50">Iekraušana</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold mt-2">Zolitudes iela 11a, Rīga</p>
-                              <p className="text-xs text-background/50">Izkraušana</p>
-                            </div>
+                          <div className="mt-2">
+                            <p className="text-xs font-semibold text-neutral-900">
+                              Zolitudes iela 11a, Rīga
+                            </p>
+                            <p className="text-[10px] text-neutral-400">Izkraušana</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 mt-4 pt-5 border-t border-background/10">
-                        <div className="flex-1 bg-primary hover:bg-primary/90 transition-colors text-background rounded-2xl py-3.5 flex items-center justify-center text-sm font-bold cursor-pointer">
-                          Sākt Navigāciju
+                      {/* Stats row */}
+                      <div className="grid grid-cols-3 gap-2 bg-white rounded-2xl p-3 border border-neutral-100">
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-[9px] text-neutral-400 uppercase tracking-widest">
+                            Attālums
+                          </p>
+                          <p className="text-sm font-bold text-neutral-900">48 km</p>
                         </div>
-                        <div className="w-12 h-12 bg-background/10 hover:bg-background/20 transition-colors rounded-2xl flex items-center justify-center cursor-pointer shrink-0">
-                          <MapPin className="w-5 h-5 text-background" />
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-[9px] text-neutral-400 uppercase tracking-widest">
+                            Laiks
+                          </p>
+                          <p className="text-sm font-bold text-neutral-900">~1h 45m</p>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-[9px] text-neutral-400 uppercase tracking-widest">
+                            Izpeļņa
+                          </p>
+                          <p className="text-sm font-bold text-neutral-900">€122</p>
+                        </div>
+                      </div>
+
+                      {/* CTA */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-[#203728] rounded-2xl py-3 flex items-center justify-center text-[11px] font-bold text-white cursor-pointer">
+                          Sākt navigāciju
+                        </div>
+                        <div className="w-10 h-10 bg-neutral-100 rounded-2xl flex items-center justify-center cursor-pointer shrink-0">
+                          <MapPin className="w-4 h-4 text-neutral-500" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Future / Finished trips faded */}
-                    <div className="w-full h-20 bg-background/5 border border-background/5 rounded-2xl p-4 flex gap-4 opacity-50 items-center">
-                      <div className="w-12 h-12 bg-background/10 rounded-xl" />
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div className="w-1/2 h-2.5 bg-background/20 rounded-full" />
-                        <div className="w-1/3 h-2 bg-background/10 rounded-full" />
+                    {/* Completed trip (faded) */}
+                    <div className="w-full bg-neutral-50 border border-neutral-100 rounded-2xl p-3 flex gap-3 items-center opacity-60">
+                      <div className="w-9 h-9 bg-neutral-200 rounded-xl shrink-0" />
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <div className="w-1/2 h-2 bg-neutral-200 rounded-full" />
+                        <div className="w-1/3 h-1.5 bg-neutral-100 rounded-full" />
+                      </div>
+                      <div className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                        Pabeigts
                       </div>
                     </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-foreground to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none" />
                   </div>
                 </div>
               </div>
@@ -286,7 +320,7 @@ export default function ParvadatajemPage() {
         />
 
         {/* ── CTA ── */}
-        <section className="w-full bg-foreground text-background py-32">
+        <section className="w-full bg-[#203728] text-white py-32">
           <Container className="flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
             <div className="flex flex-col gap-4">
               <h2 className="text-5xl md:text-7xl font-medium tracking-tighter leading-none">

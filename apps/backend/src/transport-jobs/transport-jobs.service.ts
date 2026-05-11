@@ -1263,7 +1263,15 @@ export class TransportJobsService {
         const jobs = await this.prisma.transportJob.findMany({
           where: {
             status: TransportJobStatus.AVAILABLE,
-            OR: [{ offeredToDriverId: null }, { offerExpiresAt: { lt: now } }],
+            OR: [
+              // No outstanding offer AND not in a dispatch-backoff cooldown
+              {
+                offeredToDriverId: null,
+                OR: [{ offerExpiresAt: null }, { offerExpiresAt: { lt: now } }],
+              },
+              // Outstanding offer has expired (driver didn't respond)
+              { offeredToDriverId: { not: null }, offerExpiresAt: { lt: now } },
+            ],
           },
           select: {
             id: true,
@@ -1415,33 +1423,54 @@ export class TransportJobsService {
         },
       });
       if (anyRemainingOnline === 0) {
-        // No eligible drivers remain — alert platform admins
-        this.prisma.user
-          .findMany({
-            where: { userType: 'ADMIN' },
-            select: { id: true },
-            take: 50,
+        // No eligible drivers remain.
+        // Set a 30-minute dispatch backoff so the cron does not hammer the same
+        // dead job every 30 seconds.  offerExpiresAt serves as the cooldown
+        // timer here (offeredToDriverId stays null).
+        const BACKOFF_MS = 30 * 60_000;
+        const backoffUntil = new Date(Date.now() + BACKOFF_MS);
+        // Only alert admins on the first pass for this job.  Subsequent passes
+        // are suppressed while the backoff is active (offerExpiresAt > now and
+        // offeredToDriverId is null means we already entered this state).
+        const alreadyBackedOff =
+          !expiredDriverId && job.offerExpiresAt && job.offerExpiresAt > now;
+
+        await this.prisma.transportJob
+          .updateMany({
+            where: { id: job.id, status: TransportJobStatus.AVAILABLE },
+            data: { offerExpiresAt: backoffUntil },
           })
-          .then((admins) => {
-            if (admins.length === 0) return;
-            return this.notifications.createForMany(
-              admins.map((a) => a.id),
-              {
-                type: NotificationType.SYSTEM_ALERT,
-                title: '🚨 Nav pieejamu šoferu',
-                message: `Darbam ${job.id} (${job.pickupCity} → ${job.deliveryCity}) nav pieejamu šoferu. Nepieciešama manuāla iejaukšanās vai darba pārplānošana.`,
-                data: { jobId: job.id },
-              },
+          .catch(() => undefined); // best-effort; don't block return
+
+        if (!alreadyBackedOff) {
+          // Alert platform admins — fires at most once per 30-min window per job
+          this.prisma.user
+            .findMany({
+              where: { userType: 'ADMIN' },
+              select: { id: true },
+              take: 50,
+            })
+            .then((admins) => {
+              if (admins.length === 0) return;
+              return this.notifications.createForMany(
+                admins.map((a) => a.id),
+                {
+                  type: NotificationType.SYSTEM_ALERT,
+                  title: '🚨 Nav pieejamu šoferu',
+                  message: `Darbam ${job.id} (${job.pickupCity} → ${job.deliveryCity}) nav pieejamu šoferu. Nepieciešama manuāla iejaukšanās vai darba pārplānošana.`,
+                  data: { jobId: job.id },
+                },
+              );
+            })
+            .catch((err) =>
+              this.logger.error(
+                `dispatchToNextDriver: admin escalation failed for job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
+              ),
             );
-          })
-          .catch((err) =>
-            this.logger.error(
-              `dispatchToNextDriver: admin escalation failed for job ${job.id}: ${err instanceof Error ? err.message : String(err)}`,
-            ),
+          this.logger.warn(
+            `dispatchToNextDriver: no eligible drivers left for job ${job.id} — admins alerted`,
           );
-        this.logger.warn(
-          `dispatchToNextDriver: no eligible drivers left for job ${job.id} — admins alerted`,
-        );
+        }
       }
       return;
     }

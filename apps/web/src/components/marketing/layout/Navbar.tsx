@@ -19,68 +19,69 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
-      <Container>
-        <div className="flex h-20 items-center justify-between">
-          <div className="flex items-center gap-12">
-            {/* Logo */}
-            <Link href="/" className="flex items-center" aria-label="B3Hub sākumlapa">
-              <span className="text-2xl font-medium tracking-tighter text-foreground">B3Hub</span>
-            </Link>
+    <>
+      <header className="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
+        <Container>
+          <div className="flex h-20 items-center justify-between">
+            <div className="flex items-center gap-12">
+              {/* Logo */}
+              <Link href="/" className="flex items-center" aria-label="B3Hub sākumlapa">
+                <span className="text-2xl font-medium tracking-tighter text-foreground">B3Hub</span>
+              </Link>
 
-            {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+              {/* Desktop nav */}
+              <nav className="hidden md:flex items-center gap-8">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href={`/login`}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+            {/* Desktop CTA */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                href={`/login`}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                Ienākt
+              </Link>
+              <CTAButton href={`/register`} variant="secondary" size="sm">
+                Reģistrēties
+              </CTAButton>
+              <div className="w-px h-5 bg-border/60 mx-1" aria-hidden="true" />
+              <CTAButton href={`/order`} variant="primary" size="sm">
+                Pasūtīt
+              </CTAButton>
+            </div>
+
+            {/* Mobile toggle */}
+            <button
+              type="button"
+              className="md:hidden p-2 text-foreground -mr-2"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-expanded={mobileOpen}
+              aria-label="Atvērt izvēlni"
             >
-              Ienākt
-            </Link>
-            <CTAButton href={`/register`} variant="secondary" size="sm">
-              Reģistrēties
-            </CTAButton>
-            <div className="w-px h-5 bg-border/60 mx-1" aria-hidden="true" />
-            <CTAButton href={`/order`} variant="primary" size="sm">
-              Pasūtīt
-            </CTAButton>
+              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
+        </Container>
+      </header>
 
-          {/* Mobile toggle */}
-          <button
-            type="button"
-            className="md:hidden p-2 text-foreground -mr-2"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-expanded={mobileOpen}
-            aria-label="Atvērt izvēlni"
-          >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
-      </Container>
-
-      {/* Mobile menu */}
+      {/* Mobile menu — sibling of header so backdrop-filter doesn't trap fixed positioning */}
       <div
         className={cn(
-          'md:hidden overflow-hidden transition-all duration-300 bg-background',
-          mobileOpen ? 'max-h-[collapse] border-b border-border' : 'max-h-0',
+          'md:hidden fixed inset-0 top-20 bg-background z-50 flex flex-col transition-all duration-300',
+          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
-        style={{ maxHeight: mobileOpen ? '400px' : '0' }}
       >
-        <nav className="px-6 pb-8 pt-4 flex flex-col gap-6">
+        <nav className="px-6 pb-8 pt-4 flex flex-col gap-6 overflow-y-auto h-full">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -120,6 +121,6 @@ export function Navbar() {
           </div>
         </nav>
       </div>
-    </header>
+    </>
   );
 }

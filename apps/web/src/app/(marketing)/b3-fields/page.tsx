@@ -205,7 +205,7 @@ export default async function B3FieldsPage() {
         />
 
         {/* ── CTA ── */}
-        <section className="w-full py-32 bg-foreground">
+        <section className="w-full py-32 bg-[#203728]">
           <Container className="flex flex-col items-center justify-center text-center gap-8">
             <h2 className="text-5xl md:text-6xl font-bold tracking-tighter text-background leading-none">
               Sāc jau šodien.

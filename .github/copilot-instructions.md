@@ -52,7 +52,9 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
+
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
+
 <!-- END GEN -->
 
 ### Module anatomy
@@ -80,6 +82,7 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
+
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -105,6 +108,7 @@ export interface RequestingUser {
   companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }
 ```
+
 <!-- END GEN -->
 
 > ⚠️ **Important**: The `/auth/me` and login API responses return company features as `user.company.features` (nested), **not** as a flat `user.companyFeatures`. Mobile `mode-context.tsx` reads `user.company.features` accordingly. Never read `user.companyFeatures` directly in mobile code.
@@ -165,6 +169,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
+
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
@@ -240,6 +245,7 @@ Backend is flat (`apps/backend/src/`). All marketplace and admin features use th
 ## Improving existing flows — rules to prevent duplication
 
 - **Grep before you build.** Before creating any new component, sheet, state machine, or screen for a flow, search for existing implementations first. `order-request-new.tsx`, wizard components, and context files often already handle what you're about to build.
+- **Check global components first.** Before writing any inline UI (address picker, status badge, price row, empty state, loading state, modal, map) — check `apps/mobile/components/ui/` and `apps/web/src/components/ui/` for an existing component. The component catalog in `.github/instructions/mobile-components.instructions.md` and `.github/instructions/web-components.instructions.md` is the single source of truth. One `grep` takes less than a second.
 - **"Improve X" means edit X, not build a parallel X.** Patch the gap in the existing file — do not design a new flow from scratch alongside it.
 - **Read the destination screen before touching the entry point.** If the task is "improve the catalog → order flow," read `order-request-new.tsx` (or whatever the destination is) before writing a single line in `catalog.tsx`.
 - **Ask one scoped question before implementing anything net-new.** If unsure whether a flow already exists, ask: _"Does [screen] already handle [feature]?"_ — one grep answers it in seconds.

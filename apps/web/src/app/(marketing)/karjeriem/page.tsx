@@ -486,7 +486,7 @@ export default function KarjeriemPage() {
         />
 
         {/* ── CTA ── */}
-        <section className="w-full py-32 bg-foreground">
+        <section className="w-full py-32 bg-[#203728]">
           <Container className="flex flex-col md:flex-row items-center justify-between gap-12">
             <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-none">
               Pievienojies

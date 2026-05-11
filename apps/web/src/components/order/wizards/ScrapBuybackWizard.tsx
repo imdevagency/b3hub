@@ -821,6 +821,13 @@ export function ScrapBuybackWizard({ mode }: Props) {
             </p>
           )}
 
+          <div className="rounded-2xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-xs text-yellow-900 leading-relaxed">
+            <span className="font-bold">Nodokļu informācija:</span> Fiziskām personām no izmaksas
+            tiek ieturēts <span className="font-bold">10% IIN</span>. Juridiskām personām piemēro{' '}
+            <span className="font-bold">PVN reverso shēmu</span> — PVN jādeklarē pašiem. Precīzas
+            saistības noskaidrojiet ar savu grāmatvedi.
+          </div>
+
           <div className="pt-4">
             <Button
               className="w-full h-12 text-base rounded-full shadow-md hover:shadow-lg transition-all"
