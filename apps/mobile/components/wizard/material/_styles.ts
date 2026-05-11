@@ -456,7 +456,7 @@ export const s = StyleSheet.create({
   // ── Offers step ──
   offersTitle: {
     fontSize: 22,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
@@ -468,15 +468,12 @@ export const s = StyleSheet.create({
   },
   sortPill: {
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: '#fff',
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#f3f4f6',
   },
   sortPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.textPrimary,
+    backgroundColor: '#111827',
   },
   sortPillText: {
     fontSize: 13,
@@ -488,12 +485,15 @@ export const s = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   rfqBox: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bgCard,
+    borderRadius: 20,
+    backgroundColor: '#f9fafb',
     padding: 16,
     gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   rfqIconBg: {
     width: 44,

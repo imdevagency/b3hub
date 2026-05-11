@@ -35,12 +35,9 @@ export function WhenStep({
   onTruckIntervalChange,
 }: WhenStepProps) {
   return (
-    <View className="px-6 pt-5 pb-12">
+    <View className="px-6 pt-5 pb-6">
       {/* Inline calendar */}
       <View className="mb-6">
-        <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
-          Piegādes datums
-        </Text>
         <WizardCalendar
           selectedDate={deliveryDate}
           onDateChange={(d) => {
@@ -53,9 +50,6 @@ export function WhenStep({
 
       {/* Time window selection */}
       <View className="mb-6">
-        <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
-          Dienas laiks
-        </Text>
         <View className="flex-row gap-3">
           {(
             [
@@ -69,18 +63,36 @@ export function WhenStep({
             return (
               <TouchableOpacity
                 key={i}
-                className={`flex-1 rounded-2xl p-4 items-center justify-center ${
-                  active ? 'bg-[#166534]' : 'bg-gray-50'
-                }`}
                 onPress={() => {
                   haptics.light();
                   onWindowChange(w.id);
                 }}
                 activeOpacity={0.8}
+                style={{
+                  flex: 1,
+                  borderRadius: 20,
+                  paddingVertical: 18,
+                  paddingHorizontal: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  backgroundColor: active ? '#111827' : '#f3f4f6',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: active ? 4 : 1 },
+                  shadowOpacity: active ? 0.15 : 0.04,
+                  shadowRadius: active ? 10 : 4,
+                  elevation: active ? 4 : 1,
+                }}
               >
-                <Icon size={20} color={active ? '#ffffff' : '#9ca3af'} className="mb-2" />
+                <Icon size={22} color={active ? '#ffffff' : '#6b7280'} />
                 <Text
-                  className={`font-semibold text-xs ${active ? 'text-white' : 'text-gray-500'}`}
+                  style={{
+                    fontSize: 13,
+                    fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
+                    fontWeight: active ? '700' : '500',
+                    color: active ? '#fff' : '#4b5563',
+                    textAlign: 'center',
+                  }}
                 >
                   {w.label}
                 </Text>
@@ -93,22 +105,65 @@ export function WhenStep({
       {/* Truck count stepper — only shown when prop is wired */}
       {onTruckCountChange && (
         <View className="mb-10">
-          <Text className="text-gray-900 text-base font-semibold tracking-tight mb-4 ml-1">
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_600SemiBold',
+              fontWeight: '600',
+              color: '#9ca3af',
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              marginBottom: 16,
+              marginLeft: 4,
+            }}
+          >
             Kravas auto skaits
           </Text>
-          <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 py-3 gap-4">
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#f3f4f6',
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              gap: 16,
+            }}
+          >
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
                 onTruckCountChange(Math.max(1, truckCount - 1));
               }}
               activeOpacity={0.7}
-              className="w-10 h-10 rounded-xl bg-white items-center justify-center"
-              style={{ borderWidth: 1, borderColor: '#e5e7eb' }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
             >
-              <Text className="text-gray-900 text-xl font-semibold">−</Text>
+              <Text style={{ fontSize: 22, fontFamily: 'Inter_400Regular', color: '#111827' }}>
+                −
+              </Text>
             </TouchableOpacity>
-            <Text className="flex-1 text-center text-gray-900 text-base font-semibold">
+            <Text
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                fontSize: 18,
+                fontFamily: 'Inter_700Bold',
+                fontWeight: '700',
+                color: '#111827',
+              }}
+            >
               {truckCount} {truckCount === 1 ? 'auto' : 'auto'}
             </Text>
             <TouchableOpacity
@@ -117,17 +172,40 @@ export function WhenStep({
                 onTruckCountChange(Math.min(5, truckCount + 1));
               }}
               activeOpacity={0.7}
-              className="w-10 h-10 rounded-xl bg-white items-center justify-center"
-              style={{ borderWidth: 1, borderColor: '#e5e7eb' }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
             >
-              <Text className="text-gray-900 text-xl font-semibold">+</Text>
+              <Text style={{ fontSize: 22, fontFamily: 'Inter_400Regular', color: '#111827' }}>
+                +
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* Interval chips — only visible when >1 truck */}
           {truckCount > 1 && onTruckIntervalChange && (
             <View className="mt-3">
-              <Text className="text-gray-500 text-xs mb-2 ml-1">Intervāls starp automašīnām</Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#9ca3af',
+                  fontFamily: 'Inter_500Medium',
+                  marginBottom: 8,
+                  marginLeft: 4,
+                }}
+              >
+                Intervāls starp automašīnām
+              </Text>
               <View className="flex-row gap-2">
                 {([30, 60, 90, 120] as const).map((mins) => {
                   const active = truckIntervalMinutes === mins;
@@ -139,11 +217,21 @@ export function WhenStep({
                         onTruckIntervalChange(mins);
                       }}
                       activeOpacity={0.75}
-                      className={`flex-1 rounded-xl py-2 items-center ${active ? 'bg-[#166534]' : 'bg-gray-50'}`}
-                      style={active ? undefined : { borderWidth: 1, borderColor: '#e5e7eb' }}
+                      style={{
+                        flex: 1,
+                        borderRadius: 999,
+                        paddingVertical: 10,
+                        alignItems: 'center',
+                        backgroundColor: active ? '#111827' : '#f3f4f6',
+                      }}
                     >
                       <Text
-                        className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-500'}`}
+                        style={{
+                          fontSize: 13,
+                          fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
+                          fontWeight: active ? '700' : '500',
+                          color: active ? '#fff' : '#4b5563',
+                        }}
                       >
                         {mins} min
                       </Text>

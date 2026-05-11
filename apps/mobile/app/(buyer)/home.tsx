@@ -17,10 +17,12 @@ import {
   FolderOpen,
   Wrench,
   Search,
+  RefreshCcw,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { SearchBar } from '@/components/ui/SearchBar';
 import { useHeaderConfig } from '@/lib/header-context';
 import { useToast } from '@/components/ui/Toast';
 import { useMode } from '@/lib/mode-context';
@@ -70,42 +72,12 @@ const TJ_ACTIVE_STATUSES = new Set([
 // ── Services ──────────────────────────────────────────────────────────────
 
 const SERVICES = [
-  {
-    id: 'materials',
-    icon: HardHat,
-    label: 'Materiāli',
-    sub: 'Smiltis, šķembas',
-    route: '/(buyer)/catalog',
-  },
-  {
-    id: 'transport',
-    icon: Truck,
-    label: 'Pasūtīt auto',
-    sub: 'Tehnika, transports',
-    route: '/transport',
-  },
-  { id: 'container', icon: Package, label: 'Konteineri', sub: 'Piegāde', route: '/skip-hire' },
-  {
-    id: 'disposal',
-    icon: Trash2,
-    label: 'Utilizācija',
-    sub: 'Būvgruži, zeme',
-    route: '/disposal',
-  },
-  {
-    id: 'scrap-buyback',
-    icon: Wrench,
-    label: 'Metāllūžņi',
-    sub: 'Nodo un saņem samaksu',
-    route: '/scrap-buyback',
-  },
-  {
-    id: 'toilet-cabin',
-    icon: Building2,
-    label: 'Tualetes kabīnes',
-    sub: 'Noma būvlaukumam',
-    route: '/toilet-cabin',
-  },
+  { id: 'materials', icon: HardHat, label: 'Materiāli', route: '/(buyer)/catalog' },
+  { id: 'transport', icon: Truck, label: 'Transports', route: '/transport' },
+  { id: 'container', icon: Package, label: 'Konteineri', route: '/skip-hire' },
+  { id: 'disposal', icon: Trash2, label: 'Utilizācija', route: '/disposal' },
+  { id: 'scrap-buyback', icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
+  { id: 'toilet-cabin', icon: Building2, label: 'Kabīnes', route: '/toilet-cabin' },
 ];
 
 export default function HomeScreen() {
@@ -203,10 +175,16 @@ export default function HomeScreen() {
         sub: skip.location ?? '—',
         status:
           (
-            { PENDING: 'Gaida', CONFIRMED: 'Apstiprināts', DELIVERED: 'Piegādāts' } as Record<
-              string,
-              string
-            >
+            {
+              PENDING: 'Gaida apstiprinājumu',
+              CONFIRMED: 'Apstiprināts',
+              SCHEDULED: 'Ieplānots',
+              IN_TRANSIT: 'Ceļā',
+              DELIVERED: 'Piegādāts',
+              COLLECTED: 'Savākts',
+              COMPLETED: 'Pabeigts',
+              CANCELLED: 'Atcelts',
+            } as Record<string, string>
           )[skip.status] ?? skip.status,
         dotColor: '#f59e0b',
         kind: 'skip',
@@ -244,16 +222,68 @@ export default function HomeScreen() {
     [orders, skipOrders, transportOrders],
   );
 
-  // Recent completed/cancelled material orders — shown as "order again" strip
-  const recentOrders = useMemo(
-    () =>
-      orders
-        .filter(
-          (o) => (o.status === 'COMPLETED' || o.status === 'DELIVERED') && o.items?.length > 0,
-        )
-        .slice(0, 3),
-    [orders],
-  );
+  // Unified "order again" items — material, skip hire, and transport
+  type ReorderItem = {
+    key: string;
+    label: string;
+    sub: string;
+    kind: 'material' | 'skip' | 'transport';
+    onPress: () => void;
+  };
+  const recentReorders = useMemo<ReorderItem[]>(() => {
+    const items: ReorderItem[] = [];
+    for (const o of orders) {
+      if ((o.status === 'COMPLETED' || o.status === 'DELIVERED') && o.items?.length > 0) {
+        const firstItem = o.items[0];
+        items.push({
+          key: o.id,
+          label: firstItem?.material?.name ?? '—',
+          sub: o.deliveryCity ?? o.deliveryAddress ?? '—',
+          kind: 'material',
+          onPress: () => {
+            haptics.light();
+            router.push({
+              pathname: '/(wizards)/material-order' as never,
+              params: {
+                initialCategory: firstItem?.material?.category ?? undefined,
+                prefillAddress: o.deliveryAddress ?? undefined,
+                prefillCity: o.deliveryCity ?? undefined,
+              },
+            } as never);
+          },
+        });
+      }
+    }
+    for (const o of skipOrders) {
+      if (o.status === 'COMPLETED') {
+        items.push({
+          key: o.id,
+          label: 'Konteiners',
+          sub: o.location ?? '—',
+          kind: 'skip',
+          onPress: () => {
+            haptics.light();
+            router.push('/(wizards)/skip-hire' as never);
+          },
+        });
+      }
+    }
+    for (const o of transportOrders) {
+      if (o.status === 'DELIVERED') {
+        items.push({
+          key: o.id,
+          label: 'Transports',
+          sub: (o as any).pickupCity ?? '—',
+          kind: 'transport',
+          onPress: () => {
+            haptics.light();
+            router.push('/(wizards)/transport' as never);
+          },
+        });
+      }
+    }
+    return items.slice(0, 4);
+  }, [orders, skipOrders, transportOrders, router]);
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
@@ -472,7 +502,7 @@ export default function HomeScreen() {
                 </View>
                 <Text
                   style={{
-                    color: '#9ca3af',
+                    color: '#d1d5db',
                     fontFamily: 'Inter_600SemiBold',
                     fontWeight: '600',
                     fontSize: 14,
@@ -497,7 +527,7 @@ export default function HomeScreen() {
               </Text>
               <Text
                 style={{
-                  color: '#9ca3af',
+                  color: '#d1d5db',
                   fontFamily: 'Inter_500Medium',
                   fontWeight: '500',
                   fontSize: 16,
@@ -535,107 +565,204 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* ── Recent Orders — quick reorder ── */}
-        {recentOrders.length > 0 && (!user?.companyRole || (user?.permManageOrders ?? false)) && (
-          <View style={{ marginBottom: 32 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 20,
-                marginBottom: 14,
-              }}
-            >
-              <Text
+        {/* ── Search + Services + Popular Materials — always visible for permitted users ── */}
+        {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
+          <>
+            {/* Search shortcut */}
+            <SearchBar
+              style={{ marginHorizontal: 20, marginBottom: 24 }}
+              onPress={() =>
+                router.push({ pathname: '/(buyer)/catalog', params: { focus: '1' } } as never)
+              }
+            />
+
+            {/* Services — Uber style 2-column grid */}
+            <View style={{ marginBottom: 32, paddingHorizontal: 20 }}>
+              <View
                 style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  fontSize: 20,
-                  letterSpacing: -0.4,
-                  color: '#111827',
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  gap: 12,
                 }}
               >
-                Pasūtīt vēlreiz
-              </Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-            >
-              {recentOrders.map((order) => {
-                const firstItem = order.items[0];
-                return (
-                  <TouchableOpacity
-                    key={order.id}
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      haptics.light();
-                      router.push({
-                        pathname: '/(wizards)/material-order' as never,
-                        params: {
-                          initialCategory: firstItem?.material?.category ?? undefined,
-                          prefillAddress: order.deliveryAddress ?? undefined,
-                          prefillCity: order.deliveryCity ?? undefined,
-                        },
-                      } as never);
-                    }}
-                    style={{
-                      width: 180,
-                      backgroundColor: '#f9fafb',
-                      borderRadius: 20,
-                      padding: 16,
-                      borderWidth: 1,
-                      borderColor: '#e5e7eb',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
-                        fontSize: 14,
-                        color: '#111827',
-                        marginBottom: 4,
+                {SERVICES.map((svc, i) => {
+                  const Icon = svc.icon;
+                  // First two cards are larger visually if needed, but let's make them all uniform 2-col squares
+                  const isTopRow = i < 2;
+                  return (
+                    <TouchableOpacity
+                      key={svc.id}
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        haptics.light();
+                        router.push(svc.route as any);
                       }}
-                      numberOfLines={2}
-                    >
-                      {firstItem?.material?.name ?? '—'}
-                    </Text>
-                    <Text
                       style={{
-                        fontFamily: 'Inter_400Regular',
-                        fontSize: 12,
-                        color: '#6b7280',
-                        marginBottom: 14,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {order.deliveryCity ?? order.deliveryAddress ?? '—'}
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 4,
+                        width: '48%',
+                        aspectRatio: isTopRow ? 1.2 : 1.1,
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: 16,
+                        padding: 16,
+                        justifyContent: 'space-between',
                       }}
                     >
                       <Text
-                        style={{
-                          fontFamily: 'Inter_600SemiBold',
-                          fontWeight: '600',
-                          fontSize: 13,
-                          color: '#166534',
-                        }}
+                        style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#111827' }}
+                        numberOfLines={2}
                       >
-                        Atkārtot
+                        {svc.label}
                       </Text>
-                      <ArrowRight size={12} color="#166534" />
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                      <View style={{ alignSelf: 'flex-end', marginTop: 10 }}>
+                        <Icon size={isTopRow ? 36 : 28} color="#4b5563" strokeWidth={1.5} />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Popular materials — horizontal scroll, matching Uber style */}
+            <View style={{ marginBottom: 32 }}>
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontSize: 20,
+                  letterSpacing: -0.4,
+                  color: '#111827',
+                  paddingHorizontal: 20,
+                  marginBottom: 16,
+                }}
+              >
+                Populārākie materiāli
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {[
+                  { cat: 'GRAVEL', icon: HardHat, label: 'Grants', sub: 'Ceļu un pamatu būvei' },
+                  { cat: 'SAND', icon: HardHat, label: 'Smiltis', sub: 'Būvēm un apzaļumiem' },
+                  { cat: 'STONE', icon: HardHat, label: 'Šķembas', sub: 'Drenāžai un ceļiem' },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <TouchableOpacity
+                      key={item.cat}
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        haptics.light();
+                        router.push({
+                          pathname: '/(wizards)/material-order' as never,
+                          params: { initialCategory: item.cat },
+                        } as never);
+                      }}
+                      style={{
+                        width: 140,
+                        height: 140,
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: 16,
+                        padding: 16,
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <View>
+                        <Text
+                          style={{
+                            fontFamily: 'Inter_600SemiBold',
+                            fontSize: 16,
+                            color: '#111827',
+                            marginBottom: 4,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text
+                          style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: '#6b7280' }}
+                          numberOfLines={2}
+                        >
+                          {item.sub}
+                        </Text>
+                      </View>
+                      <View style={{ alignSelf: 'flex-end' }}>
+                        <Icon size={28} color="#4b5563" strokeWidth={1.5} />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </>
+        )}
+
+        {/* ── Recent Orders ── */}
+        {recentReorders.length > 0 && (!user?.companyRole || (user?.permManageOrders ?? false)) && (
+          <View style={{ marginBottom: 32 }}>
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 20,
+                letterSpacing: -0.4,
+                color: '#111827',
+                paddingHorizontal: 20,
+                marginBottom: 8,
+              }}
+            >
+              Pasūtīt vēlreiz
+            </Text>
+            <View style={{ paddingHorizontal: 20 }}>
+              {recentReorders.map((item, index) => (
+                <TouchableOpacity
+                  key={item.key}
+                  activeOpacity={0.7}
+                  onPress={item.onPress}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 16,
+                    borderBottomWidth: index === recentReorders.length - 1 ? 0 : 1,
+                    borderBottomColor: '#f3f4f6',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: '#f3f4f6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 16,
+                    }}
+                  >
+                    <RefreshCcw size={18} color="#4b5563" />
+                  </View>
+                  <View style={{ flex: 1, marginRight: 16 }}>
+                    <Text
+                      style={{
+                        fontFamily: 'Inter_600SemiBold',
+                        fontSize: 16,
+                        color: '#111827',
+                        marginBottom: 2,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: '#6b7280' }}
+                      numberOfLines={1}
+                    >
+                      {item.sub}
+                    </Text>
+                  </View>
+                  <ChevronRight size={20} color="#9ca3af" strokeWidth={2} />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
@@ -648,15 +775,14 @@ export default function HomeScreen() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingHorizontal: 20,
-                marginBottom: 14,
+                marginBottom: 16,
               }}
             >
               <Text
                 style={{
                   fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  fontSize: 22,
-                  letterSpacing: -0.5,
+                  fontSize: 20,
+                  letterSpacing: -0.4,
                   color: '#111827',
                 }}
               >
@@ -669,13 +795,13 @@ export default function HomeScreen() {
               >
                 <Text
                   style={{
-                    fontFamily: 'Inter_600SemiBold',
-                    fontWeight: '600',
+                    fontFamily: 'Inter_500Medium',
                     fontSize: 14,
-                    color: '#166534',
+                    color: '#4b5563',
+                    paddingRight: 4,
                   }}
                 >
-                  Visi projekti
+                  Visi
                 </Text>
               </TouchableOpacity>
             </View>
@@ -693,348 +819,39 @@ export default function HomeScreen() {
                     router.push(`/(buyer)/catalog?projectId=${project.id}` as any);
                   }}
                   style={{
-                    width: 200,
-                    backgroundColor: '#f0fdf4',
-                    borderRadius: 24,
-                    padding: 18,
-                    borderWidth: 1,
-                    borderColor: '#bbf7d0',
+                    width: 140,
+                    height: 140,
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: 16,
+                    padding: 16,
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: '#dcfce7',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 14,
-                    }}
-                  >
-                    <FolderOpen size={20} color="#166534" strokeWidth={2} />
-                  </View>
-                  <Text
-                    style={{
-                      fontFamily: 'Inter_700Bold',
-                      fontWeight: '700',
-                      fontSize: 15,
-                      color: '#111827',
-                      letterSpacing: -0.3,
-                      marginBottom: 4,
-                    }}
-                    numberOfLines={2}
-                  >
-                    {project.name}
-                  </Text>
-                  {project.siteAddress ? (
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_400Regular',
-                        fontSize: 12,
-                        color: '#6b7280',
-                        marginBottom: 14,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {project.siteAddress}
-                    </Text>
-                  ) : (
-                    <View style={{ marginBottom: 14 }} />
-                  )}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: '#166534',
-                      borderRadius: 10,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      gap: 6,
-                    }}
-                  >
+                  <View>
                     <Text
                       style={{
                         fontFamily: 'Inter_600SemiBold',
-                        fontWeight: '600',
-                        fontSize: 13,
-                        color: '#fff',
-                        flex: 1,
+                        fontSize: 16,
+                        color: '#111827',
+                        marginBottom: 4,
                       }}
+                      numberOfLines={2}
                     >
-                      Pasūtīt
+                      {project.name}
                     </Text>
-                    <ArrowRight size={14} color="#fff" />
+                    <Text
+                      style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: '#6b7280' }}
+                      numberOfLines={2}
+                    >
+                      {project.siteAddress || 'Nav adreses'}
+                    </Text>
+                  </View>
+                  <View style={{ alignSelf: 'flex-end' }}>
+                    <FolderOpen size={24} color="#4b5563" strokeWidth={1.5} />
                   </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        )}
-
-        {/* ── Popular materials — quick-start for users with no orders yet ── */}
-        {!loading &&
-          !activeItem &&
-          recentOrders.length === 0 &&
-          (!user?.companyRole || (user?.permManageOrders ?? false)) && (
-            <View style={{ marginBottom: 32 }}>
-              <Text
-                style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontWeight: '700',
-                  fontSize: 20,
-                  letterSpacing: -0.4,
-                  color: '#111827',
-                  paddingHorizontal: 20,
-                  marginBottom: 14,
-                }}
-              >
-                Populārākie materiāli
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-                keyboardShouldPersistTaps="handled"
-              >
-                {[
-                  {
-                    cat: 'GRAVEL',
-                    label: 'Grants',
-                    sub: 'Ceļu un pamatu būvei',
-                    color: '#e2e8f0',
-                    accent: '#475569',
-                  },
-                  {
-                    cat: 'SAND',
-                    label: 'Smiltis',
-                    sub: 'Būvēm un apzaļum',
-                    color: '#fef3c7',
-                    accent: '#d97706',
-                  },
-                  {
-                    cat: 'STONE',
-                    label: 'Šķembas',
-                    sub: 'Drēnāžai un ceļiem',
-                    color: '#dde1e8',
-                    accent: '#334155',
-                  },
-                ].map((item) => (
-                  <TouchableOpacity
-                    key={item.cat}
-                    activeOpacity={0.85}
-                    onPress={() => {
-                      haptics.light();
-                      router.push({
-                        pathname: '/(wizards)/material-order' as never,
-                        params: { initialCategory: item.cat },
-                      } as never);
-                    }}
-                    style={{
-                      width: 160,
-                      backgroundColor: item.color,
-                      borderRadius: 24,
-                      padding: 18,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
-                        fontSize: 17,
-                        color: '#111827',
-                        letterSpacing: -0.3,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {item.label}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_400Regular',
-                        fontSize: 12,
-                        color: '#6b7280',
-                        marginBottom: 16,
-                        lineHeight: 17,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {item.sub}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text
-                        style={{
-                          fontFamily: 'Inter_600SemiBold',
-                          fontWeight: '600',
-                          fontSize: 13,
-                          color: item.accent,
-                        }}
-                      >
-                        Pasūdīt
-                      </Text>
-                      <ArrowRight size={12} color={item.accent} />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    haptics.light();
-                    router.push('/(buyer)/catalog' as any);
-                  }}
-                  style={{
-                    width: 120,
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: 24,
-                    padding: 18,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: 'Inter_600SemiBold',
-                      fontWeight: '600',
-                      fontSize: 14,
-                      color: '#374151',
-                      textAlign: 'center',
-                      marginBottom: 8,
-                    }}
-                  >
-                    Viss katalogs
-                  </Text>
-                  <ArrowRight size={16} color="#374151" />
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          )}
-
-        {/* ── Empty State / Actions Grid ── */}
-        {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
-          <View style={{ paddingHorizontal: 20 }}>
-            {/* Empty state — just a heading prompt, the grid below is the CTA */}
-            {!activeItem && !loading && (
-              <Text
-                style={{
-                  fontFamily: 'Inter_500Medium',
-                  fontWeight: '500',
-                  fontSize: 15,
-                  color: '#6b7280',
-                  marginBottom: 16,
-                }}
-              >
-                Nav aktīvu pasūtījumu. Sāciet no pakalpojumiem zemāk.
-              </Text>
-            )}
-
-            {/* Tappable search shortcut — routes to Catalog with search focused */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => {
-                haptics.light();
-                router.push({ pathname: '/(buyer)/catalog', params: { focus: '1' } } as never);
-              }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: '#f3f4f6',
-                borderRadius: 16,
-                paddingHorizontal: 16,
-                paddingVertical: 13,
-                marginBottom: 20,
-                gap: 10,
-              }}
-            >
-              <Search size={18} color="#9ca3af" strokeWidth={2} />
-              <Text
-                style={{
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 16,
-                  color: '#9ca3af',
-                  flex: 1,
-                }}
-              >
-                Ko nepiecieams piegādāt?
-              </Text>
-            </TouchableOpacity>
-
-            <Text
-              style={{
-                fontFamily: 'Inter_700Bold',
-                fontWeight: '700',
-                fontSize: 26,
-                letterSpacing: -0.5,
-                color: '#111827',
-                marginBottom: 20,
-              }}
-            >
-              Pakalpojumi
-            </Text>
-            <View
-              style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}
-            >
-              {SERVICES.map((svc) => {
-                const Icon = svc.icon;
-                return (
-                  <TouchableOpacity
-                    key={svc.id}
-                    style={{
-                      width: '48%',
-                      backgroundColor: '#f9fafb',
-                      borderRadius: 32,
-                      padding: 20,
-                      marginBottom: 16,
-                    }}
-                    onPress={() => {
-                      haptics.light();
-                      router.push(svc.route as any);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={{
-                        marginBottom: 24,
-                        backgroundColor: '#ffffff',
-                        alignSelf: 'flex-start',
-                        padding: 14,
-                        borderRadius: 20,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 8,
-                        elevation: 2,
-                      }}
-                    >
-                      <Icon size={24} color="#111827" strokeWidth={2} />
-                    </View>
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_700Bold',
-                        fontWeight: '700',
-                        fontSize: 17,
-                        letterSpacing: -0.5,
-                        color: '#111827',
-                        marginBottom: 6,
-                      }}
-                    >
-                      {svc.label}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_500Medium',
-                        fontWeight: '500',
-                        fontSize: 14,
-                        color: '#6b7280',
-                        lineHeight: 18,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {svc.sub}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
           </View>
         )}
 

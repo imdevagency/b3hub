@@ -18,6 +18,7 @@ import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { SearchBar } from '@/components/ui/SearchBar';
 import { Text } from '@/components/ui/text';
 import {
   Layers,
@@ -105,7 +106,14 @@ function CategoryCard({
 
   return (
     <TouchableOpacity
-      className="bg-white mx-5 py-4 flex-row items-center border-b border-gray-100"
+      className="bg-white mx-5 mb-3 p-4 flex-row items-center rounded-2xl"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 8,
+        elevation: 1,
+      }}
       onPress={() => {
         haptics.light();
         onPress();
@@ -113,10 +121,10 @@ function CategoryCard({
       activeOpacity={0.7}
     >
       <View
-        className="h-12 w-12 rounded-2xl items-center justify-center mr-4"
+        className="h-14 w-14 rounded-2xl items-center justify-center mr-4"
         style={{ backgroundColor: meta.bg }}
       >
-        <Icon size={22} color={meta.accent} strokeWidth={2.5} />
+        <Icon size={24} color={meta.accent} strokeWidth={2} />
       </View>
 
       <View className="flex-1 justify-center pr-2">
@@ -504,34 +512,13 @@ export default function CatalogScreen() {
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
-          <Search size={18} color="#9ca3af" style={{ marginRight: 10 }} />
-          <TextInput
-            ref={searchInputRef}
-            className="flex-1 text-gray-900"
-            style={{ fontSize: 16, fontFamily: 'Inter_500Medium', paddingVertical: 0 }}
-            placeholder="Meklēt materiālu..."
-            placeholderTextColor="#9ca3af"
-            value={query}
-            onChangeText={setQuery}
-            returnKeyType="search"
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                haptics.light();
-                setQuery('');
-              }}
-              hitSlop={14}
-            >
-              <View className="bg-gray-200 p-1 rounded-full">
-                <X size={12} color="#374151" strokeWidth={3} />
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          ref={searchInputRef}
+          editable={true}
+          value={query}
+          onChangeText={setQuery}
+          style={{ paddingVertical: 12, paddingHorizontal: 16 }}
+        />
       </View>
 
       <FlatList
@@ -614,20 +601,25 @@ export default function CatalogScreen() {
                             router.push(svc.route as never);
                           }}
                           activeOpacity={0.8}
-                          className="flex-row items-center bg-white border border-gray-100 rounded-[14px] px-4 py-3 gap-2 shadow-sm"
+                          className="flex-row items-center bg-white rounded-2xl px-5 py-4 shadow-sm"
                           style={{
                             shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.02,
-                            shadowRadius: 4,
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.03,
+                            shadowRadius: 8,
                             elevation: 1,
                           }}
                         >
-                          <Icon size={16} color="#374151" strokeWidth={2.5} />
+                          <Icon
+                            size={20}
+                            color="#4b5563"
+                            strokeWidth={2}
+                            style={{ marginRight: 10 }}
+                          />
                           <Text
                             style={{
                               fontFamily: 'Inter_600SemiBold',
-                              fontSize: 14,
+                              fontSize: 15,
                               color: '#111827',
                             }}
                           >

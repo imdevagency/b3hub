@@ -212,24 +212,57 @@ export function SpecsStep({
 
         {/* Quantity stepper */}
         <View className="mb-6 mt-2">
-          <Text className="text-gray-400 text-sm font-semibold tracking-widest uppercase mb-6 text-center">
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_700Bold',
+              color: '#9ca3af',
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              textAlign: 'center',
+              marginBottom: 20,
+            }}
+          >
             Kopējais apjoms
           </Text>
-          <View className="flex-row items-center justify-center gap-6">
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 24,
+            }}
+          >
             <TouchableOpacity
-              className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center"
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                borderWidth: 1.5,
+                borderColor: '#e5e7eb',
+                backgroundColor: '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
               onPress={() => {
                 haptics.light();
                 onQuantityChange(Math.max(1, Math.round(quantity - stepAmt)));
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
               <Minus size={24} color="#111827" />
             </TouchableOpacity>
 
-            <View className="items-center px-4 w-[160px]">
+            <View style={{ alignItems: 'center', minWidth: 160 }}>
               {quantityEditing ? (
-                <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}
+                >
                   <TextInput
                     autoFocus
                     keyboardType="decimal-pad"
@@ -247,18 +280,27 @@ export function SpecsStep({
                     }}
                     returnKeyType="done"
                     style={{
-                      fontSize: 48,
-                      fontFamily: 'Inter_900Black',
+                      fontSize: 56,
+                      fontFamily: 'Inter_800ExtraBold',
                       color: '#111827',
                       textAlign: 'center',
                       minWidth: 100,
                       borderBottomWidth: 2,
                       borderBottomColor: '#111827',
+                      letterSpacing: -2,
+                      includeFontPadding: false,
+                      padding: 0,
+                      margin: 0,
                     }}
                   />
                   <Text
-                    className="text-xl font-semibold text-gray-400 ml-1"
-                    style={{ marginBottom: 8 }}
+                    style={{
+                      fontSize: 20,
+                      fontFamily: 'Inter_600SemiBold',
+                      color: '#9ca3af',
+                      marginLeft: 4,
+                      marginBottom: 8,
+                    }}
                   >
                     {ORDER_TYPE_UNIT_LABEL[orderType]}
                   </Text>
@@ -269,38 +311,86 @@ export function SpecsStep({
                     setQuantityDraft(String(quantity));
                     setQuantityEditing(true);
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
+                  style={{ alignItems: 'center' }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'flex-end',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <Text
-                      className="text-5xl font-black text-gray-900 tracking-tighter"
+                      style={{
+                        fontSize: 56,
+                        fontFamily: 'Inter_800ExtraBold',
+                        color: '#111827',
+                        letterSpacing: -2,
+                        includeFontPadding: false,
+                      }}
                       numberOfLines={1}
                     >
                       {quantity.toString()}
                     </Text>
                     <Text
-                      className="text-xl font-semibold text-gray-400 ml-1"
-                      style={{ marginBottom: 6 }}
+                      style={{
+                        fontSize: 20,
+                        fontFamily: 'Inter_600SemiBold',
+                        color: '#9ca3af',
+                        marginLeft: 4,
+                        marginBottom: 6,
+                      }}
                     >
                       {ORDER_TYPE_UNIT_LABEL[orderType]}
                     </Text>
                   </View>
-                  <Text
-                    style={{ fontSize: 10, color: '#9ca3af', textAlign: 'center', marginTop: 3 }}
+                  <View
+                    style={{
+                      marginTop: 2,
+                      paddingHorizontal: 12,
+                      paddingVertical: 4,
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 999,
+                    }}
                   >
-                    pieskarties lai rediģētu
-                  </Text>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontFamily: 'Inter_700Bold',
+                        color: '#6b7280',
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      Rediģēt
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
 
             <TouchableOpacity
-              className="w-14 h-14 bg-gray-100 rounded-full items-center justify-center"
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 26,
+                borderWidth: 1.5,
+                borderColor: '#e5e7eb',
+                backgroundColor: '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
               onPress={() => {
                 haptics.light();
                 onQuantityChange(Math.round(quantity + stepAmt));
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
               <Plus size={24} color="#111827" />
             </TouchableOpacity>
@@ -313,47 +403,102 @@ export function SpecsStep({
               flexWrap: 'wrap',
               justifyContent: 'center',
               gap: 8,
-              marginTop: 16,
+              marginTop: 20,
             }}
           >
-            {QUANTITY_PRESETS[orderType].map((p) => (
-              <TouchableOpacity
-                key={p}
-                onPress={() => {
-                  haptics.light();
-                  onQuantityChange(p);
-                }}
-                activeOpacity={0.8}
-                style={{
-                  paddingHorizontal: 18,
-                  paddingVertical: 10,
-                  borderRadius: 999,
-                  backgroundColor:
-                    quantity === p ? colors.primary || '#111827' : colors.bgMuted || '#f3f4f6',
-                }}
-              >
-                <Text
+            {QUANTITY_PRESETS[orderType].map((p) => {
+              const active = quantity === p;
+              return (
+                <TouchableOpacity
+                  key={p}
+                  onPress={() => {
+                    haptics.light();
+                    onQuantityChange(p);
+                  }}
+                  activeOpacity={0.8}
                   style={{
-                    fontSize: 13,
-                    fontFamily: quantity === p ? 'Inter_700Bold' : 'Inter_600SemiBold',
-                    color: quantity === p ? '#fff' : colors.textPrimary || '#111827',
+                    paddingHorizontal: 18,
+                    paddingVertical: 12,
+                    borderRadius: 999,
+                    borderWidth: 1.5,
+                    borderColor: active ? '#111827' : '#f0f0f0',
+                    backgroundColor: active ? '#f8fafc' : '#fff',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: active ? 0.05 : 0,
+                    shadowRadius: 6,
+                    elevation: active ? 2 : 0,
                   }}
                 >
-                  {p} {ORDER_TYPE_UNIT_LABEL[orderType]}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily: active ? 'Inter_700Bold' : 'Inter_600SemiBold',
+                      color: active ? '#111827' : '#6b7280',
+                      letterSpacing: -0.2,
+                    }}
+                  >
+                    {p} {ORDER_TYPE_UNIT_LABEL[orderType]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* Truck load info */}
-        <View className="bg-gray-100 rounded-2xl p-4 mb-6 flex-row items-center">
-          <View className="bg-white w-10 h-10 rounded-full items-center justify-center mr-4 shadow-sm">
-            <Truck size={18} color="#111827" />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#fff',
+            borderRadius: 20,
+            borderWidth: 1.5,
+            borderColor: '#f0f0f0',
+            padding: 16,
+            marginBottom: 24,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+            elevation: 2,
+          }}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: '#f8fafc',
+              borderWidth: 1.5,
+              borderColor: '#f0f0f0',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 16,
+            }}
+          >
+            <Truck size={20} color="#111827" />
           </View>
-          <View className="flex-1">
-            <Text className="text-gray-900 font-semibold text-sm mb-0.5">Tehniska informācija</Text>
-            <Text className="text-gray-500 font-medium text-xs leading-tight">
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                color: '#111827',
+                fontFamily: 'Inter_700Bold',
+                letterSpacing: -0.2,
+                marginBottom: 2,
+              }}
+            >
+              Tehniska informācija
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                color: '#6b7280',
+                fontFamily: 'Inter_500Medium',
+                lineHeight: 18,
+              }}
+            >
               Nepieciešami {Math.ceil(quantity / 26)} reisi (26 {ORDER_TYPE_UNIT_LABEL[orderType]}{' '}
               ietilpība automašīnai)
             </Text>
@@ -362,30 +507,65 @@ export function SpecsStep({
 
         {/* Notes */}
         <View className="mt-8">
-          <Text className="text-gray-400 text-sm font-semibold mb-2 ml-1">
+          <Text
+            style={{
+              fontSize: 18,
+              color: '#111827',
+              fontFamily: 'Inter_700Bold',
+              letterSpacing: -0.3,
+              marginBottom: 12,
+              marginLeft: 4,
+            }}
+          >
             Piezīmes (neobligāti)
           </Text>
           <TextInput
-            className="w-full bg-gray-100 rounded-2xl p-4 pt-4 text-gray-900 font-medium text-sm"
             placeholder="Ievadiet papildu informāciju piegādātājam..."
             placeholderTextColor="#9ca3af"
             value={notes}
             onChangeText={onNotesChange}
             multiline
-            style={{ minHeight: 120, textAlignVertical: 'top' }}
+            style={{
+              borderWidth: 1.5,
+              borderColor: '#f0f0f0',
+              borderRadius: 16,
+              paddingHorizontal: 20,
+              paddingVertical: 18,
+              fontSize: 16,
+              color: '#111827',
+              fontFamily: 'Inter_500Medium',
+              backgroundColor: '#fff',
+              minHeight: 120,
+              textAlignVertical: 'top',
+            }}
           />
         </View>
 
         {/* Site photo */}
-        <View className="mt-6 mb-2">
-          <Text className="text-gray-400 text-sm font-semibold mb-2 ml-1">
+        <View className="mt-8 mb-2">
+          <Text
+            style={{
+              fontSize: 18,
+              color: '#111827',
+              fontFamily: 'Inter_700Bold',
+              letterSpacing: -0.3,
+              marginBottom: 12,
+              marginLeft: 4,
+            }}
+          >
             Izkraušanas vietas foto (neobligāti)
           </Text>
           {sitePhotoUri ? (
             <View style={{ position: 'relative' }}>
               <Image
                 source={{ uri: sitePhotoUri }}
-                style={{ width: '100%', height: 180, borderRadius: 16 }}
+                style={{
+                  width: '100%',
+                  height: 180,
+                  borderRadius: 16,
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                }}
                 resizeMode="cover"
               />
               <TouchableOpacity
@@ -395,34 +575,62 @@ export function SpecsStep({
                 }}
                 style={{
                   position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  backgroundColor: 'rgba(0,0,0,0.55)',
-                  borderRadius: 16,
-                  width: 32,
-                  height: 32,
+                  top: 12,
+                  right: 12,
+                  backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                  borderRadius: 20,
+                  width: 36,
+                  height: 36,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
                 activeOpacity={0.8}
               >
-                <X size={16} color="#fff" />
+                <X size={18} color="#fff" />
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
               onPress={handlePickSitePhoto}
               disabled={uploadingPhoto}
-              className="bg-gray-100 rounded-2xl p-4 flex-row items-center justify-center"
               activeOpacity={0.8}
-              style={{ minHeight: 72 }}
+              style={{
+                borderWidth: 1.5,
+                borderColor: '#e5e7eb',
+                borderStyle: 'dashed',
+                borderRadius: 16,
+                backgroundColor: '#f9fafb',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 110,
+                paddingVertical: 20,
+              }}
             >
               {uploadingPhoto ? (
                 <ActivityIndicator size="small" color="#111827" />
               ) : (
                 <>
-                  <Camera size={20} color="#6b7280" />
-                  <Text className="text-gray-500 font-semibold text-sm ml-2">Pievienot foto</Text>
+                  <Camera size={26} color="#6b7280" />
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: 'Inter_600SemiBold',
+                      color: '#4b5563',
+                      marginTop: 10,
+                    }}
+                  >
+                    Pievienot foto
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: 'Inter_400Regular',
+                      color: '#9ca3af',
+                      marginTop: 4,
+                    }}
+                  >
+                    Palīdzēs šoferim precīzi atrast vietu
+                  </Text>
                 </>
               )}
             </TouchableOpacity>

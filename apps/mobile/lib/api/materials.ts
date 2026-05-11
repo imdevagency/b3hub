@@ -182,6 +182,7 @@ export const materialsApi = {
         fulfillmentType?: 'DELIVERY' | 'PICKUP';
         pickupFieldId?: string;
         pickupSlotId?: string;
+        paymentMethod?: 'CARD' | 'INVOICE';
       },
       token: string,
     ) =>
@@ -220,6 +221,7 @@ export const materialsApi = {
           fulfillmentType: input.fulfillmentType ?? 'DELIVERY',
           pickupFieldId: input.pickupFieldId ?? undefined,
           pickupSlotId: input.pickupSlotId ?? undefined,
+          paymentMethod: input.paymentMethod ?? undefined,
         }),
       }),
 

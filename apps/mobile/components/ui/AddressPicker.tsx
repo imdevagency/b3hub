@@ -40,6 +40,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Marker } from 'react-native-maps';
 import { MapPin, X, Check, Search, Navigation } from 'lucide-react-native';
+import { SearchBar } from '@/components/ui/SearchBar';
 import { BaseMap, useGeocode, GeocodeSuggestion } from '@/components/map';
 import type { CameraRefHandle, MapPressFeature } from '@/components/map';
 import { colors } from '@/lib/theme';
@@ -213,17 +214,20 @@ export function AddressPicker({
           <Text style={styles.bottomCardTitle}>{displayTitle}</Text>
 
           <View style={styles.searchWrapper}>
-            <View style={styles.searchInputRow}>
-              <Search size={18} color="#6b7280" />
-              <TextInput
-                style={styles.searchInput}
+            <View style={{ justifyContent: 'center' }}>
+              <SearchBar
+                editable
                 placeholder={t.savedAddresses?.searchPlaceholder ?? 'Search address…'}
-                placeholderTextColor="#9ca3af"
                 value={searchText}
                 onChangeText={onSearchChange}
                 autoCorrect={false}
+                style={{ paddingVertical: 12 }}
               />
-              {geocodeLoading && <ActivityIndicator size="small" color="#6b7280" />}
+              {geocodeLoading && (
+                <View style={{ position: 'absolute', right: 48 }}>
+                  <ActivityIndicator size="small" color="#6b7280" />
+                </View>
+              )}
             </View>
 
             {suggestions.length > 0 && (

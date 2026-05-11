@@ -150,6 +150,23 @@ export default function TransportConfirmation() {
         ) : null}
       </View>
 
+      {/* What happens next */}
+      <View style={s.nextSteps}>
+        <Text style={s.nextStepsTitle}>Kas notiks tālāk?</Text>
+        {[
+          'Pārvadātāji saņem jūsu pieprasījumu',
+          'Zvans vai SMS ar brauciena apstiprinājumu',
+          'Kravas pārvadāšana plānotajā datumā',
+        ].map((text, i) => (
+          <View key={i} style={s.nextStepRow}>
+            <View style={s.nextStepNum}>
+              <Text style={s.nextStepNumText}>{i + 1}</Text>
+            </View>
+            <Text style={s.nextStepText}>{text}</Text>
+          </View>
+        ))}
+      </View>
+
       {/* Buttons */}
       <View style={s.btns}>
         <TouchableOpacity
@@ -239,7 +256,7 @@ const s = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.primary,
+    backgroundColor: '#111827',
     marginTop: 4,
     flexShrink: 0,
   },
@@ -261,9 +278,30 @@ const s = StyleSheet.create({
   estimatedLabel: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
   estimatedValue: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
 
+  nextSteps: { paddingHorizontal: 20, marginBottom: 28 },
+  nextStepsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  nextStepRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  nextStepNum: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  nextStepNumText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  nextStepText: { flex: 1, fontSize: 14, color: colors.textPrimary, lineHeight: 20 },
   btns: { paddingHorizontal: 20, gap: 10 },
   btnPrimary: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#111827',
     borderRadius: 14,
     height: 52,
     alignItems: 'center',

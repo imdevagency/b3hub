@@ -32,7 +32,8 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { Check, CheckCircle2 } from 'lucide-react-native';
+import { Check, CheckCircle2, MapPin } from 'lucide-react-native';
+import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -364,11 +365,10 @@ export default function OrderRequestWizard() {
     if (stepIndex === 0) {
       const hasDraft = notes.trim() !== '' || pickedAddress !== null;
       if (hasDraft) {
-        Alert.alert('Iziet no pasūtīšanas?', 'Ievadītie dati tiks zaudēti.', [
-          { text: 'Turpināt', style: 'cancel' },
+        Alert.alert('Iziet no pasūtīšanas?', 'Jūsu progress ir saglabāts. Varat turpināt vēlāk.', [
+          { text: 'Turpināt pasūtīšanu', style: 'cancel' },
           {
-            text: 'Iziet',
-            style: 'destructive',
+            text: 'Saglabāt un iziet',
             onPress: () => {
               if (router.canGoBack()) router.back();
               else router.replace('/(buyer)/home' as never);
@@ -752,16 +752,92 @@ export default function OrderRequestWizard() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <AddressField
-            label="Piegādes adrese"
-            value={pickedAddress}
-            onPick={(p) => {
-              setPickedAddress(p);
-              setUnloadLat(null);
-              setUnloadLng(null);
+          {/* ── Instructions ── */}
+          <View style={{ marginBottom: 24, marginTop: 8 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: 'Inter_500Medium',
+                color: '#6B7280',
+                lineHeight: 22,
+              }}
+            >
+              {!pickedAddress
+                ? 'Norādiet, kur vēlētos saņemt materiālus'
+                : 'Pārbaudiet un apstipriniet izvēlēto adresi'}
+            </Text>
+          </View>
+
+          {/* ── Unified Modern Address Card ── */}
+          <View
+            style={{
+              backgroundColor: pickedAddress ? '#fff' : 'transparent',
+              borderRadius: 16,
+              borderWidth: pickedAddress ? 1 : 0,
+              borderColor: '#E5E7EB',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: pickedAddress ? 0.04 : 0,
+              shadowRadius: 10,
+              elevation: pickedAddress ? 2 : 0,
+              overflow: 'hidden',
+              marginBottom: 24,
             }}
-            placeholder="Ievadiet piegādes adresi"
-          />
+          >
+            <AddressField
+              value={pickedAddress}
+              onPick={(p) => {
+                haptics.light();
+                setPickedAddress(p);
+                setUnloadLat(null);
+                setUnloadLng(null);
+              }}
+              placeholder="Ievadiet piegādes adresi"
+              pinColor="#111827"
+              style={
+                pickedAddress
+                  ? {
+                      borderWidth: 0,
+                      borderRadius: 0,
+                      shadowColor: 'transparent',
+                      shadowOpacity: 0,
+                      elevation: 0,
+                      backgroundColor: 'transparent',
+                    }
+                  : {}
+              }
+            />
+
+            {!pickedAddress && (
+              <View style={{ marginTop: 8, paddingHorizontal: 4 }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}
+                >
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: '#F3F4F6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MapPin size={16} color="#4B5563" />
+                  </View>
+                  <View>
+                    <Text
+                      style={{ fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' }}
+                    >
+                      Izmantot pašreizējo atrašanās vietu
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Note: Save address toggle would go here if implemented for material order */}
+          </View>
         </ScrollView>
       )}
       {step === 'specs' && (
@@ -867,192 +943,181 @@ export default function OrderRequestWizard() {
             onTruckIntervalChange={setTruckIntervalMinutes}
           />
           {/* ── Confirm form ── */}
-          <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24, gap: 12 }}>
+          <View style={{ paddingHorizontal: 24, paddingTop: 0, paddingBottom: 0, gap: 20 }}>
             {selectedOffer && (
               <View
                 style={{
-                  backgroundColor: '#f9fafb',
-                  borderRadius: 12,
-                  padding: 14,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  gap: 4,
+                  backgroundColor: '#fff',
+                  borderRadius: 20,
+                  padding: 20,
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  gap: 6,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 15,
+                  elevation: 2,
                 }}
               >
                 <Text
-                  style={{ fontSize: 13, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}
+                  style={{
+                    fontSize: 12,
+                    color: colors.textMuted,
+                    fontFamily: 'Inter_700Bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                  }}
                 >
                   Izvēlētais piegādātājs
                 </Text>
                 <Text
                   style={{
-                    fontSize: 15,
-                    fontWeight: '600',
-                    color: colors.textPrimary,
-                    fontFamily: 'Inter_600SemiBold',
+                    fontSize: 20,
+                    color: '#111827',
+                    fontFamily: 'Inter_800ExtraBold',
+                    letterSpacing: -0.5,
                   }}
                 >
                   {selectedOffer.supplier?.name}
                 </Text>
-                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                  €{selectedOffer.totalPrice?.toFixed(2)} kopā
+                <Text style={{ fontSize: 16, color: '#4b5563', fontFamily: 'Inter_500Medium' }}>
+                  <Text style={{ fontFamily: 'Inter_800ExtraBold', color: '#111827' }}>
+                    €{selectedOffer.totalPrice?.toFixed(2)}
+                  </Text>{' '}
+                  kopā
                 </Text>
               </View>
             )}
 
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: colors.textPrimary,
-                fontFamily: 'Inter_600SemiBold',
-                marginTop: 4,
-              }}
-            >
-              Kontaktinformācija
-            </Text>
-            <TextInput
-              value={contactName}
-              onChangeText={setContactName}
-              placeholder="Kontaktpersona"
-              placeholderTextColor={colors.textDisabled}
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 14,
-                color: colors.textPrimary,
-                fontFamily: 'Inter_400Regular',
-                backgroundColor: '#fff',
-              }}
-            />
-            <TextInput
-              value={contactPhone}
-              onChangeText={setContactPhone}
-              placeholder="Tālrunis"
-              placeholderTextColor={colors.textDisabled}
-              keyboardType="phone-pad"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 14,
-                color: colors.textPrimary,
-                fontFamily: 'Inter_400Regular',
-                backgroundColor: '#fff',
-              }}
-            />
-            <TextInput
-              value={bisNumber}
-              onChangeText={setBisNumber}
-              placeholder="BIS numurs (neobligāts)"
-              placeholderTextColor={colors.textDisabled}
-              autoCapitalize="characters"
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                fontSize: 14,
-                color: colors.textPrimary,
-                fontFamily: 'Inter_400Regular',
-                backgroundColor: '#fff',
-              }}
-            />
-
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '600',
-                color: colors.textPrimary,
-                fontFamily: 'Inter_600SemiBold',
-                marginTop: 4,
-              }}
-            >
-              Apmaksas veids
-            </Text>
-            {(['CARD', 'INVOICE'] as const).map((method) => (
-              <TouchableOpacity
-                key={method}
-                activeOpacity={0.8}
-                onPress={() => setPaymentMethod(method)}
+            <View style={{ gap: 12 }}>
+              <Text
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  borderWidth: 1.5,
-                  borderColor: paymentMethod === method ? '#111827' : colors.border,
-                  borderRadius: 12,
-                  padding: 12,
-                  gap: 10,
-                  backgroundColor: paymentMethod === method ? '#f9fafb' : '#fff',
+                  fontSize: 18,
+                  color: '#111827',
+                  fontFamily: 'Inter_700Bold',
+                  letterSpacing: -0.3,
+                  marginLeft: 4,
                 }}
               >
-                <View
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
-                    borderWidth: 2,
-                    borderColor: paymentMethod === method ? '#111827' : '#d1d5db',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {paymentMethod === method && (
-                    <View
-                      style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#111827' }}
-                    />
-                  )}
-                </View>
-                <View>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
-                    {method === 'CARD' ? 'Karte (Paysera)' : 'Rēķins (NET 30)'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
-                    {method === 'CARD'
-                      ? 'Tūlītēja apmaksa ar bankas karti'
-                      : 'Rēķins tiks izrakstīts pēc piegādes'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                Kontaktinformācija
+              </Text>
+              <TextInput
+                value={contactName}
+                onChangeText={setContactName}
+                placeholder="Kontaktpersona"
+                placeholderTextColor={colors.textDisabled}
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  borderRadius: 16,
+                  paddingHorizontal: 20,
+                  paddingVertical: 18,
+                  fontSize: 16,
+                  color: '#111827',
+                  fontFamily: 'Inter_500Medium',
+                  backgroundColor: '#fff',
+                }}
+              />
+              <TextInput
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                placeholder="Tālrunis"
+                placeholderTextColor={colors.textDisabled}
+                keyboardType="phone-pad"
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  borderRadius: 16,
+                  paddingHorizontal: 20,
+                  paddingVertical: 18,
+                  fontSize: 16,
+                  color: '#111827',
+                  fontFamily: 'Inter_500Medium',
+                  backgroundColor: '#fff',
+                }}
+              />
+              <TextInput
+                value={bisNumber}
+                onChangeText={setBisNumber}
+                placeholder="BIS numurs (neobligāts)"
+                placeholderTextColor={colors.textDisabled}
+                autoCapitalize="characters"
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  borderRadius: 16,
+                  paddingHorizontal: 20,
+                  paddingVertical: 18,
+                  fontSize: 16,
+                  color: '#111827',
+                  fontFamily: 'Inter_500Medium',
+                  backgroundColor: '#fff',
+                }}
+              />
+            </View>
+
+            <View style={{ gap: 12, marginTop: 8 }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: '#111827',
+                  fontFamily: 'Inter_700Bold',
+                  letterSpacing: -0.3,
+                  marginLeft: 4,
+                }}
+              >
+                Apmaksas veids
+              </Text>
+              <WizardPaymentMethodPicker
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                isLoggedIn={!!user}
+              />
+            </View>
 
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 4 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 14,
+                paddingHorizontal: 4,
+              }}
               onPress={() => setTermsAccepted((v) => !v)}
               activeOpacity={0.7}
             >
               <View
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 6,
-                  borderWidth: 1.5,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 8,
+                  borderWidth: 2,
                   borderColor: termsAccepted ? '#111827' : '#d1d5db',
                   backgroundColor: termsAccepted ? '#111827' : '#fff',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginTop: 1,
+                  marginTop: 2,
                 }}
               >
-                {termsAccepted && <Check size={12} color="#fff" strokeWidth={2.5} />}
+                {termsAccepted && <Check size={14} color="#fff" strokeWidth={3} />}
               </View>
               <Text
                 style={{
                   flex: 1,
-                  fontSize: 13,
-                  color: colors.textSecondary,
-                  fontFamily: 'Inter_400Regular',
-                  lineHeight: 20,
+                  fontSize: 14,
+                  color: '#4b5563',
+                  fontFamily: 'Inter_500Medium',
+                  lineHeight: 22,
                 }}
               >
-                Piekrītu <Text style={{ color: colors.primary }}>lietošanas noteikumiem</Text> un{' '}
-                <Text style={{ color: colors.primary }}>privātuma politikai</Text>
+                Piekrītu{' '}
+                <Text style={{ color: '#111827', fontFamily: 'Inter_700Bold' }}>
+                  lietošanas noteikumiem
+                </Text>{' '}
+                un{' '}
+                <Text style={{ color: '#111827', fontFamily: 'Inter_700Bold' }}>
+                  privātuma politikai
+                </Text>
               </Text>
             </TouchableOpacity>
 

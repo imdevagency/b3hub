@@ -28,6 +28,7 @@ export interface ApiOrderSurcharge {
   createdAt: string;
 }
 export interface CreateDisposalOrderInput {
+  paymentMethod?: 'CARD' | 'INVOICE';
   pickupAddress: string;
   pickupCity: string;
   pickupState?: string;
@@ -68,6 +69,7 @@ export interface CreateDisposalOrderInput {
 }
 
 export interface CreateTransportOrderInput {
+  paymentMethod?: 'CARD' | 'INVOICE';
   pickupAddress: string;
   pickupCity: string;
   pickupState?: string;

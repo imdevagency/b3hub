@@ -18,8 +18,19 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { MapPin, Truck, Calendar, Send, CheckCircle2, Check } from 'lucide-react-native';
+import {
+  MapPin,
+  Truck,
+  Calendar,
+  Send,
+  CheckCircle2,
+  Check,
+  SlidersHorizontal,
+  X,
+  ChevronDown,
+} from 'lucide-react-native';
 import { OfferCard } from './OfferCard';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { UNIT_SHORT } from '@/lib/materials';
 import type { MaterialUnit } from '@/lib/materials';
 import type { SupplierOffer } from '@/lib/api';
@@ -125,6 +136,7 @@ export function OffersStep({
   const router = useRouter();
   // ── Internal filter/sort state ──
   const [offersSort, setOffersSort] = useState<'price' | 'distance' | 'eta' | 'rating'>('price');
+  const [filtersVisible, setFiltersVisible] = useState(false);
 
   // Persist guest order token when the success screen is shown
   useEffect(() => {
@@ -169,6 +181,11 @@ export function OffersStep({
   };
   const [priceMaxFilter, setPriceMaxFilter] = useState<number | null>(null);
   const [distanceMaxFilter, setDistanceMaxFilter] = useState<number | null>(null);
+
+  let activeFiltersCount = 0;
+  if (priceMaxFilter !== null) activeFiltersCount++;
+  if (distanceMaxFilter !== null) activeFiltersCount++;
+
   const [selectedOffer, setSelectedOffer] = useState<SupplierOffer | null>(null);
 
   // ── Success: order placed ──
@@ -191,9 +208,9 @@ export function OffersStep({
         {!isGuestSuccess && (
           <TouchableOpacity
             style={{
-              backgroundColor: colors.primary,
-              borderRadius: 14,
-              paddingVertical: 16,
+              backgroundColor: '#111827',
+              borderRadius: 999,
+              paddingVertical: 18,
               alignItems: 'center',
               marginBottom: 12,
             }}
@@ -203,9 +220,10 @@ export function OffersStep({
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: '600',
+                fontWeight: '700',
                 color: '#fff',
-                fontFamily: 'Inter_600SemiBold',
+                fontFamily: 'Inter_700Bold',
+                letterSpacing: -0.2,
               }}
             >
               Apmaksāt pasūtījumu
@@ -215,9 +233,9 @@ export function OffersStep({
 
         <TouchableOpacity
           style={{
-            backgroundColor: isGuestSuccess ? colors.primary : 'transparent',
-            borderRadius: 14,
-            paddingVertical: isGuestSuccess ? 16 : 14,
+            backgroundColor: isGuestSuccess ? '#111827' : 'transparent',
+            borderRadius: 999,
+            paddingVertical: isGuestSuccess ? 18 : 14,
             alignItems: 'center',
           }}
           onPress={onNavigateToOrder}
@@ -327,9 +345,9 @@ export function OffersStep({
 
         <TouchableOpacity
           style={{
-            backgroundColor: colors.primary,
-            borderRadius: 14,
-            paddingVertical: 16,
+            backgroundColor: '#111827',
+            borderRadius: 999,
+            paddingVertical: 18,
             alignItems: 'center',
             marginBottom: 12,
           }}
@@ -339,9 +357,10 @@ export function OffersStep({
           <Text
             style={{
               fontSize: 16,
-              fontWeight: '600',
+              fontWeight: '700',
               color: '#fff',
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'Inter_700Bold',
+              letterSpacing: -0.2,
             }}
           >
             Skatīt pieprasījumu
@@ -505,22 +524,19 @@ export function OffersStep({
 
   const pillStyle = (active: boolean) => [
     {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 100,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: colors.border,
-      backgroundColor: '#fff',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: active ? '#111827' : '#f3f4f6',
     },
-    active && { borderColor: colors.textPrimary, backgroundColor: colors.bgMuted },
   ];
 
   const pillTextStyle = (active: boolean) => [
-    { fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_500Medium' },
-    active && {
-      color: colors.textPrimary,
-      fontWeight: '600' as const,
-      fontFamily: 'Inter_600SemiBold',
+    {
+      fontSize: 13,
+      color: active ? '#fff' : '#4b5563',
+      fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
+      fontWeight: active ? ('700' as const) : ('500' as const),
     },
   ];
 
@@ -529,104 +545,143 @@ export function OffersStep({
       <View style={{ padding: 16, paddingBottom: 8, gap: 12 }}>
         <Text
           style={{
-            fontSize: 18,
-            fontWeight: '600',
+            fontSize: 22,
+            fontWeight: '700',
             color: colors.textPrimary,
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'Inter_700Bold',
+            letterSpacing: -0.3,
           }}
         >
           {sorted.length} piedāvājum{sorted.length === 1 ? 's' : 'i'}
         </Text>
 
-        {/* Combined Filters Horizontal Scroller */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ overflow: 'visible' }}
-        >
-          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+        {/* Uber style filter triggers */}
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 999,
+              backgroundColor: '#f3f4f6',
+            }}
+            onPress={() => {
+              haptics.light();
+              setFiltersVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <SlidersHorizontal size={14} color="#111827" />
             <Text
               style={{
                 fontSize: 13,
-                color: colors.textMuted,
-                marginRight: 4,
-                fontFamily: 'Inter_500Medium',
+                color: '#111827',
+                fontFamily: 'Inter_600SemiBold',
+                fontWeight: '600',
               }}
             >
-              Sortēt:
+              Filtri {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ''}
             </Text>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                onPress={() => {
-                  haptics.light();
-                  setOffersSort(opt.key);
-                }}
-                style={pillStyle(offersSort === opt.key)}
-              >
-                <Text style={pillTextStyle(offersSort === opt.key)}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
+            <ChevronDown size={14} color="#111827" style={{ marginLeft: 2 }} />
+          </TouchableOpacity>
 
-            <View
-              style={{ width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 6 }}
-            />
-
-            <Text
-              style={{
-                fontSize: 13,
-                color: colors.textMuted,
-                marginRight: 4,
-                fontFamily: 'Inter_500Medium',
-              }}
-            >
-              Max €/t:
-            </Text>
-            {[null, 10, 20, 50].map((cap) => (
-              <TouchableOpacity
-                key={cap === null ? 'all' : cap}
-                onPress={() => {
-                  haptics.light();
-                  setPriceMaxFilter(cap);
-                }}
-                style={pillStyle(priceMaxFilter === cap)}
-              >
-                <Text style={pillTextStyle(priceMaxFilter === cap)}>
-                  {cap === null ? 'Visi' : `≤€${cap}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            <View
-              style={{ width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 6 }}
-            />
-
-            <Text
-              style={{
-                fontSize: 13,
-                color: colors.textMuted,
-                marginRight: 4,
-                fontFamily: 'Inter_500Medium',
-              }}
-            >
-              Max km:
-            </Text>
-            {([null, 25, 50, 100] as (number | null)[]).map((km) => (
-              <TouchableOpacity
-                key={km === null ? 'all-km' : km}
-                onPress={() => {
-                  haptics.light();
-                  setDistanceMaxFilter(km);
-                }}
-                style={pillStyle(distanceMaxFilter === km)}
-              >
-                <Text style={pillTextStyle(distanceMaxFilter === km)}>
-                  {km === null ? 'Visi' : `≤${km}km`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flex: 1, overflow: 'visible' }}
+          >
+            <View style={{ flexDirection: 'row', gap: 8, paddingRight: 16 }}>
+              {SORT_OPTIONS.filter((o) => o.key === offersSort).map((opt) => (
+                <TouchableOpacity
+                  key="sort-active"
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                    backgroundColor: '#111827',
+                  }}
+                  onPress={() => {
+                    haptics.light();
+                    setFiltersVisible(true);
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: '#fff',
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                    }}
+                  >
+                    Kārtot: {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              {priceMaxFilter !== null && (
+                <TouchableOpacity
+                  key="price-active"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                    backgroundColor: '#111827',
+                  }}
+                  onPress={() => {
+                    haptics.light();
+                    setPriceMaxFilter(null);
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: '#fff',
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                    }}
+                  >
+                    ≤€{priceMaxFilter}/t
+                  </Text>
+                  <X size={12} color="#fff" />
+                </TouchableOpacity>
+              )}
+              {distanceMaxFilter !== null && (
+                <TouchableOpacity
+                  key="dist-active"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                    backgroundColor: '#111827',
+                  }}
+                  onPress={() => {
+                    haptics.light();
+                    setDistanceMaxFilter(null);
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: '#fff',
+                      fontFamily: 'Inter_600SemiBold',
+                      fontWeight: '600',
+                    }}
+                  >
+                    ≤{distanceMaxFilter}km
+                  </Text>
+                  <X size={12} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </ScrollView>
+        </View>
 
         {submitError ? (
           <Text style={{ fontSize: 14, color: colors.danger, fontWeight: '500' }}>
@@ -908,25 +963,24 @@ export function OffersStep({
             bottom: 0,
             left: 0,
             right: 0,
-            padding: 16,
-            paddingBottom: 32, // Accommodate safe area roughly
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 36,
             backgroundColor: '#fff',
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderColor: colors.border,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            elevation: 10,
+            shadowOffset: { width: 0, height: -8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 20,
+            elevation: 20,
           }}
         >
           {onOfferChosen ? (
             // Compare-only mode: advance to confirm step
             <TouchableOpacity
               style={{
-                backgroundColor: colors.primary,
-                borderRadius: 14,
-                paddingVertical: 16,
+                backgroundColor: '#111827',
+                borderRadius: 999,
+                paddingVertical: 18,
                 alignItems: 'center',
               }}
               disabled={submitting}
@@ -936,21 +990,22 @@ export function OffersStep({
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '600',
+                  fontWeight: '700',
                   color: '#fff',
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'Inter_700Bold',
+                  letterSpacing: -0.2,
                 }}
               >
-                {`€${selectedOffer.totalPrice.toFixed(2)} — Turpināt`}
+                {`Turpināt — €${selectedOffer.totalPrice.toFixed(2)}`}
               </Text>
             </TouchableOpacity>
           ) : (
             // Submit mode: place order immediately
             <TouchableOpacity
               style={{
-                backgroundColor: termsAccepted ? colors.primary : '#d1d5db',
-                borderRadius: 14,
-                paddingVertical: 16,
+                backgroundColor: termsAccepted ? '#111827' : '#d1d5db',
+                borderRadius: 999,
+                paddingVertical: 18,
                 alignItems: 'center',
               }}
               disabled={submitting || !termsAccepted}
@@ -963,14 +1018,15 @@ export function OffersStep({
                 <Text
                   style={{
                     fontSize: 16,
-                    fontWeight: '600',
+                    fontWeight: '700',
                     color: '#fff',
-                    fontFamily: 'Inter_600SemiBold',
+                    fontFamily: 'Inter_700Bold',
+                    letterSpacing: -0.2,
                   }}
                 >
                   {!termsAccepted
                     ? 'Piekrītiet noteikumiem'
-                    : `Cena €${selectedOffer.totalPrice.toFixed(2)} — Apstiprināt`}
+                    : `Apstiprināt — €${selectedOffer.totalPrice.toFixed(2)}`}
                 </Text>
               )}
             </TouchableOpacity>
@@ -1003,6 +1059,135 @@ export function OffersStep({
           pendingGuestOfferRef.current = null;
         }}
       />
+
+      <BottomSheet
+        visible={filtersVisible}
+        onClose={() => setFiltersVisible(false)}
+        title="Kārtot un Filtrēt"
+      >
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 24, paddingBottom: 40 }}>
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: '#111827' }}>
+              Kārtot pēc
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {SORT_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => {
+                    haptics.light();
+                    setOffersSort(opt.key);
+                  }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: offersSort === opt.key ? '#111827' : '#e5e7eb',
+                    backgroundColor: offersSort === opt.key ? '#111827' : '#fff',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily: offersSort === opt.key ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                      color: offersSort === opt.key ? '#fff' : '#4b5563',
+                    }}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: '#111827' }}>
+              Maksimālā cena
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[null, 10, 20, 50].map((cap) => (
+                <TouchableOpacity
+                  key={cap === null ? 'all' : cap}
+                  onPress={() => {
+                    haptics.light();
+                    setPriceMaxFilter(cap);
+                  }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: priceMaxFilter === cap ? '#111827' : '#e5e7eb',
+                    backgroundColor: priceMaxFilter === cap ? '#111827' : '#fff',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily: priceMaxFilter === cap ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                      color: priceMaxFilter === cap ? '#fff' : '#4b5563',
+                    }}
+                  >
+                    {cap === null ? 'Visas' : `≤€${cap}/t`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: '#111827' }}>
+              Maksimālais attālums
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {([null, 25, 50, 100] as (number | null)[]).map((km) => (
+                <TouchableOpacity
+                  key={km === null ? 'all' : km}
+                  onPress={() => {
+                    haptics.light();
+                    setDistanceMaxFilter(km);
+                  }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: distanceMaxFilter === km ? '#111827' : '#e5e7eb',
+                    backgroundColor: distanceMaxFilter === km ? '#111827' : '#fff',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily:
+                        distanceMaxFilter === km ? 'Inter_600SemiBold' : 'Inter_500Medium',
+                      color: distanceMaxFilter === km ? '#fff' : '#4b5563',
+                    }}
+                  >
+                    {km === null ? 'Visi' : `≤${km}km`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#111827',
+              borderRadius: 999,
+              paddingVertical: 18,
+              alignItems: 'center',
+              marginTop: 16,
+            }}
+            onPress={() => setFiltersVisible(false)}
+          >
+            <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' }}>
+              Skatīt piedāvājumus
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </BottomSheet>
     </View>
   );
 }

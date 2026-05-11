@@ -42,6 +42,9 @@ import { useToast } from '@/components/ui/Toast';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
+import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
+import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
+import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { colors } from '@/lib/theme';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
@@ -913,26 +916,7 @@ export default function DisposalWizard() {
             />
 
             <SectionLabel label="Vēlamais savākšanas laiks" />
-            <View style={s.windowRow}>
-              {(
-                [
-                  ['ANY', 'Jebkurā laikā'],
-                  ['AM', 'Rīts  8–12'],
-                  ['PM', 'Diena  12–17'],
-                ] as const
-              ).map(([val, label]) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[s.windowChip, pickupWindow === val && s.windowChipActive]}
-                  onPress={() => setPickupWindow(val)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[s.windowChipText, pickupWindow === val && s.windowChipTextActive]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <WizardTimeWindowPicker value={pickupWindow} onChange={setPickupWindow} />
           </ScrollView>
         )}
 
@@ -944,7 +928,7 @@ export default function DisposalWizard() {
             showsVerticalScrollIndicator={false}
           >
             <SectionLabel label="Kopsavilkums" />
-            <View style={s.summaryCard}>
+            <WizardSummaryCard style={{ marginBottom: 4 }}>
               <View style={s.addressRow}>
                 <MapPin size={18} color="#111827" />
                 <Text style={s.addressValue} numberOfLines={2}>
@@ -1002,7 +986,7 @@ export default function DisposalWizard() {
                   last
                 />
               )}
-            </View>
+            </WizardSummaryCard>
 
             <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
             <View style={{ gap: 10, marginBottom: 8 }}>
@@ -1158,45 +1142,11 @@ export default function DisposalWizard() {
             </TouchableOpacity>
 
             <SectionLabel label="Maksājuma veids" style={{ marginTop: 20 }} />
-            <View style={{ gap: 10, marginBottom: 8 }}>
-              {(
-                [
-                  [
-                    'CARD',
-                    '💳 Ar karti (Paysera)',
-                    'Tūlītējs maksājums ar debetkarti vai kredītkarti',
-                  ],
-                  ...(user
-                    ? [
-                        [
-                          'INVOICE',
-                          '🧾 Priekšapmaksas rēķins',
-                          'Rēķins tiks nosūtīts uz e-pastu',
-                        ] as const,
-                      ]
-                    : []),
-                ] as const
-              ).map(([val, label, sub]) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
-                  onPress={() => setPaymentMethod(val)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
-                    {paymentMethod === val && <View style={s.payMethodRadioDot} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
-                    >
-                      {label}
-                    </Text>
-                    <Text style={s.payMethodSub}>{sub}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <WizardPaymentMethodPicker
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              isLoggedIn={!!user}
+            />
 
             <View style={{ height: 16 }} />
           </ScrollView>

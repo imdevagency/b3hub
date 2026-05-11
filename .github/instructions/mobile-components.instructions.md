@@ -458,6 +458,25 @@ Order card, order status row, and related components.
 
 Multi-step form wizard primitives used by order creation and skip-hire flows.
 
+**Hard rules for all wizards (`apps/mobile/app/(wizards)/**`):\*\*
+
+- **Never duplicate payment method rows.** Always use `<WizardPaymentMethodPicker>` from `@/components/wizard/WizardPaymentMethodPicker`. It handles `CARD`/`INVOICE` options, haptic feedback, and consistent radio styling. Pass `isLoggedIn={!!user}` to show/hide invoice.
+- **Never duplicate time window chips (AM/PM/ANY).** Always use `<WizardTimeWindowPicker>` from `@/components/wizard/WizardTimeWindowPicker`. It accepts `value`, `onChange`, and optional `labels` override.
+- **Never write an inline receipt/summary card.** Always wrap `<DetailRow>` items inside `<WizardSummaryCard>` from `@/components/wizard/WizardSummaryCard`. The card provides the standard `#f9fafb` background, border, and border-radius.
+- **Never duplicate the Uber-style pickup/dropoff route display.** Always use `<WizardRouteBox pickup={...} dropoff={...}>` from `@/components/wizard/WizardRouteBox` for any route visualization on review steps.
+- **Never duplicate inline section headings.** Use `<SectionLabel>` from `@/components/ui/SectionLabel` for uppercase grey section labels in scrollable wizard content.
+- **Never write inline `payMethodRow` / `windowChip` / `summaryCard` StyleSheet entries.** These are all provided by the shared components above.
+
+| Component                   | Import                                          | When to use                                                     |
+| --------------------------- | ----------------------------------------------- | --------------------------------------------------------------- |
+| `WizardPaymentMethodPicker` | `@/components/wizard/WizardPaymentMethodPicker` | Any wizard step with CARD / INVOICE choice                      |
+| `WizardTimeWindowPicker`    | `@/components/wizard/WizardTimeWindowPicker`    | Any wizard step with AM / PM / ANY time selection               |
+| `WizardSummaryCard`         | `@/components/wizard/WizardSummaryCard`         | Any wizard "Review" step summary container                      |
+| `WizardRouteBox`            | `@/components/wizard/WizardRouteBox`            | Any wizard review step showing pickup → dropoff                 |
+| `WizardLayout`              | `@/components/wizard/WizardLayout`              | Root layout wrapper for every wizard (progress bar, CTA button) |
+| `WizardCalendar`            | `@/components/wizard/WizardCalendar`            | Date picker for scheduling steps                                |
+| `WizardAuthGate`            | `@/components/wizard/WizardAuthGate`            | Auth/guest prompt before final submission                       |
+
 ### `components/map/`
 
 `<BaseMap>`, `<JobRouteMap>`, `useGeocode()` — always use these for any map rendering.

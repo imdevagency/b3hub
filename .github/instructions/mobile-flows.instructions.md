@@ -181,6 +181,7 @@ Step 4 — CONFIRM : date, contact, review summary, submit
 - Each wizard has its own context file: `lib/order-context.tsx`, `lib/disposal-context.tsx`, `lib/transport-context.tsx`
 - Steps are separate screens rendered inside `WizardLayout` — **not** tabs, swipeable pagers, or BottomSheets
 - The `WizardLayout` shell (thin progress bar + large bold left-aligned title + pill CTA) **must** be used for all steps — never build a custom shell
+- **Never render a wizard step title locally inside the screen component.** The `WizardLayout` shell already provides the large left-aligned h1 title. Local titles duplicate the header (e.g., two "Kur piegādāt?" or "Piegādes vieta" texts). Render only section subtitles or form elements inside the step.
 - Step 1 always sets the order type / primary selection — must never ask for address first
 - The "compare offers / pick a supplier" step **always comes before** the confirmation step
 - Final step is always a review + confirm before the API call

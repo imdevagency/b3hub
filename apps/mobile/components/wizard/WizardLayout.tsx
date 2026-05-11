@@ -171,7 +171,7 @@ const wl = StyleSheet.create({
   },
   progressFill: {
     height: 3,
-    backgroundColor: colors.primary,
+    backgroundColor: '#111827',
     borderTopRightRadius: 2,
     borderBottomRightRadius: 2,
   },
@@ -228,15 +228,15 @@ const wl = StyleSheet.create({
     backgroundColor: '#fff',
   },
   cta: {
-    backgroundColor: colors.primary,
-    borderRadius: 16,
+    backgroundColor: '#111827',
+    borderRadius: 999,
     paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#111827',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 4,
   },
   ctaDisabled: {
@@ -244,6 +244,12 @@ const wl = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  ctaText: { fontSize: 17, fontFamily: 'Inter_600SemiBold', color: '#fff' },
+  ctaText: {
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: -0.2,
+  },
   ctaTextDisabled: { color: colors.textDisabled },
 });

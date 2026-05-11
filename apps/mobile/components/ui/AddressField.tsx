@@ -11,12 +11,14 @@ export function AddressField({
   onPick,
   placeholder = 'Select address...',
   pinColor = '#1f8f53', // B3Hub green by default
+  style,
 }: {
   label?: string;
   value: PickedAddress | null;
   onPick: (loc: PickedAddress) => void;
   placeholder?: string;
   pinColor?: string;
+  style?: any;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -24,7 +26,7 @@ export function AddressField({
     <View>
       {label && <Text style={styles.label}>{label}</Text>}
       <TouchableOpacity
-        style={[styles.field, value ? styles.fieldFilled : styles.fieldEmpty]}
+        style={[styles.field, value ? styles.fieldFilled : styles.fieldEmpty, style]}
         onPress={() => setPickerOpen(true)}
       >
         <View style={styles.iconWrap}>

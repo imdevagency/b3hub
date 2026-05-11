@@ -23,6 +23,9 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { DetailRow } from '@/components/ui/DetailRow';
 import { InfoSection } from '@/components/ui/InfoSection';
+import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
+import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
+import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
@@ -661,28 +664,7 @@ export default function ToiletCabinWizard() {
 
             {/* Delivery time window */}
             <SectionLabel label="Vēlamais piegādes laiks" style={{ marginTop: 4 }} />
-            <View style={s.windowRow}>
-              {(
-                [
-                  ['ANY', 'Jebkurā laikā'],
-                  ['AM', 'Rīts  8–12'],
-                  ['PM', 'Diena  12–17'],
-                ] as const
-              ).map(([val, label]) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[s.windowChip, deliveryWindow === val && s.windowChipActive]}
-                  onPress={() => setDeliveryWindow(val)}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[s.windowChipText, deliveryWindow === val && s.windowChipTextActive]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <WizardTimeWindowPicker value={deliveryWindow} onChange={setDeliveryWindow} />
 
             {/* Servicing schedule — shown for hires ≥ 14 days */}
             {hireDays >= 14 && (
@@ -805,45 +787,11 @@ export default function ToiletCabinWizard() {
 
             {/* Payment method */}
             <SectionLabel label="Maksājuma veids" style={{ marginTop: 16 }} />
-            <View style={{ gap: 10, marginBottom: 8 }}>
-              {(
-                [
-                  [
-                    'CARD',
-                    '💳 Ar karti (Paysera)',
-                    'Tūlītējs maksājums ar debetkarti vai kredītkarti',
-                  ],
-                  ...(user
-                    ? [
-                        [
-                          'INVOICE',
-                          '🧾 Priekšapmaksas rēķins',
-                          'Rēķins tiks nosūtīts uz e-pastu',
-                        ] as const,
-                      ]
-                    : []),
-                ] as const
-              ).map(([val, label, sub]) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[s.payMethodRow, paymentMethod === val && s.payMethodRowActive]}
-                  onPress={() => setPaymentMethod(val)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[s.payMethodRadio, paymentMethod === val && s.payMethodRadioActive]}>
-                    {paymentMethod === val && <View style={s.payMethodRadioDot} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[s.payMethodLabel, paymentMethod === val && s.payMethodLabelActive]}
-                    >
-                      {label}
-                    </Text>
-                    <Text style={s.payMethodSub}>{sub}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <WizardPaymentMethodPicker
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              isLoggedIn={!!user}
+            />
           </ScrollView>
         )}
       </WizardLayout>

@@ -24,7 +24,7 @@ export function SkipWasteStep({
   const content = SKIP_WASTE_CATEGORIES.map((id) => {
     const info = SKIP_WASTE_LABELS[id];
     const isSelected = selected === id;
-    const Icon = WASTE_ICONS[id];
+    const Icon = WASTE_ICONS[id] || (WASTE_ICONS['MIXED'] as any);
     return (
       <View key={id} style={{ width: '48%' }}>
         <TouchableOpacity
