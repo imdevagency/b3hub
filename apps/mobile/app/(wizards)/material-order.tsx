@@ -33,6 +33,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { Check, CheckCircle2, MapPin } from 'lucide-react-native';
+import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
+import { DetailRow } from '@/components/ui/DetailRow';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { TextInputField } from '@/components/ui/TextInputField';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
@@ -991,84 +995,49 @@ export default function OrderRequestWizard() {
             )}
 
             <View style={{ gap: 12 }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  color: '#111827',
-                  fontFamily: 'Inter_700Bold',
-                  letterSpacing: -0.3,
-                  marginLeft: 4,
-                }}
-              >
-                Kontaktinformācija
-              </Text>
-              <TextInput
-                value={contactName}
-                onChangeText={setContactName}
-                placeholder="Kontaktpersona"
-                placeholderTextColor={colors.textDisabled}
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: '#f0f0f0',
-                  borderRadius: 16,
-                  paddingHorizontal: 20,
-                  paddingVertical: 18,
-                  fontSize: 16,
-                  color: '#111827',
-                  fontFamily: 'Inter_500Medium',
-                  backgroundColor: '#fff',
-                }}
-              />
-              <TextInput
-                value={contactPhone}
-                onChangeText={setContactPhone}
-                placeholder="Tālrunis"
-                placeholderTextColor={colors.textDisabled}
-                keyboardType="phone-pad"
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: '#f0f0f0',
-                  borderRadius: 16,
-                  paddingHorizontal: 20,
-                  paddingVertical: 18,
-                  fontSize: 16,
-                  color: '#111827',
-                  fontFamily: 'Inter_500Medium',
-                  backgroundColor: '#fff',
-                }}
-              />
-              <TextInput
-                value={bisNumber}
-                onChangeText={setBisNumber}
-                placeholder="BIS numurs (neobligāts)"
-                placeholderTextColor={colors.textDisabled}
-                autoCapitalize="characters"
-                style={{
-                  borderWidth: 1.5,
-                  borderColor: '#f0f0f0',
-                  borderRadius: 16,
-                  paddingHorizontal: 20,
-                  paddingVertical: 18,
-                  fontSize: 16,
-                  color: '#111827',
-                  fontFamily: 'Inter_500Medium',
-                  backgroundColor: '#fff',
-                }}
-              />
+              <SectionLabel label="KONTAKTINFORMĀCIJA" />
+              <TextInputField
+                  placeholder="Kontaktpersona *"
+                  value={contactName}
+                  onChangeText={setContactName}
+                  containerStyle={{
+                    backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
+                  }}
+                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                />
+              <TextInputField
+                  placeholder="Tālrunis *"
+                  keyboardType="phone-pad"
+                  value={contactPhone}
+                  onChangeText={setContactPhone}
+                  containerStyle={{
+                    backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
+                  }}
+                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                />
+              <TextInputField
+                  placeholder="BIS numurs (neobligāts)"
+                  autoCapitalize="characters"
+                  value={bisNumber}
+                  onChangeText={setBisNumber}
+                  containerStyle={{
+                    backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
+                  }}
+                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                />
             </View>
 
             <View style={{ gap: 12, marginTop: 8 }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  color: '#111827',
-                  fontFamily: 'Inter_700Bold',
-                  letterSpacing: -0.3,
-                  marginLeft: 4,
-                }}
-              >
-                Apmaksas veids
-              </Text>
+              <SectionLabel label="APMAKSAS VEIDS" />
               <WizardPaymentMethodPicker
                 value={paymentMethod}
                 onChange={setPaymentMethod}

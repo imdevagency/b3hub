@@ -1062,7 +1062,7 @@ export default function TransportWizard() {
               style={{ marginBottom: 24 }}
             />
 
-            <Text style={s.sectionTitle}>Kopsavilkums</Text>
+            <SectionLabel label="KOPSAVILKUMS" />
             <WizardSummaryCard style={{ marginBottom: 24 }}>
               <DetailRow
                 label="Maršruts"
@@ -1160,17 +1160,17 @@ export default function TransportWizard() {
               </View>
             )}
 
-            <Text style={s.sectionTitle}>Kontaktinformācija</Text>
+            <SectionLabel label="KONTAKTINFORMĀCIJA" />
             <View style={{ gap: 10, marginBottom: 24 }}>
               <TextInputField
                 placeholder="Kontaktpersona *"
                 value={siteContactName}
                 onChangeText={setSiteContactName}
                 containerStyle={{
-                  backgroundColor: '#f9fafb',
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
+                  backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
                 }}
               />
               <TextInputField
@@ -1179,10 +1179,10 @@ export default function TransportWizard() {
                 value={siteContactPhone}
                 onChangeText={setSiteContactPhone}
                 containerStyle={{
-                  backgroundColor: '#f9fafb',
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
+                  backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
                 }}
               />
               <TextInputField
@@ -1191,10 +1191,10 @@ export default function TransportWizard() {
                 value={notes}
                 onChangeText={setNotes}
                 containerStyle={{
-                  backgroundColor: '#f9fafb',
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
+                  backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
                 }}
               />
               {pricingMode === 'FLAT' ? (
@@ -1205,10 +1205,10 @@ export default function TransportWizard() {
                     value={offeredRateText}
                     onChangeText={setOfferedRateText}
                     containerStyle={{
-                      backgroundColor: '#f9fafb',
-                      borderWidth: 1,
-                      borderColor: '#e5e7eb',
-                      borderRadius: 12,
+                      backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
                     }}
                   />
                   <Text
@@ -1231,10 +1231,10 @@ export default function TransportWizard() {
                     value={pricePerTonneText}
                     onChangeText={setPricePerTonneText}
                     containerStyle={{
-                      backgroundColor: '#f9fafb',
-                      borderWidth: 1,
-                      borderColor: '#e5e7eb',
-                      borderRadius: 12,
+                      backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
                     }}
                   />
                   <Text
@@ -1253,7 +1253,7 @@ export default function TransportWizard() {
             </View>
 
             {/* Payment method */}
-            <Text style={s.sectionTitle}>Maksājuma veids</Text>
+            <SectionLabel label="APMAKSAS VEIDS" />
             <WizardPaymentMethodPicker
               value={paymentMethod}
               onChange={setPaymentMethod}
