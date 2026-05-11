@@ -9,7 +9,7 @@ import {
   MinLength,
   IsIn,
 } from 'class-validator';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, ToiletCabinType } from '@prisma/client';
 
 export class CreateToiletCabinDto {
   /** Street address for delivery */
@@ -31,6 +31,11 @@ export class CreateToiletCabinDto {
   @IsOptional()
   @IsNumber()
   lng?: number;
+
+  /** Cabin product type — STANDARD | DISABLED_ACCESS | VIP | HEATED */
+  @IsOptional()
+  @IsIn(['STANDARD', 'DISABLED_ACCESS', 'VIP', 'HEATED'])
+  cabinType?: ToiletCabinType;
 
   /** Number of cabin units */
   @IsInt()

@@ -22,7 +22,7 @@ import { UpdateToiletCabinStatusDto } from './dto/update-toilet-cabin-status.dto
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
-import { ToiletCabinStatus } from '@prisma/client';
+import { ToiletCabinStatus, ToiletCabinType } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Toilet Cabins')
@@ -41,11 +41,13 @@ export class ToiletCabinsController {
     @Query('city') city: string,
     @Query('cabins') cabins: string,
     @Query('hireDays') hireDays: string,
+    @Query('cabinType') cabinType?: ToiletCabinType,
   ) {
     return this.toiletCabinsService.getQuotes(
       city ?? '',
       parseInt(cabins ?? '1', 10),
       parseInt(hireDays ?? '1', 10),
+      cabinType,
     );
   }
 

@@ -4,11 +4,14 @@
  */
 import { apiFetch } from './common';
 
+export type ToiletCabinType = 'STANDARD' | 'DISABLED_ACCESS' | 'VIP' | 'HEATED';
+
 export interface CreateToiletCabinPayload {
   address: string;
   city: string;
   lat?: number;
   lng?: number;
+  cabinType?: ToiletCabinType;
   cabinCount: number;
   hireDays: number;
   deliveryDate: string;

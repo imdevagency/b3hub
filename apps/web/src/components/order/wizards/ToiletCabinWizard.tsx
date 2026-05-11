@@ -28,6 +28,7 @@ import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/Web
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { createToiletCabinOrder } from '@/lib/api/toilet-cabins';
+import type { ToiletCabinType } from '@/lib/api/toilet-cabins';
 import type { User } from '@/lib/api';
 import {
   ArrowRight,
@@ -39,12 +40,57 @@ import {
   Minus,
   Phone,
   Plus,
+  Star,
+  Thermometer,
+  Accessibility,
   User as UserIcon,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PRICE_PER_CABIN_PER_DAY = 12; // EUR
+const PRICE_BY_TYPE: Record<ToiletCabinType, number> = {
+  STANDARD: 1.0,
+  DISABLED_ACCESS: 2.7,
+  VIP: 1.7,
+  HEATED: 2.7,
+};
+
+const CABIN_TYPE_OPTIONS: Array<{
+  value: ToiletCabinType;
+  label: string;
+  sub: string;
+  features: string[];
+  Icon: React.ElementType;
+}> = [
+  {
+    value: 'STANDARD',
+    label: 'Standarta',
+    sub: 'Būvlaukumiem un remontu darbiem',
+    features: ['Tvertne', 'Pisuārs', 'Tualetes papīrs'],
+    Icon: MapPin,
+  },
+  {
+    value: 'DISABLED_ACCESS',
+    label: 'Cilvēkiem ar īpašām vajadzībām',
+    sub: 'Plašāka ieeja, rūpju telpa',
+    features: ['Tvertne', 'Tualetes papīrs', 'Plata ieeja'],
+    Icon: Accessibility,
+  },
+  {
+    value: 'VIP',
+    label: 'VIP',
+    sub: 'Ofisa objektiem un pastākākiem pasākumiem',
+    features: ['Iekšējā izlietne', 'Ziepju dozators', 'Tualetes papīrs'],
+    Icon: Star,
+  },
+  {
+    value: 'HEATED',
+    label: 'Siltināta',
+    sub: 'Ziemas sezonai un ilgtirmīna nomām',
+    features: ['Elektrisks radiators', 'Apgaismojums', 'Spogulis'],
+    Icon: Thermometer,
+  },
+];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -61,7 +107,10 @@ export function ToiletCabinWizard({ mode }: Props) {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
 
-  // Step 1 — cabin config
+  // Step 1 — cabin type
+  const [cabinType, setCabinType] = useState<ToiletCabinType>('STANDARD');
+
+  // Step 2 — cabin config (was step 1)
   const [cabinCount, setCabinCount] = useState(1);
 
   // Step 2 — address
@@ -144,7 +193,8 @@ export function ToiletCabinWizard({ mode }: Props) {
       ? differenceInCalendarDays(dateRange.to, dateRange.from) + 1
       : null;
   const effectiveDays = rangeDays ?? 0;
-  const estimatedPrice = cabinCount * effectiveDays * PRICE_PER_CABIN_PER_DAY;
+  const pricePerDay = PRICE_BY_TYPE[cabinType] ?? 1.0;
+  const estimatedPrice = cabinCount * effectiveDays * pricePerDay;
 
   // ── Submit helpers ────────────────────────────────────────────────────────────
 
@@ -158,6 +208,7 @@ export function ToiletCabinWizard({ mode }: Props) {
           city,
           lat,
           lng,
+          cabinType,
           cabinCount,
           hireDays: effectiveDays,
           deliveryDate: dateRange!.from!.toISOString().split('T')[0],
@@ -255,14 +306,84 @@ export function ToiletCabinWizard({ mode }: Props) {
     <WizardShell
       className={mode === 'dashboard' ? 'flex-1' : 'w-full h-auto'}
       step={step + 1}
-      totalSteps={3}
+      totalSteps={4}
       title="Tualetes kabīnes"
       onClose={mode === 'public' && !isConfirmed ? () => router.push('/order') : undefined}
       onBack={step > 0 ? () => setStep(step - 1) : undefined}
       innerScroll={mode === 'dashboard'}
     >
-      {/* ── Step 0: Cabin count + date range ───────────────────────── */}
+      {/* ── Step 0: Cabin type ───────────────────────────────────────── */}
       {step === 0 && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+          <div>
+            <p className="text-xl font-bold text-foreground">Kādu tualetes kabīni nepieciešams?</p>
+            <p className="text-sm text-muted-foreground mt-1">Izvēlieties kabīnes veidu</p>
+          </div>
+          <div className="space-y-3">
+            {CABIN_TYPE_OPTIONS.map((ct) => {
+              const isSel = cabinType === ct.value;
+              return (
+                <button
+                  key={ct.value}
+                  type="button"
+                  onClick={() => setCabinType(ct.value)}
+                  className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+                    isSel
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border bg-card hover:border-border/80'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <ct.Icon
+                      className={`size-5 mt-0.5 shrink-0 ${
+                        isSel ? 'text-primary' : 'text-muted-foreground'
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p
+                          className={`font-semibold text-sm ${
+                            isSel ? 'text-primary' : 'text-foreground'
+                          }`}
+                        >
+                          {ct.label}
+                        </p>
+                        <span
+                          className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
+                            isSel ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          no €{PRICE_BY_TYPE[ct.value].toFixed(2)}/dienā
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{ct.sub}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {ct.features.map((f) => (
+                          <span
+                            key={f}
+                            className="text-xs bg-muted/60 rounded-full px-2 py-0.5 text-muted-foreground"
+                          >
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            onClick={() => setStep(1)}
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+          >
+            Tālāk — skaits un periods <ArrowRight className="size-4 ml-1.5" />
+          </Button>
+        </div>
+      )}
+
+      {/* ── Step 1: Cabin count + date range (was step 0) ──────────── */}
+      {step === 1 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
           <div>
             <p className="text-xl font-bold text-foreground">Cik kabīnes nepieciešams?</p>
@@ -334,7 +455,7 @@ export function ToiletCabinWizard({ mode }: Props) {
                 <p className="text-xs text-muted-foreground font-medium mb-0.5">Orientējoša cena</p>
                 <p className="text-2xl font-bold tracking-tight">€{estimatedPrice.toFixed(0)}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {cabinCount} kab. × {effectiveDays} d. × €{PRICE_PER_CABIN_PER_DAY}/d.
+                  {cabinCount} kab. × {effectiveDays} d. × €{pricePerDay.toFixed(2)}/d.
                 </p>
               </div>
             </div>
@@ -342,7 +463,7 @@ export function ToiletCabinWizard({ mode }: Props) {
 
           <Button
             disabled={!canProceedStep0}
-            onClick={() => setStep(1)}
+            onClick={() => setStep(2)}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
           >
             Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1.5" />
@@ -350,8 +471,8 @@ export function ToiletCabinWizard({ mode }: Props) {
         </div>
       )}
 
-      {/* ── Step 1: Address ─────────────────────────────────────────────── */}
-      {step === 1 && (
+      {/* ── Step 2: Address (was step 1) ────────────────────────────── */}
+      {step === 2 && (
         <div className="animate-in fade-in slide-in-from-bottom-2">
           <Step2Address
             value={address}
@@ -360,8 +481,8 @@ export function ToiletCabinWizard({ mode }: Props) {
             title="Kur piegādāt kabīnes?"
             subtitle="Ievadiet precīzu adresi — šoferis atbrauks ar kabīnēm uz šo vietu"
             nextLabel="Tālāk — datums un kontakti"
-            onNext={() => setStep(2)}
-            onBack={() => setStep(0)}
+            onNext={() => setStep(3)}
+            onBack={() => setStep(1)}
             onAddressChange={(addr, la, ln, ct) => {
               setAddress(addr);
               setLat(la);
@@ -373,8 +494,8 @@ export function ToiletCabinWizard({ mode }: Props) {
         </div>
       )}
 
-      {/* ── Step 2: Time window + contact + submit ─────────────────── */}
-      {step === 2 && (
+      {/* ── Step 3: Time window + contact + submit (was step 2) ── */}
+      {step === 3 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
           {/* Order summary pill */}
           <div className="rounded-2xl bg-muted/40 p-4 flex items-center gap-3">
@@ -503,7 +624,7 @@ export function ToiletCabinWizard({ mode }: Props) {
 
   // ── Right panel ────────────────────────────────────────────────────────────
 
-  const showMap = step === 1;
+  const showMap = step === 2;
 
   const rightPanel = (
     <div
@@ -584,7 +705,7 @@ export function ToiletCabinWizard({ mode }: Props) {
                 <p>
                   {cabinCount} kab. × {effectiveDays || '?'} d.
                 </p>
-                <p>€{PRICE_PER_CABIN_PER_DAY}/kab./dienā</p>
+                <p>€{pricePerDay.toFixed(2)}/kab./dienā</p>
               </div>
             </div>
           )}

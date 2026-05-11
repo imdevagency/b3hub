@@ -1,17 +1,18 @@
 /**
  * Toilet Cabin Hire wizard
  *
- *   Step 1 – Cabin count
- *   Step 2 – Delivery address
- *   Step 3 – Kad? (hire period chips + date picker with range preview)
- *   Step 4 – Review + contact details + confirm
+ *   Step 1 – Cabin type (STANDARD / DISABLED_ACCESS / VIP / HEATED)
+ *   Step 2 – Cabin count
+ *   Step 3 – Delivery address
+ *   Step 4 – Kad? (hire period chips + date picker with range preview)
+ *   Step 5 – Review + contact details + confirm
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Building2 } from 'lucide-react-native';
+import { Building2, Thermometer, Star, Accessibility } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -28,9 +29,10 @@ import { colors } from '@/lib/theme';
 import { api } from '@/lib/api';
 import { addGuestOrder } from '@/lib/guest-token-storage';
 import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
+import type { ToiletCabinType } from '@/lib/api';
 
 // ── Types ──────────────────────────────────────────────────────────
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 // ── Draft persistence ──────────────────────────────────────────────
 const TOILET_CABIN_DRAFT_KEY = '@b3hub_toilet_cabin_draft';
@@ -38,6 +40,7 @@ const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface ToiletCabinDraft {
   step: Step;
+  cabinType: ToiletCabinType;
   cabinCount: number;
   hireDays: number;
   picked: PickedAddress | null;
@@ -83,11 +86,54 @@ const HIRE_PERIOD_OPTIONS: Array<{ days: number; label: string }> = [
 
 const BASE_PRICE_PER_CABIN_PER_DAY = 12;
 
+const CABIN_TYPES: Array<{
+  value: ToiletCabinType;
+  label: string;
+  sub: string;
+  features: string[];
+  fromPrice: number;
+  Icon: React.ElementType;
+}> = [
+  {
+    value: 'STANDARD',
+    label: 'Standarta',
+    sub: 'Būvlaukumiem un pastākā remontu darbiem',
+    features: ['Tvertne', 'Pisuārs', 'Tualetes papīrs'],
+    fromPrice: 1.0,
+    Icon: Building2,
+  },
+  {
+    value: 'DISABLED_ACCESS',
+    label: 'Cilvēkiem ar īpašām vajadzībām',
+    sub: 'Plašāka ieeja, rūpju telpa',
+    features: ['Tvertne', 'Tualetes papīrs', 'Plata ieeja'],
+    fromPrice: 2.7,
+    Icon: Accessibility,
+  },
+  {
+    value: 'VIP',
+    label: 'VIP',
+    sub: 'Pastākākiem pasākumiem un ofisa objektiem',
+    features: ['Iekšējā izlietne', 'Pisuārs', 'Ziepju dozators', 'Tualetes papīrs'],
+    fromPrice: 1.7,
+    Icon: Star,
+  },
+  {
+    value: 'HEATED',
+    label: 'Siltināta',
+    sub: 'Ziemas sezonai un ilgtirmīna nomām',
+    features: ['Elektrisks radiators', 'Apgaismojums', 'Spogulis', 'VIP aprīkojums'],
+    fromPrice: 2.7,
+    Icon: Thermometer,
+  },
+];
+
 const STEP_TITLES: Record<Step, string> = {
-  1: 'Kabīnes',
-  2: 'Adrese',
-  3: 'Kad?',
-  4: 'Apstiprināt',
+  1: 'Kabīnes veids',
+  2: 'Kabīnes',
+  3: 'Adrese',
+  4: 'Kad?',
+  5: 'Apstiprīnāt',
 };
 
 // ── Component ───────────────────────────────────────────────────────
@@ -96,6 +142,7 @@ export default function ToiletCabinWizard() {
   const { user, token } = useAuth();
 
   const [step, setStep] = useState<Step>(1);
+  const [cabinType, setCabinType] = useState<ToiletCabinType>('STANDARD');
   const [cabinCount, setCabinCount] = useState(1);
   const [hireDays, setHireDays] = useState(7);
   const [picked, setPicked] = useState<PickedAddress | null>(null);
@@ -151,6 +198,7 @@ export default function ToiletCabinWizard() {
             return;
           }
           if (d.step) setStep(d.step);
+          if (d.cabinType) setCabinType(d.cabinType);
           if (d.cabinCount) setCabinCount(d.cabinCount);
           if (d.hireDays) setHireDays(d.hireDays);
           if (d.picked) setPicked(d.picked);
@@ -178,6 +226,7 @@ export default function ToiletCabinWizard() {
     if (!draftLoadedRef.current) return;
     const draft: ToiletCabinDraft = {
       step,
+      cabinType,
       cabinCount,
       hireDays,
       picked,
@@ -194,6 +243,7 @@ export default function ToiletCabinWizard() {
     AsyncStorage.setItem(TOILET_CABIN_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
   }, [
     step,
+    cabinType,
     cabinCount,
     hireDays,
     picked,
@@ -207,17 +257,26 @@ export default function ToiletCabinWizard() {
     servicingFrequency,
   ]);
 
-  const estimatedPrice = cabinCount * hireDays * BASE_PRICE_PER_CABIN_PER_DAY;
+  const BASE_PRICE_BY_TYPE: Record<string, number> = {
+    STANDARD: 1.0,
+    DISABLED_ACCESS: 2.7,
+    VIP: 1.7,
+    HEATED: 2.7,
+  };
+  const estimatedPrice = (cabinCount * hireDays * (BASE_PRICE_BY_TYPE[cabinType] ?? 1.0)).toFixed(
+    2,
+  );
 
   // ── CTA config ────────────────────────────────────────────────────
   const ctaDisabled =
-    (step === 1 && cabinCount < 1) ||
-    (step === 2 && !picked) ||
-    (step === 3 && !selectedDay) ||
-    (step === 4 && (!contactPhone.trim() || !contactName.trim())) ||
+    (step === 1 && !cabinType) ||
+    (step === 2 && cabinCount < 1) ||
+    (step === 3 && !picked) ||
+    (step === 4 && !selectedDay) ||
+    (step === 5 && (!contactPhone.trim() || !contactName.trim())) ||
     loading;
 
-  const ctaLabel = step === 4 ? 'Apstiprināt pasūtījumu' : 'Turpināt';
+  const ctaLabel = step === 5 ? 'Apstiprīnāt pasūtījumu' : 'Turpināt';
 
   // ── Guest submit handler ─────────────────────────────────────────
   const handleGuestSubmit = useCallback(
@@ -234,7 +293,10 @@ export default function ToiletCabinWizard() {
             : servicingFrequency === 'MONTHLY'
               ? 'Tīrīšana: reizi mēnesī'
               : null;
-      const combinedNotes = [servicingNote, notes].filter(Boolean).join('. ');
+      const cabinTypeLabel = CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType;
+      const combinedNotes = [`Kabīnes veids: ${cabinTypeLabel}`, servicingNote, notes]
+        .filter(Boolean)
+        .join('. ');
       try {
         const result = await api.guestOrders.create({
           category: 'TOILET_CABIN',
@@ -277,6 +339,7 @@ export default function ToiletCabinWizard() {
     [
       picked,
       selectedDay,
+      cabinType,
       cabinCount,
       hireDays,
       collectionDay,
@@ -300,7 +363,10 @@ export default function ToiletCabinWizard() {
             : servicingFrequency === 'MONTHLY'
               ? 'Tīrīšana: reizi mēnesī'
               : null;
-      const combinedNotes = [servicingNote, notes].filter(Boolean).join('. ');
+      const cabinTypeLabel = CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType;
+      const combinedNotes = [`Kabīnes veids: ${cabinTypeLabel}`, servicingNote, notes]
+        .filter(Boolean)
+        .join('. ');
       try {
         const result = await api.createToiletCabinOrder(
           {
@@ -308,6 +374,7 @@ export default function ToiletCabinWizard() {
             city: picked!.city ?? '',
             lat: picked!.lat,
             lng: picked!.lng,
+            cabinType,
             cabinCount,
             hireDays,
             deliveryDate: selectedDay!,
@@ -333,6 +400,7 @@ export default function ToiletCabinWizard() {
     },
     [
       picked,
+      cabinType,
       cabinCount,
       hireDays,
       selectedDay,
@@ -347,7 +415,7 @@ export default function ToiletCabinWizard() {
 
   const onCTA = useCallback(async () => {
     haptics.medium();
-    if (step < 4) {
+    if (step < 5) {
       setStep((s) => (s + 1) as Step);
       return;
     }
@@ -395,7 +463,7 @@ export default function ToiletCabinWizard() {
     <>
       <WizardLayout
         title={STEP_TITLES[step]}
-        totalSteps={4}
+        totalSteps={5}
         step={step}
         onBack={goBack}
         onClose={() => {
@@ -408,8 +476,62 @@ export default function ToiletCabinWizard() {
         ctaLoading={loading}
         stepKey={step}
       >
-        {/* ── Step 1: Cabin count ── */}
+        {/* ── Step 1: Cabin type ── */}
         {step === 1 && (
+          <ScrollView
+            style={s.content}
+            contentContainerStyle={s.pad}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={s.stepSub}>Kādu tualetes kabīni nepieciešams nomāt?</Text>
+            <View style={{ gap: 12, marginTop: 16 }}>
+              {CABIN_TYPES.map((ct) => {
+                const isSel = cabinType === ct.value;
+                return (
+                  <TouchableOpacity
+                    key={ct.value}
+                    style={[s.cabinTypeCard, isSel && s.cabinTypeCardSel]}
+                    onPress={() => {
+                      haptics.light();
+                      setCabinType(ct.value);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={s.cabinTypeCardHeader}>
+                      <ct.Icon
+                        size={22}
+                        color={isSel ? colors.primary : '#6b7280'}
+                        style={{ marginRight: 10 }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.cabinTypeTitle, isSel && s.cabinTypeTitleSel]}>
+                          {ct.label}
+                        </Text>
+                        <Text style={s.cabinTypeSub}>{ct.sub}</Text>
+                      </View>
+                      <View style={[s.cabinTypeBadge, isSel && s.cabinTypeBadgeSel]}>
+                        <Text style={[s.cabinTypeBadgeText, isSel && s.cabinTypeBadgeTextSel]}>
+                          no €{ct.fromPrice.toFixed(2)}/d.
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={s.cabinTypeFeatures}>
+                      {ct.features.map((f) => (
+                        <View key={f} style={s.cabinTypeFeatureRow}>
+                          <Text style={s.cabinTypeFeatureDot}>•</Text>
+                          <Text style={s.cabinTypeFeatureText}>{f}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+        )}
+
+        {/* ── Step 2: Cabin count ── */}
+        {step === 2 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -450,7 +572,7 @@ export default function ToiletCabinWizard() {
             {/* Live price estimate based on current count + default hire period */}
             <View style={s.priceEstimate}>
               <Text style={s.priceEstimateMain}>
-                ~€{cabinCount * BASE_PRICE_PER_CABIN_PER_DAY}/dienā
+                ~€{(cabinCount * (BASE_PRICE_BY_TYPE[cabinType] ?? 1.0)).toFixed(2)}/dienā
               </Text>
               <Text style={s.priceEstimateSub}>
                 ~€{estimatedPrice} par {hireDays} dienām · + PVN 21%
@@ -459,8 +581,8 @@ export default function ToiletCabinWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 2: Address ── */}
-        {step === 2 && (
+        {/* ── Step 3: Address ── */}
+        {step === 3 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={{ paddingTop: 4, paddingBottom: 40 }}
@@ -479,8 +601,8 @@ export default function ToiletCabinWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 3: Kad? (period + calendar together) ── */}
-        {step === 3 && (
+        {/* ── Step 4: Kad? (period + calendar together) ── */}
+        {step === 4 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.contentPad}
@@ -597,8 +719,8 @@ export default function ToiletCabinWizard() {
           </ScrollView>
         )}
 
-        {/* ── Step 4: Contact + confirm ── */}
-        {step === 4 && (
+        {/* ── Step 5: Contact + confirm ── */}
+        {step === 5 && (
           <ScrollView
             style={s.content}
             contentContainerStyle={s.pad}
@@ -608,6 +730,10 @@ export default function ToiletCabinWizard() {
             {/* Summary */}
             <View style={{ marginBottom: 20 }}>
               <InfoSection title="Pasūtījuma kopsavilkums">
+                <DetailRow
+                  label="Kabīnes veids"
+                  value={CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType}
+                />
                 <DetailRow label="Kabīnes" value={`${cabinCount} gab.`} />
                 <DetailRow label="Nomas periods" value={`${hireDays} dienas`} />
                 <DetailRow label="Adrese" value={picked?.address ?? '—'} />
@@ -757,6 +883,76 @@ const s = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: 12,
     lineHeight: 22,
+  },
+
+  // Cabin type cards
+  cabinTypeCard: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+    padding: 14,
+  },
+  cabinTypeCardSel: {
+    borderColor: colors.primary,
+    backgroundColor: '#f0fdf4',
+  },
+  cabinTypeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  cabinTypeTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  cabinTypeTitleSel: {
+    color: colors.primary,
+  },
+  cabinTypeSub: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 1,
+    lineHeight: 16,
+  },
+  cabinTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: colors.bgMuted,
+    marginLeft: 8,
+  },
+  cabinTypeBadgeSel: {
+    backgroundColor: colors.primary + '20',
+  },
+  cabinTypeBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  cabinTypeBadgeTextSel: {
+    color: colors.primary,
+  },
+  cabinTypeFeatures: {
+    marginTop: 10,
+    gap: 4,
+    paddingLeft: 32,
+  },
+  cabinTypeFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cabinTypeFeatureDot: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  cabinTypeFeatureText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 18,
   },
 
   // Counter

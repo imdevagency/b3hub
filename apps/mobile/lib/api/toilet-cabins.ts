@@ -1,7 +1,7 @@
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
+export type ToiletCabinType = 'STANDARD' | 'DISABLED_ACCESS' | 'VIP' | 'HEATED';
 export type ToiletCabinStatus =
   | 'PENDING'
   | 'CONFIRMED'
@@ -18,6 +18,7 @@ export interface ToiletCabinOrder {
   city: string;
   lat?: number | null;
   lng?: number | null;
+  cabinType: ToiletCabinType;
   cabinCount: number;
   hireDays: number;
   deliveryDate: string;
@@ -39,6 +40,7 @@ export interface ToiletCabinQuote {
   carrierId: string;
   carrierName: string;
   carrierLogo: string | null;
+  cabinType: ToiletCabinType;
   pricePerCabinPerDay: number;
   totalPrice: number;
   currency: string;
@@ -48,6 +50,7 @@ export interface ToiletCabinQuote {
 export interface CarrierToiletCabinSettings {
   id: string;
   carrierId: string;
+  cabinType: ToiletCabinType;
   pricePerCabinPerDay: number;
   maxCabins: number;
   serviceCities: string[];
@@ -61,6 +64,7 @@ export interface CreateToiletCabinInput {
   city: string;
   lat?: number;
   lng?: number;
+  cabinType?: ToiletCabinType;
   cabinCount: number;
   hireDays: number;
   deliveryDate: string;
@@ -74,6 +78,7 @@ export interface CreateToiletCabinInput {
 }
 
 export interface SetToiletCabinSettingsInput {
+  cabinType: ToiletCabinType;
   pricePerCabinPerDay: number;
   maxCabins: number;
   serviceCities: string[];
@@ -85,10 +90,10 @@ export interface SetToiletCabinSettingsInput {
 export const toiletCabinsApi = {
   // ── Buyer ────────────────────────────────────────────────────────────────
 
-  /** Get quotes from carriers for a given city + cabin count + hire period */
-  getQuotes: (city: string, cabins: number, hireDays: number) =>
+  /** Get quotes from carriers for a given city + cabin count + hire period + type */
+  getQuotes: (city: string, cabins: number, hireDays: number, cabinType?: ToiletCabinType) =>
     apiFetch<ToiletCabinQuote[]>(
-      `/toilet-cabins/quotes?city=${encodeURIComponent(city)}&cabins=${cabins}&hireDays=${hireDays}`,
+      `/toilet-cabins/quotes?city=${encodeURIComponent(city)}&cabins=${cabins}&hireDays=${hireDays}${cabinType ? `&cabinType=${cabinType}` : ''}`,
     ),
 
   createToiletCabinOrder: (data: CreateToiletCabinInput, token?: string) =>
@@ -132,9 +137,9 @@ export const toiletCabinsApi = {
       },
     }),
 
-  /** Get carrier's own pricing & service city settings */
+  /** Get carrier's own pricing & service city settings (array, one entry per cabin type) */
   getCarrierToiletCabinSettings: (token: string) =>
-    apiFetch<CarrierToiletCabinSettings | null>('/toilet-cabins/carrier/settings', {
+    apiFetch<CarrierToiletCabinSettings[]>('/toilet-cabins/carrier/settings', {
       headers: { Authorization: `Bearer ${token}` },
     }),
 

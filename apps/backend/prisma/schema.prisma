@@ -208,6 +208,13 @@ enum SkipHireStatus {
   CANCELLED
 }
 
+enum ToiletCabinType {
+  STANDARD        // Standarta kabīne ~€30/mēn.
+  DISABLED_ACCESS // Cilvēkiem ar īpašām vajadzībām ~€80/mēn.
+  VIP             // VIP (iekšējā izlietne, ziepju dozators) ~€50/mēn.
+  HEATED          // Siltināta (radiators, apgaismojums) ~€80/mēn.
+}
+
 enum ToiletCabinStatus {
   PENDING
   CONFIRMED
@@ -625,7 +632,7 @@ model Company {
   availabilityBlocks         CarrierAvailability[]        @relation("CarrierAvailability")
   assignedSkipOrders         SkipHireOrder[]              @relation("AssignedSkipCarrier")
   assignedToiletCabinOrders  ToiletCabinOrder[]           @relation("AssignedToiletCabinCarrier")
-  toiletCabinSettings        CarrierToiletCabinSettings?
+  toiletCabinSettings        CarrierToiletCabinSettings[]
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
@@ -1757,8 +1764,9 @@ model ToiletCabinOrder {
   lng     Float?
 
   // Rental details
-  cabinCount Int @default(1) // number of units needed
-  hireDays   Int             // hire period in days
+  cabinType  ToiletCabinType @default(STANDARD) // cabin product type
+  cabinCount Int             @default(1)         // number of units needed
+  hireDays   Int                                 // hire period in days
 
   // Scheduling
   deliveryDate   DateTime
@@ -1797,21 +1805,24 @@ model ToiletCabinOrder {
 }
 
 // Carrier pricing & availability settings for toilet cabin rental.
-// One row per carrier company. Carriers set their day-rate and list the
-// cities/regions they operate in — used by the quote engine.
+// One row per carrier per cabin type. Carriers set their day-rate and
+// list the cities/regions they operate in — used by the quote engine.
 model CarrierToiletCabinSettings {
-  id        String  @id @default(cuid())
-  carrier   Company @relation(fields: [carrierId], references: [id], onDelete: Cascade)
-  carrierId String  @unique
+  id        String          @id @default(cuid())
+  carrier   Company         @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId String
+  cabinType ToiletCabinType // product type this pricing row covers
 
-  pricePerCabinPerDay Float    // EUR per cabin per day
-  maxCabins           Int      @default(1) // fleet capacity (max simultaneous rentals)
+  pricePerCabinPerDay Float    // EUR per cabin per day for this type
+  maxCabins           Int      @default(1) // fleet capacity for this type
   serviceCities       String[] // lowercase city names e.g. ["rīga", "jūrmala", "sigulda"]
   isActive            Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([carrierId, cabinType])
+  @@index([carrierId])
   @@map("carrier_toilet_cabin_settings")
 }
 

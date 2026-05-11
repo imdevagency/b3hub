@@ -13,16 +13,22 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateToiletCabinDto } from './dto/create-toilet-cabin.dto';
 import { UpdateToiletCabinStatusDto } from './dto/update-toilet-cabin-status.dto';
-import { ToiletCabinStatus } from '@prisma/client';
+import { ToiletCabinStatus, ToiletCabinType } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 
-// Platform base rate (EUR/cabin/day) used when no carrier is selected.
-const BASE_PRICE_PER_CABIN_PER_DAY = 12;
+// Platform base rate (EUR/cabin/day) per type, used when no carrier is selected.
+const BASE_PRICE_BY_TYPE: Record<ToiletCabinType, number> = {
+  STANDARD: 1.0,
+  DISABLED_ACCESS: 2.7,
+  VIP: 1.7,
+  HEATED: 2.7,
+};
 
 export interface ToiletCabinQuoteResult {
   carrierId: string;
   carrierName: string;
   carrierLogo: string | null;
+  cabinType: ToiletCabinType;
   pricePerCabinPerDay: number;
   totalPrice: number; // pricePerCabinPerDay * cabinCount * hireDays
   currency: string;
@@ -30,6 +36,7 @@ export interface ToiletCabinQuoteResult {
 }
 
 export class SetToiletCabinSettingsDto {
+  cabinType: ToiletCabinType;
   pricePerCabinPerDay: number;
   maxCabins: number;
   serviceCities: string[];
@@ -46,21 +53,22 @@ export class ToiletCabinsService {
   async create(dto: CreateToiletCabinDto, userId?: string) {
     const orderNumber = this.generateOrderNumber();
 
+    const cabinType: ToiletCabinType = dto.cabinType ?? ToiletCabinType.STANDARD;
     let price: number;
     const carrierId: string | null = dto.carrierId ?? null;
 
     if (carrierId) {
-      // Re-derive price server-side from carrier's own settings
+      // Re-derive price server-side from carrier's own settings for this type
       const settings = await this.prisma.carrierToiletCabinSettings.findUnique({
-        where: { carrierId },
+        where: { carrierId_cabinType: { carrierId, cabinType } },
         select: { pricePerCabinPerDay: true, isActive: true },
       });
       if (!settings || !settings.isActive) {
-        throw new BadRequestException('Selected carrier is not available');
+        throw new BadRequestException('Selected carrier is not available for this cabin type');
       }
       price = settings.pricePerCabinPerDay * dto.cabinCount * dto.hireDays;
     } else {
-      price = BASE_PRICE_PER_CABIN_PER_DAY * dto.cabinCount * dto.hireDays;
+      price = BASE_PRICE_BY_TYPE[cabinType] * dto.cabinCount * dto.hireDays;
     }
 
     const order = await this.prisma.toiletCabinOrder.create({
@@ -70,6 +78,7 @@ export class ToiletCabinsService {
         city: dto.city,
         lat: dto.lat,
         lng: dto.lng,
+        cabinType,
         cabinCount: dto.cabinCount,
         hireDays: dto.hireDays,
         deliveryDate: new Date(dto.deliveryDate),
@@ -248,10 +257,11 @@ export class ToiletCabinsService {
       );
     }
 
-    const settings = await this.prisma.carrierToiletCabinSettings.findUnique({
+    // Returns all type-specific settings rows for this carrier
+    return this.prisma.carrierToiletCabinSettings.findMany({
       where: { carrierId: user.companyId },
+      orderBy: { cabinType: 'asc' },
     });
-    return settings ?? null;
   }
 
   async upsertCarrierSettings(userId: string, dto: SetToiletCabinSettingsDto) {
@@ -273,9 +283,10 @@ export class ToiletCabinsService {
       .filter(Boolean);
 
     return this.prisma.carrierToiletCabinSettings.upsert({
-      where: { carrierId: user.companyId },
+      where: { carrierId_cabinType: { carrierId: user.companyId, cabinType: dto.cabinType } },
       create: {
         carrierId: user.companyId,
+        cabinType: dto.cabinType,
         pricePerCabinPerDay: dto.pricePerCabinPerDay,
         maxCabins: dto.maxCabins,
         serviceCities: normCities,
@@ -299,12 +310,15 @@ export class ToiletCabinsService {
     city: string,
     cabinCount: number,
     hireDays: number,
+    cabinType?: ToiletCabinType,
   ): Promise<ToiletCabinQuoteResult[]> {
     const cityNorm = city.toLowerCase().trim();
+    const type = cabinType ?? ToiletCabinType.STANDARD;
 
     const allSettings = await this.prisma.carrierToiletCabinSettings.findMany({
       where: {
         isActive: true,
+        cabinType: type,
         maxCabins: { gte: cabinCount },
         serviceCities: { has: cityNorm },
       },
@@ -321,6 +335,7 @@ export class ToiletCabinsService {
         carrierId: s.carrier.id,
         carrierName: s.carrier.name,
         carrierLogo: s.carrier.logo,
+        cabinType: type,
         pricePerCabinPerDay: s.pricePerCabinPerDay,
         totalPrice: s.pricePerCabinPerDay * cabinCount * hireDays,
         currency: 'EUR',
