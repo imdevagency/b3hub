@@ -83,6 +83,7 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/materials',
       tabs: [
         { label: 'Materiāli', href: '/dashboard/materials' },
+        { label: 'Karjeri', href: '/dashboard/locations' },
         { label: 'Atsauksmes', href: '/dashboard/reviews' },
       ],
     },

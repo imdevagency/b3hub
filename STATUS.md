@@ -298,6 +298,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (marketing)/order/disposal
 - (marketing)/order/materials
 - (marketing)/order/materials/[category]
+- (marketing)/order/scrap-buyback
 - (marketing)/order/skip-hire
 - (marketing)/order/toilet-cabin
 - (marketing)/order/transport
@@ -397,6 +398,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/materials
 - dashboard/(platform)/order
 - dashboard/(platform)/order/disposal
+- dashboard/(platform)/order/scrap-buyback
 - dashboard/(platform)/order/skip-hire
 - dashboard/(platform)/order/transport
 - dashboard/(platform)/orders
@@ -419,6 +421,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/skip-hire/fleet
 - dashboard/(platform)/supplier
 - dashboard/(platform)/supplier/loading-schedule
+- dashboard/(platform)/toilet-cabins
 - dashboard/(platform)/transport-history
 - dashboard/(platform)/transport-jobs/[id]
 - dashboard/(platform)/transporter

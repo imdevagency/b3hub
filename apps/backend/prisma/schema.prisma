@@ -616,6 +616,7 @@ model Company {
   orders           Order[]
   recyclingCenters RecyclingCenter[]
   carrierJobs      TransportJob[]
+  locations        SupplierLocation[]
   quoteResponses   QuoteResponse[]
 
   // Carrier comparison engine
@@ -675,6 +676,13 @@ model Material {
   recoveryRate       Float?           // % of incoming waste that was recovered (copied from WasteRecord)
   provenanceFacility String?          // recycling facility name, for display on listing
 
+  // Particle size fraction (e.g. "0/16", "16/32") — structured for filtering
+  fraction String?
+
+  // Pickup location — which quarry/site this material is loaded from
+  pickupLocation   SupplierLocation? @relation(fields: [pickupLocationId], references: [id])
+  pickupLocationId String?
+
   // Visibility
   featured Boolean @default(false) // promoted listing — sorted to top in catalog
 
@@ -711,6 +719,34 @@ model MaterialAvailabilityBlock {
   createdAt DateTime @default(now())
 
   @@map("material_availability_blocks")
+}
+
+/// A specific quarry / loading site belonging to a supplier company.
+/// Suppliers with multiple quarry locations create one record per site.
+/// Materials reference their pickup location via Material.pickupLocationId.
+model SupplierLocation {
+  id         String  @id @default(cuid())
+  name       String  // e.g. "Jaunbemberi"
+  address    String  // full human-readable address
+  city       String?
+  postalCode String?
+  country    String  @default("LV")
+
+  lat Float? // WGS-84 latitude
+  lng Float? // WGS-84 longitude
+
+  active Boolean @default(true)
+
+  supplier   Company @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplierId String
+
+  materials Material[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([supplierId])
+  @@map("supplier_locations")
 }
 
 model Container {

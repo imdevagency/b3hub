@@ -28,6 +28,7 @@ export * from './payments';
 export * from './projects';
 export * from './saved-addresses';
 export * from './api-keys';
+export * from './supplier-locations';
 export * from './support';
 export * from './field-passes';
 export * from './tracking';

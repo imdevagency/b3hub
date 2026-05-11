@@ -79,6 +79,17 @@ export class CreateMaterialDto {
   @MaxLength(100)
   quality?: string;
 
+  /** Particle size fraction, e.g. "0/16", "16/32", "0/63" */
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  fraction?: string;
+
+  /** FK to SupplierLocation — which quarry/pit this material is loaded from */
+  @IsOptional()
+  @IsString()
+  pickupLocationId?: string;
+
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

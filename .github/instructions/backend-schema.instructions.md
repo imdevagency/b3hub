@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (3368 lines, 82 models, 68 enums).
+Schema: `apps/backend/prisma/schema.prisma` (3404 lines, 83 models, 68 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -199,20 +199,26 @@ npm run db:seed           # reseed demo data
 ### Company — `@@map("companies")`  
 **Fields:** `id`: String @id @default(cuid(), `name`: String, `legalName`: String, `registrationNum`: String? @unique, `taxId`: String?, `email`: String, `phone`: String, `website`: String?, `street`: String, `city`: String, `state`: String, `postalCode`: String, `country`: String @default("LV"), `description`: String?, `logo`: String?, `verified`: Boolean @default(false), `rating`: Float?, `isFirstParty`: Boolean @default(false), `ibanNumber`: String?, `commissionRate`: Float @default(6.0), `carrierCommissionRate`: Float @default(8.0), `payoutEnabled`: Boolean @default(false), `paymentTermsDays`: Int?, `billingAgentAgreedAt`: DateTime?, `lat`: Float?, `lng`: Float?, `serviceRadiusKm`: Int?, `onTimePct`: Float?, `fulfillmentPct`: Float?, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `companyType`: CompanyType, `features`: CompanyFeature  
-**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, ToiletCabinOrder, CarrierToiletCabinSettings?, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead, MaterialRateEntry, ConstructionEmployee, ConstructionSubcontractor
+**Relations:** → User, Material, Container, Vehicle, Order, RecyclingCenter, TransportJob, SupplierLocation, QuoteResponse, CarrierPricing, CarrierServiceZone, CarrierAvailability, SkipHireOrder, ToiletCabinOrder, CarrierToiletCabinSettings?, Review, FrameworkContract, FrameworkContract, Project, ApiKey, FieldPass, Invoice, Invoice, SupplierPayout, CarrierPayout, CrmLead, MaterialRateEntry, ConstructionEmployee, ConstructionSubcontractor
 
 ---
 
 ### Material — `@@map("materials")`  
-**Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `subCategory`: String?, `basePrice`: Float, `currency`: String @default("EUR"), `inStock`: Boolean @default(true), `stockQty`: Float?, `minOrder`: Float?, `maxOrder`: Float?, `deliveryRadiusKm`: Int? @default(100), `isRecycled`: Boolean @default(false), `quality`: String?, `certificates`: String, `wasteRecordId`: String? @unique, `recoveryRate`: Float?, `provenanceFacility`: String?, `featured`: Boolean @default(false), `images`: String, `specifications`: Json?, `supplierId`: String, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `description`: String?, `subCategory`: String?, `basePrice`: Float, `currency`: String @default("EUR"), `inStock`: Boolean @default(true), `stockQty`: Float?, `minOrder`: Float?, `maxOrder`: Float?, `deliveryRadiusKm`: Int? @default(100), `isRecycled`: Boolean @default(false), `quality`: String?, `certificates`: String, `wasteRecordId`: String? @unique, `recoveryRate`: Float?, `provenanceFacility`: String?, `fraction`: String?, `pickupLocationId`: String?, `featured`: Boolean @default(false), `images`: String, `specifications`: Json?, `supplierId`: String, `active`: Boolean @default(true), `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
 **Enum fields:** `category`: MaterialCategory, `unit`: MaterialUnit  
-**Relations:** → Company, OrderItem, MaterialPriceTier, MaterialAvailabilityBlock
+**Relations:** → SupplierLocation?, Company, OrderItem, MaterialPriceTier, MaterialAvailabilityBlock
 
 ---
 
 ### MaterialAvailabilityBlock — `@@map("material_availability_blocks")`  
 **Fields:** `id`: String @id @default(cuid(), `materialId`: String, `startDate`: DateTime, `endDate`: DateTime, `note`: String?, `createdAt`: DateTime @default(now()  
 **Relations:** → Material
+
+---
+
+### SupplierLocation — `@@map("supplier_locations")`  
+**Fields:** `id`: String @id @default(cuid(), `name`: String, `address`: String, `city`: String?, `postalCode`: String?, `country`: String @default("LV"), `lat`: Float?, `lng`: Float?, `active`: Boolean @default(true), `supplierId`: String, `createdAt`: DateTime @default(now(), `updatedAt`: DateTime  
+**Relations:** → Company, Material
 
 ---
 

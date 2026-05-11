@@ -64,6 +64,7 @@ import { JumisModule } from './jumis/jumis.module';
 import { BisModule } from './bis/bis.module';
 import { LursoftModule } from './lursoft/lursoft.module';
 import { FuelModule } from './fuel/fuel.module';
+import { SupplierLocationsModule } from './supplier-locations/supplier-locations.module';
 
 @Module({
   imports: [
@@ -133,6 +134,7 @@ import { FuelModule } from './fuel/fuel.module';
     BisModule,
     LursoftModule,
     FuelModule,
+    SupplierLocationsModule,
   ],
   controllers: [AppController],
   providers: [

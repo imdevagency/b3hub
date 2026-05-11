@@ -20,6 +20,7 @@ import {
   getMaterialAvailability,
   addMaterialAvailabilityBlock,
   removeMaterialAvailabilityBlock,
+  getMySupplierLocations,
   type PriceTier,
   type AvailabilityBlock,
   type ApiMaterial,
@@ -27,6 +28,7 @@ import {
   type MaterialUnit,
   type CreateMaterialInput,
   type UpdateMaterialInput,
+  type ApiSupplierLocation,
 } from '@/lib/api';
 import {
   Check,
@@ -104,6 +106,8 @@ interface MaterialFormValues {
   description: string;
   category: MaterialCategory;
   subCategory: string;
+  fraction: string;
+  pickupLocationId: string;
   basePrice: string;
   unit: MaterialUnit;
   minOrder: string;
@@ -120,6 +124,8 @@ const EMPTY_FORM: MaterialFormValues = {
   description: '',
   category: 'SAND',
   subCategory: '',
+  fraction: '',
+  pickupLocationId: '',
   basePrice: '',
   unit: 'TONNE',
   minOrder: '',
@@ -137,6 +143,8 @@ function materialToForm(m: ApiMaterial): MaterialFormValues {
     description: m.description ?? '',
     category: m.category,
     subCategory: m.subCategory ?? '',
+    fraction: m.fraction ?? '',
+    pickupLocationId: m.pickupLocationId ?? '',
     basePrice: String(m.basePrice),
     unit: m.unit,
     minOrder: m.minOrder ? String(m.minOrder) : '',
@@ -171,6 +179,7 @@ function MaterialFormModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [certs, setCerts] = useState<string[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [locations, setLocations] = useState<ApiSupplierLocation[]>([]);
 
   // Update form when editing changes or sheet opens
   useEffect(() => {
@@ -179,8 +188,12 @@ function MaterialFormModal({
       setImages(editing?.images ?? []);
       setCerts(editing?.certificates ?? []);
       setError('');
+      // Load supplier locations for the picker
+      getMySupplierLocations(token)
+        .then(setLocations)
+        .catch(() => setLocations([]));
     }
-  }, [open, editing]);
+  }, [open, editing, token]);
 
   const set =
     (k: keyof MaterialFormValues) =>
@@ -269,6 +282,8 @@ function MaterialFormModal({
           description: form.description.trim() || undefined,
           category: form.category,
           subCategory: form.subCategory.trim() || undefined,
+          fraction: form.fraction.trim() || undefined,
+          pickupLocationId: form.pickupLocationId || null,
           basePrice: price,
           unit: form.unit,
           minOrder: form.minOrder ? parseFloat(form.minOrder) : undefined,
@@ -286,6 +301,8 @@ function MaterialFormModal({
           description: form.description.trim() || undefined,
           category: form.category,
           subCategory: form.subCategory.trim() || undefined,
+          fraction: form.fraction.trim() || undefined,
+          pickupLocationId: form.pickupLocationId || undefined,
           basePrice: price,
           unit: form.unit,
           minOrder: form.minOrder ? parseFloat(form.minOrder) : undefined,
@@ -381,7 +398,7 @@ function MaterialFormModal({
               </div>
             </div>
 
-            {/* Price */}
+            {/* Price + subCategory */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium ml-1">
@@ -406,6 +423,49 @@ function MaterialFormModal({
                   onChange={set('subCategory')}
                   className={inputClasses}
                 />
+              </div>
+            </div>
+
+            {/* Fraction + Pickup Location */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium ml-1">Frakcija</Label>
+                <Input
+                  placeholder="piem. 0/16, 16/32, 0/63"
+                  value={form.fraction}
+                  onChange={set('fraction')}
+                  className={inputClasses}
+                />
+                <p className="text-xs text-muted-foreground mt-1 ml-1">Daļiņu izmēru diapazons</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium ml-1">Iekraušanas vieta</Label>
+                <Select
+                  value={form.pickupLocationId || '__none__'}
+                  onValueChange={(v) => setSelect('pickupLocationId', v === '__none__' ? '' : v)}
+                >
+                  <SelectTrigger className={`w-full ${inputClasses}`}>
+                    <SelectValue placeholder="Izvēlieties karjeru" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-none shadow-lg">
+                    <SelectItem value="__none__" className="rounded-lg text-muted-foreground">
+                      — Nav norādīts —
+                    </SelectItem>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id} className="rounded-lg">
+                        {loc.name}
+                        {loc.city ? ` · ${loc.city}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {locations.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1 ml-1">
+                    <a href="/dashboard/locations" className="text-primary hover:underline">
+                      Pievienot karjerus
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
 

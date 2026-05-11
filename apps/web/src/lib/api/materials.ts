@@ -39,6 +39,18 @@ export interface ApiMaterial {
     city?: string;
   };
   createdAt: string;
+  /** Particle size fraction e.g. "0/16", "16/32" */
+  fraction?: string | null;
+  /** Quarry / loading site this material is dispatched from */
+  pickupLocation?: {
+    id: string;
+    name: string;
+    address: string;
+    city?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+  } | null;
+  pickupLocationId?: string | null;
 }
 
 export interface CreateMaterialInput {
@@ -55,6 +67,10 @@ export interface CreateMaterialInput {
   deliveryRadiusKm?: number;
   isRecycled?: boolean;
   quality?: string;
+  /** Particle size fraction e.g. "0/16", "16/32" */
+  fraction?: string;
+  /** FK to SupplierLocation */
+  pickupLocationId?: string;
   supplierId: string;
 }
 
@@ -72,6 +88,10 @@ export interface UpdateMaterialInput {
   deliveryRadiusKm?: number;
   isRecycled?: boolean;
   quality?: string;
+  /** Particle size fraction e.g. "0/16", "16/32" */
+  fraction?: string;
+  /** FK to SupplierLocation */
+  pickupLocationId?: string | null;
 }
 
 export interface CreateMaterialOrderInput {

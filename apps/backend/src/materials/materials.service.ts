@@ -43,6 +43,7 @@ export class MaterialsService {
             rating: true,
           },
         },
+        pickupLocation: true,
       },
     });
     this.logger.log(`Material ${material.id} created`);
@@ -110,6 +111,7 @@ export class MaterialsService {
               lng: true,
             },
           },
+          pickupLocation: true,
         },
         // Featured listings always appear first, then newest
         orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
@@ -180,6 +182,7 @@ export class MaterialsService {
           },
         },
         priceTiers: { orderBy: { minQty: 'asc' } },
+        pickupLocation: true,
       },
     });
 
