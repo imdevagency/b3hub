@@ -18,7 +18,7 @@ import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { TransportVehicleType } from '@/lib/api';
-import { useRoute } from '@/components/map';
+import { useRoute, BaseMap, RouteLayer, PinLayer } from '@/components/map';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import { AddressPicker } from '@/components/ui/AddressPicker';
@@ -1055,12 +1055,29 @@ export default function TransportWizard() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Route summary box */}
-            <WizardRouteBox
-              pickup={pickupPicked?.address ?? 'Ielādes adrese'}
-              dropoff={dropoffPicked?.address ?? 'Izkraušanas adrese'}
-              style={{ marginBottom: 24 }}
-            />
+            
+              {/* Map Header */}
+              {route?.coords && pickupStop && dropoffStop && (
+                <View style={{ height: 200, marginHorizontal: -20, marginTop: -20, marginBottom: 24, overflow: 'hidden' }}>
+                  <BaseMap
+                    style={StyleSheet.absoluteFill}
+                    center={[pickupStop.lng, pickupStop.lat]}
+                    zoom={10}
+                    
+                    
+                    
+                    
+                  >
+                    <RouteLayer id="route" coordinates={route.coords} />
+                    <PinLayer id="pickup" coordinate={{ lat: pickupStop.lat, lng: pickupStop.lng }} type="pickup" />
+                    <PinLayer id="dropoff" coordinate={{ lat: dropoffStop.lat, lng: dropoffStop.lng }} type="delivery" />
+                  </BaseMap>
+                  
+                  {/* Fade gradient overlay at the bottom of the map */}
+                  <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, backgroundColor: 'rgba(255,255,255,0.7)', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
+                </View>
+              )}
+
 
             <SectionLabel label="KOPSAVILKUMS" />
             <WizardSummaryCard style={{ marginBottom: 24 }}>
