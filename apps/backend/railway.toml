@@ -1,6 +1,5 @@
 # Railway deployment config for b3hub backend
 # Service root directory in Railway dashboard: apps/backend
-# Build context for Dockerfile is always repo root; dockerfilePath is relative to service root.
 # Docs: https://docs.railway.com/reference/railway-toml
 
 [build]
@@ -10,5 +9,3 @@ dockerfilePath = "Dockerfile"
 [deploy]
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
