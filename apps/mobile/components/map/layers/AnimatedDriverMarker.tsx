@@ -9,7 +9,7 @@
  */
 import React, { useEffect, useRef } from 'react';
 import { Animated, View, StyleSheet } from 'react-native';
-import { Truck } from 'lucide-react-native';
+
 
 let MarkerAnimated: any = null;
 let AnimatedRegion: any = null;
@@ -150,15 +150,25 @@ export function AnimatedDriverMarker({ id, coordinate, animationDuration = 900 }
       flat
     >
       <Animated.View style={[styles.wrapper, { transform: [{ rotate }] }]}>
-        {/* Pulsing ring — expands outward from the truck bubble */}
+        {/* Pulsing ring */}
         <Animated.View
           style={[styles.pulseRing, { transform: [{ scale: pulseScale }], opacity: pulseOpacity }]}
         />
-        <View style={styles.bubble}>
-          <Truck size={16} color="#fff" strokeWidth={2.5} />
+        {/* Top-down vehicle (Uber style) */}
+        <View style={styles.vehicleBody}>
+          {/* Front headlights */}
+          <View style={[styles.light, styles.headlightLeft]} />
+          <View style={[styles.light, styles.headlightRight]} />
+          {/* Windshield */}
+          <View style={styles.windshield} />
+          {/* Roof */}
+          <View style={styles.roof} />
+          {/* Rear window */}
+          <View style={styles.rearWindow} />
+          {/* Tail lights */}
+          <View style={[styles.light, styles.taillightLeft]} />
+          <View style={[styles.light, styles.taillightRight]} />
         </View>
-        {/* Directional notch at top of bubble indicating forward */}
-        <View style={styles.notch} />
       </Animated.View>
     </MarkerAnimated>
   );
@@ -171,37 +181,71 @@ const styles = StyleSheet.create({
   },
   pulseRing: {
     position: 'absolute',
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(79, 70, 229, 0.35)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
-  bubble: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#166534',
+  vehicleBody: {
+    width: 22,
+    height: 46,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 10,
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  // Small triangle pointing forward (north before rotation applied)
-  notch: {
+  windshield: {
+    width: 16,
+    height: 6,
+    backgroundColor: '#111827',
+    marginTop: 10,
+    borderRadius: 2,
+    opacity: 0.85,
+  },
+  roof: {
+    width: 14,
+    height: 12,
+    backgroundColor: '#f3f4f6',
+    marginTop: 1,
+  },
+  rearWindow: {
+    width: 14,
+    height: 5,
+    backgroundColor: '#374151',
+    marginTop: 1,
+    borderRadius: 1,
+    opacity: 0.85,
+  },
+  light: {
     position: 'absolute',
-    top: -6,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderBottomWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: '#111827',
+    width: 5,
+    height: 2,
+    borderRadius: 1,
+  },
+  headlightLeft: {
+    top: 2,
+    left: 3,
+    backgroundColor: '#fef08a', // warm yellow
+  },
+  headlightRight: {
+    top: 2,
+    right: 3,
+    backgroundColor: '#fef08a',
+  },
+  taillightLeft: {
+    bottom: 2,
+    left: 3,
+    backgroundColor: '#ef4444',
+  },
+  taillightRight: {
+    bottom: 2,
+    right: 3,
+    backgroundColor: '#ef4444',
   },
 });

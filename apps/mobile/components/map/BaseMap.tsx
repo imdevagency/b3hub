@@ -7,6 +7,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { StyleSheet, ViewStyle, StyleProp, View, Text } from 'react-native';
 import { colors } from '@/lib/theme';
+import { uberMapStyle } from './UberStyle';
 
 // react-native-maps is not bundled in Expo Go SDK 50+. Guard the import so the
 // app loads in Expo Go and shows a fallback instead of crashing the JS runtime.
@@ -265,7 +266,7 @@ export function BaseMap({
         onRegionChangeComplete?.(region, details)
       }
       mapPadding={mapPadding}
-      customMapStyle={customMapStyle}
+      customMapStyle={customMapStyle || uberMapStyle}
     >
       {children}
     </MapView>

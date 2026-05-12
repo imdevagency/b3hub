@@ -30,7 +30,8 @@ export type PinType =
   | 'custom'
   | 'home'
   | 'elegant-pickup'
-  | 'elegant-delivery';
+  | 'elegant-delivery'
+  | 'uber-destination';
 
 interface Props {
   id: string;
@@ -95,6 +96,8 @@ function MarkerForType({
       return <ElegantPill type="pickup" label={label} subtitle={subtitle} />;
     case 'elegant-delivery':
       return <ElegantPill type="delivery" label={label} subtitle={subtitle} />;
+    case 'uber-destination':
+      return <UberDestination />;
     case 'pickup':
       return (
         <PinBubble icon={ArrowUp} color={color || '#111827'} label={label} iconColor={iconColor} />
@@ -257,6 +260,14 @@ const pin = StyleSheet.create({
   },
 });
 
+function UberDestination() {
+  return (
+    <View style={{ width: 14, height: 14, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 6, height: 6, backgroundColor: '#fff' }} />
+    </View>
+  );
+}
+
 function ElegantPill({
   type,
   label,
@@ -267,7 +278,7 @@ function ElegantPill({
   subtitle?: string;
 }) {
   const isPickup = type === 'pickup';
-  const mainColor = isPickup ? '#4f46e5' : '#14b8a6'; // Indigo for pickup, teal for delivery
+  const mainColor = isPickup ? '#111827' : '#059669';
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 }}>

@@ -65,9 +65,11 @@ export default function DriverHomeScreen() {
       });
       // Small timeout to ensure map is ready
       const timerId = setTimeout(() => {
+        // If we are in simulator in SF, pins in Latvia won't show. Default to Riga unless we have jobs.
+        // We'll let a separate effect handle jobs focus if needed, but for now we focus driver.
         cameraRef.current?.setCamera({
           centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
-          zoomLevel: 14,
+          zoomLevel: 13,
           animationDuration: 1000,
         });
       }, 500);
@@ -133,6 +135,20 @@ export default function DriverHomeScreen() {
         ),
     ]);
   }, [token]);
+
+    useEffect(() => {
+    if (availableJobs && availableJobs.length > 0) {
+      const validJobs = availableJobs.filter(j => j.pickupLat && j.pickupLng);
+      if (validJobs.length > 0) {
+        // Simple zoom to first job's area for better UX testing
+        cameraRef.current?.setCamera({
+          centerCoordinate: [validJobs[0].pickupLng, validJobs[0].pickupLat],
+          zoomLevel: 11,
+          animationDuration: 1000,
+        });
+      }
+    }
+  }, [availableJobs]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -245,12 +261,13 @@ export default function DriverHomeScreen() {
               .filter((j) => j.pickupLat != null && j.pickupLng != null)
               .map((j) => (
                 <PinLayer
-                  key={j.id}
-                  id={j.id}
-                  coordinate={{ lat: j.pickupLat!, lng: j.pickupLng! }}
-                  type="pickup"
-                  label={j.pickupCity}
-                />
+                    key={j.id}
+                    id={j.id}
+                    coordinate={{ lat: j.pickupLat!, lng: j.pickupLng! }}
+                    type="elegant-pickup"
+                    label={`€${j.rate}`}
+                    subtitle={j.pickupCity}
+                  />
               ))}
         </BaseMap>
       </View>

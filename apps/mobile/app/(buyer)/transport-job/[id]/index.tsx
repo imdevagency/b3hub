@@ -315,7 +315,7 @@ export default function TransportJobTrackingScreen() {
           {job.deliveryLat != null && job.deliveryLng != null && (
             <PinLayer
               id="delivery"
-              type="elegant-delivery"
+              type="uber-destination"
               coordinate={{ lat: job.deliveryLat, lng: job.deliveryLng }}
             />
           )}

@@ -24,8 +24,8 @@ interface Props {
 export function RouteLayer({
   id,
   coordinates,
-  color = '#111827',
-  width = 4,
+  color = '#000000',
+  width = 5,
   dashed = false,
 }: Props) {
   if (coordinates.length < 2 || !Polyline) return null;

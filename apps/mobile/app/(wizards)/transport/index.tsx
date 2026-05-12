@@ -12,7 +12,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Bookmark, Check, Weight, ChevronRight, Search, ArrowUpDown } from 'lucide-react-native';
+import {
+  Bookmark,
+  Check,
+  Weight,
+  ChevronRight,
+  Search,
+  ArrowUpDown,
+  MapPin,
+  ArrowRight,
+  X,
+} from 'lucide-react-native';
 import { TruckIllustration } from '@/components/ui/TruckIllustration';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
@@ -637,116 +647,189 @@ export default function TransportWizard() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={{ paddingHorizontal: 20 }}>
-              {/* Uber-style unified route card */}
-              <View style={{ backgroundColor: '#f3f4f6', borderRadius: 16, marginBottom: 24 }}>
-                <View style={{ flexDirection: 'row', padding: 16 }}>
-                  {/* Left track: circle → line → square */}
+              {/* Uber-style absolute-precision route card */}
+              <View
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: 16,
+                  marginBottom: 24,
+                  overflow: 'hidden',
+                }}
+              >
+                <View style={{ position: 'relative' }}>
+                  {/* Left track: Absolutely positioned so it perfectly aligns regardless of device scaling */}
                   <View
                     style={{
-                      alignItems: 'center',
-                      width: 20,
-                      marginRight: 14,
-                      paddingVertical: 12,
+                      position: 'absolute',
+                      left: 23,
+                      top: 30,
+                      bottom: 30,
+                      width: 2,
+                      backgroundColor: '#d1d5db',
+                      zIndex: 1,
                     }}
                   >
                     <View
                       style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 5,
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
                         borderWidth: 2,
                         borderColor: '#6b7280',
-                        backgroundColor: '#fff',
+                        backgroundColor: '#f3f4f6',
+                        position: 'absolute',
+                        top: -4,
+                        left: -3,
                       }}
                     />
                     <View
-                      style={{ width: 2, flex: 1, backgroundColor: '#d1d5db', marginVertical: 3 }}
-                    />
-                    <View
-                      style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: '#111827' }}
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 2,
+                        backgroundColor: '#111827',
+                        position: 'absolute',
+                        bottom: -4,
+                        left: -3,
+                      }}
                     />
                   </View>
 
-                  {/* Right: two tappable rows */}
-                  <View style={{ flex: 1 }}>
+                  {/* Right Swap Button: Absolutely positioned right right in the middle */}
+                  {(pickupPicked || dropoffPicked) && (
                     <TouchableOpacity
+                      onPress={swapAddresses}
                       style={{
+                        position: 'absolute',
+                        right: 16,
+                        top: 64 - 18,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: '#fff',
+                        borderWidth: 1,
+                        borderColor: '#f3f4f6',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.06,
+                        shadowRadius: 3,
+                        elevation: 3,
+                        zIndex: 10,
+                      }}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <ArrowUpDown size={15} color="#111827" />
+                    </TouchableOpacity>
+                  )}
+
+                  <View>
+                    {/* Row 1: Pickup */}
+                    <View
+                      style={{
+                        height: 64,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        paddingVertical: 12,
-                        minHeight: 48,
+                        paddingLeft: 48,
+                        paddingRight: pickupPicked || dropoffPicked ? 56 : 16,
                       }}
-                      onPress={() => setPickupPickerOpen(true)}
-                      activeOpacity={0.7}
                     >
-                      {!pickupPicked && (
-                        <Search size={15} color="#9ca3af" style={{ marginRight: 8 }} />
-                      )}
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          flex: 1,
-                          fontSize: 15,
-                          color: pickupPicked ? '#111827' : '#6b7280',
-                          fontWeight: pickupPicked ? '600' : '400',
-                        }}
+                      <TouchableOpacity
+                        style={{ flex: 1, height: '100%', justifyContent: 'center' }}
+                        onPress={() => setPickupPickerOpen(true)}
+                        activeOpacity={0.7}
                       >
-                        {pickupPicked ? pickupPicked.address : 'Pievienot ielādes vietu...'}
-                      </Text>
-                      <ChevronRight size={16} color="#d1d5db" style={{ marginLeft: 4 }} />
-                    </TouchableOpacity>
-
-                    <View style={{ height: 1, backgroundColor: '#e5e7eb', position: 'relative' }}>
-                      {(pickupPicked || dropoffPicked) && (
-                        <TouchableOpacity
-                          onPress={swapAddresses}
+                        <Text
+                          numberOfLines={1}
                           style={{
-                            position: 'absolute',
-                            right: 0,
-                            top: -14,
-                            width: 28,
-                            height: 28,
-                            borderRadius: 14,
-                            backgroundColor: '#fff',
-                            borderWidth: 1,
-                            borderColor: '#e5e7eb',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            fontSize: 16,
+                            color: pickupPicked ? '#111827' : '#9ca3af',
+                            fontWeight: pickupPicked ? '600' : '500',
                           }}
-                          activeOpacity={0.7}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <ArrowUpDown size={13} color="#6b7280" />
+                          {pickupPicked ? pickupPicked.address : 'Iekraušanas vieta...'}
+                        </Text>
+                      </TouchableOpacity>
+                      {pickupPicked && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            haptics.light();
+                            setPickupPicked(null);
+                          }}
+                          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                          style={{ marginLeft: 8 }}
+                        >
+                          <View
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: 12,
+                              backgroundColor: '#e5e7eb',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <X size={14} color="#6b7280" />
+                          </View>
                         </TouchableOpacity>
                       )}
                     </View>
 
-                    <TouchableOpacity
+                    {/* Divider */}
+                    <View style={{ height: 1, backgroundColor: '#e5e7eb', marginLeft: 48 }} />
+
+                    {/* Row 2: Dropoff */}
+                    <View
                       style={{
+                        height: 64,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        paddingVertical: 12,
-                        minHeight: 48,
+                        paddingLeft: 48,
+                        paddingRight: pickupPicked || dropoffPicked ? 56 : 16,
                       }}
-                      onPress={() => setDropoffPickerOpen(true)}
-                      activeOpacity={0.7}
                     >
-                      {!dropoffPicked && (
-                        <Search size={15} color="#9ca3af" style={{ marginRight: 8 }} />
-                      )}
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          flex: 1,
-                          fontSize: 15,
-                          color: dropoffPicked ? '#111827' : '#9ca3af',
-                          fontWeight: dropoffPicked ? '600' : '400',
-                        }}
+                      <TouchableOpacity
+                        style={{ flex: 1, height: '100%', justifyContent: 'center' }}
+                        onPress={() => setDropoffPickerOpen(true)}
+                        activeOpacity={0.7}
                       >
-                        {dropoffPicked ? dropoffPicked.address : 'Kāds ir galamērķis?'}
-                      </Text>
-                      <ChevronRight size={16} color="#d1d5db" style={{ marginLeft: 4 }} />
-                    </TouchableOpacity>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontSize: 16,
+                            color: dropoffPicked ? '#111827' : '#9ca3af',
+                            fontWeight: dropoffPicked ? '600' : '500',
+                          }}
+                        >
+                          {dropoffPicked ? dropoffPicked.address : 'Kāds ir galamērķis?'}
+                        </Text>
+                      </TouchableOpacity>
+                      {dropoffPicked && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            haptics.light();
+                            setDropoffPicked(null);
+                          }}
+                          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                          style={{ marginLeft: 8 }}
+                        >
+                          <View
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: 12,
+                              backgroundColor: '#e5e7eb',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <X size={14} color="#6b7280" />
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                 </View>
               </View>
@@ -858,14 +941,45 @@ export default function TransportWizard() {
               )}
             </View>
 
-            <Text style={s.sectionTitle}>Ieteicamie</Text>
-            <View style={{ gap: 0, marginBottom: 24 }}>
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: '700',
+                color: '#111827',
+                marginTop: 12,
+                marginBottom: 16,
+                letterSpacing: -0.5,
+              }}
+            >
+              Transportdarba detaļas
+            </Text>
+
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+              Atrodi īsto auto
+            </Text>
+            <View style={{ gap: 10, marginBottom: 32 }}>
               {VEHICLE_OPTIONS.map((v) => {
                 const isSel = selectedVehicle === v.type;
                 return (
                   <TouchableOpacity
                     key={v.type}
-                    style={[s.vehicleCard, isSel && s.vehicleCardSel]}
+                    style={[
+                      {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: '#fff',
+                        borderRadius: 16,
+                        padding: 14,
+                        minHeight: 80,
+                        borderWidth: isSel ? 2.5 : 1,
+                        borderColor: isSel ? '#111827' : '#e5e7eb',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isSel ? 0 : 0.04,
+                        shadowRadius: 6,
+                        elevation: isSel ? 0 : 1,
+                      },
+                    ]}
                     onPress={() => {
                       haptics.light();
                       setSelectedVehicle(v.type);
@@ -873,29 +987,33 @@ export default function TransportWizard() {
                     }}
                     activeOpacity={0.75}
                   >
-                    {isSel && (
-                      <View style={s.vehicleCheckBadge}>
-                        <Check size={12} color="#fff" />
-                      </View>
-                    )}
-                    <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ width: 64, alignItems: 'center', justifyContent: 'center' }}>
                       <TruckIllustration type={v.type} />
                     </View>
                     <View style={{ flex: 1, paddingLeft: 12 }}>
-                      <Text style={[s.vehicleLabel, isSel && s.vehicleLabelSel]}>{v.label}</Text>
-                      <Text style={[s.vehicleSub, isSel && s.vehicleSubSel]}>{v.sub}</Text>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: '700',
+                          color: '#111827',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {v.label}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: '#6b7280' }}>{v.sub}</Text>
                     </View>
-                    <View style={{ alignItems: 'flex-end' }}>
+                    <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
                       {route ? (
                         <>
-                          <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
+                          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
                             ~€{Math.round(v.fromPrice + route.distanceKm * v.pricePerKm)}
                           </Text>
                           <Text
                             style={{
-                              fontSize: 10,
-                              color: isSel ? 'rgba(255,255,255,0.65)' : '#9ca3af',
-                              marginTop: 1,
+                              fontSize: 12,
+                              color: '#6b7280',
+                              marginTop: 2,
                             }}
                           >
                             {route.distanceKm.toFixed(0)} km
@@ -903,7 +1021,7 @@ export default function TransportWizard() {
                         </>
                       ) : (
                         <>
-                          <Text style={[s.vehiclePrice, isSel && s.vehiclePriceSel]}>
+                          <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
                             no €{v.fromPrice}
                           </Text>
                         </>
@@ -914,19 +1032,26 @@ export default function TransportWizard() {
               })}
             </View>
 
-            <Text style={s.sectionTitle}>Kravas veids *</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+              Kas tiks vērts?
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 16 }}
-              contentContainerStyle={{ gap: 8 }}
+              contentContainerStyle={{ gap: 8, paddingRight: 20 }}
             >
               {CARGO_PRESETS.map((c) => {
                 const isSel = activeDesc === c;
                 return (
                   <TouchableOpacity
                     key={c}
-                    style={[s.cargoChip, isSel && s.cargoChipSel]}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 20,
+                      backgroundColor: isSel ? '#111827' : '#f3f4f6',
+                    }}
                     onPress={() => {
                       haptics.light();
                       setActiveDesc(c);
@@ -934,7 +1059,11 @@ export default function TransportWizard() {
                     }}
                     activeOpacity={0.75}
                   >
-                    <Text style={[s.cargoText, isSel && s.cargoTextSel]}>{c}</Text>
+                    <Text
+                      style={{ fontSize: 14, fontWeight: '600', color: isSel ? '#fff' : '#374151' }}
+                    >
+                      {c}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -942,7 +1071,12 @@ export default function TransportWizard() {
 
             {activeDesc === 'Cits' && (
               <TextInputField
-                containerStyle={{ marginBottom: 16 }}
+                containerStyle={{
+                  marginBottom: 16,
+                  backgroundColor: '#f3f4f6',
+                  borderWidth: 0,
+                  borderRadius: 12,
+                }}
                 placeholder="Aprakstiet kravu (piem., iekārtas, mēbeles, paletes)..."
                 value={otherText}
                 onChangeText={(t) => {
@@ -952,75 +1086,177 @@ export default function TransportWizard() {
               />
             )}
 
-            <Text style={s.sectionTitle}>Svars (neobligāti)</Text>
-            <View style={s.weightRow}>
-              <Weight size={16} color="#6b7280" style={{ marginRight: 8 }} />
-              <TextInput
-                style={s.weightInput}
-                placeholder="piem., 8.5"
-                placeholderTextColor="#9ca3af"
-                keyboardType="decimal-pad"
-                value={weightText}
-                onChangeText={(t) => {
-                  setWeightText(t);
-                  const w = parseFloat(t);
-                  if (!isNaN(w)) setEstimatedWeight(w);
-                }}
-              />
-              <Text style={s.weightUnit}>tonnas</Text>
+            <View style={{ flexDirection: 'row', gap: 16, marginBottom: 24, marginTop: 16 }}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 8 }}
+                >
+                  Svars (t)
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                  }}
+                >
+                  <Weight size={16} color="#6b7280" />
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      paddingVertical: 14,
+                      paddingHorizontal: 12,
+                      fontSize: 15,
+                      fontWeight: '500',
+                      color: '#111827',
+                    }}
+                    placeholder="8.5"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="decimal-pad"
+                    value={weightText}
+                    onChangeText={(t) => {
+                      setWeightText(t);
+                      const w = parseFloat(t);
+                      if (!isNaN(w)) setEstimatedWeight(w);
+                    }}
+                  />
+                </View>
+              </View>
+
+              <View style={{ flex: 1.2 }}>
+                <Text
+                  style={{ fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 8 }}
+                >
+                  Automašīnu skaits
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: 12,
+                    padding: 4,
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      width: 36,
+                      height: 36,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: truckCount > 1 ? '#fff' : 'transparent',
+                      borderRadius: 10,
+                      shadowColor: truckCount > 1 ? '#000' : 'transparent',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                      elevation: truckCount > 1 ? 2 : 0,
+                    }}
+                    onPress={() => setTruckCount((n) => Math.max(1, n - 1))}
+                    activeOpacity={0.7}
+                    disabled={truckCount <= 1}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        color: truckCount > 1 ? '#111827' : '#9ca3af',
+                        lineHeight: 24,
+                      }}
+                    >
+                      −
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                    {truckCount}
+                  </Text>
+                  <TouchableOpacity
+                    style={{
+                      width: 36,
+                      height: 36,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: truckCount < 10 ? '#fff' : 'transparent',
+                      borderRadius: 10,
+                      shadowColor: truckCount < 10 ? '#000' : 'transparent',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                      elevation: truckCount < 10 ? 2 : 0,
+                    }}
+                    onPress={() => setTruckCount((n) => Math.min(10, n + 1))}
+                    activeOpacity={0.7}
+                    disabled={truckCount >= 10}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        color: truckCount < 10 ? '#111827' : '#9ca3af',
+                        lineHeight: 24,
+                      }}
+                    >
+                      +
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
-            <Text style={s.sectionTitle}>Automašīnu skaits</Text>
-            <View style={s.truckCountRow}>
-              <TouchableOpacity
-                style={[s.truckCountBtn, truckCount <= 1 && s.truckCountBtnDisabled]}
-                onPress={() => setTruckCount((n) => Math.max(1, n - 1))}
-                activeOpacity={0.7}
-                disabled={truckCount <= 1}
-              >
-                <Text style={s.truckCountBtnText}>−</Text>
-              </TouchableOpacity>
-              <View style={s.truckCountValue}>
-                <Text style={s.truckCountNum}>{truckCount}</Text>
-                <Text style={s.truckCountUnit}>{'auto'}</Text>
-              </View>
-              <TouchableOpacity
-                style={[s.truckCountBtn, truckCount >= 10 && s.truckCountBtnDisabled]}
-                onPress={() => setTruckCount((n) => Math.min(10, n + 1))}
-                activeOpacity={0.7}
-                disabled={truckCount >= 10}
-              >
-                <Text style={s.truckCountBtnText}>+</Text>
-              </TouchableOpacity>
-            </View>
             {truckCount > 1 && (
-              <Text style={s.truckCountHint}>
-                {truckCount} atsevišķi pārvadājuma darbi • iekraušana ik 30 min
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: '#6b7280',
+                  textAlign: 'right',
+                  marginTop: -16,
+                  marginBottom: 24,
+                }}
+              >
+                {truckCount} atsevišķi pārvadājumi • iekraušana ik 30 min
               </Text>
             )}
 
-            <Text style={[s.sectionTitle, { marginTop: 20 }]}>Norēķinu veids</Text>
-            <View style={s.windowRow}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
+              Kā vēlies norēķināties?
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
               {(
                 [
-                  ['FLAT', 'Par pārvadājumu'],
+                  ['FLAT', 'Par reisu'],
                   ['PER_TONNE', 'Par tonnu'],
                 ] as const
-              ).map(([val, label]) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[s.windowChip, pricingMode === val && s.windowChipActive]}
-                  onPress={() => {
-                    haptics.light();
-                    setPricingMode(val);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[s.windowChipText, pricingMode === val && s.windowChipTextActive]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              ).map(([val, label]) => {
+                const isActive = pricingMode === val;
+                return (
+                  <TouchableOpacity
+                    key={val}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 14,
+                      borderRadius: 12,
+                      backgroundColor: isActive ? '#111827' : '#f3f4f6',
+                      alignItems: 'center',
+                    }}
+                    onPress={() => {
+                      haptics.light();
+                      setPricingMode(val);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '600',
+                        color: isActive ? '#fff' : '#374151',
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
         )}
@@ -1029,10 +1265,20 @@ export default function TransportWizard() {
         {step === 3 && (
           <ScrollView
             style={s.content}
-            contentContainerStyle={s.pad}
+            contentContainerStyle={[s.pad, { paddingTop: 24 }]}
             showsVerticalScrollIndicator={false}
           >
-            <SectionLabel label="Pārvadāšanas datums" />
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: '800',
+                color: '#111827',
+                letterSpacing: -0.5,
+                marginBottom: 20,
+              }}
+            >
+              Kad izbraucam?
+            </Text>
             <WizardCalendar
               selectedDate={selectedDay || ''}
               onDateChange={(d) => {
@@ -1042,256 +1288,387 @@ export default function TransportWizard() {
               minDate={DAY_OPTIONS[0].iso}
             />
 
-            <SectionLabel label="Vēlamais iekraušanas laiks" />
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: '700',
+                color: '#111827',
+                marginTop: 36,
+                marginBottom: 16,
+                letterSpacing: -0.5,
+              }}
+            >
+              Cikos?
+            </Text>
             <WizardTimeWindowPicker value={pickupWindow} onChange={setPickupWindow} />
           </ScrollView>
         )}
 
-        {/* ── Step 4: Review + contact + confirm ── */}
+        {/* ── Step 4: Uber-style review + confirm ── */}
         {step === 4 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={s.pad}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            
-              {/* Map Header */}
-              {route?.coords && pickupStop && dropoffStop && (
-                <View style={{ height: 200, marginHorizontal: -20, marginTop: -20, marginBottom: 24, overflow: 'hidden' }}>
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              contentContainerStyle={{ paddingBottom: 32 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* ── Edge-to-edge map ── */}
+              <View style={{ height: 260, overflow: 'hidden' }}>
+                {route?.coords && pickupStop && dropoffStop ? (
                   <BaseMap
                     style={StyleSheet.absoluteFill}
-                    center={[pickupStop.lng, pickupStop.lat]}
+                    center={[
+                      (pickupStop.lng + dropoffStop.lng) / 2,
+                      (pickupStop.lat + dropoffStop.lat) / 2,
+                    ]}
                     zoom={10}
-                    
-                    
-                    
-                    
+                    mapPadding={{ top: 30, bottom: 30, left: 40, right: 40 }}
                   >
                     <RouteLayer id="route" coordinates={route.coords} />
-                    <PinLayer id="pickup" coordinate={{ lat: pickupStop.lat, lng: pickupStop.lng }} type="pickup" />
-                    <PinLayer id="dropoff" coordinate={{ lat: dropoffStop.lat, lng: dropoffStop.lng }} type="delivery" />
+                    <PinLayer
+                      id="pickup"
+                      coordinate={{ lat: pickupStop.lat, lng: pickupStop.lng }}
+                      type="elegant-pickup"
+                    />
+                    <PinLayer
+                      id="dropoff"
+                      coordinate={{ lat: dropoffStop.lat, lng: dropoffStop.lng }}
+                      type="uber-destination"
+                    />
                   </BaseMap>
-                  
-                  {/* Fade gradient overlay at the bottom of the map */}
-                  <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, backgroundColor: 'rgba(255,255,255,0.7)', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
-                </View>
-              )}
-
-
-            <SectionLabel label="KOPSAVILKUMS" />
-            <WizardSummaryCard style={{ marginBottom: 24 }}>
-              <DetailRow
-                label="Maršruts"
-                value={route ? `${route.distanceKm.toFixed(1)} km · ${route.durationLabel}` : '—'}
-              />
-              <DetailRow
-                label="Auto"
-                value={VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
-              />
-              <DetailRow label="Krava" value={activeDesc || '—'} />
-              <DetailRow
-                label="Izpildes datums"
-                value={
-                  selectedDay
-                    ? new Date(selectedDay).toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'long',
-                      })
-                    : '—'
-                }
-              />
-              <DetailRow
-                label="Laiks"
-                value={
-                  pickupWindow === 'AM'
-                    ? '8:00 – 12:00'
-                    : pickupWindow === 'PM'
-                      ? '12:00 – 17:00'
-                      : 'Jebkurā laikā'
-                }
-              />
-              {currentVehiclePrice && (
-                <DetailRow
-                  label="Aptuvenā cena"
-                  value={
-                    route && currentVehicle
-                      ? `~€${Math.round(
-                          currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm,
-                        )}${truckCount > 1 ? ` × ${truckCount}` : ''}`
-                      : `no €${currentVehiclePrice}`
-                  }
-                />
-              )}
-              {truckCount > 1 && (
-                <DetailRow label="Auto skaits" value={`${truckCount} (ik 30 min)`} />
-              )}
-              <DetailRow
-                label="Norēķins"
-                value={pricingMode === 'FLAT' ? 'Par pārvadājumu' : 'Par tonnu'}
-              />
-            </WizardSummaryCard>
-
-            {user && (
-              <View style={{ marginBottom: 24 }}>
-                <TouchableOpacity
-                  style={s.saveAddrRow}
-                  onPress={() => setSavePickup((v) => !v)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      s.saveAddrCheck,
-                      savePickup && { backgroundColor: '#111827', borderColor: '#111827' },
-                    ]}
-                  >
-                    {savePickup && <Check size={14} color="#fff" />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.saveAddrLabel}>Saglabāt iekraušanas adresi</Text>
-                    <Text style={s.saveAddrSub} numberOfLines={1}>
-                      {pickupPicked?.address}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.saveAddrRow, { borderBottomWidth: 0 }]}
-                  onPress={() => setSaveDropoff((v) => !v)}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      s.saveAddrCheck,
-                      saveDropoff && { backgroundColor: '#111827', borderColor: '#111827' },
-                    ]}
-                  >
-                    {saveDropoff && <Check size={14} color="#fff" />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.saveAddrLabel}>Saglabāt izkraušanas adresi</Text>
-                    <Text style={s.saveAddrSub} numberOfLines={1}>
-                      {dropoffPicked?.address}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                ) : (
+                  <View style={{ flex: 1, backgroundColor: '#f5f5f5' }} />
+                )}
               </View>
-            )}
 
-            <SectionLabel label="KONTAKTINFORMĀCIJA" />
-            <View style={{ gap: 10, marginBottom: 24 }}>
-              <TextInputField
-                placeholder="Kontaktpersona *"
-                value={siteContactName}
-                onChangeText={setSiteContactName}
-                containerStyle={{
-                  backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
+              {/* ── Content below map ── */}
+              <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+                {/* Minimal FROM → TO strip */}
+                <View
+                  style={{
+                    backgroundColor: '#f9fafb',
                     borderRadius: 16,
-                }}
-              />
-              <TextInputField
-                placeholder="Tālrunis *"
-                keyboardType="phone-pad"
-                value={siteContactPhone}
-                onChangeText={setSiteContactPhone}
-                containerStyle={{
-                  backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                }}
-              />
-              <TextInputField
-                placeholder="Piezīmes (piem., vārtu kods, bīstama krava)"
-                multiline
-                value={notes}
-                onChangeText={setNotes}
-                containerStyle={{
-                  backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                }}
-              />
-              {pricingMode === 'FLAT' ? (
-                <>
-                  <TextInputField
-                    placeholder="Piedāvātā cena (€) — pēc izvēles"
-                    keyboardType="numeric"
-                    value={offeredRateText}
-                    onChangeText={setOfferedRateText}
-                    containerStyle={{
-                      backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                    }}
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginBottom: 20,
+                    gap: 12,
+                  }}
+                >
+                  <View
+                    style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#111827' }}
                   />
                   <Text
+                    style={{ flex: 1, fontSize: 13, fontWeight: '600', color: '#111827' }}
+                    numberOfLines={1}
+                  >
+                    {pickupPicked?.address?.split(',')[0] ?? state.pickupCity ?? '—'}
+                  </Text>
+                  <ArrowRight size={14} color="#9ca3af" />
+                  <Text
+                    style={{ flex: 1, fontSize: 13, fontWeight: '600', color: '#111827' }}
+                    numberOfLines={1}
+                  >
+                    {dropoffPicked?.address?.split(',')[0] ?? state.dropoffCity ?? '—'}
+                  </Text>
+                  {route && (
+                    <View
+                      style={{
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: 10,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        marginLeft: 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#111827' }}>
+                        {route.distanceKm.toFixed(1)} km
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {/* ── Price hero ── */}
+                {currentVehiclePrice && (
+                  <View
                     style={{
-                      fontSize: 12,
-                      color: '#6b7280',
-                      marginTop: -4,
-                      marginBottom: 4,
-                      paddingHorizontal: 4,
+                      flexDirection: 'row',
+                      alignItems: 'baseline',
+                      marginBottom: 18,
+                      gap: 8,
                     }}
                   >
-                    Neobligāti — norādiet summu, lai ātrāk atrastu pārvadātāju.
-                  </Text>
-                </>
-              ) : (
-                <>
+                    <Text
+                      style={{
+                        fontSize: 38,
+                        fontWeight: '800',
+                        color: '#111827',
+                        letterSpacing: -1.5,
+                      }}
+                    >
+                      {route && currentVehicle
+                        ? `~€${Math.round(
+                            currentVehicle.fromPrice + route.distanceKm * currentVehicle.pricePerKm,
+                          )}${truckCount > 1 ? ` × ${truckCount}` : ''}`
+                        : `no €${currentVehiclePrice}`}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#6b7280', fontWeight: '500' }}>
+                      aptuvenā cena
+                    </Text>
+                  </View>
+                )}
+
+                {/* ── Summary chips ── */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    marginBottom: 22,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 20,
+                      paddingHorizontal: 13,
+                      paddingVertical: 7,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
+                      {VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
+                    </Text>
+                  </View>
+                  {activeDesc ? (
+                    <View
+                      style={{
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: 20,
+                        paddingHorizontal: 13,
+                        paddingVertical: 7,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
+                        {activeDesc}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {selectedDay ? (
+                    <View
+                      style={{
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: 20,
+                        paddingHorizontal: 13,
+                        paddingVertical: 7,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
+                        {new Date(selectedDay).toLocaleDateString('lv-LV', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View
+                    style={{
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 20,
+                      paddingHorizontal: 13,
+                      paddingVertical: 7,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
+                      {pickupWindow === 'AM'
+                        ? '8:00–12:00'
+                        : pickupWindow === 'PM'
+                          ? '12:00–17:00'
+                          : 'Jebkurā laikā'}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      backgroundColor: '#f3f4f6',
+                      borderRadius: 20,
+                      paddingHorizontal: 13,
+                      paddingVertical: 7,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
+                      {pricingMode === 'FLAT' ? 'Par pārvadājumu' : 'Par tonnu'}
+                    </Text>
+                  </View>
+                  {truckCount > 1 && (
+                    <View
+                      style={{
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: 20,
+                        paddingHorizontal: 13,
+                        paddingVertical: 7,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
+                        {truckCount} auto
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* ── Save address toggles ── */}
+                {user && (
+                  <View style={{ marginBottom: 20 }}>
+                    <TouchableOpacity
+                      style={s.saveAddrRow}
+                      onPress={() => setSavePickup((v) => !v)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          s.saveAddrCheck,
+                          savePickup && { backgroundColor: '#111827', borderColor: '#111827' },
+                        ]}
+                      >
+                        {savePickup && <Check size={14} color="#fff" />}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.saveAddrLabel}>Saglabāt iekraušanas adresi</Text>
+                        <Text style={s.saveAddrSub} numberOfLines={1}>
+                          {pickupPicked?.address}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.saveAddrRow, { borderBottomWidth: 0 }]}
+                      onPress={() => setSaveDropoff((v) => !v)}
+                      activeOpacity={0.7}
+                    >
+                      <View
+                        style={[
+                          s.saveAddrCheck,
+                          saveDropoff && { backgroundColor: '#111827', borderColor: '#111827' },
+                        ]}
+                      >
+                        {saveDropoff && <Check size={14} color="#fff" />}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.saveAddrLabel}>Saglabāt izkraušanas adresi</Text>
+                        <Text style={s.saveAddrSub} numberOfLines={1}>
+                          {dropoffPicked?.address}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* ── Contact form ── */}
+                <View style={{ gap: 12, marginBottom: 20 }}>
                   <TextInputField
-                    placeholder="Cena par tonnu (€/t) *"
-                    keyboardType="numeric"
-                    value={pricePerTonneText}
-                    onChangeText={setPricePerTonneText}
+                    placeholder="Kontaktpersona *"
+                    value={siteContactName}
+                    onChangeText={setSiteContactName}
                     containerStyle={{
-                      backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
+                      backgroundColor: '#f3f4f6',
+                      borderWidth: 0,
+                      borderRadius: 12,
                     }}
                   />
+                  <TextInputField
+                    placeholder="Tālrunis *"
+                    keyboardType="phone-pad"
+                    value={siteContactPhone}
+                    onChangeText={setSiteContactPhone}
+                    containerStyle={{
+                      backgroundColor: '#f3f4f6',
+                      borderWidth: 0,
+                      borderRadius: 12,
+                    }}
+                  />
+                  <TextInputField
+                    placeholder="Piezīmes (vārtu kods, bīstama krava...)"
+                    multiline
+                    value={notes}
+                    onChangeText={setNotes}
+                    containerStyle={{
+                      backgroundColor: '#f3f4f6',
+                      borderWidth: 0,
+                      borderRadius: 12,
+                    }}
+                  />
+                  {pricingMode === 'FLAT' ? (
+                    <>
+                      <TextInputField
+                        placeholder="Piedāvātā cena (€) — pēc izvēles"
+                        keyboardType="numeric"
+                        value={offeredRateText}
+                        onChangeText={setOfferedRateText}
+                        containerStyle={{
+                          backgroundColor: '#f3f4f6',
+                          borderWidth: 0,
+                          borderRadius: 12,
+                        }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: '#6b7280',
+                          marginTop: -4,
+                          paddingHorizontal: 4,
+                        }}
+                      >
+                        Neobligāti — norādiet summu, lai ātrāk atrastu pārvadātāju.
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <TextInputField
+                        placeholder="Cena par tonnu (€/t) *"
+                        keyboardType="numeric"
+                        value={pricePerTonneText}
+                        onChangeText={setPricePerTonneText}
+                        containerStyle={{
+                          backgroundColor: '#f3f4f6',
+                          borderWidth: 0,
+                          borderRadius: 12,
+                        }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: '#6b7280',
+                          marginTop: -4,
+                          paddingHorizontal: 4,
+                        }}
+                      >
+                        Obligāti — cena tiek aprēķināta pēc kravas svara.
+                      </Text>
+                    </>
+                  )}
+                </View>
+
+                {/* ── Payment method ── */}
+                <WizardPaymentMethodPicker
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  isLoggedIn={!!user}
+                />
+
+                {/* ── Footnote ── */}
+                <View style={{ paddingTop: 16, paddingBottom: 4 }}>
                   <Text
                     style={{
-                      fontSize: 12,
-                      color: '#6b7280',
-                      marginTop: -4,
-                      marginBottom: 4,
-                      paddingHorizontal: 4,
+                      fontFamily: 'Inter_400Regular',
+                      fontSize: 13,
+                      color: colors.textMuted,
+                      textAlign: 'center',
+                      lineHeight: 18,
                     }}
                   >
-                    Obligāti — cena tiek aprēķināta pēc kravas svara.
+                    Cenu un izbraukšanas laiku apstiprināsim pa tālruni.
                   </Text>
-                </>
-              )}
-            </View>
-
-            {/* Payment method */}
-            <SectionLabel label="APMAKSAS VEIDS" />
-            <WizardPaymentMethodPicker
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-              isLoggedIn={!!user}
-            />
-            <View style={{ height: 16 }} />
-            {/* Footnote: this is a request, not an instant booking */}
-            <View style={{ paddingHorizontal: 4, paddingBottom: 8 }}>
-              <Text
-                style={{
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 13,
-                  color: colors.textMuted,
-                  textAlign: 'center',
-                  lineHeight: 18,
-                }}
-              >
-                Cenu un izbraukšanas laiku apstiprināsim pa tālruni.
-              </Text>
-            </View>
-          </ScrollView>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
         )}
       </WizardLayout>
       <WizardAuthGate

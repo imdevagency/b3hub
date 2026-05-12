@@ -1,9 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Linking,
+  Pressable,
+} from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { TileGrid, TileItem, H_PAD } from '@/components/ui/TileGrid';
 import { ListRow } from '@/components/ui/ListRow';
+import { AvatarImage } from '@/components/ui/AvatarImage';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useMode } from '@/lib/mode-context';
@@ -30,6 +37,7 @@ import {
   HardHat,
   Recycle,
   CreditCard,
+  ChevronRight,
 } from 'lucide-react-native';
 
 const MARKET_PARTIES = [
@@ -43,122 +51,84 @@ export default function MoreScreen() {
   const { user, isLoading } = useAuth();
   useMode();
   const router = useRouter();
-
   const requireAuth = useRequireAuth();
-
   const handleLogout = useLogoutConfirm();
 
-  // ── Main navigation tiles (auth-required) ────────────────────
-  const mainTiles: TileItem[] = user
-    ? [
-        {
-          icon: User,
-          label: 'Profils',
-          onPress: () => router.push('/(buyer)/profile'),
-        },
-        {
-          icon: MessageCircle,
-          label: 'Ziņojumi',
-          onPress: requireAuth(() => router.push('/messages')),
-        },
-        {
-          icon: FileText,
-          label: 'Dokumenti',
-          // Rēķini + Sertifikāti are tabs inside the Documents hub — no separate tile needed
-          onPress: requireAuth(() => router.push('/(buyer)/(account)/documents')),
-        },
-        {
-          icon: MapPin,
-          label: 'Adreses',
-          onPress: requireAuth(() => router.push('/(buyer)/(account)/saved-addresses')),
-        },
-        {
-          icon: CreditCard,
-          label: 'Maksājumi',
-          onPress: requireAuth(() => router.push('/(buyer)/(account)/payment-methods')),
-        },
-        {
-          icon: Bell,
-          label: 'Paziņojumi',
-          onPress: requireAuth(() => router.push('/notifications')),
-        },
-        {
-          icon: AlertCircle,
-          label: 'Strīdi',
-          onPress: requireAuth(() => router.push('/(buyer)/(account)/disputes')),
-        },
-      ]
-    : [];
+  const isBusinessUser = !!(user?.isCompany || user?.company?.id);
 
-  // ── Always-public tiles (guests + authenticated) ──────────────
-  const publicTiles: TileItem[] = [
+  // Uber-style quick actions row (top row under profile)
+  const quickActions = [
+    { icon: HelpCircle, label: 'Palīdzība', onPress: () => router.push('/help') },
     {
-      icon: Settings,
-      label: 'Iestatījumi',
-      onPress: () => router.push('/settings'),
+      icon: CreditCard,
+      label: 'Maksājumi',
+      onPress: requireAuth(() => router.push('/(buyer)/(account)/payment-methods')),
+    },
+    {
+      icon: MessageCircle,
+      label: 'Ziņojumi',
+      onPress: requireAuth(() => router.push('/messages')),
     },
   ];
 
-  // ── Company-only tiles (company members + sole traders with a linked company) ──
-  const isBusinessUser = !!(user?.isCompany || user?.company?.id);
-  const companyTiles: TileItem[] = isBusinessUser
-    ? [
-        {
-          icon: BarChart2,
-          label: 'Analītika',
-          // Full BI lives at web portal — open directly; mobile analytics screen is a stub
-          onPress: () => Linking.openURL('https://b3hub.lv/dashboard/analytics').catch(() => null),
-        },
-        // Sertifikāti tab is inside the Documents hub — no separate tile needed
-        {
-          icon: Calendar,
-          label: 'Grafiki',
-          onPress: () => router.push('/(buyer)/(account)/schedules'),
-        },
-        {
-          icon: Building2,
-          label: 'Uzņēmums',
-          onPress: () => Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null),
-        },
-        {
-          icon: FileText,
-          label: 'Rāmjlīgumi',
-          onPress: () => router.push('/(buyer)/framework-contracts'),
-        },
-      ]
-    : [];
-
-  // ── Become-a-partner tiles — any authenticated user can apply ─
-  // A homeowner who buys a truck should be able to apply as a carrier.
-  // Sole traders who applied and were approved get isCompany=true set server-side.
-  const becomeTiles: TileItem[] = user
-    ? [
-        ...(!user.canSell
-          ? [
-              {
-                icon: Package,
-                label: 'Piegādātājs',
-                onPress: () => router.push('/(auth)/apply-role?type=supplier' as never),
-              },
-            ]
-          : []),
-        ...(!user.canTransport
-          ? [
-              {
-                icon: Truck,
-                label: 'Pārvadātājs',
-                onPress: () => router.push('/(auth)/apply-role?type=carrier' as never),
-              },
-            ]
-          : []),
-      ]
-    : [];
-
   return (
-    <ScreenContainer topInset={0} noAnimation>
-      <ScreenHeader title="Vairāk" />
+    <ScreenContainer noAnimation bg={colors.bgScreen}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        {/* ── Marketing hero (guests only) ─────────────────── */}
+        {/* ── Header / Profile block ── */}
+        <View style={s.headerBlock}>
+          {isLoading ? null : user ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={s.profileRow}
+              onPress={() => router.push('/(buyer)/profile')}
+            >
+              <View style={s.profileTextCol}>
+                <Text style={s.profileName} numberOfLines={1}>
+                  {user.email?.split('@')[0] || 'Lietotājs'}
+                </Text>
+                <View style={s.ratingBadge}>
+                  <Text style={s.ratingText}>
+                    {isBusinessUser ? 'Uzņēmuma konts' : 'Privātpersona'}
+                  </Text>
+                </View>
+              </View>
+              <View style={s.profileAvatarWrap}>
+                <AvatarImage initials={(user.email?.[0] || 'U').toUpperCase()} size={64} />
+                <ChevronRight size={24} color={colors.textDisabled} style={{ marginLeft: 8 }} />
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={s.guestHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.guestWelcome}>Sveiki!</Text>
+                <Text style={s.guestSub}>Pievienojies B3Hub, lai veiktu pasūtījumus</Text>
+              </View>
+              <View style={s.guestAvatarSub}>
+                <User size={32} color={colors.textDisabled} />
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* ── Quick Actions Row ── */}
+        <View style={s.quickActionsWrap}>
+          {quickActions.map((action, i) => (
+            <TouchableOpacity
+              key={i}
+              style={s.quickActionCard}
+              activeOpacity={0.7}
+              onPress={() => {
+                haptics.light();
+                action.onPress();
+              }}
+            >
+              <action.icon size={28} color={colors.textPrimary} strokeWidth={1.5} />
+              <Text style={s.quickActionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Marketing Hero for Guests ── */}
         {!isLoading && !user && (
           <View style={s.heroCard}>
             <Text style={s.heroTagline}>MARĶETPLEISS</Text>
@@ -181,46 +151,117 @@ export default function MoreScreen() {
             </View>
           </View>
         )}
-        {mainTiles.length > 0 && <TileGrid tiles={mainTiles} />}
 
-        {/* ── Company tiles ──────────────────────────────────── */}
-        {companyTiles.length > 0 && (
+        {/* ── Standard Lists ── */}
+
+        {user && (
+          <View style={s.listGroup}>
+            <ListRow
+              icon={MapPin}
+              label="Saglabātās adreses"
+              onPress={() => router.push('/(buyer)/(account)/saved-addresses')}
+            />
+            <ListRow
+              icon={FileText}
+              label="Dokumenti un rēķini"
+              onPress={() => router.push('/(buyer)/(account)/documents')}
+            />
+            <ListRow
+              icon={AlertCircle}
+              label="Strīdi"
+              onPress={() => router.push('/(buyer)/(account)/disputes')}
+            />
+            <ListRow
+              icon={Bell}
+              label="Paziņojumi"
+              onPress={() => router.push('/notifications')}
+              last
+            />
+          </View>
+        )}
+
+        {isBusinessUser && (
           <>
-            <Text style={s.sectionLabel}>UZŅĒMUMS</Text>
-            <TileGrid tiles={companyTiles} />
+            <Text style={s.sectionTitle}>Uzņēmums</Text>
+            <View style={s.listGroup}>
+              <ListRow
+                icon={Building2}
+                label="Mans uzņēmums"
+                onPress={() =>
+                  Linking.openURL('https://b3hub.lv/dashboard/company').catch(() => null)
+                }
+              />
+              <ListRow
+                icon={BarChart2}
+                label="Analītika"
+                onPress={() =>
+                  Linking.openURL('https://b3hub.lv/dashboard/analytics').catch(() => null)
+                }
+              />
+              <ListRow
+                icon={Calendar}
+                label="Grafiki"
+                onPress={() => router.push('/(buyer)/(account)/schedules')}
+              />
+              <ListRow
+                icon={FileText}
+                label="Rāmjlīgumi"
+                onPress={() => router.push('/(buyer)/framework-contracts')}
+                last
+              />
+            </View>
           </>
         )}
 
-        {/* ── Become a partner ───────────────────────────────── */}
-        {becomeTiles.length > 0 && (
+        {user && (!user.canSell || !user.canTransport) && (
           <>
-            <Text style={s.sectionLabel}>KĻŪT PAR PARTNERI</Text>
-            <TileGrid tiles={becomeTiles} />
+            <Text style={s.sectionTitle}>Kļūt par partneri</Text>
+            <View style={s.listGroup}>
+              {!user.canSell && (
+                <ListRow
+                  icon={Package}
+                  label="Kļūt par piegādātāju"
+                  onPress={() => router.push('/(auth)/apply-role?type=supplier' as never)}
+                  last={user.canTransport}
+                />
+              )}
+              {!user.canTransport && (
+                <ListRow
+                  icon={Truck}
+                  label="Kļūt par pārvadātāju"
+                  onPress={() => router.push('/(auth)/apply-role?type=carrier' as never)}
+                  last
+                />
+              )}
+            </View>
           </>
         )}
 
-        {/* ── Public tiles (settings — always visible) ───────── */}
-        <Text style={s.sectionLabel}>KONTS</Text>
-        <TileGrid tiles={publicTiles} />
-
-        {/* ── Help & support ─────────────────────────────────── */}
-        <Text style={s.sectionLabel}>PALĪDZĪBA</Text>
-        <View style={s.listCard}>
-          <ListRow icon={HelpCircle} label="Palīdzība / BUJ" onPress={() => router.push('/help')} />
+        <Text style={s.sectionTitle}>Iestatījumi</Text>
+        <View style={s.listGroup}>
+          <ListRow
+            icon={Settings}
+            label="Lietotnes iestatījumi"
+            onPress={() => router.push('/settings')}
+          />
           <ListRow
             icon={MessageCircle}
-            label="Atbalsts"
-            last
+            label="Atbalsta čats"
             onPress={() => router.push('/support-chat' as never)}
+            last={!user}
           />
+          {user && (
+            <ListRow
+              icon={LogOut}
+              label="Iziet no konta"
+              isDestructive
+              onPress={handleLogout}
+              last
+            />
+          )}
         </View>
 
-        {/* ── Sign out ───────────────────────────────────────── */}
-        {user ? (
-          <View style={s.listCard}>
-            <ListRow icon={LogOut} label="Iziet" isDestructive last onPress={handleLogout} />
-          </View>
-        ) : (
+        {!user && (
           <View style={s.guestActions}>
             <TouchableOpacity
               style={s.guestPrimary}
@@ -230,7 +271,7 @@ export default function MoreScreen() {
                 router.push('/(auth)/register' as never);
               }}
             >
-              <Text style={s.guestPrimaryText}>Izveidot kontu</Text>
+              <Text style={s.guestPrimaryText}>Reģistrēties</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={s.guestSecondary}
@@ -245,7 +286,7 @@ export default function MoreScreen() {
           </View>
         )}
 
-        <View style={{ height: 32 }} />
+        <View style={{ height: 48 }} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -254,38 +295,135 @@ export default function MoreScreen() {
 const s = StyleSheet.create({
   scroll: {
     paddingBottom: 32,
+    paddingTop: 16,
   },
 
-  // Section label
-  sectionLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    fontWeight: '600',
+  // Header
+  headerBlock: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    marginTop: 16,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  profileTextCol: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  profileAvatarWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileName: {
+    fontSize: 32,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgSubtle,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 100,
+    gap: 6,
+  },
+  ratingText: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  guestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  guestWelcome: {
+    fontSize: 32,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 6,
+  },
+  guestSub: {
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
     color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginHorizontal: H_PAD + 4,
+    lineHeight: 22,
+  },
+  guestAvatarSub: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.bgSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 16,
+  },
+
+  // Quick actions
+  quickActionsWrap: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 24,
+  },
+  quickActionCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    gap: 10,
+  },
+  quickActionLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+
+  // Lists
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 10,
   },
-
-  // List card
-  listCard: {
-    backgroundColor: colors.bgCard,
-    marginHorizontal: H_PAD,
-    borderRadius: 14,
+  listGroup: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
     overflow: 'hidden',
-    marginBottom: 8,
   },
+
   // Marketing hero
   heroCard: {
     backgroundColor: colors.bgCard,
-    borderRadius: 18,
-    marginHorizontal: H_PAD,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
     padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   heroTagline: {
     fontSize: 10,
@@ -324,8 +462,6 @@ const s = StyleSheet.create({
     borderRadius: 100,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   partyIconWrap: {
     width: 22,
@@ -342,12 +478,12 @@ const s = StyleSheet.create({
 
   // Guest actions
   guestActions: {
-    marginHorizontal: H_PAD,
+    marginHorizontal: 16,
     marginTop: 16,
-    gap: 10,
+    gap: 12,
   },
   guestPrimary: {
-    backgroundColor: '#166534',
+    backgroundColor: '#111827',
     borderRadius: 100,
     paddingVertical: 16,
     alignItems: 'center',
