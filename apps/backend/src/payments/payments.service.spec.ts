@@ -18,6 +18,7 @@ function makeUser(overrides: Partial<RequestingUser> = {}): RequestingUser {
     email: 'test@example.com',
     userType: 'BUYER',
     isCompany: false,
+    canBuy: false,
     canSell: false,
     canTransport: false,
     canSkipHire: false,
