@@ -17,6 +17,7 @@ import {
 } from '@/lib/api';
 import { blobFetch } from '@/lib/api/common';
 import {
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -56,6 +57,9 @@ function InvoicesPageInner() {
   const { token } = useRequireAuth();
   const searchParams = useSearchParams();
   const initialProjectId = searchParams.get('projectId') ?? '';
+
+  const paymentSuccess = searchParams.get('paid') === '1';
+  const paymentFailed = searchParams.get('failed') === '1';
 
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [page, setPage] = useState(1);
@@ -257,6 +261,21 @@ function InvoicesPageInner() {
             </Button>
           )}
         </div>
+      )}
+
+      {paymentSuccess && (
+        <div className="flex items-center gap-3 rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+          <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+          <p className="text-sm text-green-800 font-medium">
+            Maksājums veiksmīgs! Rēķins ir atzīmēts kā apmaksāts.
+          </p>
+        </div>
+      )}
+
+      {paymentFailed && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          Maksājums neizdevās. Lūdzu, mēģiniet vēlreiz vai sazinieties ar atbalstu.
+        </p>
       )}
 
       {error && (

@@ -371,10 +371,12 @@ export class OrdersService {
       select: { creditLimit: true, creditUsed: true, paymentTerms: true },
     });
     const paymentTerms = buyerProfile?.paymentTerms ?? null;
+    // Buyer's explicit picker choice wins; fall back to paymentTerms-based logic
     const paymentMethod: PaymentMethod =
-      paymentTerms && /^NET\d+$/i.test(paymentTerms)
+      orderData.paymentMethod ??
+      (paymentTerms && /^NET\d+$/i.test(paymentTerms)
         ? PaymentMethod.INVOICE
-        : PaymentMethod.CARD;
+        : PaymentMethod.CARD);
     if (buyerProfile?.creditLimit != null) {
       // Use a raw UPDATE with a WHERE guard to atomically check + increment.
       // This prevents TOCTOU races when two orders are placed simultaneously.

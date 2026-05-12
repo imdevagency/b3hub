@@ -15,6 +15,7 @@ import { Type } from 'class-transformer';
 import {
   OrderType,
   MaterialUnit,
+  PaymentMethod,
   PaymentStatus,
   OrderFulfillmentType,
 } from '@prisma/client';
@@ -100,6 +101,10 @@ export class CreateOrderDto {
   @Min(-180)
   @Max(180)
   unloadLng?: number;
+
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 
   @IsOptional()
   @IsEnum(PaymentStatus)
