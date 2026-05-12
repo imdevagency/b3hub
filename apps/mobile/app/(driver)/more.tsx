@@ -14,7 +14,6 @@ import {
   CalendarDays,
   Truck,
   Package,
-  Toilet,
   FileText,
   MessageCircle,
   Bell,
@@ -48,7 +47,7 @@ export default function DriverMoreScreen() {
             onPress: () => router.push('/(driver)/skips'),
           } as TileItem,
           {
-            icon: Toilet,
+            icon: Building2,
             label: 'Kabīnes',
             onPress: () => router.push('/(driver)/toilet-cabins'),
           } as TileItem,

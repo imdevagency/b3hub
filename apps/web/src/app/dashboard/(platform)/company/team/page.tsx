@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Sheet,
   SheetContent,
@@ -35,8 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { PageHeader } from '@/components/ui/page-header';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,115 +141,132 @@ function InviteDialog({ open, onClose, onInvited, token, canInviteManager }: Inv
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100">
-        <SheetHeader>
-          <SheetTitle>Pievienot darbinieku</SheetTitle>
-          <SheetDescription>
-            Izveidojiet kontu jaunam komandas loceklim. Pagaidu parole tiks parādīta vienu reizi.
-          </SheetDescription>
-        </SheetHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-          <div className="grid grid-cols-2 gap-3">
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100 p-0 flex flex-col">
+        <div className="px-6 pt-8 pb-4 border-b border-slate-100">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-extrabold text-black tracking-tight">
+              Pievienot darbinieku
+            </SheetTitle>
+            <SheetDescription className="text-sm text-slate-400 font-medium mt-1">
+              Izveidojiet kontu jaunam komandas loceklim. Pagaidu parole tiks parādīta vienu reizi.
+            </SheetDescription>
+          </SheetHeader>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto">
+          <div className="space-y-5 px-6 py-6">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="inv-first">Vārds *</Label>
+                <Input
+                  id="inv-first"
+                  value={form.firstName}
+                  onChange={set('firstName')}
+                  placeholder="Jānis"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="inv-last">Uzvārds *</Label>
+                <Input
+                  id="inv-last"
+                  value={form.lastName}
+                  onChange={set('lastName')}
+                  placeholder="Bērziņš"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="inv-first">Vārds *</Label>
+              <Label htmlFor="inv-email">E-pasts</Label>
               <Input
-                id="inv-first"
-                value={form.firstName}
-                onChange={set('firstName')}
-                placeholder="Jānis"
+                id="inv-email"
+                type="email"
+                value={form.email}
+                onChange={set('email')}
+                placeholder="jberzins@uznemums.lv"
               />
             </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="inv-last">Uzvārds *</Label>
+              <Label htmlFor="inv-phone">Tālrunis</Label>
               <Input
-                id="inv-last"
-                value={form.lastName}
-                onChange={set('lastName')}
-                placeholder="Bērziņš"
+                id="inv-phone"
+                value={form.phone}
+                onChange={set('phone')}
+                placeholder="+371 20000000"
               />
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="inv-email">E-pasts</Label>
-            <Input
-              id="inv-email"
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              placeholder="jberzins@uznemums.lv"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="inv-phone">Tālrunis</Label>
-            <Input
-              id="inv-phone"
-              value={form.phone}
-              onChange={set('phone')}
-              placeholder="+371 20000000"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Loma</Label>
-            <Select
-              value={form.companyRole}
-              onValueChange={(v) => setForm((f) => ({ ...f, companyRole: v as CompanyRole }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {canInviteManager && <SelectItem value="MANAGER">Pārvaldnieks</SelectItem>}
-                <SelectItem value="DRIVER">Vadītājs</SelectItem>
-                <SelectItem value="MEMBER">Dalībnieks</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Atļaujas</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.canTransport ?? false}
-                  onChange={(e) => setForm((f) => ({ ...f, canTransport: e.target.checked }))}
-                  className="rounded"
-                />
-                <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                Var transportēt
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.canSell ?? false}
-                  onChange={(e) => setForm((f) => ({ ...f, canSell: e.target.checked }))}
-                  className="rounded"
-                />
-                <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                Var pārdot
-              </label>
+            <div className="space-y-1.5">
+              <Label>Loma</Label>
+              <Select
+                value={form.companyRole}
+                onValueChange={(v) => setForm((f) => ({ ...f, companyRole: v as CompanyRole }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {canInviteManager && <SelectItem value="MANAGER">Pārvaldnieks</SelectItem>}
+                  <SelectItem value="DRIVER">Vadītājs</SelectItem>
+                  <SelectItem value="MEMBER">Dalībnieks</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Atļaujas</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.canTransport ?? false}
+                    onChange={(e) => setForm((f) => ({ ...f, canTransport: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+                  Var transportēt
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.canSell ?? false}
+                    onChange={(e) => setForm((f) => ({ ...f, canSell: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                  Var pārdot
+                </label>
+              </div>
+            </div>
+
+            {err && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {err}
+              </p>
+            )}
           </div>
-
-          {err && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              {err}
-            </p>
-          )}
-
-          <SheetFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-              Atcelt
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Pievienot
-            </Button>
-          </SheetFooter>
+          <div className="px-6 pb-8 pt-4 border-t border-slate-100 mt-auto">
+            <SheetFooter className="flex flex-row gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+                className="flex-1 rounded-xl font-bold shadow-none"
+              >
+                Atcelt
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="flex-1 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-none"
+              >
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Pievienot
+              </Button>
+            </SheetFooter>
+          </div>
         </form>
       </SheetContent>
     </Sheet>
@@ -377,70 +391,93 @@ function EditDialog({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100">
-        <SheetHeader>
-          <SheetTitle>Rediģēt dalībnieku</SheetTitle>
-          <SheetDescription>
-            {member?.firstName} {member?.lastName}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 pt-1">
-          <div className="space-y-1.5">
-            <Label>Loma</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as CompanyRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {canPromoteToManager && <SelectItem value="MANAGER">Pārvaldnieks</SelectItem>}
-                <SelectItem value="DRIVER">Vadītājs</SelectItem>
-                <SelectItem value="MEMBER">Dalībnieks</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Atļaujas</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input
-                  type="checkbox"
-                  checked={canTransport}
-                  onChange={(e) => setCanTransport(e.target.checked)}
-                  className="rounded"
-                />
-                <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                Var transportēt
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
-                <input
-                  type="checkbox"
-                  checked={canSell}
-                  onChange={(e) => setCanSell(e.target.checked)}
-                  className="rounded"
-                />
-                <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                Var pārdot
-              </label>
-            </div>
-          </div>
-
-          {err && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              {err}
-            </p>
-          )}
+      <SheetContent className="sm:max-w-md w-[90vw] sm:w-100 p-0 flex flex-col">
+        <div className="px-6 pt-8 pb-4 border-b border-slate-100">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-extrabold text-black tracking-tight">
+              Rediģēt dalībnieku
+            </SheetTitle>
+            <SheetDescription className="text-sm text-slate-400 font-medium mt-1">
+              {member?.firstName} {member?.lastName}
+            </SheetDescription>
+          </SheetHeader>
         </div>
-        <SheetFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Atcelt
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Saglabāt
-          </Button>
-        </SheetFooter>
+
+        <div className="flex flex-col flex-1 overflow-y-auto">
+          <div className="space-y-6 px-6 py-6">
+            <div className="space-y-2">
+              <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Loma
+              </Label>
+              <Select value={role} onValueChange={(v) => setRole(v as CompanyRole)}>
+                <SelectTrigger className="rounded-xl border-slate-200 font-bold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {canPromoteToManager && <SelectItem value="MANAGER">Pārvaldnieks</SelectItem>}
+                  <SelectItem value="DRIVER">Vadītājs</SelectItem>
+                  <SelectItem value="MEMBER">Dalībnieks</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Atļaujas
+              </Label>
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-slate-200 px-4 py-3 hover:bg-slate-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={canTransport}
+                    onChange={(e) => setCanTransport(e.target.checked)}
+                    className="rounded"
+                  />
+                  <Truck className="h-4 w-4 text-slate-400 shrink-0" />
+                  <span className="text-sm font-bold text-black">Var transportēt</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer rounded-xl border border-slate-200 px-4 py-3 hover:bg-slate-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={canSell}
+                    onChange={(e) => setCanSell(e.target.checked)}
+                    className="rounded"
+                  />
+                  <Package className="h-4 w-4 text-slate-400 shrink-0" />
+                  <span className="text-sm font-bold text-black">Var pārdot</span>
+                </label>
+              </div>
+            </div>
+
+            {err && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {err}
+              </p>
+            )}
+          </div>
+
+          <div className="px-6 pb-8 pt-4 border-t border-slate-100 mt-auto">
+            <SheetFooter className="flex flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+                className="flex-1 rounded-xl font-bold shadow-none"
+              >
+                Atcelt
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-none"
+              >
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Saglabāt
+              </Button>
+            </SheetFooter>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -529,113 +566,114 @@ export default function CompanyTeamPage() {
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <PageHeader
-        title="Komanda"
-        description="Pārvaldiet uzņēmuma darbiniekus un to atļaujas."
-        action={
-          canManage ? (
-            <Button onClick={() => setInviteOpen(true)} className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              Pievienot darbinieku
-            </Button>
-          ) : undefined
-        }
-      />
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-end justify-between mb-10">
+        <div>
+          <h1 className="text-3xl font-extrabold text-black tracking-tight">Komanda</h1>
+          <p className="text-sm text-slate-500 font-bold mt-1">
+            {members.length} dalībnieks{members.length !== 1 ? 'i' : ''}
+          </p>
+        </div>
+        {canManage && (
+          <Button
+            onClick={() => setInviteOpen(true)}
+            className="gap-2 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-none"
+          >
+            <UserPlus className="h-4 w-4" />
+            Pievienot
+          </Button>
+        )}
+      </div>
 
-      <Separator />
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-base">Komandas dalībnieki</CardTitle>
+      {/* Member list */}
+      <div className="rounded-2xl border border-slate-200 overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 text-slate-400 py-16">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm font-bold uppercase tracking-wide">Ielādē…</span>
           </div>
-          <CardDescription>{members.length} dalībnieki uzņēmumā</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Ielādē…</span>
-            </div>
-          ) : errMsg ? (
-            <p className="text-sm text-red-600 flex items-center gap-1 py-4">
-              <AlertCircle className="h-4 w-4" />
-              {errMsg}
-            </p>
-          ) : members.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Nav dalībnieku. Pievienojiet pirmo darbinieku!</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {members.map((m) => (
-                <div key={m.id} className="flex items-center gap-4 py-3">
-                  <Avatar className="h-9 w-9 shrink-0 rounded-lg">
-                    {m.avatar && <AvatarImage src={m.avatar} alt={initials(m)} />}
-                    <AvatarFallback className="rounded-lg bg-muted text-xs font-semibold">
-                      {initials(m)}
-                    </AvatarFallback>
-                  </Avatar>
+        ) : errMsg ? (
+          <p className="text-sm text-red-600 flex items-center gap-1 py-8 px-6">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {errMsg}
+          </p>
+        ) : members.length === 0 ? (
+          <div className="text-center py-16 text-slate-400">
+            <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-bold">Nav dalībnieku</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {members.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors group"
+              >
+                <Avatar className="h-10 w-10 shrink-0 rounded-full">
+                  {m.avatar && <AvatarImage src={m.avatar} alt={initials(m)} />}
+                  <AvatarFallback className="rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                    {initials(m)}
+                  </AvatarFallback>
+                </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">
-                        {m.firstName} {m.lastName}
-                      </span>
-                      <RoleBadge role={m.companyRole} />
-                      {statusBadge(m.status)}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                      {m.email && <span>{m.email}</span>}
-                      {m.phone && <span>{m.phone}</span>}
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-black">
+                      {m.firstName} {m.lastName}
+                    </span>
+                    <RoleBadge role={m.companyRole} />
+                    {statusBadge(m.status)}
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground">
-                    {m.canTransport && (
-                      <span className="flex items-center gap-1 bg-blue-50 text-blue-700 rounded-full px-2 py-0.5">
-                        <Truck className="h-3 w-3" />
-                        Transport
-                      </span>
-                    )}
-                    {m.canSell && (
-                      <span className="flex items-center gap-1 bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">
-                        <Package className="h-3 w-3" />
-                        Pārdot
-                      </span>
-                    )}
+                  <div className="text-xs text-slate-400 font-bold mt-0.5 flex items-center gap-2 flex-wrap">
+                    {m.email && <span>{m.email}</span>}
+                    {m.phone && <span>{m.phone}</span>}
                   </div>
+                </div>
 
-                  {canManage && m.companyRole !== 'OWNER' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditTarget(m)}>
-                          Rediģēt
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                          onClick={() => setRemoveTarget(m)}
-                        >
-                          Noņemt no komandas
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                <div className="flex items-center gap-2 shrink-0 text-xs">
+                  {m.canTransport && (
+                    <span className="flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 font-bold">
+                      <Truck className="h-3 w-3" />
+                      Transport
+                    </span>
+                  )}
+                  {m.canSell && (
+                    <span className="flex items-center gap-1 bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 font-bold">
+                      <Package className="h-3 w-3" />
+                      Pārdot
+                    </span>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                {canManage && m.companyRole !== 'OWNER' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditTarget(m)}>Rediģēt</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                        onClick={() => setRemoveTarget(m)}
+                      >
+                        Noņemt no komandas
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Invite dialog */}
       <InviteDialog

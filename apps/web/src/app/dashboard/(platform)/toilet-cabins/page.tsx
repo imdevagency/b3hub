@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SKIP_HIRE_STATUS, StatusBadgeTw } from '@/lib/status-config';
-import { RefreshCw, Toilet, Phone, MapPin, Calendar } from 'lucide-react';
+import { RefreshCw, Home, Phone, MapPin, Calendar } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { lv } from 'date-fns/locale';
 
@@ -107,7 +107,7 @@ export default function ToiletCabinsOperatorPage() {
       <PageHeader
         title="Tualetes kabīnes"
         description="Jūsu piešķirtie tualetes kabīņu nomas pasūtījumi"
-        icon={<Toilet className="size-5" />}
+        icon={<Home className="size-5" />}
         actions={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`size-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -145,7 +145,7 @@ export default function ToiletCabinsOperatorPage() {
         </div>
       ) : orders.length === 0 ? (
         <EmptyState
-          icon={<Toilet className="size-8 text-muted-foreground" />}
+          icon={Home}
           title="Nav pasūtījumu"
           description="Šobrīd nav piešķirtu tualetes kabīņu pasūtījumu šajā kategorijā."
         />

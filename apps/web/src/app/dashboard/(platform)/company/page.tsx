@@ -158,7 +158,7 @@ export default function CompanyPage() {
 
   if (!company) {
     return (
-      <div className="max-w-2xl p-8 text-center text-muted-foreground">
+      <div className="p-8 text-center text-muted-foreground">
         <Building2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
         <p>{errMsg || 'Uzņēmums nav atrasts.'}</p>
       </div>
@@ -166,7 +166,7 @@ export default function CompanyPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Uzņēmuma profils"
         description="Pārvaldiet uzņēmuma informāciju un kontaktdatus."

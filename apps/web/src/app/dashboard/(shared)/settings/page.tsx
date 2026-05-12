@@ -179,7 +179,7 @@ export default function SettingsPage() {
           : 'Stipra';
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <PageHeader title="Iestatījumi" description="Pārvaldiet sava konta informāciju un drošību." />
 
       <Separator />

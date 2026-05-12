@@ -175,7 +175,7 @@ export default function SavedAddressesPage() {
   if (loading) return <PageSpinner />;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Saglabātās adreses"
         description="Pārvaldiet bieži izmantotās piegādes adreses."
