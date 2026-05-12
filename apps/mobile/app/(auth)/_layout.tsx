@@ -6,7 +6,7 @@ export default function AuthLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        ...SCREEN.fade,
+        ...SCREEN.push,
       }}
     />
   );
