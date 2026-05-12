@@ -54,7 +54,7 @@ type PlatformIntegration = {
   description: string;
   href: string;
   icon: React.ElementType;
-  category: 'data' | 'accounting' | 'payments' | 'comms' | 'maps';
+  category: 'data' | 'accounting' | 'payments' | 'comms' | 'maps' | 'regulatory';
   /** 'marketplace' items group by category. 'internal' items appear in a separate B3 Construction section. */
   scope: 'marketplace' | 'internal';
   /** Resolved at runtime — true if admin has saved credentials */
@@ -105,12 +105,12 @@ const INTEGRATIONS: PlatformIntegration[] = [
     id: 'paysera',
     label: 'Paysera',
     scopeLabel: 'Tirgus',
-    description: 'Maksājumu apstrāde — tirgus darījumi, izņemšana piegādātājiem un vadītājiem',
+    description:
+      'Maksājumu apstrāde — tirgus darījumi, izņemšana piegādātājiem, pārvadātājiem un pārstrādes centriem',
     href: '/dashboard/admin/integrations/paysera',
     icon: CreditCard,
     category: 'payments',
     scope: 'marketplace',
-    planned: true,
   },
   // ── Communications
   {
@@ -133,7 +133,6 @@ const INTEGRATIONS: PlatformIntegration[] = [
     icon: Mail,
     category: 'comms',
     scope: 'marketplace',
-    planned: true,
   },
   // ── Maps / Location
   {
@@ -145,7 +144,18 @@ const INTEGRATIONS: PlatformIntegration[] = [
     icon: MapPin,
     category: 'maps',
     scope: 'marketplace',
-    planned: true,
+  },
+  // ── Regulatory / Waste
+  {
+    id: 'apus',
+    label: 'APUS / VVD',
+    scopeLabel: 'Pārstrādes centri',
+    description:
+      'Valsts vides dienesta elektroniskā atkritumu uzskaite — obligāts pārstrādes centriem (MK Nr. 1032)',
+    href: '/dashboard/admin/integrations/apus',
+    icon: Recycle,
+    category: 'regulatory',
+    scope: 'marketplace',
   },
 ];
 
@@ -155,6 +165,7 @@ const CATEGORY_LABELS: Record<PlatformIntegration['category'], string> = {
   payments: 'Maksājumi',
   comms: 'Komunikācija',
   maps: 'Ģeogrāfija',
+  regulatory: 'Regulatīvās prasības',
 };
 
 const CATEGORY_ORDER: PlatformIntegration['category'][] = [
@@ -163,6 +174,7 @@ const CATEGORY_ORDER: PlatformIntegration['category'][] = [
   'payments',
   'comms',
   'maps',
+  'regulatory',
 ];
 
 // ─── Status badge ─────────────────────────────────────────────────────────────

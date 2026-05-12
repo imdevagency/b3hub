@@ -6,6 +6,7 @@ export interface RequestingUser {
   email?: string;
   userType: string; // 'BUYER' | 'ADMIN'  (UserType enum — all non-admin users are BUYER regardless of business role)
   isCompany: boolean;
+  canBuy: boolean; // approved to place orders as a buyer
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
   canSkipHire: boolean; // approved to manage skip hire fleet

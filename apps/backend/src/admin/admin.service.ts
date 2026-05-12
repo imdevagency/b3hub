@@ -17,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { PaymentsService } from '../payments/payments.service';
+import { ApusService } from '../apus/apus.service';
 
 @Injectable()
 export class AdminService {
@@ -25,6 +26,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
+    private readonly apus: ApusService,
   ) {}
 
   private userSelect = {
@@ -2158,17 +2160,42 @@ export class AdminService {
   // ── Platform settings ───────────────────────────────────────────────────────
 
   /** Returns all platform settings as a plain key→value object */
+  // Keys whose values must be masked before sending to the client.
+  // Values are stored in plaintext in PlatformSetting but NEVER returned as-is.
+  private readonly SENSITIVE_SETTING_KEYS = new Set([
+    'apus.apiKey',
+    'paysera.projectSecret',
+    'email.smtpPass',
+    'maps.serverApiKey',
+    'maps.mobileApiKey',
+    'lursoft.apiKey',
+    'bis.apiKey',
+    'jumis.apiKey',
+    'sms.apiKey',
+    'sms.authToken',
+  ]);
+
   async getSettings(): Promise<Record<string, string>> {
     const rows = await this.prisma.platformSetting.findMany();
-    return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return Object.fromEntries(
+      rows.map((r) => [
+        r.key,
+        this.SENSITIVE_SETTING_KEYS.has(r.key) && r.value
+          ? '••••••••' // mask sensitive values
+          : r.value,
+      ]),
+    );
   }
 
-  /** Bulk-upsert settings. Each key/value pair is upserted atomically. */
+  /** Bulk-upsert settings. Sensitive keys with the mask placeholder are skipped. */
   async updateSettings(
     settings: Record<string, string>,
     adminId: string,
   ): Promise<Record<string, string>> {
-    const entries = Object.entries(settings);
+    const entries = Object.entries(settings).filter(
+      // Skip if the client sent back our own mask — key was not changed
+      ([key, value]) => !(this.SENSITIVE_SETTING_KEYS.has(key) && value === '••••••••'),
+    );
     await Promise.all(
       entries.map(([key, value]) =>
         this.prisma.platformSetting.upsert({
@@ -3397,28 +3424,11 @@ export class AdminService {
       return { message: 'Already accepted', record };
     }
 
-    // ── APUS API stub ──────────────────────────────────────────────────────
-    // TODO: Replace this block with the real VVD APUS REST call once API
-    // credentials and spec are obtained from the State Environmental Service.
-    //
-    // Expected request:
-    //   POST https://apus.vvd.gov.lv/api/v1/waste-movements
-    //   Authorization: Bearer ${process.env.APUS_API_KEY}
-    //   Body: { facilityId, wasteCode, weightKg, date, bisNumber }
-    //
-    // Expected response:
-    //   { submissionId: string, status: 'ACCEPTED' | 'PENDING_REVIEW' }
-    const stubSubmissionId = `APUS-STUB-${Date.now()}`;
-    // ── end stub ──────────────────────────────────────────────────────────
+    // Delegate to the ApusService which handles simulation vs real VVD API call.
+    await this.apus.submitWasteRecord(wasteRecordId);
 
-    return this.prisma.wasteRecord.update({
+    return this.prisma.wasteRecord.findUniqueOrThrow({
       where: { id: wasteRecordId },
-      data: {
-        apusStatus: 'SUBMITTED',
-        apusSubmissionId: stubSubmissionId,
-        apusSubmittedAt: new Date(),
-        apusNote: null,
-      },
     });
   }
 
@@ -3426,17 +3436,8 @@ export class AdminService {
    * POST /admin/b3-recycling/apus-bulk-submit
    * Submit all PENDING records for a given recycling center.
    */
-  async adminApusBulkSubmit(centerId: string, adminId: string) {
-    const pending = await this.prisma.wasteRecord.findMany({
-      where: { recyclingCenterId: centerId, apusStatus: 'PENDING' },
-      select: { id: true },
-    });
-    const results = await Promise.allSettled(
-      pending.map((r) => this.adminApusSubmitRecord(r.id, adminId)),
-    );
-    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = results.filter((r) => r.status === 'rejected').length;
-    return { submitted: succeeded, failed, total: pending.length };
+  async adminApusBulkSubmit(centerId: string, _adminId: string) {
+    return this.apus.bulkSubmitForCenter(centerId);
   }
 
   /**

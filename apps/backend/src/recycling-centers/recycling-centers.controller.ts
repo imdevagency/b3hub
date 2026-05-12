@@ -13,8 +13,7 @@ import {
   Post,
   Query,
   UseGuards,
-} from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+} from '@nestjs/common';import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { RecyclingCentersService } from './recycling-centers.service';
@@ -286,5 +285,31 @@ export class RecyclingCentersController {
     if (!user.companyId)
       throw new ForbiddenException('A linked company is required');
     return this.service.cancelIncomingJob(centerId, jobId, user.companyId);
+  }
+
+  // ── Compliance Report ────────────────────────────────────────────────────
+
+  /**
+   * GET /recycling-centers/:id/compliance-report?year=2026&month=4
+   * Monthly VVD waste movement compliance report for a recycling center.
+   * Returns facility info, waste breakdown by EWC code, and APUS status summary.
+   */
+  @Get(':id/compliance-report')
+  getComplianceReport(
+    @Param('id') id: string,
+    @Query('year') year: string,
+    @Query('month') month: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    assertIsRecycler(user);
+    if (!user.companyId)
+      throw new ForbiddenException('A linked company is required');
+    const now = new Date();
+    return this.service.getComplianceReport(
+      id,
+      year ? parseInt(year, 10) : now.getFullYear(),
+      month ? parseInt(month, 10) : now.getMonth() + 1,
+      user.companyId,
+    );
   }
 }

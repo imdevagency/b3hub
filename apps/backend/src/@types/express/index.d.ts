@@ -9,6 +9,7 @@ declare namespace Express {
     email?: string;
     userType: string;
     isCompany: boolean;
+    canBuy: boolean;
     canSell: boolean;
     canTransport: boolean;
     companyId?: string;

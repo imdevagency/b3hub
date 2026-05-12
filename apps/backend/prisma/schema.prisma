@@ -458,6 +458,44 @@ model CarrierPayout {
   @@map("carrier_payouts")
 }
 
+// ── RecyclerPayout ────────────────────────────────────────────────────────────
+// Settlement record for amounts owed TO a recycling facility.
+// Two scenarios:
+//   1. Processing fee: recycler received waste and is owed a disposal/handling fee
+//      from the buyer (routed via B3Hub principal model, NET-30).
+//   2. Buyback payout: recycler collected scrap/metal from buyer and the buyer
+//      is owed money — in this case amount is negative (platform pays the buyer,
+//      not the recycler). RecyclerPayout tracks the recycler's obligation.
+model RecyclerPayout {
+  id        String  @id @default(cuid())
+
+  // Source waste record (the processed intake that generated this obligation)
+  wasteRecord   WasteRecord @relation(fields: [wasteRecordId], references: [id])
+  wasteRecordId String      @unique
+
+  // Recycling company that performed the processing
+  recycler   Company @relation("RecyclerPayouts", fields: [recyclerId], references: [id])
+  recyclerId String
+
+  amount   Float  // EUR; positive = platform owes recycler; negative = recycler owes buyer
+  currency String @default("EUR")
+
+  status  PayoutStatus @default(PENDING)
+  dueDate DateTime     // NET-30 from WasteRecord.processedDate
+
+  paidAt DateTime?
+  payseraTransferId String? // Populated when IBAN transfer is executed
+  notes             String? // Manual override notes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recyclerId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("recycler_payouts")
+}
+
 model User {
   id                 String       @id @default(cuid())
   email              String?      @unique // optional: phone-only registration
@@ -469,6 +507,7 @@ model User {
   userType           UserType     @default(BUYER)
   isCompany          Boolean      @default(false) // true = company account (VAT invoices etc.)
   personalCode       String?      @unique // Latvian personal ID code (personas kods) — individuals only
+  canBuy             Boolean      @default(true)  // approved to place orders as a buyer
   canSell            Boolean      @default(false) // approved to list & sell materials
   canTransport       Boolean      @default(false) // approved to offer transport services
   canSkipHire        Boolean      @default(false) // approved to manage skip hire fleet
@@ -643,6 +682,7 @@ model Company {
   sellerInvoices             Invoice[]             @relation("SellerInvoices")
   supplierPayouts            SupplierPayout[]      @relation("SupplierPayouts")
   carrierPayouts             CarrierPayout[]       @relation("CarrierPayouts")
+  recyclerPayouts            RecyclerPayout[]      @relation("RecyclerPayouts")
   crmLeads                   CrmLead[]
   constructionRateEntries    MaterialRateEntry[]
   constructionEmployees      ConstructionEmployee[]
@@ -1406,9 +1446,15 @@ model WasteRecord {
   apusNote         String?    // rejection reason or manual staff note
   bisNumber        String?    // BIS case reference from source Order (for construction waste)
 
+  // LV/EU waste catalogue code — auto-populated from lv-waste-codes mapping
+  lvWasteCode String? // e.g. "17 01 01" (concrete) — used in APUS submission
+
   // Source Order link (disposal orders that created this record)
   order   Order?  @relation("DisposalWasteRecord", fields: [orderId], references: [id])
   orderId String?
+
+  // Payout obligation (set when processing is complete)
+  recyclerPayout RecyclerPayout?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

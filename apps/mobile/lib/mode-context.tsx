@@ -16,6 +16,7 @@ export const MODE_HOME: Record<AppMode, string> = {
  */
 function defaultModeForUser(
   user: {
+    canBuy?: boolean;
     canSell: boolean;
     canTransport: boolean;
     canRecycle?: boolean;
@@ -44,14 +45,13 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   const availableModes = useMemo<AppMode[]>(() => {
     const modes: AppMode[] = [];
-    // All users can access BUYER — this is a marketplace and anyone may want to order
-    // materials/transport regardless of their primary specialist role.
-    modes.push('BUYER');
+    // BUYER mode is gated by canBuy flag (default true for all accounts unless explicitly revoked by admin)
+    if (user?.canBuy !== false) modes.push('BUYER');
     if (user?.canSell) modes.push('SUPPLIER');
     if (user?.canTransport) modes.push('CARRIER');
     if ((user as any)?.canRecycle) modes.push('RECYCLER');
     return modes;
-  }, [user?.canSell, user?.canTransport, (user as any)?.canRecycle]);
+  }, [user?.canBuy, user?.canSell, user?.canTransport, (user as any)?.canRecycle]);
 
   const [mode, setModeState] = useState<AppMode>(() => defaultModeForUser(user));
 
@@ -61,6 +61,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
       defaultModeForUser(
         user
           ? {
+              canBuy: user.canBuy,
               canSell: user.canSell,
               canTransport: user.canTransport,
               canRecycle: (user as any).canRecycle,

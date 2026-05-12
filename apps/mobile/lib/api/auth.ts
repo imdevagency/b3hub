@@ -12,6 +12,7 @@ export interface User {
   lastName: string;
   userType: UserType;
   isCompany: boolean;
+  canBuy?: boolean;
   canSell: boolean;
   canTransport: boolean;
   canSkipHire?: boolean;

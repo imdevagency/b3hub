@@ -159,6 +159,7 @@ export class AuthService {
       user.email ?? '',
       user.userType,
       user.isCompany,
+      user.canBuy ?? true,
       user.canSell,
       user.canTransport,
       user.canSkipHire,
@@ -292,6 +293,7 @@ export class AuthService {
       user.email ?? '',
       user.userType,
       user.isCompany,
+      user.canBuy ?? true,
       user.canSell,
       user.canTransport,
       user.canSkipHire,
@@ -704,6 +706,7 @@ export class AuthService {
         userType: string;
         status: string;
         isCompany: boolean;
+        canBuy: boolean;
         canSell: boolean;
         canTransport: boolean;
         canSkipHire: boolean;
@@ -721,7 +724,7 @@ export class AuthService {
         features: string[] | null;
       }[]
     >`
-      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canSell", u."canTransport", u."canSkipHire", u."canRecycle",
+      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canBuy", u."canSell", u."canTransport", u."canSkipHire", u."canRecycle",
              u."companyId", u."companyRole",
              u."permCreateContracts", u."permReleaseCallOffs", u."permManageOrders",
              u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry", u."tokenVersion",
@@ -749,6 +752,7 @@ export class AuthService {
       user.email ?? '',
       user.userType,
       user.isCompany,
+      (user as any).canBuy ?? true,
       user.canSell,
       user.canTransport,
       user.canSkipHire,
@@ -949,6 +953,7 @@ export class AuthService {
         existingUser.email ?? '',
         existingUser.userType,
         existingUser.isCompany,
+        existingUser.canBuy ?? true,
         existingUser.canSell,
         existingUser.canTransport,
         existingUser.canSkipHire,
@@ -1030,6 +1035,7 @@ export class AuthService {
       newUser.email ?? '',
       newUser.userType,
       newUser.isCompany,
+      newUser.canBuy ?? true,
       newUser.canSell,
       newUser.canTransport,
       newUser.canSkipHire,
@@ -1059,6 +1065,7 @@ export class AuthService {
     email: string,
     userType: string,
     isCompany: boolean,
+    canBuy: boolean,
     canSell: boolean,
     canTransport: boolean,
     canSkipHire: boolean,
@@ -1081,6 +1088,7 @@ export class AuthService {
       email,
       userType,
       isCompany,
+      canBuy,
       canSell,
       canTransport,
       canSkipHire,

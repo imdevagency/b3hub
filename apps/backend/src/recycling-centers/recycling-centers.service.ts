@@ -25,6 +25,8 @@ import { UpdateWasteRecordDto } from './dto/update-waste-record.dto';
 import { UpsertPricingRuleDto } from './dto/upsert-pricing-rule.dto';
 import { DisposalQuoteQueryDto } from './dto/disposal-quote-query.dto';
 import { DocumentsService } from '../documents/documents.service';
+import { ApusService } from '../apus/apus.service';
+import { getLvWasteCode } from './lv-waste-codes';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ export class RecyclingCentersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly documents: DocumentsService,
+    private readonly apus: ApusService,
   ) {}
 
   // ── Recycling Center CRUD ─────────────────────────────────────────────────
@@ -197,10 +200,27 @@ export class RecyclingCentersService {
     if (center.companyId !== companyId)
       throw new ForbiddenException('Not your recycling center');
 
+    // Resolve bisNumber from linked disposal order (if provided)
+    let resolvedBisNumber: string | null = null;
+    if (dto.orderId) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: dto.orderId },
+        select: { bisNumber: true },
+      });
+      resolvedBisNumber = order?.bisNumber ?? null;
+    }
+
+    // Auto-populate LV waste code from the EWC mapping
+    const lvWasteCode = getLvWasteCode(String(dto.wasteType));
+
+    // APUS status: non-licensed centers don't report to VVD
+    const apusStatus = center.licensed ? 'PENDING' : 'NOT_REQUIRED';
+
     const record = await this.prisma.wasteRecord.create({
       data: {
         recyclingCenterId: centerId,
         containerOrderId: dto.containerOrderId ?? null,
+        orderId: dto.orderId ?? null,
         wasteType: dto.wasteType,
         weight: dto.weight,
         volume: dto.volume ?? null,
@@ -213,6 +233,9 @@ export class RecyclingCentersService {
         weighbridgePhotoUrl: dto.weighbridgePhotoUrl ?? null,
         producedMaterialId: dto.producedMaterialId ?? null,
         certificateUrl: dto.certificateUrl ?? null,
+        lvWasteCode,
+        bisNumber: resolvedBisNumber,
+        apusStatus,
       },
       include: {
         recyclingCenter: { select: { id: true, name: true, city: true } },
@@ -423,7 +446,85 @@ export class RecyclingCentersService {
       data.apusSubmissionId = dto.apusSubmissionId;
     if (dto.apusNote !== undefined) data.apusNote = dto.apusNote;
 
-    return this.prisma.wasteRecord.update({ where: { id: recordId }, data });
+    const updated = await this.prisma.wasteRecord.update({
+      where: { id: recordId },
+      data,
+    });
+
+    // ── Auto-trigger APUS submission when processing is complete ─────────────
+    // Fire-and-forget: do not block the HTTP response on VVD network call.
+    const isTransitioningToProcessed =
+      dto.processingStage === 'PROCESSED' &&
+      record.processingStage !== 'PROCESSED';
+    if (isTransitioningToProcessed && center.licensed) {
+      this.apus.submitWasteRecord(recordId).catch((err: unknown) =>
+        this.logger.warn(
+          `Auto-APUS submission failed for record ${recordId}: ${(err as Error).message}`,
+        ),
+      );
+    }
+
+    // ── Create RecyclerPayout obligation when processing is done ─────────────
+    if (isTransitioningToProcessed) {
+      void this.createRecyclerPayoutIfNeeded(updated, companyId);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Creates a RecyclerPayout obligation when a WasteRecord reaches PROCESSED.
+   * Looks up the pricing rule to determine how much the recycler is owed.
+   * Skips if a payout already exists for this record.
+   */
+  private async createRecyclerPayoutIfNeeded(
+    record: {
+      id: string;
+      recyclingCenterId: string;
+      wasteType: WasteType;
+      weight: number;
+    },
+    companyId: string,
+  ): Promise<void> {
+    try {
+      const existing = await this.prisma.recyclerPayout.findUnique({
+        where: { wasteRecordId: record.id },
+      });
+      if (existing) return;
+
+      const rule = await this.prisma.recyclingCenterPricingRule.findUnique({
+        where: {
+          recyclingCenterId_wasteType: {
+            recyclingCenterId: record.recyclingCenterId,
+            wasteType: record.wasteType,
+          },
+        },
+      });
+
+      // If no pricing rule, create a zero-amount payout as a placeholder
+      const pricePerTonne = rule?.pricePerTonne ?? 0;
+      const amount = parseFloat((pricePerTonne * record.weight).toFixed(2));
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30); // NET-30
+
+      await this.prisma.recyclerPayout.create({
+        data: {
+          wasteRecordId: record.id,
+          recyclerId: companyId,
+          amount,
+          dueDate,
+          status: 'PENDING',
+        },
+      });
+
+      this.logger.log(
+        `RecyclerPayout created for record ${record.id}: €${amount} due ${dueDate.toISOString().slice(0, 10)}`,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `RecyclerPayout creation failed for record ${record.id}: ${(err as Error).message}`,
+      );
+    }
   }
 
   /**
@@ -787,6 +888,172 @@ export class RecyclingCentersService {
     });
     if (!center)
       throw new ForbiddenException('Center not found or access denied');
+  }
+
+  // ── Monthly Compliance Report ─────────────────────────────────────────────
+
+  /**
+   * GET /recycling-centers/:id/compliance-report?year=2026&month=4
+   *
+   * Returns the monthly VVD waste movement summary for a recycling center.
+   * Format mirrors the fields required for MK noteikumi Nr. 1032 monthly report.
+   * Used by the recycler operator to generate the obligatory VVD submission.
+   *
+   * Only the company that owns the center can access this.
+   */
+  async getComplianceReport(
+    centerId: string,
+    year: number,
+    month: number,
+    companyId: string,
+  ) {
+    await this.assertOwns(centerId, companyId);
+
+    const center = await this.prisma.recyclingCenter.findUniqueOrThrow({
+      where: { id: centerId },
+      select: {
+        id: true,
+        name: true,
+        licenceNumber: true,
+        apusRegistrationId: true,
+        licensed: true,
+        city: true,
+        address: true,
+        company: { select: { name: true, registrationNum: true, taxId: true } },
+      },
+    });
+
+    const from = new Date(year, month - 1, 1);
+    const to = new Date(year, month, 1);
+
+    const records = await this.prisma.wasteRecord.findMany({
+      where: {
+        recyclingCenterId: centerId,
+        createdAt: { gte: from, lt: to },
+      },
+      select: {
+        id: true,
+        wasteType: true,
+        weight: true,
+        recyclableWeight: true,
+        recyclingRate: true,
+        processingStage: true,
+        rcGrade: true,
+        lvWasteCode: true,
+        bisNumber: true,
+        apusStatus: true,
+        apusSubmissionId: true,
+        weighbridgeTicketRef: true,
+        processedDate: true,
+        createdAt: true,
+        order: { select: { orderNumber: true, bisNumber: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Aggregate by waste type + EWC code
+    const byWasteType = new Map<
+      string,
+      {
+        wasteType: string;
+        lvWasteCode: string;
+        totalWeightTonnes: number;
+        totalRecycledTonnes: number;
+        recordCount: number;
+        avgRecoveryRate: number | null;
+      }
+    >();
+
+    let totalWeightTonnes = 0;
+    let totalRecycledTonnes = 0;
+    let apusPending = 0;
+    let apusSubmitted = 0;
+    let apusAccepted = 0;
+    let apusRejected = 0;
+    let apusNotRequired = 0;
+
+    for (const r of records) {
+      totalWeightTonnes += r.weight ?? 0;
+      totalRecycledTonnes += r.recyclableWeight ?? 0;
+
+      switch (r.apusStatus) {
+        case 'PENDING': apusPending++; break;
+        case 'SUBMITTED': apusSubmitted++; break;
+        case 'ACCEPTED': apusAccepted++; break;
+        case 'REJECTED': apusRejected++; break;
+        case 'NOT_REQUIRED': apusNotRequired++; break;
+      }
+
+      const key = String(r.wasteType);
+      const existing = byWasteType.get(key);
+      if (existing) {
+        existing.totalWeightTonnes += r.weight ?? 0;
+        existing.totalRecycledTonnes += r.recyclableWeight ?? 0;
+        existing.recordCount++;
+      } else {
+        byWasteType.set(key, {
+          wasteType: key,
+          lvWasteCode: r.lvWasteCode ?? getLvWasteCode(key),
+          totalWeightTonnes: r.weight ?? 0,
+          totalRecycledTonnes: r.recyclableWeight ?? 0,
+          recordCount: 1,
+          avgRecoveryRate: r.recyclingRate,
+        });
+      }
+    }
+
+    // Compute avg recovery rates
+    const wasteBreakdown = Array.from(byWasteType.values()).map((entry) => ({
+      ...entry,
+      totalWeightTonnes: parseFloat(entry.totalWeightTonnes.toFixed(3)),
+      totalRecycledTonnes: parseFloat(entry.totalRecycledTonnes.toFixed(3)),
+      recoveryRate:
+        entry.totalWeightTonnes > 0
+          ? parseFloat(
+              (
+                (entry.totalRecycledTonnes / entry.totalWeightTonnes) *
+                100
+              ).toFixed(1),
+            )
+          : null,
+    }));
+
+    return {
+      reportPeriod: { year, month },
+      generatedAt: new Date().toISOString(),
+      facility: {
+        id: center.id,
+        name: center.name,
+        licenceNumber: center.licenceNumber,
+        apusRegistrationId: center.apusRegistrationId,
+        licensed: center.licensed,
+        address: center.address,
+        city: center.city,
+        operator: center.company.name,
+        operatorRegNum: center.company.registrationNum,
+        operatorTaxId: center.company.taxId,
+      },
+      summary: {
+        totalRecords: records.length,
+        totalWeightTonnes: parseFloat(totalWeightTonnes.toFixed(3)),
+        totalRecycledTonnes: parseFloat(totalRecycledTonnes.toFixed(3)),
+        overallRecoveryRate:
+          totalWeightTonnes > 0
+            ? parseFloat(
+                ((totalRecycledTonnes / totalWeightTonnes) * 100).toFixed(1),
+              )
+            : null,
+        apusStatus: {
+          pending: apusPending,
+          submitted: apusSubmitted,
+          accepted: apusAccepted,
+          rejected: apusRejected,
+          notRequired: apusNotRequired,
+        },
+      },
+      wasteBreakdown,
+      records,
+    };
   }
 
   // ── Buyback Quote ─────────────────────────────────────────────────────────

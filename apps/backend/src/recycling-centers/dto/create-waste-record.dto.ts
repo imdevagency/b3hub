@@ -18,6 +18,12 @@ export class CreateWasteRecordDto {
   @MaxLength(50)
   containerOrderId?: string;
 
+  // Optional link to a disposal order (populates bisNumber automatically)
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  orderId?: string;
+
   // Waste details
   @IsEnum(WasteType)
   wasteType!: WasteType;
