@@ -125,7 +125,7 @@ export default function HomePage() {
             Kas ir B3Hub
           </p>
           <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mb-4 max-w-2xl">
-            Viens digitāls marķetpleiss
+            Viena digitāla platforma
             <br />
             visai celtniecības loģistikai.
           </h2>

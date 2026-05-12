@@ -131,9 +131,9 @@ export default function MoreScreen() {
         {/* ── Marketing Hero for Guests ── */}
         {!isLoading && !user && (
           <View style={s.heroCard}>
-            <Text style={s.heroTagline}>MARĶETPLEISS</Text>
+            <Text style={s.heroTagline}>PLATFORMA</Text>
             <Text style={s.heroHeading}>
-              Viens digitāls marķetpleiss visai celtniecības loģistikai.
+              Viena digitāla platforma visai celtniecības loģistikai.
             </Text>
             <Text style={s.heroSub}>
               Pasūtiet materiālus, pārdodiet no karjera vai vediet kravas — platforma darbojas visām
