@@ -1,5 +1,4 @@
 import type { NextConfig } from 'next';
-import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@b3hub/shared'],
@@ -69,13 +68,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  // Source map upload — set SENTRY_AUTH_TOKEN in CI to enable
-  silent: !process.env.CI,
-  // Disable source map upload in dev (no auth token)
-  sourcemaps: {
-    disable: process.env.NODE_ENV !== 'production',
-  },
-  // Suppress Sentry's default telemetry
-  telemetry: false,
-});
+export default nextConfig;
+
