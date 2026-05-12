@@ -8,7 +8,7 @@
  * Lursoft IT aggreagate data directly from the Enterprise Register of the
  * Republic of Latvia plus court, insolvency, and tax-debt registries.
  *
- * Use cases on B3Hub:
+ * Use cases on Bilt:
  *  • Auto-fill at B2B registration — type reg.nr, get name/address/VAT instantly
  *  • Admin company verification — check insolvency, tax debts, liquidation status
  *  • Risk signals — warn if a buyer or seller company has active risk flags
@@ -667,7 +667,7 @@ export default function LursoftPage() {
                     arī no tiesas, maksātnespējas un nodokļu parādu reģistriem.
                   </p>
                   <p>
-                    B3Hub platformā Lursoft tiek izmantots:
+                    Bilt platformā Lursoft tiek izmantots:
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-2">
                     <li>Rekvizītu automātiska aizpilde B2B reģistrācijas laikā</li>

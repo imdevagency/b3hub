@@ -1737,7 +1737,7 @@ export async function adminCreateListingFromWasteRecord(
   });
 }
 
-// ─── B3Hub Platform Finance Stats ────────────────────────────────────────────
+// ─── Bilt Platform Finance Stats ────────────────────────────────────────────
 
 export interface AdminFinanceStats {
   gmv: {

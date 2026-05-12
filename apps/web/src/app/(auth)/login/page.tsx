@@ -95,7 +95,7 @@ function LoginPageInner() {
       {/* Absolute Header */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
         <a href="/" className="text-black text-2xl font-bold tracking-tight">
-          B3Hub{IS_ADMIN_APP ? ' Admin' : ''}
+          Bilt{IS_ADMIN_APP ? ' Admin' : ''}
         </a>
         {!IS_ADMIN_APP && (
           <Link

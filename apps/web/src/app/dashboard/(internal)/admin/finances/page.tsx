@@ -1047,7 +1047,7 @@ function InvoicesTab({ token }: { token: string }) {
                       {inv.invoiceNumber}
                     </TableCell>
                     <TableCell className="text-sm">{inv.buyerCompany?.name ?? '—'}</TableCell>
-                    <TableCell className="text-sm">{inv.sellerCompany?.name ?? 'B3Hub'}</TableCell>
+                    <TableCell className="text-sm">{inv.sellerCompany?.name ?? 'Bilt'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {inv.order?.orderNumber ?? '—'}
                     </TableCell>

@@ -524,7 +524,7 @@ export default function CheckoutPage() {
               </button>
 
               <p className="text-xs text-center text-muted-foreground">
-                Pasūtot jūs piekrītat B3Hub lietošanas noteikumiem
+                Pasūtot jūs piekrītat Bilt lietošanas noteikumiem
               </p>
             </div>
           </div>

@@ -27,8 +27,8 @@ export function Navbar() {
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center gap-12">
               {/* Logo */}
-              <Link href="/" className="flex items-center" aria-label="B3Hub sākumlapa">
-                <span className="text-2xl font-medium tracking-tighter text-foreground">B3Hub</span>
+              <Link href="/" className="flex items-center" aria-label="Bilt sākumlapa">
+                <span className="text-2xl font-medium tracking-tighter text-foreground">Bilt</span>
               </Link>
 
               {/* Desktop nav */}

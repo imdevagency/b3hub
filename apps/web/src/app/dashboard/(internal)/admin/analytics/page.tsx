@@ -255,7 +255,7 @@ export default function AdminAnalyticsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Platformas analītika"
-        description="B3Hub tirgus apjomi, ieņēmumi un darbības rādītāji"
+        description="Bilt tirgus apjomi, ieņēmumi un darbības rādītāji"
       />
 
       {loading && (

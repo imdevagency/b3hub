@@ -339,9 +339,9 @@ export default function EmailIntegrationPage() {
                 <Label htmlFor="email.fromName">Sūtītāja vārds</Label>
                 <Input
                   id="email.fromName"
-                  value={str(settings, 'email.fromName', 'B3Hub')}
+                  value={str(settings, 'email.fromName', 'Bilt')}
                   onChange={(e) => set('email.fromName', e.target.value)}
-                  placeholder="B3Hub"
+                  placeholder="Bilt"
                   disabled={!enabled}
                 />
               </div>

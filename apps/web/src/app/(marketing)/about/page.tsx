@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Par mums',
   description:
-    'B3Hub ir celtniecības loģistikas platforma, kas savieno pircējus, piegādātājus un pārvadātājus Latvijā un Baltijā.',
+    'Bilt ir celtniecības loģistikas platforma, kas savieno pircējus, piegādātājus un pārvadātājus Latvijā un Baltijā.',
 };
 
 export default function AboutPage() {
@@ -14,7 +14,7 @@ export default function AboutPage() {
         <section className="bg-muted py-24 sm:py-32">
           <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
             <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-              Par B3Hub
+              Par Bilt
             </h1>
             <p className="mt-6 text-xl leading-8 text-muted-foreground">
               Mēs veidojam celtniecības loģistikas platformu, kas dara biznesa procesus ātrākus,
@@ -33,7 +33,7 @@ export default function AboutPage() {
                 </h2>
                 <p className="mt-6 text-lg leading-8 text-muted-foreground">
                   Latvijas un Baltijas celtniecības nozare joprojām paļaujas uz telefona zvaniem,
-                  papīra dokumentiem un neefektīviem procesiem. B3Hub maina to — digitalizējot visu
+                  papīra dokumentiem un neefektīviem procesiem. Bilt maina to — digitalizējot visu
                   piegādes ķēdi no pasūtījuma līdz piegādei.
                 </p>
                 <p className="mt-4 text-lg leading-8 text-muted-foreground">

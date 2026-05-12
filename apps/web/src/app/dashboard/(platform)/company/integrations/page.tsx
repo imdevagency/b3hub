@@ -481,7 +481,7 @@ export default function IntegrationsPage() {
                     )}
                     {!active && (
                       <p className="text-xs text-muted-foreground italic">
-                        Sazinieties ar B3Hub atbalstu, lai iespējotu šo moduli.
+                        Sazinieties ar Bilt atbalstu, lai iespējotu šo moduli.
                       </p>
                     )}
                   </CardContent>
@@ -497,7 +497,7 @@ export default function IntegrationsPage() {
         <div>
           <h2 className="text-base font-semibold">Platformas pakalpojumi</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Integrācijas, kas darbojas automātiski visiem B3Hub klientiem.
+            Integrācijas, kas darbojas automātiski visiem Bilt klientiem.
           </p>
         </div>
 
@@ -531,7 +531,7 @@ export default function IntegrationsPage() {
         <div>
           <h2 className="text-base font-semibold">API piekļuve (ERP integrācija)</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            API atslēgas ļauj ārējām sistēmām pieslēgties B3Hub platformai.
+            API atslēgas ļauj ārējām sistēmām pieslēgties Bilt platformai.
           </p>
         </div>
 

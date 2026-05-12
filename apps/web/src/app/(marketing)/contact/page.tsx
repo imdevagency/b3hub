@@ -6,7 +6,7 @@ import { ContactForm } from '@/components/marketing/contact-form';
 
 export const metadata: Metadata = {
   title: 'Kontakti',
-  description: 'Sazinieties ar B3Hub komandu. Esam šeit, lai palīdzētu.',
+  description: 'Sazinieties ar Bilt komandu. Esam šeit, lai palīdzētu.',
 };
 
 export default function ContactPage() {

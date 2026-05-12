@@ -24,7 +24,7 @@ const journey = [
   {
     step: '03',
     title: 'Apstiprina & iekrauj',
-    body: 'Apstiprini iekraušanas laiku. B3Hub piešķir šoferi automātiski — nav jāmeklē transports.',
+    body: 'Apstiprini iekraušanas laiku. Bilt piešķir šoferi automātiski — nav jāmeklē transports.',
     features: ['Transports organizēts platformas pusē', 'SMS un app paziņojums šoferim'],
   },
   {
@@ -62,7 +62,7 @@ export default function KarjeriemPage() {
               Tu iekrauj.
             </>
           }
-          subtitle="Publicē savus materiālus katalogā — B3Hub parāda tos visiem Latvijas pasūtītājiem. Transports, dokumenti un samaksa — automātiski."
+          subtitle="Publicē savus materiālus katalogā — Bilt parāda tos visiem Latvijas pasūtītājiem. Transports, dokumenti un samaksa — automātiski."
           actions={
             <>
               <CTAButton href={`/register?role=seller`} variant="primary" size="lg">
@@ -200,7 +200,7 @@ export default function KarjeriemPage() {
                   Vairāk pasūtījumu.
                 </h2>
                 <p className="text-xl text-muted-foreground font-light">
-                  B3Hub nodrošina visu no pasūtījuma saņemšanas līdz samaksai — bez manuālas
+                  Bilt nodrošina visu no pasūtījuma saņemšanas līdz samaksai — bez manuālas
                   koordinācijas.
                 </p>
               </div>
@@ -476,7 +476,7 @@ export default function KarjeriemPage() {
             },
             {
               q: 'Vai platforma koordinē transportu manā vietā?',
-              a: 'Jā. Jums nav jāmeklē šoferi — B3Hub savieno jūs ar apstiprinātu pārvadātāju tīklu.',
+              a: 'Jā. Jums nav jāmeklē šoferi — Bilt savieno jūs ar apstiprinātu pārvadātāju tīklu.',
             },
             {
               q: 'Kas notiek, ja pircējs atceļ pasūtījumu?',

@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'B3Hub — Celtniecības loģistikas platforma',
+  title: 'Bilt — Celtniecības loģistikas platforma',
   description:
     'Pasūtiet celtniecības materiālus, konteinerus, transportu un utilizāciju. Cenas redzamas uzreiz, pavadzīmes automātiski.',
 };

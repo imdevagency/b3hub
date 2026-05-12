@@ -1,7 +1,7 @@
 /**
  * Market Health — /dashboard/admin/market-health
  *
- * Cross-side liquidity monitor for the B3Hub marketplace.
+ * Cross-side liquidity monitor for the Bilt marketplace.
  * Shows all 4 market sides simultaneously so ops can spot and close gaps.
  */
 'use client';
@@ -143,7 +143,7 @@ export default function MarketHealthPage() {
     try {
       const thinList = data?.supply.thinCategories?.join(', ') ?? 'dažādās kategorijās';
       const res = await adminBroadcastNotification(
-        'B3Hub — nepieciešami piegādātāji',
+        'Bilt — nepieciešami piegādātāji',
         `Platformā ir paaugstināts pieprasījums pēc materiāliem (${thinList}). Piesakieties un pievienojiet savus sludinājumus, lai saņemtu jaunus pasūtījumus.`,
         'SELLERS',
         token,
@@ -751,7 +751,7 @@ export default function MarketHealthPage() {
                 },
                 {
                   label: 'Pasīvi materiāli',
-                  action: 'Pievienojiet pārstrādātās masas B3Hub tirgū caur reciklēšanas moduli.',
+                  action: 'Pievienojiet pārstrādātās masas Bilt tirgū caur reciklēšanas moduli.',
                   href: '/dashboard/b3-recycling/waste-log',
                   color: 'text-teal-600',
                   bg: 'bg-teal-50',

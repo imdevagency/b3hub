@@ -16,10 +16,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "lv.b3hub.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "B3Hub needs your location to track deliveries.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "B3Hub uses your location in the background to send GPS updates during active transport jobs.",
-        "NSCameraUsageDescription": "B3Hub needs camera access to take delivery proof photos.",
-        "NSPhotoLibraryUsageDescription": "B3Hub needs photo library access for delivery documents."
+        "NSLocationWhenInUseUsageDescription": "Bilt needs your location to track deliveries.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Bilt uses your location in the background to send GPS updates during active transport jobs.",
+        "NSCameraUsageDescription": "Bilt needs camera access to take delivery proof photos.",
+        "NSPhotoLibraryUsageDescription": "Bilt needs photo library access for delivery documents."
       }
     },
     "android": {
@@ -44,7 +44,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "B3Hub uses your location in the background to send GPS updates during active transport jobs."
+          "locationAlwaysAndWhenInUsePermission": "Bilt uses your location in the background to send GPS updates during active transport jobs."
         }
       ],
       [
@@ -57,8 +57,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "B3Hub needs photo library access for delivery documents.",
-          "cameraPermission": "B3Hub needs camera access to take delivery proof photos."
+          "photosPermission": "Bilt needs photo library access for delivery documents.",
+          "cameraPermission": "Bilt needs camera access to take delivery proof photos."
         }
       ],
       "expo-secure-store",

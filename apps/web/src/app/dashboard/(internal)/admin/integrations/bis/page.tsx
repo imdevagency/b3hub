@@ -6,7 +6,7 @@
  * BIS (Būvniecības informācijas sistēma) — Platformas integrācija
  * https://bis.gov.lv
  *
- * Pārvalda BIS OAuth2 savienojumu, ko izmanto B3Hub platforma:
+ * Pārvalda BIS OAuth2 savienojumu, ko izmanto Bilt platforma:
  *   • Tirgus pasūtījumos — BIS projektu numuru validācija
  *   • Lursoft/BIS apvienota pārbaude B2B reģistrācijai
  *

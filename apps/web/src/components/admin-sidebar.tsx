@@ -2,9 +2,9 @@
  * AdminSidebar — dedicated sidebar for ADMIN users.
  *
  * Shown instead of AppSidebar when user.userType === 'ADMIN'.
- * Three top-level scopes: B3Hub (marketplace), B3 Recycling, B3 Construction.
+ * Three top-level scopes: Bilt (marketplace), B3 Recycling, B3 Construction.
  * Scope is detected from the current URL pathname.
- * B3Hub sections have live badge counts refreshed every 30 s.
+ * Bilt sections have live badge counts refreshed every 30 s.
  */
 'use client';
 
@@ -111,7 +111,7 @@ const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
   { id: 'b3hub', label: 'APP', href: '/dashboard/admin' },
 ];
 
-// ─── B3Hub navigation (marketplace admin) ────────────────────────────────────
+// ─── Bilt navigation (marketplace admin) ────────────────────────────────────
 // 7 items max — one per business domain. Tabs within each domain live
 // in AdminSectionTabs (rendered by the admin layout), not here.
 
@@ -293,7 +293,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
 
   const isActive = React.useMemo(() => makeIsRouteActive(pathname, ['/dashboard/admin']), [pathname]);
 
-  // Live badge refresh — only runs for B3Hub scope (where badges are meaningful)
+  // Live badge refresh — only runs for Bilt scope (where badges are meaningful)
   React.useEffect(() => {
     if (!token) return;
 

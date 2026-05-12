@@ -184,7 +184,7 @@ export default function TrackingPage() {
         {/* Header */}
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold tracking-tight">B3Hub</span>
+          <span className="text-xl font-bold tracking-tight">Bilt</span>
           <span className="text-muted-foreground">· Live Order Tracking</span>
         </div>
 

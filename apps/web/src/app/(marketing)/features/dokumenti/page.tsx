@@ -32,7 +32,7 @@ const docTypes = [
  { code: 'SVZ', name: 'Svara zīme', standard: 'LVS EN', color: 'bg-muted/30' },
  { code: 'CMR', name: 'CMR pavadzīme', standard: 'CMR Convention', color: 'bg-muted/30' },
  { code: 'RK', name: 'Rēķins', standard: 'PVN likums', color: 'bg-foreground text-background' },
- { code: 'PA', name: 'Piegādes akts', standard: 'B3Hub std.', color: 'bg-muted/30' },
+ { code: 'PA', name: 'Piegādes akts', standard: 'Bilt std.', color: 'bg-muted/30' },
 ];
 
 export default function DokumentiPage() {

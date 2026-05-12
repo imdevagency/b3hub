@@ -43,7 +43,7 @@ export function Footer() {
           {/* Brand & Mission - left side */}
           <div className="space-y-6 xl:col-span-1">
             <Link href="/" className="inline-block">
-              <span className="text-4xl font-medium tracking-tighter text-foreground">B3Hub</span>
+              <span className="text-4xl font-medium tracking-tighter text-foreground">Bilt</span>
             </Link>
             <p className="max-w-sm text-lg leading-relaxed text-foreground/60 font-light tracking-tight">
               Aizstājam zvanus un e-pastus ar vienotu platformu celtniecības loģistikai.
@@ -151,7 +151,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-24 border-t border-neutral-300 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-foreground/50">
-            © {new Date().getFullYear()} B3Hub. Visas tiesības aizsargātas.
+            © {new Date().getFullYear()} Bilt. Visas tiesības aizsargātas.
           </p>
           <div className="flex gap-6">
             <Link

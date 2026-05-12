@@ -28,7 +28,7 @@ export default function HomePage() {
       {/* ── 1. HERO ── */}
       <Hero
         align="center"
-        eyebrow="B3Hub · Latvija"
+        eyebrow="Bilt · Latvija"
         title={
           <>
             Digitālā platforma visai
@@ -91,7 +91,7 @@ export default function HomePage() {
               Nekādu slēptu izmaksu.
             </h2>
             <p className="text-lg text-muted-foreground font-light">
-              B3Hub apvieno vadošos karjerus, transporta uzņēmumus un atkritumu pieņēmējus
+              Bilt apvieno vadošos karjerus, transporta uzņēmumus un atkritumu pieņēmējus
               vienuviet. Pasūtiet visu nepieciešamo ar pāris klikšķiem tieši no piegādātājiem.
             </p>
             <ul className="flex flex-col gap-3 mt-2">
@@ -122,7 +122,7 @@ export default function HomePage() {
       <section id="uznemumiem" className="w-full bg-neutral-50 border-t border-border">
         <Container className="py-24 flex flex-col items-center text-center">
           <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-4">
-            Kas ir B3Hub
+            Kas ir Bilt
           </p>
           <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-tight mb-4 max-w-2xl">
             Viena digitāla platforma

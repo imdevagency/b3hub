@@ -8,7 +8,7 @@ import { getAllPosts } from '@/lib/blog';
 export const metadata: Metadata = {
   title: 'Blogs',
   description:
-    'B3Hub blogs — nozares padomi, loģistikas raksti un jaunumi no celtniecības platformas komandas.',
+    'Bilt blogs — nozares padomi, loģistikas raksti un jaunumi no celtniecības platformas komandas.',
 };
 
 export default function BlogPage() {
@@ -24,7 +24,7 @@ export default function BlogPage() {
               Vēstis & <br /> Ieskati.
             </>
           }
-          subtitle="Celtniecības loģistika, platformas jaunumi un viedokļi no B3Hub komandas."
+          subtitle="Celtniecības loģistika, platformas jaunumi un viedokļi no Bilt komandas."
         />
 
         <section className="w-full bg-neutral-50">

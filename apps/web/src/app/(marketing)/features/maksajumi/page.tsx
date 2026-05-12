@@ -78,7 +78,7 @@ export default function MaksajumiPage() {
  { desc: 'Granīts karjers — 4 piegādes', sub: 'Liepa SIA · 88 t', amount: '€1 240' },
  { desc: 'Smilts & Grants — 2 piegādes', sub: 'Granīts SIA · 42 t', amount: '€620' },
  { desc: 'Dolomīts — 1 piegāde', sub: 'Akmenssala · 22 t', amount: '€310' },
- { desc: 'Transporta komisija (8%)', sub: 'B3Hub platforma', amount: '€148' },
+ { desc: 'Transporta komisija (8%)', sub: 'Bilt platforma', amount: '€148' },
  ].map(({ desc, sub, amount }) => (
  <div key={desc} className="flex items-center justify-between px-6 py-4">
  <div>

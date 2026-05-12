@@ -368,7 +368,7 @@ export default function ApusIntegrationPage() {
           <CardHeader>
             <CardTitle className="text-base">Atkritumu kodu uzziņa (EWC / LV katalogs)</CardTitle>
             <CardDescription>
-              Eiropas atkritumu kataloga (EWC) kodi, ko lieto B3Hub pārstrādes centra ieraksti. MK
+              Eiropas atkritumu kataloga (EWC) kodi, ko lieto Bilt pārstrādes centra ieraksti. MK
               noteikumi Nr. 1032, Pielikums Nr. 1.
             </CardDescription>
           </CardHeader>

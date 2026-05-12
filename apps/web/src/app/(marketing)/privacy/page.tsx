@@ -3,14 +3,14 @@ import { Container } from '@/components/marketing/layout/Container';
 
 export const metadata: Metadata = {
   title: 'Privātuma politika',
-  description: 'B3Hub privātuma politika — kā mēs apstrādājam jūsu personas datus.',
+  description: 'Bilt privātuma politika — kā mēs apstrādājam jūsu personas datus.',
 };
 
 const sections = [
   {
     title: '1. Pārzinis',
     content:
-      'Personas datu pārzinis ir B3Hub SIA (turpmāk — "B3Hub"), reģistrācijas numurs tiks norādīts pirms komercdarbības uzsākšanas, juridiskā adrese: Rīga, Latvija. Kontakts datu aizsardzības jautājumos: info@b3hub.lv.',
+      'Personas datu pārzinis ir Bilt SIA (turpmāk — "Bilt"), reģistrācijas numurs tiks norādīts pirms komercdarbības uzsākšanas, juridiskā adrese: Rīga, Latvija. Kontakts datu aizsardzības jautājumos: info@b3hub.lv.',
   },
   {
     title: '2. Kādi dati tiek vākti',
@@ -40,7 +40,7 @@ const sections = [
   {
     title: '7. Sīkdatnes',
     content:
-      'B3Hub tīmekļa vietne izmanto sīkdatnes. Sīkāku informāciju skatiet mūsu Sīkdatņu politikā.',
+      'Bilt tīmekļa vietne izmanto sīkdatnes. Sīkāku informāciju skatiet mūsu Sīkdatņu politikā.',
   },
   {
     title: '8. Izmaiņas politikā',
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
               Privātuma politika
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-              Šī politika izskaidro, kādus personas datus B3Hub vāc, kāpēc tos apstrādā un kādas
+              Šī politika izskaidro, kādus personas datus Bilt vāc, kāpēc tos apstrādā un kādas
               tiesības jums ir attiecībā uz saviem datiem.
             </p>
           </Container>

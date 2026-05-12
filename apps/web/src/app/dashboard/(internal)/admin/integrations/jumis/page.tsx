@@ -3,10 +3,10 @@
 /**
  * /dashboard/admin/integrations/jumis
  *
- * Jumis grāmatvedības integrācija — B3Hub platforma (B3Hub SIA)
+ * Jumis grāmatvedības integrācija — Bilt platforma (Bilt SIA)
  * https://www.jumis.lv
  *
- * Šī integrācija ir paredzēta B3Hub SIA kā juridiskai personai:
+ * Šī integrācija ir paredzēta Bilt SIA kā juridiskai personai:
  * tirgu rēķini, piegādātāju un pārvadātāju norēķini.
  */
 
@@ -141,7 +141,7 @@ export default function PlatformJumisPage() {
   if (error) {
     return (
       <div className="space-y-6 p-6">
-        <PageHeader title="Jumis — Platforma" description="B3Hub SIA grāmatvedības integrācija" />
+        <PageHeader title="Jumis — Platforma" description="Bilt SIA grāmatvedības integrācija" />
         <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
@@ -157,7 +157,7 @@ export default function PlatformJumisPage() {
     <div className="space-y-6 p-6">
       <PageHeader
         title="Jumis — Platforma"
-        description="Jumis integrācija B3Hub SIA grāmatvedībai — tirgu rēķini, norēķini ar piegādātājiem un pārvadātājiem."
+        description="Jumis integrācija Bilt SIA grāmatvedībai — tirgu rēķini, norēķini ar piegādātājiem un pārvadātājiem."
         action={
           <a
             href="https://www.jumis.lv"
@@ -174,7 +174,7 @@ export default function PlatformJumisPage() {
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <div>
-          <strong>B3Hub SIA</strong> Jumis konts — apkopo tirgus rēķinus un apakšuzņēmēju norēķinus.
+          <strong>Bilt SIA</strong> Jumis konts — apkopo tirgus rēķinus un apakšuzņēmēju norēķinus.
         </div>
       </div>
 
@@ -189,7 +189,7 @@ export default function PlatformJumisPage() {
                   Savienojuma statuss
                 </CardTitle>
                 <CardDescription className="mt-1">
-                  Ieslēdzot, sistēma sāk eksportēt darījumus uz B3Hub SIA Jumis serveri.
+                  Ieslēdzot, sistēma sāk eksportēt darījumus uz Bilt SIA Jumis serveri.
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2.5 shrink-0">
@@ -217,7 +217,7 @@ export default function PlatformJumisPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Savienojuma dati</CardTitle>
-            <CardDescription>B3Hub SIA Jumis servera adrese un autentifikācija.</CardDescription>
+            <CardDescription>Bilt SIA Jumis servera adrese un autentifikācija.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -298,7 +298,7 @@ export default function PlatformJumisPage() {
           <CardHeader>
             <CardTitle className="text-base">Eksporta opcijas</CardTitle>
             <CardDescription>
-              Kādi tirgus darījumi automātiski jāreģistrē B3Hub SIA Jumis.
+              Kādi tirgus darījumi automātiski jāreģistrē Bilt SIA Jumis.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

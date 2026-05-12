@@ -81,7 +81,7 @@ export default function DemandGapsPage() {
     setNotifyResult(null);
     try {
       const res = await adminBroadcastNotification(
-        'B3Hub — atgriezieties platformā',
+        'Bilt — atgriezieties platformā',
         `Jūsu uzņēmuma darbība platformā ir samazinājusies. Piesakieties, lai pārskatītu jaunus pasūtījumus un iespējas.`,
         audience,
         token,

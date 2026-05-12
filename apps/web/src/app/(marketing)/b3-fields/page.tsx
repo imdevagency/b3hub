@@ -8,15 +8,15 @@ import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 
 export const metadata: Metadata = {
   // NOTE: metadata export is kept so the page config is preserved for future use
-  title: 'B3 Fields — Fiziskie loģistikas punkti Latvijā | B3Hub',
+  title: 'B3 Fields — Fiziskie loģistikas punkti Latvijā | Bilt',
   description:
-    'Paņem celtniecības materiālus, nodod atkritumus ar juridiski derīgu sertifikātu un īrē piekabes 6 punktos visā Latvijā. Viss caur B3Hub platformu.',
+    'Paņem celtniecības materiālus, nodod atkritumus ar juridiski derīgu sertifikātu un īrē piekabes 6 punktos visā Latvijā. Viss caur Bilt platformu.',
   openGraph: {
     title: 'B3 Fields — Fiziskie loģistikas punkti Latvijā',
     description:
       'Materiālu paņemšana, atkritumu nodošana un piekabju noma. 6 punkti. Dokumenti automātiski.',
     url: 'https://b3hub.lv/b3-fields',
-    siteName: 'B3Hub',
+    siteName: 'Bilt',
     locale: 'lv_LV',
     type: 'website',
   },

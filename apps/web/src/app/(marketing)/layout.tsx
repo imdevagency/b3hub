@@ -4,15 +4,15 @@ import { Footer } from '@/components/marketing/layout/Footer';
 
 export const metadata: Metadata = {
   title: {
-    default: 'B3Hub — Celtniecības loģistikas platforma',
-    template: '%s | B3Hub',
+    default: 'Bilt — Celtniecības loģistikas platforma',
+    template: '%s | Bilt',
   },
   description:
-    'B3Hub savieno pircējus, piegādātājus un pārvadātājus vienā platformā. Pasūtiet materiālus, izsekojiet piegādēm un optimizējiet piegādes ķēdi.',
+    'Bilt savieno pircējus, piegādātājus un pārvadātājus vienā platformā. Pasūtiet materiālus, izsekojiet piegādēm un optimizējiet piegādes ķēdi.',
   openGraph: {
     type: 'website',
     locale: 'lv_LV',
-    siteName: 'B3Hub',
+    siteName: 'Bilt',
   },
 };
 

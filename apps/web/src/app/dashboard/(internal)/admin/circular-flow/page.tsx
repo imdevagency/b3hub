@@ -1,7 +1,7 @@
 /**
  * Circular Economy Flow — /dashboard/admin/circular-flow
  *
- * End-to-end traceability of the B3Hub material loop:
+ * End-to-end traceability of the Bilt material loop:
  *   Disposal order → WasteRecord (processing) → RC Material listing → Sold back to construction
  *
  * Shows platform-wide recovery rate, conversion pipeline, CO₂ savings and

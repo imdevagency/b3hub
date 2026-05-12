@@ -41,7 +41,7 @@ export default function BuvnieckiemPage() {
               kur ir auto?
             </>
           }
-          subtitle="B3Hub dod reāllaika GPS, automātiskus dokumentus un caurspīdīgas cenas — bez Excel un WhatsApp."
+          subtitle="Bilt dod reāllaika GPS, automātiskus dokumentus un caurspīdīgas cenas — bez Excel un WhatsApp."
           actions={
             <>
               <CTAButton href={`/register`} variant="primary" size="lg">
@@ -119,7 +119,7 @@ export default function BuvnieckiemPage() {
                   Vairāk laika darbam.
                 </h2>
                 <p className="text-xl text-muted-foreground font-light leading-relaxed">
-                  B3Hub digitalizē visu piegādes ķēdi no karjera līdz objektam. Vairs nekādu
+                  Bilt digitalizē visu piegādes ķēdi no karjera līdz objektam. Vairs nekādu
                   pazaudētu svara zīmju un lieku zvanu.
                 </p>
               </div>
@@ -289,7 +289,7 @@ export default function BuvnieckiemPage() {
           className="bg-background"
           items={[
             {
-              q: 'Cik maksā izmantot B3Hub kā pircējam?',
+              q: 'Cik maksā izmantot Bilt kā pircējam?',
               a: 'Pilnīgi bezmaksas. Nav abonēšanas maksas, nav komisijas no piegādēm.',
             },
             {

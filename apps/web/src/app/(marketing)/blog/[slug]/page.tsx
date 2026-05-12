@@ -83,7 +83,7 @@ export default async function BlogPostPage({ params }: Props) {
             <div>
               <h2 className="text-3xl font-medium tracking-tight mb-2">Esat gatavi sākt?</h2>
               <p className="text-muted-foreground text-lg">
-                Pievienojieties simtiem uzņēmumu B3Hub platformā.
+                Pievienojieties simtiem uzņēmumu Bilt platformā.
               </p>
             </div>
             <Link

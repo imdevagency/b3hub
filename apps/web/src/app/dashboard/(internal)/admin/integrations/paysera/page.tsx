@@ -164,7 +164,7 @@ export default function PayseraIntegrationPage() {
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <div>
-          Paysera apstrādā visus B3Hub tirgus maksājumus. Piegādātāju un pārvadātāju izmaksas
+          Paysera apstrādā visus Bilt tirgus maksājumus. Piegādātāju un pārvadātāju izmaksas
           (SupplierPayout / CarrierPayout) tiek nosūtītas uz Paysera Transfer API.
         </div>
       </div>

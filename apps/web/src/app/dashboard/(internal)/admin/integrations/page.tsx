@@ -3,10 +3,10 @@
 /**
  * /dashboard/admin/integrations
  *
- * Platform Integration Hub — all external services wired into the B3Hub marketplace.
+ * Platform Integration Hub — all external services wired into the Bilt marketplace.
  *
  * ── OWNERSHIP RULE ────────────────────────────────────────────────────────────
- * This section is for integrations that serve the B3Hub MARKETPLACE and its users
+ * This section is for integrations that serve the Bilt MARKETPLACE and its users
  * (buyers, sellers, carriers, construction ERP accounts).
  *
  * Decision rule: "Who is the end user of this integration's data?"
@@ -92,9 +92,9 @@ const INTEGRATIONS: PlatformIntegration[] = [
   {
     id: 'jumis',
     label: 'Jumis',
-    scopeLabel: 'Tirgus · B3Hub SIA',
+    scopeLabel: 'Tirgus · Bilt SIA',
     description:
-      'B3Hub SIA grāmatvedības sistēma — tirgu rēķinu eksports, piegādātāju un pārvadātāju norēķinu reģistrācija',
+      'Bilt SIA grāmatvedības sistēma — tirgu rēķinu eksports, piegādātāju un pārvadātāju norēķinu reģistrācija',
     href: '/dashboard/admin/integrations/jumis',
     icon: Receipt,
     category: 'accounting',
@@ -251,7 +251,7 @@ export default function IntegrationsHubPage() {
       })
       .catch(() => setStatuses((prev) => ({ ...prev, bis: 'unknown' })));
 
-    // Jumis marketplace (flat settings, jumis.* keys = B3Hub SIA)
+    // Jumis marketplace (flat settings, jumis.* keys = Bilt SIA)
     adminGetSettings(accessToken)
       .then((s) => {
         const jumisEnabled = s['jumis.enabled'] === 'true';
@@ -314,7 +314,7 @@ export default function IntegrationsHubPage() {
     <div className="space-y-8">
       <PageHeader
         title="Platformas integrācijas"
-        description="Ārējie pakalpojumi, kas nodrošina B3Hub tirgu — uzticamības pārbaudes, maksājumi, komunikācija, ģeogrāfija"
+        description="Ārējie pakalpojumi, kas nodrošina Bilt tirgu — uzticamības pārbaudes, maksājumi, komunikācija, ģeogrāfija"
       />
 
       {/* ── Marketplace integrations ───────────────────────────────────────── */}

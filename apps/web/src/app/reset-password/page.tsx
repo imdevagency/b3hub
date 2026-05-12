@@ -155,7 +155,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-red-50 to-white px-4 py-12">
       <Link href="/" className="flex items-center gap-2 mb-8">
         <Building2 className="h-8 w-8 text-primary" />
-        <span className="text-2xl font-bold text-gray-900">B3Hub</span>
+        <span className="text-2xl font-bold text-gray-900">Bilt</span>
       </Link>
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-8">
         <Suspense

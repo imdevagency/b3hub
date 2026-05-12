@@ -3,19 +3,19 @@ import { Container } from '@/components/marketing/layout/Container';
 
 export const metadata: Metadata = {
   title: 'Lietošanas noteikumi',
-  description: 'B3Hub platformas lietošanas noteikumi un pakalpojumu sniegšanas nosacījumi.',
+  description: 'Bilt platformas lietošanas noteikumi un pakalpojumu sniegšanas nosacījumi.',
 };
 
 const sections = [
   {
     title: '1. Vispārēji noteikumi',
     content:
-      'Šie lietošanas noteikumi regulē B3Hub platformas (tīmekļa vietne un mobilā lietotne) izmantošanu. Reģistrējoties un izmantojot platformu, jūs piekrītat šiem noteikumiem. Ja nepiekrītat, lūdzam neizmantot platformu. B3Hub ir starpniecības platforma, kas savieno materiālu pircējus, piegādātājus un transporta pakalpojumu sniedzējus. B3Hub nav darījumu puse starp lietotājiem.',
+      'Šie lietošanas noteikumi regulē Bilt platformas (tīmekļa vietne un mobilā lietotne) izmantošanu. Reģistrējoties un izmantojot platformu, jūs piekrītat šiem noteikumiem. Ja nepiekrītat, lūdzam neizmantot platformu. Bilt ir starpniecības platforma, kas savieno materiālu pircējus, piegādātājus un transporta pakalpojumu sniedzējus. Bilt nav darījumu puse starp lietotājiem.',
   },
   {
     title: '2. Reģistrācija un konts',
     content:
-      'Platformas izmantošanai nepieciešama reģistrācija. Jūs apliecinājat, ka sniedzat patiesus un aktuālus datus. Konta akreditācijas datu drošība ir jūsu atbildība. Uzņēmumu pārstāvjiem ir jābūt pilnvarotiem darboties uzņēmuma vārdā. B3Hub ir tiesības apturēt vai dzēst kontus, kuros konstatēta noteikumu pārkāpšana vai krāpnieciska darbība.',
+      'Platformas izmantošanai nepieciešama reģistrācija. Jūs apliecinājat, ka sniedzat patiesus un aktuālus datus. Konta akreditācijas datu drošība ir jūsu atbildība. Uzņēmumu pārstāvjiem ir jābūt pilnvarotiem darboties uzņēmuma vārdā. Bilt ir tiesības apturēt vai dzēst kontus, kuros konstatēta noteikumu pārkāpšana vai krāpnieciska darbība.',
   },
   {
     title: '3. Platformas izmantošana',
@@ -25,27 +25,27 @@ const sections = [
   {
     title: '4. Darījumi un maksājumi',
     content:
-      'B3Hub nodrošina rīkus darījumu organizēšanai, taču darījuma saistības rodas tieši starp pircēju un piegādātāju / transporta pakalpojumu sniedzēju. Maksājumu nosacījumi tiek saskaņoti starp darījumu pusēm platformā noteiktajos ietvaros. Komisijas maksa par izpildītajiem darījumiem tiek norādīta platformas cenu lapā.',
+      'Bilt nodrošina rīkus darījumu organizēšanai, taču darījuma saistības rodas tieši starp pircēju un piegādātāju / transporta pakalpojumu sniedzēju. Maksājumu nosacījumi tiek saskaņoti starp darījumu pusēm platformā noteiktajos ietvaros. Komisijas maksa par izpildītajiem darījumiem tiek norādīta platformas cenu lapā.',
   },
   {
     title: '5. Satura publicēšana',
     content:
-      'Publicējot materiālu piedāvājumus, cenas pieprasījumus vai atsauksmes, jūs apliecināt, ka informācija ir patiesa. Jūs piešķirat B3Hub neekskluzīvu, bezatlīdzības licenci izmantot jūsu publicēto saturu platformas darbībai un mārketingam. B3Hub paturas tiesības noņemt saturu, kas pārkāpj noteikumus vai trešo pušu tiesības.',
+      'Publicējot materiālu piedāvājumus, cenas pieprasījumus vai atsauksmes, jūs apliecināt, ka informācija ir patiesa. Jūs piešķirat Bilt neekskluzīvu, bezatlīdzības licenci izmantot jūsu publicēto saturu platformas darbībai un mārketingam. Bilt paturas tiesības noņemt saturu, kas pārkāpj noteikumus vai trešo pušu tiesības.',
   },
   {
     title: '6. Atbildības ierobežojums',
     content:
-      'B3Hub nesniedz garantijas par materiālu vai transporta pakalpojumu kvalitāti, kurus piedāvā platformas lietotāji. B3Hub atbildība ir ierobežota ar komisijas maksas apmēru, kas saistīts ar konkrēto darījumu. B3Hub nav atbildīgs par netiešiem zaudējumiem, peļņas zaudējumu vai darījumu aizkavēšanos.',
+      'Bilt nesniedz garantijas par materiālu vai transporta pakalpojumu kvalitāti, kurus piedāvā platformas lietotāji. Bilt atbildība ir ierobežota ar komisijas maksas apmēru, kas saistīts ar konkrēto darījumu. Bilt nav atbildīgs par netiešiem zaudējumiem, peļņas zaudējumu vai darījumu aizkavēšanos.',
   },
   {
     title: '7. Intelektuālais īpašums',
     content:
-      'Platformas dizains, programmatūra, preču zīmes un saturs, ko radījis B3Hub, ir B3Hub intelektuālā īpašuma objekti. To reproducēšana vai izmantošana komerciālos nolūkos bez rakstiskas atļaujas ir aizliegta.',
+      'Platformas dizains, programmatūra, preču zīmes un saturs, ko radījis Bilt, ir Bilt intelektuālā īpašuma objekti. To reproducēšana vai izmantošana komerciālos nolūkos bez rakstiskas atļaujas ir aizliegta.',
   },
   {
     title: '8. Noteikumu izmaiņas',
     content:
-      'B3Hub ir tiesības grozīt šos noteikumus. Par būtiskām izmaiņām tiks paziņots vismaz 30 dienas iepriekš. Turpinot izmantot platformu pēc izmaiņu spēkā stāšanās, jūs piekrītat jaunajiem noteikumiem. Pēdējās izmaiņas: 2025. gads.',
+      'Bilt ir tiesības grozīt šos noteikumus. Par būtiskām izmaiņām tiks paziņots vismaz 30 dienas iepriekš. Turpinot izmantot platformu pēc izmaiņu spēkā stāšanās, jūs piekrītat jaunajiem noteikumiem. Pēdējās izmaiņas: 2025. gads.',
   },
   {
     title: '9. Piemērojamais likums',
@@ -68,7 +68,7 @@ export default function TermsPage() {
               Lietošanas noteikumi
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-              Šie noteikumi regulē B3Hub platformas izmantošanu. Lūdzu izlasiet tos pirms
+              Šie noteikumi regulē Bilt platformas izmantošanu. Lūdzu izlasiet tos pirms
               reģistrācijas un platformas lietošanas uzsākšanas.
             </p>
           </Container>

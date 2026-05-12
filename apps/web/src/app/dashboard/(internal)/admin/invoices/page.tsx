@@ -288,7 +288,7 @@ export default function AdminInvoicesPage() {
                       </TableCell>
                       <TableCell className="text-sm">{inv.buyerCompany?.name ?? '—'}</TableCell>
                       <TableCell className="text-sm">
-                        {inv.sellerCompany?.name ?? 'B3Hub'}
+                        {inv.sellerCompany?.name ?? 'Bilt'}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {inv.order?.orderNumber ?? '—'}

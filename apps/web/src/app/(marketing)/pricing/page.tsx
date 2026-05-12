@@ -9,7 +9,7 @@ import { FAQAccordion } from '@/components/marketing/ui/faq-accordion';
 export const metadata: Metadata = {
   title: 'Cenas',
   description:
-    'B3Hub komisijas modelis: maksājiet tikai tad, kad nopelnāt. Bez abonēšanas maksas, bez slēptajām maksām.',
+    'Bilt komisijas modelis: maksājiet tikai tad, kad nopelnāt. Bez abonēšanas maksas, bez slēptajām maksām.',
 };
 
 const plans = [

@@ -194,7 +194,7 @@ export default function GpsIzsekosanaPage() {
  </div>
  <div className="flex flex-col gap-4 md:pl-16 pt-12 md:pt-0">
  <p className="text-xs font-bold tracking-widest uppercase text-muted-foreground mb-2">
- Ar B3Hub
+ Ar Bilt
  </p>
  {[
  'Atver lietotni — auto redzams kartē',

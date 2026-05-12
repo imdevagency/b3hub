@@ -64,7 +64,7 @@ export function HowItWorks() {
             Viena platforma — trīs lomas
           </p>
           <p className="mt-4 text-lg text-gray-600">
-            Neatkarīgi no jūsu lomas B3Hub nodrošina visu, kas nepieciešams efektīvai darbībai.
+            Neatkarīgi no jūsu lomas Bilt nodrošina visu, kas nepieciešams efektīvai darbībai.
           </p>
         </div>
 

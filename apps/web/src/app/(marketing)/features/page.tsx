@@ -67,7 +67,7 @@ export default function FeaturesPage() {
                 platformā.
               </h1>
               <p className="text-xl text-muted-foreground font-light max-w-xl leading-relaxed">
-                B3Hub digitalizē katru soli — no materiālu kataloga līdz automātiskajiem
+                Bilt digitalizē katru soli — no materiālu kataloga līdz automātiskajiem
                 dokumentiem. Visi moduļi strādā kopā nevainojami.
               </p>
               <div className="flex flex-wrap gap-4">
@@ -128,7 +128,7 @@ export default function FeaturesPage() {
                 <h2 className="text-4xl md:text-5xl font-bold tracking-tighter leading-none">
                   Kāpēc pārslēgties uz
                   <br />
-                  B3Hub platformu?
+                  Bilt platformu?
                 </h2>
               </div>
 

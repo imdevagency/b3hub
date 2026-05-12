@@ -1,7 +1,7 @@
 import { ScrapBuybackWizard } from '@/components/order/wizards/ScrapBuybackWizard';
 
 export const metadata = {
-  title: 'Metāllūžņi — B3Hub',
+  title: 'Metāllūžņi — Bilt',
   description:
     'Nododiet metāllūžņus officiālos pieņemšanas punktos. Salīdziniet cenas un pieteikt izbraukšanu.',
 };

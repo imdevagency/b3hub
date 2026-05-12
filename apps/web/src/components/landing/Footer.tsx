@@ -30,7 +30,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8">
-            <div className="text-2xl font-bold text-primary">B3Hub</div>
+            <div className="text-2xl font-bold text-primary">Bilt</div>
             <p className="text-sm leading-6 text-gray-600">
               Sakārtojiet materiālu pasūtījumus un piegādes ķēdes pārvaldību.
             </p>
@@ -85,7 +85,7 @@ export function Footer() {
         </div>
         <div className="mt-16 border-t border-gray-900/10 pt-8 sm:mt-20 lg:mt-24">
           <p className="text-xs leading-5 text-gray-500">
-            &copy; {new Date().getFullYear()} B3Hub. Visas tiesības aizsargātas.
+            &copy; {new Date().getFullYear()} Bilt. Visas tiesības aizsargātas.
           </p>
         </div>
       </div>

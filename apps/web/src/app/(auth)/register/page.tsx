@@ -143,7 +143,7 @@ function RegisterPageInner() {
       {/* Absolute Header */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
         <a href="/" className="text-black text-2xl font-bold tracking-tight">
-          B3Hub
+          Bilt
         </a>
         <Link
           href={
@@ -328,7 +328,7 @@ function RegisterPageInner() {
                 <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="mb-8">
                     <h1 className="text-4xl font-medium text-gray-900 tracking-tight mb-3">
-                      Kā izmantosiet B3Hub?
+                      Kā izmantosiet Bilt?
                     </h1>
                     <p className="text-[15px] text-gray-500">
                       Izvēlieties savu galveno lomu platformā.

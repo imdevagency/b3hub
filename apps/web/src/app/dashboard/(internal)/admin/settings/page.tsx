@@ -117,7 +117,7 @@ export default function AdminSettingsPage() {
   // ─── Live invoice preview HTML ────────────────────────────────────────────
 
   const invoicePreviewHtml = useMemo(() => {
-    const name = str(settings, 'company.legalName', 'B3Hub SIA');
+    const name = str(settings, 'company.legalName', 'Bilt SIA');
     const regNo = str(settings, 'company.regNo', '40003000000');
     const vatNo = str(settings, 'company.vatNo', 'LV40003000000');
     const address = str(settings, 'company.address', 'Rīga, Latvija');
@@ -302,7 +302,7 @@ export default function AdminSettingsPage() {
                   <Label htmlFor="platform.name">Platformas nosaukums</Label>
                   <Input
                     id="platform.name"
-                    value={str(settings, 'platform.name', 'B3Hub')}
+                    value={str(settings, 'platform.name', 'Bilt')}
                     onChange={(e) => set('platform.name', e.target.value)}
                   />
                 </div>
@@ -415,9 +415,9 @@ export default function AdminSettingsPage() {
                       <input
                         id="company.legalName"
                         className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        value={str(settings, 'company.legalName', 'B3Hub SIA')}
+                        value={str(settings, 'company.legalName', 'Bilt SIA')}
                         onChange={(e) => set('company.legalName', e.target.value)}
-                        placeholder="B3Hub SIA"
+                        placeholder="Bilt SIA"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">

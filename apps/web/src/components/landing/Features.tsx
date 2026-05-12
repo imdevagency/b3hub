@@ -51,7 +51,7 @@ export function Features() {
             Jaudīgas Funkcijas Moderniem Uzņēmumiem
           </p>
           <p className="mt-6 text-lg leading-8 text-gray-600">
-            B3Hub nodrošina visus rīkus, kas nepieciešami efektīvai materiālu un pasūtījumu
+            Bilt nodrošina visus rīkus, kas nepieciešami efektīvai materiālu un pasūtījumu
             pārvaldībai.
           </p>
         </div>

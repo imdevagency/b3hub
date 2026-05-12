@@ -3,7 +3,7 @@ import { Container } from '@/components/marketing/layout/Container';
 
 export const metadata: Metadata = {
   title: 'Sīkdatņu politika',
-  description: 'B3Hub sīkdatņu politika — kādas sīkdatnes mēs izmantojam un kāpēc.',
+  description: 'Bilt sīkdatņu politika — kādas sīkdatnes mēs izmantojam un kāpēc.',
 };
 
 const cookieTypes = [

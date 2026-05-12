@@ -1283,7 +1283,7 @@ export default function ProjectDetailPage() {
               </div>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={wSell} onChange={(e) => setWSell(e.target.checked)} className="rounded" />
-                Vēlamies pārdot (pēc apstrādes tiks piedāvāts B3Hub tirgū)
+                Vēlamies pārdot (pēc apstrādes tiks piedāvāts Bilt tirgū)
               </label>
               <div className="flex gap-2 justify-end">
                 <Button size="sm" variant="outline" onClick={() => setWasteFormOpen(false)}>Atcelt</Button>

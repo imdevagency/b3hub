@@ -126,7 +126,7 @@ export default function DispetsPage() {
  <section className="w-full bg-neutral-50 pb-32 pt-16">
  <Container>
  <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground mb-12">
- Kāpēc šoferi izvēlas B3Hub
+ Kāpēc šoferi izvēlas Bilt
  </p>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  {benefits.map(({ icon: Icon, title, body }) => (
@@ -215,7 +215,7 @@ export default function DispetsPage() {
  
  Sāc braukt
  <br />
- ar B3Hub šodien.
+ ar Bilt šodien.
  
  </h2>
  <div className="flex flex-col gap-6 min-w-fit shrink-0">

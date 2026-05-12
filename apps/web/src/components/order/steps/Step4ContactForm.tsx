@@ -252,7 +252,7 @@ export function Step4ContactForm({
       </div>
 
       <p className="text-xs text-center text-gray-400 -mt-2">
-        Pasūtot jūs piekrītat B3Hub lietošanas noteikumiem
+        Pasūtot jūs piekrītat Bilt lietošanas noteikumiem
       </p>
     </div>
   );
