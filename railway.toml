@@ -1,0 +1,12 @@
+# Railway deployment config for b3hub backend
+# Docs: https://docs.railway.com/reference/railway-toml
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/backend/Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 60
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 3
