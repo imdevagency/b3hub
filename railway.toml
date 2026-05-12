@@ -1,0 +1,12 @@
+# Railway deployment config — repo root
+# If the Railway service root is set to apps/backend, Railway uses
+# apps/backend/railway.toml instead of this file.
+# This file covers the case where service root = repo root.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/backend/Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 60
