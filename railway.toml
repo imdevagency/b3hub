@@ -1,12 +1,13 @@
 # Railway deployment config — repo root
-# If the Railway service root is set to apps/backend, Railway uses
-# apps/backend/railway.toml instead of this file.
-# This file covers the case where service root = repo root.
+# Used when Railway service source directory = repo root (empty).
+# If service source directory = apps/backend, apps/backend/railway.toml is used instead.
 
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "apps/backend/Dockerfile"
+# Install all workspace deps then build backend
+buildCommand = "npm ci && npm run build --workspace=apps/backend"
 
 [deploy]
+# CWD at runtime is repo root
+startCommand = "cd apps/backend && npx prisma migrate deploy && node --max-old-space-size=512 dist/main"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60

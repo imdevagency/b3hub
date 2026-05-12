@@ -3,9 +3,11 @@
 # Docs: https://docs.railway.com/reference/railway-toml
 
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+# Install from repo root to respect npm workspaces, then build backend
+buildCommand = "cd /app && npm ci && npm run build --workspace=apps/backend"
 
 [deploy]
+# CWD at runtime is /app/apps/backend
+startCommand = "npx prisma migrate deploy && node --max-old-space-size=512 dist/main"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60
