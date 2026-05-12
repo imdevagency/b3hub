@@ -44,4 +44,4 @@ WORKDIR /app/apps/backend
 EXPOSE 3000
 
 # Run pending migrations then start the server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node --max-old-space-size=512 dist/main"]
