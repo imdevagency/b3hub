@@ -17,9 +17,8 @@ COPY packages/ ./packages/
 
 WORKDIR /app/apps/backend
 
-# Generate Prisma client and build NestJS
-RUN npx prisma generate \
-  && npm run build
+# Build NestJS (prisma generate runs automatically via prebuild script)
+RUN npm run build
 
 # ── Stage 2: production image ─────────────────────────────────────────────────
 FROM node:22-alpine AS runner
