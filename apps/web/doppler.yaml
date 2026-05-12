@@ -1,0 +1,18 @@
+# Doppler secrets config for the web (Next.js) app.
+# Docs: https://docs.doppler.com/docs/cli
+#
+# First-time setup (once per machine):
+#   brew install dopplerhq/cli/doppler
+#   doppler login
+#   cd apps/web && doppler setup
+#
+# Doppler project "bilt-web" must exist with configs "dev" and "prd".
+# Secret names should match apps/web/.env.example exactly.
+# NEXT_PUBLIC_* vars are public — safe to expose in client bundle.
+#
+# Sync to Vercel:
+#   Doppler dashboard → bilt-web → Integrations → Vercel → connect project
+
+setup:
+  project: bilt-web
+  config: dev

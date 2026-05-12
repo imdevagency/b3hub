@@ -3,14 +3,15 @@
 # Docs: https://docs.railway.com/reference/railway-toml
 
 [build]
-# Install from repo root to respect npm workspaces, then build backend
-buildCommand = "cd /app && npm ci && npm run build --workspace=apps/backend"
+# Install from repo root to respect npm workspaces, then build backend.
+# Explicit cd + direct npx avoids npm workspace CWD ambiguity.
+buildCommand = "cd /app && npm ci && cd apps/backend && npx prisma generate && npx nest build"
 
 [deploy]
 # preDeployCommand runs after build but before traffic switches over.
-# DATABASE_URL and DIRECT_URL are available here as service variables.
-preDeployCommand = "npx prisma migrate deploy"
-# CWD at runtime is /app/apps/backend
-startCommand = "node --max-old-space-size=512 dist/main"
+# DATABASE_URL and DIRECT_URL must be set as Railway service variables.
+preDeployCommand = "cd /app/apps/backend && npx prisma migrate deploy"
+# Absolute path — CWD on Railway may vary.
+startCommand = "node --max-old-space-size=512 /app/apps/backend/dist/main"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60

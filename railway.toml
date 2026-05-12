@@ -3,14 +3,15 @@
 # If service source directory = apps/backend, apps/backend/railway.toml is used instead.
 
 [build]
-# Install all workspace deps then build backend
-buildCommand = "npm ci && npm run build --workspace=apps/backend"
+# Install all workspace deps then build backend.
+# Explicit cd ensures nest build runs from apps/backend/ and outputs dist/ there.
+buildCommand = "npm ci && cd apps/backend && npx prisma generate && npx nest build"
 
 [deploy]
 # preDeployCommand runs after build but before traffic switches over.
-# DATABASE_URL and DIRECT_URL are available here as service variables.
+# DATABASE_URL and DIRECT_URL must be set as Railway service variables.
 preDeployCommand = "cd apps/backend && npx prisma migrate deploy"
-# CWD at runtime is repo root
-startCommand = "cd apps/backend && node --max-old-space-size=512 dist/main"
+# Absolute path avoids any CWD ambiguity at runtime.
+startCommand = "node --max-old-space-size=512 /app/apps/backend/dist/main"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60

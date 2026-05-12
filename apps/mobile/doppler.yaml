@@ -1,0 +1,22 @@
+# Doppler secrets config for the mobile (Expo) app.
+# Docs: https://docs.doppler.com/docs/cli
+#
+# First-time setup (once per machine):
+#   brew install dopplerhq/cli/doppler
+#   doppler login
+#   cd apps/mobile && doppler setup
+#
+# Doppler project "bilt-mobile" must exist with configs "dev" and "prd".
+# Secret names should match apps/mobile/.env.example exactly.
+# EXPO_PUBLIC_* vars are baked into the app binary — treat as public.
+#
+# EAS builds — inject secrets at build time:
+#   cd apps/mobile && doppler run -- eas build --profile preview --platform ios
+#
+# NOTE: Doppler does NOT sync to EAS secrets vault automatically.
+# Either use `doppler run --` when invoking eas CLI, or sync manually via:
+#   doppler secrets download --no-file --format env | eas secret:push --scope project
+
+setup:
+  project: bilt-mobile
+  config: dev

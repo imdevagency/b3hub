@@ -1,0 +1,18 @@
+# Doppler secrets config for the backend service.
+# Docs: https://docs.doppler.com/docs/cli
+#
+# First-time setup (once per machine):
+#   brew install dopplerhq/cli/doppler
+#   doppler login
+#   cd apps/backend && doppler setup
+#
+# Doppler project "bilt-backend" must exist with configs "dev" and "prd".
+# Secret names should match apps/backend/.env.example exactly.
+#
+# Sync to Railway:
+#   Doppler dashboard → bilt-backend → Integrations → Railway → connect service
+# Sync to Vercel is not needed for backend (Railway only).
+
+setup:
+  project: bilt-backend
+  config: dev
