@@ -53,6 +53,7 @@ export class JwtOrApiKeyGuard implements CanActivate {
         userId: `apikey:${result.keyId}`,
         userType: 'BUYER',
         isCompany: true,
+        canBuy: true,
         canSell: false,
         canTransport: false,
         canSkipHire: false,

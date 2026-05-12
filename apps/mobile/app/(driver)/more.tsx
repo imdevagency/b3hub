@@ -22,6 +22,7 @@ import {
   LogOut,
   Users,
   Building2,
+  CreditCard,
 } from 'lucide-react-native';
 
 export default function DriverMoreScreen() {
@@ -61,6 +62,15 @@ export default function DriverMoreScreen() {
 
   const settingsTiles: TileItem[] = [
     { icon: Settings, label: 'Iestatījumi', onPress: () => router.push('/settings') },
+    ...(!user?.isCompany
+      ? [
+          {
+            icon: CreditCard,
+            label: 'Norēķini',
+            onPress: () => router.push('/(driver)/billing-settings'),
+          } as TileItem,
+        ]
+      : []),
   ];
 
   return (

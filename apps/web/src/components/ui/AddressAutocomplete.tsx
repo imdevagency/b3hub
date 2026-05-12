@@ -1,90 +1,29 @@
 /**
  * AddressAutocomplete UI component.
- * Text input wired to the Google Places AutocompleteSuggestion API for custom address search UI.
+ * Uses the backend /maps/autocomplete + /maps/place-details proxy.
+ * No client-side Google Maps SDK needed — works for anonymous users too.
  */
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2, Search } from 'lucide-react';
-
-/// <reference types="@types/google.maps" />
-
-// Extend Window to declare the custom Maps init callback property
-declare global {
-  interface Window {
-    __googleMapsPlacesInit?: () => void;
-  }
-}
-
-// ── Script loader (singleton — loads the script once) ────────────────────────
-
-let scriptState: 'idle' | 'loading' | 'ready' = 'idle';
-const pendingCallbacks: Array<() => void> = [];
-
-export function loadGoogleMapsScript(apiKey: string, onReady: () => void) {
-  // Already fully loaded (window.google.maps exists from any loader)
-  if (typeof window !== 'undefined' && window.google?.maps) {
-    scriptState = 'ready';
-    onReady();
-    return;
-  }
-
-  if (scriptState === 'ready') {
-    onReady();
-    return;
-  }
-
-  pendingCallbacks.push(onReady);
-
-  if (scriptState === 'loading') return;
-
-  // Another loader (e.g. @react-google-maps/api) may have already injected the script tag.
-  // Avoid duplicate injection — just wait for it to complete.
-  const existing =
-    typeof document !== 'undefined'
-      ? document.querySelector<HTMLScriptElement>('script[src*="maps.googleapis.com/maps/api/js"]')
-      : null;
-
-  if (existing) {
-    scriptState = 'loading';
-    // Poll until window.google.maps becomes available
-    const poll = window.setInterval(() => {
-      if (window.google?.maps) {
-        window.clearInterval(poll);
-        scriptState = 'ready';
-        pendingCallbacks.forEach((cb) => cb());
-        pendingCallbacks.length = 0;
-      }
-    }, 50);
-    return;
-  }
-
-  scriptState = 'loading';
-
-  window.__googleMapsPlacesInit = () => {
-    scriptState = 'ready';
-    pendingCallbacks.forEach((cb) => cb());
-    pendingCallbacks.length = 0;
-  };
-
-  const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=lv&loading=async&callback=__googleMapsPlacesInit`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
-}
+import { API_URL } from '@/lib/api/common';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface PlaceAddress {
-  address: string; // street + number
+  address: string;
   city: string;
   postal: string;
   lat?: number;
   lng?: number;
+}
+
+interface Suggestion {
+  place_id: string;
+  description: string;
 }
 
 interface Props {
@@ -95,6 +34,63 @@ interface Props {
   required?: boolean;
   className?: string;
   id?: string;
+}
+
+// ── Parse description into address parts ─────────────────────────────────────
+// Google Places descriptions for Baltic market:
+//   "Iela 1, Rajons, Rīga, Latvija"  → address: "Iela 1", city: "Rīga"
+//   "Iela, Rajons, Rīga"             → address: "Iela",   city: "Rīga"
+//   "Rīga, Latvija"                  → address: "Rīga",   city: "Rīga"
+const COUNTRY_SUFFIXES = ['latvija', 'lietuva', 'igaunija', 'latvia', 'lithuania', 'estonia'];
+function parseDescription(description: string): { address: string; city: string; postal: string } {
+  const parts = description.split(',').map((p) => p.trim());
+  const lastIsCountry = COUNTRY_SUFFIXES.some((c) =>
+    parts[parts.length - 1].toLowerCase().includes(c),
+  );
+  // The city is the second-to-last part when a country suffix is present,
+  // or the last part otherwise.
+  const cityIdx = lastIsCountry ? parts.length - 2 : parts.length - 1;
+  return {
+    address: parts[0] ?? description,
+    city: cityIdx >= 0 ? (parts[cityIdx] ?? '') : '',
+    postal: '',
+  };
+}
+
+function splitDescription(description: string): { main: string; secondary: string } {
+  const idx = description.indexOf(',');
+  if (idx === -1) return { main: description, secondary: '' };
+  return { main: description.slice(0, idx), secondary: description.slice(idx + 1).trim() };
+}
+
+// Keep exported so existing callers (SkipHireWizard, TransportWizard etc.)
+// can still load the Maps JS SDK for their embedded google.maps.Map instances.
+const LOADING_CALLBACKS: (() => void)[] = [];
+let sdkState: 'idle' | 'loading' | 'ready' = 'idle';
+
+export function loadGoogleMapsScript(apiKey: string, onReady: () => void) {
+  if (typeof window === 'undefined') return;
+  if (sdkState === 'ready') {
+    onReady();
+    return;
+  }
+  LOADING_CALLBACKS.push(onReady);
+  if (sdkState === 'loading') return;
+  sdkState = 'loading';
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&language=lv`;
+  script.async = true;
+  script.defer = true;
+  script.onload = () => {
+    sdkState = 'ready';
+    LOADING_CALLBACKS.forEach((cb) => cb());
+    LOADING_CALLBACKS.length = 0;
+  };
+  script.onerror = () => {
+    sdkState = 'idle';
+    LOADING_CALLBACKS.length = 0;
+  };
+  document.head.appendChild(script);
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -110,33 +106,19 @@ export function AddressAutocomplete({
 }: Props) {
   const [isOpen, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // Prevents the debounce from re-fetching / re-opening the dropdown after
+  // the user selects a suggestion (value changes programmatically, not via typing).
+  const userIsTypingRef = useRef(false);
 
-  // Google Maps session token
-  const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | undefined>(undefined);
-
-  useEffect(() => {
-    const apiKey = getGoogleMapsPublicKey();
-    if (!apiKey) return;
-
-    loadGoogleMapsScript(apiKey, () => {
-      const google = window.google;
-      if (!google) return;
-
-      sessionToken.current = new google.maps.places.AutocompleteSessionToken();
-    });
-  }, []);
-
-  // Handle outside click to close dropdown
+  // Close on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
-      const insideInput = containerRef.current?.contains(target);
-      const insideDropdown = dropdownRef.current?.contains(target);
-      if (!insideInput && !insideDropdown) {
+      if (!containerRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setOpen(false);
       }
     }
@@ -144,7 +126,7 @@ export function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Recalculate dropdown position whenever it opens or window resizes/scrolls
+  // Recalculate dropdown position
   useEffect(() => {
     function updatePosition() {
       if (!containerRef.current) return;
@@ -168,84 +150,64 @@ export function AddressAutocomplete({
     }
   }, [isOpen]);
 
-  // Debounced fetch
+  // Debounced fetch via backend proxy — only runs when the user is actually typing.
   useEffect(() => {
+    if (!userIsTypingRef.current) {
+      // value changed programmatically (e.g. after a suggestion was selected)
+      return;
+    }
     if (!value || value.length < 2) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPredictions([]);
+      setSuggestions([]);
       return;
     }
 
     setLoading(true);
     const timeoutId = setTimeout(async () => {
       try {
-        const g = window.google;
-        if (!g?.maps?.places?.AutocompleteSuggestion) return;
-
-        const { suggestions } =
-          await g.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: value,
-            includedRegionCodes: ['lv'],
-            types: ['address'],
-            sessionToken: sessionToken.current,
-          });
-
-        setLoading(false);
-        setPredictions(suggestions);
-        if (
-          suggestions.length > 0 &&
-          (document.activeElement?.id === id || document.activeElement?.closest('#' + id))
-        ) {
-          setOpen(true);
+        const res = await fetch(`${API_URL}/maps/autocomplete?input=${encodeURIComponent(value)}`);
+        if (!res.ok) {
+          setLoading(false);
+          return;
         }
+        const data = (await res.json()) as { suggestions?: Suggestion[] };
+        const results = data.suggestions ?? [];
+        setSuggestions(results);
+        setLoading(false);
+        if (results.length > 0) setOpen(true);
       } catch {
         setLoading(false);
-        setPredictions([]);
       }
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [value, id]);
+  }, [value]);
 
-  const handleSelect = async (suggestion: google.maps.places.AutocompleteSuggestion) => {
+  const handleSelect = async (s: Suggestion) => {
+    // Mark as NOT typing so subsequent value changes don't re-trigger debounce.
+    userIsTypingRef.current = false;
     setOpen(false);
-    const pp = suggestion.placePrediction!;
-    onChange(pp.text.text);
+    setLoading(false);
+    setSuggestions([]);
+
+    const parsed = parseDescription(s.description);
+    // Show the full suggestion description immediately so the user sees
+    // something meaningful while the place-details fetch is in flight.
+    onChange(s.description);
 
     try {
-      const place = pp.toPlace();
-      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress', 'location'] });
-
-      let route = '';
-      let streetNumber = '';
-      let city = '';
-      let postal = '';
-
-      const comps = place.addressComponents || [];
-      for (const component of comps) {
-        const type = component.types[0];
-        if (type === 'route') route = component.longText ?? '';
-        else if (type === 'street_number') streetNumber = component.longText ?? '';
-        else if (type === 'locality') city = component.longText ?? '';
-        else if (type === 'postal_code') postal = component.longText ?? '';
+      const res = await fetch(
+        `${API_URL}/maps/place-details?place_id=${encodeURIComponent(s.place_id)}`,
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { location?: { lat: number; lng: number } };
+        onSelect({ ...parsed, lat: data.location?.lat, lng: data.location?.lng });
+        return;
       }
-
-      const address = route
-        ? `${route}${streetNumber ? ' ' + streetNumber : ''}`
-        : (place.formattedAddress ?? '');
-
-      const lat = place.location?.lat();
-      const lng = place.location?.lng();
-
-      onChange(address);
-      onSelect({ address, city, postal, lat, lng });
     } catch {
-      // fallback: use the description as-is
-      onSelect({ address: pp.text.text, city: '', postal: '' });
+      // fall through to description-only result
     }
 
-    // Reset session token after a selection
-    sessionToken.current = new window.google.maps.places.AutocompleteSessionToken();
+    onSelect(parsed);
   };
 
   return (
@@ -257,11 +219,12 @@ export function AddressAutocomplete({
           type="text"
           value={value}
           onChange={(e) => {
+            userIsTypingRef.current = true;
             onChange(e.target.value);
             setOpen(true);
           }}
           onFocus={() => {
-            if (predictions.length > 0) setOpen(true);
+            if (suggestions.length > 0) setOpen(true);
           }}
           placeholder={placeholder}
           required={required}
@@ -275,7 +238,7 @@ export function AddressAutocomplete({
         )}
       </div>
       {isOpen &&
-        predictions.length > 0 &&
+        suggestions.length > 0 &&
         typeof document !== 'undefined' &&
         createPortal(
           <div
@@ -284,12 +247,10 @@ export function AddressAutocomplete({
             className="bg-background rounded-2xl border border-border shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <ul className="max-h-72 overflow-y-auto w-full divide-y divide-border/40 flex flex-col scrollbar-thin">
-              {predictions.map((s) => {
-                const pp = s.placePrediction!;
-                const mainText = pp.mainText?.text || pp.text.text;
-                const secondaryText = pp.secondaryText?.text || '';
+              {suggestions.map((s) => {
+                const { main, secondary } = splitDescription(s.description);
                 return (
-                  <li key={pp.placeId}>
+                  <li key={s.place_id}>
                     <button
                       type="button"
                       className="w-full text-left px-4 py-3.5 hover:bg-muted/40 active:bg-muted transition-colors flex items-center gap-3.5 group/item focus:outline-none focus:bg-muted/60"
@@ -300,11 +261,11 @@ export function AddressAutocomplete({
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="text-[15px] font-bold text-foreground truncate pr-2">
-                          {mainText}
+                          {main}
                         </span>
-                        {secondaryText && (
+                        {secondary && (
                           <span className="text-[13px] font-medium text-muted-foreground truncate pr-2">
-                            {secondaryText}
+                            {secondary}
                           </span>
                         )}
                       </div>

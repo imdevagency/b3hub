@@ -329,28 +329,30 @@ export function ToiletCabinWizard({ mode }: Props) {
                   onClick={() => setCabinType(ct.value)}
                   className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
                     isSel
-                      ? 'border-primary bg-primary/5'
+                      ? 'border-[#203728] bg-[#203728]/5'
                       : 'border-border bg-card hover:border-border/80'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <ct.Icon
                       className={`size-5 mt-0.5 shrink-0 ${
-                        isSel ? 'text-primary' : 'text-muted-foreground'
+                        isSel ? 'text-[#203728]' : 'text-muted-foreground'
                       }`}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p
                           className={`font-semibold text-sm ${
-                            isSel ? 'text-primary' : 'text-foreground'
+                            isSel ? 'text-[#203728]' : 'text-foreground'
                           }`}
                         >
                           {ct.label}
                         </p>
                         <span
                           className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
-                            isSel ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+                            isSel
+                              ? 'bg-[#203728]/15 text-[#203728]'
+                              : 'bg-muted text-muted-foreground'
                           }`}
                         >
                           no €{PRICE_BY_TYPE[ct.value].toFixed(2)}/dienā
@@ -375,7 +377,7 @@ export function ToiletCabinWizard({ mode }: Props) {
           </div>
           <Button
             onClick={() => setStep(1)}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             Tālāk — skaits un periods <ArrowRight className="size-4 ml-1.5" />
           </Button>
@@ -431,7 +433,7 @@ export function ToiletCabinWizard({ mode }: Props) {
               />
             </div>
             {dateRange?.from && dateRange?.to && (
-              <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+              <div className="flex items-center gap-2.5 rounded-xl bg-[#203728]/10 border border-[#203728]/20 px-4 py-3">
                 <CalendarDays className="size-4 text-foreground shrink-0" />
                 <span className="text-sm font-semibold text-foreground">
                   {dateRange.from.toLocaleDateString('lv-LV', { day: 'numeric', month: 'long' })}
@@ -464,7 +466,7 @@ export function ToiletCabinWizard({ mode }: Props) {
           <Button
             disabled={!canProceedStep0}
             onClick={() => setStep(2)}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1.5" />
           </Button>
@@ -602,7 +604,7 @@ export function ToiletCabinWizard({ mode }: Props) {
           <Button
             disabled={submitting}
             onClick={handleSubmitClick}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" />

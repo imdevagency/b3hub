@@ -426,8 +426,8 @@ export function DisposalWizard({ mode }: Props) {
                   onClick={() => setWasteType(w.id)}
                   className={`relative flex flex-col text-left rounded-2xl border-2 p-4 transition-all group ${
                     selected
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border/60 bg-transparent hover:border-primary/30'
+                      ? 'border-[#203728] bg-[#203728]/5 shadow-sm'
+                      : 'border-border/60 bg-transparent hover:border-[#203728]/30'
                   } ${w.hazardous && !selected ? 'border-amber-200 bg-amber-50/20 hover:border-amber-300' : ''} ${
                     w.hazardous && selected ? 'border-amber-500 bg-amber-100/30' : ''
                   }`}
@@ -441,7 +441,7 @@ export function DisposalWizard({ mode }: Props) {
                             : 'bg-primary text-white shadow-sm'
                           : w.hazardous
                             ? 'bg-amber-100 text-amber-700 group-hover:bg-amber-200'
-                            : 'bg-muted text-muted-foreground group-hover:text-primary group-hover:bg-primary/10'
+                            : 'bg-muted text-muted-foreground group-hover:text-[#203728] group-hover:bg-[#203728]/10'
                       }`}
                     >
                       <Icon className="size-5" strokeWidth={2.5} />
@@ -451,10 +451,10 @@ export function DisposalWizard({ mode }: Props) {
                         selected
                           ? w.hazardous
                             ? 'border-amber-500 bg-amber-500'
-                            : 'border-primary bg-primary'
+                            : 'border-[#203728] bg-[#203728]'
                           : w.hazardous
                             ? 'border-amber-300'
-                            : 'border-border/60 group-hover:border-primary/40'
+                            : 'border-border/60 group-hover:border-[#203728]/40'
                       }`}
                     >
                       {selected && <Check className="size-3 text-white" strokeWidth={3.5} />}
@@ -478,7 +478,7 @@ export function DisposalWizard({ mode }: Props) {
                   {selected && priceBand && (
                     <div className="mt-3 pt-3 border-t border-border/40 w-full">
                       <p
-                        className={`text-xs font-extrabold ${w.hazardous ? 'text-amber-700' : 'text-primary'}`}
+                        className={`text-xs font-extrabold ${w.hazardous ? 'text-amber-700' : 'text-[#203728]'}`}
                       >
                         ~ €{priceBand.from}–€{priceBand.to}{' '}
                         <span className="font-semibold opacity-70">/ t</span>
@@ -505,7 +505,7 @@ export function DisposalWizard({ mode }: Props) {
                 placeholder="piem. 5"
                 value={weightT}
                 onChange={(e) => setWeightT(e.target.value)}
-                className="pl-12 pr-16 h-14 text-lg font-bold rounded-2xl bg-muted/30 border-2 border-transparent hover:border-primary/40 focus-visible:ring-0 focus-visible:border-primary transition-all shadow-none"
+                className="pl-12 pr-16 h-14 text-lg font-bold rounded-2xl bg-muted/30 border-2 border-transparent hover:border-[#203728]/40 focus-visible:ring-0 focus-visible:border-[#203728] transition-all shadow-none"
                 style={{ WebkitAppearance: 'none', margin: 0 }}
               />
               <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
@@ -527,7 +527,7 @@ export function DisposalWizard({ mode }: Props) {
           <Button
             onClick={() => setStep('address')}
             disabled={!wasteType || !weightT}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             Tālāk — adrese <ArrowRight className="size-4 ml-1.5" />
           </Button>
@@ -605,9 +605,9 @@ export function DisposalWizard({ mode }: Props) {
               />
             </div>
             {date && (
-              <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+              <div className="flex items-center gap-2.5 rounded-xl bg-[#203728]/10 border border-[#203728]/20 px-4 py-3">
                 <CalendarDays className="size-4 text-black shrink-0" />
-                <span className="text-sm font-semibold text-primary">
+                <span className="text-sm font-semibold text-[#203728]">
                   Izņemšana:{' '}
                   {new Date(date + 'T00:00:00').toLocaleDateString('lv-LV', {
                     weekday: 'long',
@@ -753,7 +753,7 @@ export function DisposalWizard({ mode }: Props) {
               }
             }}
             disabled={!date || !contactPhone.trim() || hasTruckAccess === null || submitting}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" />
@@ -804,14 +804,14 @@ export function DisposalWizard({ mode }: Props) {
           {guestToken ? (
             <Button
               onClick={() => router.push(`/pasutijums/${guestToken}`)}
-              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
             >
               <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
             </Button>
           ) : (
             <Button
               onClick={() => router.push('/dashboard/orders')}
-              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
             >
               <CheckCircle2 className="size-4 mr-1.5" /> Skatīt pasūtījumus
             </Button>

@@ -74,6 +74,12 @@ class RejectSurchargeDto {
   @IsString() @IsOptional() note?: string;
 }
 
+class UpdateDriverBillingDto {
+  /** IBAN for Paysera IBAN payouts. Pass empty string to clear. */
+  @IsString()
+  ibanNumber: string;
+}
+
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
 class UploadPickupPhotoDto {
@@ -313,6 +319,23 @@ export class TransportJobsController {
     // Validates ownership/access — throws 403/404 if caller has no access to this job.
     await this.service.findOneAsUser(id, user);
     return this.service.getDocumentReadiness(id);
+  }
+
+  /**
+   * PATCH /transport-jobs/driver/billing
+   * Solo (non-company) drivers submit their IBAN for Paysera payouts.
+   * Company drivers manage IBAN through PATCH /company/me.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('driver/billing')
+  updateDriverBilling(
+    @CurrentUser() user: RequestingUser,
+    @Body() dto: UpdateDriverBillingDto,
+  ) {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only approved drivers can update billing details');
+    }
+    return this.service.updateDriverBillingIban(user.userId, dto.ibanNumber);
   }
 
   /**

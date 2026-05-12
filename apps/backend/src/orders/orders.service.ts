@@ -3585,6 +3585,7 @@ export class OrdersService {
               userId: schedule.createdById,
               userType: schedule.createdBy.userType as 'BUYER',
               isCompany: schedule.createdBy.isCompany,
+              canBuy: schedule.createdBy.canBuy ?? true,
               canSell: schedule.createdBy.canSell,
               canTransport: schedule.createdBy.canTransport,
               canSkipHire: schedule.createdBy.canSkipHire,

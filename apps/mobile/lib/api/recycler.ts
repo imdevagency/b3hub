@@ -147,3 +147,35 @@ export async function cancelIncomingJob(
   );
   if (!res.ok) throw new Error('Failed to cancel job');
 }
+
+export interface CreateRecyclingCenterInput {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  coordinates?: { lat: number; lng: number };
+  acceptedWasteTypes: string[];
+  capacity: number;
+  certifications?: string[];
+  operatingHours: Record<string, { open: string; close: string } | null>;
+  licensed?: boolean;
+  licenceNumber?: string;
+}
+
+/** POST /recycling-centers — register a new recycling/waste center */
+export async function createRecyclingCenter(
+  token: string,
+  data: CreateRecyclingCenterInput,
+): Promise<RecyclerCenter> {
+  const res = await fetch(`${API_BASE}/recycling-centers`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any)?.message ?? 'Failed to create recycling center');
+  }
+  return res.json();
+}

@@ -40,30 +40,28 @@ export function WizardShell({
   return (
     <div className={cn('flex flex-col', className)}>
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0 bg-[#203728]">
         {onBack ? (
           <button
             onClick={onBack}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             aria-label="Atpakaļ"
           >
-            <ArrowLeft className="size-4 text-foreground" />
+            <ArrowLeft className="size-4 text-white" />
           </button>
         ) : (
           <div className="size-9 shrink-0" />
         )}
 
-        <h2 className="flex-1 text-center text-[15px] font-bold text-foreground truncate">
-          {title}
-        </h2>
+        <h2 className="flex-1 text-center text-[15px] font-bold text-white truncate">{title}</h2>
 
         {onClose ? (
           <button
             onClick={onClose}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             aria-label="Aizvērt"
           >
-            <X className="size-4 text-foreground" />
+            <X className="size-4 text-white" />
           </button>
         ) : (
           <div className="size-9 shrink-0" />
@@ -71,13 +69,13 @@ export function WizardShell({
       </div>
 
       {/* ── Optional header slot (e.g. tab switcher) ────────────── */}
-      {headerSlot && <div className="px-4 pb-2 shrink-0">{headerSlot}</div>}
+      {headerSlot && <div className="px-4 pb-2 shrink-0 bg-[#203728]">{headerSlot}</div>}
 
       {/* ── Progress bar ────────────────────────────────────────── */}
       {step > 0 && (
-        <div className="relative h-0.5 shrink-0 bg-border/50">
+        <div className="relative h-1 shrink-0 bg-white/20">
           <div
-            className="absolute left-0 top-0 bottom-0 bg-foreground transition-[width] duration-300 ease-out"
+            className="absolute left-0 top-0 bottom-0 bg-white transition-[width] duration-300 ease-out"
             style={{ width: `${progress * 100}%` }}
           />
         </div>

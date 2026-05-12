@@ -25,6 +25,13 @@ export class MapsService {
     return key;
   }
 
+  private getPlacesApiKey(): string {
+    const key =
+      this.configService.get<string>('GOOGLE_MAPS_PLACES_API_KEY')?.trim() ||
+      this.getApiKey();
+    return key;
+  }
+
   async getRouteEncodedPolyline(input: {
     originLat: number;
     originLng: number;
@@ -86,7 +93,7 @@ export class MapsService {
 
   /** Proxy Google Places Autocomplete — keeps API key server-side. */
   async autocomplete(input: string): Promise<PlaceSuggestion[]> {
-    const apiKey = this.getApiKey();
+    const apiKey = this.getPlacesApiKey();
     if (!apiKey) return [];
     try {
       const url =
@@ -107,7 +114,7 @@ export class MapsService {
 
   /** Proxy Google Place Details to get lat/lng from place_id. */
   async placeDetails(placeId: string): Promise<PlaceLatLng | null> {
-    const apiKey = this.getApiKey();
+    const apiKey = this.getPlacesApiKey();
     if (!apiKey) return null;
     try {
       const url =

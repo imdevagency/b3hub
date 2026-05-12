@@ -522,7 +522,7 @@ export function ScrapBuybackWizard({ mode }: Props) {
           </div>
 
           <Button
-            className="w-full h-12 text-base rounded-full shadow-md hover:shadow-lg transition-all"
+            className="w-full h-12 text-base rounded-full shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
             size="lg"
             disabled={!validWeight}
             onClick={() => setStep('address')}
@@ -656,7 +656,7 @@ export function ScrapBuybackWizard({ mode }: Props) {
                               </span>
                             )}
                             {offer.licensed && (
-                              <BadgeCheck className="size-5 shrink-0 text-emerald-600" />
+                              <BadgeCheck className="size-5 shrink-0 text-[#203728]" />
                             )}
                           </div>
                           <p className="text-sm font-medium text-muted-foreground truncate">
@@ -830,7 +830,7 @@ export function ScrapBuybackWizard({ mode }: Props) {
 
           <div className="pt-4">
             <Button
-              className="w-full h-12 text-base rounded-full shadow-md hover:shadow-lg transition-all"
+              className="w-full h-12 text-base rounded-full shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
               size="lg"
               disabled={submitting || !contactPhone.trim()}
               onClick={() => {

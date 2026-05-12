@@ -258,7 +258,7 @@ export function TransportWizard({ mode }: Props) {
   ]);
 
   // ── Map ───────────────────────────────────────────────────────────────────
-   
+
   const mapDivRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -529,7 +529,7 @@ export function TransportWizard({ mode }: Props) {
           <Button
             onClick={() => setStep('from')}
             disabled={!cargoDesc.trim()}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             Tālāk — iekraušanas adrese <ArrowRight className="size-4 ml-1.5" />
           </Button>
@@ -590,7 +590,7 @@ export function TransportWizard({ mode }: Props) {
             <p className="font-bold text-foreground text-sm truncate">{cargoDesc}</p>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <MapPin className="size-3 shrink-0 text-emerald-600" /> {fromAddress}
+                <MapPin className="size-3 shrink-0 text-[#203728]" /> {fromAddress}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <MapPin className="size-3 shrink-0 text-red-500" /> {toAddress}
@@ -661,9 +661,9 @@ export function TransportWizard({ mode }: Props) {
               />
             </div>
             {date && (
-              <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+              <div className="flex items-center gap-2.5 rounded-xl bg-[#203728]/10 border border-[#203728]/20 px-4 py-3">
                 <CalendarDays className="size-4 text-black shrink-0" />
-                <span className="text-sm font-semibold text-primary">
+                <span className="text-sm font-semibold text-[#203728]">
                   Datums:{' '}
                   {new Date(date + 'T00:00:00').toLocaleDateString('lv-LV', {
                     weekday: 'long',
@@ -777,7 +777,7 @@ export function TransportWizard({ mode }: Props) {
               }
             }}
             disabled={!date || !contactPhone.trim() || submitting}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" />
@@ -828,14 +828,14 @@ export function TransportWizard({ mode }: Props) {
           {guestToken ? (
             <Button
               onClick={() => router.push(`/pasutijums/${guestToken}`)}
-              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
             >
               <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
             </Button>
           ) : (
             <Button
               onClick={() => router.push('/dashboard/orders')}
-              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+              className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
             >
               <CheckCircle2 className="size-4 mr-1.5" /> Skatīt pasūtījumus
             </Button>
@@ -864,7 +864,7 @@ export function TransportWizard({ mode }: Props) {
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {fromAddress && (
             <div className="bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-xs font-medium text-foreground flex items-center gap-1.5">
-              <MapPin className="size-3.5 text-emerald-600 shrink-0" />
+              <MapPin className="size-3.5 text-[#203728] shrink-0" />
               <span className="truncate max-w-55">{fromAddress}</span>
             </div>
           )}

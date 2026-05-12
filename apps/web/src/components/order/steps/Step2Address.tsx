@@ -172,7 +172,7 @@ export function Step2Address({
             <button
               onClick={onNext}
               disabled={!isValid}
-              className="flex-2 rounded-full bg-foreground py-3.5 text-base font-bold text-background shadow-md hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+              className="flex-2 rounded-full bg-[#203728] py-3.5 text-base font-bold text-white shadow-md hover:shadow-lg hover:bg-[#203728]/90 transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
             >
               {nextLabel ?? 'Rādīt piedāvājumus'}
             </button>

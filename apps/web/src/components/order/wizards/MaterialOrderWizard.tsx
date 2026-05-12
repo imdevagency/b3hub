@@ -336,7 +336,7 @@ function OfferCard({
         <Button
           onClick={onSelect}
           disabled={submitting}
-          className="w-full rounded-xl h-11 font-bold"
+          className="w-full rounded-xl h-11 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
         >
           {submitting ? (
             <Loader2 className="size-4 animate-spin" />
@@ -383,7 +383,7 @@ function RFQPanel({
         onClick={onSend}
         disabled={submitting}
         variant={compact ? 'outline' : 'default'}
-        className={`w-full rounded-2xl font-bold ${compact ? 'h-11' : 'h-12'}`}
+        className={`w-full rounded-2xl font-bold ${compact ? 'h-11' : 'h-12'} ${!compact ? 'bg-[#203728] text-white hover:bg-[#203728]/90' : ''}`}
       >
         {submitting ? (
           <Loader2 className="size-4 animate-spin" />
@@ -976,7 +976,7 @@ export function MaterialOrderWizard({
           <Button
             onClick={() => setStep('where')}
             disabled={!form.materialName.trim() || form.quantity <= 0}
-            className="w-full rounded-2xl h-12 text-[15px] font-bold"
+            className="w-full rounded-2xl h-12 text-[15px] font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1" />
           </Button>
@@ -1116,7 +1116,7 @@ export function MaterialOrderWizard({
                 )
               }
               disabled={!form.siteContactPhone.trim()}
-              className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-2 rounded-xl bg-[#203728] py-3 text-sm font-bold text-white hover:bg-[#203728]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {selectedOffer ? 'Apstiprināt pasūtījumu' : 'Nosūtīt pieprasījumu'}
             </button>
@@ -1216,7 +1216,7 @@ export function MaterialOrderWizard({
           <div className="w-full space-y-3 pt-2">
             <Button
               onClick={() => router.push('/dashboard/quote-requests')}
-              className="w-full rounded-2xl h-12 font-bold"
+              className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
             >
               <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
             </Button>
@@ -1281,14 +1281,14 @@ export function MaterialOrderWizard({
             {guestToken ? (
               <Button
                 onClick={() => router.push(`/pasutijums/${guestToken}`)}
-                className="w-full rounded-2xl h-12 font-bold"
+                className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
               >
                 <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
               </Button>
             ) : (
               <Button
                 onClick={() => router.push('/dashboard/orders')}
-                className="w-full rounded-2xl h-12 font-bold"
+                className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
               >
                 <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
               </Button>

@@ -10,6 +10,7 @@ import {
 import { MapsService } from './maps.service';
 import { RoutePolylineDto } from './dto/route-polyline.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 import { ApiTags } from '@nestjs/swagger';
 
@@ -25,7 +26,8 @@ export class MapsController {
     return { encodedPolyline };
   }
 
-  /** GET /maps/autocomplete?input=Riga */
+  /** GET /maps/autocomplete?input=Riga — public so marketing page works for anonymous users */
+  @Public()
   @Get('autocomplete')
   async autocomplete(@Query('input') input: string) {
     // Truncate to 200 chars to prevent excessively large upstream requests
@@ -34,7 +36,8 @@ export class MapsController {
     return { suggestions };
   }
 
-  /** GET /maps/place-details?place_id=ChIJ... */
+  /** GET /maps/place-details?place_id=ChIJ... — public so marketing page works for anonymous users */
+  @Public()
   @Get('place-details')
   async placeDetails(@Query('place_id') placeId: string) {
     if (!placeId || placeId.length > 500) {

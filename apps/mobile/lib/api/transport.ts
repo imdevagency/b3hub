@@ -537,4 +537,18 @@ export const transportApi = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       }),  },
+
+  /**
+   * PATCH /transport-jobs/driver/billing
+   * Solo drivers (not linked to a company) submit their IBAN for payouts.
+   */
+  updateDriverBilling: (token: string, ibanNumber: string) =>
+    apiFetch<{ ibanNumber: string | null; payoutEnabled: boolean }>(
+      '/transport-jobs/driver/billing',
+      {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ibanNumber }),
+      },
+    ),
 };

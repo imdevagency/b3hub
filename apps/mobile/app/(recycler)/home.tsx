@@ -10,7 +10,7 @@ import { useHeaderConfig } from '@/lib/header-context';
 import { getRecyclerJobStatus } from '@/lib/status';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { Inbox, FileText, Recycle, ChevronRight } from 'lucide-react-native';
+import { Inbox, FileText, Recycle, ChevronRight, Plus } from 'lucide-react-native';
 
 function StatCard({
   label,
@@ -116,6 +116,29 @@ export default function RecyclerHomeScreen() {
             : 'Atkritumu savākšanas punkts'}
         </Text>
 
+        {/* No center registered — prompt to register */}
+        {centers.length === 0 && (
+          <View style={ls.registerBanner}>
+            <Recycle size={28} color="#203728" />
+            <Text style={ls.registerTitle}>Objekts nav reģistrēts</Text>
+            <Text style={ls.registerSub}>
+              Reģistrējiet savu atkritumu pārstrādes punktu, lai sāktu saņemt izvedumu darbus no
+              B3Hub platformas.
+            </Text>
+            <TouchableOpacity
+              style={ls.registerBtn}
+              activeOpacity={0.8}
+              onPress={() => {
+                haptics.light();
+                router.push('/(recycler)/register-center');
+              }}
+            >
+              <Plus size={16} color="#fff" />
+              <Text style={ls.registerBtnText}>Reģistrēt objektu</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* stats row */}
         <View style={ls.statsRow}>
           <StatCard
@@ -192,6 +215,39 @@ const ls = StyleSheet.create({
     marginBottom: 4,
   },
   sub: { fontSize: 13, color: colors.textMuted, marginBottom: 20 },
+  registerBanner: {
+    backgroundColor: '#f0f9f5',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1ede3',
+    gap: 10,
+  },
+  registerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#203728',
+    textAlign: 'center',
+  },
+  registerSub: {
+    fontSize: 14,
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  registerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#203728',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 4,
+  },
+  registerBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
   statsRow: {
     flexDirection: 'row',
     gap: 10,

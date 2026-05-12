@@ -4467,4 +4467,27 @@ export class TransportJobsService {
     });
     return job?.driverId === driverId;
   }
+
+  /**
+   * Update the IBAN on the solo driver's DriverProfile.
+   * Company drivers manage IBAN through PATCH /company/me instead.
+   */
+  async updateDriverBillingIban(
+    userId: string,
+    ibanNumber: string,
+  ): Promise<{ ibanNumber: string | null; payoutEnabled: boolean }> {
+    const profile = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!profile) {
+      throw new NotFoundException('Driver profile not found');
+    }
+    const updated = await this.prisma.driverProfile.update({
+      where: { userId },
+      data: { ibanNumber: ibanNumber || null },
+      select: { ibanNumber: true, payoutEnabled: true },
+    });
+    return updated;
+  }
 }

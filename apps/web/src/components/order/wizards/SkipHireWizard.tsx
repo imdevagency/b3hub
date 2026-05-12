@@ -420,7 +420,7 @@ export function SkipHireWizard({ mode }: Props) {
                     setWasteType(id);
                     setStep('size');
                   }}
-                  className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-emerald-300 hover:shadow-sm transition-all group"
+                  className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-[#203728] hover:shadow-sm transition-all group"
                 >
                   <div>
                     <p className="font-semibold text-foreground">{w.label}</p>
@@ -452,12 +452,12 @@ export function SkipHireWizard({ mode }: Props) {
                   setSize(s.id);
                   setStep('address');
                 }}
-                className="group text-left rounded-2xl border border-border/60 bg-card p-5 hover:border-emerald-300 hover:shadow-sm transition-all active:scale-[0.98]"
+                className="group text-left rounded-2xl border border-border/60 bg-card p-5 hover:border-[#203728] hover:shadow-sm transition-all active:scale-[0.98]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-[16px] text-foreground">{s.label}</p>
-                    <p className="text-sm font-medium text-emerald-700 mt-0.5">{s.sub}</p>
+                    <p className="text-sm font-medium text-[#203728] mt-0.5">{s.sub}</p>
                   </div>
                   <p className="text-lg font-bold text-foreground shrink-0">no €{s.fromPrice}</p>
                 </div>
@@ -541,10 +541,10 @@ export function SkipHireWizard({ mode }: Props) {
               />
             </div>
             {hireRange?.from && (
-              <div className="flex items-center gap-2.5 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
+              <div className="flex items-center gap-2.5 rounded-xl bg-[#203728]/10 border border-[#203728]/20 px-4 py-3">
                 <CalendarDays className="size-4 text-black shrink-0" />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-primary">
+                  <span className="text-sm font-semibold text-[#203728]">
                     Piegāde:{' '}
                     {hireRange.from.toLocaleDateString('lv-LV', {
                       weekday: 'long',
@@ -554,7 +554,7 @@ export function SkipHireWizard({ mode }: Props) {
                     })}
                   </span>
                   {hireRange.to && hireRange.to.getTime() !== hireRange.from.getTime() && (
-                    <span className="text-xs font-medium text-primary/70">
+                    <span className="text-xs font-medium text-[#203728]/70">
                       Nodošana:{' '}
                       {hireRange.to.toLocaleDateString('lv-LV', {
                         day: 'numeric',
@@ -713,7 +713,7 @@ export function SkipHireWizard({ mode }: Props) {
               }
             }}
             disabled={!deliveryDate || !contactPhone.trim() || submitting}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             {submitting ? (
               <Loader2 className="size-4 animate-spin" />
@@ -777,7 +777,7 @@ export function SkipHireWizard({ mode }: Props) {
           )}
           <Button
             onClick={() => router.push('/dashboard/orders')}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             Skatīt pasūtījumus
           </Button>
@@ -802,7 +802,7 @@ export function SkipHireWizard({ mode }: Props) {
           </p>
           <Button
             onClick={() => router.push(`/pasutijums/${guestToken}`)}
-            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all"
+            className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
             <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
           </Button>

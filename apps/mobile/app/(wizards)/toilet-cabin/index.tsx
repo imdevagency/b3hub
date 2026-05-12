@@ -24,6 +24,7 @@ import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPick
 import { WizardDateRangeSummary } from '@/components/wizard/WizardDateRangeSummary';
 import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
 import { WizardContactFields } from '@/components/wizard/WizardContactFields';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';

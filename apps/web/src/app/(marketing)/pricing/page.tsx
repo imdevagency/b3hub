@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Check, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { Hero } from '@/components/marketing/layout/Hero';
 import { Container } from '@/components/marketing/layout/Container';
 import { CTAButton } from '@/components/marketing/ui/cta-button';
@@ -249,30 +250,31 @@ export default function PricingPage() {
         </section>
 
         {/* ── FAQ ── */}
-        <FAQAccordion items={faq} className="bg-neutral-50" />
+        <FAQAccordion items={faq} className="bg-background" />
 
-        {/* ── ENTERPRISE / VOLUME ── */}
-        <section className="w-full bg-background pb-32">
-          <Container>
-            <div className="flex flex-col md:flex-row md:items-center bg-neutral-50 rounded-[4rem] p-12 md:p-20 justify-between gap-12 shadow-sm border border-border/50">
-              <div className="max-w-2xl flex flex-col gap-6">
-                <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
+        {/* ── CTA + ENTERPRISE ── */}
+        <section className="w-full py-32 bg-[#203728]">
+          <Container className="flex flex-col md:flex-row items-end justify-between gap-12">
+            <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-background leading-none">
+              Sāciet
+              <br />
+              bez riska.
+            </h2>
+            <div className="flex flex-col gap-6 min-w-fit">
+              <CTAButton href="/register" variant="inverted" size="lg">
+                Reģistrēties bez maksas
+              </CTAButton>
+              <div className="border-t border-background/10 pt-6 flex flex-col gap-1">
+                <p className="text-xs font-bold tracking-widest uppercase text-background/30">
                   Liels apjoms?
                 </p>
-                <h2 className="text-5xl md:text-7xl font-bold tracking-tighter leading-none">
-                  Individuāli
-                  <br /> noteikumi.
-                </h2>
-                <p className="text-muted-foreground text-xl font-light leading-relaxed">
-                  Uzņēmumiem ar augstu darījumu apjomu — piegādātājiem, pārvadātājiem un būvniecības
-                  kompānijām ar vairākiem aktīviem projektiem — piedāvājam individuālu komisijas
-                  struktūru un integrāciju esošajās sitēmās.
-                </p>
-              </div>
-              <div className="shrink-0 flex items-center justify-center">
-                <CTAButton href="/contact" variant="primary" size="lg">
-                  Sazināties ar komandu
-                </CTAButton>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-1.5 text-sm text-background/50 hover:text-background/80 transition-colors"
+                >
+                  Individuāli noteikumi lieliem partneriem
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
           </Container>

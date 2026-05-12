@@ -481,7 +481,7 @@ export function Step3DateOffers({
         <button
           onClick={onNext}
           disabled={!canProceed}
-          className="flex-2 rounded-2xl bg-black py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-gray-800 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
+          className="flex-2 rounded-2xl bg-[#203728] py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-[#203728]/90 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none"
         >
           Turpināt
         </button>

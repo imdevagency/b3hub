@@ -379,7 +379,9 @@ export default function EarningsScreen() {
           />
         }
       >
-        {user?.isCompany && user.payoutEnabled === false && (
+        {/* Payout setup banner — company drivers: show if payoutEnabled is false; solo drivers: always show until IBAN is set */}
+        {((user?.isCompany && user.payoutEnabled === false) ||
+          (!user?.isCompany && !stripeOnboarded)) && (
           <View className="mx-5 mb-8 bg-gray-50 rounded-3xl p-5 border border-gray-100">
             <View className="flex-row items-center mb-3">
               <AlertCircle size={20} color="#ea580c" />
@@ -403,10 +405,16 @@ export default function EarningsScreen() {
                 marginBottom: 16,
               }}
             >
-              Pievienojiet bankas kontu Stripe sistēmā, lai mēs varētu pārskaitīt jūsu izpeļņu.
+              {user?.isCompany
+                ? 'Pievienojiet uzņēmuma bankas kontu, lai mēs varētu pārskaitīt jūsu izpeļņu.'
+                : 'Pievienojiet savu IBAN numuru, lai mēs varētu pārskaitīt jūsu izpeļņu.'}
             </Text>
             <TouchableOpacity
-              onPress={handleSetupPayouts}
+              onPress={
+                user?.isCompany
+                  ? handleSetupPayouts
+                  : () => router.push('/(driver)/billing-settings')
+              }
               disabled={setupLoading}
               className="bg-[#166534] py-3.5 px-6 rounded-full items-center mt-4"
               activeOpacity={0.8}
