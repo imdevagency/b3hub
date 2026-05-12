@@ -7,7 +7,10 @@
 buildCommand = "npm ci && npm run build --workspace=apps/backend"
 
 [deploy]
+# preDeployCommand runs after build but before traffic switches over.
+# DATABASE_URL and DIRECT_URL are available here as service variables.
+preDeployCommand = "cd apps/backend && npx prisma migrate deploy"
 # CWD at runtime is repo root
-startCommand = "cd apps/backend && npx prisma migrate deploy && node --max-old-space-size=512 dist/main"
+startCommand = "cd apps/backend && node --max-old-space-size=512 dist/main"
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 60
