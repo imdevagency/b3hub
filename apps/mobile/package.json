@@ -6,9 +6,9 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "start": "doppler run -- expo start --clear",
-    "start:go": "doppler run -- expo start --clear --go",
-    "start:tunnel": "cloudflared tunnel --url http://localhost:8081 & doppler run -- expo start --clear",
+    "start": "expo start --clear",
+    "start:go": "expo start --clear --go",
+    "start:tunnel": "cloudflared tunnel --url http://localhost:8081 & expo start --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
