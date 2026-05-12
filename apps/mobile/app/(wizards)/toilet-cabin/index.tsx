@@ -10,30 +10,20 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Building2, Thermometer, Star, Accessibility, ArrowRight } from 'lucide-react-native';
+import { Building2, Thermometer, Star, Accessibility } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
-import { SectionLabel } from '@/components/ui/SectionLabel';
-import { TextInputField } from '@/components/ui/TextInputField';
-import { DetailRow } from '@/components/ui/DetailRow';
-import { InfoSection } from '@/components/ui/InfoSection';
-import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
+import { WizardDateRangeSummary } from '@/components/wizard/WizardDateRangeSummary';
+import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
+import { WizardContactFields } from '@/components/wizard/WizardContactFields';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
@@ -696,49 +686,11 @@ export default function ToiletCabinWizard() {
 
             <View style={{ paddingHorizontal: 24, marginTop: 12 }}>
               {/* Range summary block */}
-              <View
-                style={{
-                  backgroundColor: '#f9fafb',
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: '#f3f4f6',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 32,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Piegāde</Text>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontWeight: '600',
-                      color: selectedDay ? '#111827' : '#9ca3af',
-                    }}
-                  >
-                    {selectedDay ? isoToDisplay(selectedDay) : 'Izvēlieties datumu'}
-                  </Text>
-                </View>
-                <View style={{ paddingHorizontal: 16 }}>
-                  <ArrowRight size={16} color="#9ca3af" />
-                </View>
-                <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>
-                    Savākšana {collectionDay ? `(${hireDays} d.)` : ''}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontWeight: '600',
-                      color: collectionDay ? '#111827' : '#9ca3af',
-                    }}
-                  >
-                    {collectionDay ? isoToDisplay(collectionDay) : '—'}
-                  </Text>
-                </View>
-              </View>
+              <WizardDateRangeSummary
+                startDate={selectedDay}
+                endDate={collectionDay}
+                dayCount={hireDays}
+              />
 
               <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
                 {pickingDate === 'START' ? 'Kurā datumā piegādāt?' : 'Līdz kuram datumam nomāt?'}
@@ -995,81 +947,21 @@ export default function ToiletCabinWizard() {
                 </View>
               </View>
 
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
-                Kontakti
-              </Text>
+              <WizardSectionHeading label="Kontakti" style={{ marginBottom: 12 }} />
 
-              <View
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  overflow: 'hidden',
-                  marginBottom: 32,
-                }}
-              >
-                <TextInput
-                  placeholder="Vārds, uzvārds"
-                  value={contactName}
-                  onChangeText={setContactName}
-                  style={{
-                    fontSize: 16,
-                    padding: 18,
-                    backgroundColor: '#fff',
-                    borderBottomWidth: 1,
-                    borderBottomColor: '#f3f4f6',
-                  }}
-                  placeholderTextColor="#9ca3af"
-                />
-                <TextInput
-                  placeholder="Tālrunis"
-                  value={contactPhone}
-                  onChangeText={setContactPhone}
-                  keyboardType="phone-pad"
-                  style={{
-                    fontSize: 16,
-                    padding: 18,
-                    backgroundColor: '#fff',
-                    borderBottomWidth: 1,
-                    borderBottomColor: '#f3f4f6',
-                  }}
-                  placeholderTextColor="#9ca3af"
-                />
-                <TextInput
-                  placeholder="E-pasts (neobligāti)"
-                  value={contactEmail}
-                  onChangeText={setContactEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={{
-                    fontSize: 16,
-                    padding: 18,
-                    backgroundColor: '#fff',
-                    borderBottomWidth: 1,
-                    borderBottomColor: '#f3f4f6',
-                  }}
-                  placeholderTextColor="#9ca3af"
-                />
-                <TextInput
-                  placeholder="Piezīmes (piem., piekļuves kods, vietas apraksts)"
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  style={{
-                    fontSize: 16,
-                    padding: 18,
-                    backgroundColor: '#fff',
-                    minHeight: 80,
-                    textAlignVertical: 'top',
-                  }}
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
+              <WizardContactFields
+                name={contactName}
+                onChangeName={setContactName}
+                namePlaceholder="Vārds, uzvārds"
+                phone={contactPhone}
+                onChangePhone={setContactPhone}
+                email={contactEmail}
+                onChangeEmail={setContactEmail}
+                notes={notes}
+                onChangeNotes={setNotes}
+              />
 
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
-                Apmaksa
-              </Text>
+              <WizardSectionHeading label="Apmaksa" style={{ marginBottom: 12 }} />
               <WizardPaymentMethodPicker
                 value={paymentMethod}
                 onChange={setPaymentMethod}

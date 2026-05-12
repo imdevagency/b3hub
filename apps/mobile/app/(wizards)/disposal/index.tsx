@@ -10,7 +10,16 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Linking,
+  TextInput,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   MapPin,
@@ -45,6 +54,8 @@ import { TextInputField } from '@/components/ui/TextInputField';
 import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
+import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
+import { WizardContactFields, wizardInputStyle } from '@/components/wizard/WizardContactFields';
 import { colors } from '@/lib/theme';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
@@ -988,40 +999,48 @@ export default function DisposalWizard() {
               )}
             </WizardSummaryCard>
 
-            <SectionLabel label="Kontaktinformācija" style={{ marginTop: 20 }} />
-            <View style={{ gap: 10, marginBottom: 8 }}>
-              <TextInputField
-                placeholder="Kontaktpersona"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-              <TextInputField
-                placeholder="Tālrunis"
-                keyboardType="phone-pad"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-              />
-              <TextInputField
-                placeholder="Neobligāti: Papildu informācija autovadītājam..."
-                multiline
-                value={desc}
-                onChangeText={setDesc}
-              />
-              <TextInputField
-                placeholder="Piezīmes un norādījumi (piem., piekļuves kods, šaurā iebraukšana)"
-                multiline
-                value={notes}
-                onChangeText={setNotes}
-              />
-              <TextInputField
-                label="BIS numurs (nav obligāts)"
-                placeholder="Piem., BIS-2024-12345"
-                hint="Būvniecības informācijas sistēmas lietas numurs — nepieciešams celtniecības atkritumu utilizācijai pēc LR tiesību normām."
-                value={bisNumber}
-                onChangeText={setBisNumber}
-                autoCapitalize="characters"
-              />
-            </View>
+            <WizardSectionHeading
+              label="Kontaktinformācija"
+              icon={<Bookmark size={16} color="#111827" />}
+              style={{ marginTop: 20, marginBottom: 12 }}
+            />
+            <WizardContactFields
+              name={contactName}
+              onChangeName={setContactName}
+              phone={contactPhone}
+              onChangePhone={setContactPhone}
+              notes={desc}
+              onChangeNotes={setDesc}
+              notesPlaceholder="Neobligāti: Papildu informācija autovadītājam..."
+              extras={
+                <>
+                  <TextInput
+                    placeholder="Piezīmes un norādījumi (piem., piekļuves kods, šaurā iebraukšana)"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    value={notes}
+                    onChangeText={setNotes}
+                    style={[
+                      wizardInputStyle,
+                      {
+                        minHeight: 72,
+                        textAlignVertical: 'top',
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#F3F4F6',
+                      },
+                    ]}
+                  />
+                  <TextInput
+                    placeholder="BIS numurs (nav obligāts) — Piem., BIS-2024-12345"
+                    placeholderTextColor="#9CA3AF"
+                    value={bisNumber}
+                    onChangeText={setBisNumber}
+                    autoCapitalize="characters"
+                    style={wizardInputStyle}
+                  />
+                </>
+              }
+            />
 
             {/* ── Loading coordination ── */}
             <SectionLabel label="Kraušanas koordinācija" style={{ marginTop: 20 }} />

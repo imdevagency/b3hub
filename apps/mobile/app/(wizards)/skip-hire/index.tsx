@@ -64,11 +64,12 @@ import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 
 // Module-level constant — statuses eligible to link a skip hire to
 const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
-import { SectionLabel } from '@/components/ui/SectionLabel';
-import { TextInputField } from '@/components/ui/TextInputField';
-import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
+import { WizardDateRangeSummary } from '@/components/wizard/WizardDateRangeSummary';
+import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
+import { WizardContactFields } from '@/components/wizard/WizardContactFields';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 
 // ── Types ─────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -977,80 +978,25 @@ export default function OrderWizard() {
               rangeEndDate={collectionDay ?? undefined}
             />
 
-            {/* ── Date range summary bar (Uber style box) ── */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: '#F9FAFB',
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 32,
-                borderWidth: 1,
-                borderColor: '#E5E7EB',
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontFamily: 'Inter_500Medium',
-                    color: '#6B7280',
-                    marginBottom: 4,
-                  }}
-                >
-                  Piegāde
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontFamily: 'Inter_600SemiBold',
-                    color: !selectedDay ? '#9CA3AF' : '#111827',
-                  }}
-                >
-                  {selectedDay
-                    ? new Date(selectedDay + 'T00:00:00').toLocaleDateString('lv-LV', {
-                        weekday: 'short',
-                        day: 'numeric',
-                        month: 'short',
-                      })
-                    : 'Izvēlieties'}
-                </Text>
-              </View>
-              <View style={{ paddingHorizontal: 16 }}>
-                <Text style={{ color: '#D1D5DB', fontSize: 20 }}>→</Text>
-              </View>
-              <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontFamily: 'Inter_500Medium',
-                    color: '#6B7280',
-                    marginBottom: 4,
-                  }}
-                >
-                  Savākšana {collectionDayState ? `· ${hireDays} d.` : ''}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontFamily: 'Inter_600SemiBold',
-                    color: !collectionDayState ? '#9CA3AF' : '#111827',
-                  }}
-                >
-                  {collectionDayState
-                    ? new Date(collectionDayState + 'T00:00:00').toLocaleDateString('lv-LV', {
-                        weekday: 'short',
-                        day: 'numeric',
-                        month: 'short',
-                      })
-                    : 'Izvēlieties'}
-                </Text>
-              </View>
-            </View>
+            {/* ── Date range summary bar ── */}
+            <WizardDateRangeSummary
+              startDate={selectedDay}
+              endDate={collectionDayState}
+              dayCount={hireDays}
+              style={{ marginBottom: 32 }}
+            />
 
             {/* ── Delivery window ── */}
-            <SectionLabel label="Vēlamais piegādes laiks" />
+            <Text
+              style={{
+                fontSize: 15,
+                fontFamily: 'Inter_600SemiBold',
+                color: '#111827',
+                marginBottom: 12,
+              }}
+            >
+              Vēlamais piegādes laiks
+            </Text>
             <WizardTimeWindowPicker value={deliveryWindow} onChange={setDeliveryWindow} />
             <View style={{ height: 40 }} />
           </ScrollView>
@@ -1091,91 +1037,39 @@ export default function OrderWizard() {
 
               {/* Contact Info */}
               <View style={{ gap: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <Bookmark size={16} color="#111827" style={{ marginRight: 8 }} />
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      color: '#111827',
-                      fontFamily: 'Inter_700Bold',
-                      letterSpacing: -0.3,
-                    }}
-                  >
-                    Kontaktinformācija
-                  </Text>
-                </View>
-                <TextInput
-                  placeholder="Kontaktpersona"
-                  placeholderTextColor={colors.textDisabled}
-                  value={contactName}
-                  onChangeText={setContactName}
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                    paddingHorizontal: 20,
-                    paddingVertical: 18,
-                    fontSize: 16,
-                    color: '#111827',
-                    fontFamily: 'Inter_500Medium',
-                    backgroundColor: '#fff',
-                  }}
+                <WizardSectionHeading
+                  label="Kontaktinformācija"
+                  icon={<Bookmark size={16} color="#111827" />}
+                  style={{ marginBottom: 4 }}
                 />
-                <TextInput
-                  placeholder="Tālrunis"
-                  placeholderTextColor={colors.textDisabled}
-                  keyboardType="phone-pad"
-                  value={contactPhone}
-                  onChangeText={setContactPhone}
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                    paddingHorizontal: 20,
-                    paddingVertical: 18,
-                    fontSize: 16,
-                    color: '#111827',
-                    fontFamily: 'Inter_500Medium',
-                    backgroundColor: '#fff',
-                  }}
-                />
-                <TextInput
-                  placeholder="Piezīmes (piem., piekļuves kods, vārtu atvēršana)"
-                  placeholderTextColor={colors.textDisabled}
-                  multiline
-                  value={notes}
-                  onChangeText={setNotes}
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                    paddingHorizontal: 20,
-                    paddingVertical: 18,
-                    fontSize: 16,
-                    color: '#111827',
-                    fontFamily: 'Inter_500Medium',
-                    backgroundColor: '#fff',
-                    minHeight: 80,
-                    textAlignVertical: 'top',
-                  }}
-                />
-                <TextInput
-                  placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
-                  placeholderTextColor={colors.textDisabled}
-                  value={bisNumber}
-                  onChangeText={setBisNumber}
-                  autoCapitalize="characters"
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                    paddingHorizontal: 20,
-                    paddingVertical: 18,
-                    fontSize: 16,
-                    color: '#111827',
-                    fontFamily: 'Inter_500Medium',
-                    backgroundColor: '#fff',
-                  }}
+                <WizardContactFields
+                  name={contactName}
+                  onChangeName={setContactName}
+                  namePlaceholder="Kontaktpersona"
+                  phone={contactPhone}
+                  onChangePhone={setContactPhone}
+                  notes={notes}
+                  onChangeNotes={setNotes}
+                  extras={
+                    <TextInput
+                      placeholder="BIS numurs (neobligāts) — piem. BL-231-2123-12"
+                      placeholderTextColor={colors.textDisabled}
+                      value={bisNumber}
+                      onChangeText={setBisNumber}
+                      autoCapitalize="characters"
+                      style={{
+                        borderWidth: 1.5,
+                        borderColor: '#f0f0f0',
+                        borderRadius: 16,
+                        paddingHorizontal: 20,
+                        paddingVertical: 18,
+                        fontSize: 16,
+                        color: '#111827',
+                        fontFamily: 'Inter_500Medium',
+                        backgroundColor: '#fff',
+                      }}
+                    />
+                  }
                 />
               </View>
 
@@ -1228,19 +1122,11 @@ export default function OrderWizard() {
 
               {/* Payment Methods */}
               <View style={{ gap: 12, marginTop: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <Check size={16} color="#111827" style={{ marginRight: 8 }} />
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      color: '#111827',
-                      fontFamily: 'Inter_700Bold',
-                      letterSpacing: -0.3,
-                    }}
-                  >
-                    Maksājuma veids
-                  </Text>
-                </View>
+                <WizardSectionHeading
+                  label="Maksājuma veids"
+                  icon={<Check size={16} color="#111827" />}
+                  style={{ marginBottom: 4 }}
+                />
                 <WizardPaymentMethodPicker
                   value={paymentMethod}
                   onChange={setPaymentMethod}
@@ -1250,19 +1136,11 @@ export default function OrderWizard() {
 
               {/* Linked Orders (Optional) */}
               <View style={{ gap: 12, marginTop: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <Link2 size={16} color="#111827" style={{ marginRight: 8 }} />
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      color: '#111827',
-                      fontFamily: 'Inter_700Bold',
-                      letterSpacing: -0.3,
-                    }}
-                  >
-                    Saistītie pasūtījumi
-                  </Text>
-                </View>
+                <WizardSectionHeading
+                  label="Saistītie pasūtījumi"
+                  icon={<Link2 size={16} color="#111827" />}
+                  style={{ marginBottom: 4 }}
+                />
                 <TouchableOpacity
                   style={{
                     flexDirection: 'row',

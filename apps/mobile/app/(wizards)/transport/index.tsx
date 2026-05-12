@@ -41,6 +41,8 @@ import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { WizardRouteBox } from '@/components/wizard/WizardRouteBox';
+import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
+import { WizardContactFields } from '@/components/wizard/WizardContactFields';
 import { colors } from '@/lib/theme';
 import { haptics } from '@/lib/haptics';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
@@ -1561,39 +1563,25 @@ export default function TransportWizard() {
                 )}
 
                 {/* ── Contact form ── */}
+                <WizardSectionHeading
+                  label="Kontaktpersona"
+                  icon={<Bookmark size={16} color="#111827" />}
+                  style={{ marginBottom: 12 }}
+                />
+                <WizardContactFields
+                  name={siteContactName}
+                  onChangeName={setSiteContactName}
+                  namePlaceholder="Kontaktpersona *"
+                  phone={siteContactPhone}
+                  onChangePhone={setSiteContactPhone}
+                  notes={notes}
+                  onChangeNotes={setNotes}
+                  notesPlaceholder="Piezīmes (vārtu kods, bīstama krava...)"
+                  style={{ marginBottom: 20 }}
+                />
+
+                {/* ── Pricing ── */}
                 <View style={{ gap: 12, marginBottom: 20 }}>
-                  <TextInputField
-                    placeholder="Kontaktpersona *"
-                    value={siteContactName}
-                    onChangeText={setSiteContactName}
-                    containerStyle={{
-                      backgroundColor: '#f3f4f6',
-                      borderWidth: 0,
-                      borderRadius: 12,
-                    }}
-                  />
-                  <TextInputField
-                    placeholder="Tālrunis *"
-                    keyboardType="phone-pad"
-                    value={siteContactPhone}
-                    onChangeText={setSiteContactPhone}
-                    containerStyle={{
-                      backgroundColor: '#f3f4f6',
-                      borderWidth: 0,
-                      borderRadius: 12,
-                    }}
-                  />
-                  <TextInputField
-                    placeholder="Piezīmes (vārtu kods, bīstama krava...)"
-                    multiline
-                    value={notes}
-                    onChangeText={setNotes}
-                    containerStyle={{
-                      backgroundColor: '#f3f4f6',
-                      borderWidth: 0,
-                      borderRadius: 12,
-                    }}
-                  />
                   {pricingMode === 'FLAT' ? (
                     <>
                       <TextInputField
