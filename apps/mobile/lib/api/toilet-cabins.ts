@@ -32,6 +32,9 @@ export interface ToiletCabinOrder {
   contactPhone?: string | null;
   userId?: string | null;
   notes?: string | null;
+  paymentMethod?: 'CARD' | 'INVOICE';
+  paymentStatus?: string;
+  paymentUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,7 +100,7 @@ export const toiletCabinsApi = {
     ),
 
   createToiletCabinOrder: (data: CreateToiletCabinInput, token?: string) =>
-    apiFetch<ToiletCabinOrder>('/toilet-cabins', {
+    apiFetch<ToiletCabinOrder & { paymentUrl: string | null }>('/toilet-cabins', {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {

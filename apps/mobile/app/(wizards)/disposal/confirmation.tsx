@@ -167,6 +167,17 @@ export default function DisposalConfirmation() {
             </Text>
           </View>
         </View>
+
+        {/* Payment note */}
+        <View style={[s.row, { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f3f4f6' }]}>
+          <CreditCard size={14} color="#6b7280" style={{ marginTop: 1 }} />
+          <View style={{ flex: 1, marginLeft: 8 }}>
+            <Text style={s.rowLabel}>Norēķins</Text>
+            <Text style={[s.rowValue, { color: colors.textMuted }]}>
+              Rēķins tiks nosūtīts pēc servisa pabeigšanas
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Buttons */}

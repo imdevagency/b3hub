@@ -206,6 +206,53 @@ export class PaymentsService {
   }
 
   /**
+   * Create a Paysera checkout for a toilet-cabin order.
+   * Returns a redirect URL the buyer follows to complete payment.
+   */
+  async createToiletCabinPaymentIntent(orderId: string) {
+    const order = await this.prisma.toiletCabinOrder.findUnique({
+      where: { id: orderId },
+    });
+    if (!order) throw new BadRequestException('Toilet-cabin order not found');
+
+    // Idempotency
+    if (order.payseraOrderId && order.payseraPaymentUrl) {
+      return {
+        paymentUrl: order.payseraPaymentUrl,
+        payseraOrderId: order.payseraOrderId,
+      };
+    }
+
+    const amountCents = Math.round(order.price * 100);
+    const baseUrl =
+      this.configService.get<string>('APP_BASE_URL') ?? 'https://b3hub.app';
+
+    const checkout = await this.paysera.createCheckout({
+      reference: order.orderNumber,
+      amountCents,
+      currency: order.currency,
+      successUrl: `${baseUrl}/toilet-cabin/${orderId}/payment-success`,
+      failureUrl: `${baseUrl}/toilet-cabin/${orderId}/payment-failed`,
+      callbackUrl: `${this.configService.get('API_URL') ?? 'https://api.b3hub.app'}/api/v1/payments/webhook`,
+      name: `Tualetes kabīne ${order.orderNumber}`,
+    });
+
+    await this.prisma.toiletCabinOrder.update({
+      where: { id: orderId },
+      data: {
+        payseraOrderId: checkout.payseraOrderId,
+        payseraPaymentUrl: checkout.paymentUrl,
+        paymentStatus: 'PENDING',
+      },
+    });
+
+    return {
+      paymentUrl: checkout.paymentUrl,
+      payseraOrderId: checkout.payseraOrderId,
+    };
+  }
+
+  /**
    * @deprecated Paysera payments are immediate — no capture step required.
    * This method is a no-op kept for backward compatibility with controller routes.
    */

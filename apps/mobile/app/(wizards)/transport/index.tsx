@@ -38,7 +38,6 @@ import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
-import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { WizardRouteBox } from '@/components/wizard/WizardRouteBox';
 import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
@@ -202,7 +201,6 @@ export default function TransportWizard() {
   const [siteContactPhone, setSiteContactPhone] = useState(() => user?.phone ?? '');
   const [notes, setNotes] = useState('');
   const [offeredRateText, setOfferedRateText] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
 
   // ── Route (for step 3 summary) ────────────────────────────────
   const { route } = useRoute(
@@ -413,7 +411,6 @@ export default function TransportWizard() {
               : undefined,
           truckCount: truckCount > 1 ? truckCount : undefined,
           projectId: projectId || undefined,
-          paymentMethod,
         },
         token,
       );
@@ -1632,13 +1629,6 @@ export default function TransportWizard() {
                     </>
                   )}
                 </View>
-
-                {/* ── Payment method ── */}
-                <WizardPaymentMethodPicker
-                  value={paymentMethod}
-                  onChange={setPaymentMethod}
-                  isLoggedIn={!!user}
-                />
 
                 {/* ── Footnote ── */}
                 <View style={{ paddingTop: 16, paddingBottom: 4 }}>

@@ -157,6 +157,7 @@ export default function TransportConfirmation() {
           'Pārvadātāji saņem jūsu pieprasījumu',
           'Zvans vai SMS ar brauciena apstiprinājumu',
           'Kravas pārvadāšana plānotajā datumā',
+          'Rēķins tiek nosūtīts pēc piegādes pabeigšanas',
         ].map((text, i) => (
           <View key={i} style={s.nextStepRow}>
             <View style={s.nextStepNum}>

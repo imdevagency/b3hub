@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 // Guard: expo-clipboard requires a native build (not available in Expo Go)
 let Clipboard: { setStringAsync: (text: string) => Promise<void> } | null = null;
 try {
@@ -8,8 +8,8 @@ try {
 } catch {
   /* Expo Go fallback */
 }
+import { openPaymentUrl } from '@/lib/open-payment-url';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { useToast } from '@/components/ui/Toast';
 import { useRouter } from 'expo-router';
 import { useOrder } from '@/lib/order-context';
 import { t } from '@/lib/translations';
@@ -23,7 +23,6 @@ function formatDisplay(iso: string): string {
 }
 
 export default function OrderConfirmation() {
-  const toast = useToast();
   const router = useRouter();
   const { state, reset } = useOrder();
   const order = state.confirmedOrder;
@@ -139,15 +138,7 @@ export default function OrderConfirmation() {
               onPress={async () => {
                 setPaying(true);
                 try {
-                  const supported = await Linking.canOpenURL(paymentUrl);
-                  if (!supported) {
-                    toast.error('Nevar atvērt maksājuma lapu');
-                    return;
-                  }
-                  await Linking.openURL(paymentUrl);
-                  // Webhook will mark the order as paid; user will see updated status on return
-                  reset();
-                  router.replace('/(buyer)/orders');
+                  await openPaymentUrl(paymentUrl);
                 } catch (err: unknown) {
                   Alert.alert(
                     'Maksājuma kļūda',
@@ -159,7 +150,9 @@ export default function OrderConfirmation() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={s.primaryBtnText}>{paying ? 'Atver...' : '💳 Apmaksāt pasūtījumu'}</Text>
+              <Text style={s.primaryBtnText}>
+                {paying ? 'Atver...' : '💳 Atkārtoti atvērt maksājumu'}
+              </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity

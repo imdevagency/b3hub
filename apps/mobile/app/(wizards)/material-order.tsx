@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { openPaymentUrl } from '@/lib/open-payment-url';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -194,6 +195,7 @@ export default function OrderRequestWizard() {
   const [orderId, setOrderId] = useState('');
   const [rfqNumber, setRfqNumber] = useState('');
   const [rfqId, setRfqId] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   /** Offer selected in the compare step; used for submission in the confirm step. */
   const [selectedOffer, setSelectedOffer] = useState<SupplierOffer | null>(null);
 
@@ -540,6 +542,18 @@ export default function OrderRequestWizard() {
       setSubmitted('order');
       haptics.success();
       AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
+      // CARD payment: immediately open Paysera checkout — no extra taps
+      if (paymentMethod === 'CARD' && currentToken) {
+        api
+          .createIntent(order.id, currentToken)
+          .then(({ paymentUrl: url }) => {
+            setPaymentUrl(url);
+            openPaymentUrl(url).catch(() => {});
+          })
+          .catch(() => {
+            // silently ignore — user can still tap the button in the success screen
+          });
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         const data = err.data as { code?: string; currentPrice?: number };
@@ -667,11 +681,13 @@ export default function OrderRequestWizard() {
       ? 'Skatīt pieprasījumu'
       : orderId.startsWith('guest:')
         ? 'Uz sākumu'
-        : 'Apmaksāt pasūtījumu'
+        : 'Skatīt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
-      : step === 'when'
-        ? 'Pasūtīt'
+      : step === 'when' && selectedOffer
+        ? paymentMethod === 'CARD'
+          ? `Apmaksāt €${selectedOffer.totalPrice?.toFixed(2) ?? ''}`
+          : 'Apstiprināt pasūtījumu'
         : 'Turpināt';
 
   const handleCTA = submitted
@@ -901,34 +917,51 @@ export default function OrderRequestWizard() {
                 lineHeight: 20,
               }}
             >
-              Piegādātājs saņēma jūsu pasūtījumu. Lai to apstiprinātu, veiciet apmaksu.
+              Piegādātājs saņēma jūsu pasūtījumu.
+              {paymentMethod === 'CARD'
+                ? ' Paysera apmaksas logs tika atvērts automātiski.'
+                : ' Rēķins tiks nosūtīts uz jūsu e-pastu.'}
             </Text>
           </View>
-          <TouchableOpacity
-            style={{
-              backgroundColor: colors.primary,
-              borderRadius: 14,
-              paddingVertical: 16,
-              alignItems: 'center',
-            }}
-            onPress={() => {
-              if (!orderId) return;
-              if (orderId.startsWith('guest:')) router.replace('/(buyer)/home' as never);
-              else router.replace(`/(buyer)/order/${orderId}` as never);
-            }}
-            activeOpacity={0.85}
-          >
-            <Text
+          {paymentMethod === 'CARD' && (
+            <TouchableOpacity
               style={{
-                fontSize: 16,
-                fontWeight: '600',
-                color: '#fff',
-                fontFamily: 'Inter_600SemiBold',
+                backgroundColor: '#F3F4F6',
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: 'center',
               }}
+              onPress={() => {
+                if (!orderId) return;
+                if (paymentUrl) {
+                  openPaymentUrl(paymentUrl).catch(() => {});
+                } else {
+                  const t = tokenRef.current;
+                  if (t) {
+                    api
+                      .createIntent(orderId, t)
+                      .then(({ paymentUrl: url }) => {
+                        setPaymentUrl(url);
+                        openPaymentUrl(url).catch(() => {});
+                      })
+                      .catch(() => {});
+                  }
+                }
+              }}
+              activeOpacity={0.85}
             >
-              {orderId.startsWith('guest:') ? 'Atgriezties uz sākumu' : 'Apmaksāt pasūtījumu'}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: '500',
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Atkārtoti atvērt maksājumu
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       )}
       {step === 'when' && submitted !== 'order' && (
@@ -997,43 +1030,43 @@ export default function OrderRequestWizard() {
             <View style={{ gap: 12 }}>
               <SectionLabel label="KONTAKTINFORMĀCIJA" />
               <TextInputField
-                  placeholder="Kontaktpersona *"
-                  value={contactName}
-                  onChangeText={setContactName}
-                  containerStyle={{
-                    backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                  }}
-                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
-                />
+                placeholder="Kontaktpersona *"
+                value={contactName}
+                onChangeText={setContactName}
+                containerStyle={{
+                  backgroundColor: '#fff',
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  borderRadius: 16,
+                }}
+                inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+              />
               <TextInputField
-                  placeholder="Tālrunis *"
-                  keyboardType="phone-pad"
-                  value={contactPhone}
-                  onChangeText={setContactPhone}
-                  containerStyle={{
-                    backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                  }}
-                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
-                />
+                placeholder="Tālrunis *"
+                keyboardType="phone-pad"
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                containerStyle={{
+                  backgroundColor: '#fff',
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  borderRadius: 16,
+                }}
+                inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+              />
               <TextInputField
-                  placeholder="BIS numurs (neobligāts)"
-                  autoCapitalize="characters"
-                  value={bisNumber}
-                  onChangeText={setBisNumber}
-                  containerStyle={{
-                    backgroundColor: '#fff',
-                    borderWidth: 1.5,
-                    borderColor: '#f0f0f0',
-                    borderRadius: 16,
-                  }}
-                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
-                />
+                placeholder="BIS numurs (neobligāts)"
+                autoCapitalize="characters"
+                value={bisNumber}
+                onChangeText={setBisNumber}
+                containerStyle={{
+                  backgroundColor: '#fff',
+                  borderWidth: 1.5,
+                  borderColor: '#f0f0f0',
+                  borderRadius: 16,
+                }}
+                inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+              />
             </View>
 
             <View style={{ gap: 12, marginTop: 8 }}>

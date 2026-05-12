@@ -15,6 +15,7 @@ import { CreateToiletCabinDto } from './dto/create-toilet-cabin.dto';
 import { UpdateToiletCabinStatusDto } from './dto/update-toilet-cabin-status.dto';
 import { ToiletCabinStatus, ToiletCabinType } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
+import { PaymentsService } from '../payments/payments.service';
 
 // Platform base rate (EUR/cabin/day) per type, used when no carrier is selected.
 const BASE_PRICE_BY_TYPE: Record<ToiletCabinType, number> = {
@@ -47,7 +48,7 @@ export class SetToiletCabinSettingsDto {
 export class ToiletCabinsService {
   private readonly logger = new Logger(ToiletCabinsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly payments: PaymentsService) {}
 
   // ── Create (public — optional auth) ───────────────────────────
   async create(dto: CreateToiletCabinDto, userId?: string) {
@@ -97,6 +98,20 @@ export class ToiletCabinsService {
 
     this.logger.log(`ToiletCabinOrder created: ${order.orderNumber}`);
 
+    // Create a Paysera payment link only for card payments.
+    // INVOICE orders are paid by bank transfer — no redirect needed.
+    let paymentUrl: string | null = null;
+    if ((dto.paymentMethod ?? 'CARD') === 'CARD') {
+      try {
+        const pi = await this.payments.createToiletCabinPaymentIntent(order.id);
+        paymentUrl = pi.paymentUrl ?? null;
+      } catch (err) {
+        this.logger.error(
+          `Failed to create payment link for toilet-cabin order ${order.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+
     // If no carrier pre-selected, broadcast to eligible carriers in the city
     if (!carrierId) {
       this.broadcastToEligibleCarriers(
@@ -110,7 +125,7 @@ export class ToiletCabinsService {
       );
     }
 
-    return order;
+    return { ...order, paymentUrl };
   }
 
   // ── List ───────────────────────────────────────────────────────

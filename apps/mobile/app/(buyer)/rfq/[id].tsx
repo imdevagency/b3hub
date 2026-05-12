@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { QuoteRequest, QuoteResponse } from '@/lib/api';
+import { openPaymentUrl } from '@/lib/open-payment-url';
 import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
 import { formatDateShort } from '@/lib/format';
 import { MapPin, Package, Clock, CheckCircle, Star, XCircle } from 'lucide-react-native';
@@ -128,13 +129,20 @@ export default function RfqDetailScreen() {
       [
         { text: 'Atcelt', style: 'cancel' },
         {
-          text: 'Pieņemt',
+          text: 'Pieņemt un apmaksāt',
           onPress: async () => {
             setAccepting(response.id);
             try {
               const result = await api.quoteRequests.accept(rfq.id, response.id, token);
               haptics.success();
               setAcceptedOrderId(result.id);
+              // Open Paysera immediately — payment IS the acceptance confirmation
+              if (token) {
+                api
+                  .createIntent(result.id, token)
+                  .then(({ paymentUrl }) => openPaymentUrl(paymentUrl))
+                  .catch(() => {}); // silently fail — retry available in order details
+              }
               setAcceptResultVisible(true);
             } catch (e) {
               toast.error(e instanceof Error ? e.message : 'Neizdevās pieņemt piedāvājumu');
@@ -422,20 +430,17 @@ export default function RfqDetailScreen() {
         visible={acceptResultVisible}
         onClose={() => {
           setAcceptResultVisible(false);
-          router.replace('/(buyer)/orders');
+          if (acceptedOrderId) router.replace(`/(buyer)/order/${acceptedOrderId}`);
+          else router.replace('/(buyer)/orders');
         }}
         variant="success"
         title="Pasūtījums izveidots"
-        subtitle="Apmaksājiet pasūtījumu, lai pārdevējs to apstiprinātu."
-        primaryLabel="Apmaksāt tagad"
+        subtitle="Paysera apmaksas logs tika atvērts automātiski."
+        primaryLabel="Skatīt pasūtījumu"
         onPrimary={() => {
           setAcceptResultVisible(false);
           if (acceptedOrderId) router.replace(`/(buyer)/order/${acceptedOrderId}`);
-        }}
-        secondaryLabel="Vēlāk"
-        onSecondary={() => {
-          setAcceptResultVisible(false);
-          router.replace('/(buyer)/orders');
+          else router.replace('/(buyer)/orders');
         }}
       />
     </ScreenContainer>

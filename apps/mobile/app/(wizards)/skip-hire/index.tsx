@@ -64,6 +64,7 @@ import { GuestOrderSuccess } from '@/components/wizard/GuestOrderSuccess';
 
 // Module-level constant — statuses eligible to link a skip hire to
 const ACTIVE_ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'IN_TRANSIT'];
+import { openPaymentUrl } from '@/lib/open-payment-url';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { WizardDateRangeSummary } from '@/components/wizard/WizardDateRangeSummary';
@@ -456,6 +457,9 @@ export default function OrderWizard() {
       haptics.success();
       setSkipPaymentUrl(order.paymentUrl ?? null);
       setConfirmedOrder(order);
+      if (paymentMethod === 'CARD' && order.paymentUrl) {
+        openPaymentUrl(order.paymentUrl).catch(() => {});
+      }
       router.push('/skip-hire/confirmation');
     } catch (err) {
       Alert.alert(t.skipHire.errorTitle, err instanceof Error ? err.message : t.skipHire.error);

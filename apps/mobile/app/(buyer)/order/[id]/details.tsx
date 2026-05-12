@@ -9,6 +9,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { openPaymentUrl } from '@/lib/open-payment-url';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import {
@@ -119,12 +120,12 @@ export default function OrderDetailsScreen() {
     haptics.light();
     try {
       const { paymentUrl } = await api.createIntent(order.id, token);
-      const supported = await Linking.canOpenURL(paymentUrl);
+      // expo-web-browser handles all https URLs — no canOpenURL check needed
       if (!supported) {
         toast.error('Nevar atvērt maksājuma lapu');
         return;
       }
-      await Linking.openURL(paymentUrl);
+      await openPaymentUrl(paymentUrl);
       // Webhook will update payment status; reload order when user returns
       setPaymentProcessing(true);
       load();
@@ -226,7 +227,7 @@ export default function OrderDetailsScreen() {
   const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status) && canManageOrders;
   const canPay =
     !paymentProcessing &&
-    order.status === 'PENDING' &&
+    ['PENDING', 'CONFIRMED'].includes(order.status) &&
     (!order.paymentStatus || order.paymentStatus === 'PENDING') &&
     order.paymentMethod !== 'INVOICE';
   const hasRated = alreadyRated || ratedLocally;
@@ -234,7 +235,6 @@ export default function OrderDetailsScreen() {
 
   return (
     <ScreenContainer bg="#FFFFFF" standalone>
-      <View style={styles.headerSpacer} />
       <View style={styles.headerSection}>
         <TouchableOpacity
           style={styles.backButton}
@@ -725,9 +725,6 @@ export default function OrderDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerSpacer: {
-    height: 48,
-  },
   headerSection: {
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -774,7 +771,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   content: {
-    paddingBottom: 20,
+    paddingBottom: 120,
   },
   cardSection: {
     paddingHorizontal: 20,

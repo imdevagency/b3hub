@@ -25,6 +25,7 @@ import { WizardDateRangeSummary } from '@/components/wizard/WizardDateRangeSumma
 import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
 import { WizardContactFields } from '@/components/wizard/WizardContactFields';
 import { SectionLabel } from '@/components/ui/SectionLabel';
+import { openPaymentUrl } from '@/lib/open-payment-url';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
@@ -418,6 +419,9 @@ export default function ToiletCabinWizard() {
         AsyncStorage.removeItem(TOILET_CABIN_DRAFT_KEY).catch(() => {});
         haptics.success();
         setConfirmedOrderNumber(result.orderNumber);
+        if (paymentMethod === 'CARD' && result.paymentUrl) {
+          openPaymentUrl(result.paymentUrl).catch(() => {});
+        }
       } catch (err: unknown) {
         haptics.error();
         Alert.alert('Kļūda', err instanceof Error ? err.message : 'Neizdevās iesniegt pasūtījumu');

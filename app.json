@@ -1,5 +1,8 @@
 {
   "ios": {
     "bundleIdentifier": "lv.b3hub.app"
-  }
+  },
+  "plugins": [
+    "expo-web-browser"
+  ]
 }

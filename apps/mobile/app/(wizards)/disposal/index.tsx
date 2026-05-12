@@ -52,7 +52,6 @@ import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { WizardSummaryCard } from '@/components/wizard/WizardSummaryCard';
-import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { WizardSectionHeading } from '@/components/wizard/WizardSectionHeading';
 import { WizardContactFields, wizardInputStyle } from '@/components/wizard/WizardContactFields';
@@ -301,7 +300,6 @@ export default function DisposalWizard() {
   );
   const [contactWillBePresent, setContactWillBePresent] = useState(true);
   const [wasteReadiness, setWasteReadiness] = useState<'PILED' | 'NEEDS_PREP'>('PILED');
-  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
 
   // Recycling centre comparison (populated from disposal-quote when >1 center exists)
   const [availableCenters, setAvailableCenters] = useState<DisposalQuoteCenterResult[]>([]);
@@ -473,7 +471,6 @@ export default function DisposalWizard() {
           quotedRate: derived.fromPrice,
           projectId: projectId || undefined,
           preferredRecyclingCenterId: preferredRecyclingCenterId || undefined,
-          paymentMethod,
         },
         token,
       );
@@ -1159,13 +1156,6 @@ export default function DisposalWizard() {
                 </Text>
               </View>
             </TouchableOpacity>
-
-            <SectionLabel label="Maksājuma veids" style={{ marginTop: 20 }} />
-            <WizardPaymentMethodPicker
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-              isLoggedIn={!!user}
-            />
 
             <View style={{ height: 16 }} />
           </ScrollView>
