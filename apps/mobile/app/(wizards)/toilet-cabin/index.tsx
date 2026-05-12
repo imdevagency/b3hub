@@ -10,9 +10,17 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  TextInput,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Building2, Thermometer, Star, Accessibility } from 'lucide-react-native';
+import { Building2, Thermometer, Star, Accessibility, ArrowRight } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -155,6 +163,7 @@ export default function ToiletCabinWizard() {
   const [contactName, setContactName] = useState(() =>
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
+  const [pickingDate, setPickingDate] = useState<'START' | 'END'>('START');
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
   const [contactEmail, setContactEmail] = useState(() => user?.email ?? '');
   const [notes, setNotes] = useState('');
@@ -175,6 +184,31 @@ export default function ToiletCabinWizard() {
   const collectionDay = selectedDay
     ? toISO(addDays(new Date(selectedDay + 'T00:00:00'), hireDays))
     : null;
+
+  const handleCalendarPress = useCallback(
+    (iso: string) => {
+      haptics.light();
+      const tapped = new Date(iso + 'T00:00:00');
+      const start = selectedDay ? new Date(selectedDay + 'T00:00:00') : null;
+
+      if (pickingDate === 'START' || !start) {
+        setSelectedDay(iso);
+        setHireDays(1); // Reset length so the user visually sees the selection dragging
+        setPickingDate('END');
+      } else {
+        if (tapped < start) {
+          setSelectedDay(iso);
+          setHireDays(1);
+          setPickingDate('END');
+        } else {
+          const diffDays = Math.round((tapped.getTime() - start.getTime()) / 86400000);
+          setHireDays(diffDays > 0 ? diffDays : 1);
+          setPickingDate('START');
+        }
+      }
+    },
+    [pickingDate, selectedDay],
+  );
 
   // Sync contact from auth on login mid-wizard
   useEffect(() => {
@@ -608,96 +642,207 @@ export default function ToiletCabinWizard() {
         {step === 4 && (
           <ScrollView
             style={s.content}
-            contentContainerStyle={s.contentPad}
+            contentContainerStyle={{ paddingBottom: 40 }}
             showsVerticalScrollIndicator={false}
           >
-            {/* Hire period — first, because it drives the calendar range */}
-            <SectionLabel label="Nomas periods" style={{ marginTop: 8 }} />
-            <View style={[s.periodGrid, { marginBottom: 16 }]}>
+            <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: '#111827', marginBottom: 6 }}>
+                Nomas periods
+              </Text>
+              <Text style={{ fontSize: 16, color: '#6b7280', marginBottom: 24, lineHeight: 22 }}>
+                Cik ilgi plānojat nomāt kabīni?
+              </Text>
+            </View>
+
+            {/* Horizontal Scroll for Period */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 24, gap: 12, paddingBottom: 16 }}
+            >
               {HIRE_PERIOD_OPTIONS.map((opt) => {
                 const isSel = hireDays === opt.days;
                 return (
                   <TouchableOpacity
                     key={opt.days}
-                    style={[s.periodChip, isSel && s.periodChipSel]}
                     onPress={() => {
                       haptics.light();
                       setHireDays(opt.days);
+                      setPickingDate('START');
+                    }}
+                    activeOpacity={0.7}
+                    style={{
+                      paddingHorizontal: 20,
+                      paddingVertical: 14,
+                      borderRadius: 24,
+                      backgroundColor: isSel ? '#111827' : '#f9fafb',
+                      borderWidth: 1,
+                      borderColor: isSel ? '#111827' : '#e5e7eb',
                     }}
                   >
-                    <Text style={[s.periodChipText, isSel && s.periodChipTextSel]}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: isSel ? '600' : '500',
+                        color: isSel ? '#fff' : '#4b5563',
+                      }}
+                    >
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
 
-            {/* Date range summary bar — updates live as user picks period & date */}
-            <View style={s.rangeSummaryBar}>
-              <View style={s.rangeSummaryCol}>
-                <Text style={s.rangeSummaryLabel}>Piegāde</Text>
-                <Text style={[s.rangeSummaryDate, !selectedDay && s.rangeSummaryDateEmpty]}>
-                  {selectedDay ? isoToDisplay(selectedDay) : 'Izvēlieties'}
-                </Text>
-              </View>
-              <View style={s.rangeSummaryArrow}>
-                <Text style={s.rangeSummaryArrowText}>→</Text>
-              </View>
-              <View style={[s.rangeSummaryCol, { alignItems: 'flex-end' }]}>
-                <Text style={s.rangeSummaryLabel}>
-                  Savākšana{collectionDay ? ` · ${hireDays} d.` : ''}
-                </Text>
-                <Text style={[s.rangeSummaryDate, !collectionDay && s.rangeSummaryDateEmpty]}>
-                  {collectionDay ? isoToDisplay(collectionDay) : '—'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Calendar — tap delivery date, range end auto-derived from period above */}
-            <WizardCalendar
-              selectedDate={selectedDay ?? ''}
-              onDateChange={setSelectedDay}
-              minDate={MIN_DATE}
-              rangeEndDate={collectionDay ?? undefined}
-            />
-
-            {/* Delivery time window */}
-            <SectionLabel label="Vēlamais piegādes laiks" style={{ marginTop: 4 }} />
-            <WizardTimeWindowPicker value={deliveryWindow} onChange={setDeliveryWindow} />
-
-            {/* Servicing schedule — shown for hires ≥ 14 days */}
-            {hireDays >= 14 && (
-              <>
-                <SectionLabel label="Tīrīšanas biežums" style={{ marginTop: 16 }} />
-                <Text style={s.stepSub}>Kā bieži kabīne jātīra?</Text>
-                <View style={[s.periodGrid, { marginBottom: 16 }]}>
-                  {(
-                    [
-                      { value: 'WEEKLY' as const, label: 'Katru nedēļu' },
-                      { value: 'BIWEEKLY' as const, label: 'Reizi 2 nedēļās' },
-                      { value: 'MONTHLY' as const, label: 'Reizi mēnesī' },
-                    ] as const
-                  ).map((opt) => {
-                    const isSel = servicingFrequency === opt.value;
-                    return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[s.periodChip, isSel && s.periodChipSel]}
-                        onPress={() => {
-                          haptics.light();
-                          setServicingFrequency(opt.value);
-                        }}
-                      >
-                        <Text style={[s.periodChipText, isSel && s.periodChipTextSel]}>
-                          {opt.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+            <View style={{ paddingHorizontal: 24, marginTop: 12 }}>
+              {/* Range summary block */}
+              <View
+                style={{
+                  backgroundColor: '#f9fafb',
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: '#f3f4f6',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 32,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Piegāde</Text>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: '600',
+                      color: selectedDay ? '#111827' : '#9ca3af',
+                    }}
+                  >
+                    {selectedDay ? isoToDisplay(selectedDay) : 'Izvēlieties datumu'}
+                  </Text>
                 </View>
-              </>
-            )}
+                <View style={{ paddingHorizontal: 16 }}>
+                  <ArrowRight size={16} color="#9ca3af" />
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>
+                    Savākšana {collectionDay ? `(${hireDays} d.)` : ''}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: '600',
+                      color: collectionDay ? '#111827' : '#9ca3af',
+                    }}
+                  >
+                    {collectionDay ? isoToDisplay(collectionDay) : '—'}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
+                {pickingDate === 'START' ? 'Kurā datumā piegādāt?' : 'Līdz kuram datumam nomāt?'}
+              </Text>
+
+              <WizardCalendar
+                selectedDate={selectedDay ?? ''}
+                onDateChange={handleCalendarPress}
+                minDate={MIN_DATE}
+                rangeEndDate={collectionDay ?? undefined}
+              />
+
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: '700',
+                  color: '#111827',
+                  marginTop: 32,
+                  marginBottom: 16,
+                }}
+              >
+                Piegādes laiks
+              </Text>
+              <WizardTimeWindowPicker value={deliveryWindow} onChange={setDeliveryWindow} />
+
+              {hireDays >= 14 && (
+                <>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: '700',
+                      color: '#111827',
+                      marginTop: 32,
+                      marginBottom: 16,
+                    }}
+                  >
+                    Apkopes biežums
+                  </Text>
+                  <View style={{ gap: 12 }}>
+                    {(
+                      [
+                        { value: 'WEEKLY' as const, label: 'Katru nedēļu' },
+                        { value: 'BIWEEKLY' as const, label: 'Reizi 2 nedēļās' },
+                        { value: 'MONTHLY' as const, label: 'Reizi mēnesī' },
+                      ] as const
+                    ).map((opt) => {
+                      const isSel = servicingFrequency === opt.value;
+                      return (
+                        <TouchableOpacity
+                          key={opt.value}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: 16,
+                            borderRadius: 16,
+                            backgroundColor: isSel ? '#f8fafc' : '#fff',
+                            borderWidth: isSel ? 2 : 1,
+                            borderColor: isSel ? '#111827' : '#e5e7eb',
+                          }}
+                          onPress={() => {
+                            haptics.light();
+                            setServicingFrequency(opt.value);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: 10,
+                              borderWidth: 2,
+                              borderColor: isSel ? '#111827' : '#d1d5db',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 16,
+                            }}
+                          >
+                            {isSel && (
+                              <View
+                                style={{
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: 5,
+                                  backgroundColor: '#111827',
+                                }}
+                              />
+                            )}
+                          </View>
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: isSel ? '600' : '500',
+                              color: '#111827',
+                            }}
+                          >
+                            {opt.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+            </View>
           </ScrollView>
         )}
 
@@ -705,93 +850,232 @@ export default function ToiletCabinWizard() {
         {step === 5 && (
           <ScrollView
             style={s.content}
-            contentContainerStyle={s.pad}
+            contentContainerStyle={{ paddingBottom: 40 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Summary */}
-            <View style={{ marginBottom: 20 }}>
-              <InfoSection title="Pasūtījuma kopsavilkums">
-                <DetailRow
-                  label="Kabīnes veids"
-                  value={CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType}
-                />
-                <DetailRow label="Kabīnes" value={`${cabinCount} gab.`} />
-                <DetailRow label="Nomas periods" value={`${hireDays} dienas`} />
-                <DetailRow label="Adrese" value={picked?.address ?? '—'} />
-                <DetailRow label="Piegāde" value={selectedDay ? isoToLong(selectedDay) : '—'} />
-                <DetailRow
-                  label="Savākšana"
-                  value={collectionDay ? isoToLong(collectionDay) : '—'}
-                />
-                <DetailRow
-                  label="Laiks"
-                  value={
-                    deliveryWindow === 'AM'
-                      ? 'Rīts (8–12)'
-                      : deliveryWindow === 'PM'
-                        ? 'Diena (12–17)'
-                        : 'Jebkurā laikā'
-                  }
-                />
-                <DetailRow
-                  label="Aptuvena cena"
-                  value={`€${estimatedPrice} + PVN`}
-                  last={!servicingFrequency || hireDays < 14}
-                />
+            <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: '#111827', marginBottom: 24 }}>
+                Pārbaudiet informāciju
+              </Text>
+
+              {/* Summary Card */}
+              <View
+                style={{
+                  backgroundColor: '#f9fafb',
+                  borderRadius: 20,
+                  padding: 20,
+                  borderWidth: 1,
+                  borderColor: '#f3f4f6',
+                  marginBottom: 32,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#6b7280' }}>Kabīnes veids</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                    {CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#6b7280' }}>Daudzums</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                    {cabinCount} gab.
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#6b7280' }}>Periods</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                    {hireDays} dienas
+                  </Text>
+                </View>
                 {servicingFrequency && hireDays >= 14 && (
-                  <DetailRow
-                    label="Tīrīšana"
-                    value={
-                      servicingFrequency === 'WEEKLY'
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, color: '#6b7280' }}>Tīrīšana</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                      {servicingFrequency === 'WEEKLY'
                         ? 'Katru nedēļu'
                         : servicingFrequency === 'BIWEEKLY'
                           ? 'Reizi 2 nedēļās'
-                          : 'Reizi mēnesī'
-                    }
-                    last
-                  />
+                          : 'Reizi mēnesī'}
+                    </Text>
+                  </View>
                 )}
-              </InfoSection>
-            </View>
 
-            {/* Contact */}
-            <SectionLabel label="Kontaktinformācija *" />
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <TextInputField
-                placeholder="Vārds, uzvārds"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-              <TextInputField
-                placeholder="Tālrunis"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-                keyboardType="phone-pad"
-              />
-              <TextInputField
-                placeholder="E-pasts (neobligāti)"
-                value={contactEmail}
-                onChangeText={setContactEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInputField
-                placeholder="Piezīmes (piem., piekļuves kods, vietas apraksts)"
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={3}
+                <View style={{ height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }} />
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginTop: 16,
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#6b7280' }}>Piegāde</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                    {selectedDay ? isoToDisplay(selectedDay) : '—'}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#6b7280' }}>Savākšana</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
+                    {collectionDay ? isoToDisplay(collectionDay) : '—'}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#6b7280' }}>Adrese</Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: '#111827',
+                      flex: 1,
+                      textAlign: 'right',
+                      marginLeft: 16,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {picked?.address ?? '—'}
+                  </Text>
+                </View>
+
+                <View style={{ height: 1, backgroundColor: '#e5e7eb', marginVertical: 4 }} />
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginTop: 16,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827' }}>
+                    Aptuvenā cena
+                  </Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>
+                    €{estimatedPrice}{' '}
+                    <Text style={{ fontSize: 12, fontWeight: '500', color: '#6b7280' }}>+ PVN</Text>
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
+                Kontakti
+              </Text>
+
+              <View
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                  overflow: 'hidden',
+                  marginBottom: 32,
+                }}
+              >
+                <TextInput
+                  placeholder="Vārds, uzvārds"
+                  value={contactName}
+                  onChangeText={setContactName}
+                  style={{
+                    fontSize: 16,
+                    padding: 18,
+                    backgroundColor: '#fff',
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#f3f4f6',
+                  }}
+                  placeholderTextColor="#9ca3af"
+                />
+                <TextInput
+                  placeholder="Tālrunis"
+                  value={contactPhone}
+                  onChangeText={setContactPhone}
+                  keyboardType="phone-pad"
+                  style={{
+                    fontSize: 16,
+                    padding: 18,
+                    backgroundColor: '#fff',
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#f3f4f6',
+                  }}
+                  placeholderTextColor="#9ca3af"
+                />
+                <TextInput
+                  placeholder="E-pasts (neobligāti)"
+                  value={contactEmail}
+                  onChangeText={setContactEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={{
+                    fontSize: 16,
+                    padding: 18,
+                    backgroundColor: '#fff',
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#f3f4f6',
+                  }}
+                  placeholderTextColor="#9ca3af"
+                />
+                <TextInput
+                  placeholder="Piezīmes (piem., piekļuves kods, vietas apraksts)"
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  style={{
+                    fontSize: 16,
+                    padding: 18,
+                    backgroundColor: '#fff',
+                    minHeight: 80,
+                    textAlignVertical: 'top',
+                  }}
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 16 }}>
+                Apmaksa
+              </Text>
+              <WizardPaymentMethodPicker
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                isLoggedIn={!!user}
               />
             </View>
-
-            {/* Payment method */}
-            <SectionLabel label="Maksājuma veids" style={{ marginTop: 16 }} />
-            <WizardPaymentMethodPicker
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-              isLoggedIn={!!user}
-            />
           </ScrollView>
         )}
       </WizardLayout>
