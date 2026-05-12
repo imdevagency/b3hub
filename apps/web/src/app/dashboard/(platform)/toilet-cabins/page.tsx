@@ -107,7 +107,7 @@ export default function ToiletCabinsOperatorPage() {
       <PageHeader
         title="Tualetes kabīnes"
         description="Jūsu piešķirtie tualetes kabīņu nomas pasūtījumi"
-        actions={
+        action={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`size-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atjaunot
