@@ -8,6 +8,7 @@ import { EmailModule } from '../email/email.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { OrdersModule } from '../orders/orders.module';
+import { MapsModule } from '../maps/maps.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { OrdersModule } from '../orders/orders.module';
     PaymentsModule,
     ReviewsModule,
     OrdersModule,
+    MapsModule,
   ],
   controllers: [TransportJobsController],
   providers: [TransportJobsService],

@@ -91,6 +91,68 @@ export class MapsService {
     }
   }
 
+  /**
+   * Returns the estimated driving duration in minutes between two points using
+   * the Google Routes API (traffic-aware). Falls back to null on any error or
+   * missing key — callers should degrade gracefully.
+   */
+  async getRouteDurationMinutes(input: {
+    originLat: number;
+    originLng: number;
+    destLat: number;
+    destLng: number;
+  }): Promise<number | null> {
+    const apiKey = this.getApiKey();
+    if (!apiKey) return null;
+
+    try {
+      const res = await fetch(
+        'https://routes.googleapis.com/directions/v2:computeRoutes',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': 'routes.duration',
+          },
+          body: JSON.stringify({
+            origin: {
+              location: {
+                latLng: { latitude: input.originLat, longitude: input.originLng },
+              },
+            },
+            destination: {
+              location: {
+                latLng: { latitude: input.destLat, longitude: input.destLng },
+              },
+            },
+            travelMode: 'DRIVE',
+            routingPreference: 'TRAFFIC_AWARE',
+          }),
+        },
+      );
+
+      if (!res.ok) {
+        this.logger.warn(`Google Routes API (ETA) failed: ${res.status}`);
+        return null;
+      }
+
+      const data = (await res.json()) as {
+        routes?: Array<{ duration?: string }>;
+      };
+      // duration is returned as e.g. "1234s"
+      const raw = data.routes?.[0]?.duration;
+      if (!raw) return null;
+      const seconds = parseInt(raw.replace('s', ''), 10);
+      return isNaN(seconds) ? null : Math.max(1, Math.round(seconds / 60));
+    } catch (e) {
+      this.logger.warn(
+        `getRouteDurationMinutes failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return null;
+    }
+  }
+
   /** Proxy Google Places Autocomplete — keeps API key server-side. */
   async autocomplete(input: string): Promise<PlaceSuggestion[]> {
     const apiKey = this.getPlacesApiKey();

@@ -22,6 +22,7 @@ import { GetQuotesQueryDto } from './dto/get-quotes-query.dto';
 import { UpdateSkipHireStatusDto } from './dto/update-skip-hire-status.dto';
 import { AmendSkipHireDto } from './dto/amend-skip-hire.dto';
 import { ExtendSkipHireDto } from './dto/extend-skip-hire.dto';
+import { UpdateSkipHireLocationDto } from './dto/update-skip-hire-location.dto';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
@@ -265,5 +266,19 @@ export class SkipHireController {
       req.user.userId,
       dto.additionalDays,
     );
+  }
+
+  /**
+   * PATCH /api/v1/skip-hire/:id/location
+   * Carrier driver sends live GPS position for buyer real-time tracking.
+   */
+  @Patch(':id/location')
+  @UseGuards(JwtAuthGuard)
+  updateLocation(
+    @Param('id') id: string,
+    @Body() dto: UpdateSkipHireLocationDto,
+    @Request() req: Express.Request & { user: RequestingUser },
+  ) {
+    return this.skipHireService.updateLocation(id, req.user.userId, dto);
   }
 }

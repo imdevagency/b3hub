@@ -24,6 +24,7 @@ import type { CameraRefHandle } from '@/components/map';
 
 import { haptics } from '@/lib/haptics';
 import { useSkipOrder } from '@/lib/use-skip-order';
+import { useLiveUpdates } from '@/lib/use-live-updates';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
 import { useAuth } from '@/lib/auth-context';
@@ -65,11 +66,20 @@ export default function SkipOrderTrackingScreen() {
   const [requestingPickup, setRequestingPickup] = useState(false);
   const [cancellingOrder, setCancellingOrder] = useState(false);
 
+  // Live driver tracking via WebSocket (replaces 15s polling)
+  const isActive = order ? ACTIVE_STATUSES.has(order.status) : false;
+  const { skipLocation, connected: wsConnected } = useLiveUpdates({
+    skipOrderId: isActive ? (id ?? null) : null,
+    token,
+  });
+
+  // Fallback: reload order every 30s if WebSocket is not connected
   useEffect(() => {
     if (!order || !ACTIVE_STATUSES.has(order.status)) return;
-    const interval = setInterval(() => reload(true), 15_000);
+    if (wsConnected) return; // WS is live — no polling needed
+    const interval = setInterval(() => reload(true), 30_000);
     return () => clearInterval(interval);
-  }, [order?.status, reload]);
+  }, [order?.status, reload, wsConnected]);
 
   useEffect(() => {
     if (!cameraRef.current || order?.lat == null || order?.lng == null) return;
@@ -106,6 +116,7 @@ export default function SkipOrderTrackingScreen() {
     order.status === 'COLLECTED' || order.status === 'COMPLETED' || order.status === 'CANCELLED';
 
   const orderSubDesc = order.wasteCategory.replace(/_/g, ' ').toLowerCase();
+  const isLive = wsConnected && skipLocation != null;
 
   return (
     <ScreenContainer bg="#FFFFFF" standalone topInset={0}>
@@ -126,7 +137,23 @@ export default function SkipOrderTrackingScreen() {
               coordinate={{ lat: order.lat!, lng: order.lng! }}
             />
           )}
+          {skipLocation && (
+            <PinLayer
+              id="driver-truck"
+              type="truck"
+              coordinate={{ lat: skipLocation.lat, lng: skipLocation.lng }}
+            />
+          )}
         </BaseMap>
+
+        {/* LIVE ETA pill — shown only when driver is broadcasting */}
+        {isLive && skipLocation?.estimatedArrivalMin != null && (
+          <View style={[styles.etaPill, { top: Math.max(insets.top, 24) + 64 }]}>
+            <Truck size={13} color="#FFFFFF" />
+            <Text style={styles.etaText}>~{skipLocation.estimatedArrivalMin} min</Text>
+            <View style={styles.liveDot} />
+          </View>
+        )}
 
         {/* Minimal Bolt-style Top Pill */}
         <View style={[styles.topPill, { top: Math.max(insets.top, 24) + 12 }]}>
@@ -427,6 +454,33 @@ const styles = StyleSheet.create({
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+  etaPill: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#111827',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  etaText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
   },
   topPill: {
     position: 'absolute',

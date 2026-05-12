@@ -226,6 +226,28 @@ enum ToiletCabinStatus {
   CANCELLED
 }
 
+// ── Rental services — generic (new services beyond skip-hire and toilet-cabin) ──
+enum RentalServiceType {
+  SCAFFOLDING     // Temporary scaffolding structures
+  TEMP_FENCING    // Hoarding, crowd barriers, site security fencing
+  SITE_OFFICE     // Mobile welfare / office cabins
+  GENERATOR       // Power generator units
+  LIGHTING_TOWER  // Site lighting towers for night work
+  WATER_BOWSER    // Water supply tankers for remote sites
+  SKIP_HIRE       // Alias for future migration of SkipHireOrder
+  TOILET_CABIN    // Alias for future migration of ToiletCabinOrder
+}
+
+enum RentalOrderStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  IN_USE
+  COLLECTED
+  COMPLETED
+  CANCELLED
+}
+
 enum ContainerOrderStatus {
   SCHEDULED
   DELIVERED
@@ -672,7 +694,9 @@ model Company {
   availabilityBlocks         CarrierAvailability[]        @relation("CarrierAvailability")
   assignedSkipOrders         SkipHireOrder[]              @relation("AssignedSkipCarrier")
   assignedToiletCabinOrders  ToiletCabinOrder[]           @relation("AssignedToiletCabinCarrier")
+  assignedRentalOrders       RentalOrder[]                @relation("AssignedRentalCarrier")
   toiletCabinSettings        CarrierToiletCabinSettings[]
+  rentalSettings             CarrierRentalSettings[]
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
@@ -1792,9 +1816,16 @@ model SkipHireOrder {
   // Per-status timestamps: { PENDING: "2024-01-01T00:00:00.000Z", CONFIRMED: "...", ... }
   statusTimestamps Json?
 
+  // Live driver location — { lat, lng, updatedAt } — set by carrier driver app
+  currentLocation Json?
+
+  // Public unauthenticated tracking share link
+  trackingToken String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([trackingToken])
   @@map("skip_hire_orders")
 }
 
@@ -1845,10 +1876,105 @@ model ToiletCabinOrder {
   notes            String?
   statusTimestamps Json?
 
+  // Live driver location — { lat, lng, updatedAt } — set by carrier driver app
+  currentLocation Json?
+
+  // Public unauthenticated tracking share link
+  trackingToken String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([trackingToken])
   @@map("toilet_cabin_orders")
+}
+
+// ── Generic rental order — for all future rental service types ──────────────
+// New services (scaffolding, generators, fencing, site offices, etc.) use this
+// single table. Service-specific configuration lives in `metadata` JSON.
+// SkipHireOrder and ToiletCabinOrder keep their dedicated models for now.
+model RentalOrder {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  // Service type — determines what metadata fields are expected
+  serviceType RentalServiceType
+
+  // Delivery location (canonical address form for all rental types)
+  address String
+  city    String
+  lat     Float?
+  lng     Float?
+
+  // Hire period
+  hireDays       Int
+  deliveryDate   DateTime
+  deliveryWindow String?  // 'AM' | 'PM' | 'ANY'
+
+  // Service-specific fields — e.g. { scaffoldingHeight: 6, fencingMetres: 50 }
+  metadata Json?
+
+  // Quantity (e.g. number of generators, sections of fencing)
+  quantity Int @default(1)
+
+  // Pricing (stored at time of order)
+  price    Float
+  currency String @default("EUR")
+
+  // Payment
+  paymentMethod     PaymentMethod @default(CARD)
+  payseraOrderId    String?
+  payseraPaymentUrl String?
+  paymentStatus     PaymentStatus @default(PENDING)
+
+  // Status lifecycle
+  status RentalOrderStatus @default(PENDING)
+
+  // Contact (guest or registered user)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  userId       String?
+
+  // Carrier assigned
+  carrier   Company? @relation("AssignedRentalCarrier", fields: [carrierId], references: [id])
+  carrierId String?
+
+  // Live driver location — { lat, lng, updatedAt }
+  currentLocation Json?
+
+  // Public unauthenticated tracking share link
+  trackingToken String? @unique
+
+  notes            String?
+  statusTimestamps Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trackingToken])
+  @@index([userId])
+  @@index([carrierId])
+  @@index([serviceType, status])
+  @@map("rental_orders")
+}
+
+// Carrier pricing for generic rental services.
+// One row per carrier per service type.
+model CarrierRentalSettings {
+  id          String            @id @default(cuid())
+  carrier     Company           @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId   String
+  serviceType RentalServiceType
+
+  pricePerUnitPerDay Float    // EUR per unit per day
+  cities             String[] // list of cities/regions served
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([carrierId, serviceType])
+  @@map("carrier_rental_settings")
 }
 
 // Carrier pricing & availability settings for toilet cabin rental.

@@ -4,17 +4,12 @@
  */
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import {
-  getTransportJob,
-  getTransportJobLocation,
-  type ApiTransportJob,
-  type TransportJobLocation,
-  type TransportJobStatus,
-} from '@/lib/api';
+import { getTransportJob, type ApiTransportJob, type TransportJobStatus } from '@/lib/api';
+import { useJobTracking } from '@/lib/use-job-tracking';
 import { fmtDate } from '@/lib/format';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, Clock, MessageSquare, Truck, User } from 'lucide-react';
@@ -117,13 +112,16 @@ export default function TransportJobDetailPage() {
   const { token } = useAuth();
 
   const [job, setJob] = useState<ApiTransportJob | null>(null);
-  const [location, setLocation] = useState<TransportJobLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastPoll, setLastPoll] = useState<Date | null>(null);
 
-  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const truckPos = location?.currentLocation ?? null;
+  // Real-time location via WebSocket (replaces 10s poll)
+  const {
+    truckPos: livePos,
+    liveStatus,
+    connected: wsConnected,
+  } = useJobTracking({ jobId: id, token });
+  const truckPos = livePos ? { lat: livePos.lat, lng: livePos.lng } : null;
 
   const loadJob = useCallback(async () => {
     if (!token || !id) return;
@@ -138,25 +136,9 @@ export default function TransportJobDetailPage() {
     }
   }, [id, token]);
 
-  const pollLocation = useCallback(async () => {
-    if (!token || !id) return;
-    try {
-      const data = await getTransportJobLocation(id, token);
-      setLocation(data);
-      setLastPoll(new Date());
-    } catch {
-      // silently ignore poll errors
-    }
-  }, [id, token]);
-
   useEffect(() => {
     loadJob();
-    pollLocation();
-    pollTimer.current = setInterval(pollLocation, 10_000);
-    return () => {
-      if (pollTimer.current) clearInterval(pollTimer.current);
-    };
-  }, [loadJob, pollLocation]);
+  }, [loadJob]);
 
   if (loading) return <PageSpinner className="min-h-[60vh]" />;
 
@@ -172,7 +154,9 @@ export default function TransportJobDetailPage() {
   }
 
   const currentIdx = statusIndex(job.status);
-  const isLive = job.status === 'EN_ROUTE_PICKUP' || job.status === 'EN_ROUTE_DELIVERY';
+  const activeStatus = (liveStatus as TransportJobStatus) ?? job.status;
+  const isLive =
+    (activeStatus === 'EN_ROUTE_PICKUP' || activeStatus === 'EN_ROUTE_DELIVERY') && wsConnected;
   const statusCfg = STATUS_CFG[job.status] ?? { label: job.status, bg: '#f1f5f9', text: '#475569' };
 
   return (
@@ -209,20 +193,23 @@ export default function TransportJobDetailPage() {
       <div>
         <TrackingMap
           token={token ?? undefined}
-          pickupLat={location?.pickupLat ?? job.pickupLat}
-          pickupLng={location?.pickupLng ?? job.pickupLng}
+          pickupLat={job.pickupLat}
+          pickupLng={job.pickupLng}
           pickupAddress={job.pickupAddress}
-          deliveryLat={location?.deliveryLat ?? job.deliveryLat}
-          deliveryLng={location?.deliveryLng ?? job.deliveryLng}
+          deliveryLat={job.deliveryLat}
+          deliveryLng={job.deliveryLng}
           deliveryAddress={job.deliveryAddress}
           truckPos={truckPos}
           isLive={isLive}
         />
-        {lastPoll && (
-          <p className="text-xs text-slate-400 mt-1.5 text-right pr-1">
-            GPS atjaunots {fmtTime(lastPoll.toISOString())} · atsvaidzina ik 10s
-          </p>
-        )}
+        <div className="flex items-center justify-end gap-3 mt-1.5 pr-1">
+          {livePos?.estimatedArrivalMin != null && (
+            <p className="text-xs text-blue-600 font-medium">
+              Paredzamais iebraukšanas laiks: ~{livePos.estimatedArrivalMin} min
+            </p>
+          )}
+          <p className="text-xs text-slate-400">{wsConnected ? '● LIVE' : 'Savienojas…'}</p>
+        </div>
       </div>
 
       {/* ── Status Timeline ── */}

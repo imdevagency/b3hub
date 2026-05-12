@@ -232,5 +232,16 @@ export const skipHireApi = {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ additionalDays }),
       }),
+
+    /** Carrier driver: send live GPS position for buyer real-time tracking. */
+    updateLocation: (id: string, lat: number, lng: number, token: string) =>
+      apiFetch<{ ok: boolean; estimatedArrivalMin: number | null }>(
+        `/skip-hire/${id}/location`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ lat, lng }),
+        },
+      ),
   },
 };

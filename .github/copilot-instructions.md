@@ -91,6 +91,7 @@ export interface RequestingUser {
   email?: string;
   userType: string; // 'BUYER' | 'ADMIN'  (UserType enum — all non-admin users are BUYER regardless of business role)
   isCompany: boolean;
+  canBuy: boolean; // approved to place orders as a buyer
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
   canSkipHire: boolean; // approved to manage skip hire fleet
@@ -172,9 +173,9 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
-- `(driver)` — active, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
+- `(driver)` — active, billing-settings, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
 - `(gate)` — fields
-- `(recycler)` — documents, home, incoming, messages, more, profile, records
+- `(recycler)` — documents, home, incoming, messages, more, profile, records, register-center
 - `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
 - `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, language, messages, notification/, notifications, review/, settings, support-chat
 - `(wizards)` — disposal/, material-order, scrap-buyback/, skip-hire/, toilet-cabin/, transport/, utilization/
@@ -272,6 +273,7 @@ Before writing any custom styled View, div, or input, check the component librar
 Detailed references are in scoped instruction files:
 
 - **Backend** (`apps/backend/**`) → `.github/instructions/backend-schema.instructions.md`
+- **All apps** (`apps/**`) → `.github/instructions/rental-services.instructions.md` ← adding a new rental service
 - **Web** (`apps/web/**`) → `.github/instructions/web-components.instructions.md`
 - **Mobile** (`apps/mobile/**`) → `.github/instructions/mobile-components.instructions.md`
 - **Mobile styling** (`apps/mobile/**`) → `.github/instructions/mobile-styling.instructions.md`
@@ -282,6 +284,7 @@ Key rules:
 - **Web**: use shadcn/ui primitives from `@/components/ui/`. Never write raw `<button>` or custom modal markup.
 - **Mobile**: every screen must start with `<ScreenContainer>`. Detail screens must use `<ScreenHeader>`. Named sections must use `<InfoSection>` + `<DetailRow>`. Status must use `<StatusPill>`. Empty lists must use `<EmptyState>`.
 - **Mobile styling**: always check the NativeWind safe-usage rules before writing any `className` or `style` in mobile. Never use arbitrary values (`text-[16px]`) in `className`. Never mix the custom `Text` component with font-weight overrides.
+- **New rental service**: always read `.github/instructions/rental-services.instructions.md` before building anything. The answer is always 4 file edits — never a new module, model, or screen.
 
 ---
 
@@ -307,6 +310,13 @@ Key rules:
 | `.github/instructions/mobile-components.instructions.md`     | Mobile UI component catalog + usage                                                     |
 | `.github/instructions/mobile-styling.instructions.md`        | NativeWind safe-usage rules — what goes in className vs style, font rules               |
 | `scripts/generate-instructions.mjs`                          | Regenerates all instruction files from source — runs automatically on `prisma:generate` |
+| `SCALING.md`                                                 | **Rental platform scaling guide** — architecture, 5-step checklist, status flows        |
+| `.github/instructions/rental-services.instructions.md`       | AI checklist for adding a new rental service (4 file edits, 0 new screens)              |
+| `apps/backend/src/rentals/`                                  | Generic rental module — handles all service types via `RentalOrder` model               |
+| `apps/mobile/lib/rental-services.ts`                         | Mobile service registry — one config entry per rental service type                      |
+| `apps/mobile/lib/api/rentals.ts`                             | Mobile API — one file covers all rental service types                                   |
+| `apps/mobile/components/wizard/RentalHirePeriodStep.tsx`     | Shared hire period wizard step — reused by all rental service wizards                   |
+| `apps/mobile/components/driver/RentalOrderCard.tsx`          | Generic driver order card — reused by all rental service types on the driver tab        |
 
 ```
 

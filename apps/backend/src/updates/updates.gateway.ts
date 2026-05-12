@@ -47,6 +47,13 @@ export interface JobLocationPayload {
   estimatedArrivalMin: number | null;
 }
 
+export interface SkipHireLocationPayload {
+  skipOrderId: string;
+  lat: number;
+  lng: number;
+  estimatedArrivalMin: number | null;
+}
+
 export interface SellerNewOrderPayload {
   companyId: string;
   orderId: string;
@@ -169,6 +176,27 @@ export class UpdatesGateway
     void client.leave(`job:${data.jobId}`);
   }
 
+  /** Subscribe to live location updates for a skip-hire order (buyer side). */
+  @SubscribeMessage('watchSkipHireOrder')
+  handleWatchSkipHireOrder(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { skipOrderId: string },
+  ) {
+    this.assertUUID(data?.skipOrderId, 'skipOrderId');
+    void client.join(`skip:${data.skipOrderId}`);
+    return { ok: true };
+  }
+
+  @SubscribeMessage('unwatchSkipHireOrder')
+  handleUnwatchSkipHireOrder(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { skipOrderId: string },
+  ) {
+    if (!data?.skipOrderId || !UpdatesGateway.UUID_RE.test(data.skipOrderId))
+      return;
+    void client.leave(`skip:${data.skipOrderId}`);
+  }
+
   /** Subscribe to all order events for a seller company (new orders, cancellations). */
   @SubscribeMessage('watchSeller')
   handleWatchSeller(
@@ -210,6 +238,12 @@ export class UpdatesGateway
 
   broadcastJobLocation(payload: JobLocationPayload) {
     this.server.to(`job:${payload.jobId}`).emit('jobLocationChanged', payload);
+  }
+
+  broadcastSkipHireLocation(payload: SkipHireLocationPayload) {
+    this.server
+      .to(`skip:${payload.skipOrderId}`)
+      .emit('skipLocationChanged', payload);
   }
 
   broadcastSellerNewOrder(payload: SellerNewOrderPayload) {

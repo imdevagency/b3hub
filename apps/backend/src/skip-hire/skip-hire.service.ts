@@ -29,6 +29,12 @@ import {
   TransportJobType,
 } from '@prisma/client';
 import type { RequestingUser } from '../common/types/requesting-user.interface.js';
+import {
+  UpdatesGateway,
+  SkipHireLocationPayload,
+} from '../updates/updates.gateway';
+import { MapsService } from '../maps/maps.service';
+import { UpdateSkipHireLocationDto } from './dto/update-skip-hire-location.dto';
 
 const SKIP_STATUS_LABEL: Partial<Record<SkipHireStatus, string>> = {
   [SkipHireStatus.CONFIRMED]: 'Konteiners apstiprināts',
@@ -71,6 +77,8 @@ export class SkipHireService {
     private readonly notifications: NotificationsService,
     private readonly payments: PaymentsService,
     @Optional() private readonly supabase: SupabaseService,
+    @Optional() private readonly updates: UpdatesGateway,
+    @Optional() private readonly maps: MapsService,
   ) {}
 
   /**
@@ -565,6 +573,69 @@ export class SkipHireService {
         );
     }
     return updated;
+  }
+
+  /**
+   * PATCH :id/location — driver sends live GPS position.
+   * Updates currentLocation on the order and broadcasts via WebSocket.
+   */
+  async updateLocation(
+    id: string,
+    userId: string,
+    dto: UpdateSkipHireLocationDto,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { companyId: true, canSkipHire: true, canTransport: true },
+    });
+    if (!user?.companyId)
+      throw new ForbiddenException('User is not associated with a company');
+
+    const order = await this.prisma.skipHireOrder.findUnique({
+      where: { id },
+      select: { id: true, carrierId: true, lat: true, lng: true, status: true },
+    });
+    if (!order) throw new NotFoundException(`Skip hire order ${id} not found`);
+    if (order.carrierId !== user.companyId)
+      throw new ForbiddenException(
+        'This order does not belong to your company',
+      );
+
+    const locationData = { lat: dto.lat, lng: dto.lng, updatedAt: new Date().toISOString() };
+
+    await this.prisma.skipHireOrder.update({
+      where: { id },
+      data: { currentLocation: locationData },
+    });
+
+    // Compute road-based ETA (falls back to haversine)
+    let estimatedArrivalMin: number | null = null;
+    if (order.lat && order.lng && this.maps) {
+      estimatedArrivalMin = await this.maps
+        .getRouteDurationMinutes({
+          originLat: dto.lat,
+          originLng: dto.lng,
+          destLat: order.lat,
+          destLng: order.lng,
+        })
+        .catch(() => null);
+    }
+    if (estimatedArrivalMin === null && order.lat && order.lng) {
+      const distKm = this.haversineKm(dto.lat, dto.lng, order.lat, order.lng);
+      estimatedArrivalMin = Math.max(1, Math.round((distKm / 50) * 60));
+    }
+
+    if (this.updates) {
+      const payload: SkipHireLocationPayload = {
+        skipOrderId: id,
+        lat: dto.lat,
+        lng: dto.lng,
+        estimatedArrivalMin,
+      };
+      this.updates.broadcastSkipHireLocation(payload);
+    }
+
+    return { ok: true, estimatedArrivalMin };
   }
 
   // ── Carrier fleet map (skip driver view) ─────────────────────

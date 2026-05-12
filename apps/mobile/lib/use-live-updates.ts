@@ -40,6 +40,13 @@ export interface LiveLocationUpdate {
   estimatedArrivalMin: number | null;
 }
 
+export interface LiveSkipLocationUpdate {
+  skipOrderId: string;
+  lat: number;
+  lng: number;
+  estimatedArrivalMin: number | null;
+}
+
 export interface SellerNewOrderUpdate {
   companyId: string;
   orderId: string;
@@ -51,6 +58,8 @@ interface UseLiveUpdatesOptions {
   jobId?: string | null;
   /** Seller company ID — subscribes to the seller room for new-order push events. */
   sellerCompanyId?: string | null;
+  /** Skip-hire order ID — subscribes for live driver location updates (buyer). */
+  skipOrderId?: string | null;
   token: string | null;
 }
 
@@ -61,6 +70,8 @@ interface UseLiveUpdatesReturn {
   jobStatus: string | null;
   /** Latest driver GPS location, or null if not yet received */
   jobLocation: LiveLocationUpdate | null;
+  /** Latest driver GPS location for a skip-hire order, or null if not yet received */
+  skipLocation: LiveSkipLocationUpdate | null;
   /** Latest seller new-order push event, or null if not yet received */
   sellerNewOrder: SellerNewOrderUpdate | null;
   connected: boolean;
@@ -72,18 +83,20 @@ export function useLiveUpdates({
   orderId,
   jobId,
   sellerCompanyId,
+  skipOrderId,
   token,
 }: UseLiveUpdatesOptions): UseLiveUpdatesReturn {
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<string | null>(null);
   const [jobLocation, setJobLocation] = useState<LiveLocationUpdate | null>(null);
+  const [skipLocation, setSkipLocation] = useState<LiveSkipLocationUpdate | null>(null);
   const [sellerNewOrder, setSellerNewOrder] = useState<SellerNewOrderUpdate | null>(null);
   const [connected, setConnected] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    if (!token || (!orderId && !jobId && !sellerCompanyId)) return;
+    if (!token || (!orderId && !jobId && !sellerCompanyId && !skipOrderId)) return;
 
     const socket = io(`${WS_URL}/updates`, {
       auth: { token },
@@ -100,6 +113,7 @@ export function useLiveUpdates({
       if (orderId) socket.emit('watchOrder', { orderId });
       if (jobId) socket.emit('watchJob', { jobId });
       if (sellerCompanyId) socket.emit('watchSeller', { companyId: sellerCompanyId });
+      if (skipOrderId) socket.emit('watchSkipHireOrder', { skipOrderId });
     });
 
     socket.on('disconnect', () => setConnected(false));
@@ -126,6 +140,12 @@ export function useLiveUpdates({
       }
     });
 
+    socket.on('skipLocationChanged', (payload: LiveSkipLocationUpdate) => {
+      if (skipOrderId && payload.skipOrderId === skipOrderId) {
+        setSkipLocation(payload);
+      }
+    });
+
     socket.on('sellerNewOrder', (payload: SellerNewOrderUpdate) => {
       if (sellerCompanyId && payload.companyId === sellerCompanyId) {
         setSellerNewOrder(payload);
@@ -136,10 +156,11 @@ export function useLiveUpdates({
       if (orderId) socket.emit('unwatchOrder', { orderId });
       if (jobId) socket.emit('unwatchJob', { jobId });
       if (sellerCompanyId) socket.emit('unwatchSeller', { companyId: sellerCompanyId });
+      if (skipOrderId) socket.emit('unwatchSkipHireOrder', { skipOrderId });
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [orderId, jobId, sellerCompanyId, token]);
+  }, [orderId, jobId, sellerCompanyId, skipOrderId, token]);
 
-  return { orderStatus, jobStatus, jobLocation, sellerNewOrder, connected };
+  return { orderStatus, jobStatus, jobLocation, skipLocation, sellerNewOrder, connected };
 }

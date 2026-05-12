@@ -209,6 +209,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - admin
 - analytics
 - api-keys
+- apus
 - auth
 - b3-fields
 - bis
@@ -335,9 +336,13 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/framework-contracts
 - dashboard/(internal)/admin/guest-orders
 - dashboard/(internal)/admin/integrations
+- dashboard/(internal)/admin/integrations/apus
 - dashboard/(internal)/admin/integrations/bis
+- dashboard/(internal)/admin/integrations/email
 - dashboard/(internal)/admin/integrations/jumis
 - dashboard/(internal)/admin/integrations/lursoft
+- dashboard/(internal)/admin/integrations/maps
+- dashboard/(internal)/admin/integrations/paysera
 - dashboard/(internal)/admin/invoices
 - dashboard/(internal)/admin/jobs
 - dashboard/(internal)/admin/jobs/[id]
@@ -395,6 +400,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/incoming-orders
 - dashboard/(platform)/invoices
 - dashboard/(platform)/jobs
+- dashboard/(platform)/locations
 - dashboard/(platform)/materials
 - dashboard/(platform)/order
 - dashboard/(platform)/order/disposal
@@ -433,9 +439,17 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(shared)/settings/saved-addresses
 - forgot-password
 - gate
+- guest/payment-failed
+- guest/payment-success
+- order/[id]/payment-failed
+- order/[id]/payment-success
 - pasutijums/[token]
 - reset-password
 - share/[token]
+- skip-hire/[id]/payment-failed
+- skip-hire/[id]/payment-success
+- toilet-cabin/[id]/payment-failed
+- toilet-cabin/[id]/payment-success
 - track/[token]
 <!-- END GEN -->
 
@@ -475,6 +489,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/transport-job/[id]/details
 - (buyer)/transport-job/[id]/index
 - (driver)/active
+- (driver)/billing-settings
 - (driver)/documents
 - (driver)/earnings
 - (driver)/home
@@ -495,6 +510,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (recycler)/more
 - (recycler)/profile
 - (recycler)/records
+- (recycler)/register-center
 - (seller)/billing-settings
 - (seller)/catalog
 - (seller)/documents

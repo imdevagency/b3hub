@@ -47,6 +47,13 @@ import { formatDateNumeric } from '@/lib/format';
 import { geocodeLocation } from '@/lib/maps';
 import { colors } from '@/lib/theme';
 
+let Location: typeof import('expo-location') | null = null;
+try {
+  Location = require('expo-location');
+} catch {
+  /* Expo Go */
+}
+
 const ACCENT = '#000000';
 const RIGA: [number, number] = [24.1052, 56.9496];
 const cs = t.carrierSkips;
@@ -224,6 +231,56 @@ export default function CarrierSkipsScreen() {
   const [coords, setCoords] = useState<Record<string, [number, number]>>({});
   const [selectedOrder, setSelectedOrder] = useState<SkipHireOrder | null>(null);
   const [showList, setShowList] = useState(false);
+
+  // ── Live GPS tracking — sends position to backend while en-route ──────────
+  const locationSub = useRef<{ remove: () => void } | null>(null);
+  const lastSentAt = useRef<number>(0);
+  const SEND_INTERVAL_MS = 15_000; // send at most every 15 s
+
+  useEffect(() => {
+    // Only track if there is an active order being delivered
+    const enRouteOrder = orders.find((o) => o.status === 'CONFIRMED' || o.status === 'DELIVERED');
+    if (!enRouteOrder || !token || !Location) {
+      locationSub.current?.remove();
+      locationSub.current = null;
+      return;
+    }
+
+    let active = true;
+    const orderId = enRouteOrder.id;
+
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted' || !active) return;
+
+      locationSub.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 30, // update every 30 m
+          timeInterval: 10_000,
+        },
+        (loc) => {
+          if (!active) return;
+          const now = Date.now();
+          if (now - lastSentAt.current < SEND_INTERVAL_MS) return;
+          lastSentAt.current = now;
+          api.skipHire
+            .updateLocation(orderId, loc.coords.latitude, loc.coords.longitude, token)
+            .catch(() => {
+              // silent — never block the driver UI
+            });
+        },
+      );
+    })();
+
+    return () => {
+      active = false;
+      locationSub.current?.remove();
+      locationSub.current = null;
+    };
+    // Re-run when orders change (new order becomes active) or token changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders.map((o) => o.id + o.status).join(','), token]);
 
   const load = useCallback(
     async (silent = false) => {

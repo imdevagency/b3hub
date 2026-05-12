@@ -20,6 +20,7 @@ import { MaterialsModule } from './materials/materials.module';
 import { OrdersModule } from './orders/orders.module';
 import { SkipHireModule } from './skip-hire/skip-hire.module';
 import { ToiletCabinsModule } from './toilet-cabins/toilet-cabins.module';
+import { RentalsModule } from './rentals/rentals.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ProviderApplicationsModule } from './provider-applications/provider-applications.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
@@ -90,6 +91,7 @@ import { SupplierLocationsModule } from './supplier-locations/supplier-locations
     OrdersModule,
     SkipHireModule,
     ToiletCabinsModule,
+    RentalsModule,
     DocumentsModule,
     ProviderApplicationsModule,
     VehiclesModule,

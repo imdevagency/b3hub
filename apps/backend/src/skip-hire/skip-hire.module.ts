@@ -5,9 +5,11 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { SupabaseModule } from '../supabase/supabase.module';
+import { UpdatesModule } from '../updates/updates.module';
+import { MapsModule } from '../maps/maps.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, PaymentsModule, SupabaseModule],
+  imports: [PrismaModule, NotificationsModule, PaymentsModule, SupabaseModule, UpdatesModule, MapsModule],
   controllers: [SkipHireController],
   providers: [SkipHireService],
   exports: [SkipHireService],

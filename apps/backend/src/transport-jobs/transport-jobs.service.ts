@@ -44,6 +44,7 @@ import { EmailService } from '../email/email.service';
 import type { RequestingUser } from '../common/types/requesting-user.interface';
 import { PaymentsService } from '../payments/payments.service';
 import { OrdersService } from '../orders/orders.service';
+import { MapsService } from '../maps/maps.service';
 
 // Valid next-state transitions for a driver
 const NEXT_STATUS: Partial<Record<TransportJobStatus, TransportJobStatus>> = {
@@ -70,6 +71,7 @@ export class TransportJobsService {
     private readonly email: EmailService,
     private readonly payments: PaymentsService,
     private readonly orders: OrdersService,
+    private readonly maps: MapsService,
   ) {}
 
   private isDispatcher(user: RequestingUser): boolean {
@@ -2575,8 +2577,7 @@ export class TransportJobsService {
     // ─────────────────────────────────────────────────────────────────────────
 
     // Broadcast real-time location to subscribed clients (fire-and-forget)
-    // Compute a lightweight ETA: haversine to destination ÷ 50 km/h average speed.
-    // Use delivery coords when en-route to delivery, pickup coords otherwise.
+    // ETA: call Google Routes API (traffic-aware). Falls back to haversine ÷ 50 km/h.
     const headingToDeliveryForEta =
       job.status === 'EN_ROUTE_DELIVERY' ||
       job.status === 'AT_DELIVERY' ||
@@ -2587,10 +2588,24 @@ export class TransportJobsService {
     const destLng = headingToDeliveryForEta
       ? job.deliveryLng
       : (job.pickupLng ?? job.deliveryLng);
+
     let estimatedArrivalMin: number | null = null;
     if (destLat != null && destLng != null) {
-      const distKm = this.haversineKm(dto.lat, dto.lng, destLat, destLng);
-      estimatedArrivalMin = Math.max(1, Math.round((distKm / 50) * 60));
+      // Try Google Routes API first (traffic-aware, accurate road ETA)
+      estimatedArrivalMin = await this.maps
+        .getRouteDurationMinutes({
+          originLat: dto.lat,
+          originLng: dto.lng,
+          destLat,
+          destLng,
+        })
+        .catch(() => null);
+
+      // Fallback: haversine ÷ 50 km/h if Google fails or key is missing
+      if (estimatedArrivalMin === null) {
+        const distKm = this.haversineKm(dto.lat, dto.lng, destLat, destLng);
+        estimatedArrivalMin = Math.max(1, Math.round((distKm / 50) * 60));
+      }
     }
     this.updates.broadcastJobLocation({
       jobId: id,
