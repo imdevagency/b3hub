@@ -13,7 +13,7 @@
  */
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Input } from '@/components/ui/input';
@@ -179,6 +179,77 @@ const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
 
 const DEFAULT_CENTER = { lat: 56.9496, lng: 24.1052 };
 
+// Per-category contextual detail shown in the right panel
+const CATEGORY_USE_CASES: Record<MaterialCategory, { useCases: string[]; typicalQty: string }> = {
+  SAND: {
+    useCases: ['Betonēšana un mūrēšana', 'Drenāžas slāņi', 'Rotaļu laukumi', 'Pamatu smilts'],
+    typicalQty: '5 – 50 t',
+  },
+  GRAVEL: {
+    useCases: ['Iebrauktuves un celiņi', 'Drenāža', 'Pamati un pakratnes', 'Ceļu segums'],
+    typicalQty: '5 – 100 t',
+  },
+  STONE: {
+    useCases: ['Akmens mūris', 'Dekoratīvs segums', 'Betona pildviela', 'Ēku pamati'],
+    typicalQty: '5 – 80 t',
+  },
+  CONCRETE: {
+    useCases: [
+      'Pamatu betona liešana',
+      'Grīdas plāksnes',
+      'Sienas un pārsegumi',
+      'Industriālie objekti',
+    ],
+    typicalQty: '3 – 30 m³',
+  },
+  SOIL: {
+    useCases: ['Dārza uzpildīšana', 'Apzaļumošana', 'Izlīdzināšana', 'Valni un uzbērumi'],
+    typicalQty: '10 – 200 t',
+  },
+  RECYCLED_CONCRETE: {
+    useCases: ['Ceļa pamatne', 'Aizpildīšana', 'Temporārs ceļa segums', 'Bremzēšanas slānis'],
+    typicalQty: '10 – 200 t',
+  },
+  RECYCLED_SOIL: {
+    useCases: ['Lēts uzbērums', 'Nepieejamas vietas aizpilde', 'Celtniecības zemūdens slānis'],
+    typicalQty: '20 – 500 t',
+  },
+  ASPHALT: {
+    useCases: ['Stāvlaukumi un iebrauktuves', 'Ceļa labošana', 'Rūpnieciskā asfalts', 'Veloceliņi'],
+    typicalQty: '5 – 100 t',
+  },
+  CLAY: {
+    useCases: ['Hidro izolācija', 'Dīķu un grāvju dībeņi', 'Valni', 'Māla blīvētājs'],
+    typicalQty: '10 – 150 t',
+  },
+  OTHER: { useCases: ['Speciālie materiāli', 'Pēc pieprasījuma'], typicalQty: 'Pēc pieprasījuma' },
+};
+
+// Wizard step navigation
+type WizardStepKey =
+  | 'specs'
+  | 'where'
+  | 'when'
+  | 'contact'
+  | 'offers'
+  | 'rfq-sent'
+  | 'order-confirmed';
+const WIZARD_STEP_INDEX: Record<WizardStepKey, number> = {
+  specs: 1,
+  where: 2,
+  when: 3,
+  contact: 4,
+  offers: 5,
+  'rfq-sent': 5,
+  'order-confirmed': 5,
+};
+const WIZARD_STEP_BACK: Partial<Record<WizardStepKey, WizardStepKey>> = {
+  where: 'specs',
+  when: 'where',
+  contact: 'when',
+  offers: 'contact',
+};
+
 // ── Category card ──────────────────────────────────────────────────────────────
 
 function CategoryCard({ category, onClick }: { category: MaterialCategory; onClick: () => void }) {
@@ -215,14 +286,7 @@ function CategoryCard({ category, onClick }: { category: MaterialCategory; onCli
 
 // ── Wizard overlay ─────────────────────────────────────────────────────────────
 
-type WizardStep =
-  | 'specs'
-  | 'where'
-  | 'when'
-  | 'contact'
-  | 'offers'
-  | 'rfq-sent'
-  | 'order-confirmed';
+type WizardStep = WizardStepKey;
 
 interface WizardState {
   category: MaterialCategory;
@@ -258,16 +322,6 @@ function WizardInline({
 }) {
   const meta = CATEGORY_META[initialCategory];
   const { user: authUser } = useAuth();
-
-  const stepIndex: Record<WizardStep, number> = {
-    specs: 0,
-    where: 1,
-    when: 2,
-    contact: 3,
-    offers: 4,
-    'rfq-sent': 4,
-    'order-confirmed': 4,
-  };
 
   const [step, setStep] = useState<WizardStep>('specs');
   const [form, setForm] = useState<WizardState>({
@@ -494,439 +548,634 @@ function WizardInline({
     }
   }
 
-  return (
-    <>
-      <div className="absolute inset-0 bg-[#e5e3df] z-0">
-        <div ref={mapDivRef} className="absolute inset-0" />
-      </div>
+  // ── Derived ────────────────────────────────────────────────────────────────
 
-      <WizardShell
-        className="w-full lg:w-115 flex-1 min-h-0 lg:flex-none z-20 relative lg:absolute lg:top-4 lg:bottom-4 lg:left-4 lg:rounded-2xl lg:shadow-2xl border-t lg:border-none flex flex-col bg-white"
-        step={stepIndex[step] + 1}
-        totalSteps={5}
-        title={
-          step === 'rfq-sent'
-            ? 'Pieprasījums nosūtīts'
-            : step === 'order-confirmed'
-              ? 'Pasūtījums pieņemts'
-              : CATEGORY_META[form.category].label
-        }
-        onBack={
-          stepIndex[step] > 0 && step !== 'order-confirmed' && step !== 'rfq-sent'
-            ? () => setStep(Object.keys(stepIndex)[stepIndex[step] - 1] as WizardStep)
-            : null
-        }
-        onClose={onClose}
-      >
-        {step !== 'rfq-sent' && step !== 'order-confirmed' && (
-          <div className="mb-6 rounded-2xl bg-gray-100 p-4">
+  const showMap = step === 'where';
+  const selectedMeta = CATEGORY_META[form.category];
+  const CategoryIcon = selectedMeta.icon;
+
+  function getOnBack(): (() => void) | null {
+    if (step === 'specs') return onClose;
+    if (step === 'rfq-sent' || step === 'order-confirmed') return null;
+    const back = WIZARD_STEP_BACK[step];
+    return back ? () => setStep(back) : null;
+  }
+
+  // ── Wizard content ────────────────────────────────────────────────────────
+
+  const wizardContent = (
+    <WizardShell
+      className="flex-1"
+      step={WIZARD_STEP_INDEX[step]}
+      totalSteps={5}
+      title={
+        step === 'rfq-sent'
+          ? 'Pieprasījums nosūtīts'
+          : step === 'order-confirmed'
+            ? 'Pasūtījums pieņemts'
+            : selectedMeta.label
+      }
+      onBack={getOnBack()}
+      innerScroll
+    >
+      {/* Step 1: Specs */}
+      {step === 'specs' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+          <div>
+            <p className="text-xl font-bold text-foreground">Ko jums nepieciešams?</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Aprakstiet materiālu un norādiet nepieciešamo daudzumu
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">Kategorija</label>
+              <Select
+                value={form.category}
+                onValueChange={(val) => {
+                  const m = CATEGORY_META[val as MaterialCategory];
+                  patch({
+                    category: val as MaterialCategory,
+                    materialName: m.defaultName,
+                    unit: m.defaultUnit as MaterialUnit,
+                  });
+                }}
+              >
+                <SelectTrigger className="w-full rounded-2xl h-13 bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {ALL_CATEGORIES.map((c) => {
+                    const cMeta = CATEGORY_META[c];
+                    return (
+                      <SelectItem key={c} value={c} className="rounded-lg py-3 cursor-pointer">
+                        <span className="font-medium">{cMeta.label}</span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">
+                Frakcija / Precizējums
+              </label>
+              <input
+                type="text"
+                value={form.materialName}
+                onChange={(e) => patch({ materialName: e.target.value })}
+                placeholder={selectedMeta.defaultName || 'Piem., 16-32 mm'}
+                className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-13 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-foreground">Daudzums</label>
             <div className="flex items-center gap-3">
-              <Package className="size-5 text-gray-700 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-bold truncate text-black">
-                  {form.materialName || CATEGORY_META[form.category].label}
+              <button
+                onClick={() =>
+                  patch({
+                    quantity: Math.max(
+                      0.5,
+                      parseFloat((form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2)),
+                    ),
+                  })
+                }
+                className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
+              >
+                <Minus className="size-5" />
+              </button>
+              <input
+                type="number"
+                value={form.quantity}
+                min={0.5}
+                step={0.5}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!isNaN(v) && v > 0) patch({ quantity: v });
+                }}
+                className="flex-1 min-w-0 text-center bg-transparent border-0 px-2 py-2 text-4xl font-bold tracking-tighter focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button
+                onClick={() =>
+                  patch({
+                    quantity: parseFloat(
+                      (form.quantity + (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
+                    ),
+                  })
+                }
+                className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
+              >
+                <Plus className="size-5" />
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap mt-3">
+              {UNITS.map((u) => (
+                <button
+                  key={u}
+                  onClick={() => patch({ unit: u })}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                    form.unit === u
+                      ? 'bg-foreground text-background'
+                      : 'bg-muted/50 text-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {UNIT_LABEL[u]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-foreground">
+              Papildu prasības{' '}
+              <span className="text-muted-foreground font-normal">(neobligāti)</span>
+            </label>
+            <textarea
+              value={form.notes}
+              onChange={(e) => patch({ notes: e.target.value })}
+              placeholder="piem. frakcionēts 0-16, sasmalcināts, nesasaldēts..."
+              rows={3}
+              className="w-full rounded-2xl border-0 bg-muted/40 px-4 py-3 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow resize-none"
+            />
+          </div>
+          <Button
+            onClick={() => setStep('where')}
+            disabled={!form.materialName.trim() || form.quantity <= 0}
+            className="w-full rounded-2xl h-12 text-[15px] font-bold"
+          >
+            Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
+      {/* Step 2: Where */}
+      {step === 'where' && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+          <Step2Address
+            value={form.address}
+            onAddressChange={handleAddressChange}
+            title="Kur piegādāt materiālus?"
+            subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"
+            nextLabel="Tālāk — izvēlēties datumu"
+            onNext={() => setStep('when')}
+            onBack={() => setStep('specs')}
+          />
+        </div>
+      )}
+
+      {/* Step 3: When */}
+      {step === 'when' && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
+          <MatStep3When
+            deliveryDate={form.deliveryDate}
+            onDateChange={(d) => patch({ deliveryDate: d })}
+            deliveryWindow={form.deliveryWindow}
+            onDeliveryWindowChange={(w) => patch({ deliveryWindow: w })}
+            asap={form.asap}
+            onAsapChange={(v) => patch({ asap: v, deliveryDate: v ? '' : form.deliveryDate })}
+            truckCount={form.truckCount}
+            onTruckCountChange={(n) => patch({ truckCount: n })}
+            truckIntervalMinutes={form.truckIntervalMinutes}
+            onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
+            onNext={() => setStep('contact')}
+            onBack={() => setStep('where')}
+          />
+        </div>
+      )}
+
+      {/* Step 4: Contact */}
+      {step === 'contact' && (
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+          <div>
+            <h2 className="text-lg font-bold">Objekta kontaktpersona</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Šoferis ar šo personu sazināsies piegādes dienā
+            </p>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
+                <User className="size-3.5" /> Vārds, uzvārds
+              </label>
+              <Input
+                type="text"
+                placeholder="Jānis Bērziņš"
+                value={form.siteContactName}
+                onChange={(e) => patch({ siteContactName: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
+                <Phone className="size-3.5" /> Tālrunis
+              </label>
+              <Input
+                type="tel"
+                placeholder="+371 20 000 000"
+                value={form.siteContactPhone}
+                onChange={(e) => patch({ siteContactPhone: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-foreground mb-1.5 block">
+                Papildus piezīmes (neobligāti)
+              </label>
+              <textarea
+                placeholder="Piekļuves kodi, instrukcijas šoferim..."
+                value={form.notes}
+                onChange={(e) => patch({ notes: e.target.value })}
+                rows={2}
+                className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-foreground/10"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-foreground mb-1.5 block">
+                PO numurs / pasūtījuma atsauce (neobligāti)
+              </label>
+              <Input
+                type="text"
+                placeholder="piem. PO-2024-0042"
+                value={form.poNumber}
+                onChange={(e) => patch({ poNumber: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={() => setStep('when')}
+              className="flex-1 rounded-xl border py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Atpakaļ
+            </button>
+            <button
+              onClick={goToOffers}
+              className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors"
+            >
+              Skatīt piedāvājumus
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 5: Offers */}
+      {step === 'offers' && (
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+          {offersLoading ? (
+            <div className="py-20 flex flex-col items-center gap-3">
+              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              <p className="text-sm font-medium text-muted-foreground">
+                Meklējam pieejamos piegādātājus...
+              </p>
+            </div>
+          ) : offersError || offers.length === 0 ? (
+            <div className="space-y-4">
+              {offersError ? (
+                <p className="text-sm text-destructive font-medium">{offersError}</p>
+              ) : (
+                <div>
+                  <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
+                  </p>
+                </div>
+              )}
+              <RFQPanel submitting={submitting} error={submitError} onSend={handleSendRFQ} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xl font-bold text-foreground">
+                  {offers.length} piedāvājum{offers.length === 1 ? 's' : 'i'}
                 </p>
-                <p className="text-sm font-medium text-gray-500 truncate">
+                <p className="text-sm text-muted-foreground mt-1">
+                  Sakārtoti pēc cenas — lētākais pirmais
+                </p>
+              </div>
+              {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
+              {[...offers]
+                .sort((a, b) => a.totalPrice - b.totalPrice)
+                .map((offer, idx) => (
+                  <OfferCard
+                    key={offer.id}
+                    offer={offer}
+                    unit={form.unit}
+                    isCheapest={idx === 0}
+                    submitting={submitting}
+                    onSelect={() => handleSelectOffer(offer)}
+                  />
+                ))}
+              <div className="pt-2 border-t border-border/50">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Vēlaties saņemt vairāk piedāvājumu?
+                </p>
+                <RFQPanel compact submitting={submitting} error="" onSend={handleSendRFQ} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* RFQ sent */}
+      {step === 'rfq-sent' && (
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
+          <div className="flex size-20 items-center justify-center rounded-full bg-blue-50">
+            <Send className="size-9 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">Pieprasījums nosūtīts!</p>
+            <p className="text-base text-muted-foreground font-medium mt-1">
+              Nr. <span className="font-bold text-foreground">{rfqNumber}</span>
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
+            paziņojumu.
+          </p>
+          <div className="w-full space-y-3 pt-2">
+            <Button onClick={() => onRfqSent?.()} className="w-full rounded-2xl h-12 font-bold">
+              <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full rounded-2xl h-12 font-semibold"
+            >
+              Turpināt iepirkties
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Order confirmed */}
+      {step === 'order-confirmed' && (
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
+          <div className="flex size-20 items-center justify-center rounded-full bg-foreground">
+            <CheckCircle2 className="size-9 text-background" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">Pasūtījums veikts!</p>
+            <p className="text-base text-muted-foreground font-medium mt-1">
+              Nr. <span className="font-bold text-foreground">{orderNumber}</span>
+            </p>
+          </div>
+          <div className="w-full rounded-2xl bg-muted/40 divide-y divide-border/50 text-[15px]">
+            <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
+              <Package className="size-4 shrink-0 text-foreground" />
+              <span>
+                {form.quantity} {UNIT_SHORT[form.unit]} {form.materialName}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
+              <MapPin className="size-4 shrink-0 text-foreground" />
+              <span className="truncate">{form.address}</span>
+            </div>
+            {form.deliveryDate && (
+              <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
+                <CalendarDays className="size-4 shrink-0 text-foreground" />
+                <span>
+                  {new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="w-full space-y-3">
+            <Button
+              onClick={() => (window.location.href = '/dashboard/orders')}
+              className="w-full rounded-2xl h-12 font-bold"
+            >
+              <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full rounded-2xl h-12 font-semibold"
+            >
+              Turpināt iepirkties
+            </Button>
+          </div>
+        </div>
+      )}
+    </WizardShell>
+  );
+
+  // ── Right panel ────────────────────────────────────────────────────────────
+
+  const bestOffer =
+    offers.length > 0 ? [...offers].sort((a, b) => a.totalPrice - b.totalPrice)[0] : null;
+
+  const rightPanel = (
+    <div className="hidden lg:flex flex-1 overflow-hidden bg-card border border-border/40 rounded-2xl sticky top-8 h-[calc(100svh-6rem)]">
+      {/* Map — always in DOM for initialization, visible only on 'where' step */}
+      <div
+        ref={mapDivRef}
+        className={`absolute inset-0 transition-opacity duration-300 ${showMap ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      />
+      {showMap && form.address && (
+        <div className="absolute top-4 left-4 z-10 bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-xs font-medium text-foreground flex items-center gap-1.5">
+          <MapPin className="size-3.5 shrink-0" />
+          <span className="truncate max-w-55">{form.address}</span>
+        </div>
+      )}
+
+      {/* specs step: category info + use cases */}
+      {!showMap && step === 'specs' && (
+        <div className="absolute inset-0 flex flex-col justify-start p-8 pt-10 gap-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="flex items-center gap-4">
+            <div className="flex size-16 items-center justify-center rounded-2xl bg-slate-100 shrink-0">
+              <CategoryIcon className="size-8 text-slate-600" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Izvēlētā kategorija
+              </p>
+              <h3 className="text-2xl font-bold text-foreground mt-0.5">{selectedMeta.label}</h3>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {selectedMeta.description}
+          </p>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              Tipiski pielietojumi
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {CATEGORY_USE_CASES[form.category].useCases.map((uc) => (
+                <div key={uc} className="flex items-center gap-2.5 text-sm text-foreground">
+                  <div className="size-1.5 rounded-full bg-[#203728] shrink-0" />
+                  {uc}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="border border-border/40 rounded-2xl px-4 py-3.5 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Tipiskais daudzums
+            </p>
+            <p className="text-sm font-bold text-foreground">
+              {CATEGORY_USE_CASES[form.category].typicalQty}
+            </p>
+          </div>
+          <div className="border-t border-border/30 pt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              Kā tas darbojas
+            </p>
+            <div className="flex flex-col gap-3">
+              {[
+                'Norādiet daudzumu un prasības',
+                'Saņemiet cenas no tuvākajiem piegādātājiem',
+                'Izvēlieties labāko piedāvājumu',
+              ].map((s, i) => (
+                <div key={i} className="flex items-start gap-3 text-sm text-foreground/80">
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#203728]/10 text-[10px] font-bold text-[#203728]">
+                    {i + 1}
+                  </div>
+                  {s}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* when / contact steps: running order summary */}
+      {!showMap && (step === 'when' || step === 'contact') && (
+        <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Pasūtījuma pārskats
+          </p>
+          <div className="flex flex-col border border-border/40 rounded-2xl overflow-hidden divide-y divide-border/30 bg-background/60">
+            <div className="flex items-start gap-3 px-4 py-3.5">
+              <CategoryIcon
+                className="size-4 text-muted-foreground mt-0.5 shrink-0"
+                strokeWidth={1.5}
+              />
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground mb-0.5">Materiāls</p>
+                <p className="text-sm font-medium text-foreground">{form.materialName}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 px-4 py-3.5">
+              <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground mb-0.5">Daudzums</p>
+                <p className="text-sm font-medium text-foreground">
                   {form.quantity} {UNIT_SHORT[form.unit]}
                 </p>
               </div>
-              {offers.length > 0 && step === 'offers' && (
-                <span className="font-bold text-lg text-primary shrink-0">
-                  no €{offers[0].totalPrice}
-                </span>
-              )}
             </div>
-          </div>
-        )}
-
-        {/* Step 1: Specs */}
-        {step === 'specs' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <p className="text-xl font-bold text-foreground">Ko jums nepieciešams?</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Aprakstiet materiālu un norādiet nepieciešamo daudzumu
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Kategorija</label>
-                <Select
-                  value={form.category}
-                  onValueChange={(val) => {
-                    const m = CATEGORY_META[val as MaterialCategory];
-                    patch({
-                      category: val as MaterialCategory,
-                      materialName: m.defaultName,
-                      unit: m.defaultUnit as MaterialUnit,
-                    });
-                  }}
-                >
-                  <SelectTrigger className="w-full rounded-2xl h-13 bg-muted/40 border-0 px-4 text-[15px] font-medium focus:ring-2 focus:ring-foreground/10 transition-shadow data-[state=open]:bg-muted/60">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {ALL_CATEGORIES.map((c) => {
-                      const cMeta = CATEGORY_META[c];
-                      return (
-                        <SelectItem key={c} value={c} className="rounded-lg py-3 cursor-pointer">
-                          <span className="font-medium">{cMeta.label}</span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">
-                  Frakcija / Precizējums
-                </label>
-                <input
-                  type="text"
-                  value={form.materialName}
-                  onChange={(e) => patch({ materialName: e.target.value })}
-                  placeholder={meta.defaultName || 'Piem., 16-32 mm'}
-                  className="w-full rounded-2xl border-0 bg-muted/40 px-4 h-13 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">Daudzums</label>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() =>
-                    patch({
-                      quantity: Math.max(
-                        0.5,
-                        parseFloat((form.quantity - (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2)),
-                      ),
-                    })
-                  }
-                  className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
-                >
-                  <Minus className="size-5" />
-                </button>
-                <input
-                  type="number"
-                  value={form.quantity}
-                  min={0.5}
-                  step={0.5}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
-                    if (!isNaN(v) && v > 0) patch({ quantity: v });
-                  }}
-                  className="flex-1 min-w-0 text-center bg-transparent border-0 px-2 py-2 text-4xl font-bold tracking-tighter focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-                <button
-                  onClick={() =>
-                    patch({
-                      quantity: parseFloat(
-                        (form.quantity + (form.unit === 'PIECE' ? 1 : 0.5)).toFixed(2),
-                      ),
-                    })
-                  }
-                  className="flex shrink-0 items-center justify-center rounded-2xl w-14 h-14 bg-muted/40 hover:bg-muted/70 transition-colors text-foreground"
-                >
-                  <Plus className="size-5" />
-                </button>
-              </div>
-              <div className="flex gap-2 flex-wrap mt-3">
-                {UNITS.map((u) => (
-                  <button
-                    key={u}
-                    onClick={() => patch({ unit: u })}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                      form.unit === u
-                        ? 'bg-foreground text-background'
-                        : 'bg-muted/50 text-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    {UNIT_LABEL[u]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">
-                Papildu prasības{' '}
-                <span className="text-muted-foreground font-normal">(neobligāti)</span>
-              </label>
-              <textarea
-                value={form.notes}
-                onChange={(e) => patch({ notes: e.target.value })}
-                placeholder="piem. frakcionēts 0-16, sasmalcināts, nesasaldēts..."
-                rows={3}
-                className="w-full rounded-2xl border-0 bg-muted/40 px-4 py-3 text-[15px] font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/10 transition-shadow resize-none"
-              />
-            </div>
-            <Button
-              onClick={() => setStep('where')}
-              disabled={!form.materialName.trim() || form.quantity <= 0}
-              className="w-full rounded-2xl h-12 text-[15px] font-bold"
-            >
-              Tālāk — piegādes adrese <ArrowRight className="size-4 ml-1" />
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2: Where */}
-        {step === 'where' && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
-            <Step2Address
-              value={form.address}
-              onAddressChange={handleAddressChange}
-              title="Kur piegādāt materiālus?"
-              subtitle="Ievadiet precīzu būvlaukuma adresi vai izmantojiet GPS"
-              nextLabel="Tālāk — izvēlēties datumu"
-              onNext={() => setStep('when')}
-              onBack={() => setStep('specs')}
-            />
-          </div>
-        )}
-
-        {/* Step 3: When */}
-        {step === 'when' && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 pb-6">
-            <MatStep3When
-              deliveryDate={form.deliveryDate}
-              onDateChange={(d) => patch({ deliveryDate: d })}
-              deliveryWindow={form.deliveryWindow}
-              onDeliveryWindowChange={(w) => patch({ deliveryWindow: w })}
-              asap={form.asap}
-              onAsapChange={(v) => patch({ asap: v, deliveryDate: v ? '' : form.deliveryDate })}
-              truckCount={form.truckCount}
-              onTruckCountChange={(n) => patch({ truckCount: n })}
-              truckIntervalMinutes={form.truckIntervalMinutes}
-              onTruckIntervalChange={(n) => patch({ truckIntervalMinutes: n })}
-              onNext={() => setStep('contact')}
-              onBack={() => setStep('where')}
-            />
-          </div>
-        )}
-
-        {/* Step 4: Contact */}
-        {step === 'contact' && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            <div>
-              <h2 className="text-lg font-bold">Objekta kontaktpersona</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Šoferis ar šo personu sazināsies piegādes dienā
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
-                  <User className="size-3.5" /> Vārds, uzvārds
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Jānis Bērziņš"
-                  value={form.siteContactName}
-                  onChange={(e) => patch({ siteContactName: e.target.value })}
-                  className="rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-1.5">
-                  <Phone className="size-3.5" /> Tālrunis
-                </label>
-                <Input
-                  type="tel"
-                  placeholder="+371 20 000 000"
-                  value={form.siteContactPhone}
-                  onChange={(e) => patch({ siteContactPhone: e.target.value })}
-                  className="rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-foreground mb-1.5 block">
-                  Papildus piezīmes (neobligāti)
-                </label>
-                <textarea
-                  placeholder="Piekļuves kodi, instrukcijas šoferim..."
-                  value={form.notes}
-                  onChange={(e) => patch({ notes: e.target.value })}
-                  rows={2}
-                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-foreground/10"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-foreground mb-1.5 block">
-                  PO numurs / pasūtījuma atsauce (neobligāti)
-                </label>
-                <Input
-                  type="text"
-                  placeholder="piem. PO-2024-0042"
-                  value={form.poNumber}
-                  onChange={(e) => patch({ poNumber: e.target.value })}
-                  className="rounded-xl"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setStep('when')}
-                className="flex-1 rounded-xl border py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Atpakaļ
-              </button>
-              <button
-                onClick={goToOffers}
-                className="flex-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors"
-              >
-                Skatīt piedāvājumus
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 5: Offers */}
-        {step === 'offers' && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
-            {offersLoading ? (
-              <div className="py-20 flex flex-col items-center gap-3">
-                <Loader2 className="size-8 animate-spin text-muted-foreground" />
-                <p className="text-sm font-medium text-muted-foreground">
-                  Meklējam pieejamos piegādātājus...
-                </p>
-              </div>
-            ) : offersError || offers.length === 0 ? (
-              <div className="space-y-4">
-                {offersError ? (
-                  <p className="text-sm text-destructive font-medium">{offersError}</p>
-                ) : (
-                  <div>
-                    <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
-                    </p>
-                  </div>
-                )}
-                <RFQPanel submitting={submitting} error={submitError} onSend={handleSendRFQ} />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xl font-bold text-foreground">
-                    {offers.length} piedāvājum{offers.length === 1 ? 's' : 'i'}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Sakārtoti pēc cenas — lētākais pirmais
-                  </p>
+            {form.address && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes adrese</p>
+                  <p className="text-sm font-medium text-foreground truncate">{form.address}</p>
                 </div>
-                {submitError && (
-                  <p className="text-sm text-destructive font-medium">{submitError}</p>
-                )}
-                {[...offers]
-                  .sort((a, b) => a.totalPrice - b.totalPrice)
-                  .map((offer, idx) => (
-                    <OfferCard
-                      key={offer.id}
-                      offer={offer}
-                      unit={form.unit}
-                      isCheapest={idx === 0}
-                      submitting={submitting}
-                      onSelect={() => handleSelectOffer(offer)}
-                    />
-                  ))}
-                <div className="pt-2 border-t border-border/50">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Vēlaties saņemt vairāk piedāvājumu?
+              </div>
+            )}
+            {(form.deliveryDate || form.asap) && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <CalendarDays className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes datums</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {form.asap
+                      ? 'Pēc iespējas ātrāk'
+                      : new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+                          day: 'numeric',
+                          month: 'long',
+                        })}
                   </p>
-                  <RFQPanel compact submitting={submitting} error="" onSend={handleSendRFQ} />
                 </div>
               </div>
             )}
           </div>
-        )}
-
-        {/* RFQ sent */}
-        {step === 'rfq-sent' && (
-          <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
-            <div className="flex size-20 items-center justify-center rounded-full bg-blue-50">
-              <Send className="size-9 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">Pieprasījums nosūtīts!</p>
-              <p className="text-base text-muted-foreground font-medium mt-1">
-                Nr. <span className="font-bold text-foreground">{rfqNumber}</span>
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
-              paziņojumu.
+          {step === 'contact' && (
+            <p className="text-xs text-muted-foreground">
+              Pēc kontaktinformācijas ievades redzēsiet pieejamās cenas no tuvākajiem piegādātājiem.
             </p>
-            <div className="w-full space-y-3 pt-2">
-              <Button onClick={() => onRfqSent?.()} className="w-full rounded-2xl h-12 font-bold">
-                <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
-              </Button>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="w-full rounded-2xl h-12 font-semibold"
-              >
-                Turpināt iepirkties
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
-        {/* Order confirmed */}
-        {step === 'order-confirmed' && (
-          <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
-            <div className="flex size-20 items-center justify-center rounded-full bg-foreground">
-              <CheckCircle2 className="size-9 text-background" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">Pasūtījums veikts!</p>
-              <p className="text-base text-muted-foreground font-medium mt-1">
-                Nr. <span className="font-bold text-foreground">{orderNumber}</span>
-              </p>
-            </div>
-            <div className="w-full rounded-2xl bg-muted/40 divide-y divide-border/50 text-[15px]">
-              <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
-                <Package className="size-4 shrink-0 text-foreground" />
-                <span>
-                  {form.quantity} {UNIT_SHORT[form.unit]} {form.materialName}
-                </span>
+      {/* offers / rfq-sent / order-confirmed: full summary + best price */}
+      {!showMap && (step === 'offers' || step === 'rfq-sent' || step === 'order-confirmed') && (
+        <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Pasūtījuma pārskats
+          </p>
+          <div className="flex flex-col border border-border/40 rounded-2xl overflow-hidden divide-y divide-border/30 bg-background/60">
+            <div className="flex items-start gap-3 px-4 py-3.5">
+              <CategoryIcon
+                className="size-4 text-muted-foreground mt-0.5 shrink-0"
+                strokeWidth={1.5}
+              />
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground mb-0.5">Materiāls</p>
+                <p className="text-sm font-medium text-foreground">{form.materialName}</p>
               </div>
-              <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
-                <MapPin className="size-4 shrink-0 text-foreground" />
-                <span className="truncate">{form.address}</span>
+            </div>
+            <div className="flex items-start gap-3 px-4 py-3.5">
+              <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground mb-0.5">Daudzums</p>
+                <p className="text-sm font-medium text-foreground">
+                  {form.quantity} {UNIT_SHORT[form.unit]}
+                </p>
               </div>
-              {form.deliveryDate && (
-                <div className="flex items-center gap-3 px-5 py-4 text-muted-foreground">
-                  <CalendarDays className="size-4 shrink-0 text-foreground" />
-                  <span>
-                    {new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </span>
+            </div>
+            {form.address && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes adrese</p>
+                  <p className="text-sm font-medium text-foreground truncate">{form.address}</p>
                 </div>
-              )}
-            </div>
-            <div className="w-full space-y-3">
-              <Button
-                onClick={() => (window.location.href = '/dashboard/orders')}
-                className="w-full rounded-2xl h-12 font-bold"
-              >
-                <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
-              </Button>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="w-full rounded-2xl h-12 font-semibold"
-              >
-                Turpināt iepirkties
-              </Button>
-            </div>
+              </div>
+            )}
+            {(form.deliveryDate || form.asap) && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <CalendarDays className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes datums</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {form.asap
+                      ? 'Pēc iespējas ātrāk'
+                      : new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
+                          day: 'numeric',
+                          month: 'long',
+                        })}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </WizardShell>
-    </>
+          {step === 'offers' && bestOffer && (
+            <div className="flex items-center justify-between bg-[#203728] text-white rounded-2xl px-5 py-4">
+              <span className="text-sm font-medium opacity-70">Labākā cena no</span>
+              <span className="text-2xl font-bold">€{bestOffer.totalPrice.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Layout ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="flex min-h-[calc(100svh-4rem)] gap-8">
+      <div className="w-full lg:w-125 xl:w-135 shrink-0 border border-border/40 bg-background rounded-2xl overflow-hidden flex flex-col shadow-sm self-start">
+        {wizardContent}
+      </div>
+      {rightPanel}
+    </div>
   );
 }
 
@@ -1221,7 +1470,7 @@ export default function CatalogPage() {
 
   if (activeCategory && token) {
     return (
-      <div className="pb-12 max-w-350 mx-auto w-full">
+      <div className="w-full pb-12">
         <WizardInline
           initialCategory={activeCategory}
           token={token}

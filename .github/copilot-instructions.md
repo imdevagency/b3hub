@@ -174,10 +174,9 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, billing-settings, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
-- `(gate)` — fields
 - `(recycler)` — documents, home, incoming, messages, more, profile, records, register-center
 - `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
-- `(shared)` — change-password, chat/, delivery-proof, gate-scan, help, language, messages, notification/, notifications, review/, settings, support-chat
+- `(shared)` — change-password, chat/, delivery-proof, help, language, messages, notification/, notifications, review/, settings, support-chat
 - `(wizards)` — disposal/, material-order, scrap-buyback/, skip-hire/, toilet-cabin/, transport/, utilization/
 <!-- END GEN -->
 
@@ -218,7 +217,7 @@ Prefer hooks over inline `useEffect` + `fetch` in components.
 
 One admin dashboard, one scope: `/dashboard/admin/*`. It manages all four market sides — buyers, sellers, carriers, and recyclers — plus platform operations.
 
-> ⚠️ There is **no** `Būve` tab, **no** `/dashboard/b3-construction` route, and **no** separate B3 Recycling admin scope. Do not recreate them.
+> ⚠️ There is **no** `Būve` tab, **no** `/dashboard/b3-construction` route, **no** B3 Fields / gate-scan feature, and **no** separate B3 Recycling admin scope. Do not recreate them. B3 Fields and the gate app variant have been removed — the platform is a neutral marketplace.
 
 ### Integration ownership
 

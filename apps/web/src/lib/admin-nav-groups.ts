@@ -69,7 +69,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Pieteikumi', href: '/dashboard/admin/applications' },
       { label: 'Piegādātāji', href: '/dashboard/admin/suppliers' },
       { label: 'Pārstrādes centri', href: '/dashboard/admin/recycling-centers' },
-      { label: 'B3 Lauki', href: '/dashboard/admin/b3-fields' },
       { label: 'Partneru līgumi', href: '/dashboard/admin/partner-contracts' },
     ],
   },
@@ -98,9 +97,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { label: 'Iestatījumi', href: '/dashboard/admin/settings' },
       { label: 'Izsūtīšana', href: '/dashboard/admin/broadcast' },
       { label: 'Audits', href: '/dashboard/admin/audit-logs' },
-      { label: 'Laukumu ops', href: '/dashboard/admin/field-ops' },
-      { label: 'Caurlaides', href: '/dashboard/admin/field-passes' },
-      { label: 'Taloni', href: '/dashboard/admin/weighing-slips' },
     ],
   },
   {

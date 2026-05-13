@@ -23,6 +23,17 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PageSpinner } from '@/components/ui/page-spinner';
+import { AddressMapPicker, type PickedAddress } from '@/components/ui/AddressMapPicker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // ── Form ──────────────────────────────────────────────────────────────────────
 
@@ -158,14 +169,26 @@ function LocationFormSheet({
             </div>
 
             <div>
-              <Label className="text-sm font-medium ml-1">Pilna adrese *</Label>
-              <Input
-                placeholder={`piem. "Bačas", Salgales pagasts, Jelgavas novads`}
-                value={form.address}
-                onChange={set('address')}
-                required
-                className={inputClasses}
-              />
+              <Label className="text-sm font-medium ml-1">Adrese *</Label>
+              <div className="mt-1.5">
+                <AddressMapPicker
+                  value={form.address}
+                  lat={form.lat ? parseFloat(form.lat) : null}
+                  lng={form.lng ? parseFloat(form.lng) : null}
+                  onChange={(v) => setForm((f) => ({ ...f, address: v }))}
+                  onSelect={(place: PickedAddress) =>
+                    setForm((f) => ({
+                      ...f,
+                      address: place.address,
+                      city: place.city || f.city,
+                      postalCode: place.postal || f.postalCode,
+                      lat: String(place.lat),
+                      lng: String(place.lng),
+                    }))
+                  }
+                  placeholder={`piem. "Bačas", Salgales pagasts, Jelgavas novads`}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -199,34 +222,6 @@ function LocationFormSheet({
                 className={inputClasses}
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium ml-1">Platums (lat)</Label>
-                <Input
-                  type="number"
-                  step="0.000001"
-                  placeholder="piem. 56.842"
-                  value={form.lat}
-                  onChange={set('lat')}
-                  className={inputClasses}
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium ml-1">Garums (lng)</Label>
-                <Input
-                  type="number"
-                  step="0.000001"
-                  placeholder="piem. 24.605"
-                  value={form.lng}
-                  onChange={set('lng')}
-                  className={inputClasses}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground -mt-3 ml-1">
-              Koordinātes izmanto attāluma aprēķinam katalogā. Varat pievienot vēlāk.
-            </p>
           </div>
 
           {/* Footer */}
@@ -262,6 +257,7 @@ export default function SupplierLocationsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<ApiSupplierLocation | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -299,14 +295,20 @@ export default function SupplierLocationsPage() {
     closeSheet();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Dzēst šo atrašanās vietu? Materiālu saites tiks saglabātas.')) return;
+  function handleDelete(id: string) {
+    setDeleteTarget(id);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     setDeletingId(id);
     try {
       await deleteSupplierLocation(id, accessToken);
       setLocations((prev) => prev.filter((l) => l.id !== id));
     } catch {
-      alert('Neizdevās dzēst atrašanās vietu.');
+      // silent — card stays visible so user can retry
     } finally {
       setDeletingId(null);
     }
@@ -402,6 +404,27 @@ export default function SupplierLocationsPage() {
         onClose={closeSheet}
         onSaved={handleSaved}
       />
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dzēst atrašanās vietu?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Materiālu saites uz šo vietu tiks saglabātas, bet vieta vairs nebūs pieejama jauniem
+              sludinājumiem. Šo darbību nevar atcelt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Atcelt</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDelete}
+            >
+              Dzēst
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

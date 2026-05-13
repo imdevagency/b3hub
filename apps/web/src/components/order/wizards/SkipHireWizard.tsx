@@ -13,9 +13,10 @@
  */
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,24 +36,38 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  Clock,
+  CreditCard,
   Loader2,
   Mail,
   MapPin,
   Package,
   Phone,
+  ShieldCheck,
   User as UserIcon,
+  Zap,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const SIZES = [
-  { id: 'mini', label: 'Mini', sub: '2 m³', capacity: 'Mājas remonts, mazie darbi', fromPrice: 59 },
+  {
+    id: 'mini',
+    label: 'Mini',
+    sub: '2 m³',
+    capacity: 'Mājas remonts, mazie darbi',
+    fromPrice: 59,
+    maxTonnes: 1,
+    examples: ['Vannas istabas remonts', 'Nelielas tīrīšanas', 'Dārza atkritumi'],
+  },
   {
     id: 'midi',
     label: 'Midi',
     sub: '4 m³',
     capacity: 'Virtuves/vannas istabas remonts',
     fromPrice: 89,
+    maxTonnes: 2,
+    examples: ['Virtuves remonts', 'Grīdas nomaiņa', 'Mēbeļu izvešana'],
   },
   {
     id: 'builders',
@@ -60,6 +75,8 @@ const SIZES = [
     sub: '6 m³',
     capacity: 'Celtniecības atkritumi, liels remonts',
     fromPrice: 119,
+    maxTonnes: 3,
+    examples: ['Visa māja remonts', 'Jumta nomaiņa', 'Jaunbūve iekšdarbi'],
   },
   {
     id: 'large',
@@ -67,8 +84,25 @@ const SIZES = [
     sub: '8 m³',
     capacity: 'Nojaukšana, lielas tīrīšanas',
     fromPrice: 149,
+    maxTonnes: 4,
+    examples: ['Nojaukšana', 'Liela objekta uzkopšana', 'Masīvs remonts'],
   },
 ];
+
+const WASTE_INFO: Record<SkipWasteCategory, { accepts: string[]; rejects: string[] }> = {
+  MIXED: {
+    accepts: ['Ģipškartons', 'Iepakojumi', 'Sadzīves priekšmeti', 'Keramika', 'Stikls'],
+    rejects: ['Bīstamie atkritumi', 'Azbests', 'Elektroiekārtas', 'Šķidrumi'],
+  },
+  CONCRETE_RUBBLE: {
+    accepts: ['Betons', 'Ķieģeļi', 'Cementa plāksnes', 'Flīzes', 'Bruģis'],
+    rejects: ['Koksne', 'Jaukti atkritumi', 'Metāls', 'Bīstamās vielas'],
+  },
+  WOOD: {
+    accepts: ['Dēļi', 'Sijas', 'Durvis', 'Logi', 'Paletes', 'Mēbeles'],
+    rejects: ['Azbesta plāksnes', 'Krāsota koksne ar svinu', 'Laminēta koksne'],
+  },
+};
 
 // SKIP_WASTE_CATEGORIES + SKIP_WASTE_LABELS imported from @b3hub/shared — single source of truth with mobile.
 
@@ -133,6 +167,9 @@ export function SkipHireWizard({ mode }: Props) {
   const [contactEmail, setContactEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [contactPrefilled, setContactPrefilled] = useState(false);
+
+  const [hoveredWaste, setHoveredWaste] = useState<SkipWasteCategory | null>(null);
+  const [hoveredSize, setHoveredSize] = useState<string | null>(null);
 
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
   const [guestToken, setGuestToken] = useState('');
@@ -370,7 +407,13 @@ export function SkipHireWizard({ mode }: Props) {
 
   const selectedSize = SIZES.find((s) => s.id === size);
   const isConfirmed = step === 'confirmed';
-  const showMap = true;
+  // Map is relevant only on the address step (dashboard); public mode always shows it
+  const showMap = mode === 'public' || step === 'address';
+  // Derived labels for right panel
+  const selectedWasteLabel = wasteType
+    ? (SKIP_WASTE_LABELS[wasteType as SkipWasteCategory]?.label ?? wasteType)
+    : null;
+  const selectedDuration = DURATIONS.find((d) => d.days === hireDays);
 
   function getOnBack(): (() => void) | undefined {
     if (isConfirmed) return undefined;
@@ -420,6 +463,8 @@ export function SkipHireWizard({ mode }: Props) {
                     setWasteType(id);
                     setStep('size');
                   }}
+                  onMouseEnter={() => setHoveredWaste(id)}
+                  onMouseLeave={() => setHoveredWaste(null)}
                   className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-[#203728] hover:shadow-sm transition-all group"
                 >
                   <div>
@@ -452,6 +497,8 @@ export function SkipHireWizard({ mode }: Props) {
                   setSize(s.id);
                   setStep('address');
                 }}
+                onMouseEnter={() => setHoveredSize(s.id)}
+                onMouseLeave={() => setHoveredSize(null)}
                 className="group text-left rounded-2xl border border-border/60 bg-card p-5 hover:border-[#203728] hover:shadow-sm transition-all active:scale-[0.98]"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -815,17 +862,20 @@ export function SkipHireWizard({ mode }: Props) {
 
   const rightPanel = (
     <div
-      className={
+      className={cn(
+        'relative hidden lg:flex flex-1 overflow-hidden',
         mode === 'public'
-          ? 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-150 rounded-3xl shadow-xl ring-1 ring-border/40'
-          : 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
-      }
+          ? 'bg-muted/10 sticky top-28 h-150 rounded-3xl shadow-xl ring-1 ring-border/40'
+          : 'bg-card border border-border/40 rounded-2xl sticky top-8 h-[calc(100svh-6rem)]',
+      )}
     >
+      {/* ── Map — always in DOM for initialization, visible only on address step ── */}
       <div
         ref={mapDivRef}
         className={`absolute inset-0 transition-opacity duration-300 ${showMap ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       />
 
+      {/* Map overlays */}
       {showMap && (
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {address && (
@@ -834,18 +884,279 @@ export function SkipHireWizard({ mode }: Props) {
               <span className="truncate max-w-55">{address}</span>
             </div>
           )}
-          {deliveryDate && (
-            <div className="bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-xs font-medium text-foreground flex items-center gap-1.5">
-              <CalendarDays className="size-3.5 shrink-0" />
-              <span>{deliveryDate}</span>
-            </div>
-          )}
         </div>
       )}
-
       {showMap && selectedSize && (
         <div className="absolute top-4 right-4 z-10 bg-background/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-md border border-border/50 text-sm font-bold text-foreground">
           {selectedSize.label} · no €{selectedSize.fromPrice}
+        </div>
+      )}
+
+      {/* ── Step: waste — Service intro or hovered waste detail ─────────────── */}
+      {!showMap &&
+        step === 'waste' &&
+        (() => {
+          const hw = hoveredWaste ? SKIP_WASTE_LABELS[hoveredWaste] : null;
+          const hwInfo = hoveredWaste ? WASTE_INFO[hoveredWaste] : null;
+          return hw && hwInfo ? (
+            <div
+              key={hoveredWaste}
+              className="absolute inset-0 flex flex-col justify-center p-8 gap-6 overflow-y-auto animate-in fade-in duration-150"
+            >
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                  Atkritumu veids
+                </p>
+                <h3 className="text-2xl font-bold text-foreground">{hw.label}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{hw.sub}</p>
+              </div>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600 mb-2.5">
+                    Pieņem
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {hwInfo.accepts.map((item) => (
+                      <div key={item} className="flex items-center gap-2.5 text-sm text-foreground">
+                        <div className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-rose-500 mb-2.5">
+                    Nepieņem
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {hwInfo.rejects.map((item) => (
+                      <div
+                        key={item}
+                        className="flex items-center gap-2.5 text-sm text-muted-foreground"
+                      >
+                        <div className="size-1.5 rounded-full bg-rose-400 shrink-0" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="border border-border/40 rounded-2xl overflow-hidden">
+                <div className="px-4 py-2.5 bg-muted/50 border-b border-border/30">
+                  <p className="text-xs font-semibold text-muted-foreground">Izmēri no</p>
+                </div>
+                {SIZES.map((s, i) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      'flex items-center justify-between px-4 py-3',
+                      i < SIZES.length - 1 && 'border-b border-border/30',
+                    )}
+                  >
+                    <span className="text-sm font-semibold text-foreground">
+                      {s.label}{' '}
+                      <span className="text-xs font-normal text-muted-foreground">{s.sub}</span>
+                    </span>
+                    <span className="text-sm font-bold text-[#203728]">€{s.fromPrice}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0 flex flex-col justify-center p-8 gap-7 overflow-y-auto animate-in fade-in duration-200">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                  B3 Hub · Konteineru noma
+                </p>
+                <h3 className="text-2xl font-bold text-foreground leading-snug">
+                  Vienkārša atkritumu
+                  <br />
+                  izvešana Latvijā
+                </h3>
+              </div>
+              <div className="flex flex-col gap-3">
+                {(
+                  [
+                    { Icon: Zap, text: 'Piegāde 24 h laikā' },
+                    { Icon: ShieldCheck, text: 'Licencēta utilizācija ar dokumentiem' },
+                    { Icon: MapPin, text: 'Reāllaika izsekošana mobilajā lietotnē' },
+                    { Icon: CreditCard, text: 'Apmaksa ar karti vai rēķins uzņēmumam' },
+                  ] as { Icon: React.ElementType; text: string }[]
+                ).map(({ Icon, text }) => (
+                  <div key={text} className="flex items-center gap-3 text-sm text-foreground/80">
+                    <div className="flex size-8 items-center justify-center rounded-lg bg-[#203728]/10 shrink-0">
+                      <Icon className="size-3.5 text-[#203728]" />
+                    </div>
+                    {text}
+                  </div>
+                ))}
+              </div>
+              <div className="border border-border/40 rounded-2xl overflow-hidden">
+                <div className="px-4 py-2.5 bg-muted/50 border-b border-border/30">
+                  <p className="text-xs font-semibold text-muted-foreground">Pieejamie izmēri</p>
+                </div>
+                {SIZES.map((s, i) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      'flex items-center justify-between px-4 py-3',
+                      i < SIZES.length - 1 && 'border-b border-border/30',
+                    )}
+                  >
+                    <span className="text-sm font-semibold text-foreground">
+                      {s.label}{' '}
+                      <span className="text-xs font-normal text-muted-foreground">{s.sub}</span>
+                    </span>
+                    <span className="text-sm font-bold text-[#203728]">€{s.fromPrice}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* ── Step: size — Waste chip + hovered/selected size detail ──────────── */}
+      {!showMap &&
+        step === 'size' &&
+        (() => {
+          const previewId = hoveredSize ?? size;
+          const previewSize = SIZES.find((s) => s.id === previewId);
+          return (
+            <div className="absolute inset-0 flex flex-col justify-start p-8 gap-5 overflow-y-auto">
+              {/* Chosen waste chip */}
+              {selectedWasteLabel && (
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                    Atkritumu veids
+                  </p>
+                  <div className="flex items-center gap-2.5 bg-[#203728]/8 border border-[#203728]/20 rounded-xl px-4 py-2.5">
+                    <Package className="size-3.5 text-[#203728] shrink-0" />
+                    <span className="text-sm font-semibold text-foreground">
+                      {selectedWasteLabel}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic size preview */}
+              {previewSize ? (
+                <div
+                  key={previewSize.id}
+                  className="flex flex-col gap-4 animate-in fade-in duration-150"
+                >
+                  <div className="border border-[#203728]/30 bg-[#203728]/4 rounded-2xl p-5">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <p className="text-xl font-bold text-foreground">{previewSize.label}</p>
+                      <p className="text-2xl font-bold text-[#203728]">€{previewSize.fromPrice}</p>
+                    </div>
+                    <p className="text-base font-semibold text-[#203728]">{previewSize.sub}</p>
+                    <p className="text-sm text-muted-foreground mt-2">{previewSize.capacity}</p>
+                    <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                      <ShieldCheck className="size-3.5 shrink-0" />
+                      <span>Maks. ~{previewSize.maxTonnes} t</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5">
+                      Piemērots
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {previewSize.examples.map((ex) => (
+                        <div key={ex} className="flex items-center gap-2.5 text-sm text-foreground">
+                          <div className="size-1.5 rounded-full bg-[#203728] shrink-0" />
+                          {ex}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 animate-in fade-in duration-150">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                    Uzvelciet uz izmēra, lai redzētu detaļas
+                  </p>
+                  {SIZES.map((s, i) => (
+                    <div
+                      key={s.id}
+                      className={cn(
+                        'flex items-center justify-between px-4 py-3 rounded-xl border',
+                        i === 1 ? 'border-[#203728]/30 bg-[#203728]/4' : 'border-border/40',
+                      )}
+                    >
+                      <span className="text-sm font-semibold text-foreground">
+                        {s.label}{' '}
+                        <span className="text-xs font-normal text-muted-foreground">{s.sub}</span>
+                      </span>
+                      <span className="text-sm font-bold text-[#203728]">€{s.fromPrice}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+      {/* ── Step: details / confirmed — Order summary receipt ───────────────── */}
+      {!showMap && (step === 'details' || step === 'confirmed') && (
+        <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Pasūtījuma pārskats
+          </p>
+          <div className="flex flex-col border border-border/40 rounded-2xl overflow-hidden divide-y divide-border/30 bg-background/60">
+            {selectedWasteLabel && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Atkritumu veids</p>
+                  <p className="text-sm font-medium text-foreground">{selectedWasteLabel}</p>
+                </div>
+              </div>
+            )}
+            {selectedSize && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Konteiners</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedSize.label} · {selectedSize.sub}
+                  </p>
+                </div>
+              </div>
+            )}
+            {address && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes adrese</p>
+                  <p className="text-sm font-medium text-foreground truncate">{address}</p>
+                </div>
+              </div>
+            )}
+            {deliveryDate && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <CalendarDays className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes datums</p>
+                  <p className="text-sm font-medium text-foreground">{deliveryDate}</p>
+                </div>
+              </div>
+            )}
+            {selectedDuration && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Clock className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Nomas periods</p>
+                  <p className="text-sm font-medium text-foreground">{selectedDuration.label}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {selectedSize && (
+            <div className="flex items-center justify-between bg-[#203728] text-white rounded-2xl px-5 py-4">
+              <span className="text-sm font-medium opacity-70">Kopā no</span>
+              <span className="text-2xl font-bold">€{selectedSize.fromPrice}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -880,8 +1191,8 @@ export function SkipHireWizard({ mode }: Props) {
   }
 
   return (
-    <div className="-m-6 xl:-m-8 flex min-h-[calc(100svh-4rem)]">
-      <div className="w-full lg:w-125 xl:w-135 border-r border-border/40 bg-background flex flex-col">
+    <div className="flex min-h-[calc(100svh-4rem)] gap-8">
+      <div className="w-full lg:w-125 xl:w-135 shrink-0 border border-border/40 bg-background rounded-2xl overflow-hidden flex flex-col shadow-sm self-start">
         {wizardContent}
       </div>
       {rightPanel}

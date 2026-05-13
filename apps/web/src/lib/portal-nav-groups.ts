@@ -37,7 +37,6 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
         { label: 'Visi pasūtījumi', href: '/dashboard/orders' },
         { label: 'Grafiki', href: '/dashboard/orders/schedules' },
         { label: 'Piegādes', href: '/dashboard/deliveries' },
-        { label: 'Skip noma', href: '/dashboard/order/skip-hire' },
         { label: 'Strīdi', href: '/dashboard/disputes' },
       ],
     },
@@ -47,8 +46,8 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/catalog',
       tabs: [
         { label: 'Katalogs', href: '/dashboard/catalog' },
+        { label: 'Cenu aptauja', href: '/dashboard/quote-requests' },
         { label: 'Pamatlīgumi', href: '/dashboard/framework-contracts' },
-        { label: 'Caurlaides', href: '/dashboard/field-passes' },
         { label: 'Projekti', href: '/dashboard/projects' },
       ],
     },

@@ -37,7 +37,6 @@ export * from './documents';
 export * from './chat';
 
 export * from './containers';
-export * from './b3-fields';
 
 export * from './payments';
 
@@ -52,8 +51,6 @@ export * from './guest-orders';
 export * from './company';
 
 export * from './projects';
-
-export * from './field-passes';
 
 export * from './analytics';
 
@@ -107,7 +104,7 @@ import { paymentMethodsApi } from './payment-methods';
 
 import { guestOrdersApi } from './guest-orders';
 
-import { fieldPassesApi } from './field-passes';
+
 
 import { analyticsApi } from './analytics';
 
@@ -219,12 +216,6 @@ export const api = {
   // ── Guest orders (public, no auth) ───────────────────────────────────
 
   ...guestOrdersApi,
-
-
-
-  // ── Field Passes & Weighing Slips ─────────────────────────────────────
-
-  ...fieldPassesApi,
 
 
 

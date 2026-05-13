@@ -34,14 +34,12 @@ import {
   Truck,
   LogOut,
   Building2,
-  HardHat,
   Recycle,
   CreditCard,
   ChevronRight,
 } from 'lucide-react-native';
 
 const MARKET_PARTIES = [
-  { key: 'constructor', label: 'Celtnieks', icon: HardHat },
   { key: 'freight', label: 'Pārvadājumi', icon: Truck },
   { key: 'supplier', label: 'Piegādātājs', icon: Package },
   { key: 'recycler', label: 'Pārstrādātājs', icon: Recycle },

@@ -42,7 +42,6 @@ import {
   ScrollText,
   ShieldCheck,
   Star,
-  Ticket,
   Trash2,
   Toilet,
   Truck,
@@ -897,30 +896,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/documentation">
                     <FileQuestion className="size-4 shrink-0" />
                     <span>Dokumentācija</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="B3 Fields"
-                  isActive={isRouteActive('/dashboard/admin/b3-fields')}
-                >
-                  <Link href="/dashboard/admin/b3-fields">
-                    <MapPin className="size-4 shrink-0" />
-                    <span>B3 Fields</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Field Passes"
-                  isActive={isRouteActive('/dashboard/admin/field-passes')}
-                >
-                  <Link href="/dashboard/admin/field-passes">
-                    <Ticket className="size-4 shrink-0" />
-                    <span>Field Passes</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

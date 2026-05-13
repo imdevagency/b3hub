@@ -740,8 +740,8 @@ export function ToiletCabinWizard({ mode }: Props) {
   }
 
   return (
-    <div className="-m-6 xl:-m-8 flex min-h-[calc(100svh-4rem)]">
-      <div className="w-full lg:w-125 xl:w-135 border-r border-border/40 bg-background flex flex-col">
+    <div className="flex min-h-[calc(100svh-4rem)] gap-8">
+      <div className="w-full lg:w-125 xl:w-135 shrink-0 border border-border/40 bg-background rounded-2xl overflow-hidden flex flex-col shadow-sm self-start">
         {wizardContent}
       </div>
       {rightPanel}
