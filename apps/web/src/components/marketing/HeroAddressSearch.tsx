@@ -25,6 +25,12 @@ export function HeroAddressSearch() {
     setAddress(full);
   }
 
+  function handleAddressChange(value: string) {
+    // Clear the picked selection whenever the user edits the text manually
+    setSelected(null);
+    setAddress(value);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selected && !address.trim()) return;
@@ -50,16 +56,20 @@ export function HeroAddressSearch() {
       <div className="relative w-full sm:flex-1 bg-background sm:bg-transparent border border-[#E5E5E5] sm:border-0 rounded-full sm:rounded-none shadow-sm sm:shadow-none overflow-hidden">
         <AddressAutocomplete
           value={address}
-          onChange={setAddress}
+          onChange={handleAddressChange}
           onSelect={handleSelect}
           placeholder="Ievadiet piegādes adresi..."
-          className="h-14 text-base sm:text-lg border-0 shadow-none outline-none focus-visible:ring-0 bg-transparent font-light"
+          className="h-14 text-base sm:text-lg border-0 shadow-none outline-none focus-visible:ring-0 bg-transparent hover:bg-transparent font-light"
         />
       </div>
       <button
         type="submit"
-        disabled={loading || !address.trim()}
-        className="w-full sm:w-auto h-14 px-8 sm:px-12 rounded-full bg-[#E0E0E0] text-white font-medium text-base sm:text-lg flex items-center justify-center gap-2.5 hover:bg-[#D4D4D4] transition-colors disabled:opacity-50 shrink-0 whitespace-nowrap"
+        disabled={loading}
+        className={`w-full sm:w-auto h-14 px-8 sm:px-12 rounded-full font-medium text-base sm:text-lg flex items-center justify-center gap-2.5 transition-colors shrink-0 whitespace-nowrap ${
+          selected
+            ? 'bg-[#203728] text-white hover:bg-[#2d4f3a]'
+            : 'bg-[#E0E0E0] text-white hover:bg-[#D4D4D4] opacity-50 cursor-not-allowed'
+        }`}
       >
         {loading ? (
           <Loader2 className="size-5 animate-spin" />
