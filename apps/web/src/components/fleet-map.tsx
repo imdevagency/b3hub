@@ -6,9 +6,8 @@
  */
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
-import { useRouter } from 'next/navigation';
 import { type ApiTransportJob } from '@/lib/api';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 
@@ -64,11 +63,11 @@ interface FleetMapProps {
   jobs: ApiTransportJob[];
   /** Live GPS positions keyed by job ID, polled from /transport-jobs/:id/location */
   liveLocations?: Record<string, { lat: number; lng: number }>;
+  selectedJobId?: string | null;
+  onJobSelect?: (jobId: string | null) => void;
 }
 
-export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
-  const router = useRouter();
-  const [selected, setSelected] = useState<ApiTransportJob | null>(null);
+export function FleetMap({ jobs, liveLocations = {}, selectedJobId, onJobSelect }: FleetMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { isLoaded } = useJsApiLoader({
     id: 'b3hub-google-maps',
@@ -91,13 +90,24 @@ export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
     [jobs, liveLocations],
   );
 
-  // Auto-fit bounds when jobs change
+  // Auto-fit bounds or center on selected
   useEffect(() => {
     if (!isLoaded || !mapRef.current || mappable.length === 0) return;
+
+    if (selectedJobId) {
+      const selectedJob = mappable.find((m) => m.job.id === selectedJobId);
+      if (selectedJob) {
+        mapRef.current.panTo(selectedJob.coord);
+        mapRef.current.setZoom(14);
+        return;
+      }
+    }
+
+    // Fit all if nothing selected
     const bounds = new window.google.maps.LatLngBounds();
     mappable.forEach(({ coord }) => bounds.extend(coord));
     mapRef.current.fitBounds(bounds, 80);
-  }, [isLoaded, mappable]);
+  }, [isLoaded, mappable, selectedJobId]);
 
   if (!GOOGLE_KEY) {
     return (
@@ -119,8 +129,27 @@ export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
 
   if (mappable.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center h-full w-full">
-        <p className="text-sm text-muted-foreground">Nav darbu ar koordinātām kartē</p>
+      <div className="bg-slate-50 flex items-center justify-center h-full w-full">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-slate-200/50 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-slate-400"
+            >
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-slate-400">Nav darbu ar koordinātām kartē</p>
+        </div>
       </div>
     );
   }
@@ -137,75 +166,69 @@ export function FleetMap({ jobs, liveLocations = {} }: FleetMapProps) {
         onUnmount={() => {
           mapRef.current = null;
         }}
-        onClick={() => setSelected(null)}
+        onClick={() => onJobSelect?.(null)}
         options={{
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
         }}
       >
-        {mappable.map(({ job, coord, isLive }) => (
-          <MarkerF
-            key={job.id}
-            position={coord}
-            onClick={(e) => {
-              e.domEvent?.stopPropagation();
-              setSelected(job);
-            }}
-            icon={{
-              path: window.google.maps.SymbolPath.CIRCLE,
-              fillColor: STATUS_PIN[job.status] ?? '#64748b',
-              fillOpacity: 1,
-              strokeColor: isLive ? '#ffffff' : '#94a3b8',
-              strokeWeight: isLive ? 3 : 2,
-              scale: isLive ? 10 : 8,
-            }}
-            title={`${job.jobNumber} · ${STATUS_LV[job.status] ?? job.status}${isLive ? ' · 🟢 Live' : ''}`}
-          >
-            <span />
-          </MarkerF>
-        ))}
+        {mappable.map(({ job, coord, isLive }) => {
+          const isSelected = job.id === selectedJobId;
+          return (
+            <MarkerF
+              key={job.id}
+              position={coord}
+              onClick={(e) => {
+                e.domEvent?.stopPropagation();
+                onJobSelect?.(job.id);
+              }}
+              icon={{
+                path: window.google.maps.SymbolPath.CIRCLE,
+                fillColor: STATUS_PIN[job.status] ?? '#64748b',
+                fillOpacity: 1,
+                strokeColor: isSelected ? '#000000' : isLive ? '#ffffff' : '#94a3b8',
+                strokeWeight: isSelected ? 4 : isLive ? 3 : 2,
+                scale: isSelected ? 12 : isLive ? 10 : 8,
+              }}
+              title={`${job.jobNumber} · ${STATUS_LV[job.status] ?? job.status}${isLive ? ' · 🟢 Live' : ''}`}
+            />
+          );
+        })}
 
-        {selected &&
+        {selectedJobId &&
+          mappable.find((m) => m.job.id === selectedJobId) &&
           (() => {
-            const coord = jobCoord(selected);
-            if (!coord) return null;
+            const selected = mappable.find((m) => m.job.id === selectedJobId)!;
             return (
               <InfoWindowF
-                position={coord}
-                onCloseClick={() => setSelected(null)}
+                position={selected.coord}
+                onCloseClick={() => onJobSelect?.(null)}
                 options={{ maxWidth: 240 }}
               >
                 <div className="p-1 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span
                       className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: STATUS_PIN[selected.status] ?? '#64748b' }}
+                      style={{ backgroundColor: STATUS_PIN[selected.job.status] ?? '#64748b' }}
                     />
                     <p className="text-xs font-bold text-slate-800 leading-tight">
-                      {selected.jobNumber}
+                      {selected.job.jobNumber || selected.job.id.slice(-6).toUpperCase()}
                     </p>
+                    {selected.isLive && (
+                      <span className="text-[9px] uppercase tracking-widest font-bold text-emerald-600 ml-auto bg-emerald-50 px-1 py-0.5 rounded">
+                        Live
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-600">
-                    {STATUS_LV[selected.status] ?? selected.status}
+                  <p className="text-xs text-slate-600 leading-tight">
+                    {STATUS_LV[selected.job.status]}
                   </p>
-                  <p className="text-xs text-slate-500 leading-snug">
-                    {selected.pickupCity} → {selected.deliveryCity}
-                  </p>
-                  {selected.driver && (
-                    <p className="text-xs text-slate-500">
-                      🧑 {selected.driver.firstName} {selected.driver.lastName}
+                  {selected.job.driver && (
+                    <p className="text-xs font-medium text-slate-900 leading-tight pt-1 border-t border-slate-100">
+                      {selected.job.driver.firstName} {selected.job.driver.lastName}
                     </p>
                   )}
-                  {selected.cargoWeight && (
-                    <p className="text-xs text-slate-500">📦 {selected.cargoWeight} t</p>
-                  )}
-                  <button
-                    onClick={() => router.push(`/dashboard/orders/${selected.id}`)}
-                    className="mt-1 w-full rounded-md bg-primary text-primary-foreground text-xs font-semibold py-1.5 hover:bg-primary/90 transition-colors"
-                  >
-                    Skatīt Detaļas →
-                  </button>
                 </div>
               </InfoWindowF>
             );

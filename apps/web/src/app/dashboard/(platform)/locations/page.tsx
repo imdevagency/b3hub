@@ -317,7 +317,7 @@ export default function SupplierLocationsPage() {
   if (loading) return <PageSpinner />;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 space-y-6">
       <PageHeader
         title="Karjeri un iekraušanas vietas"
         description="Pārvaldiet visas iekraušanas vietas. Piesaistiet tās materiāliem, lai pircēji redzētu precīzu kravu izcelsmes punktu."

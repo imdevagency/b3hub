@@ -20,19 +20,19 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import Link from 'next/link';
-import {
-  Users,
-  Truck,
-  Phone,
-  MapPin,
-  RefreshCw,
-  ExternalLink,
-  ArrowRight,
-} from 'lucide-react';
+import { Users, Truck, Phone, MapPin, RefreshCw, ExternalLink, ArrowRight } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type DriverStatus = 'FREE' | 'ASSIGNED' | 'ACCEPTED' | 'EN_ROUTE_PICKUP' | 'AT_PICKUP' | 'LOADED' | 'EN_ROUTE_DELIVERY' | 'AT_DELIVERY';
+type DriverStatus =
+  | 'FREE'
+  | 'ASSIGNED'
+  | 'ACCEPTED'
+  | 'EN_ROUTE_PICKUP'
+  | 'AT_PICKUP'
+  | 'LOADED'
+  | 'EN_ROUTE_DELIVERY'
+  | 'AT_DELIVERY';
 
 interface DriverRow extends CompanyMember {
   activeJob: ApiTransportJob | null;
@@ -41,7 +41,13 @@ interface DriverRow extends CompanyMember {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const ACTIVE_STATUSES = new Set([
-  'ASSIGNED', 'ACCEPTED', 'EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+  'ASSIGNED',
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
 ]);
 
 const STATUS_LABEL: Record<string, string> = {
@@ -83,7 +89,9 @@ function StatusPill({ status }: { status: string }) {
   const label = STATUS_LABEL[status] ?? status;
   const cls = STATUS_COLOR[status] ?? 'bg-gray-100 text-gray-600';
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}
+    >
       {label}
     </span>
   );
@@ -142,8 +150,7 @@ export default function DriversPage() {
     return () => clearInterval(interval);
   }, [load]);
 
-  const isDispatcher =
-    user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER';
+  const isDispatcher = user?.companyRole === 'OWNER' || user?.companyRole === 'MANAGER';
 
   if (isLoading || loading) return <PageSpinner />;
 
@@ -157,12 +164,7 @@ export default function DriversPage() {
         description={`${freeCount} brīvi · ${busyCount} aktīvā darbā`}
         action={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => load(true)}
-              disabled={refreshing}
-            >
+            <Button variant="outline" size="icon" onClick={() => load(true)} disabled={refreshing}>
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
             <Button variant="outline" asChild>
@@ -172,9 +174,9 @@ export default function DriversPage() {
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/dashboard/active">
+              <Link href="/dashboard/jobs/active">
                 <Truck className="h-4 w-4 mr-1.5" />
-                Flotes karte
+                Aktīvie darbi
               </Link>
             </Button>
           </div>
@@ -208,13 +210,7 @@ export default function DriversPage() {
 
 // ── Driver card ───────────────────────────────────────────────────────────────
 
-function DriverCard({
-  driver,
-  isDispatcher,
-}: {
-  driver: DriverRow;
-  isDispatcher: boolean;
-}) {
+function DriverCard({ driver, isDispatcher }: { driver: DriverRow; isDispatcher: boolean }) {
   const job = driver.activeJob;
   const jobStatus = job ? job.status : 'FREE';
 
@@ -255,7 +251,9 @@ function DriverCard({
               <Truck className="h-3.5 w-3.5 shrink-0" />
               <span>#{job.jobNumber}</span>
               {job.vehicle && (
-                <span className="text-muted-foreground font-normal">· {job.vehicle.licensePlate}</span>
+                <span className="text-muted-foreground font-normal">
+                  · {job.vehicle.licensePlate}
+                </span>
               )}
             </div>
             <div className="flex items-start gap-1.5 text-muted-foreground">
@@ -281,9 +279,7 @@ function DriverCard({
       )}
       {!job && isDispatcher && (
         <Button variant="outline" size="sm" asChild className="shrink-0 mt-0.5">
-          <Link href="/dashboard/jobs">
-            Piešķirt darbu
-          </Link>
+          <Link href="/dashboard/jobs">Piešķirt darbu</Link>
         </Button>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 /**
  * Public order tracking page — /track/[token]
- * No authentication required. Refreshes every 30 seconds.
+ * No authentication required. Refreshes every 10 seconds.
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -12,6 +12,7 @@ import {
   type TrackingData,
   type TrackingTransportJob,
 } from '@/lib/api/tracking';
+import TrackingMap from '@/components/tracking/TrackingMap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,15 +20,15 @@ import { MapPin, Package, Truck, Clock, CheckCircle2, AlertCircle, RefreshCw } f
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_INTERVAL_MS = 10_000;
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Awaiting Confirmation',
-  CONFIRMED: 'Confirmed',
-  IN_PROGRESS: 'In Progress',
-  DELIVERED: 'Delivered',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
+  PENDING: 'Gaida apstiprinājumu',
+  CONFIRMED: 'Apstiprināts',
+  IN_PROGRESS: 'Notiek iekraušana',
+  DELIVERED: 'Piegādāts',
+  COMPLETED: 'Pabeigts',
+  CANCELLED: 'Atcelts',
 };
 
 const ORDER_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -40,30 +41,35 @@ const ORDER_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructiv
 };
 
 const JOB_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Searching for driver',
-  OFFERED: 'Offer sent to driver',
-  ACCEPTED: 'Driver assigned',
-  EN_ROUTE_PICKUP: 'En route to pickup',
-  ARRIVED_PICKUP: 'Arrived at pickup',
-  LOADED: 'Loaded — en route to you',
-  EN_ROUTE_DELIVERY: 'On the way',
-  ARRIVED_DELIVERY: 'Arrived at delivery site',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-  NO_SHOW: 'Driver no-show',
+  AVAILABLE: 'Meklē vadītāju',
+  PENDING: 'Meklē vadītāju',
+  OFFERED: 'Piedāvājums nosūtīts vadītājam',
+  ASSIGNED: 'Vadītājs piešķirts',
+  ACCEPTED: 'Vadītājs apstiprināts',
+  EN_ROUTE_PICKUP: 'Ceļā uz iekraušanas vietu',
+  AT_PICKUP: 'Notiek iekraušana',
+  LOADED: 'Iekrauts — ceļā pie jums',
+  EN_ROUTE_DELIVERY: 'Ceļā uz piegādes vietu',
+  AT_DELIVERY: 'Ieradies piegādes vietā',
+  DELIVERED: 'Piegādāts',
+  CANCELLED: 'Atcelts',
+  NO_SHOW: 'Vadītājs neieradās',
 };
 
-const JOB_STATUS_ICON: Record<string, React.ReactNode> = {
-  DELIVERED: <CheckCircle2 className="h-4 w-4 text-green-600" />,
-  CANCELLED: <AlertCircle className="h-4 w-4 text-red-500" />,
-  NO_SHOW: <AlertCircle className="h-4 w-4 text-red-500" />,
-};
+// Statuses where the truck is physically moving and GPS tracking is meaningful
+const TRACKABLE_STATUSES = new Set([
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
+]);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
+  return new Date(iso).toLocaleString('lv-LV', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -74,7 +80,7 @@ function formatDate(iso: string | null | undefined): string {
 
 function formatDateOnly(iso: string | null | undefined): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', {
+  return new Date(iso).toLocaleDateString('lv-LV', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -85,18 +91,25 @@ function formatDateOnly(iso: string | null | undefined): string {
 
 function TransportJobCard({ job }: { job: TrackingTransportJob }) {
   const statusLabel = JOB_STATUS_LABELS[job.status] ?? job.status;
-  const statusIcon = JOB_STATUS_ICON[job.status] ?? <Truck className="h-4 w-4 text-blue-500" />;
+  const isDelivered = job.status === 'DELIVERED';
+  const isCancelled = job.status === 'CANCELLED' || job.status === 'NO_SHOW';
 
   return (
     <Card className="border border-border">
       <CardContent className="pt-4 pb-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            {statusIcon}
+            {isDelivered ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            ) : isCancelled ? (
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            ) : (
+              <Truck className="h-4 w-4 text-blue-500" />
+            )}
             <span className="text-sm font-medium">{statusLabel}</span>
           </div>
           {job.truckIndex != null && (
-            <span className="text-xs text-muted-foreground">Truck #{job.truckIndex}</span>
+            <span className="text-xs text-muted-foreground">Kravas auto #{job.truckIndex}</span>
           )}
         </div>
 
@@ -111,7 +124,7 @@ function TransportJobCard({ job }: { job: TrackingTransportJob }) {
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Truck className="h-3.5 w-3.5 shrink-0" />
             <span>
-              {job.driver?.firstName ?? 'Driver'}
+              {job.driver?.firstName ?? 'Vadītājs'}
               {job.carrier ? ` · ${job.carrier.name}` : ''}
             </span>
           </div>
@@ -120,14 +133,14 @@ function TransportJobCard({ job }: { job: TrackingTransportJob }) {
         {job.estimatedArrival && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Clock className="h-3.5 w-3.5 shrink-0" />
-            <span>ETA: {formatDate(job.estimatedArrival)}</span>
+            <span>Paredzamais ierašanās laiks: {formatDate(job.estimatedArrival)}</span>
           </div>
         )}
 
         {job.currentLocation && (
           <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
             <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            Live GPS active
+            GPS izsekošana aktīva
           </div>
         )}
       </CardContent>
@@ -141,7 +154,7 @@ function LoadingSkeleton() {
       <Skeleton className="h-8 w-48" />
       <Skeleton className="h-6 w-32" />
       <Skeleton className="h-24 w-full" />
-      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-48 w-full" />
       <Skeleton className="h-32 w-full" />
     </div>
   );
@@ -176,7 +189,10 @@ export default function TrackingPage() {
     return () => clearInterval(timer);
   }, [load]);
 
-  // ── Render states ──────────────────────────────────────────────────────────
+  // First job in an active/trackable status drives the map; fall back to any first job
+  const mapJob =
+    data?.transportJobs.find((j) => TRACKABLE_STATUSES.has(j.status)) ?? data?.transportJobs[0];
+  const showMap = !!mapJob && TRACKABLE_STATUSES.has(mapJob.status);
 
   return (
     <div className="min-h-screen bg-background py-10 px-4">
@@ -184,8 +200,8 @@ export default function TrackingPage() {
         {/* Header */}
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold tracking-tight">Bilt</span>
-          <span className="text-muted-foreground">· Live Order Tracking</span>
+          <span className="text-xl font-bold tracking-tight">B3Hub</span>
+          <span className="text-muted-foreground">· Piegādes izsekošana</span>
         </div>
 
         {/* Content */}
@@ -195,9 +211,9 @@ export default function TrackingPage() {
           <Card>
             <CardContent className="pt-8 pb-8 text-center space-y-2">
               <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
-              <p className="font-medium">Tracking link not found</p>
+              <p className="font-medium">Izsekošanas saite nav atrasta</p>
               <p className="text-sm text-muted-foreground">
-                This link may have expired or is invalid.
+                Šī saite var būt beigusi derīguma termiņu vai ir nederīga.
               </p>
             </CardContent>
           </Card>
@@ -207,9 +223,9 @@ export default function TrackingPage() {
           <Card>
             <CardContent className="pt-8 pb-8 text-center space-y-2">
               <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
-              <p className="font-medium">Could not load tracking data</p>
+              <p className="font-medium">Neizdevās ielādēt izsekošanas datus</p>
               <p className="text-sm text-muted-foreground">
-                Check your connection — retrying automatically.
+                Pārbaudiet interneta savienojumu — mēģina atkārtoti.
               </p>
             </CardContent>
           </Card>
@@ -221,7 +237,7 @@ export default function TrackingPage() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base">Order #{data.orderNumber}</CardTitle>
+                  <CardTitle className="text-base">Pasūtījums #{data.orderNumber}</CardTitle>
                   <Badge variant={ORDER_STATUS_VARIANT[data.status] ?? 'secondary'}>
                     {ORDER_STATUS_LABELS[data.status] ?? data.status}
                   </Badge>
@@ -238,7 +254,7 @@ export default function TrackingPage() {
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5 shrink-0" />
                     <span>
-                      Delivery: {formatDateOnly(data.deliveryDate)}
+                      Piegāde: {formatDateOnly(data.deliveryDate)}
                       {data.deliveryWindow ? ` · ${data.deliveryWindow}` : ''}
                     </span>
                   </div>
@@ -246,10 +262,29 @@ export default function TrackingPage() {
               </CardContent>
             </Card>
 
+            {/* Live map — shown while driver is en-route */}
+            {showMap && mapJob && (
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Tiešraides karte
+                </h2>
+                <TrackingMap
+                  pickupLat={mapJob.pickupLat ?? null}
+                  pickupLng={mapJob.pickupLng ?? null}
+                  pickupAddress={mapJob.pickupCity}
+                  deliveryLat={data.deliveryLat ?? mapJob.deliveryLat ?? null}
+                  deliveryLng={data.deliveryLng ?? mapJob.deliveryLng ?? null}
+                  deliveryAddress={data.deliveryAddress}
+                  truckPos={mapJob.currentLocation}
+                  isLive={!!mapJob.currentLocation}
+                />
+              </div>
+            )}
+
             {/* Cargo */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Cargo</CardTitle>
+                <CardTitle className="text-base">Krava</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 pt-0">
                 {data.items.map((item, i) => (
@@ -267,7 +302,7 @@ export default function TrackingPage() {
             {data.transportJobs.length > 0 && (
               <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  Transport
+                  Transports
                 </h2>
                 {data.transportJobs.map((job) => (
                   <TransportJobCard key={job.id} job={job} />
@@ -279,7 +314,7 @@ export default function TrackingPage() {
             {lastUpdated && (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground justify-end">
                 <RefreshCw className="h-3 w-3" />
-                Updated {lastUpdated.toLocaleTimeString()} · refreshes every 30s
+                Atjaunots {lastUpdated.toLocaleTimeString('lv-LV')} · atsvaidzina ik 10s
               </p>
             )}
           </>

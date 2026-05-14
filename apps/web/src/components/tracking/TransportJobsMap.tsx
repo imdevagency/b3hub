@@ -43,13 +43,21 @@ function getBounds(jobs: JobRoutePoint[]): [[number, number], [number, number]] 
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
+export interface TruckDot {
+  lat: number;
+  lng: number;
+  updatedAt: string;
+}
+
 interface Props {
   jobs: JobRoutePoint[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  /** Live truck positions keyed by jobId — from useFleetPositions hook */
+  truckPositions?: Record<string, TruckDot>;
 }
 
-export default function TransportJobsMap({ jobs, selectedId, onSelect }: Props) {
+export default function TransportJobsMap({ jobs, selectedId, onSelect, truckPositions = {} }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const { isLoaded } = useJsApiLoader({
     id: 'b3hub-google-maps',
@@ -183,6 +191,36 @@ export default function TransportJobsMap({ jobs, selectedId, onSelect }: Props) 
               }}
             />
           </React.Fragment>
+        );
+      })}
+
+      {/* ── Live truck dots ──────────────────────────────────────── */}
+      {jobs.map((job) => {
+        const dot = truckPositions[job.id];
+        if (!dot) return null;
+        const isSelected = job.id === selectedId;
+        // Stale if not updated in last 2 minutes
+        const staleMs = Date.now() - new Date(dot.updatedAt).getTime();
+        const isStale = staleMs > 2 * 60 * 1000;
+        return (
+          <MarkerF
+            key={`truck-${job.id}`}
+            position={{ lat: dot.lat, lng: dot.lng }}
+            onClick={(e) => {
+              e.domEvent?.stopPropagation();
+              onSelect(job.id);
+            }}
+            icon={{
+              path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              fillColor: isSelected ? '#3b82f6' : isStale ? '#6b7280' : '#f97316',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+              scale: isSelected ? 6 : 5,
+              anchor: new window.google.maps.Point(0, 2.5),
+            }}
+            zIndex={10}
+          />
         );
       })}
 

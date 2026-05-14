@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       // ── Consolidated routes ───────────────────────────────────────────────────
-      { source: '/dashboard/fleet', destination: '/dashboard/active', permanent: true },
+      { source: '/dashboard/fleet', destination: '/dashboard/jobs/active', permanent: true },
       {
         source: '/dashboard/incoming-orders',
         destination: '/dashboard/orders',

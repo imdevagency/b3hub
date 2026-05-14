@@ -11,7 +11,11 @@ export interface TrackingTransportJob {
   jobNumber: string;
   status: string;
   pickupCity: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
   deliveryCity: string;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   estimatedArrival: string | null;
   currentLocation: { lat: number; lng: number } | null;
   statusTimestamps: Record<string, string> | null;
@@ -25,6 +29,8 @@ export interface TrackingData {
   status: string;
   deliveryAddress: string;
   deliveryCity: string;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   deliveryDate: string | null;
   deliveryWindow: string | null;
   createdAt: string;

@@ -2643,6 +2643,48 @@ export class TransportJobsService {
     return job;
   }
 
+  /**
+   * Bulk fleet positions for the dispatch board map.
+   * Returns latest GPS for all jobs currently in-progress (not terminal states).
+   */
+  async getFleetPositions(): Promise<
+    { jobId: string; lat: number; lng: number; updatedAt: string }[]
+  > {
+    const activeStatuses: TransportJobStatus[] = [
+      TransportJobStatus.ACCEPTED,
+      TransportJobStatus.EN_ROUTE_PICKUP,
+      TransportJobStatus.AT_PICKUP,
+      TransportJobStatus.LOADED,
+      TransportJobStatus.EN_ROUTE_DELIVERY,
+      TransportJobStatus.AT_DELIVERY,
+    ];
+
+    const jobs = await this.prisma.transportJob.findMany({
+      where: {
+        status: { in: activeStatuses },
+        currentLocation: { not: null },
+      },
+      select: { id: true, currentLocation: true },
+    });
+
+    return jobs
+      .map((j) => {
+        const loc = j.currentLocation as {
+          lat?: number;
+          lng?: number;
+          updatedAt?: string;
+        } | null;
+        if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return null;
+        return {
+          jobId: j.id,
+          lat: loc.lat,
+          lng: loc.lng,
+          updatedAt: loc.updatedAt ?? new Date().toISOString(),
+        };
+      })
+      .filter(Boolean) as { jobId: string; lat: number; lng: number; updatedAt: string }[];
+  }
+
   // ── Report delivery delay — driver notifies buyer of expected late arrival ──
   async reportDelay(
     id: string,

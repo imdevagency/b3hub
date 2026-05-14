@@ -279,6 +279,20 @@ export class TransportJobsController {
   }
 
   /**
+   * GET /transport-jobs/fleet-positions
+   * Live truck positions for all active jobs — polled every 5s by the dispatch board fleet map.
+   */
+  @Get('fleet-positions')
+  getFleetPositions(@CurrentUser() user: RequestingUser) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view fleet positions',
+      );
+    }
+    return this.service.getFleetPositions();
+  }
+
+  /**
    * GET /transport-jobs/sla-overdue
    * Dispatcher list of currently overdue jobs.
    */

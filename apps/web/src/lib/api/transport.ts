@@ -232,6 +232,19 @@ export async function getAllTransportJobs(token: string): Promise<ApiTransportJo
   return normalizeTransportJobsPayload(payload);
 }
 
+export interface FleetPosition {
+  jobId: string;
+  lat: number;
+  lng: number;
+  updatedAt: string;
+}
+
+export async function getFleetPositions(token: string): Promise<FleetPosition[]> {
+  return apiFetch<FleetPosition[]>('/transport-jobs/fleet-positions', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export async function getSlaOverdueTransportJobs(
   token: string,
 ): Promise<ApiTransportJob[]> {

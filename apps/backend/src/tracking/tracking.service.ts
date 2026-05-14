@@ -21,6 +21,8 @@ export class TrackingService {
         deliveryCity: true,
         deliveryDate: true,
         deliveryWindow: true,
+        deliveryLat: true,
+        deliveryLng: true,
         createdAt: true,
         items: {
           select: {
@@ -37,7 +39,11 @@ export class TrackingService {
             jobNumber: true,
             status: true,
             pickupCity: true,
+            pickupLat: true,
+            pickupLng: true,
             deliveryCity: true,
+            deliveryLat: true,
+            deliveryLng: true,
             estimatedArrival: true,
             currentLocation: true,
             statusTimestamps: true,

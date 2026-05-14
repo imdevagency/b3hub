@@ -69,17 +69,17 @@ export default function SupplierDashboardPage() {
 
   const actions: Action[] = [
     {
-      label: 'Mani Materiāli',
-      description: 'Pārvaldīt savus materiālu sludinājumus, cenas un krājumus',
+      label: 'Mans Katalogs',
+      description: 'Pārvaldīt materiālus, tehniku, konteinerus un tualetes no viena paneļa',
       icon: Package,
-      href: '/dashboard/materials',
+      href: '/dashboard/portfolio',
       primary: true,
     },
     {
-      label: 'Pievienot Materiālu',
+      label: 'Pievienot Katalogam',
       description: 'Publicēt jaunu produktu vai pakalpojumu',
       icon: Plus,
-      href: '/dashboard/materials?new=true',
+      href: '/dashboard/portfolio',
       primary: true,
     },
     {

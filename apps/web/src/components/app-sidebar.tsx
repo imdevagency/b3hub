@@ -27,9 +27,7 @@ import {
   FolderKanban,
   FolderOpen,
   LayoutDashboard,
-  LayoutGrid,
   LogOut,
-  MapPin,
   MessageSquare,
   Percent,
   Radio,
@@ -140,12 +138,6 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
           href: '/dashboard/orders',
           icon: ClipboardList,
           groupPaths: getGroupPaths('SUPPLIER', 'work'),
-        },
-        {
-          label: 'Iekraušanas grafiks',
-          href: '/dashboard/supplier/loading-schedule',
-          icon: CalendarDays,
-          groupPaths: getGroupPaths('SUPPLIER', 'schedule'),
         },
         {
           label: 'Katalogs',
@@ -334,40 +326,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }));
 
     if (activeMode === 'CARRIER') {
-      const isDispatcher =
-        user?.isCompany && (user.companyRole === 'OWNER' || user.companyRole === 'MANAGER');
       const isCompanyDriver =
         user?.isCompany && (user.companyRole === 'DRIVER' || user.companyRole === 'MEMBER');
-
-      if (isDispatcher) {
-        // Dispatcher: insert dispatcher panel right after home
-        sections = sections.map((section) => {
-          if (section.id !== 'carrier-main') return section;
-          const [home, ...rest] = section.items;
-          return {
-            ...section,
-            items: [
-              home,
-              { label: 'Dispečera Panelis', href: '/dashboard/active', icon: LayoutGrid },
-              ...rest,
-            ],
-          };
-        });
-      } else if (user?.companyRole !== 'DRIVER') {
-        // Non-dispatcher, non-field driver: add active job monitor
-        sections = sections.map((section) => {
-          if (section.id !== 'carrier-main') return section;
-          const [home, ...rest] = section.items;
-          return {
-            ...section,
-            items: [
-              home,
-              { label: 'Aktīvais Darbs', href: '/dashboard/active', icon: MapPin },
-              ...rest,
-            ],
-          };
-        });
-      }
 
       if (isCompanyDriver) {
         // Field drivers: remove home dashboard + job marketplace sidebar items

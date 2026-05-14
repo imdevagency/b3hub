@@ -9,21 +9,20 @@ import Link from 'next/link';
 
 export default function PortfolioHubPage() {
   const { user } = useAuth();
-  
+
   const canSell = !!user?.canSell;
-  const canRent = !!(user as any)?.canRent;
-  const canSkipHire = !!(user as any)?.canSkipHire;
+  const canRent = !!user?.canRent;
+  const canSkipHire = !!user?.canSkipHire;
   const canTransport = !!user?.canTransport;
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <PageHeader 
-        title="Mans Katalogs" 
-        description="Pārvaldiet visu savu piedāvājumu (materiālus, tehniku, konteinerus, tualetes) no viena paneļa." 
+      <PageHeader
+        title="Mans Katalogs"
+        description="Pārvaldiet visu savu piedāvājumu (materiālus, tehniku, konteinerus, tualetes) no viena paneļa."
       />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        
         {canSell && (
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="pt-6 flex flex-col gap-4">
@@ -107,7 +106,6 @@ export default function PortfolioHubPage() {
             </CardContent>
           </Card>
         )}
-
       </div>
     </div>
   );

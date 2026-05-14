@@ -229,7 +229,7 @@ export default function TransporterDashboardPage() {
       label: 'Dispečera Panelis',
       description: 'Pārvaldi floti un aktīvos reisus reāllaikā',
       icon: LayoutGrid,
-      href: '/dashboard/fleet',
+      href: '/dashboard/jobs/active',
       primary: true,
     },
     {
@@ -276,8 +276,8 @@ export default function TransporterDashboardPage() {
 
   const actions = isDispatcher ? dispatcherActions : driverActions;
   const focusAction = isDispatcher
-    ? { href: '/dashboard/fleet', title: 'Atvērt dispečera karti' }
-    : { href: '/dashboard/active', title: 'Atvērt aktīvo darbu' };
+    ? { href: '/dashboard/jobs/active', title: 'Atvērt aktīvos darbus' }
+    : { href: '/dashboard/jobs/active', title: 'Atvērt aktīvo darbu' };
 
   return (
     <div className="w-full h-full pb-20 space-y-10">

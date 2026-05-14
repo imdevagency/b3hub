@@ -160,244 +160,250 @@ export default function TransportJobDetailPage() {
   const statusCfg = STATUS_CFG[job.status] ?? { label: job.status, bg: '#f1f5f9', text: '#475569' };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-[1400px] mx-auto p-4 lg:p-8">
       {/* ── Header ── */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5 text-slate-600" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{job.jobNumber}</h1>
-          <p className="text-sm text-slate-500">
-            {CARGO_LABELS[job.cargoType] ?? job.cargoType}
-            {job.cargoWeight ? ` · ${job.cargoWeight} t` : ''}
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200">
+            <ArrowLeft className="h-5 w-5 text-slate-700" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">#{job.jobNumber}</h1>
+              <span
+                style={{ backgroundColor: statusCfg.bg, color: statusCfg.text }}
+                className="inline-block rounded-md px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider"
+              >
+                {statusCfg.label}
+              </span>
+            </div>
+            <p className="text-sm font-medium text-slate-500 mt-0.5">
+              {CARGO_LABELS[job.cargoType] ?? job.cargoType}
+              {job.cargoWeight ? ` · ${job.cargoWeight} t` : ''}
+            </p>
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="shadow-sm border-slate-200 font-semibold" asChild>
             <Link href={`/dashboard/chat/${job.id}`}>
-              <MessageSquare className="h-4 w-4 mr-1.5" />
+              <MessageSquare className="h-4 w-4 mr-2" />
               Sarakste
             </Link>
           </Button>
-          <span
-            style={{ backgroundColor: statusCfg.bg, color: statusCfg.text }}
-            className="inline-block rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap"
-          >
-            {statusCfg.label}
-          </span>
         </div>
       </div>
 
-      {/* ── Live Map ── */}
-      <div>
-        <TrackingMap
-          token={token ?? undefined}
-          pickupLat={job.pickupLat}
-          pickupLng={job.pickupLng}
-          pickupAddress={job.pickupAddress}
-          deliveryLat={job.deliveryLat}
-          deliveryLng={job.deliveryLng}
-          deliveryAddress={job.deliveryAddress}
-          truckPos={truckPos}
-          isLive={isLive}
-        />
-        <div className="flex items-center justify-end gap-3 mt-1.5 pr-1">
-          {livePos?.estimatedArrivalMin != null && (
-            <p className="text-xs text-blue-600 font-medium">
-              Paredzamais iebraukšanas laiks: ~{livePos.estimatedArrivalMin} min
-            </p>
-          )}
-          <p className="text-xs text-slate-400">{wsConnected ? '● LIVE' : 'Savienojas…'}</p>
-        </div>
-      </div>
-
-      {/* ── Status Timeline ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-4">Statusa hronoloģija</h2>
-        <div className="space-y-0">
-          {STATUS_STEPS.map((step, i) => {
-            const stepIdx = statusIndex(step.status);
-            const done = stepIdx < currentIdx;
-            const active = stepIdx === currentIdx;
-            const upcoming = stepIdx > currentIdx;
-
-            return (
-              <div key={step.status} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={[
-                      'flex items-center justify-center w-7 h-7 rounded-full shrink-0',
-                      done ? 'bg-green-100 text-green-600' : '',
-                      active ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-300' : '',
-                      upcoming ? 'bg-slate-100 text-slate-400' : '',
-                    ].join(' ')}
-                  >
-                    {done ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : active ? (
-                      <Truck className="h-3.5 w-3.5" />
-                    ) : (
-                      <Circle className="h-3.5 w-3.5" />
-                    )}
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+        {/* ── Left Column: Details ── */}
+        <div className="flex-1 space-y-6 min-w-0">
+          
+          {/* Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Route Card */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 md:col-span-2">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Maršruts</h2>
+              <div className="relative">
+                <div className="absolute left-2.5 top-3 bottom-4 w-0.5 bg-slate-200" />
+                
+                <div className="flex gap-4 relative z-10 mb-6">
+                  <div className="w-5 h-5 mt-0.5 rounded-full bg-slate-900 ring-4 ring-white flex items-center justify-center shrink-0">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
                   </div>
-                  {i < STATUS_STEPS.length - 1 && (
-                    <div
-                      className={['w-0.5 flex-1 my-1', done ? 'bg-green-300' : 'bg-slate-200'].join(
-                        ' ',
-                      )}
-                      style={{ minHeight: 20 }}
-                    />
-                  )}
+                  <div className="flex-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Iekraušana</p>
+                    <p className="text-base font-semibold text-slate-900 mt-0.5">{job.pickupCity}</p>
+                    <p className="text-sm text-slate-600 mt-0.5">{job.pickupAddress}</p>
+                    <div className="flex items-center gap-1.5 mt-2 bg-slate-50 w-fit px-2 py-1 rounded-md border border-slate-100">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-xs font-medium text-slate-700">
+                        {fmtDate(job.pickupDate)}
+                        {job.pickupWindow && ` · ${job.pickupWindow}`}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="pb-4 pt-0.5">
-                  <p
-                    className={[
-                      'text-sm font-medium leading-tight',
-                      done ? 'text-green-700' : '',
-                      active ? 'text-blue-700' : '',
-                      upcoming ? 'text-slate-400' : '',
-                    ].join(' ')}
-                  >
-                    {step.label}
-                  </p>
-                  {(done || active) && (
-                    <p className="text-xs text-slate-500 mt-0.5">{step.description}</p>
-                  )}
+
+                <div className="flex gap-4 relative z-10">
+                  <div className="w-5 h-5 mt-0.5 rounded-full bg-emerald-500 ring-4 ring-white flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-3 w-3 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Piegāde</p>
+                    <p className="text-base font-semibold text-slate-900 mt-0.5">{job.deliveryCity}</p>
+                    <p className="text-sm text-slate-600 mt-0.5">{job.deliveryAddress}</p>
+                    <div className="flex items-center gap-1.5 mt-2 bg-slate-50 w-fit px-2 py-1 rounded-md border border-slate-100">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="text-xs font-medium text-slate-700">
+                        {fmtDate(job.deliveryDate)}
+                        {job.deliveryWindow && ` · ${job.deliveryWindow}`}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
+            </div>
 
-      {/* ── Route ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-slate-700">Maršruts</h2>
-        <div className="space-y-3">
-          <div className="flex gap-3">
-            <div className="flex flex-col items-center gap-0.5 pt-1">
-              <div className="w-3 h-3 rounded-full bg-green-500 shrink-0" />
-              <div className="w-0.5 flex-1 bg-slate-200" style={{ minHeight: 24 }} />
-            </div>
-            <div className="flex-1 pb-3">
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
-                Iekraušana
-              </p>
-              <p className="text-sm text-slate-900">{job.pickupAddress}</p>
-              <p className="text-xs text-slate-500">{job.pickupCity}</p>
-              <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                <Clock className="h-3 w-3" />
-                {fmtDate(job.pickupDate)}
-                {job.pickupWindow && ` · ${job.pickupWindow}`}
+            {/* Driver */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-start gap-4">
+              <div className="h-10 w-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center shrink-0">
+                <User className="h-5 w-5 text-slate-500" />
               </div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="pt-1">
-              <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Piegāde</p>
-              <p className="text-sm text-slate-900">{job.deliveryAddress}</p>
-              <p className="text-xs text-slate-500">{job.deliveryCity}</p>
-              <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                <Clock className="h-3 w-3" />
-                {fmtDate(job.deliveryDate)}
-                {job.deliveryWindow && ` · ${job.deliveryWindow}`}
-              </div>
-            </div>
-          </div>
-        </div>
-        {job.distanceKm && (
-          <p className="text-xs text-slate-400 pt-1 border-t border-slate-100">
-            Attālums: <span className="font-medium text-slate-600">{job.distanceKm} km</span>
-          </p>
-        )}
-      </div>
-
-      {/* ── Driver & Vehicle ── */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
-          <div className="p-2 bg-slate-100 rounded-xl">
-            <User className="h-4 w-4 text-slate-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 mb-0.5">Vadītājs</p>
-            {job.driver ? (
-              <>
-                <p className="text-sm font-medium text-slate-900">
-                  {job.driver.firstName} {job.driver.lastName}
-                </p>
-                {job.driver.phone && (
-                  <a
-                    href={`tel:${job.driver.phone}`}
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    {job.driver.phone}
-                  </a>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Vadītājs</p>
+                {job.driver ? (
+                  <>
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {job.driver.firstName} {job.driver.lastName}
+                    </p>
+                    {job.driver.phone && (
+                      <a href={`tel:${job.driver.phone}`} className="text-xs font-medium text-blue-600 hover:text-blue-700 truncate mt-0.5 inline-block">
+                        {job.driver.phone}
+                      </a>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm font-medium text-slate-500">Nav piesaistīts</p>
                 )}
-              </>
-            ) : (
-              <p className="text-sm text-slate-400">Nav piešķirts</p>
-            )}
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-start gap-3">
-          <div className="p-2 bg-slate-100 rounded-xl">
-            <Truck className="h-4 w-4 text-slate-600" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 mb-0.5">Transportlīdzeklis</p>
-            {job.vehicle ? (
-              <>
-                <p className="text-sm font-medium text-slate-900">
-                  {VEHICLE_LABELS[job.vehicle.vehicleType] ?? job.vehicle.vehicleType}
-                </p>
-                <p className="text-xs text-slate-500">{job.vehicle.licensePlate}</p>
-              </>
-            ) : (
-              <p className="text-sm text-slate-400">Nav piešķirts</p>
-            )}
-          </div>
-        </div>
-      </div>
+              </div>
+            </div>
 
-      {/* ── Cargo summary ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Krava</h2>
-        <div className="grid grid-cols-2 gap-y-3 text-sm">
-          <div>
-            <p className="text-xs text-slate-400">Veids</p>
-            <p className="font-medium text-slate-800">
-              {CARGO_LABELS[job.cargoType] ?? job.cargoType}
-            </p>
+            {/* Vehicle */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-start gap-4">
+              <div className="h-10 w-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center shrink-0">
+                <Truck className="h-5 w-5 text-slate-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Auto</p>
+                {job.vehicle ? (
+                  <>
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {job.vehicle.licensePlate}
+                    </p>
+                    <p className="text-xs font-medium text-slate-500 truncate mt-0.5">
+                      {VEHICLE_LABELS[job.vehicle.vehicleType] ?? job.vehicle.vehicleType}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm font-medium text-slate-500">Nav piesaistīts</p>
+                )}
+              </div>
+            </div>
+
+            {/* Cargo specifics */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 md:col-span-2">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Kravas Detaļas</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Pasūtījums</p>
+                  <p className="text-sm font-semibold text-slate-900">{job.order?.orderNumber ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Svars</p>
+                  <p className="text-sm font-semibold text-slate-900">{job.cargoWeight ? `${job.cargoWeight} t` : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Attālums</p>
+                  <p className="text-sm font-semibold text-slate-900">{job.distanceKm ? `${job.distanceKm} km` : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Likme</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {job.rate && job.currency ? job.rate.toLocaleString('lv-LV', { style: 'currency', currency: job.currency }) : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Timeline */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 md:col-span-2">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-5">Izpildes Gaita</h2>
+              <div className="space-y-0">
+                {STATUS_STEPS.map((step, i) => {
+                  const stepIdx = statusIndex(step.status);
+                  const done = stepIdx < currentIdx;
+                  const active = stepIdx === currentIdx;
+                  const upcoming = stepIdx > currentIdx;
+
+                  return (
+                    <div key={step.status} className="flex gap-4 group">
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={[
+                            'flex items-center justify-center w-6 h-6 rounded-full shrink-0 border-2 transition-all',
+                            done ? 'bg-slate-900 border-slate-900 text-white' : '',
+                            active ? 'bg-white border-blue-600 ring-4 ring-blue-50' : '',
+                            upcoming ? 'bg-white border-slate-200' : '',
+                          ].join(' ')}
+                        >
+                          {done && <CheckCircle2 className="h-3 w-3" />}
+                          {active && <div className="h-2 w-2 rounded-full bg-blue-600" />}
+                        </div>
+                        {i < STATUS_STEPS.length - 1 && (
+                          <div
+                            className={['w-0.5 flex-1 my-1', done ? 'bg-slate-900' : 'bg-slate-100'].join(' ')}
+                            style={{ minHeight: 24 }}
+                          />
+                        )}
+                      </div>
+                      <div className="pb-5 pt-0.5">
+                        <p
+                          className={[
+                            'text-sm font-bold',
+                            done || active ? 'text-slate-900' : 'text-slate-400',
+                          ].join(' ')}
+                        >
+                          {step.label}
+                        </p>
+                        {(done || active) && (
+                          <p className="text-[13px] font-medium text-slate-500 mt-0.5 leading-snug">{step.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
           </div>
-          {job.cargoWeight && (
-            <div>
-              <p className="text-xs text-slate-400">Svars</p>
-              <p className="font-medium text-slate-800">{job.cargoWeight} t</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-slate-400">Darba nr.</p>
-            <p className="font-medium text-slate-800">{job.jobNumber}</p>
-          </div>
-          {job.order && (
-            <div>
-              <p className="text-xs text-slate-400">Pasūtījuma nr.</p>
-              <p className="font-medium text-slate-800">{job.order.orderNumber}</p>
-            </div>
-          )}
-          {job.rate && (
-            <div>
-              <p className="text-xs text-slate-400">Atlīdzība</p>
-              <p className="font-medium text-slate-800">
-                {job.rate.toLocaleString('lv-LV', { style: 'currency', currency: job.currency })}
-              </p>
-            </div>
-          )}
         </div>
+
+        {/* ── Right Column: Map ── */}
+        <div className="w-full lg:w-[480px] xl:w-[600px] shrink-0">
+          <div className="lg:sticky lg:top-6 bg-slate-100 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px] lg:h-[calc(100vh-120px)] min-h-[500px]">
+            <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 z-10">
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-2.5 w-2.5">
+                  {wsConnected && isLive && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  )}
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${wsConnected ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                  {wsConnected ? 'Live Karte' : 'Karte (Bezsaistē)'}
+                </p>
+              </div>
+              {livePos?.estimatedArrivalMin != null && (
+                <p className="text-xs font-medium text-slate-500">
+                  PTA: <span className="font-bold text-slate-900">~{livePos.estimatedArrivalMin} min</span>
+                </p>
+              )}
+            </div>
+            <div className="flex-1 relative z-0">
+              <TrackingMap
+                token={token ?? undefined}
+                pickupLat={job.pickupLat}
+                pickupLng={job.pickupLng}
+                pickupAddress={job.pickupAddress}
+                deliveryLat={job.deliveryLat}
+                deliveryLng={job.deliveryLng}
+                deliveryAddress={job.deliveryAddress}
+                truckPos={truckPos}
+                isLive={isLive}
+              />
+            </div>
+          </div>
+        </div>
+        
       </div>
     </div>
   );

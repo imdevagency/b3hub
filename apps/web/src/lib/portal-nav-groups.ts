@@ -71,6 +71,7 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/orders',
       tabs: [
         { label: 'Ienākošie', href: '/dashboard/orders' },
+        { label: 'Iekraušanas grafiks', href: '/dashboard/supplier/loading-schedule' },
         { label: 'Piegādes', href: '/dashboard/deliveries' },
         { label: 'RFQ tirgus', href: '/dashboard/quote-requests/open' },
         { label: 'Pieprasījumi', href: '/dashboard/quote-requests' },
@@ -109,18 +110,18 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/jobs',
       tabs: [
         { label: 'Darbu tirgus', href: '/dashboard/jobs' },
+        { label: 'Aktīvie darbi', href: '/dashboard/jobs/active' },
         { label: 'Piegādes', href: '/dashboard/deliveries' },
         { label: 'Utilizācija', href: '/dashboard/recycling-centers' },
-        { label: 'Vēsture', href: '/dashboard/transport-history' },
+        { label: 'Vēsture', href: '/dashboard/orders' },
       ],
     },
     {
       id: 'fleet',
-      label: 'Flote',
+      label: 'Autoparks',
       primaryHref: '/dashboard/fleet-management',
       tabs: [
         { label: 'Transportlīdzekļi', href: '/dashboard/fleet-management' },
-        { label: 'Skip flote', href: '/dashboard/skip-hire/fleet' },
         { label: 'Iestatījumi', href: '/dashboard/transporter/settings' },
       ],
     },

@@ -7,5 +7,5 @@
 import { redirect } from 'next/navigation';
 
 export default function FleetRedirect() {
-  redirect('/dashboard/active');
+  redirect('/dashboard/jobs/active');
 }

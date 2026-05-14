@@ -167,7 +167,7 @@ export default function GuestOrderTrackingPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Bilt</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">B3Hub</p>
             <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight mt-0.5">
               Pasūtījuma izsekošana
             </h1>

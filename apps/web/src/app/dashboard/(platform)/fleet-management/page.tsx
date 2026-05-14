@@ -1,7 +1,6 @@
 /**
  * Fleet Management page — /dashboard/fleet-management
- * Tabbed: Transportlīdzekļi (canTransport) + Konteineri (canSkipHire)
- * Replaces /dashboard/garage and /dashboard/containers/fleet.
+ * Shows carrier vehicles only. Skips and containers are managed from the supplier side.
  */
 'use client';
 
@@ -10,9 +9,7 @@ import { useRouter } from 'next/navigation';
 import {
   Car,
   ChevronDown,
-  Check,
   Loader2,
-  Package,
   Pencil,
   Plus,
   RefreshCw,
@@ -37,18 +34,6 @@ import {
   type VehicleStatus,
   type CreateVehicleInput,
 } from '@/lib/api';
-import {
-  type ApiContainer,
-  type ContainerType,
-  type ContainerSize,
-  type CreateContainerInput,
-  getMyFleetContainers,
-  createContainer,
-  updateContainer,
-  deleteContainer,
-} from '@/lib/api/containers';
-
-type Tab = 'vehicles' | 'containers';
 
 // ── Vehicle constants ─────────────────────────────────────────────────────────
 
@@ -84,23 +69,6 @@ const EMPTY_VEHICLE_FORM: CreateVehicleInput = {
   driveType: '',
   status: 'ACTIVE',
 };
-
-// ── Container constants ───────────────────────────────────────────────────────
-
-const CONTAINER_TYPES: { value: ContainerType; label: string }[] = [
-  { value: 'SKIP', label: 'Skip' },
-  { value: 'ROLL_OFF', label: 'Roll-Off' },
-  { value: 'COMPACTOR', label: 'Kompaktors' },
-  { value: 'HOOKLOADER', label: 'Āķkrāvējs' },
-  { value: 'FLATBED', label: 'Platforma' },
-];
-
-const CONTAINER_SIZES: { value: ContainerSize; label: string }[] = [
-  { value: 'SMALL', label: 'Mazs' },
-  { value: 'MEDIUM', label: 'Vidējs' },
-  { value: 'LARGE', label: 'Liels' },
-  { value: 'EXTRA_LARGE', label: 'Ļoti liels' },
-];
 
 // ── Vehicle sub-components ────────────────────────────────────────────────────
 
@@ -673,399 +641,15 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
   );
 }
 
-// ── Add Container Modal ───────────────────────────────────────────────────────
-
-interface AddContainerModalProps {
-  token: string;
-  onClose: () => void;
-  onSaved: () => void;
-  editing?: ApiContainer | null;
-}
-
-function AddContainerModal({ token, onClose, onSaved, editing }: AddContainerModalProps) {
-  const [form, setForm] = useState<Partial<CreateContainerInput>>({
-    containerType: editing?.containerType ?? 'SKIP',
-    size: editing?.size ?? 'SMALL',
-    volume: editing?.volume ?? undefined,
-    maxWeight: editing?.maxWeight ?? undefined,
-    rentalPrice: editing?.rentalPrice ?? undefined,
-    deliveryFee: editing?.deliveryFee ?? 0,
-    pickupFee: editing?.pickupFee ?? 0,
-    location: editing?.location ?? '',
-    currency: editing?.currency ?? 'EUR',
-  });
-  const [saving, setSaving] = useState(false);
-
-  const set = (k: keyof CreateContainerInput, v: string | number) =>
-    setForm((f) => ({ ...f, [k]: v }));
-
-  const handleSubmit = async () => {
-    const { containerType, size, volume, maxWeight, rentalPrice, deliveryFee, pickupFee } = form;
-    if (
-      !containerType ||
-      !size ||
-      !volume ||
-      !maxWeight ||
-      rentalPrice == null ||
-      deliveryFee == null ||
-      pickupFee == null
-    )
-      return;
-    setSaving(true);
-    try {
-      if (editing) {
-        await updateContainer(token, editing.id, form as Partial<CreateContainerInput>);
-      } else {
-        await createContainer(token, form as CreateContainerInput);
-      }
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">
-            {editing ? 'Rediģēt konteineru' : 'Pievienot konteineru'}
-          </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 sm:col-span-1">
-            <Label className="text-xs text-muted-foreground mb-1 block">Tips *</Label>
-            <select
-              className="w-full h-9 rounded-md border text-sm px-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
-              value={form.containerType}
-              onChange={(e) => set('containerType', e.target.value as ContainerType)}
-            >
-              {CONTAINER_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-span-2 sm:col-span-1">
-            <Label className="text-xs text-muted-foreground mb-1 block">Izmērs *</Label>
-            <select
-              className="w-full h-9 rounded-md border text-sm px-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary/40"
-              value={form.size}
-              onChange={(e) => set('size', e.target.value as ContainerSize)}
-            >
-              {CONTAINER_SIZES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Tilpums (m³) *</Label>
-            <Input
-              type="number"
-              min="0.1"
-              step="0.1"
-              placeholder="6.0"
-              className="h-9 text-sm"
-              value={form.volume ?? ''}
-              onChange={(e) => set('volume', parseFloat(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Maks. svars (t) *</Label>
-            <Input
-              type="number"
-              min="0.1"
-              step="0.1"
-              placeholder="5.0"
-              className="h-9 text-sm"
-              value={form.maxWeight ?? ''}
-              onChange={(e) => set('maxWeight', parseFloat(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">
-              Nomas cena / dienā (€) *
-            </Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="25.00"
-              className="h-9 text-sm"
-              value={form.rentalPrice ?? ''}
-              onChange={(e) => set('rentalPrice', parseFloat(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Piegādes maksa (€)</Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              className="h-9 text-sm"
-              value={form.deliveryFee ?? ''}
-              onChange={(e) => set('deliveryFee', parseFloat(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Savākšanas maksa (€)</Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              className="h-9 text-sm"
-              value={form.pickupFee ?? ''}
-              onChange={(e) => set('pickupFee', parseFloat(e.target.value))}
-            />
-          </div>
-          <div className="col-span-2">
-            <Label className="text-xs text-muted-foreground mb-1 block">Atrašanās vieta</Label>
-            <Input
-              placeholder="Rīga"
-              className="h-9 text-sm"
-              value={form.location ?? ''}
-              onChange={(e) => set('location', e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Atcelt
-          </Button>
-          <Button
-            size="sm"
-            disabled={saving || !form.containerType || !form.volume || form.rentalPrice == null}
-            onClick={handleSubmit}
-            className="gap-1.5"
-          >
-            {saving ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Check className="h-3.5 w-3.5" />
-            )}
-            {editing ? 'Saglabāt' : 'Pievienot'}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Containers tab ────────────────────────────────────────────────────────────
-
-function ContainersTab({ token }: { token: string }) {
-  const [containers, setContainers] = useState<ApiContainer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingContainer, setEditingContainer] = useState<ApiContainer | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setContainers(await getMyFleetContainers(token));
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const handleDelete = async (id: string) => {
-    setPendingDeleteId(null);
-    setDeletingId(id);
-    try {
-      await deleteContainer(token, id);
-      await load();
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const containerTypeLabel = (t: ContainerType) =>
-    CONTAINER_TYPES.find((x) => x.value === t)?.label ?? t;
-  const containerSizeLabel = (s: ContainerSize) =>
-    CONTAINER_SIZES.find((x) => x.value === s)?.label ?? s;
-
-  const statusLabel: Record<string, string> = {
-    AVAILABLE: 'Pieejams',
-    RENTED: 'Iznomāts',
-    MAINTENANCE: 'Remonts',
-    RETIRED: 'Izslēgts',
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <p className="text-sm font-medium text-gray-500">{containers.length} konteineri flotē</p>
-        <Button
-          className="h-11 px-5 rounded-full text-sm font-semibold bg-black text-white hover:bg-gray-800 gap-2"
-          onClick={() => setShowAdd(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Pievienot konteineru
-        </Button>
-      </div>
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : containers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 py-24 text-center">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
-            <Package className="h-6 w-6 text-gray-500" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-            Konteineru parks ir tukšs
-          </h3>
-          <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-gray-500">
-            Pievienojiet pirmo konteineru, lai varētu piedāvāt konteineru servisu.
-          </p>
-          <Button
-            className="mt-8 rounded-full bg-black text-white hover:bg-gray-800 px-6 h-12 text-[15px] font-semibold gap-2"
-            onClick={() => setShowAdd(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Pievienot pirmo konteineru
-          </Button>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden flex flex-col">
-          {containers.map((c) => (
-            <div
-              key={c.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/80 transition-all bg-white group"
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 shrink-0">
-                  <Package className="h-5 w-5 text-gray-700" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-semibold text-gray-900 tracking-tight truncate">
-                      {containerTypeLabel(c.containerType)}
-                    </span>
-                    <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-gray-600 uppercase tracking-wider shrink-0">
-                      {containerSizeLabel(c.size)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-gray-500 mt-0.5">
-                    <span className="font-medium text-gray-700">{c.volume} m³</span>
-                    <span className="text-gray-300">&bull;</span>
-                    <span>€{c.rentalPrice.toFixed(2)}/d</span>
-                    <span className="text-gray-300">&bull;</span>
-                    <span className="truncate">{c.location || 'Nav norādīts'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end sm:justify-between gap-4 mt-3 sm:mt-0 pl-16 sm:pl-4 shrink-0">
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
-                    c.status === 'AVAILABLE'
-                      ? 'bg-green-50 text-green-700'
-                      : c.status === 'RENTED'
-                        ? 'bg-blue-50 text-blue-700'
-                        : c.status === 'MAINTENANCE'
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {statusLabel[c.status] ?? c.status}
-                </span>
-
-                <div className="flex items-center justify-end gap-1 w-[80px]">
-                  {pendingDeleteId === c.id ? (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 px-3 rounded-full text-xs font-semibold"
-                        onClick={() => handleDelete(c.id)}
-                        disabled={deletingId === c.id}
-                      >
-                        Dzēst
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 text-gray-500"
-                        onClick={() => setPendingDeleteId(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setEditingContainer(c)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        disabled={deletingId === c.id}
-                        onClick={() => setPendingDeleteId(c.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                      >
-                        {deletingId === c.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {(showAdd || editingContainer) && (
-        <AddContainerModal
-          token={token}
-          editing={editingContainer}
-          onClose={() => {
-            setShowAdd(false);
-            setEditingContainer(null);
-          }}
-          onSaved={() => {
-            setShowAdd(false);
-            setEditingContainer(null);
-            load();
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FleetManagementPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('vehicles');
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
-    else if (!isLoading && user && !user.canTransport && !user.canSkipHire)
-      router.push('/dashboard');
-    else if (!isLoading && user && !user.canTransport && user.canSkipHire)
-      queueMicrotask(() => setTab('containers'));
+    else if (!isLoading && user && !user.canTransport) router.push('/dashboard');
   }, [user, isLoading, router]);
 
   const isReadOnly = Boolean(
@@ -1080,41 +664,10 @@ export default function FleetManagementPage() {
     );
   }
 
-  const showVehicles = Boolean(user?.canTransport);
-  const showContainers = Boolean(user?.canSkipHire);
-
-  const tabs: { key: Tab; label: string }[] = [
-    ...(showVehicles ? [{ key: 'vehicles' as Tab, label: 'Transportlīdzekļi' }] : []),
-    ...(showContainers ? [{ key: 'containers' as Tab, label: 'Konteineri' }] : []),
-  ];
-
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Flotes Pārvaldība"
-        description="Pārvaldiet savus transportlīdzekļus un konteinerus"
-      />
-
-      {tabs.length > 1 && (
-        <div className="flex gap-1 border-b">
-          {tabs.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors -mb-px ${
-                tab === key
-                  ? 'border-b-2 border-primary text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {tab === 'vehicles' && showVehicles && <VehiclesTab token={token} isReadOnly={isReadOnly} />}
-      {tab === 'containers' && showContainers && <ContainersTab token={token} />}
+      <PageHeader title="Autoparks" description="Pārvaldiet savus transportlīdzekļus" />
+      <VehiclesTab token={token} isReadOnly={isReadOnly} />
     </div>
   );
 }
