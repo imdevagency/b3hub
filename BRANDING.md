@@ -16,11 +16,11 @@ The master brand is always **B3**. Sub-brands append a descriptor (see Brand Arc
 
 ## Brand Architecture
 
-B3 operates three distinct verticals under one master brand. Each has its own name, audience, and go-to-market — but they share the B3 visual identity, color system, and the B3Hub transaction platform as the connective tissue.
+B3 operates three distinct verticals under one master brand. Each has its own name, audience, and go-to-market — but they share the B3 visual identity, color system, and the Bilt transaction platform as the connective tissue.
 
 ```
 B3  (master brand — the company)
-├── B3Hub          — digital marketplace platform
+├── Bilt          — digital marketplace platform
 ├── B3 Laukumi     — physical fulfillment network
 └── B3 Būvniecība  — construction services
 ```
@@ -31,7 +31,7 @@ The three verticals reach different people through different channels:
 
 | Sub-brand         | Primary audience                                         | How they discover it                    |
 | ----------------- | -------------------------------------------------------- | --------------------------------------- |
-| **B3Hub**         | Construction companies, contractors, suppliers, carriers | App stores, digital ads, referrals      |
+| **Bilt**         | Construction companies, contractors, suppliers, carriers | App stores, digital ads, referrals      |
 | **B3 Laukumi**    | Homeowners, micro-contractors, small builders            | Yard signage, Google Maps, driving past |
 | **B3 Būvniecība** | Project owners, developers, municipalities               | Google search, tenders, site referrals  |
 
@@ -39,15 +39,15 @@ A homeowner driving past a gravel yard reads "B3 Laukumi" — immediately clear 
 
 ### Why not fully separate brands
 
-B3 Laukumi IS B3Hub in the physical world. Every transaction at a B3 Laukumi location flows through the B3Hub platform — same payment, same documents, same data model. If they looked like unrelated companies, that connection (and the moat it creates) would be invisible. The shared B3 mark is what ties them together in the customer's mind and in the product.
+B3 Laukumi IS Bilt in the physical world. Every transaction at a B3 Laukumi location flows through the Bilt platform — same payment, same documents, same data model. If they looked like unrelated companies, that connection (and the moat it creates) would be invisible. The shared B3 mark is what ties them together in the customer's mind and in the product.
 
-### The rule: B3Hub is always the connective tissue
+### The rule: Bilt is always the connective tissue
 
-Even when a user only knows "B3 Laukumi", they interact with B3Hub under the hood. Physical locations must carry: _"darbojas uz B3Hub platformas"_ (powered by B3Hub platform). This is not optional — it's how the physical network feeds the digital platform's data and transaction volume.
+Even when a user only knows "B3 Laukumi", they interact with Bilt under the hood. Physical locations must carry: _"darbojas uz Bilt platformas"_ (powered by Bilt platform). This is not optional — it's how the physical network feeds the digital platform's data and transaction volume.
 
 ### B3 Būvniecība is the most independent
 
-Construction services (earthworks, demolition, drainage, landscaping) have a different sales cycle, different staff, and different risk profile from a transaction marketplace. They earn the most separation. B3 Būvniecība can win tenders entirely on its own merit without the buyer needing to know or care about the platform side. But the B3 mark on the door still earns trust from contractors who know B3Hub.
+Construction services (earthworks, demolition, drainage, landscaping) have a different sales cycle, different staff, and different risk profile from a transaction marketplace. They earn the most separation. B3 Būvniecība can win tenders entirely on its own merit without the buyer needing to know or care about the platform side. But the B3 mark on the door still earns trust from contractors who know Bilt.
 
 ---
 
@@ -55,7 +55,7 @@ Construction services (earthworks, demolition, drainage, landscaping) have a dif
 
 | Sub-brand             | How to write it   | Never write                                             |
 | --------------------- | ----------------- | ------------------------------------------------------- |
-| Digital platform      | **B3Hub**         | B3 Hub, b3hub, B3HUB, "the hub"                         |
+| Digital platform      | **Bilt**         | B3 Hub, b3hub, B3HUB, "the hub"                         |
 | Physical network      | **B3 Laukumi**    | B3Laukumi, B3 Fields (in LV), "the fields"              |
 | Construction services | **B3 Būvniecība** | B3Būvnieciba, B3 Buvnieciba (must use ū)                |
 | Company / master      | **B3**            | B3 Group, B3 Co, B3 Ltd (legal entity name is separate) |
@@ -64,7 +64,7 @@ Construction services (earthworks, demolition, drainage, landscaping) have a dif
 
 ## Brand Positioning
 
-> **B3Hub is the infrastructure layer for construction logistics in the Baltics.**
+> **Bilt is the infrastructure layer for construction logistics in the Baltics.**
 
 Not a marketplace. Not a procurement tool. Not a trucking app.
 The infrastructure layer — the thing underneath everything else that moves materials from quarry to site.
@@ -75,7 +75,7 @@ The infrastructure layer — the thing underneath everything else that moves mat
 
 ### Why this positioning wins
 
-Most Latvian construction companies juggle 3–5 suppliers, 2–3 transport contacts, and paper-based waste certificates. B3Hub collapses that into a single trackable flow. The moat is not the software — it's the **physical B3 Field network** backed by the software. Competitors can copy the app; they can't copy the locations.
+Most Latvian construction companies juggle 3–5 suppliers, 2–3 transport contacts, and paper-based waste certificates. Bilt collapses that into a single trackable flow. The moat is not the software — it's the **physical B3 Field network** backed by the software. Competitors can copy the app; they can't copy the locations.
 
 ---
 
@@ -113,7 +113,7 @@ Most Latvian construction companies juggle 3–5 suppliers, 2–3 transport cont
 
 ## Brand Personality
 
-| Dimension     | B3Hub is                                         | B3Hub is NOT                                  |
+| Dimension     | Bilt is                                         | Bilt is NOT                                  |
 | ------------- | ------------------------------------------------ | --------------------------------------------- |
 | **Tone**      | Direct, factual, efficient                       | Salesy, hype-driven, corporate                |
 | **Character** | The reliable contractor, not the startup founder | Cool, disruptive, visionary                   |
@@ -135,7 +135,7 @@ The brand should feel like the best subcontractor you've ever worked with: shows
    - ❌ "Efficiently manage your material orders."
    - ✅ "Track 500 tonnes across 12 sites. One screen."
 
-3. **Latvian first for the Latvian market.** B3Hub communications in Latvia are in Latvian by default. English is for investor/partner communication.
+3. **Latvian first for the Latvian market.** Bilt communications in Latvia are in Latvian by default. English is for investor/partner communication.
 
 4. **Short sentences win.** Baltic B2B buyers don't read paragraphs.
 
@@ -201,15 +201,15 @@ The B3 Field physical locations are the brand's strongest asset. Every B3 Field 
 ### Physical branding principles
 
 - **Amber and near-black** signage — visible from a distance on a construction site
-- "B3 Field" is the location type name, always in this format, never "B3Hub Field" or "B3 Center"
-- The entrance gate or sign should display the B3 logo, opening hours, and a QR code linking to the active location on B3Hub
-- Weighbridge / scale receipts printed with B3Hub header and transaction ID — every tonne documented
+- "B3 Field" is the location type name, always in this format, never "Bilt Field" or "B3 Center"
+- The entrance gate or sign should display the B3 logo, opening hours, and a QR code linking to the active location on Bilt
+- Weighbridge / scale receipts printed with Bilt header and transaction ID — every tonne documented
 
 ---
 
 ## Taglines (draft — one per sub-brand)
 
-**B3Hub (digital platform):**
+**Bilt (digital platform):**
 
 > "Order. Move. Document." — three verbs, the complete transaction flow
 
@@ -235,14 +235,14 @@ These are brand anti-patterns. If a design or copy direction starts trending tow
 
 | Anti-pattern                   | Why it's wrong                                                                                          |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| A trucking app                 | B3Hub is a marketplace — carriers are one side of three                                                 |
+| A trucking app                 | Bilt is a marketplace — carriers are one side of three                                                 |
 | A SaaS startup                 | Product-market fit is physical + digital together, not pure software                                    |
 | A sustainability platform      | ESG is a feature (CO₂ reporting, waste certificates) — not the lead                                     |
 | A "marketplace for everything" | Narrow and deep in construction logistics, not broad                                                    |
 | A Latvian government portal    | Must feel modern, fast, and private-sector sharp                                                        |
 | Schüttflix clone               | Schüttflix is Germany-scale. B3 Laukumi is the physical network competitors can't copy. Lead with that. |
 | "The B3 Group"                 | Don't add "Group" — it signals holding company complexity you don't have yet                            |
-| Three unrelated companies      | B3Hub, B3 Laukumi, and B3 Būvniecība must visually read as family, not strangers                        |
+| Three unrelated companies      | Bilt, B3 Laukumi, and B3 Būvniecība must visually read as family, not strangers                        |
 
 ---
 

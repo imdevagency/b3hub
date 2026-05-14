@@ -1,6 +1,6 @@
-# B3Hub — Real-World Construction Workflows
+# Bilt — Real-World Construction Workflows
 
-> How construction logistics actually works today, what breaks, and exactly what B3Hub does to fix it.
+> How construction logistics actually works today, what breaks, and exactly what Bilt does to fix it.
 
 ---
 
@@ -8,7 +8,7 @@
 
 Construction sites run on materials and movement. Every tonne of gravel placed, every load of waste removed, every delivery executed requires a chain of coordination between at minimum three parties: the **buyer** (contractor, foreman, or homeowner), the **supplier** (quarry, batch plant, merchant), and the **carrier** (trucking company or independent driver).
 
-Today that chain is held together by phone calls, WhatsApp messages, handwritten delivery notes, paper weighing slips, and emailed PDF invoices. B3Hub replaces that entire chain with one platform — without changing the physical work.
+Today that chain is held together by phone calls, WhatsApp messages, handwritten delivery notes, paper weighing slips, and emailed PDF invoices. Bilt replaces that entire chain with one platform — without changing the physical work.
 
 ---
 
@@ -18,7 +18,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 **Day before:**
 
@@ -42,7 +42,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
 **Buyer places order (mobile app or web — 3 minutes):**
 
@@ -68,8 +68,8 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
     - Buyer gets all documents in the Documents section immediately.
 12. Payment was already captured at step 3 via Paysera. Platform initiates supplier and carrier payouts (manual/batch payout, or Stripe Connect for solo individual drivers). No invoice chasing.
 
-**What B3Hub eliminated:**
-| Manual step | B3Hub equivalent |
+**What Bilt eliminated:**
+| Manual step | Bilt equivalent |
 |---|---|
 | Price negotiation call | Fixed catalog price or RFQ |
 | Truck booking phone call | Automatic nearest-driver dispatch |
@@ -88,7 +88,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 1. Contractor calls several waste carriers to get quotes. Takes 1–2 days to collect.
 2. Agrees a price verbally. Books a truck.
@@ -103,7 +103,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
 1. Contractor opens the **Disposal wizard** on mobile. Selects waste type (rubble, mixed construction waste, recyclable materials), estimated weight, pickup address, and preferred date.
 2. System shows licensed recycling centres or carriers offering disposal in that area.
@@ -123,7 +123,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 1. Homeowner searches Google for "skip hire Rīga". Gets 5 different websites.
 2. Calls two of them. One doesn't pick up. One gives a price but can't tell them if a skip is available for Thursday.
@@ -135,9 +135,9 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
-1. Homeowner goes to the B3Hub landing page (or mobile app — guest checkout, no account needed).
+1. Homeowner goes to the Bilt landing page (or mobile app — guest checkout, no account needed).
 2. Skip hire wizard: choose skip size (2m³ / 4m³ / 6m³ / 8m³), waste type, address, delivery date, collection date.
 3. Precise placement location selected on the map by tapping. Optional site photo attached.
 4. Pays by card. Confirmation email sent immediately with booking reference.
@@ -145,7 +145,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 6. When skip is collected, waste transfer note auto-generated. Proves legal disposal.
 7. No phone call. No missing paperwork. Homeowner has a legal document proving their renovation waste was disposed of correctly.
 
-**Why this matters legally:** in Latvia, the waste producer (homeowner) is legally responsible for ensuring construction waste is disposed of at a licensed facility. A waste transfer note is the proof. Most homeowners don't know they need one. B3Hub generates it automatically.
+**Why this matters legally:** in Latvia, the waste producer (homeowner) is legally responsible for ensuring construction waste is disposed of at a licensed facility. A waste transfer note is the proof. Most homeowners don't know they need one. Bilt generates it automatically.
 
 ---
 
@@ -155,7 +155,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 1. Procurement manager negotiates a supply contract with a quarry. 6 hours of back-and-forth. Contract typed in Word.
 2. Site foremen call or WhatsApp the procurement manager when they need a delivery.
@@ -167,7 +167,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
 **One-time contract setup:**
 
@@ -193,7 +193,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 1. Transport manager calls or texts the driver the night before with the job list.
 2. Driver writes them down or saves the WhatsApp messages.
@@ -204,7 +204,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
 **Morning (before starting):**
 
@@ -225,13 +225,13 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 This dispute has no clean resolution without evidence. Both sides argue from memory or incomplete paper records. It usually ends with the buyer paying under protest or the relationship breaking down.
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
 1. At LOADED, driver entered actual weight: 26.4 tonnes (from the quarry's digital scale).
 2. Ordered quantity was 30 tonnes → 12% discrepancy.
@@ -250,7 +250,7 @@ This dispute has no clean resolution without evidence. Both sides argue from mem
 
 ---
 
-### How it works today (without B3Hub)
+### How it works today (without Bilt)
 
 1. Buyer refuses to pay. Calls supplier to complain.
 2. Supplier says material was correct grade. Calls carrier to ask if something went wrong.
@@ -258,10 +258,10 @@ This dispute has no clean resolution without evidence. Both sides argue from mem
 
 ---
 
-### How it works on B3Hub
+### How it works on Bilt
 
 1. Buyer opens the order in the app. Taps **File Dispute**. Selects reason (wrong material), adds description and photos.
-2. System immediately notifies all B3Hub admins.
+2. System immediately notifies all Bilt admins.
 3. Admin reviews: checks delivery proof photos, weighing slip, CMR, any quality certificates attached to the material listing, chat history between buyer and seller.
 4. Admin resolves:
    - **In buyer's favour**: order cancelled, Paysera payment refunded. Buyer notified. Driver notified (dispute resolved, delivery was contested).
@@ -274,7 +274,7 @@ This dispute has no clean resolution without evidence. Both sides argue from mem
 
 ## Document Map
 
-Every delivery on B3Hub produces a set of documents automatically. Here is what generates when, and what it proves.
+Every delivery on Bilt produces a set of documents automatically. Here is what generates when, and what it proves.
 
 | Document                         | When generated                           | What it proves                                             | Legal requirement?                                               |
 | -------------------------------- | ---------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -298,7 +298,7 @@ Every delivery on B3Hub produces a set of documents automatically. Here is what 
 | **Supplier (quarry operator)**  | Web portal + mobile      | Confirm incoming orders, manage catalog prices and stock, upload quality certs, see earnings |
 | **Carrier dispatcher**          | Web portal               | Assign jobs to drivers, monitor fleet on GPS map, handle SLA exceptions                      |
 | **Driver**                      | Mobile app only          | Accept jobs, advance status, enter weight, submit delivery proof                             |
-| **B3Hub admin**                 | Web portal               | Review applications, resolve disputes, monitor all platform activity                         |
+| **Bilt admin**                 | Web portal               | Review applications, resolve disputes, monitor all platform activity                         |
 
 ---
 
@@ -310,13 +310,13 @@ Most software solves one side of this problem:
 - Fleet management software tracks trucks but doesn't handle the order, documents, or payment.
 - Accounting software handles invoices but only after the delivery has happened.
 
-B3Hub connects all three sides under one transaction model. The value increases with every new supplier, carrier, and buyer because they all benefit from the same network. A new driver on the platform can immediately see orders from all buyers. A new supplier is immediately reachable by all buyers. That is the network effect that makes the marketplace defensible.
+Bilt connects all three sides under one transaction model. The value increases with every new supplier, carrier, and buyer because they all benefit from the same network. A new driver on the platform can immediately see orders from all buyers. A new supplier is immediately reachable by all buyers. That is the network effect that makes the marketplace defensible.
 
 ---
 
-## Summary: What B3Hub Automates
+## Summary: What Bilt Automates
 
-| Manual today                        | B3Hub                                               |
+| Manual today                        | Bilt                                               |
 | ----------------------------------- | --------------------------------------------------- |
 | Phone calls to find availability    | Catalog with real-time stock                        |
 | Price negotiation per delivery      | Framework contracts, fixed catalog prices           |

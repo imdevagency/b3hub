@@ -538,3 +538,39 @@ export async function amendOrder(
     body: JSON.stringify(input),
   });
 }
+
+// ── Transport Summary ─────────────────────────────────────────────────────────
+
+export interface TransportLoadRow {
+  id: string;
+  jobNumber: string | null;
+  truckIndex: number | null;
+  status: string;
+  estimatedWeightTonnes: number | null;
+  actualWeightTonnes: number | null;
+  pickupDate: string | null;
+  driver: string | null;
+  vehicle: string | null;
+}
+
+export interface TransportSummary {
+  orderId: string;
+  totalLoads: number;
+  deliveredLoads: number;
+  inProgressLoads: number;
+  pendingLoads: number;
+  orderedWeightTonnes: number;
+  actualWeightTonnes: number;
+  completionPct: number;
+  loads: TransportLoadRow[];
+}
+
+export async function getOrderTransportSummary(
+  orderId: string,
+  token: string,
+): Promise<TransportSummary> {
+  return apiFetch<TransportSummary>(
+    `/orders/${encodeURIComponent(orderId)}/transport-summary`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}

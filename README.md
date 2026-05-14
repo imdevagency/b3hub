@@ -1,4 +1,4 @@
-# B3Hub Monorepo
+# Bilt Monorepo
 
 A full-stack monorepo containing backend, web, and mobile applications.
 

@@ -156,7 +156,7 @@ Used for: `order/[id]/details.tsx`, `skip-order/[id]/details.tsx`, `transport-jo
 
 ### Standard 4-step template
 
-Every B3Hub wizard follows the same 4-step structure, matching best-in-class UX (Bolt, Wolt, Zolt):
+Every Bilt wizard follows the same 4-step structure, matching best-in-class UX (Bolt, Wolt, Zolt):
 
 ```
 Step 1 — WHAT    : service / product / waste type selection (pick from list, no free text)

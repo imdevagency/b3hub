@@ -607,6 +607,104 @@ export class AdminController {
     return this.service.adminDeleteSkipSize(code);
   }
 
+  // ── Catalogue CRUD — material categories ─────────────────────────────────
+
+  @Get('catalogue/material-categories')
+  listMaterialCategories() { return this.service.adminListMaterialCategories(); }
+
+  @Put('catalogue/material-categories/:code')
+  upsertMaterialCategory(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertMaterialCategory(code, dto);
+  }
+
+  @Delete('catalogue/material-categories/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteMaterialCategory(@Param('code') code: string) { return this.service.adminDeleteMaterialCategory(code); }
+
+  // ── Catalogue CRUD — material fractions ──────────────────────────────────
+
+  @Get('catalogue/material-fractions')
+  listMaterialFractions() { return this.service.adminListMaterialFractions(); }
+
+  @Put('catalogue/material-fractions/:code')
+  upsertMaterialFraction(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertMaterialFraction(code, dto);
+  }
+
+  @Delete('catalogue/material-fractions/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteMaterialFraction(@Param('code') code: string) { return this.service.adminDeleteMaterialFraction(code); }
+
+  // ── Catalogue CRUD — waste types ──────────────────────────────────────────
+
+  @Get('catalogue/waste-types')
+  listWasteTypes() { return this.service.adminListWasteTypes(); }
+
+  @Put('catalogue/waste-types/:code')
+  upsertWasteType(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertWasteType(code, dto);
+  }
+
+  @Delete('catalogue/waste-types/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteWasteType(@Param('code') code: string) { return this.service.adminDeleteWasteType(code); }
+
+  // ── Catalogue CRUD — vehicle categories ───────────────────────────────────
+
+  @Get('catalogue/vehicle-categories')
+  listVehicleCategories() { return this.service.adminListVehicleCategories(); }
+
+  @Put('catalogue/vehicle-categories/:code')
+  upsertVehicleCategory(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertVehicleCategory(code, dto);
+  }
+
+  @Delete('catalogue/vehicle-categories/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteVehicleCategory(@Param('code') code: string) { return this.service.adminDeleteVehicleCategory(code); }
+
+  // ── Catalogue CRUD — toilet cabin types ──────────────────────────────────
+
+  @Get('catalogue/toilet-cabin-types')
+  listToiletCabinTypes() { return this.service.adminListToiletCabinTypes(); }
+
+  @Put('catalogue/toilet-cabin-types/:code')
+  upsertToiletCabinType(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertToiletCabinType(code, dto);
+  }
+
+  @Delete('catalogue/toilet-cabin-types/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteToiletCabinType(@Param('code') code: string) { return this.service.adminDeleteToiletCabinType(code); }
+
+  // ── Catalogue CRUD — rental service types ────────────────────────────────
+
+  @Get('catalogue/rental-service-types')
+  listRentalServiceTypes() { return this.service.adminListRentalServiceTypes(); }
+
+  @Put('catalogue/rental-service-types/:code')
+  upsertRentalServiceType(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertRentalServiceType(code, dto);
+  }
+
+  @Delete('catalogue/rental-service-types/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteRentalServiceType(@Param('code') code: string) { return this.service.adminDeleteRentalServiceType(code); }
+
+  // ── Catalogue CRUD — scrap materials ─────────────────────────────────────
+
+  @Get('catalogue/scrap-materials')
+  listScrapMaterials() { return this.service.adminListScrapMaterials(); }
+
+  @Put('catalogue/scrap-materials/:code')
+  upsertScrapMaterial(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
+    return this.service.adminUpsertScrapMaterial(code, dto);
+  }
+
+  @Delete('catalogue/scrap-materials/:code')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteScrapMaterial(@Param('code') code: string) { return this.service.adminDeleteScrapMaterial(code); }
+
   // ── Marketplace engine overview ───────────────────────────────────────────
 
   /**

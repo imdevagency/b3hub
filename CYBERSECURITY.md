@@ -1,4 +1,4 @@
-# B3Hub — Cybersecurity Audit Report
+# Bilt — Cybersecurity Audit Report
 
 **Date:** 2026-03-31  
 **Scope:** `apps/backend` (NestJS), `apps/mobile` (Expo/React Native), `apps/web` (Next.js)  

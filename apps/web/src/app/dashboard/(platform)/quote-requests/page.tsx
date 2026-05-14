@@ -22,11 +22,11 @@ import { PageSpinner } from '@/components/ui/page-spinner';
 import { useAuth } from '@/lib/auth-context';
 import { getMyQuoteRequests, type QuoteRequest } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+import { UNIT_SHORT } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const CATEGORY_LV = CATEGORY_LABELS;
 const UNIT_LV = UNIT_SHORT;
 
 const STATUS_CFG: Record<
@@ -78,6 +78,7 @@ interface RequestCardProps {
 function RequestCard({ request }: RequestCardProps) {
   const router = useRouter();
   const cfg = STATUS_CFG[request.status] ?? STATUS_CFG.PENDING;
+  const { categoryLabels: CATEGORY_LV } = useMaterialCatalogue();
 
   return (
     <button

@@ -81,6 +81,7 @@ import {
   DEFAULT_MATERIAL_NAMES,
   UNIT_SHORT as SHARED_UNIT_SHORT,
 } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -255,6 +256,7 @@ const WIZARD_STEP_BACK: Partial<Record<WizardStepKey, WizardStepKey>> = {
 function CategoryCard({ category, onClick }: { category: MaterialCategory; onClick: () => void }) {
   const meta = CATEGORY_META[category];
   const isRecycled = category.startsWith('RECYCLED');
+  const { categoryLabels, categoryDescriptions } = useMaterialCatalogue();
 
   return (
     <button
@@ -274,10 +276,10 @@ function CategoryCard({ category, onClick }: { category: MaterialCategory; onCli
 
       <div className="mt-auto flex flex-col gap-1.5">
         <p className="font-semibold text-[16px] text-foreground tracking-tight transition-colors group-hover:text-black">
-          {meta.label}
+          {categoryLabels[category] ?? meta.label}
         </p>
         <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
-          {meta.description}
+          {categoryDescriptions[category] ?? meta.description}
         </p>
       </div>
     </button>
@@ -322,6 +324,7 @@ function WizardInline({
 }) {
   const meta = CATEGORY_META[initialCategory];
   const { user: authUser } = useAuth();
+  const { categoryLabels } = useMaterialCatalogue();
 
   const [step, setStep] = useState<WizardStep>('specs');
   const [form, setForm] = useState<WizardState>({
@@ -573,7 +576,7 @@ function WizardInline({
           ? 'Pieprasījums nosūtīts'
           : step === 'order-confirmed'
             ? 'Pasūtījums pieņemts'
-            : selectedMeta.label
+            : (categoryLabels[form.category] ?? selectedMeta.label)
       }
       onBack={getOnBack()}
       innerScroll
@@ -609,7 +612,7 @@ function WizardInline({
                     const cMeta = CATEGORY_META[c];
                     return (
                       <SelectItem key={c} value={c} className="rounded-lg py-3 cursor-pointer">
-                        <span className="font-medium">{cMeta.label}</span>
+                        <span className="font-medium">{categoryLabels[c] ?? cMeta.label}</span>
                       </SelectItem>
                     );
                   })}
@@ -1416,6 +1419,7 @@ const ALL_CATEGORIES = Object.keys(CATEGORY_META) as MaterialCategory[];
 export default function CatalogPage() {
   const { token, isLoading } = useAuth();
   const router = useRouter();
+  const { categoryLabels, categoryDescriptions } = useMaterialCatalogue();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<MaterialCategory | null>(null);
@@ -1458,8 +1462,8 @@ export default function CatalogPage() {
     const q = search.toLowerCase();
     const m = CATEGORY_META[c];
     return (
-      m.label.toLowerCase().includes(q) ||
-      m.description.toLowerCase().includes(q) ||
+      (categoryLabels[c] ?? m.label).toLowerCase().includes(q) ||
+      (categoryDescriptions[c] ?? m.description).toLowerCase().includes(q) ||
       m.defaultName.toLowerCase().includes(q)
     );
   });

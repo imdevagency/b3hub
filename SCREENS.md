@@ -1,4 +1,4 @@
-# B3Hub — Screen Inventory
+# Bilt — Screen Inventory
 
 ## Mobile (Expo / React Native)
 

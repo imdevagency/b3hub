@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { CATEGORY_LABELS } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import {
   getAnalyticsOverview,
   exportAnalyticsPdf,
@@ -205,6 +206,7 @@ function TopMaterialsList({ materials }: { materials: TopMaterial[] }) {
 
 function MaterialBreakdownChart({ breakdown }: { breakdown: MaterialSpend[] }) {
   const maxSpend = Math.max(...breakdown.map((b) => b.totalSpent), 1);
+  const { categoryLabels } = useMaterialCatalogue();
   return (
     <div className="py-6 border-b border-border/40">
       <h3 className="text-lg font-medium mb-6">Izdevumi pēc Materiāla</h3>
@@ -214,7 +216,10 @@ function MaterialBreakdownChart({ breakdown }: { breakdown: MaterialSpend[] }) {
         <div className="space-y-4">
           {breakdown.slice(0, 6).map((b) => {
             const widthPct = Math.round((b.totalSpent / maxSpend) * 100);
-            const label = CATEGORY_LABELS[b.category as keyof typeof CATEGORY_LABELS] ?? b.category;
+            const label =
+              categoryLabels[b.category] ??
+              CATEGORY_LABELS[b.category as keyof typeof CATEGORY_LABELS] ??
+              b.category;
             return (
               <div key={b.category} className="flex flex-col gap-1.5">
                 <div className="flex justify-between text-sm">

@@ -315,3 +315,6 @@ export const EQUIPMENT_SERVICES: ServiceDef[] = [
     color: 'bg-gray-50 text-gray-600 border-gray-200',
   },
 ];
+
+// ── Live catalogue hook ───────────────────────────────────────────────────────
+

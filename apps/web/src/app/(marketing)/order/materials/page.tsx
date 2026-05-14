@@ -28,6 +28,7 @@ import {
 import { CatalogGrid } from '@/components/catalog/CatalogGrid';
 import type { MaterialCategory } from '@/lib/api';
 import { CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 // ── Category metadata ──────────────────────────────────────────────────────────
 
@@ -127,14 +128,15 @@ const CATALOG: {
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function MaterialCatalogPage() {
+  const { categoryLabels, categoryDescriptions } = useMaterialCatalogue();
   const items = CATALOG.map((cat) => ({
     id: cat.id,
     href: `/order/materials/${cat.slug}`,
-    label: cat.label,
-    description: cat.description,
+    label: categoryLabels[cat.id] ?? cat.label,
+    description: categoryDescriptions[cat.id] ?? cat.description,
     priceHint: cat.priceHint,
     icon: cat.icon,
-    searchString: `${cat.label} ${cat.description} ${cat.priceHint}`,
+    searchString: `${categoryLabels[cat.id] ?? cat.label} ${categoryDescriptions[cat.id] ?? cat.description} ${cat.priceHint}`,
     badge: cat.recycled ? (
       <div className="absolute top-5 right-5 flex items-center gap-1.5 rounded-full bg-green-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-green-700">
         <Leaf className="size-3" strokeWidth={2.5} />

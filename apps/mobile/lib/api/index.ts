@@ -62,6 +62,8 @@ export * from './rentals';
 
 export * from './fuel';
 
+export * from './catalogue';
+
 // Re-export the helper and error class for consumers that need them directly
 
 export { apiFetch, ApiError } from './common';

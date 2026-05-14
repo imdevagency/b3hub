@@ -84,11 +84,11 @@ const SERVICES: ServiceDef[] = [
   },
   {
     id: 'transport',
-    href: '/dashboard/order/transport',
+    href: '/order/transport',
     icon: Truck,
     title: 'Transports',
-    description: 'Kravaš pārvadāšana uzņēmumiem visā Latvijā. Nepie-ciešams konts.',
-    badge: 'Tikai reģištrētiem lietotājiem',
+    description: 'Kravu pārvadāšana uzņēmumiem visā Latvijā. Nepieciešams uzņēmuma konts.',
+    badge: 'Tikai uzņēmumiem',
     badgeVariant: 'restricted',
   },
 ];

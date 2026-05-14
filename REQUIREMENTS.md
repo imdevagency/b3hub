@@ -1,4 +1,4 @@
-# B3Hub — Platform Requirements
+# Bilt — Platform Requirements
 
 > **What a fully automated construction logistics marketplace must do.**
 > This document defines functional requirements from first principles — not what is built, but what must work for the platform to be a real, self-sustaining marketplace.
@@ -131,7 +131,7 @@ Carriers have two sub-roles:
 
 ---
 
-### 1.4 Admin (B3Hub Platform Staff)
+### 1.4 Admin (Bilt Platform Staff)
 
 **Must be able to:**
 

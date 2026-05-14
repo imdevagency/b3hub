@@ -1,4 +1,4 @@
-# B3Hub — Platform Architecture
+# Bilt — Platform Architecture
 
 > **Last updated: April 2026.**
 > For the authoritative DB schema, see `apps/backend/prisma/schema.prisma` and `.github/instructions/backend-schema.instructions.md`.
@@ -8,7 +8,7 @@
 
 ## Overview
 
-B3Hub is a **construction logistics marketplace** for the Latvian and Baltic market, connecting:
+Bilt is a **construction logistics marketplace** for the Latvian and Baltic market, connecting:
 
 - **Buyers** — construction companies, contractors, homeowners ordering materials, skip hire, or transport
 - **Sellers/Suppliers** — quarries and material suppliers listing gravel, sand, concrete, soil
@@ -354,7 +354,7 @@ AVAILABLE -> ASSIGNED -> ACCEPTED -> EN_ROUTE_PICKUP -> AT_PICKUP
 
 ## B3 Fields
 
-B3 Fields are physical sites where customers can collect materials, dispose of waste, or rent trailers. Every B3 Field transaction flows through the B3Hub platform — payment, documents, and receipts are handled identically to online orders.
+B3 Fields are physical sites where customers can collect materials, dispose of waste, or rent trailers. Every B3 Field transaction flows through the Bilt platform — payment, documents, and receipts are handled identically to online orders.
 
 **Platform model:**
 - Material pickup: order with `fulfillmentType: PICKUP` at a B3 Field address

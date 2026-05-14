@@ -14,7 +14,9 @@ export type TruckType =
   | 'TIPPER_LARGE'
   | 'ARTICULATED_TIPPER'
   | 'FLATBED'
-  | 'BOX_TRUCK';
+  | 'BOX_TRUCK'
+  | 'PICKUP_TRUCK'
+  | 'CAR';
 
 /** Natural viewBox dimensions per truck type */
 const NATURAL: Record<TruckType, { vw: number; vh: number }> = {
@@ -23,10 +25,12 @@ const NATURAL: Record<TruckType, { vw: number; vh: number }> = {
   ARTICULATED_TIPPER: { vw: 220, vh: 60 },
   FLATBED: { vw: 200, vh: 60 },
   BOX_TRUCK: { vw: 120, vh: 60 },
+  PICKUP_TRUCK: { vw: 110, vh: 60 },
+  CAR: { vw: 100, vh: 60 },
 };
 
 interface TruckIllustrationProps {
-  type: TruckType;
+  type: TruckType | string;
   /** Render height in dp (default 58). Width scales from aspect ratio. */
   height?: number;
   /** Override render width; height then adapts via aspect ratio */
@@ -41,7 +45,8 @@ export function TruckIllustration({
   width,
   onDark = false,
 }: TruckIllustrationProps) {
-  const { vw, vh } = NATURAL[type];
+  const safeType = (type as TruckType) in NATURAL ? (type as TruckType) : 'BOX_TRUCK';
+  const { vw, vh } = NATURAL[safeType];
   const renderH = height;
   const renderW = width ?? Math.round((vw / vh) * renderH);
 
@@ -64,18 +69,26 @@ export function TruckIllustration({
       };
 
   return (
-    <View 
-      style={{ 
-        width: 80, 
-        height: 48, 
-        backgroundColor: onDark ? '#374151' : '#f3f4f6', 
-        borderRadius: 8, 
-        alignItems: 'center', 
+    <View
+      style={{
+        width: 80,
+        height: 48,
+        backgroundColor: onDark ? '#374151' : '#f3f4f6',
+        borderRadius: 8,
+        alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Text style={{ fontSize: 10, color: onDark ? '#9ca3af' : '#9ca3af', fontWeight: '600', letterSpacing: 1 }}>AUTO</Text>
+      <Text
+        style={{
+          fontSize: 10,
+          color: onDark ? '#9ca3af' : '#9ca3af',
+          fontWeight: '600',
+          letterSpacing: 1,
+        }}
+      >
+        AUTO
+      </Text>
     </View>
   );
 }
-

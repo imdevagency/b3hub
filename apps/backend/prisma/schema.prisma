@@ -279,6 +279,7 @@ enum TransportJobType {
   WASTE_COLLECTION
   EQUIPMENT_TRANSPORT
   TRANSPORT // General point-to-point freight transport
+  HOTSHOT   // On-demand parts/tools delivery — small vehicles, fast dispatch
 }
 
 enum TransportJobStatus {
@@ -320,6 +321,8 @@ enum VehicleType {
   SKIP_LOADER
   TANKER
   VAN
+  CAR
+  PICKUP_TRUCK
 }
 
 enum VehicleStatus {
@@ -730,6 +733,7 @@ model Company {
   constructionRateEntries    MaterialRateEntry[]
   constructionEmployees      ConstructionEmployee[]
   constructionSubcontractors ConstructionSubcontractor[]
+  loadingSlots               SupplierLoadingSlot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1258,13 +1262,22 @@ model TransportJob {
 
   // Site coordination — set for WASTE_COLLECTION (disposal) jobs
   notes                String?  // driver instructions / access notes
-  siteContactName      String?  // on-site contact (foreman, site manager)
-  siteContactPhone     String?  // on-site contact phone
+  siteContactName      String?  // pickup/on-site contact (foreman, site manager)
+  siteContactPhone     String?  // pickup contact phone
+  receiverContactName  String?  // delivery recipient name (who signs at dropoff)
+  receiverContactPhone String?  // delivery recipient phone
   bisNumber            String?  // BIS case reference (construction waste tracking)
   // Loading coordination
   loadingBy            String?  // 'BUYER_CREW' | 'DRIVER_HANDS' | 'NEEDS_MACHINERY'
   contactWillBePresent Boolean? // site contact confirmed to be present during pickup
   wasteReadiness       String?  // 'PILED' | 'NEEDS_PREP' — state of waste at site
+
+  // Supplier loading slot booking
+  loadingSlot   SupplierLoadingSlot? @relation("JobLoadingSlot", fields: [loadingSlotId], references: [id], onDelete: SetNull)
+  loadingSlotId String?
+
+  // Dispatch mode: SCHEDULED (default, pre-planned) or ON_DEMAND (hotshot — book now, dispatch immediately)
+  dispatchMode  String @default("SCHEDULED")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3583,6 +3596,198 @@ model CrmLead {
   @@map("crm_leads")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM CATALOGUE — admin-managed taxonomies for all service types
+// Pattern: same as SkipSizeDefinition. Admin controls definitions in DB;
+// mobile/web reads via GET /api/v1/catalogue/<type>. No code changes needed
+// to add or rename a category.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Buyer-facing transport service categories (what the wizard shows).
+/// Maps to one or more VehicleType enum values via eligibleVehicleTypes (JSON array).
+/// Admin can add new categories, adjust pricing hints, toggle active — no migration needed.
+model VehicleServiceCategory {
+  id          String  @id @default(cuid())
+  /// Internal code used in orders and matching logic — matches VEHICLE_OPTIONS keys
+  code        String  @unique
+  label       String
+  labelLv     String?
+  description String?
+  descriptionLv String?
+  /// JSON array of VehicleType enum values eligible for this category (e.g. ["DUMP_TRUCK"])
+  eligibleVehicleTypes Json   @default("[]")
+  /// Minimum load capacity in tonnes (inclusive) — used for dispatch matching
+  minCapacityT         Float?
+  /// Maximum load capacity in tonnes (inclusive) — used for dispatch matching
+  maxCapacityT         Float?
+  /// Suggested base price shown in wizard
+  fromPrice            Float?
+  /// Suggested per-km rate shown in wizard
+  pricePerKm           Float?
+  /// Key passed to TruckIllustration component
+  iconKey              String?
+  isActive             Boolean @default(true)
+  sortOrder            Int     @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("vehicle_service_categories")
+}
+
+/// Admin-managed toilet cabin type definitions.
+/// Replaces the hardcoded ToiletCabinType enum for display/pricing purposes.
+/// The ToiletCabinType enum on orders stays as the DB-level discriminator.
+model ToiletCabinDefinition {
+  id            String  @id @default(cuid())
+  /// Must match ToiletCabinType enum value
+  code          String  @unique
+  label         String
+  labelLv       String?
+  description   String?
+  descriptionLv String?
+  basePrice     Float?
+  currency      String  @default("EUR")
+  isActive      Boolean @default(true)
+  sortOrder     Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("toilet_cabin_definitions")
+}
+
+/// Admin-managed rental service type definitions.
+/// Replaces hardcoded RENTAL_SERVICES registry in mobile for display/pricing.
+/// The RentalServiceType enum on orders stays as the DB-level discriminator.
+model RentalServiceDefinition {
+  id            String  @id @default(cuid())
+  /// Must match RentalServiceType enum value
+  code          String  @unique
+  label         String
+  labelLv       String?
+  description   String?
+  descriptionLv String?
+  /// Grouping for UI sections: "SITE_WELFARE" | "CONSTRUCTION_EQUIPMENT" | "UTILITIES"
+  group         String?
+  basePrice     Float?
+  /// Pricing unit: "day" | "week" | "month"
+  priceUnit     String?
+  currency      String  @default("EUR")
+  isActive      Boolean @default(true)
+  sortOrder     Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, group])
+  @@map("rental_service_definitions")
+}
+
+/// Admin-managed scrap material definitions for the buyback wizard.
+/// Allows adding new buyback streams (copper, aluminium, etc.) without code changes.
+model ScrapMaterialDefinition {
+  id              String  @id @default(cuid())
+  code            String  @unique  // e.g. "FERROUS_METAL", "ALUMINIUM", "COPPER"
+  label           String
+  labelLv         String?
+  description     String?
+  descriptionLv   String?
+  /// Indicative buyback price per tonne shown to buyers (admin sets from market rate)
+  indicativePricePerTonne Float?
+  currency        String  @default("EUR")
+  /// Whether buyers can self-transport or platform always arranges pickup
+  selfTransportAllowed Boolean @default(true)
+  isActive        Boolean @default(true)
+  sortOrder       Int     @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("scrap_material_definitions")
+}
+
+/// Admin-managed catalogue entry for each MaterialCategory enum value.
+/// Enriches the static enum with LV labels, descriptions, density, default unit, icon key,
+/// and sortOrder — all editable via admin UI without a code deploy.
+model MaterialCategoryDefinition {
+  id            String  @id @default(cuid())
+  /// Must match MaterialCategory enum value exactly
+  code          String  @unique
+  label         String
+  labelLv       String?
+  description   String?
+  descriptionLv String?
+  /// Bulk density in t/m³ — used for volume ↔ weight conversion in wizards
+  densityTM3    Float?
+  /// Default ordering unit: "TONNE" | "M3" | "PIECE" | "LOAD"
+  defaultUnit   String  @default("TONNE")
+  /// Key for the category icon component or emoji
+  iconKey       String?
+  isActive      Boolean @default(true)
+  sortOrder     Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fractions MaterialFractionDefinition[]
+
+  @@index([isActive])
+  @@map("material_category_definitions")
+}
+
+/// Admin-managed fraction / grade options per material category.
+/// These are shown in the order wizard as a picker (replacing the hardcoded CATEGORY_FRACTIONS).
+/// Follows EU aggregate standards (EN 12620, EN 13043, EN 13242) for Latvian construction.
+model MaterialFractionDefinition {
+  id            String  @id @default(cuid())
+  /// Stable code used in Material.fraction — e.g. "GRAVEL_4_8" or "CONCRETE_C25_30"
+  code          String  @unique
+  /// MaterialCategory enum value this fraction belongs to
+  category      String
+  /// Display label shown in wizard pickers — e.g. "4–8 mm" or "C25/30"
+  label         String
+  labelLv       String?
+  /// Optional extra context — e.g. "Smalks grants, drenāžai"
+  description   String?
+  descriptionLv String?
+  /// Unit this fraction is typically sold in: "TONNE" | "M3"
+  unit          String?
+  isActive      Boolean @default(true)
+  sortOrder     Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  categoryDef MaterialCategoryDefinition? @relation(fields: [category], references: [code])
+
+  @@index([category, isActive])
+  @@map("material_fraction_definitions")
+}
+
+// ── PLATFORM CATALOGUE: Waste types ───────────────────────────────────────────
+// Admin-managed labels, grouping, and flags for each WasteType enum value.
+// Enriches the WasteType enum without requiring a migration to rename/reorder.
+
+model WasteTypeDefinition {
+  id            String   @id @default(cuid())
+  code          String   @unique   // matches WasteType enum value exactly
+  label         String
+  labelLv       String?
+  description   String?
+  descriptionLv String?
+  /// Group code: CONSTRUCTION_WASTE | LICENSED_WASTE | SECONDARY_MATERIALS
+  group         String   @default("CONSTRUCTION_WASTE")
+  groupLabelLv  String?            // display label for the group heading
+  isHazardous   Boolean  @default(false)  // routes to licensed partner recyclers
+  isBuyback     Boolean  @default(false)  // may have a buyback price (secondary materials)
+  iconKey       String?
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, group])
+  @@map("waste_type_definitions")
+}
+
 model CrmNote {
   id        String   @id @default(cuid())
   lead      CrmLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
@@ -3730,4 +3935,29 @@ model FuelPrice {
 
   @@index([date])
   @@map("fuel_prices")
+}
+
+// ── Supplier Loading Slots ────────────────────────────────────────────────────
+// Supplier defines repeating weekly loading windows; dispatcher books a slot
+// per transport job. Prevents multiple trucks queuing at the loading bay.
+model SupplierLoadingSlot {
+  id        String  @id @default(cuid())
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+
+  dayOfWeek Int     // 0 = Sunday … 6 = Saturday
+  startTime String  // "08:00"
+  endTime   String  // "10:00"
+  capacity  Int     @default(1) // simultaneous truck slots per window
+  isActive  Boolean @default(true)
+  label     String? // optional display name e.g. "Morning pit window"
+
+  bookings  TransportJob[] @relation("JobLoadingSlot")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([companyId, dayOfWeek])
+  @@map("supplier_loading_slots")
 }

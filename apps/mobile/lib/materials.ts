@@ -13,6 +13,8 @@ export {
   UNIT_LONG,
   MATERIAL_CATEGORIES,
   MATERIAL_UNITS,
+  MATERIAL_DENSITY,
+  type MaterialFraction,
   type MaterialCategory,
   type MaterialCategoryAll,
   type MaterialUnit,

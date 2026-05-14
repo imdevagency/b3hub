@@ -63,6 +63,7 @@ import {
 import { Building2, Box, Mountain, Grid3X3, Waves, Leaf, Recycle, Map, Wind } from 'lucide-react';
 
 import { CATEGORY_LABELS } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 const CATEGORIES: { value: MaterialCategory; label: string; icon: React.ReactNode }[] = [
   { value: 'SAND', label: CATEGORY_LABELS.SAND, icon: <Waves className="w-4 h-4" /> },
@@ -374,7 +375,7 @@ function MaterialFormModal({
                       <SelectItem key={c.value} value={c.value} className="rounded-lg">
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">{c.icon}</span>
-                          <span>{c.label}</span>
+                          <span>{categoryLabels[c.value] ?? c.label}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -1065,6 +1066,7 @@ export default function MyMaterialsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { categoryLabels } = useMaterialCatalogue();
 
   const [materials, setMaterials] = useState<ApiMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1221,7 +1223,8 @@ export default function MyMaterialsPage() {
                         {m.name}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        {CATEGORIES.find((c) => c.value === m.category)?.label}
+                        {categoryLabels[m.category] ??
+                          CATEGORIES.find((c) => c.value === m.category)?.label}
                         {m.subCategory ? ` · ${m.subCategory}` : ''}
                       </p>
                       {m.stockQty != null && m.stockQty < 10 && (

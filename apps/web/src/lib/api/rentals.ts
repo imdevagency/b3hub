@@ -387,3 +387,67 @@ export async function createRentalOrder(
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 }
+
+// ── Public catalogue ───────────────────────────────────────────────────────────
+
+export interface RentalServiceDef {
+  id: string;
+  code: string;
+  label: string;
+  labelLv: string | null;
+  description: string | null;
+  descriptionLv: string | null;
+  group: string | null;
+  basePrice: number | null;
+  priceUnit: string | null;
+  currency: string;
+  sortOrder: number;
+}
+
+/** Fetches active rental service type definitions from the live catalogue. */
+export async function fetchRentalServiceTypes(): Promise<RentalServiceDef[]> {
+  try {
+    return await apiFetch<RentalServiceDef[]>('/catalogue/rental-service-types');
+  } catch {
+    return [];
+  }
+}
+
+// ── Material catalogue (public, no auth) ──────────────────────────────────
+
+export interface MaterialCategoryDef {
+  id: string;
+  code: string;
+  label: string;
+  labelLv: string | null;
+  description: string | null;
+  descriptionLv: string | null;
+  densityTM3: number | null;
+  defaultUnit: string;
+  sortOrder: number;
+}
+
+export interface MaterialFractionDef {
+  id: string;
+  code: string;
+  category: string;
+  label: string;
+  labelLv: string | null;
+  sortOrder: number;
+}
+
+export async function fetchMaterialCategoryDefs(): Promise<MaterialCategoryDef[]> {
+  try {
+    return await apiFetch<MaterialCategoryDef[]>('/catalogue/material-categories');
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchMaterialFractionDefs(): Promise<MaterialFractionDef[]> {
+  try {
+    return await apiFetch<MaterialFractionDef[]>('/catalogue/material-fractions');
+  } catch {
+    return [];
+  }
+}

@@ -1026,6 +1026,44 @@ function SkipSizesTab({ token }: { token: string }) {
 
 // ─── Hub page ─────────────────────────────────────────────────────────────────
 
+const TAXONOMY_LINKS = [
+  {
+    href: '/dashboard/admin/catalog/material-categories',
+    label: 'Materiālu kategorijas',
+    description: 'Blīvums, mērvienība, ikona',
+  },
+  {
+    href: '/dashboard/admin/catalog/material-fractions',
+    label: 'Materiālu frakcijas',
+    description: 'EU standartu frakcijas (55)',
+  },
+  {
+    href: '/dashboard/admin/catalog/waste-types',
+    label: 'Atkritumu veidi',
+    description: 'Utilizācijas vedņa izvēle',
+  },
+  {
+    href: '/dashboard/admin/catalog/vehicle-categories',
+    label: 'Transportlīdzekļu kategorijas',
+    description: 'Ietilpība, cenas, ikona',
+  },
+  {
+    href: '/dashboard/admin/catalog/toilet-cabin-types',
+    label: 'Tualetes kabīņu tipi',
+    description: 'Nomas vedņa produkti',
+  },
+  {
+    href: '/dashboard/admin/catalog/rental-service-types',
+    label: 'Nomas pakalpojumu veidi',
+    description: 'Cenu struktūra, grupas',
+  },
+  {
+    href: '/dashboard/admin/catalog/scrap-materials',
+    label: 'Lūžņu materiāli',
+    description: 'Izpirkšanas cenas',
+  },
+] as const;
+
 function CatalogHubContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1036,11 +1074,34 @@ function CatalogHubContent() {
   if (isLoading) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-6 p-6 max-w-5xl">
       <PageHeader title="Katalogs" description="Materiālu un konteineru izmēru pārvaldība" />
+
+      {/* Taxonomy catalogue links */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Taksonomijas katalogi
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {TAXONOMY_LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="group block rounded-lg border bg-card p-4 hover:border-primary/50 hover:bg-accent transition-colors"
+            >
+              <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                {l.label}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">{l.description}</div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Existing tabbed views */}
       <Tabs value={tab} onValueChange={(t) => router.push(`?tab=${t}`)}>
         <TabsList>
-          <TabsTrigger value="materials">Materiāli</TabsTrigger>
+          <TabsTrigger value="materials">Materiāli (aktīvie)</TabsTrigger>
           <TabsTrigger value="skip-sizes">Skip izmēri</TabsTrigger>
         </TabsList>
         <TabsContent value="materials">

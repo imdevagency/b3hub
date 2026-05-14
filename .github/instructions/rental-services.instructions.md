@@ -2,7 +2,7 @@
 applyTo: 'apps/**'
 ---
 
-# Adding a new rental service to B3Hub
+# Adding a new rental service to Bilt
 
 > Read `SCALING.md` at the repo root for the full architecture overview.
 > This file is the actionable checklist for AI agents.

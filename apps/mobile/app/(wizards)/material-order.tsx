@@ -26,7 +26,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { ApiError } from '@/lib/api/common';
-import { UNIT_SHORT, CATEGORY_LABELS, DEFAULT_MATERIAL_NAMES } from '@/lib/materials';
+import { UNIT_SHORT, DEFAULT_MATERIAL_NAMES } from '@/lib/materials';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import type { MaterialCategory, MaterialUnit } from '@/lib/materials';
 import type { SupplierOffer } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
@@ -49,7 +50,6 @@ import { FieldPickerStep } from '@/components/wizard/material/FieldPickerStep';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 import {
-  CATEGORY_FRACTIONS,
   CATEGORY_DEFAULT_UNIT,
   ORDER_TYPE_UNIT_MAP,
   TRUCK_OPTIONS,
@@ -91,6 +91,7 @@ type WizardDraft = {
 export default function OrderRequestWizard() {
   const router = useRouter();
   const { user, token } = useAuth();
+  const { categoryLabels, categoryFractions } = useMaterialCatalogue();
   // Keep a ref so submit callbacks always read the latest token,
   // even when called from a closure captured before the auth gate resolved.
   const tokenRef = useRef(token);
@@ -158,7 +159,7 @@ export default function OrderRequestWizard() {
   const [authGateVisible, setAuthGateVisible] = useState(false);
 
   const [selectedFraction, setSelectedFraction] = useState<string>(
-    () => CATEGORY_FRACTIONS[(params.initialCategory as MaterialCategory) || 'GRAVEL'][0],
+    () => (categoryFractions[(params.initialCategory as string) || 'GRAVEL'] ?? [])[0] ?? '',
   );
   const [orderType, setOrderType] = useState<OrderType>('BY_WEIGHT');
   const [selectedTruckId] = useState<string>(TRUCK_OPTIONS[0].id);
@@ -325,8 +326,8 @@ export default function OrderRequestWizard() {
   useEffect(() => {
     const name =
       selectedFraction !== 'Nav norādīts'
-        ? `${CATEGORY_LABELS[selectedCategory]} ${selectedFraction}`
-        : CATEGORY_LABELS[selectedCategory];
+        ? `${categoryLabels[selectedCategory]} ${selectedFraction}`
+        : categoryLabels[selectedCategory];
     setMaterialName(name);
   }, [selectedCategory, selectedFraction]);
 
@@ -876,6 +877,8 @@ export default function OrderRequestWizard() {
           onNotesChange={setNotes}
           sitePhotoUri={sitePhotoUri}
           setSitePhotoUri={setSitePhotoUri}
+          categoryLabels={categoryLabels}
+          categoryFractions={categoryFractions}
           setSitePhotoUrl={setSitePhotoUrl}
           uploadingPhoto={uploadingPhoto}
           handlePickSitePhoto={handlePickSitePhoto}

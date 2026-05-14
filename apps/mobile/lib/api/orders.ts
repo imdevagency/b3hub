@@ -90,7 +90,12 @@ export interface CreateTransportOrderInput {
   pickupWindow?: string;
   siteContactName?: string;
   siteContactPhone?: string;
+  /** Name of person receiving/signing at the dropoff location */
+  receiverContactName?: string;
+  receiverContactPhone?: string;
   notes?: string;
+  /** Comma-separated special handling flags: LIFT_GATE, SIGNATURE, INSIDE_DELIVERY, FRAGILE */
+  specialRequirements?: string;
   /** Platform-calculated estimated rate (EUR, excl. VAT). Required by backend DTO. */
   quotedRate: number;
   /** Buyer's suggested budget shown to drivers (optional) */
@@ -105,6 +110,8 @@ export interface CreateTransportOrderInput {
   pricingMode?: 'FLAT' | 'PER_TONNE';
   /** Buyer's offered rate per tonne when pricingMode = 'PER_TONNE'. */
   pricePerTonne?: number;
+  /** Dispatch mode: 'SCHEDULED' (default, planned ahead) or 'ON_DEMAND' (hotshot \u2014 book now, dispatch immediately within ~30 min). */
+  dispatchMode?: 'SCHEDULED' | 'ON_DEMAND';
 }
 
 export interface CreateMaterialOrderInput {

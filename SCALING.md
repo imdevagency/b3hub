@@ -1,4 +1,4 @@
-# B3Hub — Rental Platform Scaling Guide
+# Bilt — Rental Platform Scaling Guide
 
 > **Last updated**: May 2026  
 > This document describes the architecture that makes adding new rental services

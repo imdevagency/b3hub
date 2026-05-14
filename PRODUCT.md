@@ -1,6 +1,6 @@
-# B3Hub — Product Documentation
+# Bilt — Product Documentation
 
-> **This is the single source of truth** for what B3Hub is, who it serves, and what it does.
+> **This is the single source of truth** for what Bilt is, who it serves, and what it does.
 > Keep it updated as the product evolves. All other documentation follows from this file.
 
 ---
@@ -21,7 +21,7 @@
 
 The single metric that defines success:
 
-> **Total value of transactions processed through B3Hub** (orders + transport + disposal + skip hire).
+> **Total value of transactions processed through Bilt** (orders + transport + disposal + skip hire).
 
 Every feature, every B3 Field, and every integration should either increase the number of transactions or increase the value of each one. If it doesn't move this number, it's not a priority.
 
@@ -29,13 +29,13 @@ Every feature, every B3 Field, and every integration should either increase the 
 
 ## B3 Group — Who We Are
 
-**B3 Group** is the parent company behind B3Hub. B3Hub is the group's digital construction logistics marketplace — a single platform connecting four market sides on one transaction layer.
+**B3 Group** is the parent company behind Bilt. Bilt is the group's digital construction logistics marketplace — a single platform connecting four market sides on one transaction layer.
 
 ---
 
-## What B3Hub Is
+## What Bilt Is
 
-B3Hub is a **construction logistics marketplace** for the Latvian and Baltic market.
+Bilt is a **construction logistics marketplace** for the Latvian and Baltic market.
 
 It connects **four market sides**:
 
@@ -46,9 +46,9 @@ It connects **four market sides**:
 
 The platform handles the **complete transaction lifecycle**: buyer places order → seller confirms loading → driver delivers → documents generated automatically → payment settled.
 
-Every euro spent on materials and transport through B3Hub is trackable, documented, and tied to a real delivery. That's the core product promise.
+Every euro spent on materials and transport through Bilt is trackable, documented, and tied to a real delivery. That's the core product promise.
 
-B3Hub serves **two customer segments on the same marketplace**:
+Bilt serves **two customer segments on the same marketplace**:
 
 - **B2B** — construction companies, contractors, and project managers running complex multi-site procurement. Account required. Framework contracts, project cost tracking, invoicing, team management.
 - **B2C** — homeowners, small trades, and micro-contractors with simple one-off needs: order a skip, get gravel delivered, book waste collection. Guest checkout with phone/email capture. Account creation offered post-order as a convenience, not a gate.
@@ -67,30 +67,30 @@ In addition to the digital marketplace, B3 Group operates **B3 Fields** — phys
 
 ### How B3 Fields fit the platform
 
-Every transaction at a B3 Field flows through the B3Hub platform. Payment, documents, and receipts are handled the same way as any other order.
+Every transaction at a B3 Field flows through the Bilt platform. Payment, documents, and receipts are handled the same way as any other order.
 
 B3 Fields are modelled as **fulfillment locations** in the system:
 
 - Material orders: `fulfillmentType: PICKUP` at a B3 Field address
 - Waste disposal: B3 Field registered as a `RecyclingCenter` with `licensed` flag, physical address, and opening hours
-- Trailer rental: attached to a B3Hub order (not available as a standalone rental)
+- Trailer rental: attached to a Bilt order (not available as a standalone rental)
 
 ---
 
-## What B3Hub Is NOT
+## What Bilt Is NOT
 
-These are out of scope by design. Adding them would dilute focus and pull B3Hub away from its defensible position as a transaction marketplace.
+These are out of scope by design. Adding them would dilute focus and pull Bilt away from its defensible position as a transaction marketplace.
 
 | Out of scope                                                    | Why                                                                     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **Project management** (Gantt, milestones, dependencies)        | That's Procore / PlanRadar territory                                    |
 | **On-site quality management** (punch lists, NCRs, inspections) | That's Qualisflow / BIM tools — happens after delivery                  |
 | **Labor / timesheet tracking**                                  | That's payroll / HR software                                            |
-| **Equipment / plant management**                                | Not a B3Hub transaction                                                 |
+| **Equipment / plant management**                                | Not a Bilt transaction                                                 |
 | **External cost tracking**                                      | We track only what moves through our platform                           |
 | **General ERP**                                                 | We are the procurement + logistics layer, not the full operating system |
 
-**The rule:** if a feature requires data that doesn't originate from a B3Hub transaction, it's out of scope.
+**The rule:** if a feature requires data that doesn't originate from a Bilt transaction, it's out of scope.
 
 ---
 
@@ -134,7 +134,7 @@ Both segments run on the same marketplace, the same supply network, and the same
 
 ## Why We Win
 
-The features that make B3Hub defensible are ones that **only work because we own the transaction**. A standalone ERP cannot do these things:
+The features that make Bilt defensible are ones that **only work because we own the transaction**. A standalone ERP cannot do these things:
 
 | Feature                                           | Why only a marketplace can do it                                |
 | ------------------------------------------------- | --------------------------------------------------------------- |
@@ -175,8 +175,8 @@ Buyer pays → Paysera checkout (full order total, redirect-and-webhook flow)
 | #   | Stream                            | Mechanism                                                                                                       | Margin profile     |
 | --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------ |
 | 1   | **Material order commission**     | % of subtotal + delivery fee, retained before seller payout                                                     | 8–15%              |
-| 2   | **Transport job margin**          | `rate` charged to buyer minus `driverPayout` to carrier — B3Hub acts as logistics broker, not just intermediary | 15–30%             |
-| 3   | **Skip hire spread**              | Retail price set by B3Hub; carrier paid wholesale `CarrierPricing` rate per size. Full spread owned.            | 20–35%             |
+| 2   | **Transport job margin**          | `rate` charged to buyer minus `driverPayout` to carrier — Bilt acts as logistics broker, not just intermediary | 15–30%             |
+| 3   | **Skip hire spread**              | Retail price set by Bilt; carrier paid wholesale `CarrierPricing` rate per size. Full spread owned.            | 20–35%             |
 | 4   | **Container rental commission**   | % on `ContainerOrder` total (rental days × daily rate + delivery/pickup fees)                                   | 8–12%              |
 | 5   | **Waste disposal commission**     | % on disposal fee when waste is routed to a recycling center through the platform                               | 8–12%              |
 | 6   | **Double-dip on combined orders** | `OrderType.COMBINED` = materials + transport in one order. Commission on both sides simultaneously.             | 2× per transaction |
@@ -185,11 +185,11 @@ Buyer pays → Paysera checkout (full order total, redirect-and-webhook flow)
 
 #### TIER 1B — Logistics margin levers (squeeze more out of every truck run)
 
-These all sit inside the transport layer. The spread between what B3Hub charges the buyer and what B3Hub pays the carrier is the logistics margin. Every lever below widens that spread without changing the carrier's rate.
+These all sit inside the transport layer. The spread between what Bilt charges the buyer and what Bilt pays the carrier is the logistics margin. Every lever below widens that spread without changing the carrier's rate.
 
 | #   | Stream                              | Mechanism                                                                                                                                                                                                   | Notes                                                                                            |
 | --- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 7   | **Backhaul / return load matching** | Driver delivers gravel north → B3Hub matches a return load (waste collection, equipment) going south. Buyer 2 pays a full transport rate. Driver gets a small top-up. B3Hub keeps the delta.                | Empty truck on way back = pure waste. This is the single highest-margin opportunity in trucking. |
+| 7   | **Backhaul / return load matching** | Driver delivers gravel north → Bilt matches a return load (waste collection, equipment) going south. Buyer 2 pays a full transport rate. Driver gets a small top-up. Bilt keeps the delta.                | Empty truck on way back = pure waste. This is the single highest-margin opportunity in trucking. |
 | 8   | **Multi-stop consolidation**        | Combine 3 small orders going to nearby sites into one truck run. Charge each buyer the full single-delivery rate. Pay the driver once for the run.                                                          | `cargoWeight`/`cargoVolume` fields on `TransportJob` enable this.                                |
 | 9   | **Surcharge ownership**             | Buyers are charged surcharges (fuel, weekend delivery, overweight, narrow access, waiting time). Carriers are paid flat agreed rates. Surcharges = 100% platform margin.                                    | Store as line items on the order. Fuel surcharge alone can be 8–12% of job value.                |
 | 10  | **Pricing vs. cost arbitrage**      | Charge buyers distance-based pricing (€/km × km). Pay carriers a flat day-rate or regional zone rate. On short urban runs, the km-rate overbills vs. a flat rate — margin is captured automatically.        | `distanceKm` on `TransportJob` enables per-km billing.                                           |
@@ -218,10 +218,10 @@ These all sit inside the transport layer. The spread between what B3Hub charges 
 | #   | Stream                         | Mechanism                                                                                                                                                                                   |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 13  | **Payment float / interest**   | Paysera holds funds between buyer payment and platform-initiated seller payout. At volume, even 2–5 days of float on €1M/month GMV earns ~€3–5k/year. Modest but free.                      |
-| 14  | **Trade credit for buyers**    | Verified construction companies buy now, pay in 30/60 days. Funded via a lending partner (B3Hub earns referral + spread). Construction companies live on credit — this is extremely sticky. |
+| 14  | **Trade credit for buyers**    | Verified construction companies buy now, pay in 30/60 days. Funded via a lending partner (Bilt earns referral + spread). Construction companies live on credit — this is extremely sticky. |
 | 15  | **Early payout for suppliers** | Suppliers get paid instantly (for a 1–2% discount) instead of waiting for buyer payment cycle. Platform or factoring partner absorbs the receivable.                                        |
 | 16  | **Cargo insurance**            | Bundle per-shipment transit insurance into transport orders. Zero effort for the user — opt-out rather than opt-in. Revenue split with insurer.                                             |
-| 17  | **Driver/carrier credit**      | Carriers need vehicles and equipment. B3Hub data (earnings history, job completion rate) makes creditworthiness transparent. Refer to lenders for a fee, or originate directly later.       |
+| 17  | **Driver/carrier credit**      | Carriers need vehicles and equipment. Bilt data (earnings history, job completion rate) makes creditworthiness transparent. Refer to lenders for a fee, or originate directly later.       |
 
 ---
 
@@ -230,10 +230,10 @@ These all sit inside the transport layer. The spread between what B3Hub charges 
 | #   | Stream                               | Mechanism                                                                                                                                                                                                            |
 | --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 18  | **Analytics & reporting add-on**     | Free tier: basic order history. Paid tier: full P&L per project, budget alerts, supplier benchmarking, CSV/Excel export, custom date ranges. Monthly subscription per seat.                                          |
-| 19  | **Market price intelligence**        | B3Hub sees every material price transacted across the Baltic market. Aggregate and anonymize → sell as a "Construction Material Price Index" report to suppliers, buyers, and banks financing construction projects. |
-| 20  | **API access / ERP integration**     | Large buyers want to push orders from SAP, Procountor, or their own ERP directly into B3Hub without touching the web app. Charge a monthly API access fee + per-call volume pricing beyond a free tier.              |
-| 21  | **White-label platform**             | Sell the entire B3Hub stack (rebranded) to a logistics operator in Poland, Finland, or Germany who wants to run their own marketplace. SaaS licensing fee + revenue share.                                           |
-| 22  | **Demand forecasting for suppliers** | Quarries need to plan quarry output 6–12 months ahead. B3Hub order data = the best demand signal in the market. Sell forecast reports to suppliers.                                                                  |
+| 19  | **Market price intelligence**        | Bilt sees every material price transacted across the Baltic market. Aggregate and anonymize → sell as a "Construction Material Price Index" report to suppliers, buyers, and banks financing construction projects. |
+| 20  | **API access / ERP integration**     | Large buyers want to push orders from SAP, Procountor, or their own ERP directly into Bilt without touching the web app. Charge a monthly API access fee + per-call volume pricing beyond a free tier.              |
+| 21  | **White-label platform**             | Sell the entire Bilt stack (rebranded) to a logistics operator in Poland, Finland, or Germany who wants to run their own marketplace. SaaS licensing fee + revenue share.                                           |
+| 22  | **Demand forecasting for suppliers** | Quarries need to plan quarry output 6–12 months ahead. Bilt order data = the best demand signal in the market. Sell forecast reports to suppliers.                                                                  |
 
 ---
 
@@ -243,7 +243,7 @@ These all sit inside the transport layer. The spread between what B3Hub charges 
 | --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 23  | **Waste certificate issuance**           | Every tonne of construction waste legally requires a waste transfer certificate (EU Waste Framework Directive). Platform auto-generates these. Charge per certificate above a free monthly quota. |
 | 24  | **Document archiving**                   | Buyers and suppliers must store delivery/waste documents for 5 years (regulatory requirement). Charge a small annual archiving fee per company for long-term secure storage.                      |
-| 25  | **ESG / carbon reporting**               | Construction companies under ESG reporting obligations need scope 3 data on waste disposal and material sourcing. B3Hub data = automatic scope 3 emissions report. Sell as compliance add-on.     |
+| 25  | **ESG / carbon reporting**               | Construction companies under ESG reporting obligations need scope 3 data on waste disposal and material sourcing. Bilt data = automatic scope 3 emissions report. Sell as compliance add-on.     |
 | 26  | **ADR / hazardous transport compliance** | Hazardous waste transport requires specific documentation. Premium document generation for ADR-classified loads.                                                                                  |
 
 ---
@@ -342,7 +342,7 @@ Companies that have bulk construction materials to sell.
 - View revenue analytics and earnings
 - Manage long-term supply contracts (framework contracts)
 
-**How they register:** Submit a provider application form. **Requires manual approval by B3Hub admin.** Cannot self-register.
+**How they register:** Submit a provider application form. **Requires manual approval by Bilt admin.** Cannot self-register.
 
 ---
 
@@ -379,11 +379,11 @@ Companies and individuals who move materials and waste.
 - Report transport exceptions and incidents
 - Track earnings
 
-**How they register:** Submit a provider application form. **Requires manual approval by B3Hub admin.** Cannot self-register.
+**How they register:** Submit a provider application form. **Requires manual approval by Bilt admin.** Cannot self-register.
 
 ---
 
-### Admins (B3Hub Platform Team)
+### Admins (Bilt Platform Team)
 
 Internal staff who operate the platform.
 
@@ -425,7 +425,7 @@ User {
 | Transport company (dispatcher)      | BUYER      | false     | **true**       |
 | Driver (employed)                   | BUYER      | false     | **true**       |
 | Owner-operator (sells + transports) | BUYER      | **true**  | **true**       |
-| B3Hub platform staff                | ADMIN      | —         | —              |
+| Bilt platform staff                | ADMIN      | —         | —              |
 
 ### Company roles
 
@@ -483,7 +483,7 @@ Web app → /apply
   → Services: ☐ Sell materials  ☐ Transport
   → Description, fleet size (transport), material types (seller)
   → ProviderApplication created → status: PENDING
-  → B3Hub admin notified
+  → Bilt admin notified
   → Admin reviews → approves or rejects with note
   → On approval:
       • Existing account → canSell / canTransport flags toggled
@@ -771,7 +771,7 @@ Settings
 
 ## Roadmap Priorities
 
-Features that are uniquely possible because B3Hub owns the transaction layer — highest strategic value:
+Features that are uniquely possible because Bilt owns the transaction layer — highest strategic value:
 
 | Priority | Feature                                      | Why                                                                  |
 | -------- | -------------------------------------------- | -------------------------------------------------------------------- |

@@ -29,9 +29,9 @@ import {
   type QuoteResponse,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+import { UNIT_SHORT } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
-const CATEGORY_LV = CATEGORY_LABELS;
 const UNIT_LV = UNIT_SHORT;
 
 function fmtEur(n: number) {
@@ -183,6 +183,7 @@ export default function QuoteRequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { token } = useAuth();
+  const { categoryLabels: CATEGORY_LV } = useMaterialCatalogue();
 
   const [request, setRequest] = useState<QuoteRequest | null>(null);
   const [loading, setLoading] = useState(true);

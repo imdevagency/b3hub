@@ -10,6 +10,39 @@
 import { apiFetch } from './common';
 import type { RentalServiceType } from '../rental-services';
 
+// ── Listing types ─────────────────────────────────────────────────
+
+export interface RentalListingProvider {
+  id: string;
+  name: string;
+  logo: string | null;
+  rating: number | null;
+  verified: boolean;
+}
+
+export interface RentalListing {
+  id: string;
+  providerId: string;
+  provider?: RentalListingProvider;
+  serviceType: RentalServiceType;
+  name: string;
+  description: string | null;
+  unitLabel: string;
+  pricePerDay: number;
+  currency: string;
+  vatRate: number;
+  minHireDays: number;
+  maxHireDays: number | null;
+  hirePeriodOptions: { days: number; label: string }[];
+  quantityTotal: number;
+  coverageCities: string[];
+  deliveryRadiusKm: number | null;
+  deliveryFeePerKm: number | null;
+  imageUrls: string[];
+  specs: Record<string, string> | null;
+  isActive: boolean;
+}
+
 // ── Types ─────────────────────────────────────────────────────────
 
 export type RentalOrderStatus =
@@ -59,6 +92,7 @@ export interface RentalOrder {
 
 export interface CreateRentalOrderPayload {
   serviceType: RentalServiceType;
+  listingId?: string;
   address: string;
   city: string;
   lat?: number;
@@ -79,6 +113,20 @@ export interface CreateRentalOrderPayload {
 // ── API functions ─────────────────────────────────────────────────
 
 export const rentalsApi = {
+  /** Public — browse active listings for a service type, optionally filtered by city */
+  findListings: (
+    serviceType: RentalServiceType,
+    city?: string,
+    lat?: number,
+    lng?: number,
+  ): Promise<RentalListing[]> => {
+    const params = new URLSearchParams({ serviceType });
+    if (city) params.set('city', city.toLowerCase());
+    if (lat !== undefined) params.set('lat', String(lat));
+    if (lng !== undefined) params.set('lng', String(lng));
+    return apiFetch(`/rentals/listings?${params.toString()}`, {});
+  },
+
   /** Create a new rental order (works for guests too — token optional) */
   create: (payload: CreateRentalOrderPayload, token?: string | null): Promise<RentalOrder> =>
     apiFetch('/rentals', {

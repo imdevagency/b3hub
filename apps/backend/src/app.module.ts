@@ -64,8 +64,10 @@ import { CmsModule } from './cms/cms.module';
 import { JumisModule } from './jumis/jumis.module';
 import { BisModule } from './bis/bis.module';
 import { LursoftModule } from './lursoft/lursoft.module';
+import { SupplierLoadingSlotsModule } from './supplier-loading-slots/supplier-loading-slots.module';
 import { FuelModule } from './fuel/fuel.module';
 import { SupplierLocationsModule } from './supplier-locations/supplier-locations.module';
+import { CatalogueModule } from './catalogue/catalogue.module';
 
 @Module({
   imports: [
@@ -101,6 +103,7 @@ import { SupplierLocationsModule } from './supplier-locations/supplier-locations
     CompanyModule,
     CarrierSettingsModule,
     DriverScheduleModule,
+    SupplierLoadingSlotsModule,
     AdminModule,
     QuoteRequestsModule,
     ReviewsModule,
@@ -137,6 +140,7 @@ import { SupplierLocationsModule } from './supplier-locations/supplier-locations
     LursoftModule,
     FuelModule,
     SupplierLocationsModule,
+    CatalogueModule,
   ],
   controllers: [AppController],
   providers: [

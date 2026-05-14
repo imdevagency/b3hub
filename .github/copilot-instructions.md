@@ -1,11 +1,11 @@
 ````instructions
-# B3Hub Monorepo — Copilot Instructions
+# Bilt Monorepo — Copilot Instructions
 
 ## What this product is
 
-**B3 Group** is the parent company behind B3Hub. B3Hub is a **pure construction logistics marketplace** — one platform, one admin dashboard at `/dashboard/admin/*`.
+**B3 Group** is the parent company behind Bilt. Bilt is a **pure construction logistics marketplace** — one platform, one admin dashboard at `/dashboard/admin/*`.
 
-**B3Hub** is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
+**Bilt** is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
 
 It connects **four market sides**:
 - **Buyers** — ranges from homeowners ordering a skip for a garden project (B2C, guest checkout) to construction companies running 50 deliveries across multiple sites (B2B, full account with contracts and team management)

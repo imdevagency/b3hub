@@ -17,6 +17,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiOrder, type SellerAnalytics } from '@/lib/api';
 import { CATEGORY_LABELS } from '@/lib/materials';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { haptics } from '@/lib/haptics';
@@ -90,7 +91,10 @@ function buildDailyChart(orders: ApiOrder[]): DayBar[] {
   return bars;
 }
 
-function computeStats(orders: ApiOrder[]): {
+function computeStats(
+  orders: ApiOrder[],
+  categoryLabels: Record<string, string> = CATEGORY_LABELS as Record<string, string>,
+): {
   stats: EarningsStats;
   history: HistoryEntry[];
   dailyChart: DayBar[];
@@ -146,7 +150,7 @@ function computeStats(orders: ApiOrder[]): {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([cat, amt]) => ({
-      label: CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat,
+      label: categoryLabels[cat] ?? cat,
       amount: amt,
     }));
 
@@ -259,6 +263,7 @@ export default function SellerEarningsScreen() {
   const toast = useToast();
   const router = useRouter();
   const { showToast } = useToast();
+  const { categoryLabels } = useMaterialCatalogue();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
@@ -306,7 +311,7 @@ export default function SellerEarningsScreen() {
         const sellerOrders = user?.canSell
           ? orders.filter((o) => o.createdBy?.id !== user.id)
           : orders;
-        const { stats: s, history: h, dailyChart: dc } = computeStats(sellerOrders);
+        const { stats: s, history: h, dailyChart: dc } = computeStats(sellerOrders, categoryLabels);
         setStats(s);
         setHistory(h);
         setDailyChart(dc);
@@ -324,7 +329,7 @@ export default function SellerEarningsScreen() {
         setRefreshing(false);
       }
     },
-    [token],
+    [token, categoryLabels],
   );
 
   useFocusEffect(

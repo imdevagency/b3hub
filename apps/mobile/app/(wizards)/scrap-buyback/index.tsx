@@ -31,8 +31,8 @@ import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMeth
 import { WizardTimeWindowPicker } from '@/components/wizard/WizardTimeWindowPicker';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
-import type { WasteType, DisposalTruckType } from '@/lib/api';
+import { api, fetchScrapMaterials } from '@/lib/api';
+import type { WasteType, DisposalTruckType, ScrapMaterialDefinition } from '@/lib/api';
 import type { BuybackQuoteCenterResult } from '@/lib/api';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
 import { haptics } from '@/lib/haptics';
@@ -44,6 +44,7 @@ const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface BuybackDraft {
   step: Step;
+  scrapMaterialCode: string;
   weightText: string;
   hasPhoto: boolean | null;
   transport: 'pickup' | 'self';
@@ -55,17 +56,73 @@ interface BuybackDraft {
   savedAt: number;
 }
 
+// Fallback labels while catalogue loads
+const FALLBACK_MATERIALS: ScrapMaterialDefinition[] = [
+  {
+    id: '',
+    code: 'FERROUS_METAL',
+    label: 'Ferrous Metal / Steel',
+    labelLv: 'Melnais metāls / Tērauds',
+    description: null,
+    descriptionLv: null,
+    indicativePricePerTonne: null,
+    currency: 'EUR',
+    selfTransportAllowed: true,
+    sortOrder: 1,
+  },
+  {
+    id: '',
+    code: 'ALUMINIUM',
+    label: 'Aluminium',
+    labelLv: 'Alumīnijs',
+    description: null,
+    descriptionLv: null,
+    indicativePricePerTonne: null,
+    currency: 'EUR',
+    selfTransportAllowed: true,
+    sortOrder: 2,
+  },
+  {
+    id: '',
+    code: 'COPPER',
+    label: 'Copper',
+    labelLv: 'Varš',
+    description: null,
+    descriptionLv: null,
+    indicativePricePerTonne: null,
+    currency: 'EUR',
+    selfTransportAllowed: true,
+    sortOrder: 3,
+  },
+  {
+    id: '',
+    code: 'MIXED_METAL',
+    label: 'Mixed Metal',
+    labelLv: 'Jauktais metāls',
+    description: null,
+    descriptionLv: null,
+    indicativePricePerTonne: null,
+    currency: 'EUR',
+    selfTransportAllowed: true,
+    sortOrder: 4,
+  },
+  {
+    id: '',
+    code: 'STAINLESS_STEEL',
+    label: 'Stainless Steel',
+    labelLv: 'Nerūsējošais tērauds',
+    description: null,
+    descriptionLv: null,
+    indicativePricePerTonne: null,
+    currency: 'EUR',
+    selfTransportAllowed: true,
+    sortOrder: 5,
+  },
+];
+
 // ── Types ────────────────────────────────────────────────────────
 
 type Step = 1 | 2 | 3 | 4;
-
-// ── Constants ────────────────────────────────────────────────────
-
-// Scrap buyback is METAL only — recycling centers pay you per tonne.
-// WEEE, OIL_WASTE, TIRES, WOOD, PACKAGING_WASTE belong in the Disposal wizard.
-const MATERIAL_LABELS: Record<string, string> = {
-  METAL: 'Metāls / Dzelzslūžņi',
-};
 
 // Truck logic reused from utilization wizard
 function deriveTruck(weightT: number): { truckType: DisposalTruckType; truckCount: number } {
@@ -84,8 +141,22 @@ export default function ScrapBuybackWizard() {
 
   const [step, setStep] = useState<Step>(1);
 
-  // Material type is always METAL — buyback only applies to scrap metal
+  // Catalogue: scrap material types from DB
+  const [scrapMaterials, setScrapMaterials] =
+    useState<ScrapMaterialDefinition[]>(FALLBACK_MATERIALS);
+  useEffect(() => {
+    fetchScrapMaterials()
+      .then((mats) => {
+        if (mats.length > 0) setScrapMaterials(mats);
+      })
+      .catch(() => {
+        /* keep fallback */
+      });
+  }, []);
+
+  // Material type — always maps to WasteType.METAL for backend; code is fine-grained UI label
   const materialType: WasteType = 'METAL';
+  const [scrapMaterialCode, setScrapMaterialCode] = useState('FERROUS_METAL');
   const [weightText, setWeightText] = useState(''); // tonnes (master)
   const [hasPhoto, setHasPhoto] = useState<boolean | null>(null);
   const [transport, setTransport] = useState<'pickup' | 'self'>('pickup');
@@ -136,6 +207,7 @@ export default function ScrapBuybackWizard() {
             return;
           }
           if (d.step) setStep(d.step);
+          if (d.scrapMaterialCode) setScrapMaterialCode(d.scrapMaterialCode);
           if (d.weightText) setWeightText(d.weightText);
           if (d.hasPhoto !== undefined) setHasPhoto(d.hasPhoto);
           if (d.transport) setTransport(d.transport);
@@ -160,6 +232,7 @@ export default function ScrapBuybackWizard() {
     if (!draftLoadedRef.current) return;
     const draft: BuybackDraft = {
       step,
+      scrapMaterialCode,
       weightText,
       hasPhoto,
       transport,
@@ -171,12 +244,25 @@ export default function ScrapBuybackWizard() {
       savedAt: Date.now(),
     };
     AsyncStorage.setItem(BUYBACK_DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
-  }, [step, weightText, hasPhoto, transport, picked, notes, pickupDate, contactName, contactPhone]);
+  }, [
+    step,
+    scrapMaterialCode,
+    weightText,
+    hasPhoto,
+    transport,
+    picked,
+    notes,
+    pickupDate,
+    contactName,
+    contactPhone,
+  ]);
 
   const weightT = parseFloat(weightText);
   const validWeight = !isNaN(weightT) && weightT > 0;
 
   const selectedOffer = offers?.find((o) => o.centerId === selectedCenterId) ?? null;
+  const selectedMaterial = scrapMaterials.find((m) => m.code === scrapMaterialCode);
+  const materialLabel = selectedMaterial?.labelLv ?? selectedMaterial?.label ?? scrapMaterialCode;
 
   // ── Load offers when entering step 3 ─────────────────────────
 
@@ -262,6 +348,7 @@ export default function ScrapBuybackWizard() {
           notes:
             [
               notes,
+              `Materiāls: ${materialLabel}`,
               hasPhoto === true ? '📷 Ir pieejamas foto' : hasPhoto === false ? 'Nav foto' : '',
               transport === 'self' ? 'Pircējs atvedīs pats — nav nepieciešams transports.' : '',
             ]
@@ -311,8 +398,8 @@ export default function ScrapBuybackWizard() {
     switch (step) {
       case 1:
         return {
-          title: 'Cik daudz metāla jums ir?',
-          description: 'Dzelzs, alumīnijs, varš, nerūsējošais tērauds — ievadiet aptuveno svaru.',
+          title: 'Ko vēlaties pārdot?',
+          description: 'Izvēlieties materiāla veidu un ievadiet aptuveno svaru.',
         };
       case 2:
         return {
@@ -325,7 +412,7 @@ export default function ScrapBuybackWizard() {
       case 3:
         return {
           title: 'Izvēlieties punktu',
-          description: `Cenas aprēķinātas par aptuveni ${validWeight ? weightT : 1} t`,
+          description: `${materialLabel} · aptuveni ${validWeight ? weightT : 1} t`,
         };
       case 4:
         return {
@@ -354,6 +441,9 @@ export default function ScrapBuybackWizard() {
       >
         {step === 1 && (
           <StepMaterial
+            materials={scrapMaterials}
+            selectedCode={scrapMaterialCode}
+            onSelectCode={setScrapMaterialCode}
             weightText={weightText}
             onWeightChange={setWeightText}
             hasPhoto={hasPhoto}
@@ -378,13 +468,13 @@ export default function ScrapBuybackWizard() {
             selectedId={selectedCenterId}
             onSelect={setSelectedCenterId}
             weightT={validWeight ? weightT : 1}
-            materialLabel={materialType ? (MATERIAL_LABELS[materialType] ?? materialType) : ''}
+            materialLabel={materialLabel}
           />
         )}
         {step === 4 && (
           <StepConfirm
             offer={selectedOffer}
-            materialLabel={materialType ? (MATERIAL_LABELS[materialType] ?? materialType) : ''}
+            materialLabel={materialLabel}
             weightText={weightText}
             picked={picked}
             pickupDate={pickupDate}
@@ -421,10 +511,12 @@ export default function ScrapBuybackWizard() {
   );
 }
 
-// ── Step 1: Weight + photo ────────────────────────────────────────
-// Material type is fixed to METAL — no picker needed.
+// ── Step 1: Material type + weight + photo ────────────────────────
 
 function StepMaterial({
+  materials,
+  selectedCode,
+  onSelectCode,
   weightText,
   onWeightChange,
   hasPhoto,
@@ -432,6 +524,9 @@ function StepMaterial({
   transport,
   onTransportChange,
 }: {
+  materials: ScrapMaterialDefinition[];
+  selectedCode: string;
+  onSelectCode: (code: string) => void;
   weightText: string;
   onWeightChange: (t: string) => void;
   hasPhoto: boolean | null;
@@ -446,6 +541,36 @@ function StepMaterial({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
+      {/* Material type selector */}
+      <Text style={s.uberSectionTitle}>Materiāla veids</Text>
+      <View style={s.materialGrid}>
+        {materials.map((mat) => {
+          const isSel = mat.code === selectedCode;
+          return (
+            <TouchableOpacity
+              key={mat.code}
+              style={[s.materialCard, isSel && s.materialCardSel]}
+              onPress={() => {
+                haptics.light();
+                onSelectCode(mat.code);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[s.materialCardText, isSel && s.materialCardTextSel]} numberOfLines={2}>
+                {mat.labelLv ?? mat.label}
+              </Text>
+              {mat.indicativePricePerTonne != null && (
+                <Text style={[s.materialCardPrice, isSel && s.materialCardPriceSel]}>
+                  ~€{mat.indicativePricePerTonne.toFixed(0)}/t
+                </Text>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={s.uberDivider} />
+
       <View style={s.giantInputRow}>
         <TextInput
           value={weightText}
@@ -1119,6 +1244,43 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgMuted,
     borderRadius: 999,
     padding: 4,
+  },
+  // Material selector grid
+  materialGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  materialCard: {
+    width: '47%',
+    backgroundColor: colors.bgMuted,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    minHeight: 60,
+    justifyContent: 'center',
+  },
+  materialCardSel: {
+    backgroundColor: colors.bgCard,
+    borderColor: colors.textPrimary,
+  },
+  materialCardText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  materialCardTextSel: {
+    color: colors.textPrimary,
+  },
+  materialCardPrice: {
+    fontSize: 11,
+    color: colors.textDisabled,
+    marginTop: 2,
+  },
+  materialCardPriceSel: {
+    color: colors.textMuted,
   },
   uberPillBtn: {
     flex: 1,

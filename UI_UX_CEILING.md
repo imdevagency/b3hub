@@ -1,15 +1,15 @@
-# B3Hub — UI/UX Ceiling
+# Bilt — UI/UX Ceiling
 
-> How good can the B3Hub user experience get, and what does that ceiling look like?
+> How good can the Bilt user experience get, and what does that ceiling look like?
 > This is a forward-looking document. For current state, see `UI_UX_AUDIT_REPORT.md`.
 
 ---
 
 ## The Standard We Are Aiming For
 
-B3Hub operates in a sector (construction logistics) where the existing software is universally bad — desktop-first, dense, un-opinionated, built for system administrators not workers. The bar to clear is low.
+Bilt operates in a sector (construction logistics) where the existing software is universally bad — desktop-first, dense, un-opinionated, built for system administrators not workers. The bar to clear is low.
 
-But the bar we should set for ourselves is different: the UX should feel as good as the best consumer apps workers already use every day — Bolt, Wolt, Revolut. If a driver can use Bolt without training, they should be able to use B3Hub without training.
+But the bar we should set for ourselves is different: the UX should feel as good as the best consumer apps workers already use every day — Bolt, Wolt, Revolut. If a driver can use Bolt without training, they should be able to use Bilt without training.
 
 **UX north star:** A driver who has never seen the app should be able to accept a job, complete a delivery, and upload proof within 3 minutes of their first login. A construction company manager should be able to place a material order in under 90 seconds.
 
@@ -190,7 +190,7 @@ Performance is UX. A slow app is a bad app regardless of how it looks.
 
 ---
 
-## What Would Make B3Hub Unreplaceable from a UX Perspective
+## What Would Make Bilt Unreplaceable from a UX Perspective
 
 1. **The dispatcher map is world-class** — better than any competitor's logistics view
 2. **The driver app works in 3 taps** — simpler than any other logistics app on the market

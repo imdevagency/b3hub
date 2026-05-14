@@ -65,7 +65,9 @@ export type TransportVehicleType =
   | 'TIPPER_LARGE'
   | 'ARTICULATED_TIPPER'
   | 'FLATBED'
-  | 'BOX_TRUCK';
+  | 'BOX_TRUCK'
+  | 'CAR'
+  | 'PICKUP_TRUCK';
 
 // ── Transport job statuses ──────────────────────────────────────────────────
 

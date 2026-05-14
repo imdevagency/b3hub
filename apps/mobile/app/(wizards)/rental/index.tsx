@@ -2,13 +2,14 @@
  * Generic Rental Wizard — /(wizards)/rental?serviceType=MINI_EXCAVATOR
  *
  * Handles all rental service types from RENTAL_SERVICES registry.
- * Flow: quantity → address → hire period → contact + confirm
+ * Flow: quantity → address → pick provider → hire period → contact + confirm
  *
  * Wizard steps:
  *   1 – Quantity / model selection
  *   2 – Delivery address
- *   3 – Hire period (date range + time window)
- *   4 – Contact details + submit
+ *   3 – Pick a provider (fetches live listings by city)
+ *   4 – Hire period (date range + time window)
+ *   5 – Contact details + submit
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -19,10 +20,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Minus, Plus } from 'lucide-react-native';
+import { Minus, Plus, Star, MapPin, CheckCircle2 } from 'lucide-react-native';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
@@ -34,13 +35,13 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { rentalsApi } from '@/lib/api/rentals';
+import { rentalsApi, type RentalListing } from '@/lib/api/rentals';
 import { RENTAL_SERVICES, type RentalServiceType } from '@/lib/rental-services';
 import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
 
 // ── Types ─────────────────────────────────────────────────────────
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 const tomorrow = toISO(addDays(new Date(), 1));
 
@@ -72,6 +73,12 @@ export default function RentalWizardScreen() {
   const [step, setStep] = useState<Step>(1);
   const [quantity, setQuantity] = useState(1);
   const [picked, setPicked] = useState<PickedAddress | null>(null);
+
+  // Provider picker state
+  const [listings, setListings] = useState<RentalListing[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<RentalListing | null>(null);
+
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [hireDays, setHireDays] = useState<number>(service.hirePeriodOptions[0]?.days ?? 1);
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
@@ -104,18 +111,51 @@ export default function RentalWizardScreen() {
     setHireDays(days);
   }, []);
 
+  // Fetch listings when buyer reaches step 3 (after address is set)
+  useEffect(() => {
+    if (step !== 3 || !picked) return;
+    setListings([]);
+    setSelectedListing(null);
+    setListingsLoading(true);
+    rentalsApi
+      .findListings(
+        serviceType,
+        picked.city ?? undefined,
+        picked.lat ?? undefined,
+        picked.lng ?? undefined,
+      )
+      .then((data) => {
+        setListings(data);
+        // Auto-select if only one provider
+        if (data.length === 1) setSelectedListing(data[0]);
+      })
+      .catch(() => setListings([]))
+      .finally(() => setListingsLoading(false));
+  }, [step, picked, serviceType]);
+
+  // Hire period options — prefer listing's options, fall back to service defaults
+  const hirePeriodOptions = selectedListing?.hirePeriodOptions?.length
+    ? selectedListing.hirePeriodOptions
+    : service.hirePeriodOptions;
+
+  // Price per day from selected listing (or 0 if none selected yet)
+  const pricePerDay = selectedListing?.pricePerDay ?? 0;
+  const totalPrice = pricePerDay * hireDays * quantity;
+
   const STEP_TITLES: Record<Step, string> = {
     1: `${service.label} — daudzums`,
     2: 'Piegādes adrese',
-    3: 'Nomas periods',
-    4: 'Apstiprināt pasūtījumu',
+    3: 'Izvēlies piegādātāju',
+    4: 'Nomas periods',
+    5: 'Apstiprināt pasūtījumu',
   };
 
   const canProceed = (() => {
     if (step === 1) return quantity >= 1;
     if (step === 2) return !!picked;
-    if (step === 3) return !!selectedDay;
-    if (step === 4) return contactPhone.trim().length >= 7;
+    if (step === 3) return !!selectedListing;
+    if (step === 4) return !!selectedDay;
+    if (step === 5) return contactPhone.trim().length >= 7;
     return false;
   })();
 
@@ -128,12 +168,12 @@ export default function RentalWizardScreen() {
   };
 
   const handleCTA = () => {
-    if (step < 4) {
+    if (step < 5) {
       haptics.light();
       setStep((s) => (s + 1) as Step);
       return;
     }
-    // Step 4 — submit
+    // Step 5 — submit
     if (!token) {
       setAuthGateOpen(true);
       return;
@@ -145,11 +185,10 @@ export default function RentalWizardScreen() {
     if (!picked || !selectedDay) return;
     setSubmitting(true);
     try {
-      // Estimate price: use placeholder until provider pricing is live
-      const estimatedPrice = hireDays * 100 * quantity;
       await rentalsApi.create(
         {
           serviceType,
+          listingId: selectedListing?.id,
           address: picked.address,
           city: picked.city ?? picked.address,
           lat: picked.lat,
@@ -158,7 +197,7 @@ export default function RentalWizardScreen() {
           deliveryDate: selectedDay,
           deliveryWindow,
           quantity,
-          price: estimatedPrice,
+          price: totalPrice > 0 ? totalPrice : hireDays * 100 * quantity,
           paymentMethod,
           contactName: contactName.trim() || undefined,
           contactEmail: contactEmail.trim() || undefined,
@@ -184,11 +223,11 @@ export default function RentalWizardScreen() {
       <WizardLayout
         title={STEP_TITLES[step]}
         step={step}
-        totalSteps={4}
+        totalSteps={5}
         onBack={handleBack}
-        ctaLabel={step < 4 ? 'Turpināt' : 'Apstiprināt'}
+        ctaLabel={step < 5 ? 'Turpināt' : 'Apstiprināt'}
         onCTA={handleCTA}
-        ctaDisabled={!canProceed}
+        ctaDisabled={!canProceed || (step === 3 && listingsLoading)}
         ctaLoading={submitting}
       >
         {/* ── Step 1: Quantity ─────────────────────────── */}
@@ -250,8 +289,112 @@ export default function RentalWizardScreen() {
           </View>
         )}
 
-        {/* ── Step 3: Hire period ──────────────────────── */}
+        {/* ── Step 3: Provider picker ──────────────────── */}
         {step === 3 && (
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {listingsLoading ? (
+              <View style={{ alignItems: 'center', paddingTop: 48 }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Meklējam pieejamos piegādātājus…</Text>
+              </View>
+            ) : listings.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyTitle}>Nav pieejamu piegādātāju</Text>
+                <Text style={styles.emptyBody}>
+                  Šobrīd nav neviena piegādātāja, kas apkalpo jūsu adresi. Mēģiniet citu pilsētu vai
+                  sazinieties ar mums.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.providerHint}>
+                  {listings.length} piegādātājs{listings.length !== 1 ? 'i' : ''} pieejams jūsu
+                  rajonā
+                </Text>
+                {listings.map((listing) => {
+                  const isSelected = selectedListing?.id === listing.id;
+                  return (
+                    <TouchableOpacity
+                      key={listing.id}
+                      style={[styles.providerCard, isSelected && styles.providerCardSelected]}
+                      onPress={() => {
+                        haptics.light();
+                        setSelectedListing(listing);
+                        // Reset hire days to listing's first option if available
+                        if (listing.hirePeriodOptions?.length) {
+                          setHireDays(listing.hirePeriodOptions[0].days);
+                        }
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      {/* Header row */}
+                      <View style={styles.providerCardHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.providerName}>
+                            {listing.provider?.name ?? 'Piegādātājs'}
+                          </Text>
+                          <Text style={styles.providerListingName} numberOfLines={1}>
+                            {listing.name}
+                          </Text>
+                        </View>
+                        {isSelected && (
+                          <CheckCircle2 size={22} color={colors.primary} strokeWidth={2} />
+                        )}
+                      </View>
+
+                      {/* Meta row */}
+                      <View style={styles.providerMeta}>
+                        {listing.provider?.rating != null && (
+                          <View style={styles.metaChip}>
+                            <Star size={12} color="#f59e0b" fill="#f59e0b" />
+                            <Text style={styles.metaChipText}>
+                              {listing.provider.rating.toFixed(1)}
+                            </Text>
+                          </View>
+                        )}
+                        {listing.coverageCities.length > 0 && (
+                          <View style={styles.metaChip}>
+                            <MapPin size={12} color="#6b7280" />
+                            <Text style={styles.metaChipText}>
+                              {listing.coverageCities.slice(0, 2).join(', ')}
+                            </Text>
+                          </View>
+                        )}
+                        {listing.provider?.verified && (
+                          <View style={[styles.metaChip, { backgroundColor: '#e6f7f2' }]}>
+                            <Text style={[styles.metaChipText, { color: colors.primary }]}>
+                              ✓ Verificēts
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Price */}
+                      <View style={styles.providerPriceRow}>
+                        <Text style={styles.providerPrice}>€{listing.pricePerDay.toFixed(2)}</Text>
+                        <Text style={styles.providerPriceUnit}>/ {listing.unitLabel} / dienā</Text>
+                        {listing.minHireDays > 1 && (
+                          <Text style={styles.providerPriceMin}>
+                            · min. {listing.minHireDays} dienas
+                          </Text>
+                        )}
+                      </View>
+
+                      {listing.description ? (
+                        <Text style={styles.providerDescription} numberOfLines={2}>
+                          {listing.description}
+                        </Text>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+          </ScrollView>
+        )}
+
+        {/* ── Step 4: Hire period ──────────────────────── */}
+        {step === 4 && (
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <RentalHirePeriodStep
               selectedDay={selectedDay}
@@ -261,18 +404,24 @@ export default function RentalWizardScreen() {
               onDayPress={handleDayPress}
               onHireDaysChange={handleHireDaysChange}
               onWindowChange={setDeliveryWindow}
-              periodOptions={service.hirePeriodOptions}
+              periodOptions={hirePeriodOptions}
               minDate={tomorrow}
             />
           </ScrollView>
         )}
 
-        {/* ── Step 4: Contact + confirm ────────────────── */}
-        {step === 4 && (
+        {/* ── Step 5: Contact + confirm ────────────────── */}
+        {step === 5 && (
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {/* Order summary */}
             <View style={styles.summaryCard}>
               <SummaryRow label="Pakalpojums" value={service.label} />
+              {selectedListing && (
+                <SummaryRow
+                  label="Piegādātājs"
+                  value={selectedListing.provider?.name ?? selectedListing.name}
+                />
+              )}
               <SummaryRow label="Daudzums" value={`${quantity} ${service.unitLabel}`} />
               <SummaryRow label="Adrese" value={picked?.address ?? '—'} />
               {selectedDay && (
@@ -294,6 +443,9 @@ export default function RentalWizardScreen() {
                 />
               )}
               <SummaryRow label="Nomas periods" value={`${hireDays} dienas`} />
+              {totalPrice > 0 && (
+                <SummaryRow label="Kopā (est.)" value={`€${totalPrice.toFixed(2)}`} />
+              )}
             </View>
 
             <SectionLabel label="Kontaktinformācija" style={{ marginTop: 24 }} />
@@ -359,6 +511,116 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
+  // Provider picker
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#6b7280',
+    fontFamily: 'Inter_400Regular',
+  },
+  emptyBox: {
+    alignItems: 'center',
+    paddingTop: 48,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  providerHint: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontFamily: 'Inter_400Regular',
+    marginBottom: 12,
+  },
+  providerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  providerCardSelected: {
+    borderColor: '#00A878',
+    backgroundColor: '#f0fdf4',
+  },
+  providerCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  providerName: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  providerListingName: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+  },
+  providerMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  metaChipText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#374151',
+  },
+  providerPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+    marginBottom: 6,
+  },
+  providerPrice: {
+    fontSize: 20,
+    fontFamily: 'Inter_700Bold',
+    color: '#111827',
+  },
+  providerPriceUnit: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+  },
+  providerPriceMin: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: '#9ca3af',
+    marginLeft: 4,
+  },
+  providerDescription: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: '#6b7280',
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  //
   serviceCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',

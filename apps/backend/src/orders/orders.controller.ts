@@ -100,12 +100,17 @@ export class OrdersController {
     return this.ordersService.createDisposalOrder(dto, user.userId);
   }
 
-  /** POST /orders/freight — buyer requests point-to-point freight transport (creates TRANSPORT job) */
+  /** POST /orders/freight — company-only: point-to-point freight transport (creates TRANSPORT job) */
   @Post('freight')
   createFreight(
     @Body() dto: CreateFreightOrderDto,
     @CurrentUser() user: RequestingUser,
   ) {
+    if (!user.isCompany) {
+      throw new ForbiddenException(
+        'Freight orders are only available for registered companies.',
+      );
+    }
     return this.ordersService.createFreightOrder(dto, user.userId);
   }
 
@@ -322,5 +327,18 @@ export class OrdersController {
   ) {
     const webUrl = process.env.WEB_APP_URL ?? 'https://b3hub.lv';
     return this.ordersService.generateShareLink(id, user, webUrl);
+  }
+
+  /**
+   * GET /orders/:id/transport-summary
+   * Returns tonnage reconciliation for all transport loads on an order.
+   * Shows ordered vs actual delivered weight, per-load status breakdown.
+   */
+  @Get(':id/transport-summary')
+  getTransportSummary(
+    @Param('id') id: string,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    return this.ordersService.getTransportSummary(id, user);
   }
 }

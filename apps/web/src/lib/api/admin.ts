@@ -1060,6 +1060,125 @@ export async function adminDeleteSkipSize(
   });
 }
 
+// ── Catalogue CRUD types & API functions ─────────────────────────────────────
+
+export interface AdminMaterialCategoryDefinition {
+  id: string; code: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  densityTM3: number | null; defaultUnit: string; iconKey: string | null;
+  isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+export interface AdminMaterialFractionDefinition {
+  id: string; code: string; category: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  unit: string | null; isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+export interface AdminWasteTypeDefinition {
+  id: string; code: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  group: string; groupLabelLv: string | null;
+  isHazardous: boolean; isBuyback: boolean; iconKey: string | null;
+  isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+export interface AdminVehicleServiceCategory {
+  id: string; code: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  eligibleVehicleTypes: string[]; minCapacityT: number | null; maxCapacityT: number | null;
+  fromPrice: number | null; pricePerKm: number | null; iconKey: string | null;
+  isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+export interface AdminToiletCabinDefinition {
+  id: string; code: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  basePrice: number | null; currency: string;
+  isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+export interface AdminRentalServiceDefinition {
+  id: string; code: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  group: string | null; basePrice: number | null; priceUnit: string | null; currency: string;
+  isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+export interface AdminScrapMaterialDefinition {
+  id: string; code: string; label: string; labelLv: string | null;
+  description: string | null; descriptionLv: string | null;
+  indicativePricePerTonne: number | null; currency: string;
+  selfTransportAllowed: boolean; isActive: boolean; sortOrder: number; createdAt: string; updatedAt: string;
+}
+
+// ── Generic catalogue helpers ─────────────────────────────────────────────────
+function catFetch<T>(path: string, token: string, opts?: RequestInit) {
+  return apiFetch<T>(path, { ...opts, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(opts?.headers ?? {}) } });
+}
+function catPut<T>(path: string, token: string, data: unknown) {
+  return catFetch<T>(path, token, { method: 'PUT', body: JSON.stringify(data) });
+}
+function catDel(path: string, token: string) {
+  return catFetch<void>(path, token, { method: 'DELETE' });
+}
+
+// ── Material Categories ───────────────────────────────────────────────────────
+export const adminListMaterialCategories = (t: string) =>
+  catFetch<AdminMaterialCategoryDefinition[]>('/admin/catalogue/material-categories', t);
+export const adminUpsertMaterialCategory = (code: string, data: Partial<AdminMaterialCategoryDefinition>, t: string) =>
+  catPut<AdminMaterialCategoryDefinition>(`/admin/catalogue/material-categories/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteMaterialCategory = (code: string, t: string) =>
+  catDel(`/admin/catalogue/material-categories/${encodeURIComponent(code)}`, t);
+
+// ── Material Fractions ────────────────────────────────────────────────────────
+export const adminListMaterialFractions = (t: string) =>
+  catFetch<AdminMaterialFractionDefinition[]>('/admin/catalogue/material-fractions', t);
+export const adminUpsertMaterialFraction = (code: string, data: Partial<AdminMaterialFractionDefinition>, t: string) =>
+  catPut<AdminMaterialFractionDefinition>(`/admin/catalogue/material-fractions/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteMaterialFraction = (code: string, t: string) =>
+  catDel(`/admin/catalogue/material-fractions/${encodeURIComponent(code)}`, t);
+
+// ── Waste Types ───────────────────────────────────────────────────────────────
+export const adminListWasteTypes = (t: string) =>
+  catFetch<AdminWasteTypeDefinition[]>('/admin/catalogue/waste-types', t);
+export const adminUpsertWasteType = (code: string, data: Partial<AdminWasteTypeDefinition>, t: string) =>
+  catPut<AdminWasteTypeDefinition>(`/admin/catalogue/waste-types/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteWasteType = (code: string, t: string) =>
+  catDel(`/admin/catalogue/waste-types/${encodeURIComponent(code)}`, t);
+
+// ── Vehicle Categories ────────────────────────────────────────────────────────
+export const adminListVehicleCategories = (t: string) =>
+  catFetch<AdminVehicleServiceCategory[]>('/admin/catalogue/vehicle-categories', t);
+export const adminUpsertVehicleCategory = (code: string, data: Partial<AdminVehicleServiceCategory>, t: string) =>
+  catPut<AdminVehicleServiceCategory>(`/admin/catalogue/vehicle-categories/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteVehicleCategory = (code: string, t: string) =>
+  catDel(`/admin/catalogue/vehicle-categories/${encodeURIComponent(code)}`, t);
+
+// ── Toilet Cabin Types ────────────────────────────────────────────────────────
+export const adminListToiletCabinTypes = (t: string) =>
+  catFetch<AdminToiletCabinDefinition[]>('/admin/catalogue/toilet-cabin-types', t);
+export const adminUpsertToiletCabinType = (code: string, data: Partial<AdminToiletCabinDefinition>, t: string) =>
+  catPut<AdminToiletCabinDefinition>(`/admin/catalogue/toilet-cabin-types/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteToiletCabinType = (code: string, t: string) =>
+  catDel(`/admin/catalogue/toilet-cabin-types/${encodeURIComponent(code)}`, t);
+
+// ── Rental Service Types ──────────────────────────────────────────────────────
+export const adminListRentalServiceTypes = (t: string) =>
+  catFetch<AdminRentalServiceDefinition[]>('/admin/catalogue/rental-service-types', t);
+export const adminUpsertRentalServiceType = (code: string, data: Partial<AdminRentalServiceDefinition>, t: string) =>
+  catPut<AdminRentalServiceDefinition>(`/admin/catalogue/rental-service-types/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteRentalServiceType = (code: string, t: string) =>
+  catDel(`/admin/catalogue/rental-service-types/${encodeURIComponent(code)}`, t);
+
+// ── Scrap Materials ───────────────────────────────────────────────────────────
+export const adminListScrapMaterials = (t: string) =>
+  catFetch<AdminScrapMaterialDefinition[]>('/admin/catalogue/scrap-materials', t);
+export const adminUpsertScrapMaterial = (code: string, data: Partial<AdminScrapMaterialDefinition>, t: string) =>
+  catPut<AdminScrapMaterialDefinition>(`/admin/catalogue/scrap-materials/${encodeURIComponent(code)}`, t, data);
+export const adminDeleteScrapMaterial = (code: string, t: string) =>
+  catDel(`/admin/catalogue/scrap-materials/${encodeURIComponent(code)}`, t);
+
 // ── Marketplace engine overview ───────────────────────────────────────────────
 
 export interface MarketplaceCarrierPricing {

@@ -503,3 +503,122 @@ export async function getReturnTrips(
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Fleet Availability ───────────────────────────────────────────────────────
+
+export interface DriverAvailabilityEntry {
+  driverId: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  companyId: string | null;
+  available: boolean;
+  reason: 'blocked' | 'not_scheduled' | 'already_assigned' | null;
+  vehicles: { id: string; licensePlate: string; vehicleType: string }[];
+  schedule: { startTime: string; endTime: string } | null;
+}
+
+export interface FleetAvailabilityResult {
+  date: string;
+  dayOfWeek: number;
+  drivers: DriverAvailabilityEntry[];
+  summary: { total: number; available: number; unavailable: number };
+}
+
+export async function getFleetAvailability(
+  date: string,
+  token: string,
+): Promise<FleetAvailabilityResult> {
+  return apiFetch<FleetAvailabilityResult>(
+    `/transport-jobs/fleet-availability?date=${date}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+// ── Supplier Loading Slots ───────────────────────────────────────────────────
+
+export interface SupplierLoadingSlot {
+  id: string;
+  companyId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  isActive: boolean;
+  label: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierLoadingSlotWithAvailability extends SupplierLoadingSlot {
+  booked: number;
+  available: number;
+  bookings: { id: string; jobNumber: string | null; status: string }[];
+}
+
+export interface CreateLoadingSlotInput {
+  companyId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  capacity?: number;
+  isActive?: boolean;
+  label?: string;
+}
+
+export async function getLoadingSlots(
+  companyId: string,
+  token: string,
+): Promise<SupplierLoadingSlot[]> {
+  return apiFetch<SupplierLoadingSlot[]>(
+    `/supplier-loading-slots?companyId=${companyId}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function getAvailableLoadingSlots(
+  companyId: string,
+  date: string,
+  token: string,
+): Promise<SupplierLoadingSlotWithAvailability[]> {
+  return apiFetch<SupplierLoadingSlotWithAvailability[]>(
+    `/supplier-loading-slots/available?companyId=${companyId}&date=${date}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+}
+
+export async function createLoadingSlot(
+  input: CreateLoadingSlotInput,
+  token: string,
+): Promise<SupplierLoadingSlot> {
+  return apiFetch<SupplierLoadingSlot>('/supplier-loading-slots', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateLoadingSlot(
+  id: string,
+  input: Partial<Omit<CreateLoadingSlotInput, 'companyId'>>,
+  token: string,
+): Promise<SupplierLoadingSlot> {
+  return apiFetch<SupplierLoadingSlot>(`/supplier-loading-slots/${id}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteLoadingSlot(id: string, token: string): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(`/supplier-loading-slots/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

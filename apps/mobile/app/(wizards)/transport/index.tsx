@@ -7,7 +7,7 @@
  *   Step 4 – Date + route summary + contact/notes
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
@@ -22,12 +22,16 @@ import {
   MapPin,
   ArrowRight,
   X,
+  Truck,
 } from 'lucide-react-native';
 import { TruckIllustration } from '@/components/ui/TruckIllustration';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useTransport } from '@/lib/transport-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { TransportVehicleType } from '@/lib/api';
+import { fetchVehicleCategories } from '@/lib/api/catalogue';
 import { useRoute, BaseMap, RouteLayer, PinLayer } from '@/components/map';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
@@ -94,6 +98,20 @@ const VEHICLE_OPTIONS: {
     fromPrice: 79,
     pricePerKm: 1.2,
   },
+  {
+    type: 'PICKUP_TRUCK' as TransportVehicleType,
+    label: 'Pikaps / furgonete',
+    sub: 'līdz 1 t · 2.5 m³',
+    fromPrice: 35,
+    pricePerKm: 0.7,
+  },
+  {
+    type: 'CAR' as TransportVehicleType,
+    label: 'Vieglā automašīna',
+    sub: 'Daļas, dokumenti · līdz 50 kg',
+    fromPrice: 19,
+    pricePerKm: 0.45,
+  },
 ];
 
 const CARGO_PRESETS = [
@@ -139,6 +157,9 @@ interface TransportDraft {
   pickupWindow: 'ANY' | 'AM' | 'PM';
   siteContactName: string;
   siteContactPhone: string;
+  receiverContactName: string;
+  receiverContactPhone: string;
+  specialRequirements: string[];
   notes: string;
   offeredRateText: string;
   truckCount: number;
@@ -189,6 +210,7 @@ export default function TransportWizard() {
 
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const [dispatchMode, setDispatchMode] = useState<'SCHEDULED' | 'ON_DEMAND'>('SCHEDULED');
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
     null,
@@ -199,6 +221,9 @@ export default function TransportWizard() {
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
   const [siteContactPhone, setSiteContactPhone] = useState(() => user?.phone ?? '');
+  const [receiverContactName, setReceiverContactName] = useState('');
+  const [receiverContactPhone, setReceiverContactPhone] = useState('');
+  const [specialRequirements, setSpecialRequirements] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [offeredRateText, setOfferedRateText] = useState('');
 
@@ -208,8 +233,42 @@ export default function TransportWizard() {
     step >= 2 && dropoffStop ? dropoffStop : null,
   );
 
-  const currentVehicle = VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle);
+  const [vehicleOptions, setVehicleOptions] = useState(VEHICLE_OPTIONS);
+
+  const currentVehicle = vehicleOptions.find((v) => v.type === selectedVehicle);
   const currentVehiclePrice = currentVehicle?.fromPrice;
+
+  // ── Smart vehicle suggestion ──────────────────────────────────
+  const suggestedVehicle = useMemo<TransportVehicleType | null>(() => {
+    const weightTonnes = weightText ? parseFloat(weightText) : null;
+    const cargo = activeDesc === 'Cits' ? otherText : activeDesc;
+    if (weightTonnes !== null && !isNaN(weightTonnes)) {
+      if (weightTonnes <= 0.05) return 'CAR' as TransportVehicleType;
+      if (weightTonnes <= 1.0) return 'PICKUP_TRUCK' as TransportVehicleType;
+      if (weightTonnes <= 3.5) {
+        if (cargo === 'Smiltis/Grants' || cargo === 'Būvgruži') return 'TIPPER_SMALL';
+        return 'BOX_TRUCK';
+      }
+      if (weightTonnes <= 5.0) return 'TIPPER_SMALL';
+      if (weightTonnes <= 15.0) return 'TIPPER_LARGE';
+      return 'ARTICULATED_TIPPER';
+    }
+    if (cargo === 'Mēbeles') return 'BOX_TRUCK';
+    if (cargo === 'Iekārtas') return 'FLATBED';
+    if (cargo === 'Smiltis/Grants' || cargo === 'Būvgruži' || cargo === 'Metāls/Lūžņi')
+      return 'TIPPER_SMALL';
+    if (cargo === 'Paletes' || cargo === 'Materiāli') return 'BOX_TRUCK';
+    if (cargo === 'Koks/Dēļi') return 'FLATBED';
+    return null;
+  }, [weightText, activeDesc, otherText]);
+
+  // Auto-select suggested vehicle if user hasn't manually picked one yet
+  useEffect(() => {
+    if (suggestedVehicle && !selectedVehicle) {
+      setSelectedVehicle(suggestedVehicle);
+      setVehicleType(suggestedVehicle);
+    }
+  }, [suggestedVehicle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync contact fields when user authenticates mid-wizard
   useEffect(() => {
@@ -244,6 +303,9 @@ export default function TransportWizard() {
           if (d.pickupWindow) setPickupWindow(d.pickupWindow);
           if (d.siteContactName !== undefined) setSiteContactName(d.siteContactName);
           if (d.siteContactPhone !== undefined) setSiteContactPhone(d.siteContactPhone);
+          if (d.receiverContactName !== undefined) setReceiverContactName(d.receiverContactName);
+          if (d.receiverContactPhone !== undefined) setReceiverContactPhone(d.receiverContactPhone);
+          if (d.specialRequirements) setSpecialRequirements(d.specialRequirements);
           if (d.notes !== undefined) setNotes(d.notes);
           if (d.offeredRateText) setOfferedRateText(d.offeredRateText);
           if (d.truckCount) setTruckCount(d.truckCount);
@@ -293,6 +355,9 @@ export default function TransportWizard() {
       pickupWindow,
       siteContactName,
       siteContactPhone,
+      receiverContactName,
+      receiverContactPhone,
+      specialRequirements,
       notes,
       offeredRateText,
       truckCount,
@@ -313,6 +378,9 @@ export default function TransportWizard() {
     pickupWindow,
     siteContactName,
     siteContactPhone,
+    receiverContactName,
+    receiverContactPhone,
+    specialRequirements,
     notes,
     offeredRateText,
     truckCount,
@@ -320,6 +388,26 @@ export default function TransportWizard() {
     pricePerTonneText,
     dropoffPicked,
   ]);
+
+  // ── Load vehicle categories from catalogue ─────────────────
+  useEffect(() => {
+    fetchVehicleCategories()
+      .then((cats) => {
+        if (!cats.length) return;
+        setVehicleOptions(
+          cats.map((cat) => ({
+            type: cat.code as TransportVehicleType,
+            label: cat.labelLv ?? cat.label,
+            sub: cat.descriptionLv ?? cat.description ?? '',
+            fromPrice: cat.fromPrice ?? 0,
+            pricePerKm: cat.pricePerKm ?? 0,
+          })),
+        );
+      })
+      .catch(() => {
+        /* keep hardcoded fallback */
+      });
+  }, []);
 
   // ── Handlers ──────────────────────────────────────────────────
   const handlePickupConfirm = useCallback(
@@ -396,10 +484,14 @@ export default function TransportWizard() {
           vehicleType: selectedVehicle,
           loadDescription: resolvedDesc,
           estimatedWeight: weightText ? parseFloat(weightText) : undefined,
-          requestedDate: selectedDay,
+          requestedDate: selectedDay || new Date().toISOString().split('T')[0],
           pickupWindow: pickupWindow !== 'ANY' ? pickupWindow : undefined,
           siteContactName: siteContactName || undefined,
           siteContactPhone: siteContactPhone || undefined,
+          receiverContactName: receiverContactName || undefined,
+          receiverContactPhone: receiverContactPhone || undefined,
+          specialRequirements:
+            specialRequirements.length > 0 ? specialRequirements.join(',') : undefined,
           notes: notes || undefined,
           quotedRate,
           buyerOfferedRate:
@@ -411,6 +503,7 @@ export default function TransportWizard() {
               : undefined,
           truckCount: truckCount > 1 ? truckCount : undefined,
           projectId: projectId || undefined,
+          dispatchMode,
         },
         token,
       );
@@ -487,6 +580,9 @@ export default function TransportWizard() {
     state,
     siteContactName,
     siteContactPhone,
+    receiverContactName,
+    receiverContactPhone,
+    specialRequirements,
     notes,
     savePickup,
     saveDropoff,
@@ -553,7 +649,7 @@ export default function TransportWizard() {
     (activeDesc !== '' && activeDesc !== 'Cits'
       ? true
       : activeDesc === 'Cits' && otherText.trim() !== '');
-  const step3Valid = !!selectedDay;
+  const step3Valid = dispatchMode === 'ON_DEMAND' || !!selectedDay;
   const step4Valid =
     (user
       ? true // logged-in: contact comes from profile
@@ -605,7 +701,7 @@ export default function TransportWizard() {
   const STEP_TITLES: Record<Step, string> = {
     1: 'Maršruts',
     2: 'Izvēlies transportu',
-    3: 'Kad?',
+    3: 'Servisa veids',
     4: 'Apstiprini pasūtījumu',
   };
 
@@ -618,6 +714,74 @@ export default function TransportWizard() {
         category="TRANSPORT"
         onBack={() => router.replace('/(buyer)/home' as never)}
       />
+    );
+  }
+
+  // ── B2B gate — logged-in personal accounts cannot place freight orders ────
+  if (user && !user.isCompany) {
+    return (
+      <ScreenContainer>
+        <ScreenHeader
+          title="Kravu pārvadājumi"
+          onBack={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/(buyer)/home' as never);
+          }}
+        />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: '#f3f4f6',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+            }}
+          >
+            <Truck size={32} color="#6b7280" />
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 20,
+              color: '#111827',
+              textAlign: 'center',
+              marginBottom: 12,
+            }}
+          >
+            Tikai uzņēmumiem
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 15,
+              color: '#6b7280',
+              textAlign: 'center',
+              lineHeight: 22,
+              marginBottom: 32,
+            }}
+          >
+            Kravu pārvadājumu pakalpojums ir pieejams tikai reģistrētiem uzņēmumiem. Reģistrē savu
+            uzņēmumu, lai turpinātu.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(buyer)/profile' as never)}
+            style={{
+              backgroundColor: '#111827',
+              borderRadius: 12,
+              paddingVertical: 14,
+              paddingHorizontal: 32,
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#fff' }}>
+              Pievienot uzņēmumu
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
     );
   }
 
@@ -958,8 +1122,9 @@ export default function TransportWizard() {
               Atrodi īsto auto
             </Text>
             <View style={{ gap: 10, marginBottom: 32 }}>
-              {VEHICLE_OPTIONS.map((v) => {
+              {vehicleOptions.map((v) => {
                 const isSel = selectedVehicle === v.type;
+                const isSuggested = suggestedVehicle === v.type;
                 return (
                   <TouchableOpacity
                     key={v.type}
@@ -987,6 +1152,24 @@ export default function TransportWizard() {
                     }}
                     activeOpacity={0.75}
                   >
+                    {isSuggested && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: -9,
+                          left: 12,
+                          backgroundColor: '#1a362a',
+                          borderRadius: 8,
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          zIndex: 1,
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>
+                          ⚡ Ieteiktais
+                        </Text>
+                      </View>
+                    )}
                     <View style={{ width: 64, alignItems: 'center', justifyContent: 'center' }}>
                       <TruckIllustration type={v.type} />
                     </View>
@@ -1258,51 +1441,232 @@ export default function TransportWizard() {
                 );
               })}
             </View>
+
+            {/* ── Special requirements ── */}
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '600',
+                color: '#111827',
+                marginTop: 8,
+                marginBottom: 12,
+              }}
+            >
+              Īpašas prasības
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+              {(
+                [
+                  { key: 'LIFT_GATE', label: '🔧 Pacēlājs' },
+                  { key: 'SIGNATURE', label: '✍️ Paraksts' },
+                  { key: 'INSIDE_DELIVERY', label: '🏠 Iekštelpu piegāde' },
+                  { key: 'FRAGILE', label: '⚠️ Trausls' },
+                ] as const
+              ).map(({ key, label }) => {
+                const isOn = specialRequirements.includes(key);
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 20,
+                      backgroundColor: isOn ? '#111827' : '#f3f4f6',
+                      borderWidth: isOn ? 0 : 1,
+                      borderColor: '#e5e7eb',
+                    }}
+                    onPress={() => {
+                      haptics.light();
+                      setSpecialRequirements((prev) =>
+                        isOn ? prev.filter((r) => r !== key) : [...prev, key],
+                      );
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={{ fontSize: 13, fontWeight: '600', color: isOn ? '#fff' : '#374151' }}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </ScrollView>
         )}
 
         {/* ── Step 3: Date + time window ── */}
-        {step === 3 && (
-          <ScrollView
-            style={s.content}
-            contentContainerStyle={[s.pad, { paddingTop: 24 }]}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: '800',
-                color: '#111827',
-                letterSpacing: -0.5,
-                marginBottom: 20,
-              }}
-            >
-              Kad izbraucam?
-            </Text>
-            <WizardCalendar
-              selectedDate={selectedDay || ''}
-              onDateChange={(d) => {
-                setSelectedDay(d);
-                setRequestedDate(d);
-              }}
-              minDate={DAY_OPTIONS[0].iso}
-            />
+        {step === 3 &&
+          (() => {
+            const basePrice = currentVehicle
+              ? Math.round(
+                  currentVehicle.fromPrice + (route?.distanceKm ?? 30) * currentVehicle.pricePerKm,
+                )
+              : null;
+            const hotshotPrice = basePrice ? Math.round(basePrice * 1.35) : null;
 
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: '700',
-                color: '#111827',
-                marginTop: 36,
-                marginBottom: 16,
-                letterSpacing: -0.5,
-              }}
-            >
-              Cikos?
-            </Text>
-            <WizardTimeWindowPicker value={pickupWindow} onChange={setPickupWindow} />
-          </ScrollView>
-        )}
+            const SERVICE_MODES = [
+              {
+                val: 'ON_DEMAND' as const,
+                icon: '⚡',
+                label: 'Tūlītēja piegāde',
+                sub: 'Šoferis apstiprina dažu minūtu laikā',
+                badge: 'Ātrākais',
+                badgeColor: '#1d4ed8',
+                price: hotshotPrice ? `~€${hotshotPrice}` : null,
+                bullets: [
+                  '🚀  Šoferis dodas nekavējoties',
+                  '📍  Live tracking kartē',
+                  '🔔  ETA paziņojumi',
+                ],
+              },
+              {
+                val: 'SCHEDULED' as const,
+                icon: '📅',
+                label: 'Plānota piegāde',
+                sub: 'Rezervē laiku, ietaupi uz cenas',
+                badge: 'Labākā cena',
+                badgeColor: '#065f46',
+                price: basePrice ? `~€${basePrice}` : null,
+                bullets: [
+                  '💰  Zemāka cena',
+                  '📅  Izvēlies datumu un laiku',
+                  '🗺️  Maršruts optimizēts',
+                ],
+              },
+            ];
+
+            return (
+              <ScrollView
+                style={s.content}
+                contentContainerStyle={[s.pad, { paddingTop: 24, gap: 14 }]}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: '#6b7280',
+                    marginBottom: 4,
+                    lineHeight: 22,
+                  }}
+                >
+                  Izvēlies, kā vēlies saņemt piegādi.
+                </Text>
+
+                {SERVICE_MODES.map((mode) => {
+                  const isActive = dispatchMode === mode.val;
+                  return (
+                    <TouchableOpacity
+                      key={mode.val}
+                      onPress={() => {
+                        haptics.light();
+                        setDispatchMode(mode.val);
+                        if (mode.val === 'ON_DEMAND') {
+                          const today = new Date().toISOString().split('T')[0];
+                          setSelectedDay(today);
+                          setRequestedDate(today);
+                        }
+                      }}
+                      activeOpacity={0.75}
+                      style={{
+                        backgroundColor: '#fff',
+                        borderRadius: 20,
+                        padding: 20,
+                        borderWidth: isActive ? 2.5 : 1.5,
+                        borderColor: isActive ? '#111827' : '#e5e7eb',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isActive ? 0 : 0.05,
+                        shadowRadius: 12,
+                        elevation: isActive ? 0 : 2,
+                      }}
+                    >
+                      {/* Header row */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'flex-start',
+                          marginBottom: 12,
+                        }}
+                      >
+                        <Text style={{ fontSize: 28, marginRight: 12 }}>{mode.icon}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              fontSize: 17,
+                              fontWeight: '800',
+                              color: '#111827',
+                              letterSpacing: -0.3,
+                            }}
+                          >
+                            {mode.label}
+                          </Text>
+                          <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+                            {mode.sub}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
+                          {mode.price && (
+                            <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827' }}>
+                              {mode.price}
+                            </Text>
+                          )}
+                          <View
+                            style={{
+                              backgroundColor: mode.badgeColor,
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 3,
+                              marginTop: 4,
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>
+                              {mode.badge}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Bullet features */}
+                      <View style={{ gap: 6 }}>
+                        {mode.bullets.map((b) => (
+                          <Text key={b} style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>
+                            {b}
+                          </Text>
+                        ))}
+                      </View>
+
+                      {/* Inline calendar for SCHEDULED when selected */}
+                      {mode.val === 'SCHEDULED' && isActive && (
+                        <View style={{ marginTop: 20 }}>
+                          <WizardCalendar
+                            selectedDate={selectedDay || ''}
+                            onDateChange={(d) => {
+                              setSelectedDay(d);
+                              setRequestedDate(d);
+                            }}
+                            minDate={DAY_OPTIONS[0].iso}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: '700',
+                              color: '#111827',
+                              marginTop: 24,
+                              marginBottom: 12,
+                            }}
+                          >
+                            Cikos?
+                          </Text>
+                          <WizardTimeWindowPicker value={pickupWindow} onChange={setPickupWindow} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            );
+          })()}
 
         {/* ── Step 4: Uber-style review + confirm ── */}
         {step === 4 && (
@@ -1436,7 +1800,7 @@ export default function TransportWizard() {
                     }}
                   >
                     <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>
-                      {VEHICLE_OPTIONS.find((v) => v.type === selectedVehicle)?.label ?? '—'}
+                      {vehicleOptions.find((v) => v.type === selectedVehicle)?.label ?? '—'}
                     </Text>
                   </View>
                   {activeDesc ? (
@@ -1562,7 +1926,7 @@ export default function TransportWizard() {
 
                 {/* ── Contact form ── */}
                 <WizardSectionHeading
-                  label="Kontaktpersona"
+                  label="Kontaktpersona iekraušanā"
                   icon={<Bookmark size={16} color="#111827" />}
                   style={{ marginBottom: 12 }}
                 />
@@ -1659,6 +2023,36 @@ export default function TransportWizard() {
                   />
                 )}
 
+                {/* ── Receiver / dropoff contact ── */}
+                <WizardSectionHeading
+                  label="Saņēmējs izkraušanā"
+                  icon={<MapPin size={16} color="#111827" />}
+                  style={{ marginBottom: 12, marginTop: 24 }}
+                />
+                <View style={{ gap: 10, marginBottom: 20 }}>
+                  <TextInputField
+                    placeholder="Saņēmēja vārds, uzvārds"
+                    value={receiverContactName}
+                    onChangeText={setReceiverContactName}
+                    containerStyle={{
+                      backgroundColor: '#f3f4f6',
+                      borderWidth: 0,
+                      borderRadius: 12,
+                    }}
+                  />
+                  <TextInputField
+                    placeholder="Saņēmēja tālrunis"
+                    value={receiverContactPhone}
+                    onChangeText={setReceiverContactPhone}
+                    keyboardType="phone-pad"
+                    containerStyle={{
+                      backgroundColor: '#f3f4f6',
+                      borderWidth: 0,
+                      borderRadius: 12,
+                    }}
+                  />
+                </View>
+
                 {/* ── Pricing ── */}
                 <View style={{ gap: 12, marginBottom: 20 }}>
                   {pricingMode === 'FLAT' ? (
@@ -1723,7 +2117,9 @@ export default function TransportWizard() {
                       lineHeight: 18,
                     }}
                   >
-                    Cenu un izbraukšanas laiku apstiprināsim pa tālruni.
+                    {dispatchMode === 'ON_DEMAND'
+                      ? 'Šoferis apstiprinās dažu minūtu laikā. Sekojiet piegādei reāllaikā.'
+                      : 'Cenu un izbraukšanas laiku apstiprināsim pa tālruni.'}
                   </Text>
                 </View>
               </View>

@@ -1,6 +1,6 @@
-# B3Hub — Marketplace Scope
+# Bilt — Marketplace Scope
 
-> **The single question that determines whether something belongs in B3Hub:**
+> **The single question that determines whether something belongs in Bilt:**
 >
 > _Does this feature exist to connect the four market sides, or does it exist to run one party's internal operations?_
 >
@@ -12,15 +12,15 @@
 
 SchüttFlix, Sennder, Utrax, and every other construction logistics marketplace that has scaled did so by solving **one problem ruthlessly well**: connecting buyers, sellers, and carriers through a trusted transaction layer. None of them tried to become a project management system, HR platform, or full ERP for any of the parties. That's the territory.
 
-B3Hub connects **four** sides rather than the usual three (construction waste and recycling creates the fourth). That's the defensible advantage. But the moment B3Hub becomes the internal management system for any one side, it loses focus, creates dependency on parties that weren't willing to commit, and ends up competing with tools that those parties already trust.
+Bilt connects **four** sides rather than the usual three (construction waste and recycling creates the fourth). That's the defensible advantage. But the moment Bilt becomes the internal management system for any one side, it loses focus, creates dependency on parties that weren't willing to commit, and ends up competing with tools that those parties already trust.
 
-This document defines exactly what B3Hub does and does not do for each market side. It is a decision tool. When a new feature is proposed, check it against this document first.
+This document defines exactly what Bilt does and does not do for each market side. It is a decision tool. When a new feature is proposed, check it against this document first.
 
 ---
 
 ## The Four Sides
 
-| Side         | Who                                             | Primary need from B3Hub                                                                     |
+| Side         | Who                                             | Primary need from Bilt                                                                     |
 | ------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | **Buyer**    | Construction companies, contractors, homeowners | Find and receive materials, transport, disposal, and skip hire — tracked and documented     |
 | **Seller**   | Quarries, material suppliers                    | List materials and fulfil confirmed orders from verified buyers                             |
@@ -33,7 +33,7 @@ All four sides share a single platform. A company can be a seller **and** a carr
 
 ## Side 1 — Buyer
 
-### What B3Hub provides
+### What Bilt provides
 
 | Capability                                                                                               | Notes                                                           |
 | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -44,14 +44,14 @@ All four sides share a single platform. A company can be a seller **and** a carr
 | Download invoices, delivery notes, weighing slips, waste certificates as PDF                             | Auto-generated from transaction data                            |
 | Submit RFQs to multiple suppliers simultaneously                                                         | Convert winning quote directly to order                         |
 | Framework contracts with preferred suppliers                                                             | Call-off orders against agreed volumes and rates                |
-| Assign orders to procurement projects; see project-level spend vs budget                                 | Spend is only what flows through B3Hub                          |
+| Assign orders to procurement projects; see project-level spend vs budget                                 | Spend is only what flows through Bilt                          |
 | Manage a company team: invite members, set roles, toggle permissions                                     | Roles: OWNER, MANAGER, DRIVER, MEMBER                           |
 | Pay via card or in-app payment sheet                                                                     | Paysera (primary); Stripe Connect for individual driver payouts |
 | Save frequently used delivery addresses                                                                  | —                                                               |
 | Write reviews for suppliers and carriers after delivery                                                  | —                                                               |
 | Chat with driver on an active transport job                                                              | Per-job thread only                                             |
 
-### What B3Hub does NOT provide
+### What Bilt does NOT provide
 
 | Out of scope                                                                    | Who owns it instead                        |
 | ------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -59,11 +59,11 @@ All four sides share a single platform. A company can be a seller **and** a carr
 | On-site quality management (punch lists, defect logs, inspections)              | Qualisflow, BIM tools                      |
 | Labour tracking, timesheets, crew clock in/out                                  | Payroll/HR software                        |
 | Equipment and plant hire management                                             | Specialist rental platforms                |
-| Cost tracking for items not purchased through B3Hub                             | Buyer's accounting/ERP system              |
+| Cost tracking for items not purchased through Bilt                             | Buyer's accounting/ERP system              |
 | Subcontractor contract management and invoicing                                 | Buyer's ERP                                |
 | General company ERP                                                             | Not our layer                              |
 
-**The rule for buyer features:** if the data originates from a B3Hub transaction, it belongs here. If the data has to be entered manually and has no link to a B3Hub order, it doesn't.
+**The rule for buyer features:** if the data originates from a Bilt transaction, it belongs here. If the data has to be entered manually and has no link to a Bilt order, it doesn't.
 
 **The one exception — B3 Construction internal portal (`/dashboard/b3-construction`):** this is a B3 Group _internal_ operational tool for B3 Group's own groundworks business. It is explicitly **not** a marketplace feature and must never be offered as a feature to external buyer companies. DPRs, employee records, subcontractor registers, and labour cost tracking in that portal exist only because B3 Construction is an internal business unit, not because we're building project management software. The boundary is hard.
 
@@ -71,7 +71,7 @@ All four sides share a single platform. A company can be a seller **and** a carr
 
 ## Side 2 — Seller (Supplier)
 
-### What B3Hub provides
+### What Bilt provides
 
 | Capability                                                                                            | Notes                               |
 | ----------------------------------------------------------------------------------------------------- | ----------------------------------- |
@@ -85,18 +85,18 @@ All four sides share a single platform. A company can be a seller **and** a carr
 | Receive automatic payouts when orders complete                                                        | Via Stripe Connect                  |
 | Upload quality certificates tied to specific materials or orders                                      | Triggered at AT_PICKUP if missing   |
 
-### What B3Hub does NOT provide
+### What Bilt does NOT provide
 
 | Out of scope                                               | Who owns it instead            |
 | ---------------------------------------------------------- | ------------------------------ |
 | Internal inventory / warehouse management system           | Supplier's ERP or WMS          |
 | Production scheduling (when to crush, when to process)     | Supplier's internal operations |
 | HR and staff management                                    | Supplier's HR system           |
-| Procurement of inputs (fuel, machinery, raw aggregate)     | Not a B3Hub transaction        |
-| Customer CRM (relationship management beyond B3Hub orders) | Supplier's CRM                 |
+| Procurement of inputs (fuel, machinery, raw aggregate)     | Not a Bilt transaction        |
+| Customer CRM (relationship management beyond Bilt orders) | Supplier's CRM                 |
 | Accounting and bookkeeping                                 | Supplier's accounting system   |
 
-**The rule for seller features:** B3Hub is the window through which suppliers see demand and receive payment. Everything behind that window — stock production, staff management, accounts — stays in the supplier's own systems.
+**The rule for seller features:** Bilt is the window through which suppliers see demand and receive payment. Everything behind that window — stock production, staff management, accounts — stays in the supplier's own systems.
 
 ---
 
@@ -108,7 +108,7 @@ Carriers operate in two sub-roles on the same platform:
 
 **Driver** (DRIVER role or independent owner-operator): accepts and executes individual jobs.
 
-### What B3Hub provides
+### What Bilt provides
 
 | Capability                                                                                 | Notes                                          |
 | ------------------------------------------------------------------------------------------ | ---------------------------------------------- |
@@ -128,7 +128,7 @@ Carriers operate in two sub-roles on the same platform:
 | Carrier pricing and service zone configuration                                             | —                                              |
 | Chat with buyer on active jobs                                                             | —                                              |
 
-### What B3Hub does NOT provide
+### What Bilt does NOT provide
 
 | Out of scope                                        | Who owns it instead                 |
 | --------------------------------------------------- | ----------------------------------- |
@@ -138,30 +138,30 @@ Carriers operate in two sub-roles on the same platform:
 | Driver HR records (contracts, sick leave, holidays) | HR system                           |
 | Driver training and licensing compliance            | HR / fleet compliance tool          |
 | Insurance management                                | Insurance provider's portal         |
-| Load planning and manifesting beyond B3Hub orders   | TMS                                 |
-| Customer invoicing outside of B3Hub transactions    | Carrier's accounting system         |
+| Load planning and manifesting beyond Bilt orders   | TMS                                 |
+| Customer invoicing outside of Bilt transactions    | Carrier's accounting system         |
 
-**The rule for carrier features:** B3Hub is the job board plus the execution layer. A driver opens the app, sees the job, executes it, and gets paid. Everything about managing the carrier as a business — HR, fleet maintenance, insurance, payroll — stays in the carrier's own systems.
+**The rule for carrier features:** Bilt is the job board plus the execution layer. A driver opens the app, sees the job, executes it, and gets paid. Everything about managing the carrier as a business — HR, fleet maintenance, insurance, payroll — stays in the carrier's own systems.
 
 ---
 
 ## Side 4 — Recycler
 
-The fourth side is unique to B3Hub's market position. Construction waste recycling creates a mandatory documentation trail (Latvian and EU regulation), and B3Hub closes the loop by connecting buyers who need disposal with licensed recyclers who can accept and process waste.
+The fourth side is unique to Bilt's market position. Construction waste recycling creates a mandatory documentation trail (Latvian and EU regulation), and Bilt closes the loop by connecting buyers who need disposal with licensed recyclers who can accept and process waste.
 
-### What B3Hub provides
+### What Bilt provides
 
 | Capability                                                                                 | Notes                                    |
 | ------------------------------------------------------------------------------------------ | ---------------------------------------- |
 | List recycling / waste drop-off sites with accepted waste types, operating hours, capacity | —                                        |
-| Receive online booking requests from buyers                                                | B3Hub disposal wizard → booked job       |
+| Receive online booking requests from buyers                                                | Bilt disposal wizard → booked job       |
 | View inbound job queue: waste type, estimated weight, source order                         | —                                        |
 | Issue waste acceptance certificates per customer                                           | Legally required under Latvian waste law |
 | Log actual received waste: type, weight, source                                            | Per-delivery record                      |
 | APUS reporting module (VVD waste movement reports)                                         | Latvia-specific regulatory requirement   |
 | Earnings dashboard and payouts                                                             | —                                        |
 
-### What B3Hub does NOT provide
+### What Bilt does NOT provide
 
 | Out of scope                                                             | Who owns it instead            |
 | ------------------------------------------------------------------------ | ------------------------------ |
@@ -169,15 +169,15 @@ The fourth side is unique to B3Hub's market position. Construction waste recycli
 | Equipment and machinery maintenance                                      | Recycler's internal ops        |
 | Regulatory licence management (beyond what the platform needs to verify) | Recycler's compliance function |
 | Staff scheduling at the facility                                         | Recycler's HR system           |
-| Resale of processed materials through channels other than B3Hub          | Recycler's own sales channels  |
+| Resale of processed materials through channels other than Bilt          | Recycler's own sales channels  |
 
-**Note on B3 Recycling (Gulbene):** The B3 Recycling admin portal (`/dashboard/b3-recycling`) is an internal operational tool for B3 Group's own licensed facility. The features built there (intake log, APUS reporting, certificate generation) are also the blueprint for what any licensed external recycler would see in their portal. The boundary is the same: B3Hub manages the booking, documentation, and payment. The physical recycling process is not our concern.
+**Note on B3 Recycling (Gulbene):** The B3 Recycling admin portal (`/dashboard/b3-recycling`) is an internal operational tool for B3 Group's own licensed facility. The features built there (intake log, APUS reporting, certificate generation) are also the blueprint for what any licensed external recycler would see in their portal. The boundary is the same: Bilt manages the booking, documentation, and payment. The physical recycling process is not our concern.
 
 ---
 
-## The Platform — B3Hub Marketplace (Admin)
+## The Platform — Bilt Marketplace (Admin)
 
-B3Hub platform staff use a separate admin scope (`/dashboard/admin`) to operate the marketplace itself. This is not a fifth market side — it's the platform operator function.
+Bilt platform staff use a separate admin scope (`/dashboard/admin`) to operate the marketplace itself. This is not a fifth market side — it's the platform operator function.
 
 ### What the admin scope covers
 
@@ -198,9 +198,9 @@ B3Hub platform staff use a separate admin scope (`/dashboard/admin`) to operate 
 When a feature request comes in, ask these questions in order:
 
 1. **Which of the four sides does it serve?**
-   If it doesn't clearly serve a buyer, seller, carrier, or recycler in the context of a B3Hub transaction, stop.
+   If it doesn't clearly serve a buyer, seller, carrier, or recycler in the context of a Bilt transaction, stop.
 
-2. **Does the feature require data that originates from a B3Hub transaction?**
+2. **Does the feature require data that originates from a Bilt transaction?**
    If yes → likely in scope.
    If the data has to be manually entered with no connection to an order → likely out of scope.
 
@@ -226,8 +226,8 @@ These items were identified during the scope audit as potentially drifting towar
 | **DPR (Daily Production Reports)** for B3 Construction                     | `/dashboard/b3-construction`               | ✅ Intentionally internal — B3 Group only. Must never become a feature offered to external buyers.                                                                                                            |
 | **Employee management** in B3 Construction portal                          | `/dashboard/b3-construction/employees`     | ✅ Intentionally internal — B3 Group only.                                                                                                                                                                    |
 | **Labour hours and subcontractor spend tracking**                          | `admin.service.ts` B3 Construction methods | ✅ Internal B3 Group analytics. Not a marketplace feature.                                                                                                                                                    |
-| **`CONSTRUCTION_MANAGEMENT` feature flag** (buyer projects, DPRs, budgets) | `CompanyFeature` enum                      | ⚠️ Projects + P&L tied to B3Hub orders = in scope. GPS timesheets and field crew DPRs = drifting out of scope. If this becomes a full construction management SaaS, it competes with Procore, not SchüttFlix. |
-| **Driver GPS timesheets**                                                  | Phase 2 in CONCEPT.md                      | ⚠️ If the purpose is to feed payroll or labour records, it's HR software. If the purpose is to confirm a driver was at the right place at the right time on a B3Hub job, it's in scope.                       |
+| **`CONSTRUCTION_MANAGEMENT` feature flag** (buyer projects, DPRs, budgets) | `CompanyFeature` enum                      | ⚠️ Projects + P&L tied to Bilt orders = in scope. GPS timesheets and field crew DPRs = drifting out of scope. If this becomes a full construction management SaaS, it competes with Procore, not SchüttFlix. |
+| **Driver GPS timesheets**                                                  | Phase 2 in CONCEPT.md                      | ⚠️ If the purpose is to feed payroll or labour records, it's HR software. If the purpose is to confirm a driver was at the right place at the right time on a Bilt job, it's in scope.                       |
 | **Carrier fleet maintenance records**                                      | Not yet built                              | 🚫 Do not build. Carriers have their own TMS.                                                                                                                                                                 |
 | **Supplier inventory / WMS**                                               | Not yet built                              | 🚫 Do not build. Suppliers have their own stock management.                                                                                                                                                   |
 | **Buyer HR / crew management**                                             | Not yet built                              | 🚫 Do not build.                                                                                                                                                                                              |
@@ -236,7 +236,7 @@ These items were identified during the scope audit as potentially drifting towar
 
 ## What Stays Out — Absolute
 
-These will never be built in B3Hub, regardless of how they are framed:
+These will never be built in Bilt, regardless of how they are framed:
 
 - Payroll processing for any market side
 - Equipment or plant hire management (non-transport)
@@ -254,7 +254,7 @@ If a customer asks for one of these, the answer is: _"We don't do that. Use [rel
 
 Because every company we connect already runs their own systems, integrations are first-class citizens — not afterthoughts. The integration model is:
 
-- **We are the transaction of record.** Order placed, delivery confirmed, document generated, payment settled — all in B3Hub.
+- **We are the transaction of record.** Order placed, delivery confirmed, document generated, payment settled — all in Bilt.
 - **We push to their systems, not replace them.** A supplier's ERP gets a webhook when an order is confirmed. A carrier's TMS can pull their job queue. A buyer's accounting system gets the invoice via export.
 - **We pull from authoritative sources.** Company registry data from Lursoft. Construction project registry from BIS. We don't build our own company registry.
 

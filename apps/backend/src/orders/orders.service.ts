@@ -2824,18 +2824,33 @@ export class OrdersService {
         volume: 20,
         vehicleEnum: VehicleType.VAN,
       },
+      CAR: {
+        label: 'Vieglā automašīna',
+        capacity: 0.3,
+        volume: 0.5,
+        vehicleEnum: VehicleType.CAR,
+      },
+      PICKUP_TRUCK: {
+        label: 'Pikaps / furgonete',
+        capacity: 1.0,
+        volume: 2.5,
+        vehicleEnum: VehicleType.PICKUP_TRUCK,
+      },
     };
 
     const vehicle =
       VEHICLE_LABELS[dto.vehicleType] ?? VEHICLE_LABELS.TIPPER_LARGE;
-    const basePickupDate = new Date(dto.requestedDate);
+    // ON_DEMAND: dispatch immediately (30 min from now), ignoring requestedDate
+    const isHotshot = dto.dispatchMode === 'ON_DEMAND';
+    const basePickupDate = isHotshot
+      ? new Date(Date.now() + 30 * 60_000)
+      : new Date(dto.requestedDate);
     const truckCount = Math.min(Math.max(dto.truckCount ?? 1, 1), 10);
     const intervalMs = (dto.truckIntervalMinutes ?? 30) * 60_000;
     const isPricingPerTonne =
       dto.pricingMode === 'PER_TONNE' && (dto.pricePerTonne ?? 0) > 0;
 
     const baseJobData = {
-      jobType: TransportJobType.TRANSPORT,
       requestedById: userId,
       pickupAddress: dto.pickupAddress,
       pickupCity: dto.pickupCity,
@@ -2854,7 +2869,12 @@ export class OrdersService {
       cargoVolume: vehicle.volume,
       requiredVehicleType: vehicle.label,
       requiredVehicleEnum: vehicle.vehicleEnum,
-      specialRequirements: null,
+      specialRequirements: dto.specialRequirements ?? null,
+      siteContactName: dto.siteContactName ?? null,
+      siteContactPhone: dto.siteContactPhone ?? null,
+      receiverContactName: dto.receiverContactName ?? null,
+      receiverContactPhone: dto.receiverContactPhone ?? null,
+      notes: dto.notes ?? null,
       rate: dto.quotedRate,
       pricePerTonne: isPricingPerTonne ? dto.pricePerTonne : null,
       buyerOfferedRate: dto.buyerOfferedRate ?? null,
@@ -2862,6 +2882,9 @@ export class OrdersService {
       projectId: dto.projectId ?? null,
       status: TransportJobStatus.AVAILABLE,
     } as const;
+
+    // For hotshot jobs, use HOTSHOT job type instead of TRANSPORT
+    const jobType = isHotshot ? TransportJobType.HOTSHOT : TransportJobType.TRANSPORT;
 
     // Create one transport job per truck, staggered by intervalMs
     const jobs = await Promise.all(
@@ -2874,9 +2897,11 @@ export class OrdersService {
         return this.prisma.transportJob.create({
           data: {
             ...baseJobData,
+            jobType,
             jobNumber,
             pickupDate,
             deliveryDate: new Date(pickupDate.getTime() + 4 * 3_600_000),
+            dispatchMode: dto.dispatchMode ?? 'SCHEDULED',
           },
         });
       }),
@@ -2905,8 +2930,11 @@ export class OrdersService {
       );
 
     // Notify all active drivers about the new job (fire-and-forget)
+    const notifTitle = isHotshot
+      ? `⚡ Hotshot: ${dto.pickupCity} → ${dto.dropoffCity}`
+      : `🚚 Jauns kravas pārvadājuma darbs: ${dto.pickupCity} → ${dto.dropoffCity}`;
     this.notifyActiveDrivers(
-      `🚚 Jauns kravas pārvadājuma darbs: ${dto.pickupCity} → ${dto.dropoffCity}`,
+      notifTitle,
       `${dto.loadDescription ?? vehicle.label}${truckCount > 1 ? ` (${truckCount} auto)` : ''}`,
     ).catch((err) =>
       this.logger.error(err instanceof Error ? err.message : String(err)),
@@ -3536,6 +3564,98 @@ export class OrdersService {
       where: { id: scheduleId },
       data: { enabled: true },
     });
+  }
+
+  // ── Transport summary — tonnage reconciliation for multi-load orders ────────
+  async getTransportSummary(orderId: string, currentUser: RequestingUser) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        createdById: true,
+        items: { select: { quantity: true, unit: true } },
+        transportJobs: {
+          select: {
+            id: true,
+            jobNumber: true,
+            truckIndex: true,
+            status: true,
+            cargoWeight: true,
+            actualWeightKg: true,
+            pickupDate: true,
+            driver: { select: { id: true, firstName: true, lastName: true } },
+            vehicle: { select: { licensePlate: true, vehicleType: true } },
+          },
+          orderBy: [{ truckIndex: 'asc' }, { createdAt: 'asc' }],
+        },
+      },
+    });
+    if (!order) throw new NotFoundException(`Order ${orderId} not found`);
+    if (currentUser.userType !== 'ADMIN') {
+      await this.assertOrderAccess({ id: order.id, createdById: order.createdById }, currentUser);
+    }
+
+    const jobs = order.transportJobs;
+    const totalLoads = jobs.length;
+    const deliveredLoads = jobs.filter(
+      (j) =>
+        j.status === TransportJobStatus.DELIVERED ||
+        j.status === TransportJobStatus.DELIVERY_REFUSED,
+    ).length;
+    const inProgressLoads = jobs.filter((j) =>
+      ([
+        TransportJobStatus.ACCEPTED,
+        TransportJobStatus.EN_ROUTE_PICKUP,
+        TransportJobStatus.AT_PICKUP,
+        TransportJobStatus.LOADED,
+        TransportJobStatus.EN_ROUTE_DELIVERY,
+        TransportJobStatus.AT_DELIVERY,
+      ] as TransportJobStatus[]).includes(j.status),
+    ).length;
+
+    // Ordered weight: sum of item quantities in TONNE (convert M3 at 1.6 t/m³ rough estimate)
+    const orderedWeightTonnes = order.items.reduce((sum, item) => {
+      if (item.unit === 'TONNE') return sum + item.quantity;
+      if (item.unit === 'M3') return sum + item.quantity * 1.6;
+      return sum;
+    }, 0);
+
+    // Actual weight: sum of weigh-bridge readings from DELIVERED loads
+    const actualWeightKg = jobs
+      .filter((j) => j.status === TransportJobStatus.DELIVERED && j.actualWeightKg != null)
+      .reduce((sum, j) => sum + (j.actualWeightKg ?? 0), 0);
+    const actualWeightTonnes = actualWeightKg / 1000;
+
+    const completionPct =
+      orderedWeightTonnes > 0
+        ? Math.min(100, Math.round((actualWeightTonnes / orderedWeightTonnes) * 100))
+        : deliveredLoads > 0 && totalLoads > 0
+          ? Math.round((deliveredLoads / totalLoads) * 100)
+          : 0;
+
+    return {
+      orderId,
+      totalLoads,
+      deliveredLoads,
+      inProgressLoads,
+      pendingLoads: totalLoads - deliveredLoads - inProgressLoads,
+      orderedWeightTonnes: parseFloat(orderedWeightTonnes.toFixed(2)),
+      actualWeightTonnes: parseFloat(actualWeightTonnes.toFixed(3)),
+      completionPct,
+      loads: jobs.map((j) => ({
+        id: j.id,
+        jobNumber: j.jobNumber,
+        truckIndex: j.truckIndex,
+        status: j.status,
+        estimatedWeightTonnes: j.cargoWeight,
+        actualWeightTonnes: j.actualWeightKg != null ? j.actualWeightKg / 1000 : null,
+        pickupDate: j.pickupDate,
+        driver: j.driver
+          ? `${j.driver.firstName} ${j.driver.lastName}`
+          : null,
+        vehicle: j.vehicle?.licensePlate ?? null,
+      })),
+    };
   }
 
   async deleteSchedule(scheduleId: string, currentUser: RequestingUser) {

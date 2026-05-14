@@ -37,11 +37,11 @@ import {
   type CreateQuoteResponseInput,
 } from '@/lib/api';
 import { fmtDate } from '@/lib/format';
-import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+import { UNIT_SHORT } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-const CATEGORY_LV = CATEGORY_LABELS;
 const UNIT_LV = UNIT_SHORT;
 
 const UNITS: MaterialUnit[] = ['TONNE', 'M3', 'PIECE', 'LOAD'];
@@ -249,6 +249,7 @@ interface OpenRequestCardProps {
 function OpenRequestCard({ request, onRespond }: OpenRequestCardProps) {
   const responseCount = request.responses.length;
   const isNew = isNewRequest(request);
+  const { categoryLabels: CATEGORY_LV } = useMaterialCatalogue();
 
   return (
     <Card className="border-transparent bg-muted/40 py-0 shadow-none hover:bg-muted/60 transition-colors">

@@ -1,4 +1,4 @@
-# B3Hub Full Platform UI/UX Code Audit
+# Bilt Full Platform UI/UX Code Audit
 
 > **Scope**: Mobile (Expo/React Native), Web (Next.js 14), Backend patterns  
 > **Methodology**: IA review → Ownership analysis → Redundancy audit → User journey analysis → Heuristic evaluation  

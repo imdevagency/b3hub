@@ -42,6 +42,7 @@ import { haptics } from '@/lib/haptics';
 import { useDisposal } from '@/lib/disposal-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { fetchWasteTypes } from '@/lib/api/catalogue';
 import type { WasteType, DisposalTruckType } from '@/lib/api';
 import type { DisposalQuoteCenterResult } from '@/lib/api/containers';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
@@ -158,6 +159,29 @@ const WASTE_GROUPS: WasteGroup[] = [
 
 // Flat list used by the rest of the wizard logic (order submission, labels)
 const WASTE_OPTIONS: WasteOption[] = WASTE_GROUPS.flatMap((g) => g.items);
+
+const WASTE_ICON_MAP: Record<string, React.ElementType> = {
+  CONCRETE: Hammer,
+  BRICK: Hammer,
+  WOOD: Trees,
+  SOIL: Layers,
+  PLASTIC: Package,
+  PACKAGING_WASTE: Package,
+  ASPHALT: Layers,
+  MIXED: Trash2,
+  HAZARDOUS: AlertTriangle,
+  WEEE: Zap,
+  OIL_WASTE: FlameKindling,
+  TIRES: CircleDot,
+  METAL: Wrench,
+  GREEN_WASTE: Leaf,
+};
+
+const GROUP_HINTS: Record<string, string> = {
+  CONSTRUCTION_WASTE: 'Konteineri · Pašizgāzēji',
+  LICENSED_WASTE: 'Maršrutēti uz licencētiem partneriem',
+  SECONDARY_MATERIALS: 'Var tikt atpirkt vai pārstrādāts',
+};
 
 const TIPPER_TRUCKS: Array<{
   type: DisposalTruckType;
@@ -286,6 +310,9 @@ export default function DisposalWizard() {
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [showAuthGate, setShowAuthGate] = useState(false);
+
+  const [wasteGroups, setWasteGroups] = useState<WasteGroup[]>(WASTE_GROUPS);
+  const [wasteLabels, setWasteLabels] = useState<Record<string, string>>(WASTE_LABELS);
   const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
     null,
   );
@@ -402,7 +429,40 @@ export default function DisposalWizard() {
     picked,
   ]);
 
-  // ── Handlers ──────────────────────────────────────────────────
+  // -- Load waste types from catalogue --
+  useEffect(() => {
+    fetchWasteTypes()
+      .then((defs) => {
+        if (!defs.length) return;
+        const groupOrder = ['CONSTRUCTION_WASTE', 'LICENSED_WASTE', 'SECONDARY_MATERIALS'];
+        const grouped: Record<string, WasteGroup> = {};
+        for (const d of defs) {
+          if (!grouped[d.group]) {
+            grouped[d.group] = {
+              label: d.groupLabelLv ?? d.group,
+              hint: GROUP_HINTS[d.group],
+              items: [],
+            };
+          }
+          grouped[d.group].items.push({
+            id: d.code as WasteType,
+            label: d.labelLv ?? d.label,
+            desc: d.descriptionLv ?? d.description ?? '',
+            Icon: WASTE_ICON_MAP[d.code] ?? Trash2,
+          });
+        }
+        const groups = groupOrder.map((g) => grouped[g]).filter(Boolean);
+        if (groups.length) setWasteGroups(groups);
+        const labels: Record<string, string> = {};
+        for (const d of defs) labels[d.code] = d.labelLv ?? d.label;
+        setWasteLabels(labels);
+      })
+      .catch(() => {
+        /* keep hardcoded fallback */
+      });
+  }, []);
+
+  // -- Handlers --
   const handlePickConfirm = useCallback(
     (p: PickedAddress) => {
       setPicked(p);
@@ -444,7 +504,7 @@ export default function DisposalWizard() {
     // Build waste breakdown description prefix for operators
     const wasteBreakdownNote =
       selectedWastes.length > 1
-        ? `Atkritumu sastāvs: ${selectedWastes.map((w) => WASTE_LABELS[w]).join(', ')}\n`
+        ? `Atkritumu sastāvs: ${selectedWastes.map((w) => wasteLabels[w]).join(', ')}\n`
         : '';
     const fullDescription = wasteBreakdownNote + (desc || '');
     try {
@@ -750,7 +810,7 @@ export default function DisposalWizard() {
             keyboardShouldPersistTaps="handled"
           >
             <Text style={s.stepSub}>Izvēlieties atkritumu veidu(-s).</Text>
-            {WASTE_GROUPS.map((group) => (
+            {wasteGroups.map((group) => (
               <View key={group.label} style={{ marginBottom: 4 }}>
                 <View style={s.groupHeader}>
                   <Text style={s.groupLabel}>{group.label}</Text>
@@ -946,9 +1006,7 @@ export default function DisposalWizard() {
               <DetailRow
                 label="Atkritumu veids"
                 value={
-                  selectedWastes.length
-                    ? selectedWastes.map((w) => WASTE_LABELS[w]).join(', ')
-                    : '—'
+                  selectedWastes.length ? selectedWastes.map((w) => wasteLabels[w]).join(', ') : '—'
                 }
               />
               <DetailRow

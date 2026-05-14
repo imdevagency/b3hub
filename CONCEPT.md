@@ -1,8 +1,8 @@
-# B3Hub — Product Concept
+# Bilt — Product Concept
 
-## What B3Hub Is
+## What Bilt Is
 
-B3Hub is a **construction logistics platform** for the Latvian and Baltic market. It connects buyers, suppliers, carriers, and recyclers in one place — and gives construction companies the operational software to manage their projects, crews, and costs on top of that marketplace.
+Bilt is a **construction logistics platform** for the Latvian and Baltic market. It connects buyers, suppliers, carriers, and recyclers in one place — and gives construction companies the operational software to manage their projects, crews, and costs on top of that marketplace.
 
 One platform. One login. Everything a construction company needs.
 
@@ -21,13 +21,13 @@ Internal B3 staff only. Controls the platform.
 - Subscription and billing management
 - Platform analytics
 
-### 2. B3Hub App (`/dashboard/*` — web + mobile)
+### 2. Bilt App (`/dashboard/*` — web + mobile)
 
 Everyone else. What a company sees depends on their type and active features.
 
 ---
 
-## Who Uses B3Hub and What They See
+## Who Uses Bilt and What They See
 
 ### Any authenticated user (baseline)
 
@@ -102,7 +102,7 @@ companyRole     OWNER | MANAGER | DRIVER | MEMBER
 
 All three use the same platform. None has a separate app or login.
 
-### B3Hub (the marketplace)
+### Bilt (the marketplace)
 
 The core. Materials, transport, disposal, skip hire. Open to all.
 
@@ -118,7 +118,7 @@ A groundworks subcontracting company. Operates as a `CONSTRUCTION` company on it
 
 ## What Is Out of Scope
 
-The rule: **if it doesn't make someone order more through B3Hub, don't build it.**
+The rule: **if it doesn't make someone order more through Bilt, don't build it.**
 
 Never build:
 
@@ -156,4 +156,4 @@ Never build:
 
 ## The Differentiator
 
-No other Baltic tool connects project budget lines to live supplier rates, procurement orders, delivery tracking, and field costs in one place. A construction manager on B3Hub sees their project budget, places a material order against it, tracks the delivery, and sees the actual cost land in their profitability dashboard — without touching a spreadsheet.
+No other Baltic tool connects project budget lines to live supplier rates, procurement orders, delivery tracking, and field costs in one place. A construction manager on Bilt sees their project budget, places a material order against it, tracks the delivery, and sees the actual cost land in their profitability dashboard — without touching a spreadsheet.

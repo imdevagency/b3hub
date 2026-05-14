@@ -442,6 +442,95 @@ export default function OrderDetailsScreen() {
           </>
         )}
 
+        {order.transportJobs &&
+          order.transportJobs.length > 0 &&
+          (() => {
+            const jobs = order.transportJobs!;
+            const totalLoads = jobs.length;
+            const deliveredLoads = jobs.filter(
+              (j: { status: string }) => j.status === 'DELIVERED',
+            ).length;
+            const inProgressLoads = jobs.filter((j: { status: string }) =>
+              [
+                'ACCEPTED',
+                'EN_ROUTE_PICKUP',
+                'AT_PICKUP',
+                'LOADED',
+                'EN_ROUTE_DELIVERY',
+                'AT_DELIVERY',
+              ].includes(j.status),
+            ).length;
+            const actualWeightKg = jobs.reduce(
+              (sum: number, j: { status: string; actualWeightKg?: number | null }) =>
+                j.status === 'DELIVERED' ? sum + (j.actualWeightKg ?? 0) : sum,
+              0,
+            );
+            const actualWeightTonnes = actualWeightKg / 1000;
+            const completionPct =
+              totalLoads > 0 ? Math.round((deliveredLoads / totalLoads) * 100) : 0;
+            return (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.cardSection}>
+                  <Text style={styles.sectionHeading}>Kravas progress</Text>
+                  <DetailRow label="Kopā kraušanas" value={`${deliveredLoads} / ${totalLoads}`} />
+                  {inProgressLoads > 0 && (
+                    <DetailRow label="Ceļā šobrīd" value={`${inProgressLoads}`} />
+                  )}
+                  <DetailRow label="Piegādāts (kg)" value={`${actualWeightKg.toFixed(0)} kg`} />
+                  <DetailRow
+                    label="Piegādāts (t)"
+                    value={`${actualWeightTonnes.toFixed(3)} t`}
+                    last={completionPct === 0}
+                  />
+                  {completionPct > 0 && (
+                    <View style={{ marginTop: 10, marginBottom: 4 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Text
+                          style={{ fontSize: 12, color: '#6B7280', fontFamily: 'Inter_400Regular' }}
+                        >
+                          Izpilde
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontFamily: 'Inter_600SemiBold',
+                            color: '#111827',
+                          }}
+                        >
+                          {completionPct}%
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          height: 6,
+                          backgroundColor: '#F3F4F6',
+                          borderRadius: 3,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <View
+                          style={{
+                            height: 6,
+                            width: `${completionPct}%`,
+                            backgroundColor: completionPct >= 100 ? '#059669' : '#2563EB',
+                            borderRadius: 3,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </>
+            );
+          })()}
+
         <>
           <View style={styles.divider} />
           <View style={styles.cardSection}>

@@ -22,7 +22,8 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { QuoteRequest, QuoteResponse } from '@/lib/api';
 import { openPaymentUrl } from '@/lib/open-payment-url';
-import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
+import { UNIT_SHORT } from '@/lib/materials';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import { formatDateShort } from '@/lib/format';
 import { MapPin, Package, Clock, CheckCircle, Star, XCircle } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -61,6 +62,7 @@ export default function RfqDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const toast = useToast();
+  const { categoryLabels } = useMaterialCatalogue();
 
   const [rfq, setRfq] = useState<QuoteRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -188,8 +190,7 @@ export default function RfqDetailScreen() {
   }
 
   const st = RFQ_STATUS[rfq.status] ?? RFQ_STATUS.PENDING;
-  const categoryLabel =
-    CATEGORY_LABELS[rfq.materialCategory as keyof typeof CATEGORY_LABELS] ?? rfq.materialCategory;
+  const categoryLabel = categoryLabels[rfq.materialCategory as string] ?? rfq.materialCategory;
   // Sort cheapest-first so the "Best" badge always lands on the lowest-price offer
   const sortedResponses = [...rfq.responses].sort((a, b) => a.totalPrice - b.totalPrice);
 

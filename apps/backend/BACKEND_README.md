@@ -1,4 +1,4 @@
-# B3Hub Backend - Installation & Setup Guide
+# Bilt Backend - Installation & Setup Guide
 
 ## Prerequisites
 

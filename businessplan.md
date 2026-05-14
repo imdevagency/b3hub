@@ -8,7 +8,7 @@ B3 Group is a construction logistics business operating in Latvia and the Baltic
 
 | Unit                       | What it is                               | Role in the group                                                                                        |
 | -------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **B3Hub**                  | Digital marketplace platform             | Connects buyers, suppliers, and carriers for bulk material orders and waste disposal bookings            |
+| **Bilt**                  | Digital marketplace platform             | Connects buyers, suppliers, and carriers for bulk material orders and waste disposal bookings            |
 | **B3 Recycling (Gulbene)** | Licensed recycling and disposal facility | Accepts construction waste, processes it into certified secondary raw materials, sells it back to market |
 | **B3 Construction**        | Groundworks subcontracting company       | Generates its own material orders and waste disposal needs; feeds the platform as a first-party buyer    |
 
@@ -23,10 +23,10 @@ The three units are not separate businesses that happen to share a dashboard. Th
 ```
 Buyer (construction company, homeowner, B3 Construction itself)
        │
-       │  1. Places order on B3Hub app
+       │  1. Places order on Bilt app
        │     (gravel, sand, soil, concrete — or skip hire)
        ▼
-   B3Hub Platform
+   Bilt Platform
        │
        │  2. Matches order to nearest approved supplier
        │     + assigns carrier / driver
@@ -40,10 +40,10 @@ Buyer (construction company, homeowner, B3 Construction itself)
        │  4. Site generates waste:
        │     excavated soil, demolition concrete, rubble, asphalt
        │
-       │  5. Buyer books waste disposal via B3Hub
+       │  5. Buyer books waste disposal via Bilt
        │     (same app, same order flow)
        ▼
-   B3Hub Platform
+   Bilt Platform
        │
        │  6. Same carrier picks up waste on return trip
        │     (empty truck now loaded — doubles the trip value)
@@ -56,12 +56,12 @@ Buyer (construction company, homeowner, B3 Construction itself)
        ▼
 Secondary Raw Material (RC gravel, RC soil, processed concrete)
        │
-       │  8. Listed on B3Hub as available supply
+       │  8. Listed on Bilt as available supply
        ▼
 Next Buyer (back to step 1)
 ```
 
-**The flywheel effect**: more buyers → more deliveries → more waste bookings → more material through Gulbene → more secondary material supply → more competitive pricing on B3Hub → more buyers.
+**The flywheel effect**: more buyers → more deliveries → more waste bookings → more material through Gulbene → more secondary material supply → more competitive pricing on Bilt → more buyers.
 
 Every step creates value for the next. No truck should run empty in either direction.
 
@@ -69,9 +69,9 @@ Every step creates value for the next. No truck should run empty in either direc
 
 ## 3. What Each Unit Does Day-to-Day
 
-### B3Hub (the platform)
+### Bilt (the platform)
 
-B3Hub is the digital operating layer for the entire group. It is a **neutral marketplace** — it does not favour B3's own suppliers over external ones; it connects all parties and takes a transaction fee.
+Bilt is the digital operating layer for the entire group. It is a **neutral marketplace** — it does not favour B3's own suppliers over external ones; it connects all parties and takes a transaction fee.
 
 **What it handles:**
 
@@ -95,11 +95,11 @@ This is the physical hub that closes the circular loop. It is the B3 equivalent 
 
 **What it does:**
 
-- Accepts incoming construction waste booked through B3Hub — excavated soil, demolition concrete, rubble, bricks, asphalt
+- Accepts incoming construction waste booked through Bilt — excavated soil, demolition concrete, rubble, bricks, asphalt
 - Tests and classifies waste: determines if material meets standards for recycling or must go to licensed landfill
 - Processes recyclable material: crushing, screening, grading → produces certified secondary raw materials (RC gravel, RC fill, processed soil)
 - Issues certification documents for each batch of output material (required by Latvian construction regulations for RC material to be used on public works)
-- Sells processed secondary materials back to the market, listed on B3Hub alongside primary quarry products
+- Sells processed secondary materials back to the market, listed on Bilt alongside primary quarry products
 - Accepts walk-in drop-off from private customers and small builders (B2C waste disposal)
 
 **Why the licence matters:**
@@ -124,12 +124,12 @@ B3 Construction is a subcontracting business doing groundworks, drainage, and ea
 
 **Its role in the group:**
 
-- Generates predictable, continuous demand for bulk materials (gravel, sand, hardcore) — feeds B3Hub order volume
+- Generates predictable, continuous demand for bulk materials (gravel, sand, hardcore) — feeds Bilt order volume
 - Generates predictable, continuous construction waste (excavated soil, concrete) — feeds B3 Recycling Gulbene's intake
-- Provides a real-world test case for every feature built into B3Hub (internal dogfooding)
+- Provides a real-world test case for every feature built into Bilt (internal dogfooding)
 - Can be showcased to prospective B2B customers as proof that the platform works at scale
 
-B3 Construction is not the growth driver — B3Hub is. But it is a first-party anchor customer that ensures baseline utilisation of both the platform and the Gulbene facility.
+B3 Construction is not the growth driver — Bilt is. But it is a first-party anchor customer that ensures baseline utilisation of both the platform and the Gulbene facility.
 
 ---
 
@@ -137,10 +137,10 @@ B3 Construction is not the growth driver — B3Hub is. But it is a first-party a
 
 | Stream                   | Source               | Model                                                |
 | ------------------------ | -------------------- | ---------------------------------------------------- |
-| Platform commission      | B3Hub                | % of each completed material order                   |
-| Transport brokerage      | B3Hub                | Fee per transport job matched to a carrier           |
-| Disposal booking fee     | B3Hub                | Fee per waste disposal job routed to a facility      |
-| Skip hire revenue        | B3Hub                | Day rate for skip + collection + disposal handling   |
+| Platform commission      | Bilt                | % of each completed material order                   |
+| Transport brokerage      | Bilt                | Fee per transport job matched to a carrier           |
+| Disposal booking fee     | Bilt                | Fee per waste disposal job routed to a facility      |
+| Skip hire revenue        | Bilt                | Day rate for skip + collection + disposal handling   |
 | Gate fees (waste intake) | B3 Recycling Gulbene | Fee per tonne of waste accepted                      |
 | Secondary material sales | B3 Recycling Gulbene | Market price per tonne of certified RC material sold |
 | B2C walk-in disposal     | B3 Recycling Gulbene | Fixed fee for private customers dropping off waste   |
@@ -156,13 +156,13 @@ Schüttflix is the German company that proved this exact model at scale. Formed 
 
 | Schüttflix Group                           | B3 Group equivalent                             |
 | ------------------------------------------ | ----------------------------------------------- |
-| Schüttflix digital platform                | B3Hub marketplace                               |
+| Schüttflix digital platform                | Bilt marketplace                               |
 | IK Umwelt (licensed recycler, NRW)         | B3 Recycling — Gulbene (licensed facility)      |
 | Hagedorn / other unlicensed disposal sites | B3 Fields                                       |
 | Schüttflix Hubs (Wertstoffzentren)         | B3 Recycling Gulbene + expanded B3 Fields       |
-| Platform transaction fee                   | B3Hub commission                                |
+| Platform transaction fee                   | Bilt commission                                |
 | RC material sales                          | B3 Recycling certified secondary material sales |
-| Container hire                             | B3Hub skip hire vertical                        |
+| Container hire                             | Bilt skip hire vertical                        |
 | ~400–500 group employees at merger         | B3 Group at early growth stage                  |
 
 The key Schüttflix lesson: **they built the platform first, then acquired the physical recycling infrastructure**. B3 Group already has both. That is a structural advantage — B3 does not need to go through the stage of platform-only operation without the circular loop closed. The flywheel can start turning from day one.
@@ -176,7 +176,7 @@ A pure marketplace (platform only) is easy to copy. What is hard to copy is the 
 1. **Licensed physical infrastructure** — Gulbene's recycling licence took time and regulatory process to obtain. A competitor cannot spin one up overnight.
 2. **Data advantage** — the platform knows exactly what waste is being generated, where, and when. That data optimises Gulbene's intake scheduling and secondary material production planning. A new entrant has no data.
 3. **Network effects** — more carriers on the platform → faster deliveries → more buyers → more orders → more carriers want to join. Each side of the marketplace makes the other side more valuable.
-4. **Full-loop pricing** — because B3 captures revenue at both ends of the trip (material delivery AND waste disposal), it can offer carriers better utilisation and lower per-trip costs than a platform that only handles one direction. That makes B3Hub more attractive to carriers than any single-sided competitor.
+4. **Full-loop pricing** — because B3 captures revenue at both ends of the trip (material delivery AND waste disposal), it can offer carriers better utilisation and lower per-trip costs than a platform that only handles one direction. That makes Bilt more attractive to carriers than any single-sided competitor.
 
 ---
 
@@ -279,7 +279,7 @@ The gate app is a separate **EAS build variant** (`gate`) — the same codebase 
 
 **Yes, at the infrastructure level. One gap remains at the loop closure.**
 
-| Schüttflix + IK Umwelt                                                                         | B3Hub + B3 Fields                                                                                                    | Status                                                                              |
+| Schüttflix + IK Umwelt                                                                         | Bilt + B3 Fields                                                                                                    | Status                                                                              |
 | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Platform auto-routes disposal orders to nearest IK Umwelt facility that accepts the waste type | `createDisposalOrder` queries `RecyclingCenter` by `acceptedWasteTypes` and auto-assigns destination                 | ✅ Wired                                                                            |
 | IK Umwelt gate validates truck passes via platform                                             | `scanPass` validates `FieldPass` against the field's `recyclingCenter.acceptedWasteTypes`                            | ✅ Wired                                                                            |
@@ -304,7 +304,7 @@ Admin opens completed WasteRecord in B3 Recycling portal
   → Material record created, immediately visible in marketplace catalogue
 ```
 
-This one workflow closes the full circle and makes B3Hub functionally equivalent to the Schüttflix Group's end-to-end model.
+This one workflow closes the full circle and makes Bilt functionally equivalent to the Schüttflix Group's end-to-end model.
 
 ---
 

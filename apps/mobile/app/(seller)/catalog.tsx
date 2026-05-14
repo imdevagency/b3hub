@@ -38,7 +38,8 @@ import { useToast } from '@/components/ui/Toast';
 import { haptics } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-context';
 import { api, type ApiMaterial } from '@/lib/api';
-import { CATEGORY_LABELS, UNIT_SHORT } from '@/lib/materials';
+import { UNIT_SHORT } from '@/lib/materials';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import { PackageSearch, ExternalLink, Leaf, CalendarOff } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
 import type { ApiAvailabilityBlock } from '@/lib/api/materials';
@@ -54,7 +55,8 @@ function MaterialRow({
   onToggleStock: (id: string, next: boolean) => void;
   onBlockDates: (item: ApiMaterial) => void;
 }) {
-  const categoryLabel = CATEGORY_LABELS[item.category] ?? item.category;
+  const { categoryLabels } = useMaterialCatalogue();
+  const categoryLabel = categoryLabels[item.category] ?? item.category;
   const unit = UNIT_SHORT[item.unit] ?? item.unit;
   const thumb = item.images?.[0];
 

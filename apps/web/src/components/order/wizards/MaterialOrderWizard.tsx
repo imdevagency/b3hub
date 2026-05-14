@@ -47,6 +47,7 @@ import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/Web
 import { Container } from '@/components/marketing/layout/Container';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import {
   AlertTriangle,
   ArrowRight,
@@ -423,6 +424,7 @@ export function MaterialOrderWizard({
 }: Props) {
   const { token, setAuth, isLoading } = useAuth();
   const router = useRouter();
+  const { categoryLabels, categoryFractions } = useMaterialCatalogue();
 
   const meta = CATEGORY_META[category];
 
@@ -770,7 +772,7 @@ export function MaterialOrderWizard({
           ? 'Pieprasījums nosūtīts'
           : step === 'order-confirmed'
             ? 'Pasūtījums pieņemts'
-            : meta.label
+            : (categoryLabels[form.category] ?? meta.label)
       }
       onBack={
         STEP_INDEX[step] > 0 && step !== 'order-confirmed' && step !== 'rfq-sent'
@@ -840,7 +842,8 @@ export function MaterialOrderWizard({
                     router.push('/order/materials/' + newCat.toLowerCase().replace(/_/g, '-'));
                   } else {
                     const m = CATEGORY_META[newCat];
-                    const firstFraction = CATEGORY_FRACTIONS[newCat][0];
+                    const firstFraction = (categoryFractions[newCat] ??
+                      CATEGORY_FRACTIONS[newCat])[0];
                     const name =
                       firstFraction !== 'Nav norādīts' ? `${m.label} ${firstFraction}` : m.label;
                     patch({
@@ -860,7 +863,7 @@ export function MaterialOrderWizard({
                     const cMeta = CATEGORY_META[c];
                     return (
                       <SelectItem key={c} value={c} className="rounded-lg py-3 cursor-pointer">
-                        <span className="font-medium">{cMeta.label}</span>
+                        <span className="font-medium">{categoryLabels[c] ?? cMeta.label}</span>
                       </SelectItem>
                     );
                   })}
@@ -881,15 +884,17 @@ export function MaterialOrderWizard({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {CATEGORY_FRACTIONS[form.category].map((fraction) => (
-                    <SelectItem
-                      key={fraction}
-                      value={fraction}
-                      className="rounded-lg py-3 cursor-pointer"
-                    >
-                      <span className="font-medium">{fraction}</span>
-                    </SelectItem>
-                  ))}
+                  {(categoryFractions[form.category] ?? CATEGORY_FRACTIONS[form.category]).map(
+                    (fraction) => (
+                      <SelectItem
+                        key={fraction}
+                        value={fraction}
+                        className="rounded-lg py-3 cursor-pointer"
+                      >
+                        <span className="font-medium">{fraction}</span>
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -1348,7 +1353,7 @@ export function MaterialOrderWizard({
                         Kategorija
                       </span>
                       <span className="text-sm font-medium text-foreground text-right">
-                        {meta.label}
+                        {categoryLabels[form.category] ?? meta.label}
                       </span>
                     </div>
                     {form.selectedFraction !== 'Nav norādīts' && (

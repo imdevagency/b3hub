@@ -47,6 +47,10 @@ export type SpecsStepProps = {
   handlePickSitePhoto: () => void;
   fulfillmentType?: 'DELIVERY' | 'PICKUP';
   onFulfillmentTypeChange?: (v: 'DELIVERY' | 'PICKUP') => void;
+  /** Live category labels from DB; falls back to static @b3hub/shared values. */
+  categoryLabels?: Record<string, string>;
+  /** Live fractions per category from DB; falls back to static @b3hub/shared values. */
+  categoryFractions?: Record<string, string[]>;
 };
 
 export function SpecsStep({
@@ -67,7 +71,11 @@ export function SpecsStep({
   handlePickSitePhoto,
   fulfillmentType,
   onFulfillmentTypeChange,
+  categoryLabels: categoryLabelsProp,
+  categoryFractions: categoryFractionsProp,
 }: SpecsStepProps) {
+  const activeCategoryLabels = categoryLabelsProp ?? CATEGORY_LABELS;
+  const activeCategoryFractions = categoryFractionsProp ?? CATEGORY_FRACTIONS;
   // ── Internal UI state ──
   const [catPickerOpen, setCatPickerOpen] = useState(false);
   const [fractionPickerOpen, setFractionPickerOpen] = useState(false);
@@ -176,7 +184,7 @@ export function SpecsStep({
             <Text className="text-gray-400 text-sm font-semibold mb-1">Materiāls</Text>
             <View className="flex-row items-center justify-between">
               <Text className="text-gray-900 font-bold text-lg line-clamp-1" numberOfLines={1}>
-                {CATEGORY_LABELS[category]}
+                {activeCategoryLabels[category]}
               </Text>
               <ChevronDown size={18} color="#9ca3af" />
             </View>
@@ -647,20 +655,20 @@ export function SpecsStep({
         scrollable
         maxHeightPct={0.6}
       >
-        {(Object.keys(CATEGORY_FRACTIONS) as MaterialCategory[]).map((item) => (
+        {(Object.keys(activeCategoryFractions) as MaterialCategory[]).map((item) => (
           <TouchableOpacity
             key={item}
             style={s.sheetItem}
             onPress={() => {
               onCategoryChange(item);
-              onFractionChange(CATEGORY_FRACTIONS[item][0]);
+              onFractionChange(activeCategoryFractions[item][0]);
               setCatPickerOpen(false);
               haptics.light();
             }}
             activeOpacity={0.8}
           >
             <Text style={[s.sheetItemText, category === item && s.sheetItemTextActive]}>
-              {CATEGORY_LABELS[item]}
+              {activeCategoryLabels[item]}
             </Text>
             {category === item && <Check size={16} color="#111827" />}
           </TouchableOpacity>
@@ -674,7 +682,7 @@ export function SpecsStep({
         scrollable
         maxHeightPct={0.5}
       >
-        {CATEGORY_FRACTIONS[category].map((item) => (
+        {(activeCategoryFractions[category] ?? CATEGORY_FRACTIONS[category]).map((item) => (
           <TouchableOpacity
             key={item}
             style={s.sheetItem}

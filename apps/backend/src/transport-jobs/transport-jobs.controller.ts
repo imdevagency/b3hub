@@ -250,6 +250,32 @@ export class TransportJobsController {
   }
 
   /**
+   * GET /transport-jobs/fleet-availability?date=YYYY-MM-DD
+   * Returns which drivers/vehicles are free on a given date.
+   * Cross-references weekly schedule, date blocks, and existing job assignments.
+   * Dispatcher uses this before assigning a job.
+   */
+  @Get('fleet-availability')
+  getFleetAvailability(
+    @CurrentUser() user: RequestingUser,
+    @Query('date') date: string,
+  ) {
+    if (!canDispatch(user)) {
+      throw new ForbiddenException(
+        'You do not have permission to view fleet availability',
+      );
+    }
+    if (!date) {
+      throw new BadRequestException('date query param is required (YYYY-MM-DD)');
+    }
+    return this.service.getFleetAvailability(
+      date,
+      user.userType === 'ADMIN' ? undefined : (user.companyId ?? undefined),
+      user.userType === 'ADMIN',
+    );
+  }
+
+  /**
    * GET /transport-jobs/fleet
    * Returns ALL jobs for the dispatcher fleet status board.
    * Must come before :id route to avoid NestJS matching 'fleet' as an ID.

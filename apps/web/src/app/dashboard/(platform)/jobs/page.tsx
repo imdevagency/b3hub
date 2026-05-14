@@ -39,6 +39,8 @@ import {
   createTransportJob,
   getMyTransportJobs,
   getReturnTrips,
+  getFleetAvailability,
+  type DriverAvailabilityEntry,
   type ApiReturnTrip,
   type ApiTransportJob,
   type CreateTransportJobInput,
@@ -287,6 +289,36 @@ export default function JobsPage() {
   // Return trips panel
   const [returnTrips, setReturnTrips] = useState<ApiReturnTrip[]>([]);
   const [returnTripRef, setReturnTripRef] = useState<{ city: string; jobId: string } | null>(null);
+
+  // Fleet availability — loaded when dispatcher picks a pickupDate in create-job sheet
+  const [fleetAvailability, setFleetAvailability] = useState<DriverAvailabilityEntry[] | null>(
+    null,
+  );
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+  useEffect(() => {
+    const date = createForm.pickupDate;
+    if (!date || !token || !user?.isCompany) {
+      setFleetAvailability(null);
+      return;
+    }
+    let cancelled = false;
+    setAvailabilityLoading(true);
+    getFleetAvailability(date, token)
+      .then((res) => {
+        if (!cancelled) setFleetAvailability(res.drivers);
+      })
+      .catch(() => {
+        if (!cancelled) setFleetAvailability(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAvailabilityLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createForm.pickupDate, token]);
 
   // Live diesel price
   const [fuelDiesel, setFuelDiesel] = useState<number | null>(null);
@@ -1219,6 +1251,61 @@ export default function JobsPage() {
                     onChange={(e) => setField('pickupDate', e.target.value)}
                   />
                 </div>
+
+                {/* Fleet availability for selected pickup date */}
+                {createForm.pickupDate && (
+                  <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Šoferu pieejamība {createForm.pickupDate}
+                      </span>
+                    </div>
+                    {availabilityLoading ? (
+                      <p className="text-xs text-muted-foreground">Ielādē...</p>
+                    ) : fleetAvailability == null ? (
+                      <p className="text-xs text-muted-foreground">Pieejamības dati nav</p>
+                    ) : fleetAvailability.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nav reģistrētu šoferu</p>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        {fleetAvailability.map((d) => (
+                          <div
+                            key={d.driverId}
+                            className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs ${
+                              d.available
+                                ? 'bg-green-50 border border-green-200/70 text-green-900'
+                                : 'bg-muted/60 border border-border text-muted-foreground'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                d.available ? 'bg-green-500' : 'bg-muted-foreground/40'
+                              }`}
+                            />
+                            <span className="font-medium">
+                              {d.firstName} {d.lastName}
+                            </span>
+                            {d.schedule && d.available && (
+                              <span className="text-green-700/70 ml-auto">
+                                {d.schedule.startTime}–{d.schedule.endTime}
+                              </span>
+                            )}
+                            {!d.available && d.reason && (
+                              <span className="ml-auto">
+                                {d.reason === 'already_assigned'
+                                  ? 'Piešķirts'
+                                  : d.reason === 'blocked'
+                                    ? 'Bloķēts'
+                                    : 'Nav grafikā'}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <Label className="text-xs">Laika logs (neobligāts)</Label>
                   <Input

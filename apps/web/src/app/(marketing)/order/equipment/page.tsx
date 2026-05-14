@@ -1,11 +1,12 @@
 'use client';
 
+import { useEquipmentServices } from '@/lib/use-equipment-services';
 import { Settings2, HardHat, Clock } from 'lucide-react';
-import { EQUIPMENT_SERVICES } from '@/lib/equipment-services';
 import { CatalogGrid } from '@/components/catalog/CatalogGrid';
 
 export default function EquipmentCatalogPage() {
-  const items = EQUIPMENT_SERVICES.map((svc) => ({
+  const equipmentServices = useEquipmentServices();
+  const items = equipmentServices.map((svc) => ({
     id: svc.type,
     href: `/order/equipment/${svc.type.toLowerCase().replace(/_/g, '-')}`,
     label: svc.label,

@@ -46,12 +46,8 @@ import { useHeaderConfig } from '@/lib/header-context';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import type { MaterialCategory, ApiMaterial } from '@/lib/api';
-import {
-  CATEGORY_LABELS,
-  CATEGORY_DESCRIPTIONS,
-  MATERIAL_CATEGORIES,
-  UNIT_SHORT,
-} from '@/lib/materials';
+import { UNIT_SHORT } from '@/lib/materials';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 // ── Display order — most common construction materials first ──────────────
 
@@ -93,16 +89,20 @@ function CategoryCard({
   supplierCount,
   minPrice,
   onPress,
+  categoryLabels,
+  categoryDescriptions,
 }: {
   category: MaterialCategory;
   hasRecycled: boolean;
   supplierCount: number;
   minPrice: number | null;
   onPress: () => void;
+  categoryLabels?: Record<string, string>;
+  categoryDescriptions?: Record<string, string>;
 }) {
   const meta = CATEGORY_META[category] ?? { bg: '#f3f4f6', accent: '#6b7280', icon: Package };
   const Icon = meta.icon;
-  const description = CATEGORY_DESCRIPTIONS[category];
+  const description = categoryDescriptions?.[category] ?? '';
 
   return (
     <TouchableOpacity
@@ -133,7 +133,7 @@ function CategoryCard({
             className="text-gray-900 font-bold tracking-tight line-clamp-1"
             style={{ fontSize: 17 }}
           >
-            {CATEGORY_LABELS[category]}
+            {categoryLabels?.[category] ?? category}
           </Text>
         </View>
         <View className="flex-row items-center mt-1">
@@ -172,6 +172,7 @@ export default function CatalogScreen() {
   const router = useRouter();
   const { token } = useAuth();
   const { setConfig } = useHeaderConfig();
+  const { categoryLabels, categoryDescriptions, categories } = useMaterialCatalogue();
   const params = useLocalSearchParams<{ projectId?: string; schedule?: string; focus?: string }>();
   const projectId = params.projectId;
   const schedule = params.schedule;
@@ -425,10 +426,7 @@ export default function CatalogScreen() {
 
   // Filter categories by search query and recycled tab, preserving DISPLAY_ORDER
   const visibleCategories = useMemo(() => {
-    const ordered = [
-      ...DISPLAY_ORDER,
-      ...MATERIAL_CATEGORIES.filter((c) => !DISPLAY_ORDER.includes(c)),
-    ];
+    const ordered = [...DISPLAY_ORDER, ...categories.filter((c) => !DISPLAY_ORDER.includes(c))];
     const modeFiltered =
       filterMode === 'RECYCLED'
         ? ordered.filter((c) => c === 'RECYCLED_CONCRETE' || c === 'RECYCLED_SOIL')
@@ -437,11 +435,11 @@ export default function CatalogScreen() {
     const q = query.trim().toLowerCase();
     return modeFiltered.filter(
       (cat) =>
-        CATEGORY_LABELS[cat].toLowerCase().includes(q) ||
-        (CATEGORY_DESCRIPTIONS[cat] ?? '').toLowerCase().includes(q) ||
+        (categoryLabels[cat] ?? '').toLowerCase().includes(q) ||
+        (categoryDescriptions[cat] ?? '').toLowerCase().includes(q) ||
         allMaterials.some((m) => m.category === cat && m.name.toLowerCase().includes(q)),
     );
-  }, [query, filterMode, allMaterials]);
+  }, [query, filterMode, allMaterials, categories, categoryLabels, categoryDescriptions]);
 
   const handleCategoryPress = (cat: MaterialCategory) => {
     router.push({
@@ -728,6 +726,8 @@ export default function CatalogScreen() {
               supplierCount={supCount}
               minPrice={minPrice}
               onPress={() => handleCategoryPress(cat as MaterialCategory)}
+              categoryLabels={categoryLabels}
+              categoryDescriptions={categoryDescriptions}
             />
           );
         }}

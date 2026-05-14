@@ -50,7 +50,8 @@ import {
   Zap,
 } from 'lucide-react';
 
-import { CATEGORY_LABELS, UNIT_SHORT } from '@b3hub/shared';
+import { UNIT_SHORT } from '@b3hub/shared';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 
 // ── Order-again helpers ───────────────────────────────────────────────────────
 
@@ -455,6 +456,7 @@ export function SupplierView({ token }: { token: string }) {
   const { orders, setOrders, loading, reload } = useMaterialOrders(token);
   const [actioning, setActioning] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { categoryLabels } = useMaterialCatalogue();
 
   const handleConfirm = async (id: string) => {
     setActioning(id);
@@ -651,9 +653,7 @@ export function SupplierView({ token }: { token: string }) {
                       </h3>
                       {item?.material?.category && (
                         <p className="text-[13px] font-medium text-muted-foreground mt-1">
-                          {CATEGORY_LABELS[
-                            item.material.category as keyof typeof CATEGORY_LABELS
-                          ] ?? item.material.category}
+                          {categoryLabels[item.material.category] ?? item.material.category}
                         </p>
                       )}
                     </div>

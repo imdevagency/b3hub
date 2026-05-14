@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { fmtDate, fmtMoney } from '@/lib/format';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import {
   getProject,
   updateProject,
@@ -92,25 +93,63 @@ const STATUS_META: Record<
 };
 
 const WASTE_LABELS: Record<string, string> = {
-  CONCRETE: 'Betons', BRICK: 'Ķieģeļi', WOOD: 'Koksne', METAL: 'Metāls',
-  PLASTIC: 'Plastmasa', SOIL: 'Grunts', MIXED: 'Jaukti', HAZARDOUS: 'Bīstami',
-  ASPHALT: 'Asfalta', GREEN_WASTE: 'Zaļais atkritums', WEEE: 'Elektronikas atkritumi',
-  OIL_WASTE: 'Eļļas atkritumi', TIRES: 'Riepas', PACKAGING_WASTE: 'Iepakojuma atkritumi',
+  CONCRETE: 'Betons',
+  BRICK: 'Ķieģeļi',
+  WOOD: 'Koksne',
+  METAL: 'Metāls',
+  PLASTIC: 'Plastmasa',
+  SOIL: 'Grunts',
+  MIXED: 'Jaukti',
+  HAZARDOUS: 'Bīstami',
+  ASPHALT: 'Asfalta',
+  GREEN_WASTE: 'Zaļais atkritums',
+  WEEE: 'Elektronikas atkritumi',
+  OIL_WASTE: 'Eļļas atkritumi',
+  TIRES: 'Riepas',
+  PACKAGING_WASTE: 'Iepakojuma atkritumi',
 };
 
 const MATERIAL_LABELS: Record<string, string> = {
-  SAND: 'Smiltis', GRAVEL: 'Grants', STONE: 'Akmens', CONCRETE: 'Betons',
-  SOIL: 'Grunts', RECYCLED_CONCRETE: 'RC betons', RECYCLED_SOIL: 'RC grunts',
-  ASPHALT: 'Asfalta', CLAY: 'Māls', OTHER: 'Cits',
+  SAND: 'Smiltis',
+  GRAVEL: 'Grants',
+  STONE: 'Akmens',
+  CONCRETE: 'Betons',
+  SOIL: 'Grunts',
+  RECYCLED_CONCRETE: 'RC betons',
+  RECYCLED_SOIL: 'RC grunts',
+  ASPHALT: 'Asfalta',
+  CLAY: 'Māls',
+  OTHER: 'Cits',
 };
 
 const WASTE_TYPE_OPTIONS: WasteType[] = [
-  'CONCRETE','BRICK','WOOD','METAL','PLASTIC','SOIL','MIXED','HAZARDOUS',
-  'ASPHALT','GREEN_WASTE','WEEE','OIL_WASTE','TIRES','PACKAGING_WASTE',
+  'CONCRETE',
+  'BRICK',
+  'WOOD',
+  'METAL',
+  'PLASTIC',
+  'SOIL',
+  'MIXED',
+  'HAZARDOUS',
+  'ASPHALT',
+  'GREEN_WASTE',
+  'WEEE',
+  'OIL_WASTE',
+  'TIRES',
+  'PACKAGING_WASTE',
 ];
 
 const MATERIAL_CATEGORY_OPTIONS: MaterialCategoryValue[] = [
-  'SAND','GRAVEL','STONE','CONCRETE','SOIL','RECYCLED_CONCRETE','RECYCLED_SOIL','ASPHALT','CLAY','OTHER',
+  'SAND',
+  'GRAVEL',
+  'STONE',
+  'CONCRETE',
+  'SOIL',
+  'RECYCLED_CONCRETE',
+  'RECYCLED_SOIL',
+  'ASPHALT',
+  'CLAY',
+  'OTHER',
 ];
 
 const ORDER_STATUS_LABELS: Record<
@@ -663,6 +702,7 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { token } = useAuth();
+  const { categoryLabels: MATERIAL_LABELS } = useMaterialCatalogue();
 
   const [project, setProject] = useState<ApiProjectDetail | null>(null);
   const [documents, setDocuments] = useState<ApiProjectDocument[]>([]);
@@ -783,17 +823,25 @@ export default function ProjectDetailPage() {
     if (!token || !id || !wTonnes || !wFrom || !wTo) return;
     setSavingWaste(true);
     try {
-      const decl = await addWasteDeclaration(id, {
-        wasteType: wType,
-        estimatedTonnes: parseFloat(wTonnes),
-        availableFrom: wFrom,
-        availableTo: wTo,
-        willingToSell: wSell,
-        notes: wNotes || undefined,
-      }, token);
+      const decl = await addWasteDeclaration(
+        id,
+        {
+          wasteType: wType,
+          estimatedTonnes: parseFloat(wTonnes),
+          availableFrom: wFrom,
+          availableTo: wTo,
+          willingToSell: wSell,
+          notes: wNotes || undefined,
+        },
+        token,
+      );
       setWasteDeclarations((prev) => [...prev, decl]);
       setWasteFormOpen(false);
-      setWTonnes(''); setWFrom(''); setWTo(''); setWSell(false); setWNotes('');
+      setWTonnes('');
+      setWFrom('');
+      setWTo('');
+      setWSell(false);
+      setWNotes('');
     } finally {
       setSavingWaste(false);
     }
@@ -809,16 +857,23 @@ export default function ProjectDetailPage() {
     if (!token || !id || !nTonnes || !nFrom || !nTo) return;
     setSavingNeed(true);
     try {
-      const need = await addMaterialNeed(id, {
-        materialCategory: nCat,
-        estimatedTonnes: parseFloat(nTonnes),
-        neededFrom: nFrom,
-        neededTo: nTo,
-        notes: nNotes || undefined,
-      }, token);
+      const need = await addMaterialNeed(
+        id,
+        {
+          materialCategory: nCat,
+          estimatedTonnes: parseFloat(nTonnes),
+          neededFrom: nFrom,
+          neededTo: nTo,
+          notes: nNotes || undefined,
+        },
+        token,
+      );
       setMaterialNeeds((prev) => [...prev, need]);
       setNeedFormOpen(false);
-      setNTonnes(''); setNFrom(''); setNTo(''); setNNotes('');
+      setNTonnes('');
+      setNFrom('');
+      setNTo('');
+      setNNotes('');
     } finally {
       setSavingNeed(false);
     }
@@ -1256,59 +1311,118 @@ export default function ProjectDetailPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">Atkritumu veids</Label>
                   <Select value={wType} onValueChange={(v) => setWType(v as WasteType)}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {WASTE_TYPE_OPTIONS.map((wt) => (
-                        <SelectItem key={wt} value={wt}>{WASTE_LABELS[wt] ?? wt}</SelectItem>
+                        <SelectItem key={wt} value={wt}>
+                          {WASTE_LABELS[wt] ?? wt}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Aptuvenais daudzums (t)</Label>
-                  <Input className="h-9 text-sm" placeholder="0" value={wTonnes} onChange={(e) => setWTonnes(e.target.value)} type="number" min="0.1" />
+                  <Input
+                    className="h-9 text-sm"
+                    placeholder="0"
+                    value={wTonnes}
+                    onChange={(e) => setWTonnes(e.target.value)}
+                    type="number"
+                    min="0.1"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Pieejams no</Label>
-                  <Input className="h-9 text-sm" type="date" value={wFrom} onChange={(e) => setWFrom(e.target.value)} />
+                  <Input
+                    className="h-9 text-sm"
+                    type="date"
+                    value={wFrom}
+                    onChange={(e) => setWFrom(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Pieejams līdz</Label>
-                  <Input className="h-9 text-sm" type="date" value={wTo} onChange={(e) => setWTo(e.target.value)} />
+                  <Input
+                    className="h-9 text-sm"
+                    type="date"
+                    value={wTo}
+                    onChange={(e) => setWTo(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Piezīmes</Label>
-                <Input className="h-9 text-sm" placeholder="Papildinformācija par materiālu stāvokli..." value={wNotes} onChange={(e) => setWNotes(e.target.value)} />
+                <Input
+                  className="h-9 text-sm"
+                  placeholder="Papildinformācija par materiālu stāvokli..."
+                  value={wNotes}
+                  onChange={(e) => setWNotes(e.target.value)}
+                />
               </div>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={wSell} onChange={(e) => setWSell(e.target.checked)} className="rounded" />
+                <input
+                  type="checkbox"
+                  checked={wSell}
+                  onChange={(e) => setWSell(e.target.checked)}
+                  className="rounded"
+                />
                 Vēlamies pārdot (pēc apstrādes tiks piedāvāts Bilt tirgū)
               </label>
               <div className="flex gap-2 justify-end">
-                <Button size="sm" variant="outline" onClick={() => setWasteFormOpen(false)}>Atcelt</Button>
-                <Button size="sm" disabled={!wTonnes || !wFrom || !wTo || savingWaste} onClick={handleAddWasteDeclaration}>
+                <Button size="sm" variant="outline" onClick={() => setWasteFormOpen(false)}>
+                  Atcelt
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!wTonnes || !wFrom || !wTo || savingWaste}
+                  onClick={handleAddWasteDeclaration}
+                >
                   {savingWaste ? 'Saglabā...' : 'Saglabāt'}
                 </Button>
               </div>
             </div>
           )}
           {wasteDeclarations.length === 0 && !wasteFormOpen ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nav atkritumu deklarāciju</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nav atkritumu deklarāciju
+            </p>
           ) : (
             wasteDeclarations.map((d) => (
-              <div key={d.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-muted/30 transition-colors group">
+              <div
+                key={d.id}
+                className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-muted/30 transition-colors group"
+              >
                 <Recycle className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">{WASTE_LABELS[d.wasteType] ?? d.wasteType}</p>
-                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full">{d.estimatedTonnes} t</Badge>
-                    {d.willingToSell && <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full border-green-500 text-green-700">Pārdot</Badge>}
+                    <p className="text-sm font-semibold">
+                      {WASTE_LABELS[d.wasteType] ?? d.wasteType}
+                    </p>
+                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full">
+                      {d.estimatedTonnes} t
+                    </Badge>
+                    {d.willingToSell && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] h-4 px-1.5 rounded-full border-green-500 text-green-700"
+                      >
+                        Pārdot
+                      </Badge>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{fmtDate(d.availableFrom)} → {fmtDate(d.availableTo)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {fmtDate(d.availableFrom)} → {fmtDate(d.availableTo)}
+                  </p>
                   {d.notes && <p className="text-xs text-muted-foreground truncate">{d.notes}</p>}
                 </div>
-                <button onClick={() => handleDeleteWasteDeclaration(d.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all" title="Dzēst">
+                <button
+                  onClick={() => handleDeleteWasteDeclaration(d.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                  title="Dzēst"
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1340,54 +1454,101 @@ export default function ProjectDetailPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">Materiāla kategorija</Label>
                   <Select value={nCat} onValueChange={(v) => setNCat(v as MaterialCategoryValue)}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {MATERIAL_CATEGORY_OPTIONS.map((c) => (
-                        <SelectItem key={c} value={c}>{MATERIAL_LABELS[c] ?? c}</SelectItem>
+                        <SelectItem key={c} value={c}>
+                          {MATERIAL_LABELS[c] ?? c}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Aptuvenais daudzums (t)</Label>
-                  <Input className="h-9 text-sm" placeholder="0" value={nTonnes} onChange={(e) => setNTonnes(e.target.value)} type="number" min="0.1" />
+                  <Input
+                    className="h-9 text-sm"
+                    placeholder="0"
+                    value={nTonnes}
+                    onChange={(e) => setNTonnes(e.target.value)}
+                    type="number"
+                    min="0.1"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Vajadzīgs no</Label>
-                  <Input className="h-9 text-sm" type="date" value={nFrom} onChange={(e) => setNFrom(e.target.value)} />
+                  <Input
+                    className="h-9 text-sm"
+                    type="date"
+                    value={nFrom}
+                    onChange={(e) => setNFrom(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Vajadzīgs līdz</Label>
-                  <Input className="h-9 text-sm" type="date" value={nTo} onChange={(e) => setNTo(e.target.value)} />
+                  <Input
+                    className="h-9 text-sm"
+                    type="date"
+                    value={nTo}
+                    onChange={(e) => setNTo(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Piezīmes</Label>
-                <Input className="h-9 text-sm" placeholder="Specifikācija, kvalitāte, piegādes adrese..." value={nNotes} onChange={(e) => setNNotes(e.target.value)} />
+                <Input
+                  className="h-9 text-sm"
+                  placeholder="Specifikācija, kvalitāte, piegādes adrese..."
+                  value={nNotes}
+                  onChange={(e) => setNNotes(e.target.value)}
+                />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button size="sm" variant="outline" onClick={() => setNeedFormOpen(false)}>Atcelt</Button>
-                <Button size="sm" disabled={!nTonnes || !nFrom || !nTo || savingNeed} onClick={handleAddMaterialNeed}>
+                <Button size="sm" variant="outline" onClick={() => setNeedFormOpen(false)}>
+                  Atcelt
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!nTonnes || !nFrom || !nTo || savingNeed}
+                  onClick={handleAddMaterialNeed}
+                >
                   {savingNeed ? 'Saglabā...' : 'Saglabāt'}
                 </Button>
               </div>
             </div>
           )}
           {materialNeeds.length === 0 && !needFormOpen ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nav materiālu vajadzību</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nav materiālu vajadzību
+            </p>
           ) : (
             materialNeeds.map((n) => (
-              <div key={n.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-muted/30 transition-colors group">
+              <div
+                key={n.id}
+                className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-muted/30 transition-colors group"
+              >
                 <ShoppingCart className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold">{MATERIAL_LABELS[n.materialCategory] ?? n.materialCategory}</p>
-                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full">{n.estimatedTonnes} t</Badge>
+                    <p className="text-sm font-semibold">
+                      {MATERIAL_LABELS[n.materialCategory] ?? n.materialCategory}
+                    </p>
+                    <Badge variant="outline" className="text-[10px] h-4 px-1.5 rounded-full">
+                      {n.estimatedTonnes} t
+                    </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">{fmtDate(n.neededFrom)} → {fmtDate(n.neededTo)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {fmtDate(n.neededFrom)} → {fmtDate(n.neededTo)}
+                  </p>
                   {n.notes && <p className="text-xs text-muted-foreground truncate">{n.notes}</p>}
                 </div>
-                <button onClick={() => handleDeleteMaterialNeed(n.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all" title="Dzēst">
+                <button
+                  onClick={() => handleDeleteMaterialNeed(n.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                  title="Dzēst"
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>

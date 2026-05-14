@@ -35,7 +35,7 @@ import {
   type RentalListing,
   type PriceEstimateResult,
 } from '@/lib/api/rentals';
-import { EQUIPMENT_SERVICES } from '@/lib/equipment-services';
+import { useEquipmentServices } from '@/lib/use-equipment-services';
 
 import {
   ArrowRight,
@@ -168,8 +168,9 @@ function OfferCard({
 export function EquipmentMatchWizard({ initialServiceType, mode = 'public' }: Props) {
   const { user } = useAuth();
   const router = useRouter();
+  const equipmentServices = useEquipmentServices();
 
-  const serviceDef = EQUIPMENT_SERVICES.find((s) => s.type === initialServiceType);
+  const serviceDef = equipmentServices.find((s) => s.type === initialServiceType);
   const catalogHref = mode === 'dashboard' ? '/dashboard/order/equipment' : '/order/equipment';
 
   // ── Wizard state ──────────────────────────────────────────────────────────

@@ -2279,6 +2279,138 @@ export class AdminService {
     await this.prisma.skipSizeDefinition.delete({ where: { code } });
   }
 
+  // ── Catalogue CRUD — material categories ──────────────────────────────────
+
+  async adminListMaterialCategories() {
+    return this.prisma.materialCategoryDefinition.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async adminUpsertMaterialCategory(code: string, data: Record<string, unknown>) {
+    return this.prisma.materialCategoryDefinition.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteMaterialCategory(code: string) {
+    await this.prisma.materialCategoryDefinition.delete({ where: { code } });
+  }
+
+  // ── Catalogue CRUD — material fractions ───────────────────────────────────
+
+  async adminListMaterialFractions() {
+    return this.prisma.materialFractionDefinition.findMany({
+      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }],
+    });
+  }
+
+  async adminUpsertMaterialFraction(code: string, data: Record<string, unknown>) {
+    return this.prisma.materialFractionDefinition.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, category: (data.category as string) ?? 'OTHER', ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteMaterialFraction(code: string) {
+    await this.prisma.materialFractionDefinition.delete({ where: { code } });
+  }
+
+  // ── Catalogue CRUD — waste types ──────────────────────────────────────────
+
+  async adminListWasteTypes() {
+    return this.prisma.wasteTypeDefinition.findMany({
+      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }],
+    });
+  }
+
+  async adminUpsertWasteType(code: string, data: Record<string, unknown>) {
+    return this.prisma.wasteTypeDefinition.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteWasteType(code: string) {
+    await this.prisma.wasteTypeDefinition.delete({ where: { code } });
+  }
+
+  // ── Catalogue CRUD — vehicle service categories ───────────────────────────
+
+  async adminListVehicleCategories() {
+    return this.prisma.vehicleServiceCategory.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async adminUpsertVehicleCategory(code: string, data: Record<string, unknown>) {
+    return this.prisma.vehicleServiceCategory.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteVehicleCategory(code: string) {
+    await this.prisma.vehicleServiceCategory.delete({ where: { code } });
+  }
+
+  // ── Catalogue CRUD — toilet cabin types ──────────────────────────────────
+
+  async adminListToiletCabinTypes() {
+    return this.prisma.toiletCabinDefinition.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async adminUpsertToiletCabinType(code: string, data: Record<string, unknown>) {
+    return this.prisma.toiletCabinDefinition.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteToiletCabinType(code: string) {
+    await this.prisma.toiletCabinDefinition.delete({ where: { code } });
+  }
+
+  // ── Catalogue CRUD — rental service types ────────────────────────────────
+
+  async adminListRentalServiceTypes() {
+    return this.prisma.rentalServiceDefinition.findMany({
+      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }],
+    });
+  }
+
+  async adminUpsertRentalServiceType(code: string, data: Record<string, unknown>) {
+    return this.prisma.rentalServiceDefinition.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteRentalServiceType(code: string) {
+    await this.prisma.rentalServiceDefinition.delete({ where: { code } });
+  }
+
+  // ── Catalogue CRUD — scrap materials ─────────────────────────────────────
+
+  async adminListScrapMaterials() {
+    return this.prisma.scrapMaterialDefinition.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async adminUpsertScrapMaterial(code: string, data: Record<string, unknown>) {
+    return this.prisma.scrapMaterialDefinition.upsert({
+      where: { code },
+      create: { code, label: (data.label as string) ?? code, ...(data as any) },
+      update: data as any,
+    });
+  }
+
+  async adminDeleteScrapMaterial(code: string) {
+    await this.prisma.scrapMaterialDefinition.delete({ where: { code } });
+  }
+
   // ── Marketplace engine overview ────────────────────────────────────────────
   /**
    * Returns everything the comparison engine needs, aggregated for admin review:

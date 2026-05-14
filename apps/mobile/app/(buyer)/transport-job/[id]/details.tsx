@@ -43,7 +43,7 @@ import { api } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useTransportJob } from '@/lib/use-transport-job';
 import { useLiveUpdates } from '@/lib/use-live-updates';
-import { CATEGORY_LABELS } from '@/lib/materials';
+import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
 import { formatDate } from '@/lib/format';
 import { colors } from '@/lib/theme';
 import { entering } from '@/lib/transitions';
@@ -58,10 +58,10 @@ const CARGO_LABEL: Record<string, string> = {
   WASTE_COLLECTION: 'Atkritumu izvešana',
   MATERIAL_DELIVERY: 'Materiālu piegāde',
   GENERAL_FREIGHT: 'Vispārīgā krava',
-  SAND: CATEGORY_LABELS.SAND,
-  GRAVEL: CATEGORY_LABELS.GRAVEL,
-  CONCRETE: CATEGORY_LABELS.CONCRETE,
-  SOIL: CATEGORY_LABELS.SOIL,
+  SAND: 'Smiltis',
+  GRAVEL: 'Grants',
+  CONCRETE: 'Betons',
+  SOIL: 'Grunts',
   WOOD: 'Koks',
   METAL: 'Metāls',
   MIXED: 'Jaukts',
@@ -78,6 +78,8 @@ export default function TransportJobDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { job, loading, reload: loadJob } = useTransportJob(id);
+  const { categoryLabels } = useMaterialCatalogue();
+  const resolvedCargoLabel = { ...CARGO_LABEL, ...categoryLabels };
   const [cancelling, setCancelling] = useState(false);
   const [driverRating, setDriverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
@@ -203,7 +205,7 @@ export default function TransportJobDetailsScreen() {
   const cargoRows = [
     { label: 'Referents', value: job.jobNumber ?? null },
     { label: 'Darba tips', value: typeLabel },
-    { label: 'Krava', value: CARGO_LABEL[job.cargoType] ?? job.cargoType },
+    { label: 'Krava', value: resolvedCargoLabel[job.cargoType] ?? job.cargoType },
     {
       label: 'Svars',
       value: job.cargoWeight != null ? `${(job.cargoWeight / 1000).toFixed(1)} t` : null,
@@ -383,7 +385,7 @@ export default function TransportJobDetailsScreen() {
         <View style={styles.cardSection}>
           <Text style={styles.sectionHeading}>Papildu informācija</Text>
           <DetailRow label="Darba tips" value={typeLabel} />
-          <DetailRow label="Krava" value={CARGO_LABEL[job.cargoType] ?? job.cargoType} />
+          <DetailRow label="Krava" value={resolvedCargoLabel[job.cargoType] ?? job.cargoType} />
           <DetailRow
             label="Svars"
             value={job.cargoWeight != null ? `${(job.cargoWeight / 1000).toFixed(1)} t` : null}

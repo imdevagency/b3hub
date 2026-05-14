@@ -30,6 +30,7 @@ import { useAuth } from '@/lib/auth-context';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
 import { api } from '@/lib/api';
+import { fetchToiletCabinTypes } from '@/lib/api/catalogue';
 import { addGuestOrder } from '@/lib/guest-token-storage';
 import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
 import type { ToiletCabinType } from '@/lib/api';
@@ -88,6 +89,20 @@ const HIRE_PERIOD_OPTIONS: Array<{ days: number; label: string }> = [
 ];
 
 const BASE_PRICE_PER_CABIN_PER_DAY = 12;
+
+const CABIN_ICON_MAP: Record<string, React.ElementType> = {
+  STANDARD: Building2,
+  DISABLED_ACCESS: Accessibility,
+  VIP: Star,
+  HEATED: Thermometer,
+};
+
+const CABIN_FEATURES_MAP: Record<string, string[]> = {
+  STANDARD: ['Tvertne', 'Pisuārs', 'Tualetes papīrs'],
+  DISABLED_ACCESS: ['Tvertne', 'Tualetes papīrs', 'Plata ieeja'],
+  VIP: ['Iekšējā izlietne', 'Pisuārs', 'Ziepju dozators', 'Tualetes papīrs'],
+  HEATED: ['Elektrisks radiators', 'Apgaismojums', 'Spogulis', 'VIP aprīkojums'],
+};
 
 const CABIN_TYPES: Array<{
   value: ToiletCabinType;
@@ -165,6 +180,8 @@ export default function ToiletCabinWizard() {
   >(null);
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
+
+  const [cabinTypes, setCabinTypes] = useState(CABIN_TYPES);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
   const [guestResult, setGuestResult] = useState<{ token: string; orderNumber: string } | null>(
     null,
@@ -286,6 +303,27 @@ export default function ToiletCabinWizard() {
     servicingFrequency,
   ]);
 
+  // -- Load cabin types from catalogue --
+  useEffect(() => {
+    fetchToiletCabinTypes()
+      .then((defs) => {
+        if (!defs.length) return;
+        setCabinTypes(
+          defs.map((d) => ({
+            value: d.code as ToiletCabinType,
+            label: d.labelLv ?? d.label,
+            sub: d.descriptionLv ?? '',
+            features: CABIN_FEATURES_MAP[d.code] ?? [],
+            fromPrice: d.basePrice ?? 1.0,
+            Icon: CABIN_ICON_MAP[d.code] ?? Building2,
+          })),
+        );
+      })
+      .catch(() => {
+        /* keep hardcoded fallback */
+      });
+  }, []);
+
   const BASE_PRICE_BY_TYPE: Record<string, number> = {
     STANDARD: 1.0,
     DISABLED_ACCESS: 2.7,
@@ -322,7 +360,7 @@ export default function ToiletCabinWizard() {
             : servicingFrequency === 'MONTHLY'
               ? 'Tīrīšana: reizi mēnesī'
               : null;
-      const cabinTypeLabel = CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType;
+      const cabinTypeLabel = cabinTypes.find((c) => c.value === cabinType)?.label ?? cabinType;
       const combinedNotes = [`Kabīnes veids: ${cabinTypeLabel}`, servicingNote, notes]
         .filter(Boolean)
         .join('. ');
@@ -392,7 +430,7 @@ export default function ToiletCabinWizard() {
             : servicingFrequency === 'MONTHLY'
               ? 'Tīrīšana: reizi mēnesī'
               : null;
-      const cabinTypeLabel = CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType;
+      const cabinTypeLabel = cabinTypes.find((c) => c.value === cabinType)?.label ?? cabinType;
       const combinedNotes = [`Kabīnes veids: ${cabinTypeLabel}`, servicingNote, notes]
         .filter(Boolean)
         .join('. ');
@@ -517,7 +555,7 @@ export default function ToiletCabinWizard() {
           >
             <Text style={s.stepSub}>Kādu tualetes kabīni nepieciešams nomāt?</Text>
             <View style={{ gap: 12, marginTop: 16 }}>
-              {CABIN_TYPES.map((ct) => {
+              {cabinTypes.map((ct) => {
                 const isSel = cabinType === ct.value;
                 return (
                   <TouchableOpacity
@@ -836,7 +874,7 @@ export default function ToiletCabinWizard() {
                 >
                   <Text style={{ fontSize: 14, color: '#6b7280' }}>Kabīnes veids</Text>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                    {CABIN_TYPES.find((c) => c.value === cabinType)?.label ?? cabinType}
+                    {cabinTypes.find((c) => c.value === cabinType)?.label ?? cabinType}
                   </Text>
                 </View>
                 <View

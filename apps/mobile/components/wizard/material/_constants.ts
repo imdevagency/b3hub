@@ -3,7 +3,7 @@
  * Consumed by the wizard root (app/order-request-new.tsx) and individual steps.
  */
 import type { MaterialUnit } from '@/lib/materials';
-import { CATEGORY_FRACTIONS as _CATEGORY_FRACTIONS } from '@b3hub/shared';
+import { CATEGORY_FRACTIONS as _CATEGORY_FRACTIONS, MATERIAL_DENSITY as _MATERIAL_DENSITY } from '@b3hub/shared';
 import type { MaterialCategory } from '@b3hub/shared';
 import type { TruckType } from '@/components/ui/TruckIllustration';
 
@@ -63,19 +63,9 @@ export const TRUCK_OPTIONS: TruckOption[] = [
 export const CATEGORY_FRACTIONS = _CATEGORY_FRACTIONS;
 
 // ── Bulk density t/m³ for volume → weight conversion ──────────────────────
+// Source of truth in @b3hub/shared (MATERIAL_DENSITY) — mirrors DB catalogue densityTM3 values.
 
-export const MATERIAL_DENSITY: Partial<Record<string, number>> = {
-  SAND: 1.6,
-  GRAVEL: 1.8,
-  STONE: 2.7,
-  CONCRETE: 2.4,
-  SOIL: 1.7,
-  RECYCLED_CONCRETE: 1.5,
-  RECYCLED_SOIL: 1.5,
-  ASPHALT: 2.3,
-  CLAY: 1.8,
-  OTHER: 1.7,
-};
+export const MATERIAL_DENSITY = _MATERIAL_DENSITY;
 
 /** Category-specific default unit; all others default to TONNE. */
 export const CATEGORY_DEFAULT_UNIT: Partial<Record<string, MaterialUnit>> = {

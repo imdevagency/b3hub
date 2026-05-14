@@ -22,6 +22,7 @@ import {
   TransportExceptionStatus,
   TransportJobStatus,
   OrderStatus,
+  Prisma,
 } from '@prisma/client';
 import {
   UpdateStatusDto,
@@ -2662,7 +2663,7 @@ export class TransportJobsService {
     const jobs = await this.prisma.transportJob.findMany({
       where: {
         status: { in: activeStatuses },
-        currentLocation: { not: null },
+        currentLocation: { not: Prisma.JsonNull },
       },
       select: { id: true, currentLocation: true },
     });
@@ -4529,6 +4530,114 @@ export class TransportJobsService {
    * Update the IBAN on the solo driver's DriverProfile.
    * Company drivers manage IBAN through PATCH /company/me instead.
    */
+  // ── Fleet availability — which drivers/vehicles are free on a given date ──
+  async getFleetAvailability(
+    dateStr: string,
+    carrierId: string | undefined,
+    isAdmin: boolean,
+  ) {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date');
+    }
+    const dayOfWeek = date.getDay(); // 0=Sun … 6=Sat
+    const dateOnly = date.toISOString().slice(0, 10);
+
+    // All driver profiles in the company (or across the platform for admin)
+    const where = carrierId && !isAdmin ? { user: { companyId: carrierId } } : {};
+    const profiles = await this.prisma.driverProfile.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            companyId: true,
+            vehicles: {
+              where: { status: 'ACTIVE' },
+              select: { id: true, licensePlate: true, vehicleType: true },
+            },
+          },
+        },
+        weeklySchedule: { where: { dayOfWeek, enabled: true } },
+        dateBlocks: {
+          where: {
+            blockedDate: {
+              gte: new Date(`${dateOnly}T00:00:00.000Z`),
+              lte: new Date(`${dateOnly}T23:59:59.999Z`),
+            },
+          },
+        },
+      },
+    });
+
+    // Jobs already assigned on that date (blocks the driver for that day)
+    const dayStart = new Date(`${dateOnly}T00:00:00.000Z`);
+    const dayEnd = new Date(`${dateOnly}T23:59:59.999Z`);
+    const assignedDriverIds = new Set(
+      (
+        await this.prisma.transportJob.findMany({
+          where: {
+            pickupDate: { gte: dayStart, lte: dayEnd },
+            driverId: { not: null },
+            status: {
+              notIn: [
+                TransportJobStatus.CANCELLED,
+                TransportJobStatus.DELIVERED,
+                TransportJobStatus.DELIVERY_REFUSED,
+              ],
+            },
+          },
+          select: { driverId: true },
+        })
+      )
+        .map((j) => j.driverId)
+        .filter((id): id is string => id != null),
+    );
+
+    const result = profiles.map((p) => {
+      const isBlocked = p.dateBlocks.length > 0;
+      const hasSchedule = p.weeklySchedule.length > 0;
+      const isAssigned = assignedDriverIds.has(p.user.id);
+      const available = !isBlocked && hasSchedule && !isAssigned;
+      return {
+        driverId: p.user.id,
+        firstName: p.user.firstName,
+        lastName: p.user.lastName,
+        phone: p.user.phone,
+        companyId: p.user.companyId,
+        available,
+        reason: isBlocked
+          ? 'blocked'
+          : !hasSchedule
+            ? 'not_scheduled'
+            : isAssigned
+              ? 'already_assigned'
+              : null,
+        vehicles: p.user.vehicles,
+        schedule: p.weeklySchedule[0]
+          ? {
+              startTime: p.weeklySchedule[0].startTime,
+              endTime: p.weeklySchedule[0].endTime,
+            }
+          : null,
+      };
+    });
+
+    return {
+      date: dateOnly,
+      dayOfWeek,
+      drivers: result,
+      summary: {
+        total: result.length,
+        available: result.filter((d) => d.available).length,
+        unavailable: result.filter((d) => !d.available).length,
+      },
+    };
+  }
+
   async updateDriverBillingIban(
     userId: string,
     ibanNumber: string,

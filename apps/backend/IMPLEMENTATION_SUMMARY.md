@@ -1,4 +1,4 @@
-# B3Hub Backend - Quick Start Summary
+# Bilt Backend - Quick Start Summary
 
 ## What's Been Implemented ✅
 
