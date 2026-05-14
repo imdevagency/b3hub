@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useMode } from '@/lib/mode-context';
+import { useAuth } from '@/lib/auth-context';
 import { getPortalNavGroup, type Mode } from '@/lib/portal-nav-groups';
 
 /**
@@ -18,6 +19,7 @@ import { getPortalNavGroup, type Mode } from '@/lib/portal-nav-groups';
 export function PortalSectionTabs() {
   const pathname = usePathname();
   const { activeMode } = useMode();
+  const { user } = useAuth();
   const group = getPortalNavGroup(pathname, activeMode as Mode);
 
   if (!group) return null;
@@ -29,7 +31,17 @@ export function PortalSectionTabs() {
           {group.label}
         </span>
         <nav className="flex gap-1 overflow-x-auto scrollbar-none py-0.5" aria-label={group.label}>
-          {group.tabs.map((tab) => {
+          {group.tabs.filter(tab => {
+            // Permission filtering for Catalog tabs
+            if (group.id === 'catalog') {
+              if (tab.label === 'Materiāli' && !user?.canSell) return false;
+              if (tab.label === 'Karjeri' && !user?.canSell) return false;
+              if (tab.label === 'Tualetes kabīnes' && !(user as any)?.canSkipHire) return false;
+              if (tab.label === 'Konteineri' && !(user as any)?.canSkipHire) return false;
+              if (tab.label === 'Tehnika' && !(user as any)?.canRent) return false;
+            }
+            return true;
+          }).map((tab) => {
             const active = pathname === tab.href || pathname.startsWith(tab.href + '/');
             return (
               <Link

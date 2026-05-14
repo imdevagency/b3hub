@@ -9,7 +9,16 @@
  * each card is just a Link; auth is handled downstream in the wizard.
  */
 import Link from 'next/link';
-import { HardHat, Lock, Package, Truck, Building2, Recycle, FlameKindling } from 'lucide-react';
+import {
+  HardHat,
+  Lock,
+  Package,
+  Truck,
+  Building2,
+  Recycle,
+  FlameKindling,
+  Forklift,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ServiceDef {
@@ -66,6 +75,14 @@ const SERVICES: ServiceDef[] = [
       'Nododiet metāllūžņus oficiālos pieņemšanas punktos (Tolmets u.c.). Aktuālās cenas un ātra apmaksa.',
   },
   {
+    id: 'equipment',
+    href: '/order/equipment',
+    icon: Forklift,
+    title: 'Tehnika',
+    description: 'Ekskavatori, demperi, kompaktori, pacēlāji — noma ar piegādi uz objektu.',
+    badge: 'No €39/dienā',
+  },
+  {
     id: 'transport',
     href: '/dashboard/order/transport',
     icon: Truck,
@@ -82,6 +99,7 @@ const DASHBOARD_HREFS: Record<string, string> = {
   disposal: '/dashboard/order/disposal',
   'toilet-cabin': '/dashboard/order/toilet-cabin',
   'scrap-buyback': '/dashboard/order/scrap-buyback',
+  equipment: '/dashboard/order/equipment',
   transport: '/dashboard/order/transport',
 };
 

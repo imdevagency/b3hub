@@ -18,6 +18,7 @@ import {
   Wrench,
   Search,
   RefreshCcw,
+  Forklift,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -78,6 +79,7 @@ const SERVICES = [
   { id: 'disposal', icon: Trash2, label: 'Utilizācija', route: '/disposal' },
   { id: 'scrap-buyback', icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
   { id: 'toilet-cabin', icon: Building2, label: 'Kabīnes', route: '/toilet-cabin' },
+  { id: 'equipment', icon: Forklift, label: 'Tehnika', route: '/(buyer)/equipment' },
 ];
 
 export default function HomeScreen() {

@@ -57,6 +57,7 @@ export class JwtOrApiKeyGuard implements CanActivate {
         canSell: false,
         canTransport: false,
         canSkipHire: false,
+        canRent: false,
         canRecycle: false,
         companyId: result.companyId,
         companyRole: 'MEMBER',

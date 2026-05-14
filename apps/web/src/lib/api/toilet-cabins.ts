@@ -95,3 +95,44 @@ export async function updateToiletCabinCarrierStatus(
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// ── Carrier fleet settings ────────────────────────────────────────────────────
+
+export interface CarrierToiletCabinSettings {
+  id: string;
+  carrierId: string;
+  cabinType: ToiletCabinType;
+  pricePerCabinPerDay: number;
+  maxCabins: number;
+  serviceCities: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SetToiletCabinSettingsPayload {
+  cabinType: ToiletCabinType;
+  pricePerCabinPerDay: number;
+  maxCabins: number;
+  serviceCities: string[];
+  isActive: boolean;
+}
+
+export async function getCarrierToiletCabinSettings(
+  token: string,
+): Promise<CarrierToiletCabinSettings[]> {
+  return apiFetch<CarrierToiletCabinSettings[]>('/toilet-cabins/carrier/settings', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function upsertCarrierToiletCabinSettings(
+  payload: SetToiletCabinSettingsPayload,
+  token: string,
+): Promise<CarrierToiletCabinSettings> {
+  return apiFetch<CarrierToiletCabinSettings>('/toilet-cabins/carrier/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

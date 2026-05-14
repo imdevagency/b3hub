@@ -10,6 +10,7 @@ export interface RequestingUser {
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
   canSkipHire: boolean; // approved to manage skip hire fleet
+  canRent: boolean; // approved equipment rental provider — can receive & fulfil rental orders
   canRecycle: boolean; // approved to operate a recycling/waste center
   companyId?: string; // linked Company id, if any
   companyRole?: string; // 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER'

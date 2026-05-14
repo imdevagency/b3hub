@@ -15,7 +15,7 @@
  * 5. Done — no new screens needed.
  */
 
-import { Package, Fence, Building2, Zap, Lamp, Droplets } from 'lucide-react-native';
+import { Package, Fence, Building2, Zap, Lamp, Droplets, Shovel, Truck, Layers, Forklift, Wind, Wrench, Flame, Thermometer, Boxes, Scissors, ArrowUp } from 'lucide-react-native';
 import type React from 'react';
 
 // ── Service type ──────────────────────────────────────────────────
@@ -27,7 +27,20 @@ export type RentalServiceType =
   | 'SITE_OFFICE'
   | 'GENERATOR'
   | 'LIGHTING_TOWER'
-  | 'WATER_BOWSER';
+  | 'WATER_BOWSER'
+  | 'MINI_EXCAVATOR'
+  | 'EXCAVATOR'
+  | 'DUMPER'
+  | 'COMPACTOR'
+  | 'TELEHANDLER'
+  | 'AERIAL_PLATFORM'
+  | 'AIR_COMPRESSOR'
+  | 'POWER_TOOLS'
+  | 'WELDER'
+  | 'HEATER'
+  | 'CONCRETE_EQUIPMENT'
+  | 'REBAR_EQUIPMENT'
+  | 'ALUMINUM_TOWER';
 
 // ── Status config ─────────────────────────────────────────────────
 
@@ -211,6 +224,231 @@ export const RENTAL_SERVICES: Record<RentalServiceType, RentalServiceDefinition>
       { days: 14, label: '2 nedēļas' },
     ],
     apiPath: 'rentals/WATER_BOWSER',
+  },
+
+  // ── Construction equipment ────────────────────────────────────────
+
+  MINI_EXCAVATOR: {
+    type: 'MINI_EXCAVATOR',
+    label: 'Mini ekskavatoru noma',
+    description: 'Mini ekskavatoru noma līdz 6t — terasēšana, komunikācijas, ainava',
+    Icon: Shovel,
+    unitLabel: 'ekskavatoru',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  EXCAVATOR: {
+    type: 'EXCAVATOR',
+    label: 'Ekskavators',
+    description: 'Pilna izmēra ekskavatoru noma (6t+) — lieliem rakšanas darbiem',
+    Icon: Shovel,
+    unitLabel: 'ekskavatoru',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  DUMPER: {
+    type: 'DUMPER',
+    label: 'Dempera pašizgāzēji',
+    description: 'Materiālu pārvadāšana pa būvlaukumu bez satiksmes ceļiem',
+    Icon: Truck,
+    unitLabel: 'mašīnas',
+    actions: RENTAL_ACTIONS_SIMPLE,
+    hasInUseStep: false,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  COMPACTOR: {
+    type: 'COMPACTOR',
+    label: 'Kompaktori un rullīši',
+    description: 'Grunts, asfalta un bruģa kompaktēšanai',
+    Icon: Layers,
+    unitLabel: 'vienības',
+    actions: RENTAL_ACTIONS_SIMPLE,
+    hasInUseStep: false,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  TELEHANDLER: {
+    type: 'TELEHANDLER',
+    label: 'Teleskopiskās iekrāvējas',
+    description: 'Materiālu celšana un pārvietošana būvlaukumā',
+    Icon: Forklift,
+    unitLabel: 'iekrāvējas',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  AERIAL_PLATFORM: {
+    type: 'AERIAL_PLATFORM',
+    label: 'Pacēlāji un platformas',
+    description: 'Šķēru pacēlāji un "ķiršu lasītāji" augstuma darbiem',
+    Icon: Forklift,
+    unitLabel: 'vienības',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  // ── Small equipment & tools ───────────────────────────────────────
+
+  AIR_COMPRESSOR: {
+    type: 'AIR_COMPRESSOR',
+    label: 'Gaisa kompresori',
+    description: 'Gaisa kompresori un pneimatiskais instrumentārijs būvlaukumiem',
+    Icon: Wind,
+    unitLabel: 'kompresoram',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  POWER_TOOLS: {
+    type: 'POWER_TOOLS',
+    label: 'Elektroinstrumenti',
+    description: 'Rokas elektroinstrumenti — urbjmašīnas, slīpētāji, zāģi, perforatori',
+    Icon: Wrench,
+    unitLabel: 'instrumentam',
+    actions: RENTAL_ACTIONS_SIMPLE,
+    hasInUseStep: false,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  WELDER: {
+    type: 'WELDER',
+    label: 'Metināšanas iekārtas',
+    description: 'MIG/MAG, TIG un elektrodu metināšanas iekārtu noma',
+    Icon: Flame,
+    unitLabel: 'iekārtai',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  HEATER: {
+    type: 'HEATER',
+    label: 'Sildītāji',
+    description: 'Dīzeļdegvielas un propāna sildītāji būvlaukumu apsildei',
+    Icon: Thermometer,
+    unitLabel: 'sildītājam',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  CONCRETE_EQUIPMENT: {
+    type: 'CONCRETE_EQUIPMENT',
+    label: 'Betona tehnika',
+    description: 'Betona mikseri, vibratori, ekrāni un grīdas noslīpētāji',
+    Icon: Boxes,
+    unitLabel: 'vienībai',
+    actions: RENTAL_ACTIONS_WITH_IN_USE,
+    hasInUseStep: true,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  REBAR_EQUIPMENT: {
+    type: 'REBAR_EQUIPMENT',
+    label: 'Armatūras apstrādes tehnika',
+    description: 'Armatūras liecamās un griešanas mašīnas',
+    Icon: Scissors,
+    unitLabel: 'mašīnai',
+    actions: RENTAL_ACTIONS_SIMPLE,
+    hasInUseStep: false,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+    ],
+    apiPath: 'rentals',
+  },
+
+  ALUMINUM_TOWER: {
+    type: 'ALUMINUM_TOWER',
+    label: 'Alumīnija torņi un kāpnes',
+    description: 'Mobilās alumīnija darba platformas un teleskopiskās kāpnes',
+    Icon: ArrowUp,
+    unitLabel: 'tornītim',
+    actions: RENTAL_ACTIONS_SIMPLE,
+    hasInUseStep: false,
+    hirePeriodOptions: [
+      { days: 1,  label: '1 diena' },
+      { days: 3,  label: '3 dienas' },
+      { days: 7,  label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    apiPath: 'rentals',
   },
 };
 

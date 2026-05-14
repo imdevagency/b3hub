@@ -79,11 +79,14 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
     {
       id: 'catalog',
       label: 'Katalogs',
-      primaryHref: '/dashboard/materials',
+      primaryHref: '/dashboard/portfolio',
       tabs: [
+        { label: 'Kopskats', href: '/dashboard/portfolio' },
         { label: 'Materiāli', href: '/dashboard/materials' },
+        { label: 'Tualetes kabīnes', href: '/dashboard/toilet-cabins' },
+        { label: 'Konteineri', href: '/dashboard/skip-hire/fleet' },
+        { label: 'Tehnika', href: '/dashboard/equipment-rentals/catalog' },
         { label: 'Karjeri', href: '/dashboard/locations' },
-        { label: 'Atsauksmes', href: '/dashboard/reviews' },
       ],
     },
     {

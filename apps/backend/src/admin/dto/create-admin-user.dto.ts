@@ -58,6 +58,10 @@ export class CreateAdminUserDto {
 
   @IsOptional()
   @IsBoolean()
+  canRent?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   canRecycle?: boolean;
 
   @IsOptional()

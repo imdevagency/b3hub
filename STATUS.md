@@ -245,6 +245,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - provider-applications
 - quote-requests
 - recycling-centers
+- rentals
 - reviews
 - saved-addresses
 - skip-hire
@@ -297,6 +298,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (marketing)/karjeriem
 - (marketing)/order
 - (marketing)/order/disposal
+- (marketing)/order/equipment
 - (marketing)/order/materials
 - (marketing)/order/materials/[category]
 - (marketing)/order/scrap-buyback
@@ -313,8 +315,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/analytics
 - dashboard/(internal)/admin/applications
 - dashboard/(internal)/admin/audit-logs
-- dashboard/(internal)/admin/b3-fields
-- dashboard/(internal)/admin/b3-fields/[id]
 - dashboard/(internal)/admin/broadcast
 - dashboard/(internal)/admin/catalog
 - dashboard/(internal)/admin/circular-flow
@@ -330,8 +330,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/exceptions
 - dashboard/(internal)/admin/feature-flags
 - dashboard/(internal)/admin/fee-config
-- dashboard/(internal)/admin/field-ops
-- dashboard/(internal)/admin/field-passes
 - dashboard/(internal)/admin/finances
 - dashboard/(internal)/admin/framework-contracts
 - dashboard/(internal)/admin/guest-orders
@@ -372,7 +370,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(internal)/admin/users
 - dashboard/(internal)/admin/users/[id]
 - dashboard/(internal)/admin/waste-signals
-- dashboard/(internal)/admin/weighing-slips
 - dashboard/(internal)/b3-recycling
 - dashboard/(internal)/b3-recycling/apus
 - dashboard/(internal)/b3-recycling/certificates
@@ -392,7 +389,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/documents
 - dashboard/(platform)/drivers
 - dashboard/(platform)/earnings
-- dashboard/(platform)/field-passes
+- dashboard/(platform)/equipment-rentals
 - dashboard/(platform)/fleet
 - dashboard/(platform)/fleet-management
 - dashboard/(platform)/framework-contracts
@@ -404,6 +401,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(platform)/materials
 - dashboard/(platform)/order
 - dashboard/(platform)/order/disposal
+- dashboard/(platform)/order/equipment
 - dashboard/(platform)/order/scrap-buyback
 - dashboard/(platform)/order/skip-hire
 - dashboard/(platform)/order/transport
@@ -438,7 +436,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - dashboard/(shared)/settings
 - dashboard/(shared)/settings/saved-addresses
 - forgot-password
-- gate
 - guest/payment-failed
 - guest/payment-success
 - order/[id]/payment-failed
@@ -467,12 +464,12 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (buyer)/(account)/certificates
 - (buyer)/(account)/disputes
 - (buyer)/(account)/documents
-- (buyer)/(account)/field-passes
 - (buyer)/(account)/invoices
 - (buyer)/(account)/payment-methods
 - (buyer)/(account)/saved-addresses
 - (buyer)/(account)/schedules
 - (buyer)/catalog
+- (buyer)/equipment/index
 - (buyer)/framework-contract/[id]
 - (buyer)/framework-contracts
 - (buyer)/home
@@ -502,7 +499,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (driver)/skips
 - (driver)/toilet-cabins
 - (driver)/vehicles
-- (gate)/fields
 - (recycler)/documents
 - (recycler)/home
 - (recycler)/incoming
@@ -526,7 +522,6 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (shared)/change-password
 - (shared)/chat/[jobId]
 - (shared)/delivery-proof
-- (shared)/gate-scan
 - (shared)/help
 - (shared)/language
 - (shared)/messages
@@ -538,6 +533,7 @@ These sections are injected by `npm run docs:generate`. Do not edit by hand.
 - (wizards)/disposal/confirmation
 - (wizards)/disposal/index
 - (wizards)/material-order
+- (wizards)/rental/index
 - (wizards)/scrap-buyback/index
 - (wizards)/skip-hire/confirmation
 - (wizards)/skip-hire/index

@@ -10,7 +10,7 @@ applyTo: "apps/backend/**"
 > **Trust contract:** regenerated automatically on every `prisma:generate` and `prisma:push`.
 > Treat as accurate. Only regenerate manually if a field looks missing (means schema was edited without running generate).
 
-Schema: `apps/backend/prisma/schema.prisma` (3588 lines, 86 models, 71 enums).
+Schema: `apps/backend/prisma/schema.prisma` (3595 lines, 86 models, 71 enums).
 API prefix: `/api/v1` — all routes start with this (e.g. `POST /api/v1/orders`).
 ORM: **Prisma**. Always inject `PrismaService` from `src/prisma/prisma.module.ts` — never import `@prisma/client` directly.
 DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL` = direct (migrations only).
@@ -25,6 +25,7 @@ DB: PostgreSQL on Supabase. `DATABASE_URL` = pooler (transactions), `DIRECT_URL`
 - `OrdersModule`
 - `SkipHireModule`
 - `ToiletCabinsModule`
+- `RentalsModule`
 - `DocumentsModule`
 - `ProviderApplicationsModule`
 - `VehiclesModule`
@@ -116,7 +117,7 @@ npm run db:seed           # reseed demo data
 | `SkipHireStatus` | PENDING CONFIRMED DELIVERED COLLECTED COMPLETED CANCELLED |
 | `ToiletCabinType` | STANDARD DISABLED_ACCESS VIP HEATED |
 | `ToiletCabinStatus` | PENDING CONFIRMED DELIVERED IN_USE COLLECTED COMPLETED CANCELLED |
-| `RentalServiceType` | SCAFFOLDING TEMP_FENCING SITE_OFFICE GENERATOR LIGHTING_TOWER WATER_BOWSER SKIP_HIRE TOILET_CABIN |
+| `RentalServiceType` | SCAFFOLDING TEMP_FENCING SITE_OFFICE GENERATOR LIGHTING_TOWER WATER_BOWSER SKIP_HIRE TOILET_CABIN MINI_EXCAVATOR EXCAVATOR DUMPER COMPACTOR TELEHANDLER AERIAL_PLATFORM |
 | `RentalOrderStatus` | PENDING CONFIRMED DELIVERED IN_USE COLLECTED COMPLETED CANCELLED |
 | `ContainerOrderStatus` | SCHEDULED DELIVERED IN_USE PICKED_UP COMPLETED CANCELLED |
 | `TransportJobType` | MATERIAL_DELIVERY CONTAINER_DELIVERY CONTAINER_PICKUP WASTE_COLLECTION EQUIPMENT_TRANSPORT TRANSPORT |

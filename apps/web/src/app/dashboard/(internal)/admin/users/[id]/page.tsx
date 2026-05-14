@@ -18,6 +18,7 @@ import {
   Package,
   Recycle,
   ExternalLink,
+  Forklift,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -112,7 +113,10 @@ export default function AdminUserDetailPage() {
     load();
   }, [load]);
 
-  async function toggle(field: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRecycle', value: boolean) {
+  async function toggle(
+    field: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRecycle' | 'canRent',
+    value: boolean,
+  ) {
     if (!token || !user) return;
     setSaving(true);
     try {
@@ -346,6 +350,25 @@ export default function AdminUserDetailPage() {
               disabled={saving}
             />
           </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Forklift className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="canRent" className="font-medium">
+                  Tehnikas noma (canRent)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Apstiprināts publicēt nomas sludinājumus un saņemt nomas pasūtījumus
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="canRent"
+              checked={user.canRent ?? false}
+              onCheckedChange={(v) => toggle('canRent', v)}
+              disabled={saving}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -459,7 +482,9 @@ export default function AdminUserDetailPage() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
                 Tips
               </p>
-              {user.company?.companyType ? COMPANY_TYPE_LABELS[user.company.companyType] ?? user.company.companyType : '—'}
+              {user.company?.companyType
+                ? (COMPANY_TYPE_LABELS[user.company.companyType] ?? user.company.companyType)
+                : '—'}
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
@@ -481,7 +506,7 @@ export default function AdminUserDetailPage() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">
                 Komisija
               </p>
-              {(user.company?.commissionRate ?? 0)}%
+              {user.company?.commissionRate ?? 0}%
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">

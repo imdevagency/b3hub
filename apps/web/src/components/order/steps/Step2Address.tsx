@@ -29,6 +29,10 @@ interface Props {
   subtitle?: string;
   /** Override the "Next" button label */
   nextLabel?: string;
+  /** When true, the Next button is disabled even if address is valid */
+  nextDisabled?: boolean;
+  /** Error message shown below the address (e.g. out of delivery radius) */
+  nextError?: string;
   /** Optional content rendered between the confirmed-address pill and nav buttons */
   extra?: ReactNode;
 }
@@ -43,6 +47,8 @@ export function Step2Address({
   title,
   subtitle,
   nextLabel,
+  nextDisabled,
+  nextError,
   extra,
 }: Props) {
   const [input, setInput] = useState(value);
@@ -155,6 +161,12 @@ export function Step2Address({
         </div>
       )}
 
+      {nextError && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-destructive/10 ring-1 ring-destructive/30">
+          <p className="text-sm font-medium text-destructive">{nextError}</p>
+        </div>
+      )}
+
       {extra}
 
       {/* Nav buttons */}
@@ -171,7 +183,7 @@ export function Step2Address({
           {onNext && (
             <button
               onClick={onNext}
-              disabled={!isValid}
+              disabled={!isValid || !!nextDisabled}
               className="flex-2 rounded-full bg-[#203728] py-3.5 text-base font-bold text-white shadow-md hover:shadow-lg hover:bg-[#203728]/90 transition-all disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
             >
               {nextLabel ?? 'Rādīt piedāvājumus'}

@@ -23,6 +23,10 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsBoolean()
+  canRent?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   canRecycle?: boolean;
 
   @IsOptional()

@@ -3591,6 +3591,7 @@ export class OrdersService {
               canSell: schedule.createdBy.canSell,
               canTransport: schedule.createdBy.canTransport,
               canSkipHire: schedule.createdBy.canSkipHire,
+              canRent: false,
               canRecycle: false,
               companyId: schedule.createdBy.companyId ?? undefined,
               permCreateContracts: schedule.createdBy.permCreateContracts,

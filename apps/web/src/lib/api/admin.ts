@@ -55,6 +55,7 @@ export interface AdminUser {
   canSell: boolean;
   canTransport: boolean;
   canSkipHire: boolean;
+  canRent: boolean;
   canRecycle: boolean;
   companyRole?: string;
   emailVerified: boolean;
@@ -156,6 +157,7 @@ export async function adminUpdateUser(
     canSell: boolean;
     canTransport: boolean;
     canSkipHire: boolean;
+    canRent: boolean;
     canRecycle: boolean;
     status: string;
     userType: string;
@@ -182,6 +184,7 @@ export interface AdminCreateUserPayload {
   canSell?: boolean;
   canTransport?: boolean;
   canSkipHire?: boolean;
+  canRent?: boolean;
   canRecycle?: boolean;
   isCompany?: boolean;
   company?: {

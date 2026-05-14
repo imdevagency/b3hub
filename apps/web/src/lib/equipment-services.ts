@@ -1,0 +1,317 @@
+/**
+ * Equipment rental service catalogue.
+ *
+ * Single source of truth for all rental equipment types — icons, labels,
+ * price floors, and hire-period options. Used by the catalog browse page,
+ * the booking widget (ListingDetailClient), and the dashboard order page.
+ */
+
+import React from 'react';
+import {
+  ArrowUp,
+  Boxes,
+  Building2,
+  Droplets,
+  Fence,
+  Flame,
+  Forklift,
+  Layers,
+  Scissors,
+  Shovel,
+  Thermometer,
+  Truck,
+  Wind,
+  Wrench,
+  Zap,
+} from 'lucide-react';
+import type { RentalServiceType } from '@/lib/api/rentals';
+
+export interface ServiceDef {
+  type: RentalServiceType;
+  label: string;
+  description: string;
+  unitLabel: string;
+  priceFrom: number; // per day per unit, EUR
+  hirePeriodOptions: { days: number; label: string }[];
+  Icon: React.ElementType;
+  color?: string;
+}
+
+export const EQUIPMENT_SERVICES: ServiceDef[] = [
+  {
+    type: 'MINI_EXCAVATOR',
+    label: 'Mini ekskavators',
+    description: 'Līdz 6t. Ciešas telpas, aizsardzības darbi, apzaļumošana.',
+    unitLabel: 'mašīna',
+    priceFrom: 89,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: Shovel,
+    color: 'bg-amber-50 text-amber-600 border-amber-200',
+  },
+  {
+    type: 'EXCAVATOR',
+    label: 'Ekskavators',
+    description: '6t+ plašiem rakšanas darbiem un nojaukšanai.',
+    unitLabel: 'mašīna',
+    priceFrom: 149,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: Shovel,
+    color: 'bg-red-50 text-red-600 border-red-200',
+  },
+  {
+    type: 'DUMPER',
+    label: 'Dempera pašizgāzējs',
+    description: 'Materiālu pārvietošana laukumā un ceļa celtniecībā.',
+    unitLabel: 'mašīna',
+    priceFrom: 99,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: Truck,
+    color: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+  },
+  {
+    type: 'COMPACTOR',
+    label: 'Kompaktors / rullītis',
+    description: 'Grunts, šķembu un bitumena blīvēšana.',
+    unitLabel: 'vienība',
+    priceFrom: 79,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+    ],
+    Icon: Layers,
+    color: 'bg-green-50 text-green-600 border-green-200',
+  },
+  {
+    type: 'TELEHANDLER',
+    label: 'Teleskopiskā iekrāvēja',
+    description: 'Kraušana augstumā. Ideāls lieliem būvlaukumiem.',
+    unitLabel: 'mašīna',
+    priceFrom: 129,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: Forklift,
+    color: 'bg-pink-50 text-pink-600 border-pink-200',
+  },
+  {
+    type: 'AERIAL_PLATFORM',
+    label: 'Pacēlājs / platforma',
+    description: 'Šķēres platforma un ķiršu novācējs augstu darbu veikšanai.',
+    unitLabel: 'vienība',
+    priceFrom: 119,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+    ],
+    Icon: Building2,
+    color: 'bg-sky-50 text-sky-600 border-sky-200',
+  },
+  {
+    type: 'SCAFFOLDING',
+    label: 'Sastatnes',
+    description: 'Fasādes, jumtu un augsto darbu sastatnes.',
+    unitLabel: 'komplekts',
+    priceFrom: 59,
+    hirePeriodOptions: [
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    Icon: Layers,
+    color: 'bg-orange-50 text-orange-600 border-orange-200',
+  },
+  {
+    type: 'TEMP_FENCING',
+    label: 'Pagaidu žogs',
+    description: 'Būvlaukuma nodalīšana un drošība.',
+    unitLabel: 'panelis',
+    priceFrom: 2,
+    hirePeriodOptions: [
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+      { days: 90, label: '3 mēneši' },
+    ],
+    Icon: Fence,
+    color: 'bg-yellow-50 text-yellow-600 border-yellow-200',
+  },
+  {
+    type: 'SITE_OFFICE',
+    label: 'Mobilā būvnieku mājiņa',
+    description: 'Biroja vai atpūtas telpa tieši uz būvlaukuma.',
+    unitLabel: 'moduļa',
+    priceFrom: 199,
+    hirePeriodOptions: [
+      { days: 30, label: '1 mēnesis' },
+      { days: 60, label: '2 mēneši' },
+      { days: 90, label: '3 mēneši' },
+    ],
+    Icon: Building2,
+    color: 'bg-teal-50 text-teal-600 border-teal-200',
+  },
+  {
+    type: 'GENERATOR',
+    label: 'Ģenerators',
+    description: 'Rezerves vai galvenais elektroenerģijas avots.',
+    unitLabel: 'vienība',
+    priceFrom: 69,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    Icon: Zap,
+    color: 'bg-purple-50 text-purple-600 border-purple-200',
+  },
+  {
+    type: 'LIGHTING_TOWER',
+    label: 'Apgaismojuma tornis',
+    description: 'Nakts darbi un laukumi bez apgaismojuma.',
+    unitLabel: 'tornis',
+    priceFrom: 49,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+    ],
+    Icon: Layers,
+    color: 'bg-lime-50 text-lime-600 border-lime-200',
+  },
+  {
+    type: 'WATER_BOWSER',
+    label: 'Ūdens cisternas',
+    description: 'Pārnēsājamas ūdens cisternas būvlaukumiem.',
+    unitLabel: 'cisterna',
+    priceFrom: 39,
+    hirePeriodOptions: [
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    Icon: Droplets,
+    color: 'bg-cyan-50 text-cyan-600 border-cyan-200',
+  },
+  {
+    type: 'AIR_COMPRESSOR',
+    label: 'Gaisa kompresors',
+    description: 'Gaisa kompresori un pneimatiskais instrumentārijs būvlaukumiem.',
+    unitLabel: 'kompresoram',
+    priceFrom: 45,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: Wind,
+    color: 'bg-slate-50 text-slate-600 border-slate-200',
+  },
+  {
+    type: 'POWER_TOOLS',
+    label: 'Elektroinstrumenti',
+    description: 'Urbji, slīpētāji, zāģi, perforatori — rokas elektroinstrumenti.',
+    unitLabel: 'instrumentam',
+    priceFrom: 15,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+    ],
+    Icon: Wrench,
+    color: 'bg-zinc-50 text-zinc-600 border-zinc-200',
+  },
+  {
+    type: 'WELDER',
+    label: 'Metināšanas iekārta',
+    description: 'MIG/MAG, TIG un elektrodu metināšanas iekārtu noma.',
+    unitLabel: 'iekārtai',
+    priceFrom: 35,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: Flame,
+    color: 'bg-orange-50 text-orange-600 border-orange-200',
+  },
+  {
+    type: 'HEATER',
+    label: 'Sildītājs',
+    description: 'Dīzeļdegvielas un propāna sildītāji būvlaukumu apsildei.',
+    unitLabel: 'sildītājam',
+    priceFrom: 29,
+    hirePeriodOptions: [
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+      { days: 30, label: '1 mēnesis' },
+    ],
+    Icon: Thermometer,
+    color: 'bg-red-50 text-red-400 border-red-200',
+  },
+  {
+    type: 'CONCRETE_EQUIPMENT',
+    label: 'Betona tehnika',
+    description: 'Betona mikseri, vibratori, ekrāni un grīdas noslīpētāji.',
+    unitLabel: 'vienībai',
+    priceFrom: 49,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+    ],
+    Icon: Boxes,
+    color: 'bg-stone-50 text-stone-600 border-stone-200',
+  },
+  {
+    type: 'REBAR_EQUIPMENT',
+    label: 'Armātūras apstrāde',
+    description: 'Armātūras liecamās un griešanas mašīnas.',
+    unitLabel: 'mašīnai',
+    priceFrom: 39,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+    ],
+    Icon: Scissors,
+    color: 'bg-neutral-50 text-neutral-600 border-neutral-200',
+  },
+  {
+    type: 'ALUMINUM_TOWER',
+    label: 'Alumīnija tornis / kāpnes',
+    description: 'Mobilās alumīnija darba platformas un teleskopiskās kāpnes.',
+    unitLabel: 'tornītim',
+    priceFrom: 19,
+    hirePeriodOptions: [
+      { days: 1, label: '1 diena' },
+      { days: 3, label: '3 dienas' },
+      { days: 7, label: '1 nedēļa' },
+      { days: 14, label: '2 nedēļas' },
+    ],
+    Icon: ArrowUp,
+    color: 'bg-gray-50 text-gray-600 border-gray-200',
+  },
+];

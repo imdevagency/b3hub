@@ -16,12 +16,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
 import { useAuth } from '@/lib/auth-context';
 import { getSkipCarrierMap, type SkipMapOrder, type SkipSize } from '@/lib/api/skip-hire';
+import {
+  getCarrierPricing,
+  setCarrierPrice,
+  deleteCarrierPrice,
+  getCarrierZones,
+  addCarrierZone,
+  deleteCarrierZone,
+  type CarrierPricing,
+  type CarrierServiceZone,
+} from '@/lib/api/carrier-settings';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -38,9 +51,12 @@ import {
   MapPin,
   MapPinOff,
   Package,
+  Pencil,
   Phone,
+  Plus,
   RefreshCw,
   Trash2,
+  X,
 } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -80,6 +96,15 @@ const SIZE_LABELS: Record<SkipSize, string> = {
   BUILDERS: 'Builders (6m³)',
   LARGE: 'Large (8m³)',
 };
+
+const SIZE_DESCRIPTIONS: Record<SkipSize, string> = {
+  MINI: 'Ideāli maziem dārza darbiem',
+  MIDI: 'Standarta renovācijas projekts',
+  BUILDERS: 'Vidējs būvniecības projekts',
+  LARGE: 'Lielie būvgruzji un nojaukšana',
+};
+
+const ALL_SKIP_SIZES: SkipSize[] = ['MINI', 'MIDI', 'BUILDERS', 'LARGE'];
 
 const WASTE_LABELS: Record<string, string> = {
   MIXED: 'Jaukts',
@@ -551,14 +576,33 @@ function FleetTable({ orders }: { orders: SkipMapOrder[] }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function SkipFleetPage() {
-  const { token, user } = useAuth();
+type PageTab = 'deployed' | 'fleet';
 
+export default function SkipFleetPage() {
+  const { token } = useAuth();
+
+  // ── Deployed fleet (orders) state ────────────────────────────────
+  const [tab, setTab] = useState<PageTab>('deployed');
   const [orders, setOrders] = useState<SkipMapOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'map' | 'table'>('map');
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // ── Fleet config (pricing + zones) state ─────────────────────────
+  const [pricing, setPricing] = useState<CarrierPricing[]>([]);
+  const [zones, setZones] = useState<CarrierServiceZone[]>([]);
+  const [fleetLoading, setFleetLoading] = useState(true);
+  const [priceDialog, setPriceDialog] = useState<{ open: boolean; size: SkipSize; price: string }>({
+    open: false,
+    size: 'MINI',
+    price: '',
+  });
+  const [savingPrice, setSavingPrice] = useState(false);
+  const [deletingSize, setDeletingSize] = useState<SkipSize | null>(null);
+  const [newZone, setNewZone] = useState('');
+  const [addingZone, setAddingZone] = useState(false);
+  const [deletingZoneId, setDeletingZoneId] = useState<string | null>(null);
 
   const load = useCallback(
     async (silent = false) => {
@@ -576,14 +620,88 @@ export default function SkipFleetPage() {
     [token],
   );
 
+  const loadFleet = useCallback(async () => {
+    if (!token) return;
+    setFleetLoading(true);
+    try {
+      const [p, z] = await Promise.all([getCarrierPricing(token), getCarrierZones(token)]);
+      setPricing(p);
+      setZones(z);
+    } catch {
+      // silent
+    } finally {
+      setFleetLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (tab === 'fleet') loadFleet();
+  }, [tab, loadFleet]);
 
   // Clear selection when filter changes
   useEffect(() => {
     setSelectedId(null);
   }, [filter]);
+
+  // ── Fleet config handlers ─────────────────────────────────────────
+
+  function openPriceDialog(size: SkipSize) {
+    const existing = pricing.find((p) => p.skipSize === size);
+    setPriceDialog({ open: true, size, price: existing ? String(existing.price) : '' });
+  }
+
+  async function handleSavePrice() {
+    if (!token) return;
+    const price = parseFloat(priceDialog.price);
+    if (isNaN(price) || price <= 0) return;
+    setSavingPrice(true);
+    try {
+      await setCarrierPrice(token, priceDialog.size, price);
+      setPriceDialog((d) => ({ ...d, open: false }));
+      await loadFleet();
+    } finally {
+      setSavingPrice(false);
+    }
+  }
+
+  async function handleDeletePrice(size: SkipSize) {
+    if (!token) return;
+    setDeletingSize(size);
+    try {
+      await deleteCarrierPrice(token, size);
+      await loadFleet();
+    } finally {
+      setDeletingSize(null);
+    }
+  }
+
+  async function handleAddZone() {
+    const city = newZone.trim();
+    if (!city || !token) return;
+    setAddingZone(true);
+    try {
+      await addCarrierZone(token, { city });
+      setNewZone('');
+      await loadFleet();
+    } finally {
+      setAddingZone(false);
+    }
+  }
+
+  async function handleDeleteZone(id: string) {
+    if (!token) return;
+    setDeletingZoneId(id);
+    try {
+      await deleteCarrierZone(token, id);
+      await loadFleet();
+    } finally {
+      setDeletingZoneId(null);
+    }
+  }
 
   // ── Stats ─────────────────────────────────────────────────────────────────
 
@@ -620,128 +738,339 @@ export default function SkipFleetPage() {
     <div className="p-6 xl:p-8 space-y-6">
       <PageHeader
         title="Skip Flote"
-        description="Aktīvo skipu izvietojums, nomas termiņi un kavēšanās"
+        description="Pārvaldiet konteineru cenas, zonas un aktīvo izvietojumu"
         action={
-          <Button variant="outline" size="sm" onClick={() => load()}>
-            <RefreshCw className="h-4 w-4 mr-1.5" />
-            Atjaunināt
-          </Button>
+          tab === 'fleet' ? (
+            <Button size="sm" onClick={() => openPriceDialog('MINI')}>
+              <Plus className="size-4 mr-2" /> Pievienot konteinera tipu
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => load()}>
+              <RefreshCw className="h-4 w-4 mr-1.5" />
+              Atjaunināt
+            </Button>
+          )
         }
       />
 
-      {/* Stats strip */}
-      {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground font-medium mb-1">Gaida piegādi</p>
-              <p className="text-3xl font-bold text-foreground">{stats.confirmed}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground font-medium mb-1">Uz objekta</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.delivered}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground font-medium mb-1">Kavējas</p>
-              <p
-                className={`text-3xl font-bold ${stats.overdue > 0 ? 'text-red-600' : 'text-foreground'}`}
-              >
-                {stats.overdue}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground font-medium mb-1">Kavēšanās maksa</p>
-              <p
-                className={`text-2xl font-bold ${stats.overdueFeesTotal > 0 ? 'text-red-600' : 'text-muted-foreground'}`}
-              >
-                {stats.overdueFeesTotal > 0 ? fmtEur(stats.overdueFeesTotal) : '€0'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Controls: filter chips + view toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Filter chips */}
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(FILTER_LABELS) as FilterKey[]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                filter === key
-                  ? 'bg-foreground text-background border-foreground'
-                  : 'border-border text-foreground hover:border-foreground/40 bg-background'
-              }`}
-            >
-              {FILTER_LABELS[key]}
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
-                  filter === key ? 'bg-background/20' : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {filterCount[key]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* View toggle */}
-        <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+      {/* Tab switch */}
+      <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+        {(['deployed', 'fleet'] as PageTab[]).map((t) => (
           <button
+            key={t}
             type="button"
-            onClick={() => setView('map')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === 'map' ? 'bg-foreground text-background' : 'text-foreground hover:bg-muted/60'
+            onClick={() => setTab(t)}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              tab === t
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <MapIcon className="size-3.5" />
-            Karte
+            {t === 'deployed' ? 'Izvietojums' : 'Mana flote'}
           </button>
-          <button
-            type="button"
-            onClick={() => setView('table')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-l border-border transition-colors ${
-              view === 'table'
-                ? 'bg-foreground text-background'
-                : 'text-foreground hover:bg-muted/60'
-            }`}
-          >
-            <List className="size-3.5" />
-            Saraksts
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <Skeleton className="h-150 rounded-xl" />
-      ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <Trash2 className="size-12 text-muted-foreground/30 mb-4" />
-          <p className="text-base font-semibold text-muted-foreground">Nav aktīvu skipu</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">
-            Kad klients pasūtīs skip, tas parādīsies šeit
-          </p>
-        </div>
-      ) : view === 'map' ? (
-        <FleetMap orders={filteredOrders} selectedId={selectedId} onSelect={setSelectedId} />
-      ) : (
-        <FleetTable orders={filteredOrders} />
+      {/* ── FLEET CONFIG TAB ─────────────────────────────────────── */}
+      {tab === 'fleet' && (
+        <>
+          {fleetLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-40 rounded-2xl" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Konteineru cenas
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {ALL_SKIP_SIZES.map((size) => {
+                    const entry = pricing.find((p) => p.skipSize === size);
+                    return (
+                      <Card key={size} className="rounded-2xl border border-border">
+                        <CardContent className="pt-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-base font-semibold">{SIZE_LABELS[size]}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {SIZE_DESCRIPTIONS[size]}
+                              </p>
+                            </div>
+                            <Badge variant={entry ? 'default' : 'secondary'}>
+                              {entry ? 'Aktīvs' : 'Nav iestatīts'}
+                            </Badge>
+                          </div>
+                          {entry ? (
+                            <p className="text-2xl font-bold">
+                              €{entry.price.toFixed(2)}
+                              <span className="text-sm font-normal text-muted-foreground ml-1">
+                                / noma
+                              </span>
+                            </p>
+                          ) : (
+                            <p className="text-2xl font-bold text-muted-foreground/40">—</p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => openPriceDialog(size)}
+                            >
+                              <Pencil className="size-3.5 mr-1.5" />
+                              {entry ? 'Rediģēt' : 'Iestatīt cenu'}
+                            </Button>
+                            {entry && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                disabled={deletingSize === size}
+                                onClick={() => handleDeletePrice(size)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Service zones */}
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Apkalpojamās pilsētas
+                </h3>
+                <Card className="rounded-2xl border border-border">
+                  <CardContent className="pt-5 space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {zones.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Nav pievienotu pilsētu. Pievienojiet pilsētas, kurās nodrošināt piegādi.
+                        </p>
+                      )}
+                      {zones.map((z) => (
+                        <span
+                          key={z.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm font-medium"
+                        >
+                          <MapPin className="size-3 text-muted-foreground" />
+                          {z.city}
+                          {z.surcharge ? (
+                            <span className="text-xs text-muted-foreground">+€{z.surcharge}</span>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteZone(z.id)}
+                            disabled={deletingZoneId === z.id}
+                            className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Rīga, Jūrmala, Jelgava..."
+                        value={newZone}
+                        onChange={(e) => setNewZone(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddZone()}
+                        className="max-w-xs"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAddZone}
+                        disabled={!newZone.trim() || addingZone}
+                      >
+                        <Plus className="size-4 mr-1.5" />
+                        Pievienot
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+
+          {/* Pricing dialog */}
+          <Dialog
+            open={priceDialog.open}
+            onOpenChange={(open) => setPriceDialog((d) => ({ ...d, open }))}
+          >
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>
+                  {pricing.find((p) => p.skipSize === priceDialog.size)
+                    ? `Rediģēt — ${SIZE_LABELS[priceDialog.size]}`
+                    : `Pievienot — ${SIZE_LABELS[priceDialog.size]}`}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <p className="text-sm text-muted-foreground">
+                  {SIZE_DESCRIPTIONS[priceDialog.size]}
+                </p>
+                <div className="space-y-2">
+                  <Label>Nomas cena (€)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="0.00"
+                    value={priceDialog.price}
+                    onChange={(e) => setPriceDialog((d) => ({ ...d, price: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSavePrice()}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setPriceDialog((d) => ({ ...d, open: false }))}
+                  >
+                    Atcelt
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleSavePrice}
+                    disabled={savingPrice || !priceDialog.price}
+                  >
+                    {savingPrice ? 'Saglabā...' : 'Saglabāt'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
+
+      {/* ── DEPLOYED FLEET TAB ───────────────────────────────────── */}
+      {tab === 'deployed' && (
+        <>
+          {/* Stats strip */}
+          {loading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Gaida piegādi</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.confirmed}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Uz objekta</p>
+                  <p className="text-3xl font-bold text-blue-600">{stats.delivered}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Kavējas</p>
+                  <p
+                    className={`text-3xl font-bold ${stats.overdue > 0 ? 'text-red-600' : 'text-foreground'}`}
+                  >
+                    {stats.overdue}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Kavēšanās maksa</p>
+                  <p
+                    className={`text-2xl font-bold ${stats.overdueFeesTotal > 0 ? 'text-red-600' : 'text-muted-foreground'}`}
+                  >
+                    {stats.overdueFeesTotal > 0 ? fmtEur(stats.overdueFeesTotal) : '€0'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Controls: filter chips + view toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Filter chips */}
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(FILTER_LABELS) as FilterKey[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    filter === key
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'border-border text-foreground hover:border-foreground/40 bg-background'
+                  }`}
+                >
+                  {FILTER_LABELS[key]}
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+                      filter === key ? 'bg-background/20' : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {filterCount[key]}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+              <button
+                type="button"
+                onClick={() => setView('map')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  view === 'map'
+                    ? 'bg-foreground text-background'
+                    : 'text-foreground hover:bg-muted/60'
+                }`}
+              >
+                <MapIcon className="size-3.5" />
+                Karte
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('table')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-l border-border transition-colors ${
+                  view === 'table'
+                    ? 'bg-foreground text-background'
+                    : 'text-foreground hover:bg-muted/60'
+                }`}
+              >
+                <List className="size-3.5" />
+                Saraksts
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          {loading ? (
+            <Skeleton className="h-150 rounded-xl" />
+          ) : orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <Trash2 className="size-12 text-muted-foreground/30 mb-4" />
+              <p className="text-base font-semibold text-muted-foreground">Nav aktīvu skipu</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Kad klients pasūtīs skip, tas parādīsies šeit
+              </p>
+            </div>
+          ) : view === 'map' ? (
+            <FleetMap orders={filteredOrders} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : (
+            <FleetTable orders={filteredOrders} />
+          )}
+        </>
       )}
     </div>
   );

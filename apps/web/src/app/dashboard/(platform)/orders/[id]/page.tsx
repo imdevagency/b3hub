@@ -724,11 +724,11 @@ export default function OrderDetailPage() {
           <div>
             <TrackingMap
               token={token ?? undefined}
-              pickupLat={location?.pickupLat ?? job.pickupLat}
-              pickupLng={location?.pickupLng ?? job.pickupLng}
+              pickupLat={job.pickupLat}
+              pickupLng={job.pickupLng}
               pickupAddress={job.pickupAddress}
-              deliveryLat={location?.deliveryLat ?? job.deliveryLat}
-              deliveryLng={location?.deliveryLng ?? job.deliveryLng}
+              deliveryLat={job.deliveryLat}
+              deliveryLng={job.deliveryLng}
               deliveryAddress={job.deliveryAddress}
               truckPos={truckPos}
               isLive={isJobLive && wsConnected}

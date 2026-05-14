@@ -45,6 +45,7 @@ import {
   Trash2,
   Toilet,
   Truck,
+  Forklift,
   Users,
   Wallet,
   Wrench,
@@ -148,7 +149,7 @@ const ROLE_NAV: Record<Mode, NavSection[]> = {
         },
         {
           label: 'Katalogs',
-          href: '/dashboard/materials',
+          href: '/dashboard/portfolio',
           icon: Package,
           groupPaths: getGroupPaths('SUPPLIER', 'catalog'),
         },
@@ -377,29 +378,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           ),
         }));
       }
+    }
 
-      // Skip hire + toilet cabin operator — add fleet management sections
-      if ((user as any)?.canSkipHire) {
-        sections = sections.map((section) => {
-          if (section.id !== 'carrier-main') return section;
-          return {
-            ...section,
-            items: [
-              ...section.items,
-              {
-                label: 'Konteineri',
-                href: '/dashboard/skip-hire/fleet',
-                icon: Trash2,
-              },
-              {
-                label: 'Tualetes kabīnes',
-                href: '/dashboard/toilet-cabins',
-                icon: Toilet,
-              },
-            ],
-          };
-        });
-      }
+    if (activeMode === 'SUPPLIER') {
+      // Clean, centralized hub for Supplier Catalog (no chaotic injections)
+      // All navigation now happens explicitly via the unified /dashboard/portfolio hub
     }
 
     return sections;
@@ -609,9 +592,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="bg-gray-900 text-white hover:bg-gray-800 hover:text-white w-full justify-center shadow font-semibold h-10"
             >
-              <Link href="/dashboard/materials?new=true">
+              <Link href="/dashboard/portfolio">
                 <PackagePlus className="mr-2 size-4" />
-                Pievienot Materiālu
+                Pievienot Katalogam
               </Link>
             </SidebarMenuButton>
           )}

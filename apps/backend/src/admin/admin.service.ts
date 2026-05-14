@@ -40,6 +40,7 @@ export class AdminService {
     canSell: true,
     canTransport: true,
     canSkipHire: true,
+    canRent: true,
     canRecycle: true,
     companyRole: true,
     emailVerified: true,
@@ -71,6 +72,7 @@ export class AdminService {
         canSell: dto.canSell ?? false,
         canTransport: dto.canTransport ?? false,
         canSkipHire: dto.canSkipHire ?? false,
+        canRent: dto.canRent ?? false,
         canRecycle: dto.canRecycle ?? false,
         emailVerified: true,
         termsAcceptedAt: new Date(),
@@ -332,6 +334,7 @@ export class AdminService {
         canSell: true,
         canTransport: true,
         canSkipHire: true,
+        canRent: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -344,6 +347,7 @@ export class AdminService {
       data.canSell !== undefined ||
       data.canTransport !== undefined ||
       data.canSkipHire !== undefined ||
+      data.canRent !== undefined ||
       data.userType !== undefined ||
       data.companyId !== undefined ||
       data.companyRole !== undefined ||
@@ -367,6 +371,9 @@ export class AdminService {
         }),
         ...(data.canSkipHire !== undefined && {
           canSkipHire: data.canSkipHire,
+        }),
+        ...(data.canRent !== undefined && {
+          canRent: data.canRent,
         }),
         ...(data.canRecycle !== undefined && {
           canRecycle: data.canRecycle,

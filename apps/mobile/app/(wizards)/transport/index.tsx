@@ -555,8 +555,9 @@ export default function TransportWizard() {
       : activeDesc === 'Cits' && otherText.trim() !== '');
   const step3Valid = !!selectedDay;
   const step4Valid =
-    !!siteContactName.trim() &&
-    siteContactPhone.trim().replace(/\D/g, '').length >= 8 &&
+    (user
+      ? true // logged-in: contact comes from profile
+      : !!siteContactName.trim() && siteContactPhone.trim().replace(/\D/g, '').length >= 8) &&
     (pricingMode !== 'PER_TONNE' ||
       (!!pricePerTonneText.trim() && !isNaN(parseFloat(pricePerTonneText))));
 
@@ -1565,17 +1566,98 @@ export default function TransportWizard() {
                   icon={<Bookmark size={16} color="#111827" />}
                   style={{ marginBottom: 12 }}
                 />
-                <WizardContactFields
-                  name={siteContactName}
-                  onChangeName={setSiteContactName}
-                  namePlaceholder="Kontaktpersona *"
-                  phone={siteContactPhone}
-                  onChangePhone={setSiteContactPhone}
-                  notes={notes}
-                  onChangeNotes={setNotes}
-                  notesPlaceholder="Piezīmes (vārtu kods, bīstama krava...)"
-                  style={{ marginBottom: 20 }}
-                />
+                {user ? (
+                  <View
+                    style={{
+                      backgroundColor: '#f0fdf4',
+                      borderWidth: 1.5,
+                      borderColor: '#bbf7d0',
+                      borderRadius: 14,
+                      padding: 16,
+                      marginBottom: 20,
+                      gap: 10,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: '#16a34a',
+                        }}
+                      />
+                      <Text
+                        style={{
+                          fontFamily: 'Inter_600SemiBold',
+                          fontSize: 13,
+                          color: '#15803d',
+                        }}
+                      >
+                        Pasūtījums tiks pievienots jūsu kontam
+                      </Text>
+                    </View>
+                    <View style={{ gap: 4 }}>
+                      {(user.firstName || user.lastName) && (
+                        <Text
+                          style={{
+                            fontFamily: 'Inter_500Medium',
+                            fontSize: 14,
+                            color: '#111827',
+                          }}
+                        >
+                          {[user.firstName, user.lastName].filter(Boolean).join(' ')}
+                        </Text>
+                      )}
+                      {user.phone && (
+                        <Text
+                          style={{
+                            fontFamily: 'Inter_400Regular',
+                            fontSize: 13,
+                            color: '#6b7280',
+                          }}
+                        >
+                          {user.phone}
+                        </Text>
+                      )}
+                      {user.email && (
+                        <Text
+                          style={{
+                            fontFamily: 'Inter_400Regular',
+                            fontSize: 13,
+                            color: '#6b7280',
+                          }}
+                        >
+                          {user.email}
+                        </Text>
+                      )}
+                    </View>
+                    <TextInputField
+                      placeholder="Piezīmes (vārtu kods, bīstama krava...)"
+                      value={notes}
+                      onChangeText={setNotes}
+                      multiline
+                      containerStyle={{
+                        backgroundColor: '#fff',
+                        borderColor: '#d1fae5',
+                        borderRadius: 10,
+                        marginTop: 4,
+                      }}
+                    />
+                  </View>
+                ) : (
+                  <WizardContactFields
+                    name={siteContactName}
+                    onChangeName={setSiteContactName}
+                    namePlaceholder="Kontaktpersona *"
+                    phone={siteContactPhone}
+                    onChangePhone={setSiteContactPhone}
+                    notes={notes}
+                    onChangeNotes={setNotes}
+                    notesPlaceholder="Piezīmes (vārtu kods, bīstama krava...)"
+                    style={{ marginBottom: 20 }}
+                  />
+                )}
 
                 {/* ── Pricing ── */}
                 <View style={{ gap: 12, marginBottom: 20 }}>

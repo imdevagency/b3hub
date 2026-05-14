@@ -23,6 +23,7 @@ export interface User {
   canTransport: boolean;
   canSkipHire: boolean;
   canRecycle: boolean;
+  canRent?: boolean;
   payoutEnabled?: boolean;
   status: string;
   phone?: string;

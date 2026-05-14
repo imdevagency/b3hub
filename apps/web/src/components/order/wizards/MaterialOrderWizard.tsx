@@ -1315,9 +1315,11 @@ export function MaterialOrderWizard({
           <div className="flex flex-col w-full lg:w-110 xl:w-120 shrink-0 bg-background rounded-2xl shadow-xl border border-border/40 overflow-hidden">
             {wizardContent}
           </div>
-          {/* Right: map panel */}
-          <div className="hidden lg:flex flex-1 items-center justify-center p-10 h-150 sticky top-28 rounded-3xl overflow-hidden ring-1 ring-border/40 shadow-xl bg-muted/10">
-            <div className="absolute inset-0 bg-[#e5e3df]">
+          {/* Right: map panel / material details */}
+          <div className="hidden lg:flex flex-1 items-center justify-center p-10 h-150 sticky top-28 rounded-3xl overflow-hidden ring-1 ring-border/40 shadow-xl bg-muted/10 relative">
+            <div
+              className={`absolute inset-0 bg-[#e5e3df] transition-opacity duration-300 ${step === 'where' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            >
               <div ref={mapDivRef} className="absolute inset-0" />
               {form.address && (
                 <div className="absolute top-6 left-6 z-10 flex flex-col gap-2">
@@ -1328,6 +1330,55 @@ export function MaterialOrderWizard({
                 </div>
               )}
             </div>
+
+            {/* Material details layer (shown when not picking address) */}
+            {step !== 'where' && (
+              <div className="absolute inset-0 bg-white p-12 flex flex-col justify-center animate-in fade-in duration-300">
+                <div className="w-full max-w-lg mx-auto">
+                  <div className="flex items-center gap-5 mb-10">
+                    <meta.icon className="size-10 text-foreground" strokeWidth={1.5} />
+                    <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                      {form.materialName || meta.label}
+                    </h2>
+                  </div>
+
+                  <div className="border-t border-border/50 divide-y divide-border/50">
+                    <div className="py-5 flex shrink-0 items-start justify-between gap-4">
+                      <span className="text-sm font-medium text-muted-foreground w-1/3">
+                        Kategorija
+                      </span>
+                      <span className="text-sm font-medium text-foreground text-right">
+                        {meta.label}
+                      </span>
+                    </div>
+                    {form.selectedFraction !== 'Nav norādīts' && (
+                      <div className="py-5 flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Frakcija</span>
+                        <span className="text-sm font-medium text-foreground">
+                          {form.selectedFraction}
+                        </span>
+                      </div>
+                    )}
+                    <div className="py-5 flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">Apjoms</span>
+                      <span className="text-sm font-medium text-foreground capitalize">
+                        {form.quantity} {UNIT_SHORT[form.unit]}
+                      </span>
+                    </div>
+                    {form.notes && (
+                      <div className="py-5 flex shrink-0 items-start justify-between gap-4">
+                        <span className="text-sm font-medium text-muted-foreground w-1/3">
+                          Piezīmes
+                        </span>
+                        <span className="text-sm font-medium text-foreground text-right">
+                          {form.notes}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </Container>
         <WebWizardAuthGate
@@ -1355,7 +1406,9 @@ export function MaterialOrderWizard({
           {wizardContent}
         </div>
         <div className="hidden lg:flex flex-1 relative overflow-hidden bg-muted/10">
-          <div className="absolute inset-0">
+          <div
+            className={`absolute inset-0 bg-[#e5e3df] transition-opacity duration-300 ${step === 'where' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          >
             <div ref={mapDivRef} className="absolute inset-0" />
             {form.address && (
               <div className="absolute top-6 left-6 z-10">

@@ -34,11 +34,12 @@ enum UserStatus {
 }
 
 enum CompanyType {
-  CONSTRUCTION // Construction company
-  SUPPLIER // Material supplier
-  RECYCLER // Waste management
-  CARRIER // Transport company
-  HYBRID // Recycler + Supplier (e.g. B3 Recycling — processes waste AND sells RC materials)
+  CONSTRUCTION     // Construction company
+  SUPPLIER         // Material supplier
+  RECYCLER         // Waste management
+  CARRIER          // Transport company
+  HYBRID           // Recycler + Supplier (e.g. B3 Recycling — processes waste AND sells RC materials)
+  RENTAL_PROVIDER  // Equipment rental company (scaffolding, generators, tools, etc.)
 }
 
 enum CompanyFeature {
@@ -236,6 +237,20 @@ enum RentalServiceType {
   WATER_BOWSER    // Water supply tankers for remote sites
   SKIP_HIRE       // Alias for future migration of SkipHireOrder
   TOILET_CABIN    // Alias for future migration of ToiletCabinOrder
+  // ── Construction equipment rental ──────────────────────────────────────────
+  MINI_EXCAVATOR    // Mini excavators (up to 6t) for landscaping, utilities
+  EXCAVATOR         // Full-size excavators (6t+)
+  DUMPER            // Site dumper trucks
+  COMPACTOR         // Plate compactors and rollers
+  TELEHANDLER       // Telescopic handlers / forklifts
+  AERIAL_PLATFORM   // Scissor lifts, cherry pickers
+  AIR_COMPRESSOR    // Air compressors & pneumatic tools
+  POWER_TOOLS       // Hand-held power tools (drills, grinders, etc.)
+  WELDER            // Welding machines & accessories
+  HEATER            // Space heaters for site use
+  CONCRETE_EQUIPMENT // Concrete mixers, vibrators, screeds, power floats
+  REBAR_EQUIPMENT   // Rebar bending and cutting machines
+  ALUMINUM_TOWER    // Aluminium access towers & ladders
 }
 
 enum RentalOrderStatus {
@@ -534,6 +549,7 @@ model User {
   canSell            Boolean      @default(false) // approved to list & sell materials
   canTransport       Boolean      @default(false) // approved to offer transport services
   canSkipHire        Boolean      @default(false) // approved to manage skip hire fleet
+  canRent            Boolean      @default(false) // approved to operate as an equipment rental provider
   canRecycle         Boolean      @default(false) // approved to operate a recycling/waste center
   companyRole        CompanyRole? // role within their company; null for solo accounts
   status             UserStatus   @default(ACTIVE) // buyers are auto-activated
@@ -695,6 +711,8 @@ model Company {
   assignedSkipOrders         SkipHireOrder[]              @relation("AssignedSkipCarrier")
   assignedToiletCabinOrders  ToiletCabinOrder[]           @relation("AssignedToiletCabinCarrier")
   assignedRentalOrders       RentalOrder[]                @relation("AssignedRentalCarrier")
+  rentalListings             RentalListing[]              @relation("RentalListings")
+  rentalOrdersAsProvider     RentalOrder[]                @relation("RentalOrderProvider")
   toiletCabinSettings        CarrierToiletCabinSettings[]
   rentalSettings             CarrierRentalSettings[]
   reviews                    Review[]
@@ -1889,6 +1907,103 @@ model ToiletCabinOrder {
   @@map("toilet_cabin_orders")
 }
 
+// ── Rental listing — a specific piece of equipment or service offered by a provider ──
+// Wolt model: providers manage their own fleet/catalog; buyers browse and pick a listing.
+// Dispatch-model orders (legacy) have listingId = null.
+model RentalListing {
+  id         String            @id @default(cuid())
+  provider   Company           @relation("RentalListings", fields: [providerId], references: [id], onDelete: Cascade)
+  providerId String
+
+  serviceType       RentalServiceType
+  name              String            // e.g. "CAT 308 CR Mini Excavator"
+  // Sub-category label shown in ALL CAPS below the H1 (e.g. "HYDRAULIC SOIL DRILLS")
+  subCategoryLabel  String?
+  // Provider-facing product/asset code for support references (e.g. "151010")
+  productCode       String?
+  description       String?
+  unitLabel         String            @default("vienība")
+  yearOfManufacture Int?
+
+  // Pricing
+  pricePerDay       Float
+  currency          String            @default("EUR")
+  vatRate           Float             @default(21)
+
+  // Hire period constraints
+  minHireDays       Int               @default(1)
+  maxHireDays       Int?
+
+  // Available hire period options — [{ days: 1, label: "1 diena" }, ...]
+  hirePeriodOptions Json              @default("[]")
+
+  // Fleet quantity
+  quantityTotal     Int               @default(1)
+
+  // Coverage
+  coverageCities    String[]
+  deliveryRadiusKm  Float?
+  freeDeliveryRadiusKm Float?
+  deliveryFeePerKm  Float?
+  // Provider base coordinates — used to check if delivery address is within radius
+  providerLat       Float?
+  providerLng       Float?
+
+  // Self-collect option
+  selfCollectAvailable Boolean        @default(false)
+  selfCollectAddress   String?
+  selfCollectLat       Float?
+  selfCollectLng       Float?
+
+  // Availability — provider marks dates as blocked (fully-booked or unavailable)
+  // Stored as array of ISO date strings "YYYY-MM-DD"
+  blockedDates      String[]
+
+  // Media
+  imageUrls         String[]
+  // Document URLs — { ce?: string, inspection?: string, manual?: string }
+  documentUrls      Json?
+
+  // Free-form machine specs — e.g. { weight: "5.8t", reach: "5.2m", bucket: "0.3m³" }
+  specs             Json?
+
+  // Optional extras — AddOnDef[]
+  // { id, name, description?, pricePerDay?, priceFlat?, category, minQty, maxQty }
+  addOns            Json?
+
+  // Insurance tiers — InsuranceDef[]
+  // { id, name, description, pricePerDay, excess, coversTheft, coversThirdParty, isRequired }
+  insuranceOptions  Json?
+  // If true, buyer must select at least the cheapest paid insurance tier
+  insuranceRequired Boolean           @default(false)
+
+  // Security deposit
+  depositAmount     Float?
+  // ONLINE_BEFORE | ON_DELIVERY | NONE
+  depositMethod     String?
+
+  // Policies
+  // FULL_TO_FULL | INCLUDED | CHARGED_ON_RETURN
+  fuelPolicy        String?
+  // FREE_UNTIL_48H | FREE_UNTIL_24H | NON_REFUNDABLE
+  cancellationPolicy String?
+  lateReturnFeePerDay Float?
+
+  // Required buyer documents — { licenseType?, ownInsuranceRequired, siteInductionRequired }
+  requiredDocuments Json?
+
+  isActive Boolean @default(true)
+
+  orders RentalOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([providerId])
+  @@index([serviceType, isActive])
+  @@map("rental_listings")
+}
+
 // ── Generic rental order — for all future rental service types ──────────────
 // New services (scaffolding, generators, fencing, site offices, etc.) use this
 // single table. Service-specific configuration lives in `metadata` JSON.
@@ -1921,6 +2036,27 @@ model RentalOrder {
   price    Float
   currency String @default("EUR")
 
+  // VAT breakdown — stored at order time so receipts are always accurate
+  priceExclVat      Float?
+  vatRate           Float?
+  vatAmount         Float?
+  priceTotalInclVat Float?
+
+  // Delivery fee charged to buyer
+  deliveryFee Float?
+
+  // Selected add-ons snapshot — [{ id, name, pricePerDay?, priceFlat?, qty, lineTotal }]
+  selectedAddOns Json?
+
+  // Insurance snapshot
+  insurancePlanId      String?
+  insurancePlanName    String?
+  insurancePricePerDay Float?
+
+  // Security deposit
+  depositAmount Float?
+  depositPaid   Boolean @default(false)
+
   // Payment
   paymentMethod     PaymentMethod @default(CARD)
   payseraOrderId    String?
@@ -1935,6 +2071,14 @@ model RentalOrder {
   contactEmail String?
   contactPhone String?
   userId       String?
+
+  // Listing-based (marketplace model) — null for legacy dispatch orders
+  listing    RentalListing? @relation(fields: [listingId], references: [id])
+  listingId  String?
+
+  // Provider who fulfils this order — set at booking (listing model) or on assign (dispatch)
+  provider   Company? @relation("RentalOrderProvider", fields: [providerId], references: [id])
+  providerId String?
 
   // Carrier assigned
   carrier   Company? @relation("AssignedRentalCarrier", fields: [carrierId], references: [id])
@@ -1955,6 +2099,8 @@ model RentalOrder {
   @@index([trackingToken])
   @@index([userId])
   @@index([carrierId])
+  @@index([listingId])
+  @@index([providerId])
   @@index([serviceType, status])
   @@map("rental_orders")
 }

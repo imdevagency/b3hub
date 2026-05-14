@@ -38,6 +38,7 @@ import {
   Recycle,
   Eye,
   EyeOff,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
@@ -61,7 +62,15 @@ import {
 
 // ── Role presets ──────────────────────────────────────────────────────────────
 
-type RolePreset = 'b2c' | 'supplier' | 'carrier' | 'driver' | 'recycler' | 'skiphire' | 'admin';
+type RolePreset =
+  | 'b2c'
+  | 'supplier'
+  | 'carrier'
+  | 'driver'
+  | 'recycler'
+  | 'skiphire'
+  | 'equipment_rental'
+  | 'admin';
 
 const PRESETS: { value: RolePreset; label: string; apply: Partial<CreateUserForm> }[] = [
   {
@@ -141,6 +150,20 @@ const PRESETS: { value: RolePreset; label: string; apply: Partial<CreateUserForm
     },
   },
   {
+    value: 'equipment_rental' as RolePreset,
+    label: 'Tehnikas noma (Rental Provider)',
+    apply: {
+      userType: 'BUYER',
+      canSell: false,
+      canTransport: false,
+      canSkipHire: false,
+      canRent: true,
+      canRecycle: false,
+      isCompany: true,
+      companyType: 'SUPPLIER',
+    },
+  },
+  {
     value: 'admin',
     label: 'Platformas admins',
     apply: {
@@ -165,6 +188,7 @@ interface CreateUserForm {
   canSell: boolean;
   canTransport: boolean;
   canSkipHire: boolean;
+  canRent: boolean;
   canRecycle: boolean;
   isCompany: boolean;
   companyName: string;
@@ -181,6 +205,7 @@ const BLANK_FORM: CreateUserForm = {
   canSell: false,
   canTransport: false,
   canSkipHire: false,
+  canRent: false,
   canRecycle: false,
   isCompany: false,
   companyName: '',
@@ -238,6 +263,7 @@ function CreateUserDialog({
         canSell: form.canSell,
         canTransport: form.canTransport,
         canSkipHire: form.canSkipHire,
+        canRent: form.canRent,
         canRecycle: form.canRecycle,
         isCompany: form.isCompany,
         ...(form.isCompany && form.companyName
@@ -364,6 +390,7 @@ function CreateUserDialog({
                   { key: 'canTransport', icon: Truck, label: 'Pārvadātājs' },
                   { key: 'canSkipHire', icon: SkipForward, label: 'Konteineri' },
                   { key: 'canRecycle', icon: Recycle, label: 'Reciklēšana' },
+                  { key: 'canRent', icon: Wrench, label: 'Tehnikas noma' },
                 ] as const
               ).map(({ key, icon: Icon, label }) => (
                 <button
@@ -546,7 +573,7 @@ function ToggleBtn({
 // ── User Detail Drawer ────────────────────────────────────────────────────────
 
 const CAPABILITY_INFO: {
-  key: 'canSell' | 'canTransport' | 'canSkipHire';
+  key: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRent';
   label: string;
   description: string;
   icon: React.ElementType;
@@ -569,6 +596,12 @@ const CAPABILITY_INFO: {
     description: 'Var pārvaldīt konteinerus, plasēt un savākt konteineru pasūtījumus.',
     icon: SkipForward,
   },
+  {
+    key: 'canRent',
+    label: 'Tehnikas noma (Rental Provider)',
+    description: 'Var pieņemt un izpildīt tehnikas nomas pasūtījumus kā iekārtu nodrošinātājs.',
+    icon: Wrench,
+  },
 ];
 
 function UserDrawer({
@@ -581,7 +614,7 @@ function UserDrawer({
   user: AdminUser;
   updating: string | null;
   onClose: () => void;
-  onToggle: (field: 'canSell' | 'canTransport' | 'canSkipHire', value: boolean) => void;
+  onToggle: (field: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRent', value: boolean) => void;
   onToggleStatus: () => void;
 }) {
   return (
@@ -815,7 +848,7 @@ export default function AdminUsersPage() {
 
   const toggle = async (
     userId: string,
-    field: 'canSell' | 'canTransport' | 'canSkipHire',
+    field: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRent',
     currentValue: boolean,
   ) => {
     if (!token) return;
@@ -962,6 +995,8 @@ export default function AdminUsersPage() {
         <span>= var piedāvāt transportu</span>
         <CapBadge active icon={SkipForward} label="Skip" />
         <span>= var pārvaldīt konteineru parku</span>
+        <CapBadge active icon={Wrench} label="Rent" />
+        <span>= var iznomāt tehniku</span>
       </div>
 
       {/* Table */}
@@ -993,6 +1028,9 @@ export default function AdminUsersPage() {
                   </th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Skip
+                  </th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Rent
                   </th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">
                     Statuss
@@ -1052,6 +1090,13 @@ export default function AdminUsersPage() {
                           value={u.canSkipHire}
                           disabled={updating === u.id + 'canSkipHire'}
                           onToggle={() => toggle(u.id, 'canSkipHire', u.canSkipHire)}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <ToggleBtn
+                          value={u.canRent}
+                          disabled={updating === u.id + 'canRent'}
+                          onToggle={() => toggle(u.id, 'canRent', u.canRent)}
                         />
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -1120,7 +1165,7 @@ export default function AdminUsersPage() {
                     </tr>
                     {expandedCredit.has(u.id) && (
                       <tr className="bg-blue-50/50">
-                        <td colSpan={9} className="px-6 py-4">
+                        <td colSpan={10} className="px-6 py-4">
                           <div className="flex flex-wrap items-end gap-4">
                             <div className="flex flex-col gap-1">
                               <label className="text-xs font-semibold text-gray-600">

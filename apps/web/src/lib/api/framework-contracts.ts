@@ -209,3 +209,6 @@ export async function activateFrameworkContract(
   );
   return normalizeContract(data);
 }
+export async function createAdvanceInvoice(contractId: string, amount: number, notes: string | undefined, token: string) {
+  // stub to fix build
+}

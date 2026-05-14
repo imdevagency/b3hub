@@ -1,7 +1,12 @@
-import { IsEnum, IsString, IsNumber, IsOptional, IsInt, Min, IsIn, IsObject } from 'class-validator';
+import { IsEnum, IsString, IsNumber, IsOptional, IsInt, Min, IsIn, IsObject, IsArray } from 'class-validator';
 import { RentalServiceType, PaymentMethod } from '@prisma/client';
 
 export class CreateRentalOrderDto {
+  /** Marketplace listing — when set, serviceType/price are resolved from the listing */
+  @IsOptional()
+  @IsString()
+  listingId?: string;
+
   @IsEnum(RentalServiceType)
   serviceType: RentalServiceType;
 
@@ -61,4 +66,33 @@ export class CreateRentalOrderDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  // ── Add-ons & insurance selections ───────────────────────────────────────
+
+  /** Snapshot of selected add-ons — [{ id, name, pricePerDay?, priceFlat?, qty }] */
+  @IsOptional()
+  @IsArray()
+  selectedAddOns?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsString()
+  insurancePlanId?: string;
+
+  @IsOptional()
+  @IsString()
+  insurancePlanName?: string;
+
+  @IsOptional()
+  @IsNumber()
+  insurancePricePerDay?: number;
+
+  // ── Pricing breakdown ────────────────────────────────────────────────────
+
+  @IsOptional()
+  @IsNumber()
+  deliveryFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  depositAmount?: number;
 }

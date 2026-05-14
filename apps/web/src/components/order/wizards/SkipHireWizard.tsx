@@ -5,7 +5,7 @@
  * Used by both the public marketing site (/order/skip-hire) and the
  * authenticated dashboard (/dashboard/order/skip-hire).
  *
- * Flow: waste → size → address → details (date + hire period + time window + contact)
+ * Flow: waste → size → address → details (date + hire period + time window + contact) → offers → confirmed
  *
  * Conditional last step:
  *  mode="public"     → contact fields collected from guest → auth gate fires on submit
@@ -26,7 +26,13 @@ import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/Web
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import type { DateRange } from 'react-day-picker';
-import { createSkipHireOrder, mapSkipSize, type SkipHireOrder } from '@/lib/api/skip-hire';
+import {
+  createSkipHireOrder,
+  getSkipHireQuotes,
+  mapSkipSize,
+  type SkipHireOrder,
+  type SkipHireQuote,
+} from '@/lib/api/skip-hire';
 import { SKIP_WASTE_CATEGORIES, SKIP_WASTE_LABELS, type SkipWasteCategory } from '@b3hub/shared';
 import { createGuestOrder } from '@/lib/api';
 import type { User } from '@/lib/api';
@@ -106,12 +112,6 @@ const WASTE_INFO: Record<SkipWasteCategory, { accepts: string[]; rejects: string
 
 // SKIP_WASTE_CATEGORIES + SKIP_WASTE_LABELS imported from @b3hub/shared — single source of truth with mobile.
 
-const DURATIONS = [
-  { days: 7, label: '1 nedēļa' },
-  { days: 14, label: '2 nedēļas' },
-  { days: 28, label: '4 nedēļas' },
-];
-
 const MAP_STYLES = [
   { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
@@ -131,14 +131,15 @@ const MAP_STYLES = [
 const DRAFT_KEY = 'b3hub_skiphire_wizard_draft';
 const DRAFT_TTL = 7 * 24 * 60 * 60 * 1000;
 
-type WizardStep = 'waste' | 'size' | 'address' | 'details' | 'confirmed';
+type WizardStep = 'waste' | 'size' | 'address' | 'details' | 'offers' | 'confirmed';
 
 const STEP_INDEX: Record<WizardStep, number> = {
   waste: 1,
   size: 2,
   address: 3,
   details: 4,
-  confirmed: 4,
+  offers: 5,
+  confirmed: 5,
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -158,8 +159,7 @@ export function SkipHireWizard({ mode }: Props) {
   const [lat, setLat] = useState<number | undefined>();
   const [lng, setLng] = useState<number | undefined>();
   const [deliveryDate, setDeliveryDate] = useState('');
-  const [hireDays, setHireDays] = useState(14);
-  const [hireRange, setHireRange] = useState<DateRange | undefined>();
+  const [collectionDate, setCollectionDate] = useState('');
   const [deliveryWindow, setDeliveryWindow] = useState<'ANY' | 'AM' | 'PM'>('ANY');
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [contactName, setContactName] = useState('');
@@ -168,8 +168,11 @@ export function SkipHireWizard({ mode }: Props) {
   const [notes, setNotes] = useState('');
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
-  const [hoveredWaste, setHoveredWaste] = useState<SkipWasteCategory | null>(null);
-  const [hoveredSize, setHoveredSize] = useState<string | null>(null);
+  // Offers step
+  const [quotes, setQuotes] = useState<SkipHireQuote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [quotesError, setQuotesError] = useState('');
+  const [selectedCarrierId, setSelectedCarrierId] = useState<string | null>(null);
 
   const [confirmedOrder, setConfirmedOrder] = useState<SkipHireOrder | null>(null);
   const [guestToken, setGuestToken] = useState('');
@@ -213,18 +216,9 @@ export function SkipHireWizard({ mode }: Props) {
       if (d.size) setSize(d.size);
       if (d.wasteType) setWasteType(d.wasteType);
       if (d.address) setAddress(d.address);
-      if (d.deliveryDate) {
-        setDeliveryDate(d.deliveryDate);
-        // Restore hireRange from saved deliveryDate + hireDays
-        const days = d.hireDays ?? 14;
-        const [y, mo, dy] = d.deliveryDate.split('-').map(Number);
-        const from = new Date(y, mo - 1, dy);
-        const to = new Date(y, mo - 1, dy);
-        to.setDate(to.getDate() + days - 1);
-        setHireRange({ from, to });
-      }
+      if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
       if (d.deliveryWindow) setDeliveryWindow(d.deliveryWindow);
-      if (d.hireDays) setHireDays(d.hireDays);
+      if (d.collectionDate) setCollectionDate(d.collectionDate);
       if (d.notes) setNotes(d.notes);
       if (d.step && d.step !== 'confirmed') setStep(d.step as WizardStep);
     } catch {
@@ -246,8 +240,8 @@ export function SkipHireWizard({ mode }: Props) {
         wasteType,
         address,
         deliveryDate,
+        collectionDate,
         deliveryWindow,
-        hireDays,
         notes,
         step,
         savedAt: Date.now(),
@@ -258,8 +252,8 @@ export function SkipHireWizard({ mode }: Props) {
     wasteType,
     address,
     deliveryDate,
+    collectionDate,
     deliveryWindow,
-    hireDays,
     notes,
     step,
     confirmedOrder,
@@ -366,6 +360,23 @@ export function SkipHireWizard({ mode }: Props) {
     }
   }
 
+  // ── Go to offers ──────────────────────────────────────────────────────────
+
+  async function goToOffers() {
+    setQuotesError('');
+    setQuotesLoading(true);
+    setSelectedCarrierId(null);
+    setStep('offers');
+    try {
+      const results = await getSkipHireQuotes(mapSkipSize(size), address, deliveryDate);
+      setQuotes(results);
+    } catch {
+      setQuotesError('Neizdevās ielādēt piedāvājumus. Mēģiniet vēlreiz.');
+    } finally {
+      setQuotesLoading(false);
+    }
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
 
   async function submit(tok: string) {
@@ -384,6 +395,7 @@ export function SkipHireWizard({ mode }: Props) {
           contactName: contactName || undefined,
           contactPhone: contactPhone || undefined,
           notes: notes || undefined,
+          carrierId: selectedCarrierId || undefined,
         },
         tok,
       );
@@ -413,7 +425,13 @@ export function SkipHireWizard({ mode }: Props) {
   const selectedWasteLabel = wasteType
     ? (SKIP_WASTE_LABELS[wasteType as SkipWasteCategory]?.label ?? wasteType)
     : null;
-  const selectedDuration = DURATIONS.find((d) => d.days === hireDays);
+  const hireDays = (() => {
+    if (!deliveryDate || !collectionDate) return 0;
+    const s = new Date(deliveryDate + 'T00:00:00').getTime();
+    const e = new Date(collectionDate + 'T00:00:00').getTime();
+    return Math.max(1, Math.round((e - s) / (1000 * 3600 * 24)));
+  })();
+  const selectedDuration = hireDays > 0 ? { label: `${hireDays} dienas` } : null;
 
   function getOnBack(): (() => void) | undefined {
     if (isConfirmed) return undefined;
@@ -422,6 +440,7 @@ export function SkipHireWizard({ mode }: Props) {
     if (step === 'size') return () => setStep('waste');
     if (step === 'address') return () => setStep('size');
     if (step === 'details') return () => setStep('address');
+    if (step === 'offers') return () => setStep('details');
     return undefined;
   }
 
@@ -431,7 +450,7 @@ export function SkipHireWizard({ mode }: Props) {
     <WizardShell
       className={mode === 'dashboard' ? 'flex-1' : 'w-full h-auto'}
       step={STEP_INDEX[step]}
-      totalSteps={4}
+      totalSteps={5}
       title={isConfirmed ? 'Pasūtījums pieņemts' : 'Konteinera noma'}
       onBack={getOnBack()}
       onClose={mode === 'public' && !isConfirmed ? () => router.push('/order') : undefined}
@@ -456,26 +475,49 @@ export function SkipHireWizard({ mode }: Props) {
           <div className="flex flex-col gap-2">
             {SKIP_WASTE_CATEGORIES.map((id) => {
               const w = SKIP_WASTE_LABELS[id];
+              const isSelected = wasteType === id;
               return (
                 <button
                   key={id}
-                  onClick={() => {
-                    setWasteType(id);
-                    setStep('size');
-                  }}
-                  onMouseEnter={() => setHoveredWaste(id)}
-                  onMouseLeave={() => setHoveredWaste(null)}
-                  className="flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent border-border/60 hover:border-[#203728] hover:shadow-sm transition-all group"
+                  onClick={() => setWasteType(id)}
+                  className={`flex items-center justify-between text-left rounded-2xl border-2 px-5 py-4 bg-transparent transition-all group ${
+                    isSelected
+                      ? 'border-[#203728] bg-[#203728]/5 shadow-sm'
+                      : 'border-border/60 hover:border-[#203728] hover:shadow-sm'
+                  }`}
                 >
                   <div>
                     <p className="font-semibold text-foreground">{w.label}</p>
                     <p className="text-sm text-muted-foreground">{w.sub}</p>
                   </div>
-                  <ArrowRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
+                  {isSelected ? (
+                    <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#203728]">
+                      <svg className="size-3 text-white" fill="none" viewBox="0 0 12 12">
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  ) : (
+                    <ArrowRight className="size-4 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
+                  )}
                 </button>
               );
             })}
           </div>
+          <button
+            onClick={() => {
+              if (wasteType) setStep('size');
+            }}
+            disabled={!wasteType}
+            className="w-full rounded-2xl h-12 bg-foreground text-background text-[15px] font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-foreground/90 transition-colors flex items-center justify-center gap-2"
+          >
+            Tālāk <ArrowRight className="size-4" />
+          </button>
         </div>
       )}
 
@@ -490,28 +532,54 @@ export function SkipHireWizard({ mode }: Props) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {SIZES.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setSize(s.id);
-                  setStep('address');
-                }}
-                onMouseEnter={() => setHoveredSize(s.id)}
-                onMouseLeave={() => setHoveredSize(null)}
-                className="group text-left rounded-2xl border border-border/60 bg-card p-5 hover:border-[#203728] hover:shadow-sm transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-[16px] text-foreground">{s.label}</p>
-                    <p className="text-sm font-medium text-[#203728] mt-0.5">{s.sub}</p>
+            {SIZES.map((s) => {
+              const isSelected = size === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setSize(s.id)}
+                  className={`group text-left rounded-2xl border-2 bg-card p-5 transition-all active:scale-[0.98] ${
+                    isSelected
+                      ? 'border-[#203728] bg-[#203728]/5 shadow-sm'
+                      : 'border-border/60 hover:border-[#203728] hover:shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-[16px] text-foreground">{s.label}</p>
+                      <p className="text-sm font-medium text-[#203728] mt-0.5">{s.sub}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <p className="text-lg font-bold text-foreground">no €{s.fromPrice}</p>
+                      {isSelected && (
+                        <div className="flex size-5 items-center justify-center rounded-full bg-[#203728]">
+                          <svg className="size-3 text-white" fill="none" viewBox="0 0 12 12">
+                            <path
+                              d="M2 6l3 3 5-5"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-lg font-bold text-foreground shrink-0">no €{s.fromPrice}</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">{s.capacity}</p>
-              </button>
-            ))}
+                  <p className="text-xs text-muted-foreground mt-3">{s.capacity}</p>
+                </button>
+              );
+            })}
           </div>
+          <button
+            onClick={() => {
+              if (size) setStep('address');
+            }}
+            disabled={!size}
+            className="w-full rounded-2xl h-12 bg-foreground text-background text-[15px] font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-foreground/90 transition-colors flex items-center justify-center gap-2"
+          >
+            Tālāk — norādīt adresi <ArrowRight className="size-4" />
+          </button>
         </div>
       )}
 
@@ -555,63 +623,98 @@ export function SkipHireWizard({ mode }: Props) {
             </div>
           )}
 
+          {/* Hire period — two-tap range calendar (mirrors mobile) */}
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <CalendarDays className="size-4" /> Piegādes un nodošanas datumi
+              <CalendarDays className="size-4" /> Nomas periods
             </label>
-            <p className="text-xs text-muted-foreground">
-              Izvēlieties piegādes datumu un klikšķiniet uz nodošanas datuma.
+            <p className="text-xs text-muted-foreground -mt-1">
+              1. klikšķis — piegādes datums &nbsp;·&nbsp; 2. klikšķis — savākšanas datums
             </p>
-            <div className="rounded-2xl border overflow-hidden">
+            <div className="rounded-2xl border bg-background overflow-hidden min-h-[380px]">
               <Calendar
                 mode="range"
-                selected={hireRange}
-                onSelect={(range) => {
-                  setHireRange(range);
-                  if (range?.from) {
-                    const f = range.from;
-                    const y = f.getFullYear();
-                    const m = String(f.getMonth() + 1).padStart(2, '0');
-                    const day = String(f.getDate()).padStart(2, '0');
-                    setDeliveryDate(`${y}-${m}-${day}`);
+                showOutsideDays={false}
+                selected={
+                  deliveryDate || collectionDate
+                    ? {
+                        from: deliveryDate ? new Date(deliveryDate + 'T00:00:00') : undefined,
+                        to: collectionDate ? new Date(collectionDate + 'T00:00:00') : undefined,
+                      }
+                    : undefined
+                }
+                onSelect={(range: DateRange | undefined) => {
+                  const from = range?.from;
+                  const to = range?.to;
+                  if (from) {
+                    const y = from.getFullYear();
+                    const m = String(from.getMonth() + 1).padStart(2, '0');
+                    const d = String(from.getDate()).padStart(2, '0');
+                    setDeliveryDate(`${y}-${m}-${d}`);
                   } else {
                     setDeliveryDate('');
                   }
-                  if (range?.from && range?.to) {
-                    const diff =
-                      Math.round((range.to.getTime() - range.from.getTime()) / 86400000) + 1;
-                    setHireDays(Math.max(1, diff));
+                  if (to) {
+                    const y = to.getFullYear();
+                    const m = String(to.getMonth() + 1).padStart(2, '0');
+                    const d = String(to.getDate()).padStart(2, '0');
+                    setCollectionDate(`${y}-${m}-${d}`);
+                  } else {
+                    setCollectionDate('');
                   }
                 }}
                 disabled={{ before: new Date(Date.now() + 86400000) }}
                 className="p-3"
               />
             </div>
-            {hireRange?.from && (
-              <div className="flex items-center gap-2.5 rounded-xl bg-[#203728]/10 border border-[#203728]/20 px-4 py-3">
-                <CalendarDays className="size-4 text-black shrink-0" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-[#203728]">
-                    Piegāde:{' '}
-                    {hireRange.from.toLocaleDateString('lv-LV', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </span>
-                  {hireRange.to && hireRange.to.getTime() !== hireRange.from.getTime() && (
-                    <span className="text-xs font-medium text-[#203728]/70">
-                      Nodošana:{' '}
-                      {hireRange.to.toLocaleDateString('lv-LV', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}{' '}
-                      · {hireDays} dienas
-                    </span>
-                  )}
-                </div>
+            {(deliveryDate || collectionDate) && (
+              <div className="flex flex-col gap-2">
+                {deliveryDate && (
+                  <div className="flex items-center gap-2.5 rounded-xl bg-[#203728]/10 border border-[#203728]/20 px-4 py-3">
+                    <CalendarDays className="size-4 text-[#203728] shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-[#203728]/70 font-medium">Piegādes datums</p>
+                      <p className="text-sm font-semibold text-[#203728]">
+                        {(() => {
+                          const [y, m, d] = deliveryDate.split('-').map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString('lv-LV', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          });
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {collectionDate ? (
+                  <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                    <Clock className="size-4 text-slate-500 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Savākšanas datums · {hireDays} dienas
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {(() => {
+                          const [y, m, d] = collectionDate.split('-').map(Number);
+                          return new Date(y, m - 1, d).toLocaleDateString('lv-LV', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          });
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  deliveryDate && (
+                    <p className="text-xs text-muted-foreground px-1">
+                      Izvēlieties savākšanas datumu, noklikšķinot uz kāda nākamā datuma
+                    </p>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -635,141 +738,107 @@ export function SkipHireWizard({ mode }: Props) {
             </div>
           </div>
 
-          {/* Contact — always visible; pre-filled from profile in dashboard mode */}
+          {/* Contact */}
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-              Kontaktpersona objektā
-              {mode === 'dashboard' && contactPrefilled && (
-                <span className="text-xs font-normal text-muted-foreground">(no profila)</span>
-              )}
-            </p>
-            <div>
-              <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                <UserIcon className="size-3" /> Vārds, uzvārds
-              </label>
-              <Input
-                placeholder="Jānis Bērziņš"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-                className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                <Phone className="size-3" /> Tālrunis
-              </label>
-              <Input
-                type="tel"
-                placeholder="+371 20 000 000"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
-              />
-            </div>
-            {mode === 'public' && (
-              <div>
-                <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                  <Mail className="size-3" /> E-pasts (neobligāti, statusu paziņojumiem)
-                </label>
-                <Input
-                  type="email"
-                  placeholder="jusu@epasts.lv"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  autoComplete="email"
-                  className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+            <p className="text-sm font-semibold text-foreground">Kontaktpersona objektā</p>
+            {user ? (
+              <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                  <p className="text-sm font-semibold text-emerald-700">
+                    Pasūtījums tiks pievienots jūsu kontam
+                  </p>
+                </div>
+                <div className="space-y-0.5">
+                  {(user.firstName || user.lastName) && (
+                    <p className="text-sm font-medium text-foreground">
+                      {[user.firstName, user.lastName].filter(Boolean).join(' ')}
+                    </p>
+                  )}
+                  {user.phone && <p className="text-sm text-muted-foreground">{user.phone}</p>}
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                </div>
+                <Textarea
+                  placeholder="Piezīmes šoferim (vārtu kods, piekļuves instrukcijas...)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  className="rounded-xl resize-none bg-white border-emerald-200 focus-visible:ring-0 focus-visible:border-emerald-400"
                 />
               </div>
+            ) : (
+              <>
+                <div>
+                  <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                    <UserIcon className="size-3" /> Vārds, uzvārds
+                  </label>
+                  <Input
+                    placeholder="Jānis Bērziņš"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                    <Phone className="size-3" /> Tālrunis *
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="+371 20 000 000"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+                  />
+                </div>
+                {mode === 'public' && (
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                      <Mail className="size-3" /> E-pasts (neobligāti, statusu paziņojumiem)
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="jusu@epasts.lv"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      autoComplete="email"
+                      className="rounded-2xl bg-muted/30 border-2 border-transparent hover:border-border focus-visible:border-foreground focus-visible:ring-0 shadow-none px-4 h-14 text-base"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Piezīmes šoferim (neobligāti)
+                  </label>
+                  <Textarea
+                    placeholder="Piekļuves instrukcijas, adreses precizējums..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                    className="rounded-xl resize-none"
+                  />
+                </div>
+              </>
             )}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">
-                Piezīmes šoferim (neobligāti)
-              </label>
-              <Textarea
-                placeholder="Piekļuves instrukcijas, adreses precizējums..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="rounded-xl resize-none"
-              />
-            </div>
           </div>
 
-          {!contactPhone.trim() && (
+          {!user && !contactPhone.trim() && (
             <p className="text-sm text-destructive font-medium">
               Tālrunis ir obligāts — šoferim jāsazinās ar objekta kontaktpersonu.
             </p>
           )}
 
-          {/* Payment method */}
-          <div className="space-y-2">
-            <p className="text-sm font-semibold text-foreground">Maksājuma veids</p>
-            <div className="flex flex-col gap-2">
-              {(
-                [
-                  {
-                    val: 'CARD',
-                    label: '💳 Ar karti (Paysera)',
-                    sub: 'Tūlītējs maksājums — jūs tiksiet novirzīts uz Paysera',
-                  },
-                  {
-                    val: 'INVOICE',
-                    label: '🧾 Priekšapmaksas rēķins',
-                    sub: 'Rēķins tiks nosūtīts uz e-pastu pirms piegādes',
-                  },
-                ] as const
-              ).map(({ val, label, sub }) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setPaymentMethod(val)}
-                  className={`flex items-start gap-3 text-left rounded-2xl border-2 px-4 py-3 transition-colors ${
-                    paymentMethod === val
-                      ? 'border-foreground bg-foreground/5'
-                      : 'border-border hover:border-foreground/30'
-                  }`}
-                >
-                  <span
-                    className={`mt-0.5 size-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === val ? 'border-foreground' : 'border-muted-foreground/40'}`}
-                  >
-                    {paymentMethod === val && (
-                      <span className="size-2 rounded-full bg-foreground block" />
-                    )}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{label}</p>
-                    <p className="text-xs text-muted-foreground">{sub}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
 
           <Button
             onClick={() => {
-              if (token) {
-                submit(token);
-              } else {
-                handleGuestCheckout({
-                  name: contactName.trim() || 'Klients',
-                  phone: contactPhone.trim(),
-                  email: contactEmail.trim() || undefined,
-                });
-              }
+              if (!deliveryDate || !collectionDate || (!user && !contactPhone.trim())) return;
+              goToOffers();
             }}
-            disabled={!deliveryDate || !contactPhone.trim() || submitting}
+            disabled={!deliveryDate || !collectionDate || (!user && !contactPhone.trim())}
             className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
           >
-            {submitting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <>
-                <span>Apstiprināt pasūtījumu</span>
-                <ArrowRight className="size-4 ml-1.5" />
-              </>
-            )}
+            Tālāk — skatīt cenas <ArrowRight className="size-4 ml-1.5" />
           </Button>
 
           {mode === 'public' && (
@@ -787,6 +856,188 @@ export function SkipHireWizard({ mode }: Props) {
                 Jau ir konts? Ieiet
               </button>
             </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 5: Offers — Choose best deal ── */}
+      {step === 'offers' && (
+        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2">
+          <div>
+            <p className="text-xl font-bold text-foreground">Izvēlieties labāko piedāvājumu</p>
+            <p className="text-sm text-muted-foreground mt-1">Pieejamie pārvadātāji jūsu rajonā</p>
+          </div>
+
+          {quotesLoading && (
+            <div className="py-20 flex flex-col items-center gap-3">
+              <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              <p className="text-sm font-medium text-muted-foreground">
+                Meklējam pieejamos pārvadātājus...
+              </p>
+            </div>
+          )}
+
+          {!quotesLoading && quotesError && (
+            <div className="space-y-4">
+              <p className="text-sm text-destructive font-medium">{quotesError}</p>
+              <Button variant="outline" onClick={goToOffers} className="w-full rounded-2xl h-12">
+                Mēģināt vēlreiz
+              </Button>
+            </div>
+          )}
+
+          {!quotesLoading && !quotesError && quotes.length === 0 && (
+            <div className="py-10 text-center space-y-3">
+              <p className="text-base font-semibold text-foreground">Nav pieejamu pārvadātāju</p>
+              <p className="text-sm text-muted-foreground">
+                Šobrīd nav brīvu pārvadātāju izvēlētajam datumam. Mēģiniet citu datumu vai
+                sazinieties ar mums.
+              </p>
+              <Button variant="outline" onClick={() => setStep('details')} className="rounded-2xl">
+                ← Mainīt datumu
+              </Button>
+            </div>
+          )}
+
+          {!quotesLoading && !quotesError && quotes.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {[...quotes]
+                .sort((a, b) => a.price - b.price)
+                .map((q, idx) => {
+                  const isSelected = selectedCarrierId === q.carrierId;
+                  const isCheapest = idx === 0;
+                  return (
+                    <button
+                      key={q.carrierId}
+                      onClick={() => setSelectedCarrierId(q.carrierId)}
+                      className={`text-left rounded-2xl border-2 p-5 transition-all ${
+                        isSelected
+                          ? 'border-[#203728] bg-[#203728]/5 shadow-sm'
+                          : 'border-border/60 hover:border-[#203728]/40 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {q.carrierLogo ? (
+                          <img
+                            src={q.carrierLogo}
+                            alt={q.carrierName}
+                            className="size-10 rounded-xl object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="flex size-10 items-center justify-center rounded-xl bg-slate-100 shrink-0">
+                            <Package className="size-5 text-slate-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-foreground">{q.carrierName}</p>
+                            {isCheapest && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#203728] text-white px-2 py-0.5 rounded-full">
+                                Labākā cena
+                              </span>
+                            )}
+                          </div>
+                          {q.carrierRating && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              ★ {q.carrierRating.toFixed(1)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <p className="text-xl font-bold text-foreground">€{q.price.toFixed(2)}</p>
+                          {isSelected && (
+                            <div className="flex size-5 items-center justify-center rounded-full bg-[#203728]">
+                              <svg className="size-3 text-white" fill="none" viewBox="0 0 12 12">
+                                <path
+                                  d="M2 6l3 3 5-5"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Payment method — shown for logged-in users */}
+          {!quotesLoading && !quotesError && quotes.length > 0 && user && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-foreground">Maksājuma veids</p>
+              <div className="flex flex-col gap-2">
+                {[
+                  {
+                    val: 'CARD' as const,
+                    label: '💳 Ar karti (Paysera)',
+                    sub: 'Tūlītējs maksājums — novirzīs uz Paysera',
+                  },
+                  {
+                    val: 'INVOICE' as const,
+                    label: '🧾 Priekšapmaksas rēķins',
+                    sub: 'Rēķins tiks nosūtīts uz e-pastu pirms piegādes',
+                  },
+                ].map(({ val, label, sub }) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setPaymentMethod(val)}
+                    className={`flex items-start gap-3 text-left rounded-2xl border-2 px-4 py-3 transition-colors ${
+                      paymentMethod === val
+                        ? 'border-foreground bg-foreground/5'
+                        : 'border-border hover:border-foreground/30'
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 size-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === val ? 'border-foreground' : 'border-muted-foreground/40'}`}
+                    >
+                      {paymentMethod === val && (
+                        <span className="size-2 rounded-full bg-foreground block" />
+                      )}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{label}</p>
+                      <p className="text-xs text-muted-foreground">{sub}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!quotesLoading && !quotesError && quotes.length > 0 && (
+            <>
+              {submitError && <p className="text-sm text-destructive font-medium">{submitError}</p>}
+              <Button
+                onClick={() => {
+                  if (token) {
+                    submit(token);
+                  } else {
+                    handleGuestCheckout({
+                      name: contactName.trim() || 'Klients',
+                      phone: contactPhone.trim(),
+                      email: contactEmail.trim() || undefined,
+                    });
+                  }
+                }}
+                disabled={!selectedCarrierId || submitting}
+                className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
+              >
+                {submitting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Apstiprināt pasūtījumu</span>
+                    <ArrowRight className="size-4 ml-1.5" />
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </div>
       )}
@@ -892,15 +1143,15 @@ export function SkipHireWizard({ mode }: Props) {
         </div>
       )}
 
-      {/* ── Step: waste — Service intro or hovered waste detail ─────────────── */}
+      {/* ── Step: waste — Service intro or selected waste detail ─────────────── */}
       {!showMap &&
         step === 'waste' &&
         (() => {
-          const hw = hoveredWaste ? SKIP_WASTE_LABELS[hoveredWaste] : null;
-          const hwInfo = hoveredWaste ? WASTE_INFO[hoveredWaste] : null;
+          const hw = wasteType ? SKIP_WASTE_LABELS[wasteType] : null;
+          const hwInfo = wasteType ? WASTE_INFO[wasteType] : null;
           return hw && hwInfo ? (
             <div
-              key={hoveredWaste}
+              key={wasteType}
               className="absolute inset-0 flex flex-col justify-center p-8 gap-6 overflow-y-auto animate-in fade-in duration-150"
             >
               <div>
@@ -1015,11 +1266,11 @@ export function SkipHireWizard({ mode }: Props) {
           );
         })()}
 
-      {/* ── Step: size — Waste chip + hovered/selected size detail ──────────── */}
+      {/* ── Step: size — Waste chip + selected size detail ──────────── */}
       {!showMap &&
         step === 'size' &&
         (() => {
-          const previewId = hoveredSize ?? size;
+          const previewId = size;
           const previewSize = SIZES.find((s) => s.id === previewId);
           return (
             <div className="absolute inset-0 flex flex-col justify-start p-8 gap-5 overflow-y-auto">
@@ -1096,8 +1347,153 @@ export function SkipHireWizard({ mode }: Props) {
           );
         })()}
 
-      {/* ── Step: details / confirmed — Order summary receipt ───────────────── */}
-      {!showMap && (step === 'details' || step === 'confirmed') && (
+      {/* ── Step: details — Order summary receipt ───────────────────────────── */}
+      {!showMap && step === 'details' && (
+        <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Pasūtījuma pārskats
+          </p>
+          <div className="flex flex-col border border-border/40 rounded-2xl overflow-hidden divide-y divide-border/30 bg-background/60">
+            {selectedWasteLabel && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Atkritumu veids</p>
+                  <p className="text-sm font-medium text-foreground">{selectedWasteLabel}</p>
+                </div>
+              </div>
+            )}
+            {selectedSize && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Konteiners</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedSize.label} · {selectedSize.sub}
+                  </p>
+                </div>
+              </div>
+            )}
+            {address && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes adrese</p>
+                  <p className="text-sm font-medium text-foreground truncate">{address}</p>
+                </div>
+              </div>
+            )}
+            {deliveryDate && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <CalendarDays className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes datums</p>
+                  <p className="text-sm font-medium text-foreground">{deliveryDate}</p>
+                </div>
+              </div>
+            )}
+            {selectedDuration && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Clock className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Nomas periods</p>
+                  <p className="text-sm font-medium text-foreground">{selectedDuration.label}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {selectedSize && (
+            <div className="flex items-center justify-between bg-[#203728] text-white rounded-2xl px-5 py-4">
+              <span className="text-sm font-medium opacity-70">Kopā no</span>
+              <span className="text-2xl font-bold">€{selectedSize.fromPrice}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Step: offers — Carrier selection preview ─────────────────────────── */}
+      {!showMap && step === 'offers' && (
+        <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Pasūtījuma pārskats
+          </p>
+          <div className="flex flex-col border border-border/40 rounded-2xl overflow-hidden divide-y divide-border/30 bg-background/60">
+            {selectedWasteLabel && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Atkritumu veids</p>
+                  <p className="text-sm font-medium text-foreground">{selectedWasteLabel}</p>
+                </div>
+              </div>
+            )}
+            {selectedSize && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Package className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Konteiners</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {selectedSize.label} · {selectedSize.sub}
+                  </p>
+                </div>
+              </div>
+            )}
+            {address && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <MapPin className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes adrese</p>
+                  <p className="text-sm font-medium text-foreground truncate">{address}</p>
+                </div>
+              </div>
+            )}
+            {deliveryDate && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <CalendarDays className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Piegādes datums</p>
+                  <p className="text-sm font-medium text-foreground">{deliveryDate}</p>
+                </div>
+              </div>
+            )}
+            {selectedDuration && (
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <Clock className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground mb-0.5">Nomas periods</p>
+                  <p className="text-sm font-medium text-foreground">{selectedDuration.label}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {(() => {
+            const chosen = selectedCarrierId
+              ? quotes.find((q) => q.carrierId === selectedCarrierId)
+              : quotes.length > 0
+                ? [...quotes].sort((a, b) => a.price - b.price)[0]
+                : null;
+            if (!chosen) return null;
+            return (
+              <div className="flex items-center justify-between bg-[#203728] text-white rounded-2xl px-5 py-4">
+                <div>
+                  <p className="text-xs font-medium opacity-60">
+                    {selectedCarrierId ? chosen.carrierName : 'Labākā cena no'}
+                  </p>
+                  <p className="text-2xl font-bold">€{chosen.price.toFixed(2)}</p>
+                </div>
+                {chosen.carrierRating && (
+                  <p className="text-sm font-semibold opacity-80">
+                    ★ {chosen.carrierRating.toFixed(1)}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── Step: confirmed — Order summary receipt ──────────────────────────── */}
+      {!showMap && step === 'confirmed' && (
         <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Pasūtījuma pārskats
