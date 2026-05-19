@@ -27,15 +27,11 @@ import {
   OrderType,
   OrderStatus,
   PaymentStatus,
-  SkipHireStatus,
-  SkipWasteCategory,
   TransportJobType,
   TransportJobStatus,
   VehicleType,
   VehicleStatus,
   NotificationType,
-  QuoteRequestStatus,
-  QuoteResponseStatus,
   FrameworkContractStatus,
   FrameworkPositionType,
   MaterialUnit,
@@ -127,27 +123,6 @@ async function main() {
   }
 
   console.log(`  ✅  Carrier: ${carrierCompany.name}`);
-
-  // ── 2. Carrier skip-hire pricing ──────────────────────────────────────────
-  const skipPrices: { skipSize: string; price: number }[] = [
-    { skipSize: 'MINI', price: 85 },
-    { skipSize: 'MIDI', price: 125 },
-    { skipSize: 'BUILDERS', price: 165 },
-    { skipSize: 'LARGE', price: 195 },
-  ];
-
-  for (const sp of skipPrices) {
-    await prisma.carrierPricing.upsert({
-      where: { carrierId_skipSize: { carrierId: carrierCompany.id, skipSize: sp.skipSize } },
-      update: { price: sp.price },
-      create: {
-        carrierId: carrierCompany.id,
-        skipSize: sp.skipSize,
-        price: sp.price,
-        currency: 'EUR',
-      },
-    });
-  }
 
   // ── 3. Carrier service zones ──────────────────────────────────────────────
   const zones = [
@@ -407,170 +382,6 @@ async function main() {
     });
 
     console.log(`  ✅  ${js.jobNum} (${js.status})`);
-  }
-
-  // ── 7. Skip hire orders ───────────────────────────────────────────────────
-  console.log('\n🗑️   Seeding skip hire orders...');
-
-  const skipOrders: {
-    orderNumber: string;
-    skipSize: string;
-    wasteCategory: SkipWasteCategory;
-    status: SkipHireStatus;
-    location: string;
-    daysOffset: number;
-    price: number;
-  }[] = [
-    {
-      orderNumber: 'SKP-2024-001',
-      skipSize: 'MIDI',
-      wasteCategory: 'MIXED',
-      status: 'COMPLETED',
-      location: 'Rīga, LV-1010',
-      daysOffset: -21,
-      price: 125,
-    },
-    {
-      orderNumber: 'SKP-2024-002',
-      skipSize: 'BUILDERS',
-      wasteCategory: 'CONCRETE_RUBBLE',
-      status: 'DELIVERED',
-      location: 'Jūrmala, LV-2015',
-      daysOffset: -3,
-      price: 175,
-    },
-    {
-      orderNumber: 'SKP-2024-003',
-      skipSize: 'MINI',
-      wasteCategory: 'GREEN_GARDEN',
-      status: 'CONFIRMED',
-      location: 'Rīga, LV-1001',
-      daysOffset: 2,
-      price: 95,
-    },
-    {
-      orderNumber: 'SKP-2024-004',
-      skipSize: 'LARGE',
-      wasteCategory: 'WOOD',
-      status: 'PENDING',
-      location: 'Salaspils, LV-2121',
-      daysOffset: 7,
-      price: 195,
-    },
-  ];
-
-  for (const sk of skipOrders) {
-    const existing = await prisma.skipHireOrder.findUnique({
-      where: { orderNumber: sk.orderNumber },
-    });
-    if (existing) continue;
-
-    await prisma.skipHireOrder.create({
-      data: {
-        orderNumber: sk.orderNumber,
-        location: sk.location,
-        wasteCategory: sk.wasteCategory,
-        skipSize: sk.skipSize,
-        deliveryDate: addDays(now, sk.daysOffset),
-        price: sk.price,
-        currency: 'EUR',
-        status: sk.status,
-        carrierId: carrierCompany.id,
-        userId: buyer.id,
-        contactName: 'Jānis Bērziņš',
-        contactEmail: 'buyer@demo.com',
-        contactPhone: '+371 20 111 001',
-        lat: 56.9496,
-        lng: 24.1052,
-      },
-    });
-
-    console.log(`  ✅  ${sk.orderNumber} (${sk.skipSize} – ${sk.status})`);
-  }
-
-  // ── 8. Quote requests ─────────────────────────────────────────────────────
-  console.log('\n💬  Seeding quote requests...');
-
-  const quoteSeeds = [
-    {
-      requestNumber: 'RFQ-2024-001',
-      materialCategory: MaterialCategory.SAND,
-      materialName: 'Smiltis 0-4 mm',
-      quantity: 80,
-      unit: MaterialUnit.TONNE,
-      status: QuoteRequestStatus.QUOTED,
-      deliveryCity: 'Rīga',
-      deliveryAddress: 'Brīvības iela 55, Rīga',
-      withResponse: true,
-      responsePrice: 8.80,
-    },
-    {
-      requestNumber: 'RFQ-2024-002',
-      materialCategory: MaterialCategory.GRAVEL,
-      materialName: 'Šķembas 8-16 mm',
-      quantity: 120,
-      unit: MaterialUnit.TONNE,
-      status: QuoteRequestStatus.PENDING,
-      deliveryCity: 'Jūrmala',
-      deliveryAddress: 'Jūras iela 3, Jūrmala',
-      withResponse: false,
-      responsePrice: 0,
-    },
-    {
-      requestNumber: 'RFQ-2024-003',
-      materialCategory: MaterialCategory.SOIL,
-      materialName: 'Melnzeme dārzam',
-      quantity: 15,
-      unit: MaterialUnit.M3,
-      status: QuoteRequestStatus.ACCEPTED,
-      deliveryCity: 'Ogre',
-      deliveryAddress: 'Brīvības iela 1, Ogre',
-      withResponse: true,
-      responsePrice: 17.50,
-    },
-  ];
-
-  for (const rq of quoteSeeds) {
-    const existing = await prisma.quoteRequest.findUnique({
-      where: { requestNumber: rq.requestNumber },
-    });
-    if (existing) continue;
-
-    const qr = await prisma.quoteRequest.create({
-      data: {
-        requestNumber: rq.requestNumber,
-        buyerId: buyer.id,
-        materialCategory: rq.materialCategory,
-        materialName: rq.materialName,
-        quantity: rq.quantity,
-        unit: rq.unit,
-        deliveryAddress: rq.deliveryAddress,
-        deliveryCity: rq.deliveryCity,
-        status: rq.status,
-        notes: 'Nepieciešams piegādāt pilnā apjomā.',
-      },
-    });
-
-    if (rq.withResponse && rq.responsePrice > 0) {
-      await prisma.quoteResponse.create({
-        data: {
-          requestId: qr.id,
-          supplierId: supplierCompany.id,
-          pricePerUnit: rq.responsePrice,
-          totalPrice: rq.responsePrice * rq.quantity,
-          unit: rq.unit,
-          etaDays: 3,
-          notes: 'Varam piegādāt 3 darba dienu laikā.',
-          status:
-            rq.status === QuoteRequestStatus.ACCEPTED
-              ? QuoteResponseStatus.ACCEPTED
-              : QuoteResponseStatus.PENDING,
-          validUntil: addDays(now, 14),
-        },
-      });
-    }
-
-    console.log(`  ✅  ${rq.requestNumber} (${rq.status})`);
   }
 
   // ── 9. Framework contract ─────────────────────────────────────────────────

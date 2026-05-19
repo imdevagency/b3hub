@@ -60,7 +60,6 @@ interface MenuSection {
 
 interface BuildItemsUser {
   isCompany?: boolean;
-  canSkipHire?: boolean;
 }
 
 function buildSections(role: Role, user: BuildItemsUser | null | undefined): MenuSection[] {
@@ -113,13 +112,7 @@ function buildSections(role: Role, user: BuildItemsUser | null | undefined): Men
 
   if (role === 'driver') {
     const fleetItems: MenuItem[] = [];
-    if (user?.canSkipHire) {
-      fleetItems.push({
-        icon: (c) => <Trash2 size={20} color={c} />,
-        label: 'Konteineri',
-        route: '/(driver)/skips',
-      });
-    }
+
     fleetItems.push({
       icon: (c) => <Truck size={20} color={c} />,
       label: 'Transportlīdzekļi',

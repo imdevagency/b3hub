@@ -707,14 +707,6 @@ function CertsTab() {
     load();
   }, [load]);
 
-  if (!user?.canSkipHire)
-    return (
-      <EmptyState
-        icon={<ShieldCheck size={42} color="#9ca3af" />}
-        title="Nav pieejams"
-        subtitle="Atkritumu sertifikāti ir pieejami tikai apstiprinātu konteineru operatoriem."
-      />
-    );
   if (loading)
     return (
       <View className="p-5">

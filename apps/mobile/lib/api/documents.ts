@@ -77,7 +77,6 @@ export const documentsApi = {
         rating: number;
         comment?: string;
         orderId?: string;
-        skipOrderId?: string;
       },
       token: string,
     ) =>
@@ -89,7 +88,7 @@ export const documentsApi = {
 
     /** Check whether the user already reviewed an order or transport job. */
     status: (
-      params: { orderId?: string; skipOrderId?: string; transportJobId?: string },
+      params: { orderId?: string; transportJobId?: string },
       token: string,
     ) => {
       const qs = new URLSearchParams(

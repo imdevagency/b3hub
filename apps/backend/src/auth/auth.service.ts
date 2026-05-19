@@ -114,7 +114,6 @@ export class AuthService {
         canBuy: true,
         canSell: true,
         canTransport: true,
-        canSkipHire: true,
         canRent: true,
         canRecycle: true,
         companyRole: true,
@@ -164,7 +163,7 @@ export class AuthService {
       user.canBuy ?? true,
       user.canSell,
       user.canTransport,
-      user.canSkipHire,
+      false,
       user.canRent ?? false,
       user.canRecycle ?? false,
       user.company?.id,
@@ -299,7 +298,7 @@ export class AuthService {
       user.canBuy ?? true,
       user.canSell,
       user.canTransport,
-      user.canSkipHire,
+      false,
       (user as any).canRent ?? false,
       user.canRecycle ?? false,
       user.company?.id,
@@ -346,7 +345,6 @@ export class AuthService {
         canBuy: true,
         canSell: true,
         canTransport: true,
-        canSkipHire: true,
         canRent: true,
         companyRole: true,
         status: true,
@@ -368,6 +366,15 @@ export class AuthService {
             name: true,
             companyType: true,
             features: true,
+            accountManager: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+              },
+            },
           },
         },
         buyerProfile: {
@@ -406,7 +413,7 @@ export class AuthService {
       modes.push('RECYCLER');
     if (user.userType === 'BUYER' && !isPureTransportIndividual)
       modes.push('BUYER');
-    if (user.canSell || (user as any).canSkipHire || (user as any).canRent) modes.push('SUPPLIER');
+    if (user.canSell || (user as any).canRent) modes.push('SUPPLIER');
     if (isTransport) modes.push('CARRIER');
 
     return { ...user, availableModes: modes.length > 0 ? modes : ['BUYER'] };
@@ -716,7 +723,6 @@ export class AuthService {
         canBuy: boolean;
         canSell: boolean;
         canTransport: boolean;
-        canSkipHire: boolean;
         canRent: boolean;
         canRecycle: boolean;
         companyId: string | null;
@@ -732,7 +738,7 @@ export class AuthService {
         features: string[] | null;
       }[]
     >`
-      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canBuy", u."canSell", u."canTransport", u."canSkipHire", u."canRent", u."canRecycle",
+      SELECT u.id, u.email, u."userType", u.status, u."isCompany", u."canBuy", u."canSell", u."canTransport", u."canRent", u."canRecycle",
              u."companyId", u."companyRole",
              u."permCreateContracts", u."permReleaseCallOffs", u."permManageOrders",
              u."permViewFinancials", u."permManageTeam", u."refreshTokenExpiry", u."tokenVersion",
@@ -763,7 +769,7 @@ export class AuthService {
       (user as any).canBuy ?? true,
       user.canSell,
       user.canTransport,
-      user.canSkipHire,
+      false,
       user.canRent ?? false,
       user.canRecycle ?? false,
       user.companyId ?? undefined,
@@ -965,7 +971,7 @@ export class AuthService {
         existingUser.canBuy ?? true,
         existingUser.canSell,
         existingUser.canTransport,
-        existingUser.canSkipHire,
+        false,
         existingUser.canRent ?? false,
         existingUser.canRecycle ?? false,
         existingUser.company?.id,
@@ -1025,7 +1031,6 @@ export class AuthService {
         canBuy: true,
         canSell: true,
         canTransport: true,
-        canSkipHire: true,
         canRent: true,
         canRecycle: true,
         companyRole: true,
@@ -1050,7 +1055,7 @@ export class AuthService {
       newUser.canBuy ?? true,
       newUser.canSell,
       newUser.canTransport,
-      newUser.canSkipHire,
+      false,
       (newUser as any).canRent ?? false,
       newUser.canRecycle ?? false,
       newUser.company?.id,

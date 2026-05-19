@@ -13,7 +13,6 @@ import {
   DisputeReason,
   DisputeStatus,
   PaymentStatus,
-  SkipHireStatus,
 } from '@prisma/client';
 import { RequestingUser } from '../common/types/requesting-user.interface';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -960,82 +959,6 @@ export class PaymentsService {
                 err,
               ),
             );
-          break;
-        }
-
-        // Check if it's a skip-hire order reference
-        const skipOrder = await this.prisma.skipHireOrder.findFirst({
-          where: { orderNumber: payseraOrder.reference },
-          select: {
-            id: true,
-            orderNumber: true,
-            carrierId: true,
-            location: true,
-            deliveryDate: true,
-            skipSize: true,
-          },
-        });
-
-        if (skipOrder) {
-          const confirmedSkip = await this.prisma.skipHireOrder
-            .update({
-              where: { id: skipOrder.id },
-              data: {
-                paymentStatus: PaymentStatus.CAPTURED,
-                status: SkipHireStatus.CONFIRMED,
-              },
-              select: {
-                id: true,
-                orderNumber: true,
-                location: true,
-                deliveryDate: true,
-                skipSize: true,
-                carrierId: true,
-              },
-            })
-            .catch((err) => {
-              this.logger.error(
-                `Webhook: failed to confirm skip-hire order ${skipOrder.id}`,
-                err,
-              );
-              return null;
-            });
-
-          if (confirmedSkip?.carrierId) {
-            const carrierUsers = await this.prisma.user
-              .findMany({
-                where: { companyId: confirmedSkip.carrierId },
-                select: { id: true },
-              })
-              .catch((err: unknown) => {
-                this.logger.warn(
-                  `Webhook: failed to fetch carrier users for skip order ${confirmedSkip.id}: ${(err as Error).message}`,
-                );
-                return [] as { id: string }[];
-              });
-
-            if (carrierUsers.length > 0) {
-              const deliveryDay = confirmedSkip.deliveryDate
-                .toISOString()
-                .split('T')[0];
-              this.notifications
-                .createForMany(
-                  carrierUsers.map((u) => u.id),
-                  {
-                    type: NotificationType.ORDER_CONFIRMED,
-                    title: '📦 Jauns konteinera pasūtījums',
-                    message: `Pasūtījums #${confirmedSkip.orderNumber} apmaksāts. Piegāde: ${confirmedSkip.location}, ${deliveryDay}.`,
-                    data: { skipOrderId: confirmedSkip.id },
-                  },
-                )
-                .catch((err) =>
-                  this.logger.warn(
-                    'Notification (skip order confirmed) failed',
-                    (err as Error).message,
-                  ),
-                );
-            }
-          }
           break;
         }
 

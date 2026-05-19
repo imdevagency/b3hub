@@ -235,13 +235,47 @@ The `b3-recycling` path (`/dashboard/(internal)/b3-recycling/`) is legacy from a
 
 The following areas are **out of scope** and must not be extended, improved, or have new screens/APIs added:
 
-| Area                                                | What exists                                                                     | Action                                                       |
-| --------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Rental services**                                 | `apps/backend/src/rentals/`, `apps/mobile/lib/rental-services.ts`, wizard steps | Frozen. No new service types, no new screens, no extensions. |
-| **B3 field operator portal / APUS waste reporting** | `/dashboard/(internal)/b3-recycling/`                                           | Legacy. Do not add pages or extend.                          |
-| **CRM / projects module**                           | Any `projects` or `crm` routes/services                                         | Do not add or extend.                                        |
+| Area                                                | What exists                                                                     | Action                                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Rental services**                                 | `apps/backend/src/rentals/`, `apps/mobile/lib/rental-services.ts`, wizard steps | Frozen. No new service types, no new screens, no extensions.                              |
+| **B3 field operator portal / APUS waste reporting** | `/dashboard/(internal)/b3-recycling/`                                           | Legacy. Do not add pages or extend.                                                       |
+| **CRM / projects module**                           | Any `projects` or `crm` routes/services                                         | Do not add or extend.                                                                     |
+| **P2P messaging between market sides**              | `apps/backend/src/chat/`, `(shared)/chat/[jobId]`                               | Do not add buyer↔driver, buyer↔seller, or carrier↔supplier chat. Reroute to Bilt support. |
+| **Quote Requests / RFQ module**                     | Removed from codebase                                                           | Removed from scope. Do not rebuild.                                                       |
+| **Skip hire / Toilet cabin**                        | Removed from codebase                                                           | Removed from scope. Do not rebuild.                                                       |
 
 If asked to work on any of these areas, decline and explain the feature is out of scope.
+
+---
+
+## Communication architecture — Schüttflix model (CRITICAL)
+
+Bilt is modelled on Schüttflix's **"Smooth Contacts"** principle:
+
+> _"No unnecessary discussions on the construction site and no hassle with customer accounts. We are your contractual and contact partner."_
+
+### Rules that apply to all code in this repo
+
+1. **Bilt is the sole contractual and contact partner for all market sides.** The buyer's contract is with Bilt. The carrier's contract is with Bilt. The supplier's agreement is with Bilt. There is no direct contractual relationship between a buyer and a driver.
+
+2. **No peer-to-peer messaging.** Do NOT build or extend:
+   - Buyer ↔ driver chat
+   - Buyer ↔ seller chat
+   - Carrier ↔ supplier chat
+   - Any multi-party job thread visible to both sides
+
+3. **The correct contact channel is support.** When a user needs to communicate about an order, they contact Bilt:
+   - Mobile: `(shared)/support-chat.tsx` → `SupportThread` / `SupportMessage` backend models → `POST /api/v1/support`
+   - The support thread can carry a `jobId` or `orderId` context so Bilt staff see which job it's about
+   - Both the buyer AND the driver/carrier can open separate support threads about the same job — they do NOT see each other's threads
+
+4. **The `messages` tab = Bilt communications only.** Order status updates, system notifications, platform announcements, and Bilt support replies. Not inbox messages from other users.
+
+5. **The `chat/` backend module** (`apps/backend/src/chat/`) is currently implemented as peer-to-peer job chat. Do NOT extend it with new chat rooms. If refactoring, scope it to Bilt↔user support threads only.
+
+6. **Next-day payment.** Bilt pays carriers and sellers directly — the buyer does not pay the carrier. Payouts go via Paysera (all companies) or Stripe Connect (solo individual drivers). Never build a flow where a buyer sends money directly to a driver or seller outside the platform.
+
+7. **Autonomous pricing.** Suppliers set their own catalog prices. Carriers decide which jobs to accept. No RFQ/negotiation flow between buyers and suppliers on the platform. Framework contracts (large B2B) are arranged by Bilt staff, not via an in-app negotiation chat.
 
 ### Integration ownership
 

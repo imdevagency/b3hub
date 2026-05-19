@@ -105,6 +105,9 @@ export class DriverScheduleService {
             dto.maxJobsPerDay !== undefined
               ? dto.maxJobsPerDay
               : profile.maxJobsPerDay,
+          ...(dto.searchRadiusKm !== undefined && {
+            searchRadiusKm: dto.searchRadiusKm,
+          }),
         },
       });
 

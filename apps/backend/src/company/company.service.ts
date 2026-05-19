@@ -44,6 +44,16 @@ const COMPANY_SELECT = {
   paymentTermsDays: true,
   createdAt: true,
   updatedAt: true,
+  accountManager: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      avatar: true,
+    },
+  },
 } as const;
 
 const MEMBER_SELECT = {

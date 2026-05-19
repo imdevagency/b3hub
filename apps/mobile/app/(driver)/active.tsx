@@ -71,6 +71,7 @@ import {
   Truck,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Camera,
   PlusCircle,
   FileText,
@@ -1302,37 +1303,27 @@ export default function ActiveJobScreen() {
                   </RNText>
                 </TouchableOpacity>
 
-                {job?.id && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: '/chat/[jobId]',
-                        params: {
-                          jobId: job.id,
-                          title:
-                            job.order?.siteContactName ?? job.order?.orderNumber ?? job.jobNumber,
-                        },
-                      })
-                    }
-                    style={{ alignItems: 'center', justifyContent: 'center', gap: 6, width: 64 }}
+                {/* Chat button → Bilt Support (no P2P chat — Schüttflix contact model) */}
+                <TouchableOpacity
+                  onPress={() => router.push('/(shared)/support-chat' as any)}
+                  style={{ alignItems: 'center', justifyContent: 'center', gap: 6, width: 64 }}
+                >
+                  <View
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 26,
+                      backgroundColor: colors.bgMuted,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
-                    <View
-                      style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: 26,
-                        backgroundColor: colors.bgMuted,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <MessageCircle size={24} color="#111827" />
-                    </View>
-                    <RNText style={{ fontSize: 12, color: '#4b5563', fontWeight: '600' }}>
-                      Čats
-                    </RNText>
-                  </TouchableOpacity>
-                )}
+                    <MessageCircle size={24} color="#111827" />
+                  </View>
+                  <RNText style={{ fontSize: 12, color: '#4b5563', fontWeight: '600' }}>
+                    Atbalsts
+                  </RNText>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => {
@@ -1657,6 +1648,43 @@ export default function ActiveJobScreen() {
               )}
             </View>
           </View>
+
+          {/* No-contact delivery banner */}
+          {job.order?.noContactOnSite ? (
+            <View
+              style={{
+                backgroundColor: '#fff7ed',
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 16,
+                borderWidth: 1.5,
+                borderColor: '#fed7aa',
+                flexDirection: 'row',
+                gap: 12,
+              }}
+            >
+              <AlertTriangle size={20} color="#ea580c" style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '700',
+                    color: '#c2410c',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Piegāde bez klātbūtnes
+                </Text>
+                <Text style={{ fontSize: 14, color: '#9a3412', lineHeight: 20, fontWeight: '500' }}>
+                  Objektā nebūs neviena klāt. Izlādējiet materiālu norādītajā vietā un uzņemiet
+                  apliecinošu foto.
+                  {job.order.notes ? ` Instrukcijas: ${job.order.notes}` : ''}
+                </Text>
+              </View>
+            </View>
+          ) : null}
 
           {/* Elevated Notes (if any) */}
           {job.order?.notes ? (

@@ -119,6 +119,7 @@ export default function ScheduleScreen() {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
+  const [updatingRadius, setUpdatingRadius] = useState(false);
 
   const load = useCallback(
     async (isRefresh = false) => {
@@ -239,6 +240,36 @@ export default function ScheduleScreen() {
         isActive: false,
       },
   );
+
+  const handleRadiusChange = async (km: number) => {
+    if (!token || !profile || updatingRadius) return;
+    haptics.light();
+    setProfile((prev) => (prev ? { ...prev, searchRadiusKm: km } : prev));
+    setUpdatingRadius(true);
+    try {
+      await api.driverSchedule.updateSchedule(
+        {
+          days: gridSlots.map((s) => ({
+            dayOfWeek: s.dayOfWeek,
+            enabled: s.isActive,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          })),
+          autoSchedule: profile.autoSchedule,
+          maxJobsPerDay: profile.maxJobsPerDay,
+          searchRadiusKm: km,
+        },
+        token,
+      );
+      haptics.success();
+    } catch {
+      haptics.error();
+      toast.error('Neizdevās saglabāt rādiusu.');
+      load();
+    } finally {
+      setUpdatingRadius(false);
+    }
+  };
 
   const handleToggleDay = async (dayOfWeek: number) => {
     if (!token || !profile || updatingDays.has(dayOfWeek)) return;
@@ -377,8 +408,74 @@ export default function ScheduleScreen() {
               </View>
             </View>
 
+            {/* Search Radius */}
+            <View className="px-5 mt-6">
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: '700',
+                  color: colors.textPrimary,
+                  letterSpacing: -0.5,
+                  marginBottom: 4,
+                }}
+              >
+                Meklēšanas rādiuss
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: colors.textMuted,
+                  fontWeight: '500',
+                  marginBottom: 12,
+                }}
+              >
+                Maksimālais attālums līdz darba vietai
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[25, 50, 100, 200].map((km) => {
+                  const active = (profile.searchRadiusKm ?? 50) === km;
+                  return (
+                    <TouchableOpacity
+                      key={km}
+                      onPress={() => handleRadiusChange(km)}
+                      disabled={updatingRadius}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        backgroundColor: active ? '#111827' : '#f3f4f6',
+                        borderWidth: active ? 0 : 1.5,
+                        borderColor: '#e5e7eb',
+                        opacity: updatingRadius ? 0.6 : 1,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: '700',
+                          fontSize: 15,
+                          color: active ? '#fff' : colors.textPrimary,
+                        }}
+                      >
+                        {km}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: active ? '#9ca3af' : colors.textMuted,
+                          fontWeight: '500',
+                        }}
+                      >
+                        km
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* Schedule */}
-            <View>
+            <View className="mt-6">
               <View className="px-5 pb-3">
                 <Text
                   style={{

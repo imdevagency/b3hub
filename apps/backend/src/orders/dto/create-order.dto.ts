@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsArray,
+  IsBoolean,
   ValidateNested,
   IsDateString,
   Max,
@@ -141,6 +142,11 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(2000)
   sitePhotoUrl?: string;
+
+  /** When true the driver should unload without a site contact being present. Access info in notes. */
+  @IsOptional()
+  @IsBoolean()
+  noContactOnSite?: boolean;
 
   @IsOptional()
   @IsString()

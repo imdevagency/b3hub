@@ -39,7 +39,6 @@ export class AdminService {
     status: true,
     canSell: true,
     canTransport: true,
-    canSkipHire: true,
     canRent: true,
     canRecycle: true,
     companyRole: true,
@@ -71,7 +70,6 @@ export class AdminService {
         isCompany,
         canSell: dto.canSell ?? false,
         canTransport: dto.canTransport ?? false,
-        canSkipHire: dto.canSkipHire ?? false,
         canRent: dto.canRent ?? false,
         canRecycle: dto.canRecycle ?? false,
         emailVerified: true,
@@ -333,7 +331,6 @@ export class AdminService {
         userType: true,
         canSell: true,
         canTransport: true,
-        canSkipHire: true,
         canRent: true,
       },
     });
@@ -346,7 +343,6 @@ export class AdminService {
     const capabilityChanged =
       data.canSell !== undefined ||
       data.canTransport !== undefined ||
-      data.canSkipHire !== undefined ||
       data.canRent !== undefined ||
       data.userType !== undefined ||
       data.companyId !== undefined ||
@@ -368,9 +364,6 @@ export class AdminService {
         ...(data.canSell !== undefined && { canSell: data.canSell }),
         ...(data.canTransport !== undefined && {
           canTransport: data.canTransport,
-        }),
-        ...(data.canSkipHire !== undefined && {
-          canSkipHire: data.canSkipHire,
         }),
         ...(data.canRent !== undefined && {
           canRent: data.canRent,
@@ -586,6 +579,7 @@ export class AdminService {
       payoutEnabled?: boolean;
       features?: string[];
       companyType?: string;
+      accountManagerId?: string | null;
     },
     adminId: string,
   ) {
@@ -604,7 +598,7 @@ export class AdminService {
     this.logger.log(`Admin ${adminId} updated company ${id}`);
     // Strip features and companyType from the Prisma update payload so we can handle them separately
     // (Prisma scalar-list assignment uses `set:`; companyType must be cast to its enum)
-    const { features, companyType, ...scalarData } = data;
+    const { features, companyType, accountManagerId, ...scalarData } = data;
 
     // When reclassifying, auto-adjust RECYCLING_MANAGEMENT
     let resolvedFeatures = features;
@@ -632,6 +626,14 @@ export class AdminService {
         ...(resolvedFeatures !== undefined
           ? { features: { set: resolvedFeatures as any[] } }
           : {}),
+        ...(accountManagerId !== undefined
+          ? {
+              accountManager:
+                accountManagerId === null
+                  ? { disconnect: true }
+                  : { connect: { id: accountManagerId } },
+            }
+          : {}),
       },
       select: {
         id: true,
@@ -648,6 +650,15 @@ export class AdminService {
         carrierCommissionRate: true,
         features: true,
         createdAt: true,
+        accountManager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
         _count: { select: { users: true, orders: true } },
       },
     });
@@ -2411,14 +2422,6 @@ export class AdminService {
           serviceZones: {
             select: { id: true, city: true, postcode: true, surcharge: true },
           },
-          carrierPricing: {
-            select: {
-              skipSize: true,
-              price: true,
-              currency: true,
-              updatedAt: true,
-            },
-          },
           availabilityBlocks: {
             where: { blockedDate: { gte: today, lt: tomorrow } },
             select: { id: true, blockedDate: true },
@@ -2439,10 +2442,6 @@ export class AdminService {
         ...c,
         coverageType,
         blockedToday: c.availabilityBlocks.length > 0,
-        // Map pricing by skipSize for quick lookup in UI
-        pricingBySizeCode: Object.fromEntries(
-          c.carrierPricing.map((p) => [p.skipSize, p]),
-        ),
       };
     });
 

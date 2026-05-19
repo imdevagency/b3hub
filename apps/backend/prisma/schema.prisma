@@ -185,49 +185,7 @@ enum RcGrade {
   UNGRADED // grade not yet assessed
 }
 
-// ── Skip Hire (public 4-step wizard) ──────────────────────────
-enum SkipWasteCategory {
-  MIXED
-  GREEN_GARDEN
-  CONCRETE_RUBBLE
-  WOOD
-  METAL_SCRAP
-  ELECTRONICS_WEEE
-}
-
-enum SkipCategory {
-  SKIP      // traditional open-top skip
-  BIG_BAG   // 1 m³ bulk bag
-  CONTAINER // enclosed roll-on/roll-off
-}
-
-enum SkipHireStatus {
-  PENDING
-  CONFIRMED
-  DELIVERED
-  COLLECTED
-  COMPLETED
-  CANCELLED
-}
-
-enum ToiletCabinType {
-  STANDARD        // Standarta kabīne ~€30/mēn.
-  DISABLED_ACCESS // Cilvēkiem ar īpašām vajadzībām ~€80/mēn.
-  VIP             // VIP (iekšējā izlietne, ziepju dozators) ~€50/mēn.
-  HEATED          // Siltināta (radiators, apgaismojums) ~€80/mēn.
-}
-
-enum ToiletCabinStatus {
-  PENDING
-  CONFIRMED
-  DELIVERED
-  IN_USE
-  COLLECTED
-  COMPLETED
-  CANCELLED
-}
-
-// ── Rental services — generic (new services beyond skip-hire and toilet-cabin) ──
+// ── Rental services ────────────────────────────────────────────────────────
 enum RentalServiceType {
   SCAFFOLDING     // Temporary scaffolding structures
   TEMP_FENCING    // Hoarding, crowd barriers, site security fencing
@@ -235,8 +193,6 @@ enum RentalServiceType {
   GENERATOR       // Power generator units
   LIGHTING_TOWER  // Site lighting towers for night work
   WATER_BOWSER    // Water supply tankers for remote sites
-  SKIP_HIRE       // Alias for future migration of SkipHireOrder
-  TOILET_CABIN    // Alias for future migration of ToiletCabinOrder
   // ── Construction equipment rental ──────────────────────────────────────────
   MINI_EXCAVATOR    // Mini excavators (up to 6t) for landscaping, utilities
   EXCAVATOR         // Full-size excavators (6t+)
@@ -350,14 +306,6 @@ enum NotificationType {
   PAYOUT_PENDING         // carrier needs to provide IBAN for payouts
 }
 
-enum QuoteRequestStatus {
-  PENDING
-  QUOTED
-  ACCEPTED
-  CANCELLED
-  EXPIRED
-}
-
 enum FrameworkContractStatus {
   DRAFT
   ACTIVE
@@ -372,24 +320,10 @@ enum FieldPassStatus {
   REVOKED
 }
 
-enum ProjectStatus {
-  PLANNING
-  ACTIVE
-  COMPLETED
-  ON_HOLD
-}
-
 enum FrameworkPositionType {
   MATERIAL_DELIVERY
   WASTE_DISPOSAL
   FREIGHT_TRANSPORT
-}
-
-enum QuoteResponseStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  EXPIRED
 }
 
 enum SurchargeType {
@@ -551,7 +485,6 @@ model User {
   canBuy             Boolean      @default(true)  // approved to place orders as a buyer
   canSell            Boolean      @default(false) // approved to list & sell materials
   canTransport       Boolean      @default(false) // approved to offer transport services
-  canSkipHire        Boolean      @default(false) // approved to manage skip hire fleet
   canRent            Boolean      @default(false) // approved to operate as an equipment rental provider
   canRecycle         Boolean      @default(false) // approved to operate a recycling/waste center
   companyRole        CompanyRole? // role within their company; null for solo accounts
@@ -597,12 +530,10 @@ model User {
   requestedTransportJobs      TransportJob[]          @relation("RequestedJobs")
   notifications               Notification[]
   vehicles                    Vehicle[]
-  quoteRequests               QuoteRequest[]
   reviews                     Review[]
   sentMessages                ChatMessage[]
   chatLastReads               ChatLastRead[]
   frameworkContracts          FrameworkContract[]
-  projects                    Project[]
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
   savedAddresses              SavedAddress[]
@@ -616,9 +547,7 @@ model User {
   driverRatingsGiven          DriverRating[]          @relation("DriverRatingsGiven")
   driverRatingsReceived       DriverRating[]          @relation("BuyerRatingsReceived")
   driverPayouts               CarrierPayout[]         @relation("DriverPayouts")
-  dailyReportsCreated         DailyReport[]           @relation("DprCreatedBy")
-  dailyReportsApproved        DailyReport[]           @relation("DprApprovedBy")
-  crmLeads                    CrmLead[]
+  managedCompanies            Company[]               @relation("CompanyAccountManager")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -692,6 +621,10 @@ model Company {
   // Carrier operational area
   serviceRadiusKm Int? // Max km radius from base city for skip-hire jobs (null = no restriction)
 
+  // Assigned account manager (Bilt platform staff — admin user)
+  accountManager   User?   @relation("CompanyAccountManager", fields: [accountManagerId], references: [id], onDelete: SetNull)
+  accountManagerId String?
+
   // Performance stats — refreshed nightly by AnalyticsService.refreshSupplierStats()
   onTimePct      Float? // % of transport jobs delivered on time
   fulfillmentPct Float? // % of orders completed (not cancelled / rejected)
@@ -705,23 +638,16 @@ model Company {
   recyclingCenters RecyclingCenter[]
   carrierJobs      TransportJob[]
   locations        SupplierLocation[]
-  quoteResponses   QuoteResponse[]
-
   // Carrier comparison engine
-  carrierPricing             CarrierPricing[]             @relation("CarrierPricing")
   serviceZones               CarrierServiceZone[]         @relation("CarrierServiceZones")
   availabilityBlocks         CarrierAvailability[]        @relation("CarrierAvailability")
-  assignedSkipOrders         SkipHireOrder[]              @relation("AssignedSkipCarrier")
-  assignedToiletCabinOrders  ToiletCabinOrder[]           @relation("AssignedToiletCabinCarrier")
   assignedRentalOrders       RentalOrder[]                @relation("AssignedRentalCarrier")
   rentalListings             RentalListing[]              @relation("RentalListings")
   rentalOrdersAsProvider     RentalOrder[]                @relation("RentalOrderProvider")
-  toiletCabinSettings        CarrierToiletCabinSettings[]
   rentalSettings             CarrierRentalSettings[]
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
-  projects                   Project[]
   apiKeys                    ApiKey[]
   fieldPasses                FieldPass[]
   advanceInvoices            Invoice[]             @relation("BuyerInvoices")
@@ -729,10 +655,6 @@ model Company {
   supplierPayouts            SupplierPayout[]      @relation("SupplierPayouts")
   carrierPayouts             CarrierPayout[]       @relation("CarrierPayouts")
   recyclerPayouts            RecyclerPayout[]      @relation("RecyclerPayouts")
-  crmLeads                   CrmLead[]
-  constructionRateEntries    MaterialRateEntry[]
-  constructionEmployees      ConstructionEmployee[]
-  constructionSubcontractors ConstructionSubcontractor[]
   loadingSlots               SupplierLoadingSlot[]
 
   createdAt DateTime @default(now())
@@ -918,6 +840,10 @@ model Order {
   // Unloading-point photo — buyer can photograph the exact drop zone when placing the order
   sitePhotoUrl  String?
 
+  // Unloading in absence — buyer indicates no one will be present at delivery
+  // Driver should follow access instructions in notes and photo-proof the drop.
+  noContactOnSite Boolean @default(false)
+
   // Precise unloading pin — buyer can drag a map pin to the exact spot within the site
   // (distinct from deliveryLat/Lng which is the geocoded street address)
   unloadLat Float?
@@ -939,14 +865,6 @@ model Order {
 
   // Buyer's internal purchase order reference (B2B procurement matching)
   poNumber  String?
-
-  // Project association (optional — retrospective tagging)
-  project   Project? @relation(fields: [projectId], references: [id])
-  projectId String?
-
-  // Combo order — optional link to a skip hire order that delivers/collects the material
-  linkedSkipOrder   SkipHireOrder? @relation("LinkedMaterialOrder", fields: [linkedSkipOrderId], references: [id])
-  linkedSkipOrderId String?        @unique
 
   // Multi-truck staggered delivery
   truckCount           Int @default(1) // number of separate truck runs
@@ -985,7 +903,6 @@ model Order {
   updatedAt DateTime @updatedAt
 
   @@index([trackingToken])
-  @@index([projectId])
   @@index([scheduleId])
   @@index([buyerId])
   @@index([createdById])
@@ -1012,12 +929,6 @@ model GuestOrder {
   materialName     String?
   quantity         Float?
   unit             String?  // TONNE | M3 | KG | PIECE
-
-  // ── SKIP_HIRE specific ──
-  skipSize          String?  // SkipSize enum value
-  skipWasteCategory String?  // SkipWasteCategory enum value
-  hireDays          Int?
-  collectionDate    DateTime?
 
   // ── TRANSPORT specific ──
   pickupAddress    String?
@@ -1246,10 +1157,6 @@ model TransportJob {
   offerExpiresAt    DateTime? // offer expires at this time (45 seconds from dispatch)
   declinedDriverIds String[]  @default([]) // driver IDs who declined or timed out
 
-  // Project association (disposal and standalone freight jobs)
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  projectId String?
-
   // Relations
   containerDeliveries ContainerOrder[]        @relation("ContainerDelivery")
   containerPickups    ContainerOrder[]        @relation("ContainerPickup")
@@ -1285,7 +1192,6 @@ model TransportJob {
   @@index([driverId])
   @@index([carrierId])
   @@index([orderId])
-  @@index([projectId])
   @@index([status])
   @@index([status, pickupDate])
   @@map("transport_jobs")
@@ -1548,6 +1454,9 @@ model DriverProfile {
   ibanNumber    String? // IBAN for Paysera IBAN payouts
   payoutEnabled Boolean @default(false) // true once IBAN is set and verified
 
+  // Job search radius — driver only receives job alerts and sees board entries within this radius
+  searchRadiusKm Int @default(50)
+
   // Schedule relations
   weeklySchedule DriverSchedule[]
   dateBlocks     DriverDateBlock[]
@@ -1724,7 +1633,6 @@ model Document {
   invoiceId      String?
   transportJobId String?
   wasteRecordId  String?
-  skipHireId     String?
 
   // Ownership
   ownerId  String // User who can see this document
@@ -1759,165 +1667,6 @@ model DocumentLink {
   @@unique([documentId, entityType, entityId, role])
   @@index([entityType, entityId])
   @@map("document_links")
-}
-
-// ── CMS-managed skip/container size catalogue ──────────────────────────────
-model SkipSizeDefinition {
-  id          String      @id @default(cuid())
-  code        String      @unique // internal key used in orders, e.g. "MIDI", "BIG_BAG_1M3"
-  label       String              // display name, e.g. "Midi Skip (4 m³)"
-  labelLv     String?             // Latvian label override
-  volumeM3    Float               // volume in cubic metres
-  category    SkipCategory        // SKIP | BIG_BAG | CONTAINER
-  description String?
-  descriptionLv String?
-  heightPct   Float  @default(0.5) // 0–1 visual proportion used in mobile UI
-  basePrice   Float?               // fallback/suggested price if carrier hasn't set one
-  currency    String @default("EUR")
-  isActive    Boolean @default(true)
-  sortOrder   Int     @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([isActive, category])
-  @@map("skip_size_definitions")
-}
-
-// ── Public skip-hire orders (4-step wizard, no auth required) ──
-model SkipHireOrder {
-  id          String @id @default(cuid())
-  orderNumber String @unique
-
-  // Step 1 — Location
-  location String // Postal code or city entered by user
-
-  // Step 2 — Waste type
-  wasteCategory SkipWasteCategory
-
-  // Step 3 — Skip size (references SkipSizeDefinition.code)
-  skipSize String
-
-  // Step 4 — Delivery date
-  deliveryDate   DateTime
-  deliveryWindow String? // 'AM' (8–13) | 'PM' (13–18) | 'ANY'
-  hireDays       Int?    // hire period in days (e.g. 7, 14, 28)
-
-  // Pricing (stored at time of order)
-  price    Float
-  currency String @default("EUR")
-
-  // Payment tracking
-  paymentMethod     PaymentMethod @default(CARD)  // CARD = Paysera redirect; INVOICE = bank transfer
-  payseraOrderId    String?       // Paysera order UUID
-  payseraPaymentUrl String?       // Checkout redirect URL
-  paymentStatus     PaymentStatus @default(PENDING)
-
-  // Status lifecycle
-  status SkipHireStatus @default(PENDING)
-
-  // Optional contact info (guest or registered user)
-  contactName  String?
-  contactEmail String?
-  contactPhone String?
-
-  // If placed by a registered user
-  userId String?
-
-  // Internal notes
-  notes String?
-
-  // BIS (Būvniecības informācijas sistēma) case reference — for construction-site skips
-  bisNumber String?
-
-  // Optional unloading point photo (URL or data URI) captured during booking
-  unloadingPointPhotoUrl String?
-
-  // Carrier assigned during quote selection
-  carrier   Company? @relation("AssignedSkipCarrier", fields: [carrierId], references: [id])
-  carrierId String?
-
-  // Geocoded coordinates (resolved at booking time on the client)
-  lat Float?
-  lng Float?
-
-  // Reverse relation — the material order that this skip is linked to (if any)
-  linkedMaterialOrder Order? @relation("LinkedMaterialOrder")
-
-  // Per-status timestamps: { PENDING: "2024-01-01T00:00:00.000Z", CONFIRMED: "...", ... }
-  statusTimestamps Json?
-
-  // Live driver location — { lat, lng, updatedAt } — set by carrier driver app
-  currentLocation Json?
-
-  // Public unauthenticated tracking share link
-  trackingToken String? @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([trackingToken])
-  @@map("skip_hire_orders")
-}
-
-// ── Toilet cabin rental ──────────────────────────────────────────────────────
-
-model ToiletCabinOrder {
-  id          String @id @default(cuid())
-  orderNumber String @unique
-
-  // Location
-  address String
-  city    String
-  lat     Float?
-  lng     Float?
-
-  // Rental details
-  cabinType  ToiletCabinType @default(STANDARD) // cabin product type
-  cabinCount Int             @default(1)         // number of units needed
-  hireDays   Int                                 // hire period in days
-
-  // Scheduling
-  deliveryDate   DateTime
-  deliveryWindow String?  // 'AM' | 'PM' | 'ANY'
-
-  // Pricing (stored at time of order)
-  price    Float
-  currency String @default("EUR")
-
-  // Payment
-  paymentMethod     PaymentMethod @default(CARD)
-  payseraOrderId    String?
-  payseraPaymentUrl String?
-  paymentStatus     PaymentStatus @default(PENDING)
-
-  // Status lifecycle
-  status ToiletCabinStatus @default(PENDING)
-
-  // Contact (guest or registered user)
-  contactName  String?
-  contactEmail String?
-  contactPhone String?
-  userId       String?
-
-  // Carrier assigned
-  carrier   Company? @relation("AssignedToiletCabinCarrier", fields: [carrierId], references: [id])
-  carrierId String?
-
-  notes            String?
-  statusTimestamps Json?
-
-  // Live driver location — { lat, lng, updatedAt } — set by carrier driver app
-  currentLocation Json?
-
-  // Public unauthenticated tracking share link
-  trackingToken String? @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([trackingToken])
-  @@map("toilet_cabin_orders")
 }
 
 // ── Rental listing — a specific piece of equipment or service offered by a provider ──
@@ -2020,7 +1769,6 @@ model RentalListing {
 // ── Generic rental order — for all future rental service types ──────────────
 // New services (scaffolding, generators, fencing, site offices, etc.) use this
 // single table. Service-specific configuration lives in `metadata` JSON.
-// SkipHireOrder and ToiletCabinOrder keep their dedicated models for now.
 model RentalOrder {
   id          String @id @default(cuid())
   orderNumber String @unique
@@ -2136,45 +1884,7 @@ model CarrierRentalSettings {
   @@map("carrier_rental_settings")
 }
 
-// Carrier pricing & availability settings for toilet cabin rental.
-// One row per carrier per cabin type. Carriers set their day-rate and
-// list the cities/regions they operate in — used by the quote engine.
-model CarrierToiletCabinSettings {
-  id        String          @id @default(cuid())
-  carrier   Company         @relation(fields: [carrierId], references: [id], onDelete: Cascade)
-  carrierId String
-  cabinType ToiletCabinType // product type this pricing row covers
-
-  pricePerCabinPerDay Float    // EUR per cabin per day for this type
-  maxCabins           Int      @default(1) // fleet capacity for this type
-  serviceCities       String[] // lowercase city names e.g. ["rīga", "jūrmala", "sigulda"]
-  isActive            Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([carrierId, cabinType])
-  @@index([carrierId])
-  @@map("carrier_toilet_cabin_settings")
-}
-
 // ── Carrier comparison engine ─────────────────────────────────────────────────
-
-model CarrierPricing {
-  id        String  @id @default(cuid())
-  carrier   Company @relation("CarrierPricing", fields: [carrierId], references: [id], onDelete: Cascade)
-  carrierId String
-
-  skipSize String // references SkipSizeDefinition.code
-  price    Float
-  currency String   @default("EUR")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([carrierId, skipSize])
-  @@map("carrier_pricing")
-}
 
 model CarrierServiceZone {
   id        String  @id @default(cuid())
@@ -2278,65 +1988,6 @@ model DriverDateBlock {
   @@map("driver_date_blocks")
 }
 
-// ── Material Marketplace: Quote Requests ─────────────────────────────────────
-
-// A buyer's open request for pricing when no instant offer is available
-model QuoteRequest {
-  id            String @id @default(cuid())
-  requestNumber String @unique
-
-  buyer   User   @relation(fields: [buyerId], references: [id])
-  buyerId String
-
-  // What they want
-  materialCategory MaterialCategory
-  materialName     String
-  quantity         Float
-  unit             MaterialUnit
-
-  // Delivery
-  deliveryAddress String
-  deliveryCity    String
-  deliveryLat     Float?
-  deliveryLng     Float?
-
-  // Status & notes
-  status QuoteRequestStatus @default(PENDING)
-  notes  String?
-
-  responses QuoteResponse[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("quote_requests")
-}
-
-// A supplier's response to a QuoteRequest
-model QuoteResponse {
-  id String @id @default(cuid())
-
-  request   QuoteRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  requestId String
-
-  supplier   Company @relation(fields: [supplierId], references: [id])
-  supplierId String
-
-  pricePerUnit Float
-  totalPrice   Float
-  unit         MaterialUnit
-  etaDays      Int
-  notes        String?
-  validUntil   DateTime?
-
-  status QuoteResponseStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("quote_responses")
-}
-
 // ── Reviews / Ratings ─────────────────────────────────────────────────────────
 
 // A buyer review submitted after a completed order
@@ -2353,7 +2004,6 @@ model Review {
 
   // Exactly one of these is set per review
   orderId          String? @unique // material order
-  skipOrderId      String? @unique // skip-hire order
   transportJobId   String? @unique // driver rating (buyer rates driver post-delivery)
 
   // Set for driver ratings — the individual driver being rated
@@ -2454,10 +2104,6 @@ model FrameworkContract {
   prepaidBalance  Float   @default(0)      // total advance payments received (EUR)
   prepaidUsed     Float   @default(0)      // consumed by issued field passes (EUR)
 
-  // Optional link to a Project (P&L roll-up)
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  projectId String?
-
   positions   FrameworkPosition[]
   callOffJobs TransportJob[]
   fieldPasses FieldPass[]
@@ -2492,132 +2138,6 @@ model FrameworkPosition {
   updatedAt DateTime @updatedAt
 
   @@map("framework_positions")
-}
-
-// ── Construction Project Management ──────────────────────────────────────────
-
-model Project {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  clientName  String?       // End client this project is for
-  siteAddress String?       // Legacy single-site address (kept for backwards compat)
-
-  // Financials
-  contractValue Float        // Revenue: what their client pays them
-  budgetAmount  Float?       // Optional: material spend cap
-
-  status    ProjectStatus @default(PLANNING)
-  startDate DateTime?
-  endDate   DateTime?
-
-  // Ownership
-  company     Company @relation(fields: [companyId], references: [id])
-  companyId   String
-  createdBy   User    @relation(fields: [createdById], references: [id])
-  createdById String
-
-  // Tagged orders (costs)
-  orders Order[]
-
-  // Tagged transport & disposal jobs
-  transportJobs TransportJob[]
-
-  // Linked framework contracts
-  frameworkContracts FrameworkContract[]
-
-  // Delivery / loading sites
-  sites ProjectSite[]
-
-  // Daily production reports
-  dailyReports DailyReport[]
-
-  // DPR templates pinned to this project
-  dprTemplates DprTemplate[]
-
-  // Per-cost-code budget allocations
-  budgetLines ProjectBudgetLine[]
-
-  // Subcontractor engagements on this project
-  subcontractorEngagements SubcontractorEngagement[]
-
-  // Client invoices issued for this project
-  clientInvoices ConstructionClientInvoice[]
-
-  // Temporal supply/demand signals (Schuttflix-style urban quarry matching)
-  wasteDeclarations ProjectWasteDeclaration[]
-  materialNeeds     ProjectMaterialNeed[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([companyId])
-  @@map("projects")
-}
-
-// Waste output declared by a demolition/earthworks contractor upfront.
-// "This project will produce ~800t concrete, available June 1 – July 15, willing to sell."
-model ProjectWasteDeclaration {
-  id              String    @id @default(cuid())
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId       String
-  wasteType       WasteType
-  estimatedTonnes Float
-  availableFrom   DateTime
-  availableTo     DateTime
-  willingToSell   Boolean   @default(false) // true = auto-list on marketplace after processing
-  notes           String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@index([wasteType, availableFrom, availableTo])
-  @@map("project_waste_declarations")
-}
-
-// Material demand declared by a construction company against a project timeline.
-// "We need ~300t fill material between May 20 – June 20."
-model ProjectMaterialNeed {
-  id               String           @id @default(cuid())
-  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId        String
-  materialCategory MaterialCategory
-  estimatedTonnes  Float
-  neededFrom       DateTime
-  neededTo         DateTime
-  notes            String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@index([materialCategory, neededFrom, neededTo])
-  @@map("project_material_needs")
-}
-
-enum ProjectSiteType {
-  LOADING
-  UNLOADING
-  BOTH
-}
-
-model ProjectSite {
-  id        String          @id @default(cuid())
-  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-  label     String          // e.g. "Iekraušanas punkts", "Objekts A"
-  address   String
-  lat       Float?
-  lng       Float?
-  type      ProjectSiteType @default(BOTH)
-  isDefault Boolean         @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@map("project_sites")
 }
 
 // ── Surcharge line items ─────────────────────────────────────────────────────
@@ -2767,7 +2287,6 @@ model OrderSchedule {
   notes           String?
   siteContactName  String?
   siteContactPhone String?
-  projectId        String?
   itemsSnapshot   Json     // Array of {materialId, quantity, unit}
 
   // Recurrence
@@ -3095,432 +2614,6 @@ model PickupSlot {
   @@map("pickup_slots")
 }
 
-// ── B3 Construction — Digitisation layer ─────────────────────────────────────
-
-// Cost-code categories (WBS level 1) — same across every project so costs are comparable.
-enum CostCode {
-  LABOUR        // Workers / operators (h)
-  EQUIPMENT     // Machines / plant hired in (h or day)
-  MATERIAL      // Sand, gravel, concrete, etc. (t or m3)
-  TRANSPORT     // Trucks, freight (km or load)
-  SUBCONTRACTOR // External trade contractors (lump or h)
-  OTHER
-}
-
-enum DailyReportStatus {
-  DRAFT
-  SUBMITTED
-  APPROVED
-}
-
-// Controlled unit-of-measure vocabulary — prevents "m3" vs "m³" vs "kubikmetri" divergence.
-// Used on MaterialRateEntry.unit and DailyReportLine.unit so aggregations are always consistent.
-enum UnitOfMeasure {
-  T       // tonne
-  M3      // cubic metre
-  M2      // square metre
-  M       // linear metre
-  H       // hour
-  DAY     // shift / working day
-  KM      // kilometre
-  LOAD    // truck load
-  PC      // piece / gab
-}
-
-// Grouping for the rate library — mirrors CostCode but is independent so rates can span codes.
-enum RateCategory {
-  MATERIAL      // Sand, gravel, concrete, aggregates
-  TRANSPORT     // Trucks, freight, haulage
-  LABOUR        // Workers, operators, foremen
-  EQUIPMENT     // Plant, machinery, tools
-  SUBCONTRACTOR // External trade contractors
-  OTHER
-}
-
-// ─── Material Rate Library ────────────────────────────────────────────────────
-// Versioned, effective-dated rates — one row per material × supplier × truck config × zone.
-// Replaces the annual price spreadsheet.  Admin creates/updates rows; DPR lines reference them.
-model MaterialRateEntry {
-  id String @id @default(cuid())
-
-  // What
-  name        String        // e.g. "FR Šķemba 20-40"
-  unit        UnitOfMeasure // controlled vocabulary — no free-text drift
-  category    RateCategory  // controlled grouping — mirrors CostCode
-
-  // Who supplies it
-  supplierName String
-  supplierNote String? // e.g. "DSG karjeri Saikava"
-
-  // Rates
-  pricePerUnit      Float   // ex-works / base price
-  deliveryFee       Float   @default(0)   // per unit delivery surcharge
-  selfCostPerUnit   Float?  // pašizmaksa (optional — hides from foreman view)
-
-  // Density / conversion
-  densityCoeff      Float?  // tonne→m3 multiplier (e.g. 1.45 for gravel)
-
-  // Truck configuration context (optional — documents which truck config this applies to)
-  truckConfig       String? // e.g. "Vanna 27t", "KG7797+Piekabe 34.5t"
-
-  // Delivery zone
-  zone              String? // e.g. "Viestura iela 2, Gulbene"
-
-  // Versioning
-  effectiveFrom     DateTime @default(now())
-  effectiveTo       DateTime? // null = currently active
-  notes             String?
-
-  // Multi-tenant: null = platform-wide shared library (visible to all); set = company-private rate
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Back-references
-  reportLines    DailyReportLine[]
-  templateLines  DprTemplateLine[]
-  employees      ConstructionEmployee[]
-  budgetLines    ProjectBudgetLine[]
-
-  @@index([category])
-  @@index([effectiveFrom])
-  @@index([companyId])
-  @@map("material_rate_entries")
-}
-
-// ─── Daily Production Report (DPR) ───────────────────────────────────────────
-// One header per site-day.  Foreman logs what happened; admin approves.
-model DailyReport {
-  id          String @id @default(cuid())
-
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId   String
-
-  createdBy   User    @relation("DprCreatedBy", fields: [createdById], references: [id])
-  createdById String
-
-  approvedBy    User?   @relation("DprApprovedBy", fields: [approvedById], references: [id])
-  approvedById  String?
-
-  // When / where
-  reportDate  DateTime
-  siteLabel   String?   // e.g. "Daugmale" — free text, matches ProjectSite.label
-
-  // Narrative
-  weatherNote String?
-  notes       String?
-
-  status DailyReportStatus @default(DRAFT)
-
-  // Lines
-  lines DailyReportLine[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId, reportDate])
-  @@map("daily_reports")
-}
-
-// ─── Daily Report Line ────────────────────────────────────────────────────────
-// One line per resource entry on a DPR.
-model DailyReportLine {
-  id String @id @default(cuid())
-
-  report    DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  reportId  String
-
-  // Cost classification
-  costCode  CostCode
-
-  // Resource description
-  description String  // e.g. "Jānis Kusiņš", "CAT 317", "FR Šķemba 20-40"
-  personName  String? // for LABOUR lines — name of worker/driver
-
-  // Quantity × rate → total
-  quantity    Float
-  unit        UnitOfMeasure // controlled vocabulary — must match rate entry
-  unitRate    Float
-  total       Float   // stored denormalised for fast reporting
-
-  // Optional link to the rate library (so future rate changes don't corrupt history)
-  rateEntryId String?
-  rateEntry   MaterialRateEntry? @relation(fields: [rateEntryId], references: [id])
-
-  // Optional link to the employee roster (define once, pick in DPR)
-  employeeId String?
-  employee   ConstructionEmployee? @relation(fields: [employeeId], references: [id])
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([reportId])
-  @@index([costCode])
-  @@map("daily_report_lines")
-}
-
-// ─── Construction Employee Roster ─────────────────────────────────────────────
-// Internal B3 Construction staff — defined once, picked in DPR lines.
-// These are workers who may not have a platform login.
-// Foremen and office staff who use the app are Users (ADMIN); field workers are here.
-model ConstructionEmployee {
-  id           String  @id @default(cuid())
-  firstName    String
-  lastName     String
-  role         String  // e.g. "Ekskavātora operators", "Strādnieks", "Šoferis"
-  personalCode String? // Latvian personal ID (personas kods) — optional, for HR/contracts
-  phone        String?
-  email        String?
-  notes        String?
-
-  // Default hourly / unit rate — pulled from the rate library when picked in DPR
-  defaultRateEntryId String?
-  defaultRateEntry   MaterialRateEntry? @relation(fields: [defaultRateEntryId], references: [id])
-
-  active Boolean @default(true)
-
-  // Multi-tenant: which company this employee belongs to (null = B3 internal / legacy)
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String?
-
-  // Back-ref: every DPR line that references this person
-  reportLines   DailyReportLine[]
-  templateLines DprTemplateLine[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([active])
-  @@index([companyId])
-  @@map("construction_employees")
-}
-
-// ─── DPR Template ─────────────────────────────────────────────────────────────
-// Recurring daily cost templates — foreman picks a template, all lines are
-// pre-populated into the DPR.  Replaces entering the same 5-6 rows every day.
-// Templates are global (shared across projects) or pinned to a project.
-model DprTemplate {
-  id          String  @id @default(cuid())
-  name        String  // e.g. "Daugmale — standarta diena", "Gulbene rīti"
-  description String?
-
-  // Optional: pin to a specific project (null = global template)
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-
-  active Boolean @default(true)
-
-  lines DprTemplateLine[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@map("dpr_templates")
-}
-
-model DprTemplateLine {
-  id         String @id @default(cuid())
-  template   DprTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  templateId String
-
-  costCode    CostCode
-  description String
-  quantity    Float
-  unit        UnitOfMeasure
-  unitRate    Float
-
-  // Optional links to rate library / employee roster (auto-fill)
-  rateEntryId String?
-  rateEntry   MaterialRateEntry? @relation(fields: [rateEntryId], references: [id])
-
-  employeeId String?
-  employee   ConstructionEmployee? @relation(fields: [employeeId], references: [id])
-
-  notes       String?
-  sortOrder   Int @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([templateId])
-  @@map("dpr_template_lines")
-}
-
-// ─── Project Sub-Budget (per cost code) ──────────────────────────────────────
-// Breaks the single budgetAmount into per-cost-code allocations.
-// e.g. Labour €8,000 | Equipment €12,000 | Transport €3,000 | Materials €5,000
-// Enables burn % per category in the profitability view.
-model ProjectBudgetLine {
-  id        String   @id @default(cuid())
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId String
-
-  costCode    CostCode
-  description String        @default("")
-  quantity    Float         @default(1)
-  unit        UnitOfMeasure @default(H)
-  unitRate    Float         @default(0)
-  amount      Float         @default(0) // stored = quantity × unitRate
-
-  // Optional link to rate library entry (for B3Hub price lookup)
-  rateEntryId String?
-  rateEntry   MaterialRateEntry? @relation(fields: [rateEntryId], references: [id])
-
-  sortOrder Int     @default(0)
-  notes     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // No unique constraint — multiple lines per cost code are allowed
-  @@index([projectId])
-  @@index([projectId, costCode])
-  @@map("project_budget_lines")
-}
-
-// ─── Construction Subcontractor ───────────────────────────────────────────────
-// External companies or sole traders that B3 Construction hires to assist with
-// specific tasks (excavation, concrete, electrical, etc.).
-// Each subcontractor can have multiple engagements (contracts) per project.
-model ConstructionSubcontractor {
-  id              String  @id @default(cuid())
-  name            String                 // Company name or sole trader name
-  registrationNo  String?                // LV company reg no (optional)
-  contactPerson   String?
-  phone           String?
-  email           String?
-  speciality      String?                // e.g. "Ekskavācija", "Betonēšana"
-  notes           String?
-  active          Boolean @default(true)
-
-  // Multi-tenant: which company owns this subcontractor record (null = platform-shared)
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String?
-
-  engagements SubcontractorEngagement[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([active])
-  @@index([companyId])
-  @@map("construction_subcontractors")
-}
-
-// One engagement = one sub-contract within a project
-model SubcontractorEngagement {
-  id             String                     @id @default(cuid())
-  subcontractor  ConstructionSubcontractor  @relation(fields: [subcontractorId], references: [id])
-  subcontractorId String
-  project        Project                    @relation(fields: [projectId], references: [id])
-  projectId      String
-
-  description    String                     // What work was agreed
-  agreedAmount   Float                      // Contract price
-  invoicedAmount Float?                     // What they actually invoiced
-  paidAmount     Float?                     // What we've paid
-  startDate      DateTime?
-  endDate        DateTime?
-  status         SubEngagementStatus        @default(ACTIVE)
-  notes          String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@index([subcontractorId])
-  @@map("subcontractor_engagements")
-}
-
-enum SubEngagementStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-// ─── Group Equipment ──────────────────────────────────────────────────────────
-
-model ConstructionEquipment {
-  id               String          @id @default(cuid())
-  name             String
-  type             EquipmentType
-  licensePlate     String          @unique
-  yearManufactured Int
-  status           EquipmentStatus @default(IDLE)
-  buContext        BuContext       @default(UNASSIGNED)
-  hourlyRate       Float           @default(0)
-  assignedProject  String?         // free-text project name / id until Projects relation is needed
-  notes            String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-
-  @@index([status])
-  @@index([buContext])
-  @@map("construction_equipment")
-}
-
-enum EquipmentType {
-  EXCAVATOR
-  DUMPER
-  ROLLER
-  COMPACTOR
-  CRANE
-  OTHER
-}
-
-enum EquipmentStatus {
-  ACTIVE
-  MAINTENANCE
-  IDLE
-}
-
-enum BuContext {
-  CONSTRUCTION
-  MARKETPLACE
-  RECYCLING
-  UNASSIGNED
-}
-
-// ─── Construction Client Invoice ──────────────────────────────────────────────
-// Invoices issued BY B3 Construction TO their clients.
-// Tracks what has been billed and what has been paid, per project.
-model ConstructionClientInvoice {
-  id          String  @id @default(cuid())
-  project     Project @relation(fields: [projectId], references: [id])
-  projectId   String
-
-  invoiceNo   String                        // B3 Construction's own invoice number
-  issueDate   DateTime
-  dueDate     DateTime?
-  amount      Float                         // Invoice amount incl. VAT
-  vatAmount   Float?                        // VAT portion
-  description String?                       // What work this covers
-  status      ClientInvoiceStatus           @default(ISSUED)
-  paidAt      DateTime?
-  paidAmount  Float?                        // Can be partial
-  notes       String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([projectId])
-  @@map("construction_client_invoices")
-}
-
-enum ClientInvoiceStatus {
-  DRAFT
-  ISSUED
-  PARTIALLY_PAID
-  PAID
-  OVERDUE
-  CANCELLED
-}
-
 // ─── Fleet: Cross-BU Vehicle Assignments ─────────────────────────────────────
 
 model VehicleAssignment {
@@ -3555,50 +2648,15 @@ enum VehicleJobType {
   RECYCLING_JOB
 }
 
-// ─── Native CRM ───────────────────────────────────────────────────────────────
-
-model CrmLead {
-  id          String      @id @default(cuid())
-
-  // Contact info — can be a free-text contact or linked to platform user/company
-  name        String
-  email       String?
-  phone       String?
-  company     String?     // free-text company name (pre-registration)
-
-  // Optional link to existing platform records
-  linkedUserId    String?
-  linkedUser      User?    @relation(fields: [linkedUserId], references: [id])
-  linkedCompanyId String?
-  linkedCompany   Company? @relation(fields: [linkedCompanyId], references: [id])
-
-  type        LeadType    @default(OTHER)
-  source      LeadSource  @default(OTHER)
-  status      LeadStatus  @default(NEW)
-  buContext   BuContext   @default(UNASSIGNED)  // which BU this lead is relevant to
-
-  value       Float?      // estimated deal value (€)
-  description String?     // initial enquiry / context
-
-  assignedTo  String?     // admin user id (free-text until User relation needed)
-
-  notes       CrmNote[]
-  tasks       CrmTask[]
-
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  @@index([status])
-  @@index([type])
-  @@index([buContext])
-  @@index([linkedUserId])
-  @@index([linkedCompanyId])
-  @@map("crm_leads")
+enum BuContext {
+  CONSTRUCTION
+  MARKETPLACE
+  RECYCLING
+  UNASSIGNED
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PLATFORM CATALOGUE — admin-managed taxonomies for all service types
-// Pattern: same as SkipSizeDefinition. Admin controls definitions in DB;
 // mobile/web reads via GET /api/v1/catalogue/<type>. No code changes needed
 // to add or rename a category.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3633,28 +2691,6 @@ model VehicleServiceCategory {
 
   @@index([isActive])
   @@map("vehicle_service_categories")
-}
-
-/// Admin-managed toilet cabin type definitions.
-/// Replaces the hardcoded ToiletCabinType enum for display/pricing purposes.
-/// The ToiletCabinType enum on orders stays as the DB-level discriminator.
-model ToiletCabinDefinition {
-  id            String  @id @default(cuid())
-  /// Must match ToiletCabinType enum value
-  code          String  @unique
-  label         String
-  labelLv       String?
-  description   String?
-  descriptionLv String?
-  basePrice     Float?
-  currency      String  @default("EUR")
-  isActive      Boolean @default(true)
-  sortOrder     Int     @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([isActive])
-  @@map("toilet_cabin_definitions")
 }
 
 /// Admin-managed rental service type definitions.
@@ -3786,61 +2822,6 @@ model WasteTypeDefinition {
 
   @@index([isActive, group])
   @@map("waste_type_definitions")
-}
-
-model CrmNote {
-  id        String   @id @default(cuid())
-  lead      CrmLead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  leadId    String
-  content   String
-  authorId  String   // admin user id
-  createdAt DateTime @default(now())
-
-  @@index([leadId])
-  @@map("crm_notes")
-}
-
-model CrmTask {
-  id          String      @id @default(cuid())
-  lead        CrmLead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  leadId      String
-  title       String
-  dueAt       DateTime?
-  done        Boolean     @default(false)
-  doneAt      DateTime?
-  assignedTo  String?     // admin user id
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  @@index([leadId])
-  @@index([done])
-  @@map("crm_tasks")
-}
-
-enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  WON
-  LOST
-}
-
-enum LeadSource {
-  PLATFORM
-  WHATSAPP
-  EMAIL
-  PHONE
-  REFERRAL
-  OTHER
-}
-
-enum LeadType {
-  BUYER
-  SUPPLIER
-  CARRIER
-  RECYCLER
-  OTHER
 }
 
 // ─── Native CMS ───────────────────────────────────────────────────────────────

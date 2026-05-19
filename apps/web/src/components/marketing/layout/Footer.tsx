@@ -6,11 +6,9 @@ const navigation = {
     { name: 'GPS izsekošana', href: '/features/gps-izsekosana' },
     { name: 'Automātiskie dokumenti', href: '/features/dokumenti' },
     { name: 'Materiālu katalogs', href: '/features/katalogs' },
-    { name: 'Projektu vadība', href: '/features/projekti' },
     { name: 'Rēķini & maksājumi', href: '/features/maksajumi' },
     { name: 'Šoferu dispečerizācija', href: '/features/dispets' },
     { name: 'Ietvara Līgumi', href: '/features/ietvara-ligumi' },
-    { name: 'Cenu pieprasījumi', href: '/features/rfq' },
   ],
   platform: [
     { name: 'Būvniekiem', href: '/buvniekiem' },

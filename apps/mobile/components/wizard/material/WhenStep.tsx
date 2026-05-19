@@ -9,7 +9,15 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Sun, Moon, CalendarClock } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { WizardCalendar } from '@/components/wizard/WizardCalendar';
-import { addDays, toISO } from '@/components/wizard/skip-hire/_types';
+
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+function toISO(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
 
 const MIN_DATE = toISO(addDays(new Date(), 1));
 

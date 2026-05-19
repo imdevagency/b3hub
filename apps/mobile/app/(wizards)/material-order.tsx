@@ -103,7 +103,6 @@ export default function OrderRequestWizard() {
     prefillMaterial?: string;
     prefillAddress?: string;
     prefillCity?: string;
-    projectId?: string;
     resumeDraft?: string;
     prefilledQty?: string;
     schedule?: string;
@@ -194,7 +193,6 @@ export default function OrderRequestWizard() {
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
   const [orderNumber, setOrderNumber] = useState('');
   const [orderId, setOrderId] = useState('');
-  const [rfqId, setRfqId] = useState('');
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   /** Offer selected in the compare step; used for submission in the confirm step. */
   const [selectedOffer, setSelectedOffer] = useState<SupplierOffer | null>(null);
@@ -204,6 +202,7 @@ export default function OrderRequestWizard() {
     `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
   );
   const [contactPhone, setContactPhone] = useState(() => user?.phone ?? '');
+  const [noContactOnSite, setNoContactOnSite] = useState(false);
 
   // Re-sync contact from profile after auth (guest → logged in mid-wizard)
   const prevUserId = useRef<string | null>(null);
@@ -466,8 +465,10 @@ export default function OrderRequestWizard() {
       return;
     }
     if (!contactName.trim() || !contactPhone.trim()) {
-      setSubmitError('Lūdzu, norādiet kontaktpersonu un tālruņa numuru pirms pasūtīšanas.');
-      return;
+      if (!noContactOnSite) {
+        setSubmitError('Lūdzu, norādiet kontaktpersonu un tālruņa numuru pirms pasūtīšanas.');
+        return;
+      }
     }
     // Guard against race condition: if user just logged in via auth gate, state may not
     // have re-synced yet — fall back to the current user object values.
@@ -504,7 +505,7 @@ export default function OrderRequestWizard() {
           notes: notes || undefined,
           bisNumber: bisNumber || undefined,
           sitePhotoUrl: sitePhotoUrl || undefined,
-          projectId: params.projectId || undefined,
+          noContactOnSite: noContactOnSite || undefined,
           truckCount,
           truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
           fulfillmentType,
@@ -528,7 +529,6 @@ export default function OrderRequestWizard() {
             notes: notes || undefined,
             siteContactName: effectiveContactName || undefined,
             siteContactPhone: effectiveContactPhone || undefined,
-            projectId: params.projectId || undefined,
             items: [{ materialId: offer.id, quantity, unit }],
             intervalDays: repeatInterval,
             nextRunAt: firstRun,
@@ -634,8 +634,7 @@ export default function OrderRequestWizard() {
           : step === 'when'
             ? !!deliveryDate &&
               !!selectedOffer &&
-              !!contactName.trim() &&
-              !!contactPhone.trim() &&
+              (noContactOnSite || (!!contactName.trim() && !!contactPhone.trim())) &&
               termsAccepted
             : !offersLoading && !submitting && !submitted && termsAccepted;
 
@@ -983,32 +982,103 @@ export default function OrderRequestWizard() {
             )}
 
             <View style={{ gap: 12 }}>
-              <SectionLabel label="KONTAKTINFORMĀCIJA" />
-              <TextInputField
-                placeholder="Kontaktpersona *"
-                value={contactName}
-                onChangeText={setContactName}
-                containerStyle={{
-                  backgroundColor: '#fff',
-                  borderWidth: 1.5,
-                  borderColor: '#f0f0f0',
-                  borderRadius: 16,
-                }}
-                inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+              <SectionLabel
+                label={noContactOnSite ? 'PIEKĻUVES INSTRUKCIJAS' : 'KONTAKTINFORMĀCIJA'}
               />
-              <TextInputField
-                placeholder="Tālrunis *"
-                keyboardType="phone-pad"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-                containerStyle={{
-                  backgroundColor: '#fff',
+              {/* No-contact toggle */}
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: noContactOnSite ? '#f0fdf4' : '#f9fafb',
                   borderWidth: 1.5,
-                  borderColor: '#f0f0f0',
+                  borderColor: noContactOnSite ? '#86efac' : '#f0f0f0',
                   borderRadius: 16,
+                  padding: 16,
                 }}
-                inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
-              />
+                onPress={() => setNoContactOnSite((v) => !v)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ fontSize: 15, color: '#111827', fontFamily: 'Inter_600SemiBold' }}>
+                    Piegāde bez klātbūtnes
+                  </Text>
+                  <Text style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Inter_400Regular' }}>
+                    Neviens nebūs klāt piegādes laikā
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: 50,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: noContactOnSite ? '#22c55e' : '#d1d5db',
+                    justifyContent: 'center',
+                    paddingHorizontal: 3,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: '#fff',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 2,
+                      elevation: 2,
+                      alignSelf: noContactOnSite ? 'flex-end' : 'flex-start',
+                    }}
+                  />
+                </View>
+              </TouchableOpacity>
+              {!noContactOnSite && (
+                <>
+                  <TextInputField
+                    placeholder="Kontaktpersona *"
+                    value={contactName}
+                    onChangeText={setContactName}
+                    containerStyle={{
+                      backgroundColor: '#fff',
+                      borderWidth: 1.5,
+                      borderColor: '#f0f0f0',
+                      borderRadius: 16,
+                    }}
+                    inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                  />
+                  <TextInputField
+                    placeholder="Tālrunis *"
+                    keyboardType="phone-pad"
+                    value={contactPhone}
+                    onChangeText={setContactPhone}
+                    containerStyle={{
+                      backgroundColor: '#fff',
+                      borderWidth: 1.5,
+                      borderColor: '#f0f0f0',
+                      borderRadius: 16,
+                    }}
+                    inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                  />
+                </>
+              )}
+              {noContactOnSite && (
+                <TextInputField
+                  placeholder="Aprakstiet, kā iekļūt objektā (neobligāts)"
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  numberOfLines={3}
+                  containerStyle={{
+                    backgroundColor: '#fff',
+                    borderWidth: 1.5,
+                    borderColor: '#f0f0f0',
+                    borderRadius: 16,
+                  }}
+                  inputStyle={{ fontFamily: 'Inter_600SemiBold', fontSize: 16 }}
+                />
+              )}
               <TextInputField
                 placeholder="BIS numurs (neobligāts)"
                 autoCapitalize="characters"

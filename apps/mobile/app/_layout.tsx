@@ -193,7 +193,6 @@ export default Sentry.wrap(function RootLayout() {
             <Stack screenOptions={STACK_SCREEN_OPTIONS}>
               {/* Wizard flows */}
               <Stack.Screen name="(wizards)/material-order" />
-              <Stack.Screen name="(wizards)/skip-hire" />
               <Stack.Screen name="(wizards)/disposal" />
               <Stack.Screen name="(wizards)/transport" />
               {/* Shared cross-role screens */}

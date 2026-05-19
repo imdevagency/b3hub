@@ -11,7 +11,6 @@ import { getDashboardStats, type DashboardStats } from '@/lib/api';
 import {
   ArrowRight,
   ClipboardList,
-  Trash2,
   Package,
   Receipt,
   Truck,
@@ -38,12 +37,6 @@ const SERVICE_TILES: ServiceTile[] = [
     icon: Package,
     href: '/dashboard/catalog',
     accent: true,
-  },
-  {
-    label: 'Konteineru noma',
-    sub: 'Skip hire atkritumu izvešanai',
-    icon: Trash2,
-    href: '/dashboard/order/skip-hire',
   },
   {
     label: 'Kravas transports',

@@ -94,19 +94,45 @@ B3 Fields are modelled as **fulfillment locations** in the system:
 
 These are out of scope by design. Adding them would dilute focus and pull Bilt away from its position as a focused bulk-materials transaction marketplace.
 
-| Out of scope                                                    | Why                                                                     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Skip hire / container hire**                                  | Removed from scope — not core to bulk materials market                  |
-| **Toilet cabin hire**                                           | Removed from scope — not core to bulk materials market                  |
-| **Metal scrap buyback**                                         | Removed from scope — not core to bulk materials market                  |
-| **Equipment / plant hire**                                      | Not a Bilt transaction                                                  |
-| **Project management** (Gantt, milestones, dependencies)        | That’s Procore / PlanRadar territory                                    |
-| **On-site quality management** (punch lists, NCRs, inspections) | That’s Qualisflow / BIM tools — happens after delivery                  |
-| **Labor / timesheet tracking**                                  | That’s payroll / HR software                                            |
-| **External cost tracking**                                      | We track only what moves through our platform                           |
-| **General ERP**                                                 | We are the procurement + logistics layer, not the full operating system |
+| Out of scope                                                    | Why                                                                                                                                               |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Skip hire / container hire**                                  | Removed from scope — not core to bulk materials market                                                                                            |
+| **Toilet cabin hire**                                           | Removed from scope — not core to bulk materials market                                                                                            |
+| **Metal scrap buyback**                                         | Removed from scope — not core to bulk materials market                                                                                            |
+| **Equipment / plant hire**                                      | Not a Bilt transaction                                                                                                                            |
+| **Project management** (Gantt, milestones, dependencies)        | That’s Procore / PlanRadar territory                                                                                                              |
+| **On-site quality management** (punch lists, NCRs, inspections) | That’s Qualisflow / BIM tools — happens after delivery                                                                                            |
+| **Labor / timesheet tracking**                                  | That’s payroll / HR software                                                                                                                      |
+| **External cost tracking**                                      | We track only what moves through our platform                                                                                                     |
+| **General ERP**                                                 | We are the procurement + logistics layer, not the full operating system                                                                           |
+| **P2P messaging between market sides**                          | Bilt is the sole contractual and contact partner — no buyer↔driver, buyer↔seller, or carrier↔seller direct chat. All contact routes through Bilt. |
+| **Quote requests / RFQ module**                                 | Removed from scope — framework contracts replace the negotiation workflow                                                                         |
 
 **The rule:** if a feature requires data that doesn't originate from a Bilt transaction, it's out of scope.
+
+---
+
+## Communication Architecture — Bilt as the Single Contact Partner
+
+This is a **core architectural principle** copied directly from the Schüttflix model:
+
+> **"No unnecessary discussions on the construction site and no hassle with customer accounts. We are your contractual and contact partner."** — Schüttflix partner benefits
+
+### What this means for Bilt
+
+- **Bilt holds all contracts.** The buyer's contract is with Bilt. The carrier's contract is with Bilt. The supplier's contract is with Bilt. There is no direct contractual relationship between a buyer and a driver.
+- **No P2P chat in the product.** Buyers do not message drivers directly. Drivers do not negotiate with sellers. No buyer↔seller communication channel exists in the app.
+- **One contact for everyone.** Questions, problems, and disputes go to Bilt's service team — in-app support chat + phone line. B2B clients at scale get a regional account manager.
+- **The platform mediates everything.** Special delivery instructions go on the order as notes. Weight discrepancies are a system record both sides see. Documents are auto-generated. No back-channel is needed for anything that matters.
+
+### Technical rules that follow from this
+
+- The `chat/` backend module and `support-chat` screen are **Bilt↔user support channels only** — not peer-to-peer.
+- There must be **no chat thread** between a buyer and a driver, a buyer and a seller, or a carrier and a supplier.
+- The `(shared)/chat/[jobId]` screen must route to a **Bilt support thread** for that job, not open a line between the two parties.
+- The `messages` tab in buyer, seller, driver, and recycler layouts shows **Bilt communications** (order updates, system messages, support replies) — not inbox conversations with other users.
+
+This is not a limitation — it is a **trust feature**. Buyers and carriers do not worry about off-platform negotiations or disputes going unrecorded. Everything is documented in the platform.
 
 ---
 

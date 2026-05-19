@@ -163,9 +163,9 @@ function deepLinkPath(notif: ApiNotification, mode: string): string | null {
     case 'WEIGHING_SLIP':
       return d.orderId ? `/(buyer)/order/${d.orderId}` : '/(buyer)/documents';
     case 'QUOTE_SUBMITTED':
-      return d.quoteRequestId ? `/(buyer)/rfq/${d.quoteRequestId}` : '/(buyer)/orders';
+      return '/(buyer)/orders';
     case 'QUOTE_RECEIVED':
-      return d.requestId ? `/(buyer)/rfq/${d.requestId}` : '/(buyer)/orders';
+      return '/(buyer)/orders';
     case 'ORDER_CREATED':
       return d.orderId ? `/(seller)/order/${d.orderId}` : '/(seller)/incoming';
     case 'QUOTE_REQUEST_RECEIVED':

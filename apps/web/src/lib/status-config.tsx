@@ -1,7 +1,7 @@
 /**
  * Shared status configuration and badge components.
  *
- * Centralises ORDER_STATUS, JOB_STATUS, SKIP_STATUS, and INVOICE_STATUS
+ * Centralises ORDER_STATUS, JOB_STATUS, and INVOICE_STATUS
  * colour/label maps that were previously copy-pasted into individual pages.
  *
  * @example
@@ -54,25 +54,6 @@ export const JOB_STATUS: Record<string, HexBadgeCfg> = {
   AT_DELIVERY: { label: 'Atvedis', bg: '#ffffff', text: '#020617' },
   DELIVERED: { label: 'Piegādāts', bg: '#ffffff', text: '#020617' },
   CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
-};
-
-// ── Skip-hire statuses ─────────────────────────────────────────────────────────
-
-export const SKIP_STATUS: Record<string, HexBadgeCfg> = {
-  PENDING: { label: 'Gaidā', bg: '#f1f5f9', text: '#475569' },
-  CONFIRMED: { label: 'Apst.', bg: '#ffffff', text: '#020617' },
-  DELIVERED: { label: 'Piegādāts', bg: '#ffffff', text: '#020617' },
-  COLLECTED: { label: 'Savākts', bg: '#ffffff', text: '#020617' },
-  CANCELLED: { label: 'Atcelts', bg: '#fee2e2', text: '#b91c1c' },
-};
-
-// ── Skip size labels ──────────────────────────────────────────────────────────
-
-export const SKIP_SIZE_LABEL: Record<string, string> = {
-  MINI: 'Mini 2 m³',
-  MIDI: 'Midi 4 m³',
-  BUILDERS: 'Celtn. 6 m³',
-  LARGE: 'Liels 8 m³',
 };
 
 // ── Invoice / payment statuses ────────────────────────────────────────────────
@@ -153,31 +134,6 @@ export function StatusBadgeTw({ cfg }: { cfg: TwBadgeCfg | undefined }) {
     </span>
   );
 }
-
-// ── Skip-hire order statuses (Tailwind) ───────────────────────────────────────
-// (SKIP_STATUS above uses hex colours for the mobile app; this set uses Tailwind for web tables)
-
-export const SKIP_HIRE_STATUS: Record<string, TwBadgeCfg> = {
-  PENDING: { label: 'Gaidā', className: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED: { label: 'Apstiprināts', className: 'bg-blue-100 text-blue-700' },
-  DELIVERED: { label: 'Piegādāts', className: 'bg-teal-100 text-teal-700' },
-  IN_USE: { label: 'Izmantošanā', className: 'bg-purple-100 text-purple-700' },
-  AWAITING_COLLECTION: { label: 'Gaida savākšanu', className: 'bg-orange-100 text-orange-700' },
-  COLLECTED: { label: 'Savākts', className: 'bg-green-100 text-green-700' },
-  COMPLETED: { label: 'Pabeigts', className: 'bg-green-100 text-green-700' },
-  CANCELLED: { label: 'Atcelts', className: 'bg-red-100 text-red-500' },
-};
-
-// ── Skip-hire payment statuses ────────────────────────────────────────────────
-
-export const SKIP_PAYMENT_STATUS: Record<string, TwBadgeCfg> = {
-  PENDING: { label: 'Gaida', className: 'bg-gray-100 text-gray-500' },
-  AUTHORIZED: { label: 'Autorizēts', className: 'bg-yellow-100 text-yellow-700' },
-  CAPTURED: { label: 'Iekasēts', className: 'bg-blue-100 text-blue-700' },
-  PAID: { label: 'Apmaksāts', className: 'bg-green-100 text-green-700' },
-  REFUNDED: { label: 'Atmaksāts', className: 'bg-orange-100 text-orange-700' },
-  FAILED: { label: 'Kļūda', className: 'bg-red-100 text-red-600' },
-};
 
 // ── Payout processing statuses ────────────────────────────────────────────────
 

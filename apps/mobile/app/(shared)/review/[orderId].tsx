@@ -4,9 +4,7 @@
  * Accessible via deep link from push notifications.
  *
  * Query params:
- *   - orderId     : for regular material delivery orders
- *   - skipOrderId : for skip-hire orders (pass via useLocalSearchParams as param)
- *   - type        : 'order' | 'skip' (used to determine which id to send)
+ *   - orderId : for material delivery or transport orders
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -72,7 +70,6 @@ export default function ReviewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     orderId?: string;
-    skipOrderId?: string;
   }>();
 
   const [rating, setRating] = useState(0);
@@ -83,20 +80,19 @@ export default function ReviewScreen() {
   const [checking, setChecking] = useState(true);
 
   const orderId = params.orderId;
-  const skipOrderId = params.skipOrderId;
 
   // Check if already reviewed
   useEffect(() => {
-    if (!token || (!orderId && !skipOrderId)) {
+    if (!token || !orderId) {
       setChecking(false);
       return;
     }
     api.reviews
-      .status({ orderId, skipOrderId }, token)
+      .status({ orderId }, token)
       .then(({ reviewed }) => setAlreadyReviewed(reviewed))
       .catch((err) => console.warn('Failed to load review status:', err))
       .finally(() => setChecking(false));
-  }, [token, orderId, skipOrderId]);
+  }, [token, orderId]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -111,7 +107,6 @@ export default function ReviewScreen() {
           rating,
           comment: comment.trim() || undefined,
           orderId,
-          skipOrderId,
         },
         token,
       );

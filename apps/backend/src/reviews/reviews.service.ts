@@ -22,21 +22,14 @@ export class ReviewsService {
 
   // ── Buyer: submit a review ────────────────────────────────────
   async create(dto: CreateReviewDto, userId: string) {
-    if (!dto.orderId && !dto.skipOrderId) {
-      throw new BadRequestException(
-        'Either orderId or skipOrderId must be provided',
-      );
-    }
-    if (dto.orderId && dto.skipOrderId) {
-      throw new BadRequestException(
-        'Provide either orderId or skipOrderId, not both',
-      );
+    if (!dto.orderId) {
+      throw new BadRequestException('orderId must be provided');
     }
 
     let companyId: string;
 
-    if (dto.orderId) {
-      // Material order — company to rate is the supplier of the first item
+    // Material order — company to rate is the supplier of the first item
+    {
       const order = await this.prisma.order.findUnique({
         where: { id: dto.orderId },
         include: {
@@ -64,36 +57,6 @@ export class ReviewsService {
         );
       }
       companyId = supplierId;
-    } else {
-      // Skip-hire order — company to rate is the assigned carrier
-      const skipOrder = await this.prisma.skipHireOrder.findUnique({
-        where: { id: dto.skipOrderId },
-      });
-      if (!skipOrder) throw new NotFoundException('Skip hire order not found');
-      if (skipOrder.userId !== userId)
-        throw new ForbiddenException('Not your order');
-      if (
-        skipOrder.status !== 'COLLECTED' &&
-        skipOrder.status !== 'COMPLETED'
-      ) {
-        throw new BadRequestException(
-          'Can only review a completed skip hire order',
-        );
-      }
-      if (!skipOrder.carrierId) {
-        throw new BadRequestException(
-          'No carrier assigned to this skip hire order',
-        );
-      }
-
-      // Guard: no duplicate review
-      const existing = await this.prisma.review.findUnique({
-        where: { skipOrderId: dto.skipOrderId },
-      });
-      if (existing)
-        throw new ConflictException('You already reviewed this order');
-
-      companyId = skipOrder.carrierId;
     }
 
     // Create review
@@ -104,7 +67,6 @@ export class ReviewsService {
         reviewerId: userId,
         companyId,
         orderId: dto.orderId ?? null,
-        skipOrderId: dto.skipOrderId ?? null,
       },
     });
 
@@ -205,15 +167,10 @@ export class ReviewsService {
   async getReviewStatus(
     userId: string,
     orderId?: string,
-    skipOrderId?: string,
     transportJobId?: string,
   ) {
     if (orderId) {
       const r = await this.prisma.review.findUnique({ where: { orderId } });
-      return { reviewed: !!r && r.reviewerId === userId };
-    }
-    if (skipOrderId) {
-      const r = await this.prisma.review.findUnique({ where: { skipOrderId } });
       return { reviewed: !!r && r.reviewerId === userId };
     }
     if (transportJobId) {

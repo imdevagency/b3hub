@@ -45,18 +45,11 @@ export class ReviewsController {
   @Get('status')
   status(
     @Query('orderId') orderId: string | undefined,
-    @Query('skipOrderId') skipOrderId: string | undefined,
     @Query('transportJobId') transportJobId: string | undefined,
     @CurrentUser() user: RequestingUser,
   ) {
     if (orderId !== undefined && !ReviewsController.UUID_RE.test(orderId)) {
       throw new BadRequestException('orderId must be a valid UUID');
-    }
-    if (
-      skipOrderId !== undefined &&
-      !ReviewsController.UUID_RE.test(skipOrderId)
-    ) {
-      throw new BadRequestException('skipOrderId must be a valid UUID');
     }
     if (
       transportJobId !== undefined &&
@@ -67,7 +60,6 @@ export class ReviewsController {
     return this.service.getReviewStatus(
       user.userId,
       orderId,
-      skipOrderId,
       transportJobId,
     );
   }

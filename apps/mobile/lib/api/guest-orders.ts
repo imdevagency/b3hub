@@ -32,14 +32,6 @@ export interface CreateGuestMaterialPayload extends GuestContactBase {
   unit: string;
 }
 
-export interface CreateGuestSkipHirePayload extends GuestContactBase {
-  category: 'SKIP_HIRE';
-  skipSize: string;
-  skipWasteCategory: string;
-  hireDays: number;
-  collectionDate?: string;
-}
-
 export interface CreateGuestTransportPayload extends GuestContactBase {
   category: 'TRANSPORT';
   pickupAddress: string;
@@ -59,23 +51,11 @@ export interface CreateGuestDisposalPayload extends GuestContactBase {
   bisNumber?: string;       // BIS case reference — required for construction waste under Latvian law
 }
 
-export interface CreateGuestToiletCabinPayload extends GuestContactBase {
-  category: 'TOILET_CABIN';
-  /** Number of cabins — stored in `quantity` field */
-  quantity: number;
-  unit: 'CABIN';
-  materialName: 'Tualetes kabīne';
-  hireDays: number;
-  collectionDate?: string;
-}
-
 /** Union of all supported guest order payloads */
 export type CreateGuestOrderPayload =
   | CreateGuestMaterialPayload
-  | CreateGuestSkipHirePayload
   | CreateGuestTransportPayload
-  | CreateGuestDisposalPayload
-  | CreateGuestToiletCabinPayload;
+  | CreateGuestDisposalPayload;
 
 export interface GuestOrderCreatedResult {
   orderNumber: string;

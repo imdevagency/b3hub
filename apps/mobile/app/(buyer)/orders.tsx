@@ -266,17 +266,6 @@ export default function OrdersScreen() {
             />
             <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
             <SheetRow
-              iconBg="#eff6ff"
-              icon={<HardHat size={20} color="#2563eb" />}
-              title="Konteiners"
-              subtitle="Noma, piegāde un izvešana"
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/skip-hire');
-              }}
-            />
-            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
-            <SheetRow
               iconBg="#fff7ed"
               icon={<Trash2 size={20} color="#ea580c" />}
               title="Utilizācija"
@@ -312,11 +301,11 @@ export default function OrdersScreen() {
             <SheetRow
               iconBg="#f0fdf4"
               icon={<User size={20} color="#16a34a" />}
-              title="Tualetes kabīnes"
-              subtitle="Noma būvlaukumam"
+              title="Metāllūžņi"
+              subtitle="Nodo lūžņus un saņem samaksu"
               onPress={() => {
                 setShowTypePicker(false);
-                router.push('/toilet-cabin');
+                router.push('/scrap-buyback');
               }}
             />
           </View>

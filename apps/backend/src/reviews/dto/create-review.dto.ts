@@ -16,8 +16,4 @@ export class CreateReviewDto {
   @IsString()
   @IsOptional()
   orderId?: string;
-
-  @IsString()
-  @IsOptional()
-  skipOrderId?: string;
 }

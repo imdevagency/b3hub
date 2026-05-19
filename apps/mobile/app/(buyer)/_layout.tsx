@@ -31,7 +31,7 @@ function BuyerLayoutContent() {
   const { config } = useHeaderConfig();
   const pathname = usePathname();
   // Routes that run edge-to-edge and should hide the tab bar + top bar (tracking, live maps, etc.)
-  const isFullScreenRoute = /\/(order|skip-order|transport-job)\/[^/]/.test(pathname);
+  const isFullScreenRoute = /\/(order|transport-job)\/[^/]/.test(pathname);
   // Catalog manages its own top safe-area via its custom header — no layout padding needed
   const isCatalogScreen = pathname.endsWith('/catalog');
   // eslint-disable-next-line react/display-name
@@ -122,7 +122,6 @@ function BuyerLayoutContent() {
         />
         {/* Detail screens — hidden from tab bar */}
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
-        <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
         <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
         <Tabs.Screen name="framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />

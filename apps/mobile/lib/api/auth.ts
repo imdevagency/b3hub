@@ -15,7 +15,6 @@ export interface User {
   canBuy?: boolean;
   canSell: boolean;
   canTransport: boolean;
-  canSkipHire?: boolean;
   payoutEnabled?: boolean;
   status: string;
   phone?: string;
@@ -36,6 +35,13 @@ export interface User {
     name: string;
     companyType: string;
     features?: string[];
+    accountManager?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+    } | null;
   };
 }
 

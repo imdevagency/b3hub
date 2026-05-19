@@ -67,7 +67,6 @@ async function main() {
         isCompany: true,
         canSell: false,
         canTransport: false,
-        canSkipHire: false,
         canRecycle: true,
         companyId: company.id,
         companyRole: 'OWNER',

@@ -21,10 +21,9 @@ interface Props {
   token: string;
   /** Pass exactly ONE of these: */
   orderId?: string;
-  skipOrderId?: string;
 }
 
-export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipOrderId }: Props) {
+export function RatingModal({ visible, onClose, onSuccess, token, orderId }: Props) {
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +37,7 @@ export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipO
       setLoading(false);
       setDone(false);
     }
-  }, [visible, orderId, skipOrderId]);
+  }, [visible, orderId]);
 
   const handleSubmit = async () => {
     if (stars === 0) {
@@ -52,7 +51,6 @@ export function RatingModal({ visible, onClose, onSuccess, token, orderId, skipO
           rating: stars,
           comment: comment.trim() || undefined,
           orderId,
-          skipOrderId,
         },
         token,
       );

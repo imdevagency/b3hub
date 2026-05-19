@@ -174,6 +174,7 @@ export class TransportJobsService {
         siteContactPhone: true,
         sitePhotoUrl: true,
         notes: true,
+        noContactOnSite: true,
         items: {
           take: 1,
           select: {
@@ -277,6 +278,7 @@ export class TransportJobsService {
         siteContactName: string | null;
         siteContactPhone: string | null;
         notes: string | null;
+        noContactOnSite?: boolean | null;
         items?: Array<{
           material?: {
             supplier?: { name: string; phone: string } | null;

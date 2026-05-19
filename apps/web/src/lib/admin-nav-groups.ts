@@ -39,7 +39,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     tabs: [
       { label: 'Pasūtījumi', href: '/dashboard/admin/orders' },
       { label: 'Transporta darbi', href: '/dashboard/admin/jobs' },
-      { label: 'RFQ', href: '/dashboard/admin/rfqs' },
       { label: 'Pamatlīgumi', href: '/dashboard/admin/framework-contracts' },
       { label: 'Dokumenti', href: '/dashboard/admin/documents' },
     ],

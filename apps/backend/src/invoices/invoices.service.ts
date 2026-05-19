@@ -560,7 +560,6 @@ export class InvoicesService {
             orderNumber: true,
             deliveryAddress: true,
             deliveryCity: true,
-            project: { select: { name: true } },
           },
         },
       },
@@ -579,7 +578,6 @@ export class InvoicesService {
             orderNumber: true;
             deliveryAddress: true;
             deliveryCity: true;
-            project: { select: { name: true } };
           };
         };
       };
@@ -605,9 +603,6 @@ export class InvoicesService {
       const address = [inv.order?.deliveryAddress, inv.order?.deliveryCity]
         .filter(Boolean)
         .join(', ');
-      const projectName: string | null =
-        (inv.order as { project?: { name?: string } | null } | null | undefined)
-          ?.project?.name ?? null;
       // VAT compliance fields (LV Cabinet Regulation No. 585)
       const extInv = inv as typeof inv & {
         supplierVatNumber?: string | null;
@@ -666,7 +661,6 @@ export class InvoicesService {
       if (taxPeriod) metaLine('Nodokļa periods:', taxPeriod);
       if (supplierVat) metaLine('Piegādātāja PVN Nr.:', supplierVat);
       if (buyerVat) metaLine('Pircēja PVN Nr.:', buyerVat);
-      if (projectName) metaLine('Projekts:', projectName);
 
       // ── Totals table ──────────────────────────────────────────────────────
       const tableY = metaY + metaRow * 18 + 16;
@@ -750,7 +744,6 @@ export class InvoicesService {
             orderNumber: true,
             deliveryAddress: true,
             deliveryCity: true,
-            project: { select: { name: true } },
           },
         },
       },

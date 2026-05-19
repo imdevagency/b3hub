@@ -31,13 +31,6 @@ export class CarrierSettingsService {
         'No company is associated with your account',
       );
     }
-    // Gate on the canSkipHire capability flag — consistent with the frontend guard.
-    // Any company type can receive skip-hire approval, not just CARRIER.
-    if (!user.canSkipHire) {
-      throw new ForbiddenException(
-        'Your account does not have skip-hire management approval',
-      );
-    }
     return user.company;
   }
 

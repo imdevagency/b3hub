@@ -80,6 +80,8 @@ class UpdateCompanyDto {
   @IsOptional()
   @IsIn(['CONSTRUCTION', 'SUPPLIER', 'CARRIER', 'RECYCLER', 'HYBRID'])
   companyType?: string;
+  /** Assign a Bilt account manager (admin userId) to this company */
+  @IsOptional() @IsString() accountManagerId?: string | null;
 }
 
 class AdminCreateCompanyDto {

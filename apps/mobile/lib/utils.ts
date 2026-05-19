@@ -12,19 +12,14 @@ export function cn(...inputs: ClassValue[]) {
 interface RoleFlags {
   canSell?: boolean;
   canTransport?: boolean;
-  canSkipHire?: boolean;
 }
 
 export function getRoleName(user: RoleFlags | null | undefined): string {
   if (!user) return 'Buyer';
-  const { canSell = false, canTransport = false, canSkipHire = false } = user;
+  const { canSell = false, canTransport = false } = user;
 
-  if (canSell && canTransport && canSkipHire) return 'Company';
   if (canSell && canTransport) return 'Trader';
-  if (canSell && canSkipHire) return 'Recycler';
-  if (canTransport && canSkipHire) return 'Waste Carrier';
   if (canSell) return 'Supplier';
   if (canTransport) return 'Carrier';
-  if (canSkipHire) return 'Skip Operator';
   return 'Buyer';
 }

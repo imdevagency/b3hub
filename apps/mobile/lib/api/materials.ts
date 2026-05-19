@@ -174,6 +174,7 @@ export const materialsApi = {
         siteContactName?: string;
         siteContactPhone?: string;
         sitePhotoUrl?: string;
+        noContactOnSite?: boolean;
         notes?: string;
         bisNumber?: string;
         projectId?: string;
@@ -213,6 +214,7 @@ export const materialsApi = {
           siteContactName: input.siteContactName,
           siteContactPhone: input.siteContactPhone,
           sitePhotoUrl: input.sitePhotoUrl,
+          noContactOnSite: input.noContactOnSite,
           notes: input.notes,
           bisNumber: input.bisNumber,
           projectId: input.projectId ?? undefined,

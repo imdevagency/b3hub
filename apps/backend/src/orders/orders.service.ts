@@ -217,30 +217,7 @@ export class OrdersService {
       }
     }
 
-    // Duplicate guard: block orders placed to the same project + delivery address
-    // within 10 minutes — protects against two site managers accidentally double-ordering.
-    if (orderData.projectId && orderData.deliveryAddress) {
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60_000);
-      const recentDuplicate = await this.prisma.order.findFirst({
-        where: {
-          buyerId: buyerCompanyId,
-          projectId: orderData.projectId,
-          deliveryAddress: orderData.deliveryAddress,
-          createdAt: { gte: tenMinutesAgo },
-          status: { notIn: ['CANCELLED'] },
-        },
-        select: { id: true, orderNumber: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (recentDuplicate) {
-        const minutesAgo = Math.floor(
-          (Date.now() - recentDuplicate.createdAt.getTime()) / 60_000,
-        );
-        throw new ConflictException(
-          `Possible duplicate order: order ${recentDuplicate.orderNumber} was placed for the same project and delivery address ${minutesAgo} minute(s) ago. If intentional, wait 10 minutes or contact your team.`,
-        );
-      }
-    }
+
 
     // Phone fallback: if the order DTO did not include a site contact phone,
     // auto-populate from the buyer's account phone so drivers always have a contact.
@@ -620,9 +597,9 @@ export class OrdersService {
             siteContactName: orderData.siteContactName,
             siteContactPhone: orderData.siteContactPhone,
             sitePhotoUrl: orderData.sitePhotoUrl ?? null,
+            noContactOnSite: orderData.noContactOnSite ?? false,
             bisNumber: orderData.bisNumber ?? null,
             poNumber: orderData.poNumber ?? null,
-            projectId: orderData.projectId ?? null,
             truckCount: orderData.truckCount ?? 1,
             truckIntervalMinutes: orderData.truckIntervalMinutes ?? null,
             fulfillmentType: orderData.fulfillmentType ?? 'DELIVERY',
@@ -816,20 +793,6 @@ export class OrdersService {
               },
             },
           },
-          linkedSkipOrder: {
-            select: {
-              id: true,
-              orderNumber: true,
-              skipSize: true,
-              wasteCategory: true,
-              status: true,
-              deliveryDate: true,
-              price: true,
-            },
-          },
-          project: {
-            select: { id: true, name: true },
-          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -1005,18 +968,6 @@ export class OrdersService {
             fileUrl: true,
           },
           orderBy: { createdAt: 'desc' },
-        },
-        linkedSkipOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-            skipSize: true,
-            wasteCategory: true,
-            status: true,
-            deliveryDate: true,
-            price: true,
-            location: true,
-          },
         },
       },
     });
@@ -2698,7 +2649,6 @@ export class OrdersService {
         specialRequirements: dto.description ?? null,
         rate: dto.buybackPricePerTonne != null ? 0 : (dto.quotedRate ?? 0), // buyback = driver collects, buyer gets paid
         currency: 'EUR',
-        projectId: dto.projectId ?? null,
         status: TransportJobStatus.AVAILABLE,
         // Site coordination fields
         notes: dto.notes ?? null,
@@ -3028,63 +2978,6 @@ export class OrdersService {
     return { deleted: true };
   }
 
-  /**
-   * Link (or unlink) a SkipHireOrder to a material Order.
-   * Pass skipHireOrderId=null to remove an existing link.
-   */
-  async linkSkipOrder(
-    orderId: string,
-    skipHireOrderId: string | null,
-    currentUser: RequestingUser,
-  ) {
-    const order = await this.findOne(orderId, currentUser);
-
-    // Only the buyer who created the order or an admin may link
-    if (
-      currentUser.userType !== 'ADMIN' &&
-      order.createdById !== currentUser.userId
-    ) {
-      throw new ForbiddenException(
-        'Only the order owner or an admin can link a skip hire order',
-      );
-    }
-
-    if (skipHireOrderId) {
-      const skip = await this.prisma.skipHireOrder.findUnique({
-        where: { id: skipHireOrderId },
-        select: { id: true, linkedMaterialOrder: { select: { id: true } } },
-      });
-      if (!skip) {
-        throw new NotFoundException(
-          `SkipHireOrder ${skipHireOrderId} not found`,
-        );
-      }
-      if (skip.linkedMaterialOrder && skip.linkedMaterialOrder.id !== orderId) {
-        throw new BadRequestException(
-          'That skip hire order is already linked to a different material order',
-        );
-      }
-    }
-
-    return this.prisma.order.update({
-      where: { id: orderId },
-      data: { linkedSkipOrderId: skipHireOrderId },
-      include: {
-        linkedSkipOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-            skipSize: true,
-            wasteCategory: true,
-            status: true,
-            deliveryDate: true,
-            price: true,
-          },
-        },
-      },
-    });
-  }
-
   // ─── Scheduled tasks ─────────────────────────────────────────────────────────
 
   /**
@@ -3403,7 +3296,6 @@ export class OrdersService {
         notes: dto.notes,
         siteContactName: dto.siteContactName,
         siteContactPhone: dto.siteContactPhone,
-        projectId: dto.projectId,
         deliveryLat: dto.deliveryLat ?? null,
         deliveryLng: dto.deliveryLng ?? null,
         itemsSnapshot: dto.items as object,
@@ -3684,7 +3576,6 @@ export class OrdersService {
               canBuy: schedule.createdBy.canBuy ?? true,
               canSell: schedule.createdBy.canSell,
               canTransport: schedule.createdBy.canTransport,
-              canSkipHire: schedule.createdBy.canSkipHire,
               canRent: false,
               canRecycle: false,
               companyId: schedule.createdBy.companyId ?? undefined,
@@ -3693,6 +3584,7 @@ export class OrdersService {
               permManageOrders: schedule.createdBy.permManageOrders,
               permViewFinancials: schedule.createdBy.permViewFinancials,
               permManageTeam: schedule.createdBy.permManageTeam,
+              canSkipHire: false,
             };
 
             const dto: CreateOrderDto = {
@@ -3709,7 +3601,6 @@ export class OrdersService {
                 : '[Atkārtots pasūtījums]',
               siteContactName: schedule.siteContactName ?? undefined,
               siteContactPhone: schedule.siteContactPhone ?? undefined,
-              projectId: schedule.projectId ?? undefined,
               deliveryLat: schedule.deliveryLat ?? undefined,
               deliveryLng: schedule.deliveryLng ?? undefined,
               items: items.map((i) => ({

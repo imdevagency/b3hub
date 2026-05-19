@@ -37,6 +37,7 @@ import {
   Recycle,
   CreditCard,
   ChevronRight,
+  Phone as PhoneIcon,
 } from 'lucide-react-native';
 
 const MARKET_PARTIES = [
@@ -208,6 +209,81 @@ export default function MoreScreen() {
                 last
               />
             </View>
+            {user?.company?.accountManager && (
+              <View
+                style={{
+                  backgroundColor: '#f0f9ff',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginHorizontal: 16,
+                  marginBottom: 8,
+                  borderWidth: 1.5,
+                  borderColor: '#bae6fd',
+                  flexDirection: 'row',
+                  gap: 12,
+                  alignItems: 'center',
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: '#0284c7',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                    {(user.company.accountManager.firstName?.[0] ?? '').toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: '#0369a1',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                      marginBottom: 2,
+                    }}
+                  >
+                    Jūsu Bilt kontaktpersona
+                  </Text>
+                  <Text style={{ fontSize: 15, color: '#0c4a6e', fontWeight: '600' }}>
+                    {user.company.accountManager.firstName} {user.company.accountManager.lastName}
+                  </Text>
+                  {user.company.accountManager.email && (
+                    <Text
+                      style={{ fontSize: 13, color: '#0369a1', fontWeight: '500', marginTop: 1 }}
+                    >
+                      {user.company.accountManager.email}
+                    </Text>
+                  )}
+                </View>
+                {user.company.accountManager.phone && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      Linking.openURL(`tel:${user!.company!.accountManager!.phone}`).catch(
+                        () => null,
+                      )
+                    }
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: '#0284c7',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <PhoneIcon size={18} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </>
         )}
 

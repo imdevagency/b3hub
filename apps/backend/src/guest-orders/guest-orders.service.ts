@@ -62,13 +62,6 @@ export class GuestOrdersService {
         materialName: dto.materialName,
         quantity: dto.quantity,
         unit: dto.unit,
-        // SKIP_HIRE specific
-        skipSize: dto.skipSize,
-        skipWasteCategory: dto.skipWasteCategory,
-        hireDays: dto.hireDays,
-        collectionDate: dto.collectionDate
-          ? new Date(dto.collectionDate)
-          : undefined,
         // TRANSPORT specific
         pickupAddress: dto.pickupAddress,
         pickupCity: dto.pickupCity,
@@ -430,9 +423,6 @@ export class GuestOrdersService {
             materialName: guestOrder.materialName ?? undefined,
             quantity: guestOrder.quantity ?? undefined,
             unit: guestOrder.unit ?? undefined,
-            skipSize: guestOrder.skipSize ?? undefined,
-            skipWasteCategory: guestOrder.skipWasteCategory ?? undefined,
-            hireDays: guestOrder.hireDays ?? undefined,
             pickupAddress: guestOrder.pickupAddress ?? undefined,
             pickupCity: guestOrder.pickupCity ?? undefined,
             vehicleType: guestOrder.vehicleType ?? undefined,

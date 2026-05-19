@@ -47,4 +47,11 @@ export class UpdateScheduleDto {
   @Min(1)
   @Max(10)
   maxJobsPerDay?: number | null;
+
+  /** Driver’s preferred job search radius in km. Defaults to 50. */
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(300)
+  searchRadiusKm?: number;
 }

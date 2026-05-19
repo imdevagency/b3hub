@@ -88,10 +88,6 @@ export async function fetchVehicleCategories(): Promise<VehicleServiceCategory[]
   return apiFetch<VehicleServiceCategory[]>('/catalogue/vehicle-categories');
 }
 
-export async function fetchToiletCabinTypes(): Promise<ToiletCabinDefinition[]> {
-  return apiFetch<ToiletCabinDefinition[]>('/catalogue/toilet-cabin-types');
-}
-
 export async function fetchRentalServiceTypes(): Promise<RentalServiceDefinition[]> {
   return apiFetch<RentalServiceDefinition[]>('/catalogue/rental-service-types');
 }

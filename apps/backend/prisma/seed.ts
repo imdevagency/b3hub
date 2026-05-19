@@ -27,7 +27,6 @@ async function main() {
       isCompany: true,
       canSell: true,
       canTransport: true,
-      canSkipHire: true,
       companyRole: 'OWNER' as any,
       permCreateContracts: true,
       permReleaseCallOffs: true,
@@ -80,7 +79,6 @@ async function main() {
       isCompany: true,
       canSell: true,
       canTransport: true,
-      canSkipHire: true,
     },
     // 🔑 Admin — B3Hub platform staff
     {
@@ -101,7 +99,6 @@ async function main() {
       update: {
         canSell: account.canSell,
         canTransport: account.canTransport,
-        canSkipHire: (account as any).canSkipHire ?? false,
         isCompany: account.isCompany,
         status: UserStatus.ACTIVE,
         phone: account.phone,

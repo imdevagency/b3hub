@@ -171,8 +171,7 @@ export default function CatalogScreen() {
   const { token } = useAuth();
   const { setConfig } = useHeaderConfig();
   const { categoryLabels, categoryDescriptions, categories } = useMaterialCatalogue();
-  const params = useLocalSearchParams<{ projectId?: string; schedule?: string; focus?: string }>();
-  const projectId = params.projectId;
+  const params = useLocalSearchParams<{ schedule?: string; focus?: string }>();
   const schedule = params.schedule;
   const searchInputRef = React.useRef<TextInput>(null);
   const isMounted = React.useRef(false);
@@ -444,7 +443,6 @@ export default function CatalogScreen() {
       pathname: '/material-order',
       params: {
         initialCategory: cat,
-        projectId: projectId || undefined,
         schedule: schedule || undefined,
       },
     });
@@ -537,7 +535,7 @@ export default function CatalogScreen() {
                   haptics.light();
                   router.push({
                     pathname: '/material-order',
-                    params: { resumeDraft: 'true', projectId: projectId || undefined },
+                    params: { resumeDraft: 'true' },
                   });
                 }}
                 style={{

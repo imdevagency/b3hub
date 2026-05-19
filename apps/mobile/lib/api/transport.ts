@@ -61,6 +61,7 @@ export interface ApiTransportJob {
     siteContactName: string | null;
     siteContactPhone: string | null;
     sitePhotoUrl: string | null;
+    noContactOnSite: boolean | null;
     notes: string | null;
     supplierName: string | null;
     supplierPhone: string | null;
@@ -178,6 +179,7 @@ export interface DriverAvailability {
   effectiveOnline: boolean;
   autoSchedule: boolean;
   maxJobsPerDay: number | null;
+  searchRadiusKm: number;
   weeklySchedule: DriverWeeklySlot[];
   dateBlocks: DriverDateBlock[];
 }
@@ -529,6 +531,7 @@ export const transportApi = {
         }[];
         autoSchedule?: boolean;
         maxJobsPerDay?: number | null;
+        searchRadiusKm?: number;
       },
       token: string,
     ) =>

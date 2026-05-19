@@ -339,7 +339,6 @@ export class FrameworkContractsService {
         notes: dto.notes,
         status: FrameworkContractStatus.DRAFT,
         supplierId: dto.supplierId ?? null,
-        projectId: dto.projectId ?? null,
         positions: dto.positions?.length
           ? {
               create: dto.positions.map((p) => ({

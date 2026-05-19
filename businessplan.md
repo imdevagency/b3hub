@@ -8,7 +8,7 @@ B3 Group is a construction logistics business operating in Latvia and the Baltic
 
 | Unit                       | What it is                               | Role in the group                                                                                        |
 | -------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Bilt**                  | Digital marketplace platform             | Connects buyers, suppliers, and carriers for bulk material orders and waste disposal bookings            |
+| **Bilt**                   | Digital marketplace platform             | Connects buyers, suppliers, and carriers for bulk material orders and waste disposal bookings            |
 | **B3 Recycling (Gulbene)** | Licensed recycling and disposal facility | Accepts construction waste, processes it into certified secondary raw materials, sells it back to market |
 | **B3 Construction**        | Groundworks subcontracting company       | Generates its own material orders and waste disposal needs; feeds the platform as a first-party buyer    |
 
@@ -24,7 +24,7 @@ The three units are not separate businesses that happen to share a dashboard. Th
 Buyer (construction company, homeowner, B3 Construction itself)
        │
        │  1. Places order on Bilt app
-       │     (gravel, sand, soil, concrete — or skip hire)
+       │     (gravel, sand, soil, concrete, or waste disposal)
        ▼
    Bilt Platform
        │
@@ -137,10 +137,9 @@ B3 Construction is not the growth driver — Bilt is. But it is a first-party an
 
 | Stream                   | Source               | Model                                                |
 | ------------------------ | -------------------- | ---------------------------------------------------- |
-| Platform commission      | Bilt                | % of each completed material order                   |
-| Transport brokerage      | Bilt                | Fee per transport job matched to a carrier           |
-| Disposal booking fee     | Bilt                | Fee per waste disposal job routed to a facility      |
-| Skip hire revenue        | Bilt                | Day rate for skip + collection + disposal handling   |
+| Platform commission      | Bilt                 | % of each completed material order                   |
+| Transport brokerage      | Bilt                 | Fee per transport job matched to a carrier           |
+| Disposal booking fee     | Bilt                 | Fee per waste disposal job routed to a facility      |
 | Gate fees (waste intake) | B3 Recycling Gulbene | Fee per tonne of waste accepted                      |
 | Secondary material sales | B3 Recycling Gulbene | Market price per tonne of certified RC material sold |
 | B2C walk-in disposal     | B3 Recycling Gulbene | Fixed fee for private customers dropping off waste   |
@@ -154,18 +153,55 @@ The highest-margin streams are gate fees and secondary material sales at Gulbene
 
 Schüttflix is the German company that proved this exact model at scale. Formed in 2019 as a platform, it merged with IK Umwelt (licensed recycler, NRW) in mid-2024 to form the **Schüttflix Group**. By 2024 it generated €190 million in revenue with >50% annual growth, 1.4 million+ transports, and operations across Germany, Austria, Poland, and Czech Republic.
 
-| Schüttflix Group                           | B3 Group equivalent                             |
-| ------------------------------------------ | ----------------------------------------------- |
-| Schüttflix digital platform                | Bilt marketplace                               |
-| IK Umwelt (licensed recycler, NRW)         | B3 Recycling — Gulbene (licensed facility)      |
-| Hagedorn / other unlicensed disposal sites | B3 Fields                                       |
-| Schüttflix Hubs (Wertstoffzentren)         | B3 Recycling Gulbene + expanded B3 Fields       |
-| Platform transaction fee                   | Bilt commission                                |
-| RC material sales                          | B3 Recycling certified secondary material sales |
-| Container hire                             | Bilt skip hire vertical                        |
-| ~400–500 group employees at merger         | B3 Group at early growth stage                  |
+| Schüttflix Group                                                                                 | B3 Group equivalent                                                                                                              |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Schüttflix digital platform                                                                      | Bilt marketplace                                                                                                                 |
+| IK Umwelt (licensed recycler, NRW)                                                               | B3 Recycling — Gulbene (licensed facility)                                                                                       |
+| Hagedorn / other unlicensed disposal sites                                                       | B3 Fields                                                                                                                        |
+| Schüttflix Hubs (Wertstoffzentren)                                                               | B3 Recycling Gulbene + expanded B3 Fields                                                                                        |
+| Platform transaction fee                                                                         | Bilt commission                                                                                                                  |
+| RC material sales                                                                                | B3 Recycling certified secondary material sales                                                                                  |
+| Container hire (out of Bilt scope)                                                               | Removed from scope — not core to bulk materials market                                                                           |
+| ~400–500 group employees at merger                                                               | B3 Group at early growth stage                                                                                                   |
+| **"Smooth Contacts"** — Schüttflix is the single contractual and contact partner for all parties | **Bilt is the single contractual and contact partner** — no direct buyer↔driver, buyer↔seller, or carrier↔supplier communication |
+| Schüttflix service team + regional account managers                                              | Bilt support (in-app support chat + phone)                                                                                       |
+| Next-day payment to all partners via platform                                                    | Paysera-based payouts — sellers and carriers paid by Bilt, not by buyers directly                                                |
+| Autonomous pricing — partners set own prices                                                     | Suppliers set prices on the catalog; carriers decide which jobs to accept                                                        |
+| Fully digital: order → dispatch → delivery note                                                  | 100% digital: order → driver assignment → GPS tracking → auto delivery note                                                      |
+| "Urban quarries" — demolition sites feeding IK Umwelt                                            | Construction site excavation waste → B3 Fields → B3 Recycling Gulbene                                                            |
 
 The key Schüttflix lesson: **they built the platform first, then acquired the physical recycling infrastructure**. B3 Group already has both. That is a structural advantage — B3 does not need to go through the stage of platform-only operation without the circular loop closed. The flywheel can start turning from day one.
+
+---
+
+## 5a. The Schüttflix Contact Model — Adopted for Bilt
+
+This is one of the most important operational patterns from Schüttflix and must be maintained consistently across the Bilt product.
+
+### The principle
+
+Schüttflix markets this as **"Smooth Contacts"** on its carrier partner benefits page:
+
+> _"No unnecessary discussions on the construction site and no hassle with customer accounts. We are your contractual and contact partner. And we show you a clear edge."_
+
+This means:
+
+1. **The platform is the contract** — Schüttflix (and therefore Bilt) is the counterparty to every transaction. The buyer's contract is with Bilt. The carrier's contract is with Bilt. The supplier's agreement is with Bilt. There is no direct contractual relationship between a buyer and a driver.
+
+2. **One contact number** — Carriers, buyers, and suppliers all contact Bilt when they have a question or problem. Nobody has to figure out who to call on a construction site. Nobody chases unpaid invoices from buyers they've never met. Bilt handles disputes, Bilt handles complaints.
+
+3. **Next-day payment** — Because Bilt is the contractual partner, Bilt can guarantee payment to carriers on the next working day after job completion. The carrier does not wait for the buyer to pay — Bilt pays regardless. This eliminates default risk entirely for carriers, which is a major differentiator vs. direct contracting.
+
+4. **Autonomous operation** — Carriers set their own rates (within platform rate cards) and choose which jobs to accept. No carrier is forced to take a specific job. This freedom is possible specifically because all admin (invoicing, insurance, customer contact) is handled by Bilt.
+
+5. **Digital but personal** — Schüttflix pairs its app with a local account manager and service team for human questions. The platform is the default contact, but real people are reachable when needed. Bilt follows the same pattern: in-app support chat is the default channel; phone support for urgent issues; regional B2B account managers for large construction companies.
+
+### What this means for the Bilt product
+
+- **No peer-to-peer messaging.** There is no inbox for "driver messages" or "seller messages" addressed directly to a buyer. The `messages` tab shows Bilt system communications: order updates, status changes, platform announcements, and replies from the Bilt service team.
+- **Support chat is the contact channel.** `support-chat.tsx` → `SupportThread` / `SupportMessage` backend models → `/api/v1/support`. This is the one-contact model in practice.
+- **The chat module is Bilt↔user only.** If `apps/backend/src/chat/` contains peer-to-peer job chat (buyer↔driver), it must be repurposed or removed. The correct architecture is that each participant in a job can open a support thread _about_ that job (attaching the jobId), and the Bilt support team responds — but the buyer and driver do not see each other's messages.
+- **No direct negotiation on-platform.** Prices are set on listings. Transport rates are quoted by the platform. RFQ/quote negotiation is out of scope. If a buyer wants a custom rate for a large project, they contact Bilt and Bilt arranges a framework contract.
 
 ---
 
@@ -279,7 +315,7 @@ The gate app is a separate **EAS build variant** (`gate`) — the same codebase 
 
 **Yes, at the infrastructure level. One gap remains at the loop closure.**
 
-| Schüttflix + IK Umwelt                                                                         | Bilt + B3 Fields                                                                                                    | Status                                                                              |
+| Schüttflix + IK Umwelt                                                                         | Bilt + B3 Fields                                                                                                     | Status                                                                              |
 | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Platform auto-routes disposal orders to nearest IK Umwelt facility that accepts the waste type | `createDisposalOrder` queries `RecyclingCenter` by `acceptedWasteTypes` and auto-assigns destination                 | ✅ Wired                                                                            |
 | IK Umwelt gate validates truck passes via platform                                             | `scanPass` validates `FieldPass` against the field's `recyclingCenter.acceptedWasteTypes`                            | ✅ Wired                                                                            |

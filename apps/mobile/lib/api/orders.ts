@@ -256,16 +256,6 @@ export interface ApiOrder {
     billable: boolean;
     approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   }[];
-  linkedSkipOrder?: {
-    id: string;
-    orderNumber: string;
-    skipSize: string;
-    wasteCategory: string;
-    status: string;
-    deliveryDate: string;
-    price: number;
-  } | null;
-  project?: { id: string; name: string } | null;
   notes?: string | null;
   siteContactName?: string | null;
   siteContactPhone?: string | null;
@@ -393,13 +383,6 @@ export const ordersApi = {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ weightKg }),
-      }),
-
-    linkSkipOrder: (orderId: string, skipHireOrderId: string | null, token: string) =>
-      apiFetch<ApiOrder>(`/orders/${orderId}/link-skip`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skipHireOrderId }),
       }),
 
     addSurcharge: (

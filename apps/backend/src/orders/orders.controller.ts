@@ -256,16 +256,6 @@ export class OrdersController {
     return this.ordersService.removeSurcharge(id, surchargeId, user);
   }
 
-  /** PATCH /orders/:id/link-skip — link or unlink a SkipHireOrder to this material order */
-  @Patch(':id/link-skip')
-  linkSkipOrder(
-    @Param('id') id: string,
-    @Body('skipHireOrderId') skipHireOrderId: string | null,
-    @CurrentUser() user: RequestingUser,
-  ) {
-    return this.ordersService.linkSkipOrder(id, skipHireOrderId ?? null, user);
-  }
-
   /** PATCH /orders/:id/amend — buyer updates delivery details on PENDING/CONFIRMED orders */
   @UseGuards(JwtOrApiKeyGuard, RequireScopeGuard)
   @RequireScope('orders:write')
