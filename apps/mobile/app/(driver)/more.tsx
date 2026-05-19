@@ -13,7 +13,6 @@ import {
   User,
   CalendarDays,
   Truck,
-  Package,
   FileText,
   MessageCircle,
   Bell,
@@ -40,20 +39,6 @@ export default function DriverMoreScreen() {
   const mainTiles: TileItem[] = [
     { icon: User, label: 'Profils', onPress: () => router.push('/(driver)/profile') },
     { icon: Truck, label: 'Transporti', onPress: () => router.push('/(driver)/vehicles') },
-    ...(user?.canSkipHire
-      ? [
-          {
-            icon: Package,
-            label: 'Konteineri',
-            onPress: () => router.push('/(driver)/skips'),
-          } as TileItem,
-          {
-            icon: Building2,
-            label: 'Kabīnes',
-            onPress: () => router.push('/(driver)/toilet-cabins'),
-          } as TileItem,
-        ]
-      : []),
     { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(driver)/documents') },
     { icon: CalendarDays, label: 'Grafiks', onPress: () => router.push('/(driver)/schedule') },
     { icon: MessageCircle, label: 'Ziņojumi', onPress: () => router.push('/messages') },

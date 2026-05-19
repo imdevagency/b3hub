@@ -1,6 +1,6 @@
 /**
  * Carrier Settings page — /dashboard/transporter/settings
- * Manage skip-hire pricing, service zones, and blocked availability dates.
+ * Manage service zones and blocked availability dates.
  */
 'use client';
 
@@ -12,13 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  type SkipSize,
-  type CarrierPricing,
   type CarrierServiceZone,
   type CarrierBlockedDate,
-  getCarrierPricing,
-  setCarrierPrice,
-  deleteCarrierPrice,
   getCarrierZones,
   addCarrierZone,
   deleteCarrierZone,
@@ -28,202 +23,9 @@ import {
   getCarrierRadius,
   setCarrierRadius,
 } from '@/lib/api/carrier-settings';
-import { Trash2, Plus, RefreshCw, Check, X } from 'lucide-react';
+import { Trash2, Plus, RefreshCw, Check } from 'lucide-react';
 
-// ─── Static config ─────────────────────────────────────────────────────────
-
-const SKIP_SIZES: { value: SkipSize; label: string; volume: string }[] = [
-  { value: 'MINI', label: 'Mini', volume: '2 m³' },
-  { value: 'MIDI', label: 'Midi', volume: '4 m³' },
-  { value: 'BUILDERS', label: 'Builders', volume: '6 m³' },
-  { value: 'LARGE', label: 'Liels', volume: '8 m³' },
-];
-
-type Tab = 'pricing' | 'zones' | 'availability' | 'radius';
-
-// ─── Pricing tab ───────────────────────────────────────────────────────────
-
-function PricingTab({ token }: { token: string }) {
-  const [rows, setRows] = useState<CarrierPricing[]>([]);
-  const [editing, setEditing] = useState<Partial<Record<SkipSize, string>>>({});
-  const [saving, setSaving] = useState<Partial<Record<SkipSize, boolean>>>({});
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getCarrierPricing(token);
-      setRows(data);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const priceMap = Object.fromEntries(rows.map((r) => [r.skipSize, r]));
-
-  const handleSave = async (size: SkipSize) => {
-    const raw = editing[size];
-    const price = parseFloat(raw ?? '');
-    if (isNaN(price) || price < 0) return;
-    setSaving((s) => ({ ...s, [size]: true }));
-    try {
-      await setCarrierPrice(token, size, price);
-      setEditing((e) => {
-        const next = { ...e };
-        delete next[size];
-        return next;
-      });
-      await load();
-    } finally {
-      setSaving((s) => ({ ...s, [size]: false }));
-    }
-  };
-
-  const handleDelete = async (size: SkipSize) => {
-    setSaving((s) => ({ ...s, [size]: true }));
-    try {
-      await deleteCarrierPrice(token, size);
-      await load();
-    } finally {
-      setSaving((s) => ({ ...s, [size]: false }));
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16">
-        <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Norādiet cenu (€) katram konteinera izmēram. Šī cena tiks rādīta platformas katalogā.
-      </p>
-      <div className="border rounded-2xl overflow-hidden bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-gray-50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <th className="px-5 py-3 text-left">Izmērs</th>
-              <th className="px-5 py-3 text-left">Tilpums</th>
-              <th className="px-5 py-3 text-left">Cena / diena</th>
-              <th className="px-5 py-3 text-right">Darbības</th>
-            </tr>
-          </thead>
-          <tbody>
-            {SKIP_SIZES.map(({ value, label, volume }) => {
-              const existing = priceMap[value];
-              const isEditing = value in editing;
-              const isSaving = !!saving[value];
-              return (
-                <tr
-                  key={value}
-                  className="border-b last:border-0 hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="px-5 py-3.5 font-medium text-gray-900">{label}</td>
-                  <td className="px-5 py-3.5 text-muted-foreground">{volume}</td>
-                  <td className="px-5 py-3.5">
-                    {isEditing ? (
-                      <div className="flex items-center gap-2 max-w-35">
-                        <span className="text-muted-foreground">€</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          className="h-8 text-sm"
-                          value={editing[value] ?? ''}
-                          onChange={(e) => setEditing((ed) => ({ ...ed, [value]: e.target.value }))}
-                          autoFocus
-                        />
-                      </div>
-                    ) : existing ? (
-                      <button
-                        className="font-semibold text-foreground hover:underline"
-                        onClick={() =>
-                          setEditing((ed) => ({ ...ed, [value]: String(existing.price) }))
-                        }
-                      >
-                        € {existing.price.toFixed(2)}
-                      </button>
-                    ) : (
-                      <button
-                        className="text-muted-foreground text-xs italic hover:text-foreground transition-colors"
-                        onClick={() => setEditing((ed) => ({ ...ed, [value]: '' }))}
-                      >
-                        — nav norādīta
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {isEditing ? (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-green-600 hover:bg-green-50"
-                            disabled={isSaving}
-                            onClick={() => handleSave(value)}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            disabled={isSaving}
-                            onClick={() =>
-                              setEditing((ed) => {
-                                const next = { ...ed };
-                                delete next[value];
-                                return next;
-                              })
-                            }
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      ) : existing ? (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:bg-red-50"
-                          disabled={isSaving}
-                          onClick={() => handleDelete(value)}
-                        >
-                          {isSaving ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs gap-1 text-primary"
-                          onClick={() => setEditing((ed) => ({ ...ed, [value]: '' }))}
-                        >
-                          <Plus className="h-3 w-3" /> Pievienot
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+type Tab = 'zones' | 'availability' | 'radius';
 
 // ─── Zones tab ─────────────────────────────────────────────────────────────
 
@@ -655,21 +457,19 @@ function RadiusTab({ token }: { token: string }) {
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'pricing', label: 'Cenas' },
   { key: 'zones', label: 'Servisa zonas' },
-  { key: 'availability', label: 'Pieejamība' },
+  { key: 'availability', label: 'Pieejāmība' },
   { key: 'radius', label: 'Darbības rādiuss' },
 ];
 
 export default function CarrierSettingsPage() {
   const { user, token, isLoading } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('pricing');
+  const [tab, setTab] = useState<Tab>('zones');
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login');
-    if (!isLoading && user && !user.canSkipHire) router.push('/dashboard/transporter');
-    // Note: this page is only available to carriers with skip-hire approval (canSkipHire).
+    if (!isLoading && user && !user.canTransport) router.push('/dashboard/transporter');
   }, [user, isLoading, router]);
 
   if (isLoading || !token) {
@@ -682,10 +482,7 @@ export default function CarrierSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Nesēja iestatījumi"
-        description="Pārvaldiet skip-hire cenas, servisa zonas un pieejamību"
-      />
+      <PageHeader title="Nesēja iestatījumi" description="Pārvaldiet servisa zonas un pieejamību" />
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b">
@@ -706,7 +503,6 @@ export default function CarrierSettingsPage() {
 
       {/* Tab content */}
       <div>
-        {tab === 'pricing' && <PricingTab token={token} />}
         {tab === 'zones' && <ZonesTab token={token} />}
         {tab === 'availability' && <AvailabilityTab token={token} />}
         {tab === 'radius' && <RadiusTab token={token} />}

@@ -38,7 +38,7 @@ export default function OrderSuccessPage() {
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Button asChild variant="outline">
-          <Link href="/order/equipment">Atpakaļ uz katalogu</Link>
+          <Link href="/order/materials">Atpakaļ uz katalogu</Link>
         </Button>
         <Button asChild>
           <Link href="/dashboard">Mans konts</Link>

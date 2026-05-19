@@ -84,9 +84,6 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       tabs: [
         { label: 'Kopskats', href: '/dashboard/portfolio' },
         { label: 'Materiāli', href: '/dashboard/materials' },
-        { label: 'Tualetes kabīnes', href: '/dashboard/toilet-cabins' },
-        { label: 'Konteineri', href: '/dashboard/skip-hire/fleet' },
-        { label: 'Tehnika', href: '/dashboard/equipment-rentals/catalog' },
         { label: 'Karjeri', href: '/dashboard/locations' },
       ],
     },

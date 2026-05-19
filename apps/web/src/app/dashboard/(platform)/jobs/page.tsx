@@ -615,7 +615,7 @@ export default function JobsPage() {
       >
         <SheetContent
           side="right"
-          className="w-full sm:max-w-[400px] p-0 flex flex-col h-full bg-background border-l shadow-2xl"
+          className="w-full sm:max-w-100 p-0 flex flex-col h-full bg-background border-l shadow-2xl"
         >
           <SheetHeader className="px-6 py-5 border-b">
             <SheetTitle className="text-base font-bold flex items-center gap-2">

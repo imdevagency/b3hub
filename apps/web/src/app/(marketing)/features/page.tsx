@@ -67,15 +67,12 @@ export default function FeaturesPage() {
                 platformā.
               </h1>
               <p className="text-xl text-muted-foreground font-light max-w-xl leading-relaxed">
-                Bilt digitalizē katru soli — no materiālu kataloga līdz automātiskajiem
-                dokumentiem. Visi moduļi strādā kopā nevainojami.
+                Bilt digitalizē katru soli — no materiālu kataloga līdz automātiskajiem dokumentiem.
+                Visi moduļi strādā kopā nevainojami.
               </p>
               <div className="flex flex-wrap gap-4">
                 <CTAButton href={`/register`} variant="primary" size="lg">
                   Izmēģināt bez maksas
-                </CTAButton>
-                <CTAButton href="/pricing" variant="secondary" size="lg">
-                  Skatīt cenas
                 </CTAButton>
               </div>
             </div>

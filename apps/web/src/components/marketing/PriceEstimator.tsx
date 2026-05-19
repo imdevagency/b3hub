@@ -14,18 +14,16 @@ interface FuelRates {
   updatedAt: string;
 }
 
-type ServiceType = 'materials' | 'skip' | 'transport' | 'disposal';
+type ServiceType = 'materials' | 'transport' | 'disposal';
 
 const SERVICE_HREFS: Record<ServiceType, string> = {
   materials: '/order/materials',
-  skip: '/order/skip-hire',
   transport: '/order/transport',
   disposal: '/order/disposal',
 };
 
 const SERVICE_LABELS: Record<ServiceType, string> = {
   materials: 'Būvmateriāli',
-  skip: 'Konteinera noma',
   transport: 'Transports',
   disposal: 'Atkritumu nodošana',
 };
@@ -51,12 +49,6 @@ const SERVICES: Record<ServiceType, ServiceDef> = {
     s1: { label: 'Daudzums', unit: 't', min: 1, max: 200, default: 20, step: 1 },
     s2: { label: 'Piegādes attālums', unit: 'km', min: 5, max: 150, default: 40, step: 5 },
     estimate: (qty, km) => [qty * 7 + km * 1.1, qty * 14 + km * 1.6],
-    resultLabel: 'Provizoriskās kopējās izmaksas',
-  },
-  skip: {
-    s1: { label: 'Konteinera tilpums', unit: 'm³', min: 4, max: 30, default: 8, step: 2 },
-    s2: { label: 'Nomas ilgums', unit: 'ned.', min: 1, max: 12, default: 2, step: 1 },
-    estimate: (m3, weeks) => [m3 * 8 + weeks * 55 + 80, m3 * 12 + weeks * 70 + 150],
     resultLabel: 'Provizoriskās kopējās izmaksas',
   },
   transport: {

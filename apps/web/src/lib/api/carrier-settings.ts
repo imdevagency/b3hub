@@ -1,20 +1,10 @@
 /**
  * Carrier Settings API module (web).
- * Wraps /api/v1/carrier-settings/* endpoints for skip-hire pricing,
- * service zones, and availability (blocked dates).
+ * Wraps /api/v1/carrier-settings/* endpoints for service zones and availability.
  */
 import { apiFetch } from './common';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
-export type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
-
-export interface CarrierPricing {
-  id: string;
-  skipSize: SkipSize;
-  price: number;
-  currency: string;
-}
 
 export interface CarrierServiceZone {
   id: string;
@@ -27,36 +17,6 @@ export interface CarrierBlockedDate {
   id: string;
   date: string; // ISO date string "YYYY-MM-DD"
   reason?: string | null;
-}
-
-// ─── Pricing ───────────────────────────────────────────────────────────────
-
-/** Get all skip-hire prices set by this carrier. */
-export async function getCarrierPricing(token: string): Promise<CarrierPricing[]> {
-  return apiFetch<CarrierPricing[]>('/carrier-settings/pricing', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
-/** Create or update the price for one skip size. */
-export async function setCarrierPrice(
-  token: string,
-  size: SkipSize,
-  price: number,
-): Promise<CarrierPricing> {
-  return apiFetch<CarrierPricing>(`/carrier-settings/pricing/${size}`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ price }),
-  });
-}
-
-/** Remove price entry for one skip size. */
-export async function deleteCarrierPrice(token: string, size: SkipSize): Promise<void> {
-  return apiFetch<void>(`/carrier-settings/pricing/${size}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
 }
 
 // ─── Service Zones ─────────────────────────────────────────────────────────

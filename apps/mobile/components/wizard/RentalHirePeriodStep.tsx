@@ -81,7 +81,7 @@ export function RentalHirePeriodStep({
   return (
     <ScrollView contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       {/* Hire period chips */}
-      <WizardSectionHeading title="Nomas periods" />
+      <WizardSectionHeading label="Nomas periods" />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -106,21 +106,25 @@ export function RentalHirePeriodStep({
       </ScrollView>
 
       {/* Calendar */}
-      <WizardSectionHeading title="Piegādes datums" />
+      <WizardSectionHeading label="Piegādes datums" />
       <WizardCalendar
-        selectedDate={selectedDay ?? undefined}
+        selectedDate={selectedDay ?? ''}
         rangeEndDate={collectionDay ?? undefined}
         minDate={minDate}
-        onDayPress={onDayPress}
+        onDateChange={onDayPress}
       />
 
       {/* Date range summary pill */}
       {selectedDay && collectionDay ? (
-        <WizardDateRangeSummary startDate={selectedDay} endDate={collectionDay} days={hireDays} />
+        <WizardDateRangeSummary
+          startDate={selectedDay}
+          endDate={collectionDay}
+          dayCount={hireDays}
+        />
       ) : null}
 
       {/* Delivery window */}
-      <WizardSectionHeading title="Piegādes laiks" />
+      <WizardSectionHeading label="Piegādes laiks" />
       <WizardTimeWindowPicker value={deliveryWindow} onChange={onWindowChange} />
     </ScrollView>
   );

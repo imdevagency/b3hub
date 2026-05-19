@@ -36,8 +36,8 @@ export default function HomePage() {
             <span className="text-[#999999]">celtniecības loģistikai</span>
           </>
         }
-        subtitle="Izvēlieties izdevīgāko piedāvājumu būvmateriāliem, transportam un atkritumu konteineriem no licencētiem pakalpojumu sniedzējiem Latvijā."
-        pricingNote="Pircējiem — bezmaksas. Piegādātājiem no 6%. Pārvadātājiem no 8%."
+        subtitle="Izvēlieties izdevīgāko piedāvājumu būvmateriāliem un pārvadājumiem no licencētiem karjeriem un pārvadātājiem Latvijā."
+        pricingNote="Piegādātajiem no 6%. Pārvadātājiem no 8%. Pasūtītājiem bezmaksas."
         actions={
           <div className="flex flex-col items-center gap-4 w-full mt-4">
             <HeroAddressSearch />
@@ -46,7 +46,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium mt-2"
             >
               Pārstāvat karjeru vai tehnikas parku?{' '}
-              <span className="underline underline-offset-4">Reģistrēties partnerbāzē</span>{' '}
+              <span className="underline underline-offset-4">Reģistrēties kā partneris</span>{' '}
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -91,8 +91,8 @@ export default function HomePage() {
               Nekādu slēptu izmaksu.
             </h2>
             <p className="text-lg text-muted-foreground font-light">
-              Bilt apvieno vadošos karjerus, transporta uzņēmumus un atkritumu pieņēmējus
-              vienuviet. Pasūtiet visu nepieciešamo ar pāris klikšķiem tieši no piegādātājiem.
+              Bilt apvieno vadošos karjerus, transporta uzņēmumus un atkritumu pieņēmējus vienuviet.
+              Pasūtiet visu nepieciešamo ar pāris klikšķiem tieši no piegādātājiem.
             </p>
             <ul className="flex flex-col gap-3 mt-2">
               {[
@@ -130,8 +130,8 @@ export default function HomePage() {
             visai celtniecības loģistikai.
           </h2>
           <p className="text-lg text-muted-foreground font-light mb-16 max-w-xl">
-            Pasūtiet materiālus, pārdodiet no karjera vai vediet kravas — platforma darbojas visām
-            pusēm vienlaikus.
+            Pasūtiet materiālus, pasūtiet pārvadājumus, izpildiet braukšanas darbus vai pārdodiet no
+            karjera — platforma darbojas visām pusēm vienlaikus.
           </p>
 
           <RoleTabs />
@@ -172,26 +172,6 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* ── 5. SLIM PRICING TEASER ── */}
-      <section className="w-full bg-white border-t border-border">
-        <Container className="py-16 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-          <div>
-            <h3 className="text-2xl font-medium tracking-tight mb-2">Maksa tikai par rezultātu</h3>
-            <p className="text-muted-foreground font-light max-w-xl">
-              Pircējiem platforma ir pilnīgi <strong>bez maksas</strong>. Piegādātājiem un
-              pārvadātājiem komisija no <strong>6% līdz 8%</strong> tikai par apmaksātiem
-              pasūtījumiem.
-            </p>
-          </div>
-          <Link
-            href="/pricing"
-            className="flex items-center text-sm font-semibold tracking-wide gap-2 bg-neutral-100 hover:bg-neutral-200 text-foreground px-6 py-3 rounded-full transition-colors shrink-0"
-          >
-            Skatīt pilnu cenrādi <ArrowRight className="w-4 h-4" />
-          </Link>
-        </Container>
-      </section>
-
       {/* ── 6. FINAL CTA & APP BADGES ── */}
       <section className="w-full py-24 md:py-32 bg-[#203728] text-white">
         <Container className="flex flex-col md:flex-row items-center justify-between gap-16 md:gap-12">
@@ -221,7 +201,7 @@ export default function HomePage() {
               </CTAButton>
             </div>
             <p className="text-white/40 text-sm mt-6 hidden md:block">
-              Privātpersonām — pasūtīšana bez reģistrācijas
+              Reģistrēšanās un lietošana bez piesaistošiem līgumiem
             </p>
           </div>
 

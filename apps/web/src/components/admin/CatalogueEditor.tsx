@@ -32,7 +32,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, AlertCircle, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -52,7 +52,8 @@ export interface CatalogueEditorConfig {
   /** Badge key (string) */
   badgeKey?: string;
   /** Called to load all items */
-  loadItems: (token: string) => Promise<Record<string, unknown>[]>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  loadItems: (token: string) => Promise<any[]>;
   /** Called to save (create or update) */
   saveItem: (code: string, data: Record<string, unknown>, token: string) => Promise<unknown>;
   /** Called to delete */
@@ -244,6 +245,7 @@ export function CatalogueEditor({ config }: { config: CatalogueEditorConfig }) {
         <CardContent className="p-0">
           {items.length === 0 ? (
             <EmptyState
+              icon={Database}
               title="Nav ierakstu"
               description="Izveidojiet pirmo ierakstu ar pogu augšā."
               className="py-16"
@@ -276,7 +278,7 @@ export function CatalogueEditor({ config }: { config: CatalogueEditorConfig }) {
                       <div className="font-medium">
                         {(item.labelLv as string) || (item.label as string)}
                       </div>
-                      {config.subtitleKey && item[config.subtitleKey] && (
+                      {config.subtitleKey && !!item[config.subtitleKey] && (
                         <div className="text-xs text-muted-foreground">
                           {item[config.subtitleKey] as string}
                         </div>
@@ -284,7 +286,7 @@ export function CatalogueEditor({ config }: { config: CatalogueEditorConfig }) {
                     </td>
                     {config.badgeKey && (
                       <td className="px-4 py-2.5">
-                        {item[config.badgeKey] && (
+                        {!!item[config.badgeKey] && (
                           <Badge variant="outline" className="text-xs">
                             {item[config.badgeKey] as string}
                           </Badge>

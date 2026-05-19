@@ -375,7 +375,9 @@ function MaterialFormModal({
                       <SelectItem key={c.value} value={c.value} className="rounded-lg">
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">{c.icon}</span>
-                          <span>{categoryLabels[c.value] ?? c.label}</span>
+                          <span>
+                            {CATEGORY_LABELS[c.value as keyof typeof CATEGORY_LABELS] ?? c.label}
+                          </span>
                         </div>
                       </SelectItem>
                     ))}

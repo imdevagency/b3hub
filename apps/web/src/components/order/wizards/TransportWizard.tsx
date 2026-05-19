@@ -21,13 +21,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
-import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { createTransportOrder, type TransportVehicleType } from '@/lib/api/orders';
-import { createGuestOrder } from '@/lib/api';
 import type { User } from '@/lib/api';
 import {
   ArrowRight,
@@ -52,13 +51,6 @@ const VEHICLES: {
   maxT: number;
   fromPrice: number;
 }[] = [
-  {
-    type: 'BOX_TRUCK',
-    label: 'Kravas furgons',
-    sub: 'līdz 3.5 t · 20 m³',
-    maxT: 3.5,
-    fromPrice: 79,
-  },
   {
     type: 'TIPPER_SMALL',
     label: 'Mazais pašizgāzējs',
@@ -113,7 +105,6 @@ const STEP_INDEX: Record<WizardStep, number> = {
 };
 
 function suggestVehicle(weightT: number): TransportVehicleType {
-  if (weightT <= 3.5) return 'BOX_TRUCK';
   if (weightT <= 5) return 'TIPPER_SMALL';
   if (weightT <= 15) return 'TIPPER_LARGE';
   if (weightT <= 20) return 'FLATBED';
@@ -155,7 +146,7 @@ export function TransportWizard({ mode }: Props) {
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [refNumber, setRefNumber] = useState('');
-  const [guestToken, setGuestToken] = useState('');
+  const [guestToken, _setGuestToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -375,42 +366,6 @@ export function TransportWizard({ mode }: Props) {
     if (pendingAction) {
       pendingAction(authToken);
       setPendingAction(null);
-    }
-  }
-
-  async function handleGuestCheckout(contact: GuestContactInfo) {
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      const noteParts = [
-        fromAddress ? `Iekraušana: ${fromAddress}` : '',
-        toAddress ? `Izkraušana: ${toAddress}` : '',
-        notes,
-      ].filter(Boolean);
-      const guestRes = await createGuestOrder({
-        materialCategory: 'TRANSPORT',
-        materialName: cargoDesc || 'Transporta pasūtījums',
-        quantity: weightT ? parseFloat(weightT) : 1,
-        unit: weightT ? 'TONNE' : 'LOAD',
-        deliveryAddress: toAddress || fromAddress,
-        deliveryCity:
-          toCity || fromCity || (toAddress || fromAddress).split(',').slice(-1)[0]?.trim() || '',
-        deliveryLat: toLat,
-        deliveryLng: toLng,
-        deliveryDate: date || undefined,
-        deliveryWindow: timeWindow !== 'ANY' ? timeWindow : undefined,
-        contactName: contact.name,
-        contactPhone: contact.phone,
-        contactEmail: contact.email,
-        notes: noteParts.join('\n') || undefined,
-      });
-      setRefNumber(guestRes.orderNumber);
-      setGuestToken(guestRes.token);
-      setStep('sent');
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -768,12 +723,8 @@ export function TransportWizard({ mode }: Props) {
               if (token) {
                 submit(token);
               } else {
-                // Public mode — submit directly as guest using already-collected contact info.
-                handleGuestCheckout({
-                  name: contactName.trim() || 'Klients',
-                  phone: contactPhone.trim(),
-                  email: contactEmail.trim() || undefined,
-                });
+                setPendingAction(() => submit);
+                setAuthGateOpen(true);
               }
             }}
             disabled={!date || !contactPhone.trim() || submitting}
@@ -788,23 +739,6 @@ export function TransportWizard({ mode }: Props) {
               </>
             )}
           </Button>
-
-          {mode === 'public' && (
-            <p className="text-xs text-center text-muted-foreground -mt-2">
-              Pasūtīt var bez konta ·{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthGateMode('login');
-                  setPendingAction(() => submit);
-                  setAuthGateOpen(true);
-                }}
-                className="underline font-semibold hover:text-foreground transition-colors"
-              >
-                Jau ir konts? Ieiet
-              </button>
-            </p>
-          )}
         </div>
       )}
 
@@ -851,8 +785,8 @@ export function TransportWizard({ mode }: Props) {
     <div
       className={
         mode === 'public'
-          ? 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-[600px] rounded-3xl shadow-xl ring-1 ring-border/40'
-          : 'relative hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
+          ? 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-28 h-150 rounded-3xl shadow-xl ring-1 ring-border/40'
+          : 'hidden lg:flex flex-1 overflow-hidden bg-muted/10 sticky top-0 h-[calc(100svh-4rem)]'
       }
     >
       <div
@@ -899,14 +833,11 @@ export function TransportWizard({ mode }: Props) {
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
-          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setAuthGateMode(undefined);
             setPendingAction(null);
           }}
-          prefilledName={contactName}
-          prefilledPhone={contactPhone}
           initialMode={authGateMode}
         />
       </>

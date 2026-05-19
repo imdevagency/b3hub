@@ -7,13 +7,13 @@
 
 ## Vision
 
-> **Build the end-to-end infrastructure for construction materials and logistics in the Baltics — digitally and physically — so that every tonne of material moved, every load disposed of, and every delivery executed is trackable, documented, and settled through one platform.**
+> **Build the end-to-end digital infrastructure for bulk construction materials and logistics in the Baltics — so that every tonne of material moved, every load disposed of, and every delivery executed is trackable, documented, and settled through one platform.**
 
 ---
 
 ## Mission
 
-> Make it as simple to order, move, and dispose of construction materials in Latvia and the Baltics as it is to book a taxi — whether you're a homeowner picking up gravel from a B3 Field or a construction company running 50 simultaneous deliveries across the country.
+> Make it as simple to order, move, and dispose of bulk construction materials in Latvia and the Baltics as it is to book a taxi — whether you’re a homeowner getting gravel delivered or a construction company running 50 simultaneous deliveries across the country.
 
 ---
 
@@ -21,9 +21,22 @@
 
 The single metric that defines success:
 
-> **Total value of transactions processed through Bilt** (orders + transport + disposal + skip hire).
+> **Total value of transactions processed through Bilt** (materials orders + transport jobs + disposal jobs).
 
-Every feature, every B3 Field, and every integration should either increase the number of transactions or increase the value of each one. If it doesn't move this number, it's not a priority.
+Every feature and every integration should either increase the number of transactions or increase the value of each one. If it doesn’t move this number, it’s not a priority.
+
+---
+
+## The Four Sides — Schüttflix Model
+
+Bilt is a **4-sided construction logistics marketplace**. North star: connect these four sides on one transaction layer, nothing else.
+
+| Side                  | Who                                                      | What they need from Bilt                                                               |
+| --------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Contractors**       | Construction companies, contractors, homeowners          | Buy bulk materials, order transport jobs, book waste disposal — tracked and documented |
+| **Materials Sellers** | Quarries, gravel/sand/concrete producers and wholesalers | List materials, set prices autonomously, fulfill confirmed orders from verified buyers |
+| **Carriers**          | Trucking companies, independent tipper/flatbed drivers   | Accept and execute transport jobs — bulk materials delivery and waste haulage          |
+| **Disposers**         | Landfills, dump sites, licensed waste processing plants  | Receive booked waste disposal jobs, issue legally compliant acceptance certificates    |
 
 ---
 
@@ -35,23 +48,23 @@ Every feature, every B3 Field, and every integration should either increase the 
 
 ## What Bilt Is
 
-Bilt is a **construction logistics marketplace** for the Latvian and Baltic market.
+Bilt is a **bulk construction materials and logistics marketplace** for the Latvian and Baltic market.
 
 It connects **four market sides**:
 
-- **Buyers** — construction companies, contractors, homeowners who need materials delivered or waste removed
-- **Sellers** — quarries, material suppliers who sell gravel, sand, concrete, soil, recycled materials
-- **Carriers** — trucking companies and independent drivers who execute deliveries
-- **Recyclers** — licensed waste processing facilities that accept, process, and certify construction waste
+- **Contractors** — construction companies, homeowners, and project managers who need bulk materials delivered or mineral waste removed
+- **Materials Sellers** — quarries and bulk material producers/wholesalers (gravel, sand, concrete, soil) with full price autonomy
+- **Carriers** — trucking companies and independent tipper/flatbed drivers who execute bulk delivery and waste haulage jobs
+- **Disposers** — licensed landfills, dump sites, and waste processing plants that accept, weigh, and certify construction waste
 
-The platform handles the **complete transaction lifecycle**: buyer places order → seller confirms loading → driver delivers → documents generated automatically → payment settled.
+The platform handles the **complete transaction lifecycle**: contractor places order → seller confirms loading → driver delivers → documents generated automatically → payment settled.
 
 Every euro spent on materials and transport through Bilt is trackable, documented, and tied to a real delivery. That's the core product promise.
 
-Bilt serves **two customer segments on the same marketplace**:
+Bilt serves **two customer segments**:
 
-- **B2B** — construction companies, contractors, and project managers running complex multi-site procurement. Account required. Framework contracts, project cost tracking, invoicing, team management.
-- **B2C** — homeowners, small trades, and micro-contractors with simple one-off needs: order a skip, get gravel delivered, book waste collection. Guest checkout with phone/email capture. Account creation offered post-order as a convenience, not a gate.
+- **B2B** — construction companies and contractors running complex multi-site procurement. Framework contracts, project cost tracking, invoicing, team management.
+- **B2C** — homeowners and small trades: order gravel, book waste collection. Guest checkout with phone/email capture.
 
 ---
 
@@ -79,14 +92,17 @@ B3 Fields are modelled as **fulfillment locations** in the system:
 
 ## What Bilt Is NOT
 
-These are out of scope by design. Adding them would dilute focus and pull Bilt away from its defensible position as a transaction marketplace.
+These are out of scope by design. Adding them would dilute focus and pull Bilt away from its position as a focused bulk-materials transaction marketplace.
 
 | Out of scope                                                    | Why                                                                     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Project management** (Gantt, milestones, dependencies)        | That's Procore / PlanRadar territory                                    |
-| **On-site quality management** (punch lists, NCRs, inspections) | That's Qualisflow / BIM tools — happens after delivery                  |
-| **Labor / timesheet tracking**                                  | That's payroll / HR software                                            |
-| **Equipment / plant management**                                | Not a Bilt transaction                                                 |
+| **Skip hire / container hire**                                  | Removed from scope — not core to bulk materials market                  |
+| **Toilet cabin hire**                                           | Removed from scope — not core to bulk materials market                  |
+| **Metal scrap buyback**                                         | Removed from scope — not core to bulk materials market                  |
+| **Equipment / plant hire**                                      | Not a Bilt transaction                                                  |
+| **Project management** (Gantt, milestones, dependencies)        | That’s Procore / PlanRadar territory                                    |
+| **On-site quality management** (punch lists, NCRs, inspections) | That’s Qualisflow / BIM tools — happens after delivery                  |
+| **Labor / timesheet tracking**                                  | That’s payroll / HR software                                            |
 | **External cost tracking**                                      | We track only what moves through our platform                           |
 | **General ERP**                                                 | We are the procurement + logistics layer, not the full operating system |
 
@@ -172,14 +188,14 @@ Buyer pays → Paysera checkout (full order total, redirect-and-webhook flow)
 
 #### TIER 1 — Transaction layer (earn on every order, today)
 
-| #   | Stream                            | Mechanism                                                                                                       | Margin profile     |
-| --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------ |
-| 1   | **Material order commission**     | % of subtotal + delivery fee, retained before seller payout                                                     | 8–15%              |
+| #   | Stream                            | Mechanism                                                                                                      | Margin profile     |
+| --- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------ |
+| 1   | **Material order commission**     | % of subtotal + delivery fee, retained before seller payout                                                    | 8–15%              |
 | 2   | **Transport job margin**          | `rate` charged to buyer minus `driverPayout` to carrier — Bilt acts as logistics broker, not just intermediary | 15–30%             |
 | 3   | **Skip hire spread**              | Retail price set by Bilt; carrier paid wholesale `CarrierPricing` rate per size. Full spread owned.            | 20–35%             |
-| 4   | **Container rental commission**   | % on `ContainerOrder` total (rental days × daily rate + delivery/pickup fees)                                   | 8–12%              |
-| 5   | **Waste disposal commission**     | % on disposal fee when waste is routed to a recycling center through the platform                               | 8–12%              |
-| 6   | **Double-dip on combined orders** | `OrderType.COMBINED` = materials + transport in one order. Commission on both sides simultaneously.             | 2× per transaction |
+| 4   | **Container rental commission**   | % on `ContainerOrder` total (rental days × daily rate + delivery/pickup fees)                                  | 8–12%              |
+| 5   | **Waste disposal commission**     | % on disposal fee when waste is routed to a recycling center through the platform                              | 8–12%              |
+| 6   | **Double-dip on combined orders** | `OrderType.COMBINED` = materials + transport in one order. Commission on both sides simultaneously.            | 2× per transaction |
 
 ---
 
@@ -189,7 +205,7 @@ These all sit inside the transport layer. The spread between what Bilt charges t
 
 | #   | Stream                              | Mechanism                                                                                                                                                                                                   | Notes                                                                                            |
 | --- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 7   | **Backhaul / return load matching** | Driver delivers gravel north → Bilt matches a return load (waste collection, equipment) going south. Buyer 2 pays a full transport rate. Driver gets a small top-up. Bilt keeps the delta.                | Empty truck on way back = pure waste. This is the single highest-margin opportunity in trucking. |
+| 7   | **Backhaul / return load matching** | Driver delivers gravel north → Bilt matches a return load (waste collection, equipment) going south. Buyer 2 pays a full transport rate. Driver gets a small top-up. Bilt keeps the delta.                  | Empty truck on way back = pure waste. This is the single highest-margin opportunity in trucking. |
 | 8   | **Multi-stop consolidation**        | Combine 3 small orders going to nearby sites into one truck run. Charge each buyer the full single-delivery rate. Pay the driver once for the run.                                                          | `cargoWeight`/`cargoVolume` fields on `TransportJob` enable this.                                |
 | 9   | **Surcharge ownership**             | Buyers are charged surcharges (fuel, weekend delivery, overweight, narrow access, waiting time). Carriers are paid flat agreed rates. Surcharges = 100% platform margin.                                    | Store as line items on the order. Fuel surcharge alone can be 8–12% of job value.                |
 | 10  | **Pricing vs. cost arbitrage**      | Charge buyers distance-based pricing (€/km × km). Pay carriers a flat day-rate or regional zone rate. On short urban runs, the km-rate overbills vs. a flat rate — margin is captured automatically.        | `distanceKm` on `TransportJob` enables per-km billing.                                           |
@@ -215,21 +231,21 @@ These all sit inside the transport layer. The spread between what Bilt charges t
 
 #### TIER 3 — Float & financial services (earn on money in motion)
 
-| #   | Stream                         | Mechanism                                                                                                                                                                                   |
-| --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 13  | **Payment float / interest**   | Paysera holds funds between buyer payment and platform-initiated seller payout. At volume, even 2–5 days of float on €1M/month GMV earns ~€3–5k/year. Modest but free.                      |
+| #   | Stream                         | Mechanism                                                                                                                                                                                  |
+| --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 13  | **Payment float / interest**   | Paysera holds funds between buyer payment and platform-initiated seller payout. At volume, even 2–5 days of float on €1M/month GMV earns ~€3–5k/year. Modest but free.                     |
 | 14  | **Trade credit for buyers**    | Verified construction companies buy now, pay in 30/60 days. Funded via a lending partner (Bilt earns referral + spread). Construction companies live on credit — this is extremely sticky. |
-| 15  | **Early payout for suppliers** | Suppliers get paid instantly (for a 1–2% discount) instead of waiting for buyer payment cycle. Platform or factoring partner absorbs the receivable.                                        |
-| 16  | **Cargo insurance**            | Bundle per-shipment transit insurance into transport orders. Zero effort for the user — opt-out rather than opt-in. Revenue split with insurer.                                             |
+| 15  | **Early payout for suppliers** | Suppliers get paid instantly (for a 1–2% discount) instead of waiting for buyer payment cycle. Platform or factoring partner absorbs the receivable.                                       |
+| 16  | **Cargo insurance**            | Bundle per-shipment transit insurance into transport orders. Zero effort for the user — opt-out rather than opt-in. Revenue split with insurer.                                            |
 | 17  | **Driver/carrier credit**      | Carriers need vehicles and equipment. Bilt data (earnings history, job completion rate) makes creditworthiness transparent. Refer to lenders for a fee, or originate directly later.       |
 
 ---
 
 #### TIER 4 — SaaS & data layer (earn on information and tools)
 
-| #   | Stream                               | Mechanism                                                                                                                                                                                                            |
-| --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 18  | **Analytics & reporting add-on**     | Free tier: basic order history. Paid tier: full P&L per project, budget alerts, supplier benchmarking, CSV/Excel export, custom date ranges. Monthly subscription per seat.                                          |
+| #   | Stream                               | Mechanism                                                                                                                                                                                                           |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 18  | **Analytics & reporting add-on**     | Free tier: basic order history. Paid tier: full P&L per project, budget alerts, supplier benchmarking, CSV/Excel export, custom date ranges. Monthly subscription per seat.                                         |
 | 19  | **Market price intelligence**        | Bilt sees every material price transacted across the Baltic market. Aggregate and anonymize → sell as a "Construction Material Price Index" report to suppliers, buyers, and banks financing construction projects. |
 | 20  | **API access / ERP integration**     | Large buyers want to push orders from SAP, Procountor, or their own ERP directly into Bilt without touching the web app. Charge a monthly API access fee + per-call volume pricing beyond a free tier.              |
 | 21  | **White-label platform**             | Sell the entire Bilt stack (rebranded) to a logistics operator in Poland, Finland, or Germany who wants to run their own marketplace. SaaS licensing fee + revenue share.                                           |
@@ -243,7 +259,7 @@ These all sit inside the transport layer. The spread between what Bilt charges t
 | --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 23  | **Waste certificate issuance**           | Every tonne of construction waste legally requires a waste transfer certificate (EU Waste Framework Directive). Platform auto-generates these. Charge per certificate above a free monthly quota. |
 | 24  | **Document archiving**                   | Buyers and suppliers must store delivery/waste documents for 5 years (regulatory requirement). Charge a small annual archiving fee per company for long-term secure storage.                      |
-| 25  | **ESG / carbon reporting**               | Construction companies under ESG reporting obligations need scope 3 data on waste disposal and material sourcing. Bilt data = automatic scope 3 emissions report. Sell as compliance add-on.     |
+| 25  | **ESG / carbon reporting**               | Construction companies under ESG reporting obligations need scope 3 data on waste disposal and material sourcing. Bilt data = automatic scope 3 emissions report. Sell as compliance add-on.      |
 | 26  | **ADR / hazardous transport compliance** | Hazardous waste transport requires specific documentation. Premium document generation for ADR-classified loads.                                                                                  |
 
 ---
@@ -425,7 +441,7 @@ User {
 | Transport company (dispatcher)      | BUYER      | false     | **true**       |
 | Driver (employed)                   | BUYER      | false     | **true**       |
 | Owner-operator (sells + transports) | BUYER      | **true**  | **true**       |
-| Bilt platform staff                | ADMIN      | —         | —              |
+| Bilt platform staff                 | ADMIN      | —         | —              |
 
 ### Company roles
 

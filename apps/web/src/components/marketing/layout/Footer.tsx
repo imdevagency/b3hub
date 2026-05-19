@@ -18,7 +18,6 @@ const navigation = {
     { name: 'Karjeriem & piegādātājiem', href: '/karjeriem' },
     // TODO: B3 FIELDS — re-enable when physical locations are live
     // { name: 'B3 Fields', href: '/b3-fields' },
-    { name: 'Cenas', href: '/pricing' },
   ],
   company: [
     { name: 'Par mums', href: '/about' },
@@ -34,7 +33,10 @@ const navigation = {
 
 export function Footer() {
   return (
-    <footer className="bg-neutral-50 text-muted-foreground border-t border-border" aria-labelledby="footer-heading">
+    <footer
+      className="bg-neutral-50 text-muted-foreground border-t border-border"
+      aria-labelledby="footer-heading"
+    >
       <h2 id="footer-heading" className="sr-only">
         Footer
       </h2>

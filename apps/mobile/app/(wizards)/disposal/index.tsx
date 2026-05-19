@@ -448,7 +448,7 @@ export default function DisposalWizard() {
             id: d.code as WasteType,
             label: d.labelLv ?? d.label,
             desc: d.descriptionLv ?? d.description ?? '',
-            Icon: WASTE_ICON_MAP[d.code] ?? Trash2,
+            Icon: (WASTE_ICON_MAP[d.code] ?? Trash2) as LucideIcon,
           });
         }
         const groups = groupOrder.map((g) => grouped[g]).filter(Boolean);

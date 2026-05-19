@@ -91,27 +91,6 @@ const VEHICLE_OPTIONS: {
     fromPrice: 199,
     pricePerKm: 2.5,
   },
-  {
-    type: 'BOX_TRUCK',
-    label: 'Kravas furgons',
-    sub: 'līdz 3.5 t · 20 m³',
-    fromPrice: 79,
-    pricePerKm: 1.2,
-  },
-  {
-    type: 'PICKUP_TRUCK' as TransportVehicleType,
-    label: 'Pikaps / furgonete',
-    sub: 'līdz 1 t · 2.5 m³',
-    fromPrice: 35,
-    pricePerKm: 0.7,
-  },
-  {
-    type: 'CAR' as TransportVehicleType,
-    label: 'Vieglā automašīna',
-    sub: 'Daļas, dokumenti · līdz 50 kg',
-    fromPrice: 19,
-    pricePerKm: 0.45,
-  },
 ];
 
 const CARGO_PRESETS = [

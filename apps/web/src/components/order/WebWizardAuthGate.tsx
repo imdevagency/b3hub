@@ -1,16 +1,14 @@
 /**
  * WebWizardAuthGate
  *
- * Dialog shown when a guest tries to commit in the public /order wizard.
- * Three paths:
- *   1. Guest checkout — name + phone + optional email, NO account created.
- *      Calls onGuestContact({ name, phone, email? }) so the wizard submits
- *      directly to POST /api/v1/guest-orders.
- *   2. Register — lightweight signup (password optional).
- *   3. Login — email + password.
+ * Dialog shown when the wizard needs authentication to proceed.
+ * B2B only — no guest checkout, no personal accounts.
  *
- * On account auth calls onAuthenticated(user, token).
- * On guest path calls onGuestContact(contactInfo).
+ * Two modes:
+ *   1. Login  — email + password (default)
+ *   2. Register — company account only
+ *
+ * On success calls onAuthenticated(user, token).
  */
 'use client';
 
@@ -22,13 +20,7 @@ import { forgotPassword, loginUser, registerUser, type User } from '@/lib/api';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = 'choice' | 'guest' | 'register' | 'login';
-
-export interface GuestContactInfo {
-  name: string;
-  phone: string;
-  email?: string;
-}
+type Mode = 'login' | 'register';
 
 interface UrLookupResult {
   found: boolean;
@@ -40,73 +32,33 @@ interface UrLookupResult {
 interface Props {
   open: boolean;
   onAuthenticated: (user: User, token: string) => void;
-  /** Called when user chooses the guest path — wizard uses this to submit via guest-orders API. */
-  onGuestContact?: (info: GuestContactInfo) => void;
   onDismiss: () => void;
-  /** Pre-populate name + phone from the wizard's on-site contact fields. */
-  prefilledName?: string;
-  prefilledPhone?: string;
-  /**
-   * Open directly in this mode and hide the choice screen. Use this when the
-   * wizard already has the user's contact info and only needs login — avoids
-   * the "How do you want to continue?" wall.
-   */
-  initialMode?: 'login' | 'register' | 'guest';
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Generates a cryptographically random password (used when user skips password). */
-function generateGuestPassword(): string {
-  const arr = new Uint8Array(24);
-  crypto.getRandomValues(arr);
-  return btoa(String.fromCharCode(...arr))
-    .replace(/[+/=]/g, '')
-    .slice(0, 24);
+  /** Open directly in this mode. */
+  initialMode?: Mode;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function WebWizardAuthGate({
-  open,
-  onAuthenticated,
-  onGuestContact,
-  onDismiss,
-  prefilledName,
-  prefilledPhone,
-  initialMode,
-}: Props) {
-  const [mode, setMode] = useState<Mode>(initialMode ?? 'choice');
+export function WebWizardAuthGate({ open, onAuthenticated, onDismiss, initialMode }: Props) {
+  const [mode, setMode] = useState<Mode>(initialMode ?? 'login');
 
-  // Re-sync mode whenever the gate is re-opened with a different initialMode.
   useEffect(() => {
-    if (open) setMode(initialMode ?? 'choice');
+    if (open) setMode(initialMode ?? 'login');
   }, [open, initialMode]);
 
-  // Guest checkout fields
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-
   // Register fields
-  const [isCompany, setIsCompany] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  // Individual: personas kods
-  const [personalCode, setPersonalCode] = useState('');
-  // Company: reg lookup
   const [regNumber, setRegNumber] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companyNameLocked, setCompanyNameLocked] = useState(false);
   const [urLooking, setUrLooking] = useState(false);
   const [urResult, setUrResult] = useState<UrLookupResult | null>(null);
   const [urError, setUrError] = useState('');
-  // Password (optional for guest checkout)
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  // T&C consent
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Login fields
@@ -121,7 +73,6 @@ export function WebWizardAuthGate({
   const urDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!isCompany) return;
     const cleaned = regNumber.replace(/\s/g, '');
     if (!/^\d{8,12}$/.test(cleaned)) {
       setUrResult(null);
@@ -144,7 +95,6 @@ export function WebWizardAuthGate({
         const data: UrLookupResult = await res.json();
         setUrResult(data);
         if (data.found && data.name) {
-          // Block liquidated / struck-off companies
           const inactive = data.status && /likvidēt|izslēgt|beidz/i.test(data.status);
           if (inactive) {
             setUrError(`Uzņēmums "${data.name}" ir ${data.status} — reģistrācija nav iespējama`);
@@ -168,37 +118,16 @@ export function WebWizardAuthGate({
     return () => {
       if (urDebounce.current) clearTimeout(urDebounce.current);
     };
-  }, [regNumber, isCompany]);
-
-  // ── Pre-fill from wizard contact when gate opens ───────────────────────────
-  useEffect(() => {
-    if (!open) return;
-    if (prefilledName) {
-      const parts = prefilledName.trim().split(/\s+/);
-      setFirstName((prev) => prev || parts[0] || '');
-      setLastName((prev) => prev || parts.slice(1).join(' '));
-      setGuestName((prev) => prev || prefilledName.trim());
-    }
-    if (prefilledPhone) {
-      setPhone((prev) => prev || prefilledPhone);
-      setGuestPhone((prev) => prev || prefilledPhone);
-    }
-  }, [open, prefilledName, prefilledPhone]);
+  }, [regNumber]);
 
   // ── Reset ─────────────────────────────────────────────────────────────────
 
   function reset() {
-    setMode('choice');
     setError('');
-    setGuestName('');
-    setGuestPhone('');
-    setGuestEmail('');
-    setIsCompany(false);
     setFirstName('');
     setLastName('');
     setEmail('');
     setPhone('');
-    setPersonalCode('');
     setRegNumber('');
     setCompanyName('');
     setCompanyNameLocked(false);
@@ -213,30 +142,6 @@ export function WebWizardAuthGate({
   function handleDismiss() {
     reset();
     onDismiss();
-  }
-
-  // ── Guest checkout ────────────────────────────────────────────────────────
-
-  function handleGuestContinue() {
-    setError('');
-    if (!guestName.trim()) {
-      setError('Ievadiet vārdu un uzvārdu.');
-      return;
-    }
-    if (!/^\+?[0-9\s\-()\u200b]{7,20}$/.test(guestPhone.trim())) {
-      setError('Ievadiet derīgu tālruņa numuru.');
-      return;
-    }
-    if (guestEmail && !/^\S+@\S+\.\S+$/.test(guestEmail)) {
-      setError('Ievadiet derīgu e-pasta adresi vai atstājiet lauku tukšu.');
-      return;
-    }
-    reset();
-    onGuestContact?.({
-      name: guestName.trim(),
-      phone: guestPhone.trim(),
-      email: guestEmail.trim() || undefined,
-    });
   }
 
   // ── Register ──────────────────────────────────────────────────────────────
@@ -255,7 +160,7 @@ export function WebWizardAuthGate({
       setError('Ievadiet derīgu e-pastu.');
       return;
     }
-    if (isCompany && !companyName.trim()) {
+    if (!companyName.trim()) {
       setError('Ievadiet uzņēmuma nosaukumu.');
       return;
     }
@@ -264,9 +169,15 @@ export function WebWizardAuthGate({
       return;
     }
 
-    // Guest checkout: generate a password silently; send reset link afterwards
-    const isGuest = !password;
-    const effectivePassword = password || generateGuestPassword();
+    const effectivePassword =
+      password ||
+      (() => {
+        const arr = new Uint8Array(24);
+        crypto.getRandomValues(arr);
+        return btoa(String.fromCharCode(...arr))
+          .replace(/[+/=]/g, '')
+          .slice(0, 24);
+      })();
 
     setLoading(true);
     try {
@@ -276,19 +187,15 @@ export function WebWizardAuthGate({
         email: email.trim().toLowerCase(),
         phone: phone.trim() || undefined,
         roles: ['BUYER'],
-        isCompany,
-        companyName: isCompany ? companyName.trim() : undefined,
-        regNumber: isCompany && regNumber.trim() ? regNumber.trim() : undefined,
-        personalCode: !isCompany && personalCode.trim() ? personalCode.trim() : undefined,
+        isCompany: true,
+        companyName: companyName.trim(),
+        regNumber: regNumber.trim() || undefined,
         password: effectivePassword,
         termsAccepted,
       });
 
-      // If guest, fire a password-reset so they can set their own later
-      if (isGuest) {
-        forgotPassword(res.user.email).catch(() => {
-          /* non-critical */
-        });
+      if (!password) {
+        forgotPassword(res.user.email).catch(() => {});
       }
 
       reset();
@@ -341,165 +248,142 @@ export function WebWizardAuthGate({
         </button>
 
         <div className="p-6 pt-8">
-          {/* ── CHOICE ── */}
-          {mode === 'choice' && (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Kā turpināt?</h2>
+          {/* ── LOGIN ── */}
+          {mode === 'login' && (
+            <div className="space-y-3">
+              <div className="mb-1">
+                <h2 className="text-xl font-bold text-gray-900">Ieiet kontā</h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Izvēlieties ērtu veidu, kā iesniegt pasūtījumu.
+                  Bilt ir pieejams tikai reģistrētiem uzņēmumiem.
                 </p>
               </div>
 
-              {/* Guest — primary action when onGuestContact is provided */}
-              {onGuestContact && (
-                <button
-                  onClick={() => setMode('guest')}
-                  className="w-full flex items-center justify-between rounded-2xl border-2 border-gray-900 bg-gray-900 px-5 py-4 text-left hover:bg-gray-800 transition-colors"
-                >
-                  <div>
-                    <p className="text-[15px] font-bold text-white">Turpināt kā viesis</p>
-                    <p className="text-sm text-gray-400">Tikai vārds + tālrunis — bez konta</p>
-                  </div>
-                  <span className="text-xl text-gray-400">›</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => setMode('register')}
-                className="w-full flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-left hover:bg-gray-100 transition-colors"
-              >
-                <div>
-                  <p className="text-[15px] font-bold text-gray-900">Izveidot kontu</p>
-                  <p className="text-sm text-gray-500">Ātri — izsekojiet pasūtījumus, rēķini</p>
-                </div>
-                <span className="text-xl text-gray-400">›</span>
-              </button>
-              <button
-                onClick={() => setMode('login')}
-                className="w-full flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-4 text-left hover:bg-gray-50 transition-colors"
-              >
-                <div>
-                  <p className="text-[15px] font-bold text-gray-900">Jau ir konts? Ieiet</p>
-                  <p className="text-sm text-gray-500">Pieteikties ar e-pastu</p>
-                </div>
-                <span className="text-xl text-gray-400">›</span>
-              </button>
-              <p className="text-xs text-gray-400 text-center pt-1">
-                Reģistrējoties jūs piekrītat{' '}
-                <a href="/terms" target="_blank" className="underline">
-                  lietošanas noteikumiem
-                </a>{' '}
-                un{' '}
-                <a href="/privacy" target="_blank" className="underline">
-                  privātuma politikai
-                </a>
-                .
-              </p>
-            </div>
-          )}
-
-          {/* ── GUEST CHECKOUT ── */}
-          {mode === 'guest' && (
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setMode('choice');
-                  setError('');
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700 mb-1"
-              >
-                ← Atpakaļ
-              </button>
-              <h2 className="text-xl font-bold text-gray-900">Turpināt kā viesis</h2>
-              <p className="text-sm text-gray-500">
-                Mēs sazināsimies ar jums, lai apstiprinātu pasūtījumu.
-              </p>
-
               <Input
-                placeholder="Vārds Uzvārds"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                autoComplete="name"
+                type="email"
+                placeholder="E-pasts"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                autoComplete="email"
               />
-              <Input
-                type="tel"
-                placeholder="Tālrunis (piem. +371 20000000)"
-                value={guestPhone}
-                onChange={(e) => setGuestPhone(e.target.value)}
-                autoComplete="tel"
-              />
-              <div className="space-y-1">
+              <div className="relative">
                 <Input
-                  type="email"
-                  placeholder="E-pasts (neobligāts — apstiprinājumam)"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  autoComplete="email"
+                  type={showLoginPw ? 'text' : 'password'}
+                  placeholder="Parole"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleLogin();
+                  }}
                 />
-                <p className="text-xs text-gray-400 pl-1">
-                  Ja norādāt e-pastu, nosūtīsim pasūtījuma apstiprinājumu un izsekošanas saiti.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPw(!showLoginPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  tabIndex={-1}
+                >
+                  {showLoginPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
               </div>
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 
-              <Button onClick={handleGuestContinue} className="w-full rounded-xl">
-                Iesniegt pasūtījumu
+              <Button onClick={handleLogin} disabled={loading} className="w-full rounded-xl">
+                {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                Ieiet un pasūtīt
               </Button>
 
-              <p className="text-xs text-gray-400 text-center pt-1">
-                Ar iesniegšanu jūs piekrītat{' '}
-                <a href="/terms" target="_blank" className="underline">
-                  lietošanas noteikumiem
-                </a>{' '}
-                un{' '}
-                <a href="/privacy" target="_blank" className="underline">
-                  privātuma politikai
-                </a>
-                .
-              </p>
+              <a
+                href="/forgot-password"
+                className="block text-center text-sm text-gray-500 hover:text-gray-700 underline pt-1"
+              >
+                Aizmirsu paroli
+              </a>
+
+              <div className="pt-2 border-t border-gray-100 text-center">
+                <p className="text-sm text-gray-500">
+                  Vēl nav uzņēmuma konta?{' '}
+                  <button
+                    onClick={() => {
+                      setMode('register');
+                      setError('');
+                    }}
+                    className="font-semibold text-gray-900 underline underline-offset-2"
+                  >
+                    Reģistrēties
+                  </button>
+                </p>
+              </div>
             </div>
           )}
 
           {/* ── REGISTER ── */}
           {mode === 'register' && (
             <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setMode('choice');
-                  setError('');
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700 mb-1"
-              >
-                ← Atpakaļ
-              </button>
-              <h2 className="text-xl font-bold text-gray-900">Izveidot kontu</h2>
-
-              {/* B2C / B2B toggle */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                {(
-                  [
-                    { value: false, label: 'Privātpersona' },
-                    { value: true, label: 'Uzņēmums' },
-                  ] as const
-                ).map((opt) => (
-                  <button
-                    key={String(opt.value)}
-                    onClick={() => {
-                      setIsCompany(opt.value);
-                      setError('');
-                    }}
-                    className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors ${
-                      isCompany === opt.value
-                        ? 'border-gray-900 bg-gray-900 text-white'
-                        : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <div className="mb-1">
+                <button
+                  onClick={() => {
+                    setMode('login');
+                    setError('');
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700 mb-2 block"
+                >
+                  ← Atpakaļ
+                </button>
+                <h2 className="text-xl font-bold text-gray-900">Reģistrēt uzņēmumu</h2>
               </div>
+
+              {/* Reg number + UR lookup */}
+              <div className="relative">
+                <Input
+                  placeholder="Reģistrācijas numurs (piem. 40003009497)"
+                  value={regNumber}
+                  onChange={(e) => {
+                    setRegNumber(e.target.value);
+                    setUrResult(null);
+                    setCompanyNameLocked(false);
+                  }}
+                  maxLength={12}
+                  className="pr-9"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  {urLooking ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Search className="size-4" />
+                  )}
+                </div>
+              </div>
+
+              {urError && <p className="text-xs pl-1 text-red-500">{urError}</p>}
+              {!urError && urResult && (
+                <p
+                  className={`text-xs pl-1 ${urResult.found ? 'text-green-600' : 'text-amber-600'}`}
+                >
+                  {urResult.found
+                    ? `✓ ${urResult.name}${urResult.status ? ` · ${urResult.status}` : ''}`
+                    : 'Nav atrasts Uzņēmumu Reģistrā — pārbaudiet numuru'}
+                </p>
+              )}
+
+              <Input
+                placeholder="Uzņēmuma nosaukums"
+                value={companyName}
+                onChange={(e) => !companyNameLocked && setCompanyName(e.target.value)}
+                readOnly={companyNameLocked}
+                autoComplete="organization"
+                className={companyNameLocked ? 'bg-gray-50 text-gray-600 cursor-default' : ''}
+              />
+              {companyNameLocked && (
+                <button
+                  type="button"
+                  onClick={() => setCompanyNameLocked(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 pl-1 underline"
+                >
+                  Labot manuāli
+                </button>
+              )}
 
               {/* Name */}
               <div className="grid grid-cols-2 gap-2">
@@ -517,83 +401,6 @@ export function WebWizardAuthGate({
                 />
               </div>
 
-              {/* Personas kods — individuals only */}
-              {!isCompany && (
-                <div className="space-y-1">
-                  <Input
-                    placeholder="Personas kods (piem. 010180-12345)"
-                    value={personalCode}
-                    onChange={(e) => setPersonalCode(e.target.value)}
-                    autoComplete="off"
-                    maxLength={12}
-                  />
-                  <p className="text-xs text-gray-400 pl-1">
-                    Nepieciešams atkritumu pārvadāšanas dokumentiem
-                  </p>
-                </div>
-              )}
-
-              {/* Company fields */}
-              {isCompany && (
-                <div className="space-y-2">
-                  {/* Reg number + UR lookup */}
-                  <div className="relative">
-                    <Input
-                      placeholder="Reģistrācijas numurs (piem. 40003009497)"
-                      value={regNumber}
-                      onChange={(e) => {
-                        setRegNumber(e.target.value);
-                        setUrResult(null);
-                        setCompanyNameLocked(false);
-                      }}
-                      maxLength={12}
-                      className="pr-9"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      {urLooking ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Search className="size-4" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* UR lookup feedback */}
-                  {urError && <p className="text-xs pl-1 text-red-500">{urError}</p>}
-                  {!urError && urResult && (
-                    <p
-                      className={`text-xs pl-1 ${urResult.found ? 'text-green-600' : 'text-amber-600'}`}
-                    >
-                      {urResult.found
-                        ? `✓ ${urResult.name}${urResult.status ? ` · ${urResult.status}` : ''}`
-                        : 'Nav atrasts Uzņēmumu Reģistrā — pārbaudiet numuru'}
-                    </p>
-                  )}
-
-                  {/* Company name — read-only when filled from UR */}
-                  <Input
-                    placeholder="Uzņēmuma nosaukums"
-                    value={companyName}
-                    onChange={(e) => !companyNameLocked && setCompanyName(e.target.value)}
-                    readOnly={companyNameLocked}
-                    autoComplete="organization"
-                    className={companyNameLocked ? 'bg-gray-50 text-gray-600 cursor-default' : ''}
-                  />
-                  {companyNameLocked && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCompanyNameLocked(false);
-                      }}
-                      className="text-xs text-gray-400 hover:text-gray-600 pl-1 underline"
-                    >
-                      Labot manuāli
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Contact */}
               <Input
                 type="email"
                 placeholder="E-pasts"
@@ -609,7 +416,7 @@ export function WebWizardAuthGate({
                 autoComplete="tel"
               />
 
-              {/* Password — optional */}
+              {/* Password */}
               <div className="space-y-1">
                 <div className="relative">
                   <Input
@@ -679,65 +486,6 @@ export function WebWizardAuthGate({
                 {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
                 {password ? 'Izveidot kontu un pasūtīt' : 'Turpināt bez paroles'}
               </Button>
-            </div>
-          )}
-
-          {/* ── LOGIN ── */}
-          {mode === 'login' && (
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setMode('choice');
-                  setError('');
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700 mb-1"
-              >
-                ← Atpakaļ
-              </button>
-              <h2 className="text-xl font-bold text-gray-900">Ieiet</h2>
-
-              <Input
-                type="email"
-                placeholder="E-pasts"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                autoComplete="email"
-              />
-              <div className="relative">
-                <Input
-                  type={showLoginPw ? 'text' : 'password'}
-                  placeholder="Parole"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  autoComplete="current-password"
-                  className="pr-10"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleLogin();
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowLoginPw(!showLoginPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  tabIndex={-1}
-                >
-                  {showLoginPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
-
-              {error && <p className="text-sm text-red-600">{error}</p>}
-
-              <Button onClick={handleLogin} disabled={loading} className="w-full rounded-xl">
-                {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                Ieiet un pasūtīt
-              </Button>
-
-              <a
-                href="/forgot-password"
-                className="block text-center text-sm text-gray-500 hover:text-gray-700 underline pt-1"
-              >
-                Aizmirsu paroli
-              </a>
             </div>
           )}
         </div>

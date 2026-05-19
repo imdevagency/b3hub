@@ -200,22 +200,6 @@ export default function TransporterDashboardPage() {
       icon: Car,
       href: '/dashboard/fleet-management',
     },
-    ...(user.canSkipHire
-      ? [
-          {
-            label: 'Konteineru Flote',
-            description: 'Pārvaldi konteinerus un nomas pasūtījumus',
-            icon: Package,
-            href: '/dashboard/containers/fleet',
-          },
-          {
-            label: 'Nesēja Iestatījumi',
-            description: 'Cenas, zonas un pieejamība',
-            icon: Settings,
-            href: '/dashboard/transporter/settings',
-          },
-        ]
-      : []),
     {
       label: 'Dokumenti',
       description: 'CMR, atskaites un rēķini',
@@ -256,22 +240,6 @@ export default function TransporterDashboardPage() {
       icon: FolderOpen,
       href: '/dashboard/documents',
     },
-    ...(user.canSkipHire
-      ? [
-          {
-            label: 'Konteineru Flote',
-            description: 'Pārvaldi konteinerus un nomas pasūtījumus',
-            icon: Package,
-            href: '/dashboard/containers/fleet',
-          },
-          {
-            label: 'Nesēja Iestatījumi',
-            description: 'Cenas, zonas un pieejamība',
-            icon: Settings,
-            href: '/dashboard/transporter/settings',
-          },
-        ]
-      : []),
   ];
 
   const actions = isDispatcher ? dispatcherActions : driverActions;

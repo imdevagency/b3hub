@@ -33,6 +33,12 @@ const WASTE_TYPE_LABELS: Record<WasteType, string> = {
   SOIL: 'Zeme',
   MIXED: 'Jaukti atkritumi',
   HAZARDOUS: 'Bīstamie atkritumi',
+  ASPHALT: 'Asfalta lauskas',
+  GREEN_WASTE: 'Zaļie atkritumi',
+  WEEE: 'Elektroatkritumi',
+  OIL_WASTE: 'Eļļas atkritumi',
+  TIRES: 'Riepas',
+  PACKAGING_WASTE: 'Iepakojuma atkritumi',
 };
 
 const WASTE_TYPE_COLORS: Record<WasteType, string> = {
@@ -44,6 +50,12 @@ const WASTE_TYPE_COLORS: Record<WasteType, string> = {
   SOIL: '#78350f',
   MIXED: '#6b7280',
   HAZARDOUS: '#b91c1c',
+  ASPHALT: '#4b5563',
+  GREEN_WASTE: '#15803d',
+  WEEE: '#1d4ed8',
+  OIL_WASTE: '#92400e',
+  TIRES: '#374151',
+  PACKAGING_WASTE: '#0891b2',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

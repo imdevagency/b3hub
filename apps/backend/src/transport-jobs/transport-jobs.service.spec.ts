@@ -111,6 +111,8 @@ describe('TransportJobsService', () => {
 
   const orders = {} as any;
 
+  const maps = {} as any;
+
   const service = new TransportJobsService(
     prisma,
     notifications,
@@ -119,6 +121,7 @@ describe('TransportJobsService', () => {
     email,
     payments,
     orders,
+    maps,
   );
 
   beforeEach(() => {

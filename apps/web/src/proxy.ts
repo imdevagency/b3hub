@@ -94,8 +94,8 @@ export default function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Only protect /dashboard/** routes
-  if (!pathname.startsWith('/dashboard')) {
+  // Protect /dashboard/** and /order/** routes (B2B only — no guest access)
+  if (!pathname.startsWith('/dashboard') && !pathname.startsWith('/order')) {
     return NextResponse.next();
   }
 

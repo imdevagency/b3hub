@@ -136,13 +136,13 @@ export default function DriverHomeScreen() {
     ]);
   }, [token]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (availableJobs && availableJobs.length > 0) {
-      const validJobs = availableJobs.filter(j => j.pickupLat && j.pickupLng);
+      const validJobs = availableJobs.filter((j) => j.pickupLat && j.pickupLng);
       if (validJobs.length > 0) {
         // Simple zoom to first job's area for better UX testing
         cameraRef.current?.setCamera({
-          centerCoordinate: [validJobs[0].pickupLng, validJobs[0].pickupLat],
+          centerCoordinate: [validJobs[0].pickupLng as number, validJobs[0].pickupLat as number],
           zoomLevel: 11,
           animationDuration: 1000,
         });
@@ -261,13 +261,13 @@ export default function DriverHomeScreen() {
               .filter((j) => j.pickupLat != null && j.pickupLng != null)
               .map((j) => (
                 <PinLayer
-                    key={j.id}
-                    id={j.id}
-                    coordinate={{ lat: j.pickupLat!, lng: j.pickupLng! }}
-                    type="elegant-pickup"
-                    label={`€${j.rate}`}
-                    subtitle={j.pickupCity}
-                  />
+                  key={j.id}
+                  id={j.id}
+                  coordinate={{ lat: j.pickupLat!, lng: j.pickupLng! }}
+                  type="elegant-pickup"
+                  label={`€${j.rate}`}
+                  subtitle={j.pickupCity}
+                />
               ))}
         </BaseMap>
       </View>

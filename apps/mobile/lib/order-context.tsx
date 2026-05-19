@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { SkipHireOrder, SkipWasteCategory, SkipSize } from './api';
+// These types were removed from the API; defined locally to preserve component shape
+type SkipHireOrder = Record<string, unknown>;
+type SkipWasteCategory = string;
+type SkipSize = string;
 
 export interface WizardState {
   location: string;

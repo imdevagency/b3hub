@@ -24,7 +24,7 @@ import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { createToiletCabinOrder } from '@/lib/api/toilet-cabins';
@@ -228,15 +228,6 @@ export function ToiletCabinWizard({ mode }: Props) {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleGuestContact(contact: GuestContactInfo) {
-    setShowAuthGate(false);
-    setContactName(contact.name);
-    setContactPhone(contact.phone);
-    if (contact.email) setContactEmail(contact.email);
-    // No token for guest path — submit without auth
-    await submit('');
   }
 
   function handleAuthenticated(authUser: User, tok: string) {
@@ -730,10 +721,7 @@ export function ToiletCabinWizard({ mode }: Props) {
         <WebWizardAuthGate
           open={showAuthGate}
           onAuthenticated={handleAuthenticated}
-          onGuestContact={handleGuestContact}
           onDismiss={() => setShowAuthGate(false)}
-          prefilledName={contactName}
-          prefilledPhone={contactPhone}
         />
       </>
     );

@@ -132,16 +132,16 @@ export const rentalsApi = {
     apiFetch('/rentals', {
       method: 'POST',
       body: JSON.stringify(payload),
-      token: token ?? undefined,
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
     }),
 
   /** Buyer: list own rental orders, optionally filtered by serviceType */
   myOrders: (token: string, serviceType?: RentalServiceType): Promise<RentalOrder[]> =>
-    apiFetch(`/rentals/my${serviceType ? `?serviceType=${serviceType}` : ''}`, { token }),
+    apiFetch(`/rentals/my${serviceType ? `?serviceType=${serviceType}` : ''}`, { headers: { Authorization: `Bearer ${token}` } }),
 
   /** Carrier/driver: list assigned rental orders */
   carrierOrders: (token: string, serviceType?: RentalServiceType): Promise<RentalOrder[]> =>
-    apiFetch(`/rentals/carrier${serviceType ? `?serviceType=${serviceType}` : ''}`, { token }),
+    apiFetch(`/rentals/carrier${serviceType ? `?serviceType=${serviceType}` : ''}`, { headers: { Authorization: `Bearer ${token}` } }),
 
   /** Public tracking by token — no auth required */
   track: (trackingToken: string): Promise<RentalOrder> =>
@@ -149,13 +149,13 @@ export const rentalsApi = {
 
   /** Get one order */
   findOne: (id: string, token: string): Promise<RentalOrder> =>
-    apiFetch(`/rentals/${id}`, { token }),
+    apiFetch(`/rentals/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
 
   /** Carrier: update order status */
   updateStatus: (id: string, status: RentalOrderStatus, token: string): Promise<RentalOrder> =>
     apiFetch(`/rentals/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
-      token,
+      headers: { Authorization: `Bearer ${token}` },
     }),
 };

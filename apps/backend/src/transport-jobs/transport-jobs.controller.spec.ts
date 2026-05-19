@@ -15,6 +15,7 @@ function makeUser(overrides: Partial<RequestingUser> = {}): RequestingUser {
     canSell: false,
     canTransport: true,
     canSkipHire: false,
+    canRent: false,
     canRecycle: false,
     companyId: 'c1',
     companyRole: 'MEMBER',

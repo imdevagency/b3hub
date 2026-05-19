@@ -41,9 +41,7 @@ import {
   ShieldCheck,
   Star,
   Trash2,
-  Toilet,
   Truck,
-  Forklift,
   Users,
   Wallet,
   Wrench,
@@ -839,18 +837,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Link href="/dashboard/admin/documentation">
                     <FileQuestion className="size-4 shrink-0" />
                     <span>Dokumentācija</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="Skip noma (admin)"
-                  isActive={isRouteActive('/dashboard/admin/skip-hire')}
-                >
-                  <Link href="/dashboard/admin/skip-hire">
-                    <Box className="size-4 shrink-0" />
-                    <span>Skip Noma</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

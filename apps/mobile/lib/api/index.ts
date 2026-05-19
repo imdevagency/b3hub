@@ -20,8 +20,6 @@ export * from './auth';
 
 export * from './orders';
 
-export * from './skip-hire';
-
 export * from './transport';
 
 export * from './materials';
@@ -56,8 +54,6 @@ export * from './analytics';
 
 export * from './recycler';
 
-export * from './toilet-cabins';
-
 export * from './rentals';
 
 export * from './fuel';
@@ -75,8 +71,6 @@ export { apiFetch, ApiError } from './common';
 import { authApi } from './auth';
 
 import { ordersApi } from './orders';
-
-import { skipHireApi } from './skip-hire';
 
 import { transportApi } from './transport';
 
@@ -110,8 +104,6 @@ import { guestOrdersApi } from './guest-orders';
 
 import { analyticsApi } from './analytics';
 
-import { toiletCabinsApi } from './toilet-cabins';
-
 import { rentalsApi } from './rentals';
 
 import { fuelApi } from './fuel';
@@ -141,12 +133,6 @@ export const api = {
   // ── Orders ────────────────────────────────────────────────────────────
 
   ...ordersApi,
-
-
-
-  // ── Skip-hire ─────────────────────────────────────────────────────────
-
-  ...skipHireApi,
 
 
 
@@ -224,10 +210,6 @@ export const api = {
   // ── Analytics ────────────────────────────────────────────────────────
 
   analytics: analyticsApi,
-  // ── Toilet cabin rental ─────────────────────────────────────────────
-
-  ...toiletCabinsApi,
-
   // ── Generic rental services (scaffolding, generators, fencing, etc.) ─
 
   rentals: rentalsApi,

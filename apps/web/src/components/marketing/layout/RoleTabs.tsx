@@ -5,16 +5,16 @@ import { HardHat, Truck, Pickaxe, Recycle, Check, ArrowRight } from 'lucide-reac
 import { CTAButton } from '@/components/marketing/ui/cta-button';
 import Link from 'next/link';
 
-type Role = 'constructor' | 'driver' | 'supplier' | 'recycler';
+type Role = 'constructor' | 'driver' | 'supplier' | 'disposer';
 
 export function RoleTabs() {
   const [activeRole, setActiveRole] = useState<Role>('constructor');
 
   const roles = [
-    { id: 'constructor', label: 'Būvnieks', icon: HardHat },
-    { id: 'driver', label: 'Šoferis', icon: Truck },
+    { id: 'constructor', label: 'Kontraktors', icon: HardHat },
+    { id: 'driver', label: 'Pārvadātājs', icon: Truck },
     { id: 'supplier', label: 'Piegādātājs', icon: Pickaxe },
-    { id: 'recycler', label: 'Pārstrādātājs', icon: Recycle },
+    { id: 'disposer', label: 'Utilizētājs', icon: Recycle },
   ] as const;
 
   return (
@@ -164,21 +164,21 @@ export function RoleTabs() {
           </div>
         )}
 
-        {/* Recycler */}
-        {activeRole === 'recycler' && (
+        {/* Disposer */}
+        {activeRole === 'disposer' && (
           <div className="bg-secondary/30 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row gap-12 items-start animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex-1 flex flex-col gap-6 max-w-2xl text-left">
               <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">
-                Būvgružu un atkritumu pārstrādes uzņēmums
+                Izgāztuve, poligons vai pārstrādes uzņēmums
               </p>
               <h3 className="text-4xl md:text-5xl font-medium tracking-tight leading-tight">
                 Pieņem būvgružus.
                 <br />
-                Izstādi cenas. Saņem pasūtījumus.
+                Digitāli un bez zvaniem.
               </h3>
               <ul className="flex flex-col gap-4">
                 {[
-                  'Tiešsaistes rezervācija — klienti pierakstās paši bez zvaniem',
+                  'Profesionāli pasūtījumi — klienti atvestī pasūta online, ne pa telefonu',
                   'Automātiskie pieņemšanas akti un nodošanas sertifikāti',
                   'Svara uzskaite un atkritumu žurnāls digitāli',
                 ].map((f) => (

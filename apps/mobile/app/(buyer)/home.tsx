@@ -3,22 +3,19 @@ import { View, Text, TouchableOpacity, Animated, ScrollView, RefreshControl } fr
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { ApiOrder, SkipHireOrder, ApiTransportJob, ApiProject } from '@/lib/api';
+import type { ApiOrder, ApiTransportJob, ApiProject } from '@/lib/api';
 import {
   HardHat,
   Trash2,
   Truck,
-  Package,
   ChevronRight,
   AlertCircle,
   ArrowRight,
   MailCheck,
-  Building2,
   FolderOpen,
   Wrench,
   Search,
   RefreshCcw,
-  Forklift,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -60,7 +57,6 @@ const STATUS_DOT: Record<string, string> = {
   DELIVERING: '#22c55e',
 };
 
-const SKIP_ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
 const TJ_ACTIVE_STATUSES = new Set([
   'ACCEPTED',
   'EN_ROUTE_PICKUP',
@@ -74,12 +70,8 @@ const TJ_ACTIVE_STATUSES = new Set([
 
 const SERVICES = [
   { id: 'materials', icon: HardHat, label: 'Materiāli', route: '/(buyer)/catalog' },
-  { id: 'transport', icon: Truck, label: 'Transports', route: '/transport' },
-  { id: 'container', icon: Package, label: 'Konteineri', route: '/skip-hire' },
   { id: 'disposal', icon: Trash2, label: 'Utilizācija', route: '/disposal' },
-  { id: 'scrap-buyback', icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
-  { id: 'toilet-cabin', icon: Building2, label: 'Kabīnes', route: '/toilet-cabin' },
-  { id: 'equipment', icon: Forklift, label: 'Tehnika', route: '/(buyer)/equipment' },
+  { id: 'transport', icon: Truck, label: 'Transports', route: '/transport' },
 ];
 
 export default function HomeScreen() {
@@ -88,7 +80,6 @@ export default function HomeScreen() {
   const { setConfig } = useHeaderConfig();
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
-  const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
   const [activeProjects, setActiveProjects] = useState<ApiProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +92,6 @@ export default function HomeScreen() {
   useEffect(() => {
     const hasActive =
       orders.some((o) => ACTIVE_STATUSES.has(o.status)) ||
-      skipOrders.some((o) => SKIP_ACTIVE_STATUSES.has(o.status)) ||
       transportOrders.some((o) => TJ_ACTIVE_STATUSES.has(o.status));
     if (!hasActive) return;
     const loop = Animated.loop(
@@ -112,7 +102,7 @@ export default function HomeScreen() {
     );
     loop.start();
     return () => loop.stop();
-  }, [orders, skipOrders, transportOrders]);
+  }, [orders, transportOrders]);
 
   const loadData = useCallback(
     (isRefresh = false) => {
@@ -123,13 +113,11 @@ export default function HomeScreen() {
           toast.error('Neizdevās ielādēt pasūtījumus');
           return [] as ApiOrder[];
         }),
-        api.skipHire.myOrders(token).catch(() => [] as SkipHireOrder[]),
         api.transportJobs.myRequests(token).catch(() => [] as ApiTransportJob[]),
         api.projects.getAll(token).catch(() => [] as ApiProject[]),
       ])
-        .then(([mats, skips, reqs, projs]) => {
+        .then(([mats, reqs, projs]) => {
           setOrders(mats as ApiOrder[]);
-          setSkipOrders(skips as SkipHireOrder[]);
           setTransportOrders(reqs as ApiTransportJob[]);
           setActiveProjects(
             (projs as ApiProject[]).filter((p) => p.status === 'ACTIVE').slice(0, 5),
@@ -169,29 +157,6 @@ export default function HomeScreen() {
         kind: trackingJob ? 'transport' : 'mat',
       };
     }
-    const skip = skipOrders.find((o) => SKIP_ACTIVE_STATUSES.has(o.status));
-    if (skip) {
-      return {
-        id: skip.id,
-        num: `#${skip.orderNumber}`,
-        sub: skip.location ?? '—',
-        status:
-          (
-            {
-              PENDING: 'Gaida apstiprinājumu',
-              CONFIRMED: 'Apstiprināts',
-              SCHEDULED: 'Ieplānots',
-              IN_TRANSIT: 'Ceļā',
-              DELIVERED: 'Piegādāts',
-              COLLECTED: 'Savākts',
-              COMPLETED: 'Pabeigts',
-              CANCELLED: 'Atcelts',
-            } as Record<string, string>
-          )[skip.status] ?? skip.status,
-        dotColor: '#f59e0b',
-        kind: 'skip',
-      };
-    }
     const tj = transportOrders.find((o) => TJ_ACTIVE_STATUSES.has(o.status));
     if (tj) {
       return {
@@ -214,14 +179,13 @@ export default function HomeScreen() {
       };
     }
     return null;
-  }, [orders, skipOrders, transportOrders]);
+  }, [orders, transportOrders]);
 
   const activeCount = useMemo(
     () =>
       orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length +
-      skipOrders.filter((o) => SKIP_ACTIVE_STATUSES.has(o.status)).length +
       transportOrders.filter((o) => TJ_ACTIVE_STATUSES.has(o.status)).length,
-    [orders, skipOrders, transportOrders],
+    [orders, transportOrders],
   );
 
   // Unified "order again" items — material, skip hire, and transport
@@ -256,20 +220,6 @@ export default function HomeScreen() {
         });
       }
     }
-    for (const o of skipOrders) {
-      if (o.status === 'COMPLETED') {
-        items.push({
-          key: o.id,
-          label: 'Konteiners',
-          sub: o.location ?? '—',
-          kind: 'skip',
-          onPress: () => {
-            haptics.light();
-            router.push('/(wizards)/skip-hire' as never);
-          },
-        });
-      }
-    }
     for (const o of transportOrders) {
       if (o.status === 'DELIVERED') {
         items.push({
@@ -285,7 +235,7 @@ export default function HomeScreen() {
       }
     }
     return items.slice(0, 4);
-  }, [orders, skipOrders, transportOrders, router]);
+  }, [orders, transportOrders, router]);
 
   return (
     <ScreenContainer bg="#ffffff" topBg="#ffffff" topInset={0} noAnimation>
@@ -432,11 +382,9 @@ export default function HomeScreen() {
               haptics.light();
               if (activeCount > 1) return router.push('/(buyer)/orders');
               const route =
-                activeItem.kind === 'skip'
-                  ? `/(buyer)/skip-order/${activeItem.id}`
-                  : activeItem.kind === 'transport'
-                    ? `/(buyer)/transport-job/${activeItem.id}`
-                    : `/(buyer)/order/${activeItem.id}`;
+                activeItem.kind === 'transport'
+                  ? `/(buyer)/transport-job/${activeItem.id}`
+                  : `/(buyer)/order/${activeItem.id}`;
               router.push(route);
             }}
           >

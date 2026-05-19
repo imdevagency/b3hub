@@ -6,7 +6,15 @@
 
 import { CheckCircle2, MapPin, Trash2, Package, CalendarDays, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import type { SkipWasteCategory, SkipSize } from '@/lib/api';
+
+type SkipWasteCategory =
+  | 'MIXED'
+  | 'GREEN_GARDEN'
+  | 'CONCRETE_RUBBLE'
+  | 'WOOD'
+  | 'METAL_SCRAP'
+  | 'ELECTRONICS_WEEE';
+type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
 
 const WASTE_LABELS: Record<SkipWasteCategory, string> = {
   MIXED: 'Jaukti Atkritumi',

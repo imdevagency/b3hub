@@ -12,7 +12,6 @@ const navItems = [
   { label: 'Būvniekiem', href: '/buvniekiem' },
   { label: 'Pārvadātājiem', href: '/parvadatajiem' },
   { label: 'Karjeriem', href: '/karjeriem' },
-  { label: 'Cenas', href: '/pricing' },
 ];
 
 export function Navbar() {

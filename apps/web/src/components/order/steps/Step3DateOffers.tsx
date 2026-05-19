@@ -10,7 +10,26 @@ import Image from 'next/image';
 import { CheckCircle2, Loader2, Package, Star, Truck, X } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { getSkipHireQuotes, mapSkipSize, type SkipHireQuote } from '@/lib/api';
+
+// Skip hire API removed from scope — stub types and functions locally
+interface SkipHireQuote {
+  carrierId: string;
+  carrierName: string;
+  carrierLogo?: string;
+  carrierRating: number | null;
+  price: number;
+  currency: string;
+}
+function mapSkipSize(s: string): string {
+  return s;
+}
+async function getSkipHireQuotes(
+  _size: string,
+  _location: string,
+  _date: string,
+): Promise<SkipHireQuote[]> {
+  return [];
+}
 import { Calendar } from '@/components/ui/calendar';
 
 // ── Offer type ────────────────────────────────────────────────────────────────

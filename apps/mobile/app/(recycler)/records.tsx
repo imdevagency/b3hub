@@ -131,7 +131,7 @@ export default function RecyclerRecordsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setConfig({ title: 'Atkritumu ieraksti' });
+      setConfig({});
       load();
       return () => setConfig(null);
     }, [load, setConfig]),

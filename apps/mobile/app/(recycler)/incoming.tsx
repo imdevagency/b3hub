@@ -147,7 +147,7 @@ export default function RecyclerIncomingScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setConfig({ title: 'Ienākošie' });
+      setConfig({});
       load();
       return () => setConfig(null);
     }, [load, setConfig]),

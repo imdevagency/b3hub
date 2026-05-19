@@ -70,12 +70,6 @@ const TYPE_META: Record<
     iconColor: '#6b7280',
     iconBg: '#f9fafb',
   },
-  WASTE_TRANSPORT_NOTE: {
-    label: 'Pārvadājuma pavadzīme',
-    icon: ScrollText,
-    iconColor: '#7c3aed',
-    iconBg: '#f5f3ff',
-  },
   CMR_NOTE: { label: 'CMR', icon: ScrollText, iconColor: '#6b7280', iconBg: '#f9fafb' },
   CONTRACT: { label: 'Līgums', icon: Handshake, iconColor: '#7c3aed', iconBg: '#f5f3ff' },
   OTHER: { label: 'Cits', icon: FileText, iconColor: '#6b7280', iconBg: '#f3f4f6' },

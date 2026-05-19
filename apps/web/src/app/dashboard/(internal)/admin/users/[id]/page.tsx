@@ -13,12 +13,10 @@ import {
   CheckCircle2,
   XCircle,
   Building2,
-  ShieldCheck,
   Truck,
   Package,
   Recycle,
   ExternalLink,
-  Forklift,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -113,10 +111,7 @@ export default function AdminUserDetailPage() {
     load();
   }, [load]);
 
-  async function toggle(
-    field: 'canSell' | 'canTransport' | 'canSkipHire' | 'canRecycle' | 'canRent',
-    value: boolean,
-  ) {
+  async function toggle(field: 'canSell' | 'canTransport' | 'canRecycle', value: boolean) {
     if (!token || !user) return;
     setSaving(true);
     try {
@@ -316,23 +311,6 @@ export default function AdminUserDetailPage() {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <Label htmlFor="canSkipHire" className="font-medium">
-                  Skip hire (canSkipHire)
-                </Label>
-                <p className="text-xs text-muted-foreground">Pārvalda skip hire floti</p>
-              </div>
-            </div>
-            <Switch
-              id="canSkipHire"
-              checked={user.canSkipHire}
-              onCheckedChange={(v) => toggle('canSkipHire', v)}
-              disabled={saving}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
               <Recycle className="h-4 w-4 text-muted-foreground" />
               <div>
                 <Label htmlFor="canRecycle" className="font-medium">
@@ -347,25 +325,6 @@ export default function AdminUserDetailPage() {
               id="canRecycle"
               checked={user.canRecycle ?? false}
               onCheckedChange={(v) => toggle('canRecycle', v)}
-              disabled={saving}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Forklift className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <Label htmlFor="canRent" className="font-medium">
-                  Tehnikas noma (canRent)
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Apstiprināts publicēt nomas sludinājumus un saņemt nomas pasūtījumus
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="canRent"
-              checked={user.canRent ?? false}
-              onCheckedChange={(v) => toggle('canRent', v)}
               disabled={saving}
             />
           </div>

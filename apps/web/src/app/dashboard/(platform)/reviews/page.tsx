@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getCompanyReviews, createReview } from '@/lib/api';
 import { getMyOrders, type ApiOrder } from '@/lib/api/orders';
-import { getMySkipHireOrders, type SkipHireOrder } from '@/lib/api/skip-hire';
 import { Star, User, Send, CheckCircle } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
@@ -75,10 +74,8 @@ const RATING_LABELS: Record<number, string> = {
 
 function BuyerReviewView({ token }: { token: string }) {
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
-  const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState('');
-  const [selectedSkipId, setSelectedSkipId] = useState('');
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -86,10 +83,9 @@ function BuyerReviewView({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getMyOrders(token), getMySkipHireOrders(token)])
-      .then(([mat, skip]) => {
+    getMyOrders(token)
+      .then((mat) => {
         setMatOrders(mat.filter((o) => o.status === 'DELIVERED'));
-        setSkipOrders(skip.filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED'));
       })
       .finally(() => setLoading(false));
   }, [token]);
@@ -99,7 +95,7 @@ function BuyerReviewView({ token }: { token: string }) {
       setError('Lūdzu izvēlieties vērtējumu');
       return;
     }
-    if (!selectedOrderId && !selectedSkipId) {
+    if (!selectedOrderId) {
       setError('Lūdzu izvēlieties pasūtījumu');
       return;
     }
@@ -111,7 +107,6 @@ function BuyerReviewView({ token }: { token: string }) {
           rating,
           comment: comment.trim() || undefined,
           orderId: selectedOrderId || undefined,
-          skipOrderId: selectedSkipId || undefined,
         },
         token,
       );
@@ -141,7 +136,6 @@ function BuyerReviewView({ token }: { token: string }) {
             setRating(0);
             setComment('');
             setSelectedOrderId('');
-            setSelectedSkipId('');
           }}
         >
           Atstāt vēl vienu atsauksmi
@@ -150,7 +144,7 @@ function BuyerReviewView({ token }: { token: string }) {
     );
   }
 
-  const noOrders = matOrders.length === 0 && skipOrders.length === 0;
+  const noOrders = matOrders.length === 0;
 
   if (noOrders) {
     return (
@@ -171,23 +165,15 @@ function BuyerReviewView({ token }: { token: string }) {
         <label className="text-sm font-medium">Pasūtījums</label>
         <select
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20"
-          value={selectedOrderId || selectedSkipId}
+          value={selectedOrderId}
           onChange={(e) => {
-            const v = e.target.value;
-            const isSkip = skipOrders.some((o) => o.id === v);
-            setSelectedSkipId(isSkip ? v : '');
-            setSelectedOrderId(isSkip ? '' : v);
+            setSelectedOrderId(e.target.value);
           }}
         >
           <option value="">— izvēlieties pasūtījumu —</option>
           {matOrders.map((o) => (
             <option key={o.id} value={o.id}>
               #{o.orderNumber} · Materiāli · {new Date(o.createdAt).toLocaleDateString('lv-LV')}
-            </option>
-          ))}
-          {skipOrders.map((o) => (
-            <option key={o.id} value={o.id}>
-              #{o.orderNumber} · Konteiners · {new Date(o.createdAt).toLocaleDateString('lv-LV')}
             </option>
           ))}
         </select>

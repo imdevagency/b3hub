@@ -282,7 +282,7 @@ export default function RentalWizardScreen() {
           <View style={styles.content}>
             <SectionLabel label="Piegādes adrese" />
             <AddressField
-              value={picked?.address ?? ''}
+              value={picked}
               onPick={(p) => setPicked(p)}
               placeholder="Meklēt adresi…"
             />

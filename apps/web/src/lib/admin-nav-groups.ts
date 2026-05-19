@@ -39,11 +39,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     tabs: [
       { label: 'Pasūtījumi', href: '/dashboard/admin/orders' },
       { label: 'Transporta darbi', href: '/dashboard/admin/jobs' },
-      { label: 'Skip Hire', href: '/dashboard/admin/skip-hire' },
-      { label: 'Tualetes kabīnes', href: '/dashboard/admin/toilet-cabins' },
       { label: 'RFQ', href: '/dashboard/admin/rfqs' },
       { label: 'Pamatlīgumi', href: '/dashboard/admin/framework-contracts' },
-      { label: 'Viesa', href: '/dashboard/admin/guest-orders' },
       { label: 'Dokumenti', href: '/dashboard/admin/documents' },
     ],
   },
@@ -78,7 +75,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     primaryHref: '/dashboard/admin/catalog',
     tabs: [
       { label: 'Katalogs', href: '/dashboard/admin/catalog' },
-      { label: 'Tirgus dzinējs', href: '/dashboard/admin/marketplace' },
       { label: 'Tirgus veselība', href: '/dashboard/admin/market-health' },
       { label: 'Tirgus atbilstība', href: '/dashboard/admin/market-match' },
       { label: 'Pieprasījuma trūkumi', href: '/dashboard/admin/demand-gaps' },

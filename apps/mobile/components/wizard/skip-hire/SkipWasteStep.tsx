@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Check } from 'lucide-react-native';
-import type { SkipWasteCategory } from '@/lib/api';
+import type { SkipWasteCategory } from '@b3hub/shared';
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { SKIP_WASTE_CATEGORIES, SKIP_WASTE_LABELS, WASTE_ICONS } from './_types';

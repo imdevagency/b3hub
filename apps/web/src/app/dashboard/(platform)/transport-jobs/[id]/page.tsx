@@ -160,11 +160,16 @@ export default function TransportJobDetailPage() {
   const statusCfg = STATUS_CFG[job.status] ?? { label: job.status, bg: '#f1f5f9', text: '#475569' };
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto p-4 lg:p-8">
+    <div className="w-full max-w-350 mx-auto p-4 lg:p-8">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="shrink-0 bg-slate-100 hover:bg-slate-200 border border-slate-200"
+          >
             <ArrowLeft className="h-5 w-5 text-slate-700" />
           </Button>
           <div>
@@ -196,22 +201,27 @@ export default function TransportJobDetailPage() {
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* ── Left Column: Details ── */}
         <div className="flex-1 space-y-6 min-w-0">
-          
           {/* Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Route Card */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 md:col-span-2">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Maršruts</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Maršruts
+              </h2>
               <div className="relative">
                 <div className="absolute left-2.5 top-3 bottom-4 w-0.5 bg-slate-200" />
-                
+
                 <div className="flex gap-4 relative z-10 mb-6">
                   <div className="w-5 h-5 mt-0.5 rounded-full bg-slate-900 ring-4 ring-white flex items-center justify-center shrink-0">
                     <div className="w-1.5 h-1.5 bg-white rounded-full" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Iekraušana</p>
-                    <p className="text-base font-semibold text-slate-900 mt-0.5">{job.pickupCity}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Iekraušana
+                    </p>
+                    <p className="text-base font-semibold text-slate-900 mt-0.5">
+                      {job.pickupCity}
+                    </p>
                     <p className="text-sm text-slate-600 mt-0.5">{job.pickupAddress}</p>
                     <div className="flex items-center gap-1.5 mt-2 bg-slate-50 w-fit px-2 py-1 rounded-md border border-slate-100">
                       <Clock className="h-3.5 w-3.5 text-slate-400" />
@@ -228,8 +238,12 @@ export default function TransportJobDetailPage() {
                     <CheckCircle2 className="h-3 w-3 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Piegāde</p>
-                    <p className="text-base font-semibold text-slate-900 mt-0.5">{job.deliveryCity}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Piegāde
+                    </p>
+                    <p className="text-base font-semibold text-slate-900 mt-0.5">
+                      {job.deliveryCity}
+                    </p>
                     <p className="text-sm text-slate-600 mt-0.5">{job.deliveryAddress}</p>
                     <div className="flex items-center gap-1.5 mt-2 bg-slate-50 w-fit px-2 py-1 rounded-md border border-slate-100">
                       <Clock className="h-3.5 w-3.5 text-slate-400" />
@@ -249,14 +263,19 @@ export default function TransportJobDetailPage() {
                 <User className="h-5 w-5 text-slate-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Vadītājs</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                  Vadītājs
+                </p>
                 {job.driver ? (
                   <>
                     <p className="text-sm font-bold text-slate-900 truncate">
                       {job.driver.firstName} {job.driver.lastName}
                     </p>
                     {job.driver.phone && (
-                      <a href={`tel:${job.driver.phone}`} className="text-xs font-medium text-blue-600 hover:text-blue-700 truncate mt-0.5 inline-block">
+                      <a
+                        href={`tel:${job.driver.phone}`}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-700 truncate mt-0.5 inline-block"
+                      >
                         {job.driver.phone}
                       </a>
                     )}
@@ -273,7 +292,9 @@ export default function TransportJobDetailPage() {
                 <Truck className="h-5 w-5 text-slate-500" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Auto</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                  Auto
+                </p>
                 {job.vehicle ? (
                   <>
                     <p className="text-sm font-bold text-slate-900 truncate">
@@ -291,24 +312,45 @@ export default function TransportJobDetailPage() {
 
             {/* Cargo specifics */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 md:col-span-2">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Kravas Detaļas</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
+                Kravas Detaļas
+              </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Pasūtījums</p>
-                  <p className="text-sm font-semibold text-slate-900">{job.order?.orderNumber ?? '—'}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Pasūtījums
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {job.order?.orderNumber ?? '—'}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Svars</p>
-                  <p className="text-sm font-semibold text-slate-900">{job.cargoWeight ? `${job.cargoWeight} t` : '—'}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Svars
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {job.cargoWeight ? `${job.cargoWeight} t` : '—'}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Attālums</p>
-                  <p className="text-sm font-semibold text-slate-900">{job.distanceKm ? `${job.distanceKm} km` : '—'}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Attālums
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {job.distanceKm ? `${job.distanceKm} km` : '—'}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Likme</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Likme
+                  </p>
                   <p className="text-sm font-bold text-slate-900">
-                    {job.rate && job.currency ? job.rate.toLocaleString('lv-LV', { style: 'currency', currency: job.currency }) : '—'}
+                    {job.rate && job.currency
+                      ? job.rate.toLocaleString('lv-LV', {
+                          style: 'currency',
+                          currency: job.currency,
+                        })
+                      : '—'}
                   </p>
                 </div>
               </div>
@@ -316,7 +358,9 @@ export default function TransportJobDetailPage() {
 
             {/* Status Timeline */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 md:col-span-2">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-5">Izpildes Gaita</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-5">
+                Izpildes Gaita
+              </h2>
               <div className="space-y-0">
                 {STATUS_STEPS.map((step, i) => {
                   const stepIdx = statusIndex(step.status);
@@ -340,7 +384,10 @@ export default function TransportJobDetailPage() {
                         </div>
                         {i < STATUS_STEPS.length - 1 && (
                           <div
-                            className={['w-0.5 flex-1 my-1', done ? 'bg-slate-900' : 'bg-slate-100'].join(' ')}
+                            className={[
+                              'w-0.5 flex-1 my-1',
+                              done ? 'bg-slate-900' : 'bg-slate-100',
+                            ].join(' ')}
                             style={{ minHeight: 24 }}
                           />
                         )}
@@ -355,7 +402,9 @@ export default function TransportJobDetailPage() {
                           {step.label}
                         </p>
                         {(done || active) && (
-                          <p className="text-[13px] font-medium text-slate-500 mt-0.5 leading-snug">{step.description}</p>
+                          <p className="text-[13px] font-medium text-slate-500 mt-0.5 leading-snug">
+                            {step.description}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -363,20 +412,21 @@ export default function TransportJobDetailPage() {
                 })}
               </div>
             </div>
-            
           </div>
         </div>
 
         {/* ── Right Column: Map ── */}
-        <div className="w-full lg:w-[480px] xl:w-[600px] shrink-0">
-          <div className="lg:sticky lg:top-6 bg-slate-100 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px] lg:h-[calc(100vh-120px)] min-h-[500px]">
+        <div className="w-full lg:w-120 xl:w-150 shrink-0">
+          <div className="lg:sticky lg:top-6 bg-slate-100 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-100 lg:h-[calc(100vh-120px)] min-h-125">
             <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0 z-10">
               <div className="flex items-center gap-2">
                 <div className="relative flex h-2.5 w-2.5">
                   {wsConnected && isLive && (
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   )}
-                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${wsConnected ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                  <span
+                    className={`relative inline-flex rounded-full h-2.5 w-2.5 ${wsConnected ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  ></span>
                 </div>
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
                   {wsConnected ? 'Live Karte' : 'Karte (Bezsaistē)'}
@@ -384,7 +434,10 @@ export default function TransportJobDetailPage() {
               </div>
               {livePos?.estimatedArrivalMin != null && (
                 <p className="text-xs font-medium text-slate-500">
-                  PTA: <span className="font-bold text-slate-900">~{livePos.estimatedArrivalMin} min</span>
+                  PTA:{' '}
+                  <span className="font-bold text-slate-900">
+                    ~{livePos.estimatedArrivalMin} min
+                  </span>
                 </p>
               )}
             </div>
@@ -403,7 +456,6 @@ export default function TransportJobDetailPage() {
             </div>
           </div>
         </div>
-        
       </div>
     </div>
   );

@@ -561,7 +561,7 @@ export default function OrderTrackingScreen() {
               {(order.status === 'COMPLETED' || order.status === 'CANCELLED') &&
                 order.items?.length > 0 && (
                   <Button
-                    variant="primary"
+                    variant="default"
                     size="lg"
                     className="flex-1"
                     onPress={() => {

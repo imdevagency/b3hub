@@ -14,12 +14,36 @@ import {
   CheckCircle,
 } from 'lucide-react-native';
 import { colors, radius, spacing } from '@/lib/theme';
-import {
-  b3Fields,
-  type ApiMobileB3Field,
-  type ApiPickupSlotMobile,
-  type ApiFieldInventoryItem,
-} from '@/lib/api';
+// These types were removed from the API; defined locally as stubs
+const b3Fields = {
+  list: async (): Promise<ApiMobileB3Field[]> => [],
+  getSlots: async (_fieldId: string, _date?: string): Promise<ApiPickupSlotMobile[]> => [],
+  getPublicInventory: async (_fieldId: string): Promise<ApiFieldInventoryItem[]> => [],
+};
+interface ApiMobileB3Field {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  services: string[];
+  slots: ApiPickupSlotMobile[];
+}
+interface ApiPickupSlotMobile {
+  id: string;
+  date: string;
+  timeWindow: string;
+  available: number;
+  slotStart: string;
+  slotEnd: string;
+}
+interface ApiFieldInventoryItem {
+  id: string;
+  name: string;
+  available: number;
+  stockQty: number;
+  unit: string;
+  pricePerUnit: number;
+}
 
 const SERVICE_LABELS: Record<string, string> = {
   MATERIAL_PICKUP: 'Paņemšana',
@@ -198,7 +222,7 @@ export function FieldPickerStep({
                       {field.address}, {field.city}
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                      {field.services.map((svc) => {
+                      {field.services.map((svc: string) => {
                         const Icon = SERVICE_ICONS[svc] ?? Package;
                         return (
                           <View

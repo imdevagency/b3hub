@@ -167,7 +167,13 @@ export function RentalOrderCard({
         ))}
         <View style={s.metaItem}>
           <Calendar size={14} color={colors.textMuted} />
-          <Text style={s.metaItemText}>{formatDateNumeric(order.deliveryDate)}</Text>
+          <Text style={s.metaItemText}>
+            {formatDateNumeric(
+              typeof order.deliveryDate === 'string'
+                ? order.deliveryDate
+                : (order.deliveryDate as Date).toISOString(),
+            )}
+          </Text>
         </View>
       </View>
 

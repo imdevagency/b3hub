@@ -31,7 +31,6 @@ import {
   Box,
   Search,
   X,
-  Package,
   FolderOpen,
   ChevronRight,
   MapPin,
@@ -39,7 +38,6 @@ import {
   Truck,
   Trash2,
   Wrench,
-  Building2,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
 import { useHeaderConfig } from '@/lib/header-context';
@@ -100,7 +98,7 @@ function CategoryCard({
   categoryLabels?: Record<string, string>;
   categoryDescriptions?: Record<string, string>;
 }) {
-  const meta = CATEGORY_META[category] ?? { bg: '#f3f4f6', accent: '#6b7280', icon: Package };
+  const meta = CATEGORY_META[category] ?? { bg: '#f3f4f6', accent: '#6b7280', icon: Box };
   const Icon = meta.icon;
   const description = categoryDescriptions?.[category] ?? '';
 
@@ -584,10 +582,7 @@ export default function CatalogScreen() {
                     {(
                       [
                         { icon: Truck, label: 'Transports', route: '/transport' },
-                        { icon: Package, label: 'Konteineri', route: '/skip-hire' },
                         { icon: Trash2, label: 'Utilizācija', route: '/disposal' },
-                        { icon: Wrench, label: 'Metāllūžņi', route: '/scrap-buyback' },
-                        { icon: Building2, label: 'Tualetes', route: '/toilet-cabin' },
                       ] as const
                     ).map((svc) => {
                       const Icon = svc.icon;

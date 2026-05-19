@@ -9,16 +9,7 @@
  * each card is just a Link; auth is handled downstream in the wizard.
  */
 import Link from 'next/link';
-import {
-  HardHat,
-  Lock,
-  Package,
-  Truck,
-  Building2,
-  Recycle,
-  FlameKindling,
-  Forklift,
-} from 'lucide-react';
+import { HardHat, Lock, Truck, Recycle, Pickaxe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ServiceDef {
@@ -36,70 +27,42 @@ const SERVICES: ServiceDef[] = [
     id: 'materials',
     href: '/order/materials',
     icon: HardHat,
-    title: 'Materiāli',
-    description: 'Smiltis, grants, šķembas, betons — piegāde tieši uz jūsu objektu.',
-    badge: 'Cena uzreiz',
-  },
-  {
-    id: 'skip-hire',
-    href: '/order/skip-hire',
-    icon: Package,
-    title: 'Konteineri',
+    title: 'Pirkt būvmateriālus',
     description:
-      'Skip, Big-Bag un konteinerus atkritumu savākšanai. Piegāde un savākšana iekļauta.',
-    badge: 'No €59',
+      'Piegādājiet betonu, granti, smiltis un citus materiālus uz jūsu objektu ātri, ērti un laicīgi.',
+    badge: 'Cena uzreiz',
   },
   {
     id: 'disposal',
     href: '/order/disposal',
     icon: Recycle,
-    title: 'Būvgružu izvešana',
+    title: 'Nodot būvgružus',
     description:
-      'Betons, ķieģeļi, koks, grunts, metāls, bīstamie — nodošana licencētā pieņemšanas punktā. Sertifikāts automātiski.',
+      'Nododiet būvgružus licencētā pieņemšanas punktā. Sertifikāts tiek izsniegts automātiski.',
     badge: 'Cena pēc svara',
-  },
-  {
-    id: 'toilet-cabin',
-    href: '/order/toilet-cabin',
-    icon: Building2,
-    title: 'Tualetes kabīnes',
-    description: 'Mobilās tualetes noma būvlaukumiem un pasākumiem. Piegāde un savākšana iekļauta.',
-    badge: 'No €84/ned.',
-  },
-  {
-    id: 'scrap-buyback',
-    href: '/order/scrap-buyback',
-    icon: FlameKindling,
-    title: 'Metāllūžņi',
-    description:
-      'Nododiet metāllūžņus oficiālos pieņemšanas punktos (Tolmets u.c.). Aktuālās cenas un ātra apmaksa.',
-  },
-  {
-    id: 'equipment',
-    href: '/order/equipment',
-    icon: Forklift,
-    title: 'Tehnika',
-    description: 'Ekskavatori, demperi, kompaktori, pacēlāji — noma ar piegādi uz objektu.',
-    badge: 'No €39/dienā',
   },
   {
     id: 'transport',
     href: '/order/transport',
     icon: Truck,
-    title: 'Transports',
-    description: 'Kravu pārvadāšana uzņēmumiem visā Latvijā. Nepieciešams uzņēmuma konts.',
+    title: 'Pasūtīt transportu',
+    description: 'Pasūtiet tik daudz pārvadājumu, cik nepieciešams — ātri un vienkārši.',
     badge: 'Tikai uzņēmumiem',
     badgeVariant: 'restricted',
+  },
+  {
+    id: 'seller',
+    href: '/karjeriem',
+    icon: Pickaxe,
+    title: 'Pārdot būvmateriālus',
+    description:
+      'Pārdodiet savus materiālus bez piepūles. Pasūtījumi, dokumenti un maksājumi — automātiski.',
   },
 ];
 
 const DASHBOARD_HREFS: Record<string, string> = {
   materials: '/dashboard/catalog',
-  'skip-hire': '/dashboard/order/skip-hire',
   disposal: '/dashboard/order/disposal',
-  'toilet-cabin': '/dashboard/order/toilet-cabin',
-  'scrap-buyback': '/dashboard/order/scrap-buyback',
-  equipment: '/dashboard/order/equipment',
   transport: '/dashboard/order/transport',
 };
 
@@ -113,14 +76,16 @@ interface Props {
 }
 
 export function OrderServiceGrid({ dashboard = false, className, addressQuery }: Props) {
-  const services = SERVICES.map((s) => {
+  const services = SERVICES.filter((s) =>
+    dashboard ? s.id === 'materials' || s.id === 'disposal' || s.id === 'transport' : true,
+  ).map((s) => {
     const base = dashboard ? (DASHBOARD_HREFS[s.id] ?? s.href) : s.href;
     const href = addressQuery ? `${base}?${addressQuery}` : base;
     return { ...s, href };
   });
 
   return (
-    <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6', className)}>
+    <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-6', className)}>
       {services.map((s) => {
         const Icon = s.icon;
         return (

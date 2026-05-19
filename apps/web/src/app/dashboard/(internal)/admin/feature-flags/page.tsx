@@ -43,11 +43,6 @@ const FLAG_GROUPS: FlagGroup[] = [
         description: 'Ļauj pasūtīt pārvadājumus (bez materiālu pirkšanas).',
       },
       {
-        key: 'feature.skipHire.enabled',
-        label: 'Skip noma',
-        description: 'Skip konteineru nomas modulis pircējiem un operatoriem.',
-      },
-      {
         key: 'feature.recycling.enabled',
         label: 'Utilizācija / Pieņemšana',
         description: 'Atkritumu un grunts utilizācijas plūsma recycler uzņēmumiem.',

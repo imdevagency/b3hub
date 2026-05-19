@@ -57,7 +57,7 @@ import { useAuth } from '@/lib/auth-context';
 import { makeIsRouteActive } from '@/lib/is-route-active';
 import { getAdminStats, getUnreadNotificationCount } from '@/lib/api';
 import { adminListSupportThreads } from '@/lib/api/support';
-import { adminGetExceptions, adminGetGuestOrders } from '@/lib/api/admin';
+import { adminGetExceptions } from '@/lib/api/admin';
 import { Badge } from '@/components/ui/badge';
 import {
   Sidebar,
@@ -100,7 +100,6 @@ type AdminBadges = {
   openExceptions: number;
   activeJobs: number;
   triageAlerts: number;
-  pendingGuestOrders: number;
 };
 
 // ─── Business unit definitions ────────────────────────────────────────────────
@@ -136,7 +135,6 @@ const B3HUB_NAV: NavSection[] = [
         label: 'Pasūtījumi',
         href: '/dashboard/admin/orders',
         icon: ShoppingBag,
-        badgeKey: 'pendingGuestOrders',
         groupPaths: ADMIN_NAV_GROUPS.find((g) => g.id === 'orders')?.tabs.map((t) => t.href),
       },
       {
@@ -288,10 +286,12 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     openExceptions: 0,
     activeJobs: 0,
     triageAlerts: 0,
-    pendingGuestOrders: 0,
   });
 
-  const isActive = React.useMemo(() => makeIsRouteActive(pathname, ['/dashboard/admin']), [pathname]);
+  const isActive = React.useMemo(
+    () => makeIsRouteActive(pathname, ['/dashboard/admin']),
+    [pathname],
+  );
 
   // Live badge refresh — only runs for Bilt scope (where badges are meaningful)
   React.useEffect(() => {
@@ -300,14 +300,12 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     let cancelled = false;
 
     const load = async () => {
-      const [statsRes, notifRes, supportRes, exceptionsRes, guestOrdersRes] =
-        await Promise.allSettled([
-          getAdminStats(token),
-          getUnreadNotificationCount(token),
-          adminListSupportThreads(token),
-          adminGetExceptions(token, 'OPEN'),
-          adminGetGuestOrders(token, 'PENDING'),
-        ]);
+      const [statsRes, notifRes, supportRes, exceptionsRes] = await Promise.allSettled([
+        getAdminStats(token),
+        getUnreadNotificationCount(token),
+        adminListSupportThreads(token),
+        adminGetExceptions(token, 'OPEN'),
+      ]);
 
       if (cancelled) return;
 
@@ -315,7 +313,6 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       const notif = notifRes.status === 'fulfilled' ? notifRes.value : null;
       const support = supportRes.status === 'fulfilled' ? supportRes.value : [];
       const exceptions = exceptionsRes.status === 'fulfilled' ? exceptionsRes.value : [];
-      const guestOrders = guestOrdersRes.status === 'fulfilled' ? guestOrdersRes.value : [];
 
       const d = Math.max(0, stats?.openDisputes ?? 0);
       const s = Math.max(0, support.filter((t) => t.status === 'OPEN').length);
@@ -328,7 +325,6 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         openExceptions: x,
         activeJobs: Math.max(0, stats?.activeJobs ?? 0),
         triageAlerts: d + s + x,
-        pendingGuestOrders: Math.max(0, guestOrders.length),
       });
     };
 

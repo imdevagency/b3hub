@@ -54,9 +54,8 @@ const DEFAULT_HOURS: Record<string, { open: string; close: string } | null> = {
 };
 
 export default function RegisterCenterScreen() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
-  const token = session?.access_token ?? '';
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
@@ -99,7 +98,7 @@ export default function RegisterCenterScreen() {
     }
     setSaving(true);
     try {
-      await createRecyclingCenter(token, {
+      await createRecyclingCenter(token!, {
         name: name.trim(),
         address: address.trim(),
         city: city.trim(),

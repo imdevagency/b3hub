@@ -7,7 +7,6 @@ import Link from 'next/link';
 const navigation = {
   product: [
     { name: 'Funkcijas', href: '#features' },
-    { name: 'Cenas', href: '#' },
     { name: 'Mobilā Lietotne', href: '#' },
   ],
   company: [

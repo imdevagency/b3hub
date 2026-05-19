@@ -17,9 +17,8 @@ import { colors } from '@/lib/theme';
 import { useRouter } from 'expo-router';
 
 export default function BillingSettingsScreen() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
-  const token = session?.access_token ?? '';
 
   const [ibanNumber, setIbanNumber] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('');
@@ -28,7 +27,7 @@ export default function BillingSettingsScreen() {
 
   useEffect(() => {
     if (!token) return;
-    api.company
+    api
       .getMyCompany(token)
       .then((company) => {
         setIbanNumber(company.ibanNumber ?? '');
@@ -55,7 +54,7 @@ export default function BillingSettingsScreen() {
     }
     setSaving(true);
     try {
-      await api.company.updateMyCompany(token, {
+      await api.updateMyCompany(token!, {
         ibanNumber: iban ?? '',
         ...(days !== undefined && { paymentTermsDays: days }),
       });

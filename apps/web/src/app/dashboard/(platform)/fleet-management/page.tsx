@@ -142,7 +142,7 @@ function VehicleRow({
           {status.label}
         </span>
 
-        <div className="flex items-center justify-end gap-1 w-[80px]">
+        <div className="flex items-center justify-end gap-1 w-20">
           {isReadOnly ? null : confirmingDelete ? (
             <div className="flex items-center gap-1">
               <Button
@@ -346,7 +346,7 @@ function VehiclesTab({ token, isReadOnly }: { token: string; isReadOnly: boolean
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          <div className="relative w-full sm:min-w-[280px]">
+          <div className="relative w-full sm:min-w-70">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               className="pl-10 h-11 rounded-full border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors focus-visible:ring-1 focus-visible:ring-black text-[15px]"

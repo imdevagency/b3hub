@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/select';
 import {
   createCartOrder,
-  createGuestOrder,
   createQuoteRequest,
   getMaterialOffers,
   type MaterialCategory,
@@ -43,7 +42,7 @@ import {
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
 import { MatStep3When } from '@/components/order/steps/MatStep3When';
-import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
@@ -466,7 +465,7 @@ export function MaterialOrderWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-  const [guestToken, setGuestToken] = useState('');
+
   const [rfqNumber, setRfqNumber] = useState('');
 
   const [authGateOpen, setAuthGateOpen] = useState(false);
@@ -519,24 +518,10 @@ export function MaterialOrderWizard({
   function requireAuth(action: (tok: string) => Promise<void>) {
     if (token) {
       action(token);
-    } else if (mode === 'public') {
-      handleGuestCheckout({
-        name: form.siteContactName.trim() || 'Klients',
-        phone: form.siteContactPhone.trim(),
-        email: form.contactEmail.trim() || undefined,
-      });
     } else {
-      // dashboard mode without token — fall back to the auth gate
       setPendingAction(() => action);
       setAuthGateOpen(true);
     }
-  }
-
-  /** Open the auth gate directly in login mode for users who already have an account. */
-  function openLoginGate(action: (tok: string) => Promise<void>) {
-    setAuthGateMode('login');
-    setPendingAction(() => action);
-    setAuthGateOpen(true);
   }
 
   function handleAuthSuccess(authUser: User, authToken: string) {
@@ -545,41 +530,6 @@ export function MaterialOrderWizard({
     if (pendingAction) {
       pendingAction(authToken);
       setPendingAction(null);
-    }
-  }
-
-  async function handleGuestCheckout(contact: GuestContactInfo) {
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      const guestRes = await createGuestOrder({
-        materialCategory: form.category,
-        materialName: form.materialName,
-        quantity: form.quantity,
-        unit: form.unit,
-        deliveryAddress: form.address,
-        deliveryCity: form.city || form.address.split(',').slice(-1)[0]?.trim() || '',
-        deliveryPostal: form.postal,
-        deliveryLat: form.lat,
-        deliveryLng: form.lng,
-        deliveryDate: form.asap ? undefined : form.deliveryDate || undefined,
-        deliveryWindow: form.asap
-          ? undefined
-          : form.deliveryWindow !== 'ANY'
-            ? form.deliveryWindow
-            : undefined,
-        contactName: contact.name,
-        contactPhone: contact.phone,
-        contactEmail: contact.email,
-        notes: [form.notes, form.driverNotes].filter(Boolean).join('\n') || undefined,
-      });
-      setOrderNumber(guestRes.orderNumber);
-      setGuestToken(guestRes.token);
-      setStep('order-confirmed');
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -1283,21 +1233,12 @@ export function MaterialOrderWizard({
             ) : null}
           </div>
           <div className="w-full space-y-3">
-            {guestToken ? (
-              <Button
-                onClick={() => router.push(`/pasutijums/${guestToken}`)}
-                className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
-              >
-                <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
-              </Button>
-            ) : (
-              <Button
-                onClick={() => router.push('/dashboard/orders')}
-                className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
-              >
-                <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
-              </Button>
-            )}
+            <Button
+              onClick={() => router.push('/dashboard/orders')}
+              className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
+            >
+              <ReceiptText className="size-4 mr-1.5" /> Skatīt pasūtījumus
+            </Button>
             <Button
               variant="outline"
               onClick={() => router.push(catalogHref)}
@@ -1321,7 +1262,7 @@ export function MaterialOrderWizard({
             {wizardContent}
           </div>
           {/* Right: map panel / material details */}
-          <div className="hidden lg:flex flex-1 items-center justify-center p-10 h-150 sticky top-28 rounded-3xl overflow-hidden ring-1 ring-border/40 shadow-xl bg-muted/10 relative">
+          <div className="hidden lg:flex flex-1 items-center justify-center p-10 h-150 sticky top-28 rounded-3xl overflow-hidden ring-1 ring-border/40 shadow-xl bg-muted/10">
             <div
               className={`absolute inset-0 bg-[#e5e3df] transition-opacity duration-300 ${step === 'where' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
@@ -1389,14 +1330,11 @@ export function MaterialOrderWizard({
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
-          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setAuthGateMode(undefined);
             setPendingAction(null);
           }}
-          prefilledName={form.siteContactName}
-          prefilledPhone={form.siteContactPhone}
           initialMode={authGateMode}
         />
       </>
@@ -1429,14 +1367,11 @@ export function MaterialOrderWizard({
       <WebWizardAuthGate
         open={authGateOpen}
         onAuthenticated={handleAuthSuccess}
-        onGuestContact={handleGuestCheckout}
         onDismiss={() => {
           setAuthGateOpen(false);
           setAuthGateMode(undefined);
           setPendingAction(null);
         }}
-        prefilledName={form.siteContactName}
-        prefilledPhone={form.siteContactPhone}
         initialMode={authGateMode}
       />
     </>

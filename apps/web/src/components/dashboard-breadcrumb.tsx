@@ -33,7 +33,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   projects: 'Projekti',
   'quote-requests': 'Cenu Pieprasījumi',
   'framework-contracts': 'Ietvarlīgumi',
-  'skip-hire': 'Konteineri',
   'recycling-centers': 'Utilizācijas Centri',
   'transport-jobs': 'Transporta Darbi',
   containers: 'Konteineri',
@@ -53,7 +52,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   open: 'Atvērtie',
   fleet2: 'Konteineru Flote',
   disposal: 'Atkritumi',
-  'skip-hire-order': 'Konteineru Pasūtījums',
 };
 
 function labelFor(segment: string): string {

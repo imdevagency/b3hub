@@ -9,13 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { fmtDate, fmtMoney } from '@/lib/format';
-import {
-  ORDER_STATUS,
-  JOB_STATUS,
-  SKIP_STATUS,
-  SKIP_SIZE_LABEL,
-  StatusBadgeHex,
-} from '@/lib/status-config';
+import { ORDER_STATUS, JOB_STATUS, StatusBadgeHex } from '@/lib/status-config';
 import { QuickStat } from '@/components/ui/quick-stat';
 import {
   confirmOrder,
@@ -35,15 +29,12 @@ import { useMode } from '@/lib/mode-context';
 import {
   ArrowRight,
   Download,
-  Link2,
   Package,
   Phone,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
   Star,
-  Trash2,
   Truck,
   User,
   X,
@@ -52,24 +43,6 @@ import {
 
 import { UNIT_SHORT } from '@b3hub/shared';
 import { useMaterialCatalogue } from '@/lib/use-material-catalogue';
-
-// ── Order-again helpers ───────────────────────────────────────────────────────
-
-function skipSizeToWizardId(size: string): string {
-  return size.toLowerCase(); // MINI→mini, MIDI→midi, BUILDERS→builders, LARGE→large
-}
-
-function wasteCategoryToWizardId(cat: string): string {
-  const map: Record<string, string> = {
-    MIXED: 'mixed',
-    GREEN_GARDEN: 'green',
-    CONCRETE_RUBBLE: 'rubble',
-    WOOD: 'wood',
-    METAL_SCRAP: 'metal',
-    ELECTRONICS_WEEE: 'electronics',
-  };
-  return map[cat] ?? 'mixed';
-}
 
 // ── Carrier history ───────────────────────────────────────────────────────────
 
@@ -818,17 +791,15 @@ const JOB_TYPE_LABELS: Record<string, string> = {
 
 function BuyerView({ token }: { token: string }) {
   const [tab, setTab] = useState<'skip' | 'material' | 'transport'>('skip');
-  const { skipOrders, matOrders, transportRequests, loading, reload } = useBuyerOrders(token);
+  const { matOrders, transportRequests, loading, reload } = useBuyerOrders(token);
   const router = useRouter();
 
-  const totalSpent =
-    skipOrders.reduce((s, o) => s + o.price, 0) + matOrders.reduce((s, o) => s + o.total, 0);
+  const totalSpent = matOrders.reduce((s, o) => s + o.total, 0);
 
   return (
     <div className="space-y-4">
       {/* QUICK STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-2 mt-4">
-        <QuickStat value={String(skipOrders.length)} label="Konteineri" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 py-2 mt-4">
         <QuickStat value={String(matOrders.length)} label="Materiāli" />
         <QuickStat value={String(transportRequests.length)} label="Transports" />
         <QuickStat value={fmtMoney(totalSpent)} label="Kopā iztērēts" />
@@ -838,13 +809,12 @@ function BuyerView({ token }: { token: string }) {
       <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
         <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit">
           {[
-            { key: 'skip', label: `Konteineri (${skipOrders.length})` },
             { key: 'material', label: `Materiāli (${matOrders.length})` },
             { key: 'transport', label: `Transports (${transportRequests.length})` },
           ].map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setTab(key as 'skip' | 'material' | 'transport')}
+              onClick={() => setTab(key as 'material' | 'transport')}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
                 tab === key
                   ? 'bg-gray-100 border border-gray-200 text-gray-900 font-semibold'
@@ -867,289 +837,161 @@ function BuyerView({ token }: { token: string }) {
 
       {loading ? (
         <div className="py-16 text-center text-muted-foreground text-sm">Ielādē...</div>
-      ) : tab === 'skip' ? (
-        /* Skip-hire table */
-        skipOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
-            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
-              <Trash2 className="h-10 w-10 text-muted-foreground/60" />
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-base font-bold text-foreground">Nav konteineru pasūtījumu</p>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Jums vēl nav neviena konteinera nomas pasūtījuma. Pasūtiet konteineru atkritumu
-                izvešanai.
-              </p>
-            </div>
-            <Link
-              href="/dashboard/order/skip-hire"
-              className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
-            >
-              <Trash2 className="h-4 w-4" />
-              Pasūtīt konteineru
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-              <span>{skipOrders.length} konteineri</span>
-            </div>
-            {skipOrders.map((o) => {
-              const st = SKIP_STATUS[o.status] ?? {
-                label: o.status,
-                bg: '#f3f4f6',
-                text: '#374151',
-              };
-              return (
-                <div
-                  key={o.id}
-                  className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
-                >
-                  {/* Header row */}
-                  <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
-                        #{o.orderNumber}
-                      </span>
-                      <span className="text-[13px] font-medium text-foreground">
-                        {fmtDate(o.createdAt)}
-                      </span>
-                    </div>
-                    <div
-                      className="inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
-                      style={{ backgroundColor: st.bg, color: st.text }}
-                    >
-                      {st.label}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                    {/* Skip Info */}
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-baseline justify-between mb-2">
-                        <h3 className="font-medium text-base">
-                          {SKIP_SIZE_LABEL[o.skipSize] ?? o.skipSize}
-                        </h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {o.wasteCategory.replace(/_/g, ' ').toLowerCase()}
-                      </p>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="flex-[1.5] mt-1 flex flex-col pt-0.5">
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="size-3 bg-emerald-500 rounded-full ring-4 ring-card z-10 shrink-0 transition-colors" />
-                        </div>
-                        <div className="flex-1 -mt-0.5">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">
-                            Adrese • {fmtDate(o.deliveryDate)}
-                          </p>
-                          <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1 pr-8">
-                            {o.location || '—'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Financials + Order again */}
-                    <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0 gap-3">
-                      <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
-                        <span className="text-sm text-muted-foreground sm:text-right">Cena</span>
-                        <div className="text-lg font-bold tabular-nums">
-                          €{o.price}{' '}
-                          <span className="text-sm font-normal text-muted-foreground">
-                            {o.currency}
-                          </span>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/dashboard/order/skip-hire?size=${skipSizeToWizardId(o.skipSize)}&waste=${wasteCategoryToWizardId(o.wasteCategory)}`}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background hover:bg-muted/60 px-3 py-2 text-xs font-semibold text-foreground transition-colors"
-                      >
-                        <RotateCcw className="size-3" />
-                        Pasūtīt vēlreiz
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )
-      ) : /* Material orders table */
-      matOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
-          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
-            <Package className="h-10 w-10 text-muted-foreground/60" />
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-base font-bold text-foreground">Nav materiālu pasūtījumu</p>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Jums vēl nav neviena materiālu pasūtījuma. Apskatiet piedāvājumus un pasūtiet
-              nepieciešamos materiālus.
-            </p>
-          </div>
-          <Link
-            href="/dashboard/catalog"
-            className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
-          >
-            <Search className="h-4 w-4" />
-            Meklēt materiālus
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-            <span>{matOrders.length} pasūtījumi</span>
-          </div>
-          {matOrders.map((o) => {
-            const st = ORDER_STATUS[o.status] ?? {
-              label: o.status,
-              bg: '#f3f4f6',
-              text: '#374151',
-            };
-            const item = o.items?.[0];
-            return (
+      ) : tab === 'material' ? (
+        <>
+          {/* Material orders table */}
+          {matOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-5 text-center bg-white border border-gray-200 rounded-xl">
+              <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
+                <Package className="h-10 w-10 text-muted-foreground/60" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-base font-bold text-foreground">Nav materiālu pasūtījumu</p>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Jums vēl nav neviena materiālu pasūtījuma. Apskatiet piedāvājumus un pasūtiet
+                  nepieciešamos materiālus.
+                </p>
+              </div>
               <Link
-                href={`/dashboard/orders/${o.id}`}
-                key={o.id}
-                className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
+                href="/dashboard/catalog"
+                className="mt-2 inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full px-6 py-3 text-sm transition-all"
               >
-                {/* Header row */}
-                <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
-                  <div className="flex flex-col gap-1">
-                    <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
-                      #{o.orderNumber}
-                    </span>
-                    <span className="text-[13px] font-medium text-foreground">
-                      {fmtDate(o.createdAt)}
-                    </span>
-                  </div>
-                  <div
-                    className="inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
-                    style={{ backgroundColor: st.bg, color: st.text }}
-                  >
-                    {st.label}
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                  {/* Material Info */}
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-baseline justify-between mb-2">
-                      <h3 className="font-medium text-base">{item?.material?.name ?? '—'}</h3>
-                      {item && (
-                        <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
-                          {item.quantity}{' '}
-                          {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Timeline */}
-                  <div className="flex-[1.5] mt-1 flex flex-col pt-0.5">
-                    <div className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="size-3 bg-emerald-500 rounded-full ring-4 ring-card z-10 shrink-0 transition-colors" />
-                      </div>
-                      <div className="flex-1 -mt-0.5">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">
-                          Adrese • {fmtDate(o.deliveryDate)}
-                        </p>
-                        <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1 pr-8">
-                          {o.deliveryAddress || o.deliveryCity || '—'}
-                        </p>
-                        {(() => {
-                          const driver = o.transportJobs?.find(
-                            (j) =>
-                              j.status === 'EN_ROUTE_DELIVERY' ||
-                              j.status === 'AT_DELIVERY' ||
-                              j.status === 'LOADED',
-                          )?.driver;
-                          if (!driver) return null;
-                          return (
-                            <div className="mt-3 flex items-center gap-1.5">
-                              <User className="size-3 text-blue-500 shrink-0" />
-                              <span className="text-xs text-blue-700 font-medium">
-                                {driver.firstName} {driver.lastName}
-                              </span>
-                              {driver.phone && (
-                                <button
-                                  type="button"
-                                  className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    window.location.href = `tel:${driver.phone}`;
-                                  }}
-                                >
-                                  <Phone className="size-3" />
-                                  Zvanīt
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Financials */}
-                  <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
-                    <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
-                      <span className="text-sm text-muted-foreground sm:text-right">Summa</span>
-                      <div className="text-lg font-bold tabular-nums">{fmtMoney(o.total)}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Linked skip order badge */}
-                {o.linkedSkipOrder && (
-                  <div className="mt-3 pt-3 border-t border-border/40">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        router.push(
-                          `/dashboard/order/skip-hire?linkedOrderId=${o.linkedSkipOrder!.id}`,
-                        );
-                      }}
-                    >
-                      <Link2 className="size-3" />
-                      Konteiners #{o.linkedSkipOrder.orderNumber} ·{' '}
-                      {SKIP_SIZE_LABEL[o.linkedSkipOrder.skipSize] ?? o.linkedSkipOrder.skipSize}
-                    </button>
-                  </div>
-                )}
-
-                {/* Post-delivery review nudge */}
-                {o.status === 'DELIVERED' && (
-                  <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground">Kā pagāja piegāde?</p>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        router.push('/dashboard/reviews');
-                      }}
-                    >
-                      <Star className="size-3 fill-amber-500 text-amber-500" />
-                      Atstāt atsauksmi
-                    </button>
-                  </div>
-                )}
+                <Search className="h-4 w-4" />
+                Meklēt materiālus
               </Link>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+                <span>{matOrders.length} pasūtījumi</span>
+              </div>
+              {matOrders.map((o) => {
+                const st = ORDER_STATUS[o.status] ?? {
+                  label: o.status,
+                  bg: '#f3f4f6',
+                  text: '#374151',
+                };
+                const item = o.items?.[0];
+                return (
+                  <Link
+                    href={`/dashboard/orders/${o.id}`}
+                    key={o.id}
+                    className="group block relative bg-card border border-border/60 hover:border-border/80 rounded-[24px] p-5 md:p-6 mb-5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] transition-all duration-300"
+                  >
+                    {/* Header row */}
+                    <div className="flex items-start justify-between pb-4 mb-4 border-b border-border/40">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-mono text-[13px] font-semibold tracking-tight text-muted-foreground uppercase">
+                          #{o.orderNumber}
+                        </span>
+                        <span className="text-[13px] font-medium text-foreground">
+                          {fmtDate(o.createdAt)}
+                        </span>
+                      </div>
+                      <div
+                        className="inline-flex items-center rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
+                        style={{ backgroundColor: st.bg, color: st.text }}
+                      >
+                        {st.label}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                      {/* Material Info */}
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-baseline justify-between mb-2">
+                          <h3 className="font-medium text-base">{item?.material?.name ?? '—'}</h3>
+                          {item && (
+                            <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
+                              {item.quantity}{' '}
+                              {UNIT_SHORT[item.unit as keyof typeof UNIT_SHORT] ?? item.unit}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Timeline */}
+                      <div className="flex-[1.5] mt-1 flex flex-col pt-0.5">
+                        <div className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className="size-3 bg-emerald-500 rounded-full ring-4 ring-card z-10 shrink-0 transition-colors" />
+                          </div>
+                          <div className="flex-1 -mt-0.5">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 leading-none">
+                              Adrese • {fmtDate(o.deliveryDate)}
+                            </p>
+                            <p className="text-[14px] font-semibold text-foreground tracking-tight mt-1 pr-8">
+                              {o.deliveryAddress || o.deliveryCity || '—'}
+                            </p>
+                            {(() => {
+                              const driver = o.transportJobs?.find(
+                                (j) =>
+                                  j.status === 'EN_ROUTE_DELIVERY' ||
+                                  j.status === 'AT_DELIVERY' ||
+                                  j.status === 'LOADED',
+                              )?.driver;
+                              if (!driver) return null;
+                              return (
+                                <div className="mt-3 flex items-center gap-1.5">
+                                  <User className="size-3 text-blue-500 shrink-0" />
+                                  <span className="text-xs text-blue-700 font-medium">
+                                    {driver.firstName} {driver.lastName}
+                                  </span>
+                                  {driver.phone && (
+                                    <button
+                                      type="button"
+                                      className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        window.location.href = `tel:${driver.phone}`;
+                                      }}
+                                    >
+                                      <Phone className="size-3" />
+                                      Zvanīt
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Financials */}
+                      <div className="flex-1 flex flex-col justify-between pt-4 sm:pt-0">
+                        <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-center sm:items-end gap-1">
+                          <span className="text-sm text-muted-foreground sm:text-right">Summa</span>
+                          <div className="text-lg font-bold tabular-nums">{fmtMoney(o.total)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Post-delivery review nudge */}
+                    {o.status === 'DELIVERED' && (
+                      <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-3">
+                        <p className="text-xs text-muted-foreground">Kā pagāja piegāde?</p>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            router.push('/dashboard/reviews');
+                          }}
+                        >
+                          <Star className="size-3 fill-amber-500 text-amber-500" />
+                          Atstāt atsauksmi
+                        </button>
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : null}
       {/* Transport requests tab — includes WASTE_COLLECTION (disposal) and TRANSPORT (freight) */}
       {!loading &&
         tab === 'transport' &&

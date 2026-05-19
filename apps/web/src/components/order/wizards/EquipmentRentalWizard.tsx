@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
-import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
@@ -843,13 +843,6 @@ export function EquipmentRentalWizard({ mode, initialServiceType, listingId, lis
             setShowAuthGate(false);
             if (pendingAction) pendingAction(tok);
           }}
-          onGuestContact={(info: GuestContactInfo) => {
-            setShowAuthGate(false);
-            setContactName(info.name ?? '');
-            setContactPhone(info.phone ?? '');
-            if (info.email) setContactEmail(info.email);
-            doSubmit('');
-          }}
         />
       </>
     );
@@ -952,13 +945,6 @@ export function EquipmentRentalWizard({ mode, initialServiceType, listingId, lis
         onAuthenticated={(_user, tok) => {
           setShowAuthGate(false);
           if (pendingAction) pendingAction(tok);
-        }}
-        onGuestContact={(info: GuestContactInfo) => {
-          setShowAuthGate(false);
-          setContactName(info.name ?? '');
-          setContactPhone(info.phone ?? '');
-          if (info.email) setContactEmail(info.email);
-          doSubmit('');
         }}
       />
     </>

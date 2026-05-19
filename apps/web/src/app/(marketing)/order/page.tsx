@@ -66,11 +66,10 @@ export default async function OrderHubPage({ searchParams }: Props) {
           <div>
             <Clock className="size-9 mb-5 text-foreground" strokeWidth={1.5} />
             <h3 className="font-extrabold text-xl mb-2.5 tracking-tight">
-              Konteineri un materiāli — bez konta
+              Reģistrācija — uzņēmumiem
             </h3>
             <p className="text-[15px] font-medium text-muted-foreground leading-relaxed">
-              Konteineri, materiāli un utilizācija — pasūtiet ar telefona numuru, konts nav
-              vajadzīgs. Transports pieejams uzņēmumiem ar kontu.
+              Bilt ir pieejams reģistrētiem uzņēmumiem. Reģistrācija aizņem mazāk nekā 2 minūtes.
             </p>
           </div>
           <div>

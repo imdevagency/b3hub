@@ -1,6 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import type { SkipSize, SkipSizeDefinition } from '@/lib/api';
+// Types removed from API; defined locally
+type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
+interface SkipSizeDefinition {
+  code: SkipSize;
+  basePrice?: number | null;
+  heightPct: number;
+  labelLv?: string;
+  label?: string;
+  volumeM3?: number;
+  descriptionLv?: string;
+  description?: string;
+}
 import { haptics } from '@/lib/haptics';
 import { t } from '@/lib/translations';
 import { SIZES } from './_types';
@@ -73,7 +84,7 @@ export function SkipSizeStep({
       <TouchableOpacity
         key={item.id}
         style={[s3.card, isSel && s3.cardSel]}
-        onPress={() => handleSelect(item.id)}
+        onPress={() => handleSelect(item.id as SkipSize)}
         activeOpacity={0.75}
       >
         <View style={s3.row}>

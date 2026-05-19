@@ -4,16 +4,13 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
-  getMySkipHireOrders,
   getMyOrders,
   getMyTransportRequests,
-  type SkipHireOrder,
   type ApiOrder,
   type ApiTransportJob,
 } from '@/lib/api';
 
 interface UseBuyerOrdersResult {
-  skipOrders: SkipHireOrder[];
   matOrders: ApiOrder[];
   transportRequests: ApiTransportJob[];
   loading: boolean;
@@ -21,11 +18,10 @@ interface UseBuyerOrdersResult {
 }
 
 /**
- * Fetches skip-hire orders, material orders, and buyer transport requests in parallel.
+ * Fetches material orders and buyer transport requests in parallel.
  * Used in BuyerView (orders page).
  */
 export function useBuyerOrders(token: string | null): UseBuyerOrdersResult {
-  const [skipOrders, setSkipOrders] = useState<SkipHireOrder[]>([]);
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [transportRequests, setTransportRequests] = useState<ApiTransportJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,12 +30,10 @@ export function useBuyerOrders(token: string | null): UseBuyerOrdersResult {
     if (!token) return;
     setLoading(true);
     try {
-      const [skip, mat, transport] = await Promise.all([
-        getMySkipHireOrders(token),
+      const [mat, transport] = await Promise.all([
         getMyOrders(token),
         getMyTransportRequests(token),
       ]);
-      setSkipOrders(skip);
       setMatOrders(mat);
       setTransportRequests(transport);
     } catch {
@@ -53,5 +47,5 @@ export function useBuyerOrders(token: string | null): UseBuyerOrdersResult {
     reload();
   }, [reload]);
 
-  return { skipOrders, matOrders, transportRequests, loading, reload };
+  return { matOrders, transportRequests, loading, reload };
 }

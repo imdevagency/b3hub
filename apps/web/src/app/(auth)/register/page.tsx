@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Building2, HardHat, Loader2, Truck, User } from 'lucide-react';
+import { ArrowLeft, Building2, HardHat, Loader2, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -43,11 +43,6 @@ const USER_TYPE_META: {
   },
 ];
 
-const ACCOUNT_KIND_META = [
-  { value: true, label: 'Uzņēmums', desc: 'SIA, AS vai IK', icon: Building2 },
-  { value: false, label: 'Privātpersona', desc: 'Fiziska persona', icon: User },
-];
-
 const schema = z
   .object({
     firstName: z.string().min(2, 'Vārdam jābūt vismaz 2 rakstzīmēm'),
@@ -55,15 +50,10 @@ const schema = z
     email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
     phone: z.string().optional(),
     userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER'] as const),
-    isCompany: z.boolean(),
-    companyName: z.string().optional(),
+    companyName: z.string().min(2, 'Uzņēmuma nosaukums ir obligāts'),
     regNumber: z.string().optional(),
     password: z.string().min(8, 'Parolei jābūt vismaz 8 rakstzīmēm'),
     confirmPassword: z.string(),
-  })
-  .refine((d) => !d.isCompany || (d.companyName && d.companyName.trim().length >= 2), {
-    message: 'Nepieciešams uzņēmuma nosaukums',
-    path: ['companyName'],
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Paroles nesakrīt',
@@ -104,7 +94,6 @@ function RegisterPageInner() {
       email: '',
       phone: '',
       userType: initialUserType,
-      isCompany: false,
       companyName: '',
       regNumber: '',
       password: '',
@@ -112,8 +101,6 @@ function RegisterPageInner() {
     },
     mode: 'onTouched',
   });
-
-  const isCompany = form.watch('isCompany');
 
   const nextStep = async (fieldsToValidate: (keyof FormData)[]) => {
     const isValid = await form.trigger(fieldsToValidate);
@@ -127,6 +114,7 @@ function RegisterPageInner() {
       const res = await registerUser({
         ...rest,
         roles: [userType],
+        isCompany: true,
         companyName: companyName?.trim() || undefined,
         regNumber: regNumber?.trim() || undefined,
         termsAccepted: true,
@@ -177,97 +165,52 @@ function RegisterPageInner() {
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="mb-8">
                     <h1 className="text-4xl font-medium text-gray-900 tracking-tight mb-3">
-                      Izveidojiet kontu
+                      Reģistrēt uzņēmumu
                     </h1>
                     <p className="text-[15px] text-gray-500">
-                      Izvēlieties konta veidu un ievadiet kontaktinformāciju.
+                      Bilt ir pieejams tikai reģistrētiem uzņēmumiem.
                     </p>
                   </div>
 
-                  {/* Business / Personal toggle */}
-                  <FormField
-                    control={form.control}
-                    name="isCompany"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex gap-3">
-                          {ACCOUNT_KIND_META.map((kind) => {
-                            const Icon = kind.icon;
-                            const active = field.value === kind.value;
-                            return (
-                              <button
-                                key={String(kind.value)}
-                                type="button"
-                                onClick={() => field.onChange(kind.value)}
-                                className={`flex-1 flex flex-col items-start p-4 rounded-xl border-2 transition-all text-left ${
-                                  active
-                                    ? 'border-black bg-[#f8f8f8]'
-                                    : 'border-transparent bg-gray-100 hover:bg-gray-200'
-                                }`}
-                              >
-                                <div
-                                  className={`p-2 rounded-full mb-2 transition-colors ${active ? 'bg-black text-white' : 'bg-white text-gray-600 shadow-sm'}`}
-                                >
-                                  <Icon className="w-4 h-4" />
-                                </div>
-                                <span
-                                  className={`text-[14px] font-medium ${active ? 'text-black' : 'text-gray-900'}`}
-                                >
-                                  {kind.label}
-                                </span>
-                                <span className="text-[12px] text-gray-500 mt-0.5">
-                                  {kind.desc}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Company fields — shown only when isCompany */}
-                  {isCompany && (
-                    <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                      <FormField
-                        control={form.control}
-                        name="companyName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                placeholder="Uzņēmuma nosaukums"
-                                autoCapitalize="words"
-                                maxLength={100}
-                                className={inputCls}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="regNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                placeholder="Reģistrācijas numurs (piem. 40003009497)"
-                                inputMode="numeric"
-                                maxLength={12}
-                                className={inputCls}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  )}
+                  {/* Company fields */}
+                  <div className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="Uzņēmuma nosaukums"
+                              autoCapitalize="words"
+                              maxLength={100}
+                              className={inputCls}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="regNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="Reģistrācijas numurs (piem. 40003009497)"
+                              inputMode="numeric"
+                              maxLength={12}
+                              className={inputCls}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   {/* Email */}
                   <FormField
@@ -309,13 +252,7 @@ function RegisterPageInner() {
 
                   <Button
                     type="button"
-                    onClick={() =>
-                      nextStep(
-                        isCompany
-                          ? ['isCompany', 'companyName', 'email', 'phone']
-                          : ['isCompany', 'email', 'phone'],
-                      )
-                    }
+                    onClick={() => nextStep(['companyName', 'email', 'phone'])}
                     className="w-full h-13 bg-black hover:bg-gray-800 text-white rounded-xl text-[15px] font-medium mt-2 transition-colors"
                   >
                     Turpināt

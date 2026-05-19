@@ -121,10 +121,6 @@ export default function OrderDetailsScreen() {
     try {
       const { paymentUrl } = await api.createIntent(order.id, token);
       // expo-web-browser handles all https URLs — no canOpenURL check needed
-      if (!supported) {
-        toast.error('Nevar atvērt maksājuma lapu');
-        return;
-      }
       await openPaymentUrl(paymentUrl);
       // Webhook will update payment status; reload order when user returns
       setPaymentProcessing(true);

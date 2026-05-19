@@ -17,9 +17,8 @@ import { colors } from '@/lib/theme';
 import { useRouter } from 'expo-router';
 
 export default function DriverBillingSettingsScreen() {
-  const { session } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
-  const token = session?.access_token ?? '';
 
   const [ibanNumber, setIbanNumber] = useState('');
   const [loading, setLoading] = useState(true);
@@ -49,7 +48,7 @@ export default function DriverBillingSettingsScreen() {
     }
     setSaving(true);
     try {
-      await api.transportJobs.updateDriverBilling(token, iban);
+      await api.updateDriverBilling(token!, iban);
       Alert.alert('Saglabāts', 'Bankas konts saglabāts.', [
         {
           text: 'Labi',

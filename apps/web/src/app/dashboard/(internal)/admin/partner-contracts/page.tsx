@@ -41,7 +41,7 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type ContractType = 'SUPPLIER' | 'CARRIER' | 'RECYCLER' | 'SKIP_HIRE';
+type ContractType = 'SUPPLIER' | 'CARRIER' | 'RECYCLER';
 
 interface ContractFields {
   partnerLegalName: string;
@@ -78,19 +78,12 @@ const TYPE_CONFIG: Record<
     icon: Recycle,
     defaultCommission: '5',
   },
-  SKIP_HIRE: {
-    label: 'Skip-hire',
-    companyTypes: ['CARRIER', 'HYBRID', 'SUPPLIER'],
-    icon: Package,
-    defaultCommission: '12',
-  },
 };
 
 const CONTRACT_TITLES: Record<ContractType, string> = {
   SUPPLIER: 'Materiālu Piegādātāja Sadarbības Līgums',
   CARRIER: 'Transporta Pakalpojumu Sadarbības Līgums',
   RECYCLER: 'Atkritumu Pieņemšanas un Pārstrādes Sadarbības Līgums',
-  SKIP_HIRE: 'Skip-hire Operatora Sadarbības Līgums',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -254,47 +247,10 @@ function recyclerClauses(commission: string): string {
 `;
 }
 
-function skipHireClauses(commission: string): string {
-  return `
-<h2>1. Līguma priekšmets</h2>
-<p>1.1. Operators nodrošina B3 Hub platformai savu skip un konteineru floti un apņemas izpildīt platformas klientu pasūtījumus atbilstoši šim Līgumam.</p>
-<p>1.2. Platforma darbojas kā pasūtījumu starpnieks un veic klientu norēķinus.</p>
-
-<h2>2. Atalgojums un norēķini</h2>
-<p>2.1. Platforma ietur koordinācijas maksu <strong>${commission}%</strong> no katra pabeigta pasūtījuma vērtības (bez PVN).</p>
-<p>2.2. Izmaksas veic 14 darba dienu laikā pēc pasūtījuma pabeigšanas.</p>
-
-<h2>3. Operatora pienākumi</h2>
-<p>3.1. Uzturēt Platformā aktuālu flotes informāciju (konteineru veidi, izmēri, daudzums, pieejamība).</p>
-<p>3.2. Piegādāt konteinerus norādītajā adresē 5 (piecu) darba dienu laikā no pasūtījuma saņemšanas.</p>
-<p>3.3. Savākt konteinerus pamatnomas perioda beigās vai pēc klienta pieprasījuma 48 stundu laikā.</p>
-<p>3.4. Augšupielādēt Platformā piegādes un savākšanas fotogrāfijas kā pierādījumus.</p>
-<p>3.5. Uzturēt konteineru tīrību un drošu tehnisko stāvokli. Informēt klientu par pieļaujamajiem atkritumu veidiem un svara ierobežojumiem.</p>
-
-<h2>4. Platformas pienākumi</h2>
-<p>4.1. Nodrošināt Operatoram vadības paneli pasūtījumu, flotes un finanšu pārvaldībai.</p>
-<p>4.2. Klientu uzskaite, maksājumu apstrāde un klientu komunikācija.</p>
-<p>4.3. Automātiska dokumentu ģenerēšana (pavadzīmes, nomas apliecinājumi).</p>
-
-<h2>5. Papildu maksa</h2>
-<p>5.1. Par nomas perioda pārsniegšanu Operators ir tiesīgs iekasēt papildu maksu atbilstoši Platformas apstiprināto cenu sarakstam.</p>
-<p>5.2. Pārslogotu konteineru (virs norādītā svara) izņemšanas izmaksas sedz klients.</p>
-
-<h2>6. Līguma termiņš</h2>
-<p>6.1. Līgums ir beztermiņa un stājas spēkā no parakstīšanas brīža.</p>
-<p>6.2. Jebkura Puse var izbeigt Līgumu ar 14 dienu rakstisku paziņojumu.</p>
-<p>6.3. Aktīvo pasūtījumu laikā Līguma izbeigšana neietekmē to izpildi.</p>
-
-<h2>7. Piemērojamās tiesību normas</h2>
-<p>7.1. Latvijas Republikas tiesību normas. Strīdi tiek risināmi Latvijas Republikas tiesās.</p>
-`;
-}
-
 const CLAUSE_GENERATORS: Record<ContractType, (commission: string) => string> = {
   SUPPLIER: supplierClauses,
   CARRIER: carrierClauses,
   RECYCLER: recyclerClauses,
-  SKIP_HIRE: skipHireClauses,
 };
 
 // ── Print CSS ─────────────────────────────────────────────────────────────────

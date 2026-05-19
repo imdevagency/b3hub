@@ -3,7 +3,18 @@
  */
 
 import { Dimensions } from 'react-native';
-import type { SkipSize, SkipSizeDefinition } from '@/lib/api';
+// These types were removed from the API; defined locally
+type SkipSize = 'MINI' | 'MIDI' | 'BUILDERS' | 'LARGE';
+interface SkipSizeDefinition {
+  code: SkipSize;
+  basePrice?: number | null;
+  heightPct: number;
+  labelLv?: string;
+  label?: string;
+  volumeM3?: number;
+  descriptionLv?: string;
+  description?: string;
+}
 import {
   SKIP_WASTE_CATEGORIES,
   SKIP_WASTE_LABELS,

@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
-import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import type { DateRange } from 'react-day-picker';
@@ -327,36 +327,6 @@ export function SkipHireWizard({ mode }: Props) {
     if (pendingAction) {
       pendingAction(authToken);
       setPendingAction(null);
-    }
-  }
-
-  async function handleGuestCheckout(contact: GuestContactInfo) {
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      const guestRes = await createGuestOrder({
-        materialCategory: 'SKIP_HIRE',
-        materialName: `Skip ${size || ''}`.trim(),
-        quantity: 1,
-        unit: 'PIECE',
-        deliveryAddress: address,
-        deliveryCity: address.split(',').slice(-1)[0]?.trim() || '',
-        deliveryLat: lat,
-        deliveryLng: lng,
-        deliveryDate: deliveryDate || undefined,
-        deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
-        contactName: contact.name,
-        contactPhone: contact.phone,
-        contactEmail: contact.email,
-        notes: notes || undefined,
-      });
-      setGuestToken(guestRes.token);
-      setGuestOrderNumber(guestRes.orderNumber);
-      setStep('confirmed');
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -1572,14 +1542,11 @@ export function SkipHireWizard({ mode }: Props) {
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
-          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setAuthGateMode(undefined);
             setPendingAction(null);
           }}
-          prefilledName={contactName}
-          prefilledPhone={contactPhone}
           initialMode={authGateMode}
         />
       </>

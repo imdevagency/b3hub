@@ -61,7 +61,7 @@ export default function RecyclerHomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setConfig({ title: 'Reciklēšana' });
+      setConfig({});
       load();
       return () => setConfig(null);
     }, [load, setConfig]),

@@ -21,13 +21,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { WizardShell } from '@/components/order/WizardShell';
 import { Step2Address } from '@/components/order/steps/Step2Address';
-import { WebWizardAuthGate, type GuestContactInfo } from '@/components/order/WebWizardAuthGate';
+import { WebWizardAuthGate } from '@/components/order/WebWizardAuthGate';
 import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
 import { createDisposalOrder, type WasteType, type DisposalTruckType } from '@/lib/api/orders';
-import { createGuestOrder } from '@/lib/api';
 import type { User } from '@/lib/api';
 import {
   ArrowRight,
@@ -150,7 +149,7 @@ export function DisposalWizard({ mode }: Props) {
   const [contactPrefilled, setContactPrefilled] = useState(false);
 
   const [refNumber, setRefNumber] = useState('');
-  const [guestToken, setGuestToken] = useState('');
+  const [guestToken, _setGuestToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -295,36 +294,6 @@ export function DisposalWizard({ mode }: Props) {
     if (pendingAction) {
       pendingAction(authToken);
       setPendingAction(null);
-    }
-  }
-
-  async function handleGuestCheckout(contact: GuestContactInfo) {
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      const guestRes = await createGuestOrder({
-        materialCategory: 'DISPOSAL',
-        materialName: wasteType ? `Atkritumu izvešana: ${wasteType}` : 'Atkritumu izvešana',
-        quantity: parseFloat(weightT) || 1,
-        unit: 'TONNE',
-        deliveryAddress: address,
-        deliveryCity: city || address.split(',').slice(-1)[0]?.trim() || '',
-        deliveryLat: lat,
-        deliveryLng: lng,
-        deliveryDate: date || undefined,
-        deliveryWindow: timeWindow !== 'ANY' ? timeWindow : undefined,
-        contactName: contact.name,
-        contactPhone: contact.phone,
-        contactEmail: contact.email,
-        notes: notes || undefined,
-      });
-      setRefNumber(guestRes.orderNumber);
-      setGuestToken(guestRes.token);
-      setStep('sent');
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Kļūda iesniedzot pasūtījumu.');
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -745,11 +714,8 @@ export function DisposalWizard({ mode }: Props) {
               if (token) {
                 submit(token);
               } else {
-                handleGuestCheckout({
-                  name: contactName.trim() || 'Klients',
-                  phone: contactPhone.trim(),
-                  email: contactEmail.trim() || undefined,
-                });
+                setPendingAction(() => submit);
+                setAuthGateOpen(true);
               }
             }}
             disabled={!date || !contactPhone.trim() || hasTruckAccess === null || submitting}
@@ -764,23 +730,6 @@ export function DisposalWizard({ mode }: Props) {
               </>
             )}
           </Button>
-
-          {mode === 'public' && (
-            <p className="text-xs text-center text-muted-foreground -mt-2">
-              Pasūtīt var bez konta ·{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthGateMode('login');
-                  setPendingAction(() => submit);
-                  setAuthGateOpen(true);
-                }}
-                className="underline font-semibold hover:text-foreground transition-colors"
-              >
-                Jau ir konts? Ieiet
-              </button>
-            </p>
-          )}
         </div>
       )}
 
@@ -801,14 +750,15 @@ export function DisposalWizard({ mode }: Props) {
           <p className="text-sm text-muted-foreground max-w-xs">
             Operatori pārskatīs jūsu pieprasījumu un sazināsies ar cenu piedāvājumu.
           </p>
-          {guestToken ? (
+          {guestToken && (
             <Button
               onClick={() => router.push(`/pasutijums/${guestToken}`)}
               className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
             >
               <CheckCircle2 className="size-4 mr-1.5" /> Sekot pasūtījumam
             </Button>
-          ) : (
+          )}
+          {!guestToken && (
             <Button
               onClick={() => router.push('/dashboard/orders')}
               className="w-full rounded-full h-14 text-base font-bold shadow-md hover:shadow-lg transition-all bg-[#203728] text-white hover:bg-[#203728]/90"
@@ -876,14 +826,11 @@ export function DisposalWizard({ mode }: Props) {
         <WebWizardAuthGate
           open={authGateOpen}
           onAuthenticated={handleAuthSuccess}
-          onGuestContact={handleGuestCheckout}
           onDismiss={() => {
             setAuthGateOpen(false);
             setAuthGateMode(undefined);
             setPendingAction(null);
           }}
-          prefilledName={contactName}
-          prefilledPhone={contactPhone}
           initialMode={authGateMode}
         />
       </>

@@ -3,7 +3,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Search, AlertTriangle, ChevronRight, Truck, Map, List, X, CheckCircle2, Clock, RefreshCw, Download } from 'lucide-react';
+import {
+  Search,
+  AlertTriangle,
+  ChevronRight,
+  Truck,
+  Map,
+  List,
+  X,
+  CheckCircle2,
+  Clock,
+  RefreshCw,
+  Download,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,37 +42,42 @@ import {
 } from '@/lib/api';
 import type { JobRoutePoint } from '@/components/tracking/TransportJobsMap';
 
-const TransportJobsMap = dynamic(
-  () => import('@/components/tracking/TransportJobsMap'),
-  { ssr: false, loading: () => <div className="h-full bg-slate-100 animate-pulse rounded-xl" /> }
-);
+const TransportJobsMap = dynamic(() => import('@/components/tracking/TransportJobsMap'), {
+  ssr: false,
+  loading: () => <div className="h-full bg-slate-100 animate-pulse rounded-xl" />,
+});
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; dot: string }> = {
-  ASSIGNED:          { label: 'Piešķirts',     dot: 'bg-slate-400' },
-  ACCEPTED:          { label: 'Pieņemts',       dot: 'bg-slate-600' },
-  EN_ROUTE_PICKUP:   { label: 'Uz iekraušanu',  dot: 'bg-orange-500' },
-  AT_PICKUP:         { label: 'Iekraušanā',     dot: 'bg-pink-500' },
-  LOADED:            { label: 'Iekrauts',        dot: 'bg-violet-500' },
-  EN_ROUTE_DELIVERY: { label: 'Uz piegādi',     dot: 'bg-emerald-500' },
-  AT_DELIVERY:       { label: 'Izkraušanā',     dot: 'bg-emerald-700' },
+  ASSIGNED: { label: 'Piešķirts', dot: 'bg-slate-400' },
+  ACCEPTED: { label: 'Pieņemts', dot: 'bg-slate-600' },
+  EN_ROUTE_PICKUP: { label: 'Uz iekraušanu', dot: 'bg-orange-500' },
+  AT_PICKUP: { label: 'Iekraušanā', dot: 'bg-pink-500' },
+  LOADED: { label: 'Iekrauts', dot: 'bg-violet-500' },
+  EN_ROUTE_DELIVERY: { label: 'Uz piegādi', dot: 'bg-emerald-500' },
+  AT_DELIVERY: { label: 'Izkraušanā', dot: 'bg-emerald-700' },
 };
 
 const ACTIVE_STATUSES = [
-  'ASSIGNED', 'ACCEPTED', 'EN_ROUTE_PICKUP', 'AT_PICKUP',
-  'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY',
+  'ASSIGNED',
+  'ACCEPTED',
+  'EN_ROUTE_PICKUP',
+  'AT_PICKUP',
+  'LOADED',
+  'EN_ROUTE_DELIVERY',
+  'AT_DELIVERY',
 ];
 
 const EXCEPTION_TYPE_LABELS: Record<string, string> = {
-  DRIVER_NO_SHOW:     'Šoferis nav ieradies',
+  DRIVER_NO_SHOW: 'Šoferis nav ieradies',
   SUPPLIER_NOT_READY: 'Piegādātājs nav gatavs',
-  WRONG_MATERIAL:     'Nepareizs materiāls',
-  PARTIAL_DELIVERY:   'Nepilna piegāde',
-  REJECTED_DELIVERY:  'Piegāde noraidīta',
-  SITE_CLOSED:        'Objekts slēgts',
-  OVERWEIGHT:         'Pārslogots',
-  OTHER:              'Cits',
+  WRONG_MATERIAL: 'Nepareizs materiāls',
+  PARTIAL_DELIVERY: 'Nepilna piegāde',
+  REJECTED_DELIVERY: 'Piegāde noraidīta',
+  SITE_CLOSED: 'Objekts slēgts',
+  OVERWEIGHT: 'Pārslogots',
+  OTHER: 'Cits',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -219,7 +236,9 @@ export default function ActiveJobsPage() {
         j.deliveryDate ? new Date(j.deliveryDate).toLocaleString('lv-LV') : '',
       ]),
     ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = rows
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -244,26 +263,33 @@ export default function ActiveJobsPage() {
 
   // ── Derived values ──────────────────────────────────────────────────────────
 
-  const currentUserFullName = user ? `${(user as unknown as Record<string,string>).firstName ?? ''} ${(user as unknown as Record<string,string>).lastName ?? ''}`.trim() : '';
+  const currentUserFullName = user
+    ? `${(user as unknown as Record<string, string>).firstName ?? ''} ${(user as unknown as Record<string, string>).lastName ?? ''}`.trim()
+    : '';
 
   // A room needs response if the last message was NOT from the current dispatcher/admin
   const needsResponseRooms = chatRooms.filter(
-    (r) => r.lastMessage && r.lastMessage.senderName !== currentUserFullName
+    (r) => r.lastMessage && r.lastMessage.senderName !== currentUserFullName,
   );
   const respondedRooms = chatRooms.filter(
-    (r) => r.lastMessage && r.lastMessage.senderName === currentUserFullName
+    (r) => r.lastMessage && r.lastMessage.senderName === currentUserFullName,
   );
   const visibleRooms = commentsTab === 'UNREAD' ? needsResponseRooms : chatRooms;
 
   const exceptionJobIds = new Set(
-    exceptions.filter((e) => e.status === 'OPEN').map((e) => e.transportJobId).filter(Boolean)
+    exceptions
+      .filter((e) => e.status === 'OPEN')
+      .map((e) => e.transportJobId)
+      .filter(Boolean),
   );
 
   const lateCount = jobs.filter(isLate).length;
   const atRiskCount = jobs.filter((j) => !isLate(j) && isAtRisk(j)).length;
   const exceptionCount = jobs.filter((j) => exceptionJobIds.has(j.id)).length;
   const inTransitCount = jobs.filter((j) =>
-    ['EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY'].includes(j.status)
+    ['EN_ROUTE_PICKUP', 'AT_PICKUP', 'LOADED', 'EN_ROUTE_DELIVERY', 'AT_DELIVERY'].includes(
+      j.status,
+    ),
   ).length;
 
   const filtered = jobs.filter((j) => {
@@ -286,7 +312,7 @@ export default function ActiveJobsPage() {
   function openExceptionPanel(job: ApiTransportJob, e: React.MouseEvent) {
     e.stopPropagation();
     const jobExceptions = exceptions.filter(
-      (ex) => ex.transportJobId === job.id && ex.status === 'OPEN'
+      (ex) => ex.transportJobId === job.id && ex.status === 'OPEN',
     );
     setExceptionPanelJob(job);
     setExceptionPanelItems(jobExceptions);
@@ -312,8 +338,7 @@ export default function ActiveJobsPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 lg:p-8 w-full max-w-[1400px] mx-auto flex flex-col">
-
+    <div className="p-4 lg:p-8 w-full max-w-350 mx-auto flex flex-col">
       {/* ── Toolbar ── */}
       <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative w-full sm:max-w-xs">
@@ -412,7 +437,12 @@ export default function ActiveJobsPage() {
         <div className="ml-auto hidden sm:flex items-center gap-2">
           {lastUpdated && (
             <span className="text-xs text-slate-400">
-              Atjaunots {lastUpdated.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              Atjaunots{' '}
+              {lastUpdated.toLocaleTimeString('lv-LV', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
             </span>
           )}
           <button
@@ -437,289 +467,311 @@ export default function ActiveJobsPage() {
 
       {/* ── Main content: table + comments sidebar ── */}
       <div className="flex gap-6 items-start">
-      <div className="flex-1 min-w-0">
-
-      {/* ── Loading / Empty / Views ── */}
-      {loading && jobs.length === 0 ? (
-        <div className="flex items-center justify-center py-32 text-slate-400">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-black animate-spin" />
-            <p className="text-sm font-medium">Ielādē datus...</p>
-          </div>
-        </div>
-      ) : viewMode === 'MAP' ? (
-        /* ── MAP VIEW ── */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-[600px] lg:h-[calc(100vh-260px)] min-h-[480px] flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Flotes karte — {filtered.length} aktīvi reisi
-            </p>
-            {mapSelectedId && (
-              <button
-                onClick={() => router.push(`/dashboard/transport-jobs/${mapSelectedId}`)}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800"
-              >
-                Atvērt detaļas →
-              </button>
-            )}
-          </div>
-          <div className="flex-1 relative">
-            <TransportJobsMap
-              jobs={filtered.map(toMapPoint)}
-              selectedId={mapSelectedId}
-              onSelect={setMapSelectedId}
-              truckPositions={truckPositions}
-            />
-          </div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex items-center justify-center py-32 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-          <div className="flex flex-col items-center gap-3 text-slate-500">
-            <Truck className="h-10 w-10 text-slate-300" />
-            <p className="text-sm font-medium">
-              {activeFilter === 'EXCEPTIONS'
-                ? 'Nav atvērtu problēmu'
-                : activeFilter === 'AT_RISK'
-                ? 'Neviena piegāde nav riskā'
-                : activeFilter === 'LATE'
-                ? 'Neviena piegāde nekavējas'
-                : search
-                ? 'Nav rezultātu meklēšanai'
-                : 'Nav aktīvu piegāžu'}
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* ── TABLE VIEW ── */
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b-slate-200">
-                  <TableHead className="w-[130px] font-semibold text-slate-600">Darbs</TableHead>
-                  <TableHead className="font-semibold text-slate-600">Statuss</TableHead>
-                  <TableHead className="font-semibold text-slate-600">Šoferis / Auto</TableHead>
-                  <TableHead className="font-semibold text-slate-600">Maršruts</TableHead>
-                  <TableHead className="font-semibold text-slate-600 text-right">Mērķa laiks</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((job) => {
-                  const cfg = STATUS_CONFIG[job.status];
-                  const hasErr = exceptionJobIds.has(job.id);
-                  const isJobLate = isLate(job);
-                  const isJobAtRisk = !isJobLate && isAtRisk(job);
-
-                  return (
-                    <TableRow
-                      key={job.id}
-                      onClick={() => router.push(`/dashboard/transport-jobs/${job.id}`)}
-                      className={`group hover:bg-slate-50 cursor-pointer transition-colors ${hasErr ? 'bg-amber-50/40' : ''} ${isJobLate ? 'bg-red-50/20' : ''} ${isJobAtRisk ? 'bg-orange-50/30' : ''}`}
-                    >
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-black">#{job.jobNumber}</span>
-                          {hasErr && (
-                            <button
-                              onClick={(e) => openExceptionPanel(job, e)}
-                              title="Skatīt problēmu"
-                              className="p-0.5 rounded hover:bg-amber-100 transition-colors"
-                            >
-                              <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            </button>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2 w-2 rounded-full ${cfg?.dot || 'bg-slate-400'}`} />
-                          <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                            {cfg?.label || job.status}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-slate-900">
-                            {job.driver
-                              ? `${job.driver.firstName} ${job.driver.lastName}`
-                              : 'Meklē šoferi'}
-                          </span>
-                          <span className="text-xs text-slate-500 font-medium mt-0.5">
-                            {job.vehicle?.licensePlate || 'Nav auto'}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="text-sm font-medium text-slate-700 truncate max-w-[150px] block"
-                            title={job.pickupCity}
-                          >
-                            {job.pickupCity}
-                          </span>
-                          <ChevronRight className="h-3.5 w-3.5 text-slate-300 shrink-0" />
-                          <span
-                            className="text-sm font-bold text-slate-900 truncate max-w-[150px] block"
-                            title={job.deliveryCity}
-                          >
-                            {job.deliveryCity}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-4 text-right">
-                        <div className="flex flex-col items-end">
-                          <span
-                            className={`text-sm font-semibold ${isJobLate ? 'text-red-600' : isJobAtRisk ? 'text-orange-500' : 'text-slate-900'}`}
-                          >
-                            {fmtTime(job.deliveryDate)}
-                          </span>
-                          <span className="text-xs text-slate-500 mt-0.5">
-                            {fmtDate(job.deliveryDate)}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-4 text-right">
-                        <ChevronRight className="h-4 w-4 inline-block text-slate-300 group-hover:text-slate-600 transition-colors" />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
-      </div>{/* end flex-1 */}
-
-      {/* ── Comments Sidebar ── */}
-      <div className="hidden xl:flex flex-col w-80 2xl:w-96 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" style={{ minHeight: 480 }}>
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-bold text-slate-900">Komentāri</p>
-            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-              needsResponseRooms.length > 0
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-slate-100 text-slate-500'
-            }`}>
-              {needsResponseRooms.length > 0 ? `${needsResponseRooms.length} jauni` : 'Kārtībā'}
-            </span>
-          </div>
-          <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
-            <button
-              onClick={() => setCommentsTab('UNREAD')}
-              className={`flex-1 text-[11px] font-bold uppercase tracking-wider py-1 rounded transition-all ${
-                commentsTab === 'UNREAD'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Atbilde vajadzīga{needsResponseRooms.length > 0 && ` (${needsResponseRooms.length})`}
-            </button>
-            <button
-              onClick={() => setCommentsTab('ALL')}
-              className={`flex-1 text-[11px] font-bold uppercase tracking-wider py-1 rounded transition-all ${
-                commentsTab === 'ALL'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Visi ({chatRooms.length})
-            </button>
-          </div>
-        </div>
-
-        {/* Message list */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {visibleRooms.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-slate-400">
-              <CheckCircle2 className="h-8 w-8 text-emerald-300" />
-              <p className="text-xs font-medium text-slate-500">
-                {commentsTab === 'UNREAD' ? 'Nekas neprasa atbildi' : 'Nav aktīvu sarunu'}
-              </p>
+        <div className="flex-1 min-w-0">
+          {/* ── Loading / Empty / Views ── */}
+          {loading && jobs.length === 0 ? (
+            <div className="flex items-center justify-center py-32 text-slate-400">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-black animate-spin" />
+                <p className="text-sm font-medium">Ielādē datus...</p>
+              </div>
+            </div>
+          ) : viewMode === 'MAP' ? (
+            /* ── MAP VIEW ── */
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-150 lg:h-[calc(100vh-260px)] min-h-120 flex flex-col">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Flotes karte — {filtered.length} aktīvi reisi
+                </p>
+                {mapSelectedId && (
+                  <button
+                    onClick={() => router.push(`/dashboard/transport-jobs/${mapSelectedId}`)}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800"
+                  >
+                    Atvērt detaļas →
+                  </button>
+                )}
+              </div>
+              <div className="flex-1 relative">
+                <TransportJobsMap
+                  jobs={filtered.map(toMapPoint)}
+                  selectedId={mapSelectedId}
+                  onSelect={setMapSelectedId}
+                  truckPositions={truckPositions}
+                />
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex items-center justify-center py-32 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+              <div className="flex flex-col items-center gap-3 text-slate-500">
+                <Truck className="h-10 w-10 text-slate-300" />
+                <p className="text-sm font-medium">
+                  {activeFilter === 'EXCEPTIONS'
+                    ? 'Nav atvērtu problēmu'
+                    : activeFilter === 'AT_RISK'
+                      ? 'Neviena piegāde nav riskā'
+                      : activeFilter === 'LATE'
+                        ? 'Neviena piegāde nekavējas'
+                        : search
+                          ? 'Nav rezultātu meklēšanai'
+                          : 'Nav aktīvu piegāžu'}
+                </p>
+              </div>
             </div>
           ) : (
-            visibleRooms.map((room) => {
-              const isActive = activeChatJobId === room.jobId;
-              const needsReply = room.lastMessage?.senderName !== currentUserFullName;
-              return (
-                <div key={room.jobId} className={`p-3 cursor-pointer hover:bg-slate-50 transition-colors ${ isActive ? 'bg-blue-50/50' : '' }`}>
-                  <div
-                    className="space-y-1.5"
-                    onClick={() => setActiveChatJobId(isActive ? null : (room.jobId ?? null))}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">
-                          #{room.jobNumber}
-                          {room.pickupCity && room.deliveryCity && (
-                            <span className="font-normal text-slate-500"> · {room.pickupCity} → {room.deliveryCity}</span>
-                          )}
-                        </p>
-                        <p className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${ needsReply ? 'text-slate-800 font-medium' : 'text-slate-500' }`}>
-                          <span className="text-slate-400">{room.lastMessage?.senderName}: </span>
-                          {room.lastMessage?.body}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        {room.lastMessage && (
-                          <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                            {new Date(room.lastMessage.createdAt).toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                        {needsReply && (
-                          <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            /* ── TABLE VIEW ── */
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b-slate-200">
+                      <TableHead className="w-32.5 font-semibold text-slate-600">Darbs</TableHead>
+                      <TableHead className="font-semibold text-slate-600">Statuss</TableHead>
+                      <TableHead className="font-semibold text-slate-600">Šoferis / Auto</TableHead>
+                      <TableHead className="font-semibold text-slate-600">Maršruts</TableHead>
+                      <TableHead className="font-semibold text-slate-600 text-right">
+                        Mērķa laiks
+                      </TableHead>
+                      <TableHead className="w-12.5"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((job) => {
+                      const cfg = STATUS_CONFIG[job.status];
+                      const hasErr = exceptionJobIds.has(job.id);
+                      const isJobLate = isLate(job);
+                      const isJobAtRisk = !isJobLate && isAtRisk(job);
 
-                  {/* Inline reply box */}
-                  {isActive && (
-                    <div className="mt-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && room.jobId) handleSendChat(room.jobId); }}
-                        placeholder="Atbildēt..."
-                        className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-0"
-                      />
-                      <button
-                        onClick={() => room.jobId && handleSendChat(room.jobId)}
-                        disabled={!chatInput.trim() || sendingChat}
-                        className="px-2.5 py-1.5 rounded-md bg-slate-900 text-white text-xs font-bold disabled:opacity-40 hover:bg-slate-700 transition-colors shrink-0"
-                      >
-                        {sendingChat ? '...' : '↑'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                      return (
+                        <TableRow
+                          key={job.id}
+                          onClick={() => router.push(`/dashboard/transport-jobs/${job.id}`)}
+                          className={`group hover:bg-slate-50 cursor-pointer transition-colors ${hasErr ? 'bg-amber-50/40' : ''} ${isJobLate ? 'bg-red-50/20' : ''} ${isJobAtRisk ? 'bg-orange-50/30' : ''}`}
+                        >
+                          <TableCell className="py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-black">#{job.jobNumber}</span>
+                              {hasErr && (
+                                <button
+                                  onClick={(e) => openExceptionPanel(job, e)}
+                                  title="Skatīt problēmu"
+                                  className="p-0.5 rounded hover:bg-amber-100 transition-colors"
+                                >
+                                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                </button>
+                              )}
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="py-4">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`h-2 w-2 rounded-full ${cfg?.dot || 'bg-slate-400'}`}
+                              />
+                              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                                {cfg?.label || job.status}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-slate-900">
+                                {job.driver
+                                  ? `${job.driver.firstName} ${job.driver.lastName}`
+                                  : 'Meklē šoferi'}
+                              </span>
+                              <span className="text-xs text-slate-500 font-medium mt-0.5">
+                                {job.vehicle?.licensePlate || 'Nav auto'}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="py-4">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="text-sm font-medium text-slate-700 truncate max-w-37.5 block"
+                                title={job.pickupCity}
+                              >
+                                {job.pickupCity}
+                              </span>
+                              <ChevronRight className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                              <span
+                                className="text-sm font-bold text-slate-900 truncate max-w-37.5 block"
+                                title={job.deliveryCity}
+                              >
+                                {job.deliveryCity}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="py-4 text-right">
+                            <div className="flex flex-col items-end">
+                              <span
+                                className={`text-sm font-semibold ${isJobLate ? 'text-red-600' : isJobAtRisk ? 'text-orange-500' : 'text-slate-900'}`}
+                              >
+                                {fmtTime(job.deliveryDate)}
+                              </span>
+                              <span className="text-xs text-slate-500 mt-0.5">
+                                {fmtDate(job.deliveryDate)}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="py-4 text-right">
+                            <ChevronRight className="h-4 w-4 inline-block text-slate-300 group-hover:text-slate-600 transition-colors" />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </div>
+        {/* end flex-1 */}
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-100 shrink-0">
-          <button
-            onClick={() => router.push('/dashboard/messages')}
-            className="w-full text-center text-[11px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wider transition-colors"
-          >
-            Skatīt visas sarunas →
-          </button>
+        {/* ── Comments Sidebar ── */}
+        <div
+          className="hidden xl:flex flex-col w-80 2xl:w-96 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+          style={{ minHeight: 480 }}
+        >
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-bold text-slate-900">Komentāri</p>
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                  needsResponseRooms.length > 0
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {needsResponseRooms.length > 0 ? `${needsResponseRooms.length} jauni` : 'Kārtībā'}
+              </span>
+            </div>
+            <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
+              <button
+                onClick={() => setCommentsTab('UNREAD')}
+                className={`flex-1 text-[11px] font-bold uppercase tracking-wider py-1 rounded transition-all ${
+                  commentsTab === 'UNREAD'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Atbilde vajadzīga
+                {needsResponseRooms.length > 0 && ` (${needsResponseRooms.length})`}
+              </button>
+              <button
+                onClick={() => setCommentsTab('ALL')}
+                className={`flex-1 text-[11px] font-bold uppercase tracking-wider py-1 rounded transition-all ${
+                  commentsTab === 'ALL'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Visi ({chatRooms.length})
+              </button>
+            </div>
+          </div>
+
+          {/* Message list */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+            {visibleRooms.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12 text-slate-400">
+                <CheckCircle2 className="h-8 w-8 text-emerald-300" />
+                <p className="text-xs font-medium text-slate-500">
+                  {commentsTab === 'UNREAD' ? 'Nekas neprasa atbildi' : 'Nav aktīvu sarunu'}
+                </p>
+              </div>
+            ) : (
+              visibleRooms.map((room) => {
+                const isActive = activeChatJobId === room.jobId;
+                const needsReply = room.lastMessage?.senderName !== currentUserFullName;
+                return (
+                  <div
+                    key={room.jobId}
+                    className={`p-3 cursor-pointer hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50/50' : ''}`}
+                  >
+                    <div
+                      className="space-y-1.5"
+                      onClick={() => setActiveChatJobId(isActive ? null : (room.jobId ?? null))}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            #{room.jobNumber}
+                            {room.pickupCity && room.deliveryCity && (
+                              <span className="font-normal text-slate-500">
+                                {' '}
+                                · {room.pickupCity} → {room.deliveryCity}
+                              </span>
+                            )}
+                          </p>
+                          <p
+                            className={`text-xs mt-0.5 leading-relaxed line-clamp-2 ${needsReply ? 'text-slate-800 font-medium' : 'text-slate-500'}`}
+                          >
+                            <span className="text-slate-400">{room.lastMessage?.senderName}: </span>
+                            {room.lastMessage?.body}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {room.lastMessage && (
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                              {new Date(room.lastMessage.createdAt).toLocaleTimeString('lv-LV', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
+                          {needsReply && (
+                            <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Inline reply box */}
+                    {isActive && (
+                      <div className="mt-2 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && room.jobId) handleSendChat(room.jobId);
+                          }}
+                          placeholder="Atbildēt..."
+                          className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-0"
+                        />
+                        <button
+                          onClick={() => room.jobId && handleSendChat(room.jobId)}
+                          disabled={!chatInput.trim() || sendingChat}
+                          className="px-2.5 py-1.5 rounded-md bg-slate-900 text-white text-xs font-bold disabled:opacity-40 hover:bg-slate-700 transition-colors shrink-0"
+                        >
+                          {sendingChat ? '...' : '↑'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 py-3 border-t border-slate-100 shrink-0">
+            <button
+              onClick={() => router.push('/dashboard/messages')}
+              className="w-full text-center text-[11px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-wider transition-colors"
+            >
+              Skatīt visas sarunas →
+            </button>
+          </div>
         </div>
       </div>
-
-      </div>{/* end flex gap-6 */}
+      {/* end flex gap-6 */}
 
       {/* ── Exception Side Panel ── */}
       {exceptionPanelJob && (

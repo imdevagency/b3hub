@@ -19,8 +19,7 @@ import {
 import { format, isSameDay } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, UnifiedOrder, orderSearchText } from '@/lib/use-orders';
-import type { ApiOrder, ApiTransportJob, SkipHireOrder, QuoteRequest } from '@/lib/api';
-import type { GuestOrderTracking } from '@/lib/api/guest-orders';
+import type { ApiOrder, ApiTransportJob, QuoteRequest } from '@/lib/api';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -92,10 +91,6 @@ export default function OrdersScreen() {
         return <DisposalRow item={item.data} />;
       case 'rfq':
         return <RfqRow item={item.data} />;
-      case 'skip':
-        return <SkipRow item={item.data} />;
-      case 'guest':
-        return <GuestRow item={item.data} />;
       default:
         return null;
     }
@@ -199,8 +194,8 @@ export default function OrdersScreen() {
         style={{ flex: 1, backgroundColor: '#ffffff' }}
         sections={displaySections}
         keyExtractor={(item) =>
-          item.kind === 'guest'
-            ? `guest-${item.data.token}`
+          item.kind === 'material' || item.kind === 'rfq'
+            ? `${item.kind}-${(item.data as any).id}`
             : `${item.kind}-${(item.data as any).id}`
         }
         removeClippedSubviews={true}
@@ -577,36 +572,6 @@ function DisposalRow({ item }: { item: ApiTransportJob }) {
   );
 }
 
-function SkipRow({ item }: { item: SkipHireOrder }) {
-  const router = useRouter();
-  const st = getOrderStatus(item.status);
-
-  const size = SIZE_LABEL[item.skipSize as string] ?? item.skipSize;
-  const address = item.location?.split(',')[0] || 'Adrese nav norādīta';
-  const title = `Konteiners ${size} · ${address}`;
-
-  const dateObject = item.deliveryDate ? new Date(item.deliveryDate) : new Date();
-  const dateStr = format(dateObject, 'd MMM', { locale: lv });
-  const timeStr = format(dateObject, 'HH:mm');
-  const price = item.price != null ? `€${item.price.toFixed(2)}` : '';
-
-  const isComplete =
-    item.status === 'DELIVERED' || item.status === 'CANCELLED' || item.status === 'COMPLETED';
-  const displayTopLine = isComplete ? `${dateStr} · ${st.label}` : `${dateStr} · ${timeStr}`;
-
-  return (
-    <UniversalRow
-      icon={<HardHat size={24} color="#374151" strokeWidth={1.5} />}
-      title={title}
-      subtitleLines={[displayTopLine, price]}
-      price=""
-      statusColor={st.color}
-      statusText={!isComplete ? st.label : ''}
-      onPress={() => router.push(`/(buyer)/skip-order/${item.id}`)}
-    />
-  );
-}
-
 function RfqRow({ item }: { item: QuoteRequest }) {
   const router = useRouter();
   const st = getOrderStatus(item.status);
@@ -629,42 +594,6 @@ function RfqRow({ item }: { item: QuoteRequest }) {
       statusColor={st.color}
       statusText=""
       onPress={() => router.push(`/(buyer)/rfq/${item.id}`)}
-    />
-  );
-}
-
-const GUEST_CATEGORY_LABEL: Record<string, string> = {
-  MATERIAL: 'Materiāli',
-  SKIP_HIRE: 'Konteiners',
-  TRANSPORT: 'Transports',
-  DISPOSAL: 'Utilizācija',
-};
-
-const GUEST_STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Gaida apstiprinājumu',
-  CONFIRMED: 'Apstiprināts',
-  PROCESSING: 'Apstrādē',
-  CANCELLED: 'Atcelts',
-  CONVERTED: 'Pārveidots',
-};
-
-function GuestRow({ item }: { item: GuestOrderTracking }) {
-  const categoryLabel = GUEST_CATEGORY_LABEL[item.category] ?? item.category;
-  const statusLabel = GUEST_STATUS_LABEL[item.status] ?? item.status;
-  const address = item.deliveryCity || item.deliveryAddress?.split(',')[0] || '';
-  const dateStr = item.createdAt ? format(new Date(item.createdAt), 'd. MMM', { locale: lv }) : '';
-
-  return (
-    <UniversalRow
-      icon={<User size={20} color="#6b7280" />}
-      title={`${categoryLabel} #${item.orderNumber}`}
-      subtitleLines={[address, dateStr, 'Viesis'].filter(Boolean)}
-      price=""
-      statusColor="#9ca3af"
-      statusText={statusLabel}
-      onPress={() => {
-        /* guest order detail not yet implemented */
-      }}
     />
   );
 }
