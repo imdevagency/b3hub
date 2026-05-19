@@ -423,7 +423,7 @@ export function SkipHireWizard({ mode }: Props) {
       totalSteps={5}
       title={isConfirmed ? 'Pasūtījums pieņemts' : 'Konteinera noma'}
       onBack={getOnBack()}
-      onClose={mode === 'public' && !isConfirmed ? () => router.push('/order') : undefined}
+      onClose={mode === 'public' && !isConfirmed ? () => router.push('/dashboard') : undefined}
       innerScroll={mode === 'dashboard'}
     >
       {/* ── Step 1: Waste type ── */}

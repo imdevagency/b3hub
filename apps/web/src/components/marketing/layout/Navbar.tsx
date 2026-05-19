@@ -56,8 +56,8 @@ export function Navbar() {
                 Reģistrēties
               </CTAButton>
               <div className="w-px h-5 bg-border/60 mx-1" aria-hidden="true" />
-              <CTAButton href={`/order`} variant="primary" size="sm">
-                Pasūtīt
+              <CTAButton href={`/dashboard`} variant="primary" size="sm">
+                Sākt darbu
               </CTAButton>
             </div>
 
@@ -103,13 +103,13 @@ export function Navbar() {
                 Ienākt
               </Link>
               <CTAButton
-                href={`/order`}
+                href={`/dashboard`}
                 variant="primary"
                 size="lg"
                 className="text-center w-full mt-2"
                 onClick={() => setMobileOpen(false)}
               >
-                Pasūtīt tagad
+                Sākt darbu
               </CTAButton>
               <CTAButton
                 href={`/register`}

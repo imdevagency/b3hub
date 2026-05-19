@@ -684,7 +684,7 @@ export default function MarketHealthPage() {
                       sarakstiem.
                     </p>
                     <Button variant="outline" size="sm" asChild className="mt-3 bg-background">
-                      <Link href="/dashboard/b3-recycling/waste-log">Konvertēt žurnālā</Link>
+                      <Link href="/dashboard/recycling/waste-records">Konvertēt žurnālā</Link>
                     </Button>
                   </AlertBox>
                 ) : (
@@ -703,7 +703,7 @@ export default function MarketHealthPage() {
                     asChild
                     className="text-teal-600 hover:text-teal-700"
                   >
-                    <Link href="/dashboard/b3-recycling">
+                    <Link href="/dashboard/recycling">
                       Pārstrādes modulis <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Link>
                   </Button>
@@ -752,7 +752,7 @@ export default function MarketHealthPage() {
                 {
                   label: 'Pasīvi materiāli',
                   action: 'Pievienojiet pārstrādātās masas Bilt tirgū caur reciklēšanas moduli.',
-                  href: '/dashboard/b3-recycling/waste-log',
+                  href: '/dashboard/recycling/waste-records',
                   color: 'text-teal-600',
                   bg: 'bg-teal-50',
                   border: 'border-teal-100',

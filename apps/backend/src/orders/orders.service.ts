@@ -44,7 +44,6 @@ import { MaterialsService } from '../materials/materials.service';
 import { DocumentsService } from '../documents/documents.service';
 import { MapsService } from '../maps/maps.service';
 import { PayoutsService } from '../payouts/payouts.service';
-import { B3FieldsService } from '../b3-fields/b3-fields.service';
 
 @Injectable()
 export class OrdersService {
@@ -77,7 +76,6 @@ export class OrdersService {
     private documents: DocumentsService,
     private maps: MapsService,
     private payoutsService: PayoutsService,
-    private b3Fields: B3FieldsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, currentUser: RequestingUser) {
@@ -704,13 +702,7 @@ export class OrdersService {
           orderData.pickupSlotId &&
           (orderData.fulfillmentType as string) === 'PICKUP'
         ) {
-          this.b3Fields
-            .bookSlot(orderData.pickupSlotId)
-            .catch((err) =>
-              this.logger.warn(
-                `bookSlot failed for slot ${orderData.pickupSlotId} on order ${order.id}: ${(err as Error).message}`,
-              ),
-            );
+          // Slot booking removed — B3Fields module no longer in scope
         }
 
         return order;
@@ -1265,13 +1257,7 @@ export class OrdersService {
       status === OrderStatus.CONFIRMED &&
       order.fulfillmentType === 'PICKUP'
     ) {
-      this.b3Fields
-        .autoCreatePickupPass(id, order.buyerId, order.createdById)
-        .catch((err) =>
-          this.logger.warn(
-            `autoCreatePickupPass failed for order ${id}: ${(err as Error).message}`,
-          ),
-        );
+      // Field pass auto-creation removed — B3Fields module no longer in scope
     }
 
     // Pre-generate the atkritumu pārvadājuma pavadzīme for DISPOSAL orders on CONFIRMED.
@@ -1505,13 +1491,7 @@ export class OrdersService {
 
       // Release the pickup slot if this was a PICKUP order (fire-and-forget)
       if (order.pickupSlotId) {
-        this.b3Fields
-          .releaseSlot(order.pickupSlotId)
-          .catch((err) =>
-            this.logger.warn(
-              `releaseSlot failed for slot ${order.pickupSlotId} on cancel order ${id}: ${(err as Error).message}`,
-            ),
-          );
+        // Slot release removed — B3Fields module no longer in scope
       }
     }
 
@@ -2196,13 +2176,7 @@ export class OrdersService {
 
     // Release pickup slot if this was a PICKUP order (fire-and-forget)
     if (order.pickupSlotId) {
-      this.b3Fields
-        .releaseSlot(order.pickupSlotId)
-        .catch((err) =>
-          this.logger.warn(
-            `releaseSlot failed for slot ${order.pickupSlotId} on cancel order ${id}: ${(err as Error).message}`,
-          ),
-        );
+      // Slot release removed — B3Fields module no longer in scope
     }
 
     const updated = { ...order, status: OrderStatus.CANCELLED };

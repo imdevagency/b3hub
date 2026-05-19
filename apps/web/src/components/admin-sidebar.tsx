@@ -2,9 +2,9 @@
  * AdminSidebar — dedicated sidebar for ADMIN users.
  *
  * Shown instead of AppSidebar when user.userType === 'ADMIN'.
- * Three top-level scopes: Bilt (marketplace), B3 Recycling, B3 Construction.
- * Scope is detected from the current URL pathname.
- * Bilt sections have live badge counts refreshed every 30 s.
+ * Single scope: Bilt marketplace admin — manages all four market sides
+ * (buyers, suppliers, carriers, recyclers).
+ * Live badge counts refreshed every 30 s.
  */
 'use client';
 
@@ -48,7 +48,6 @@ import {
   Users,
   Wallet,
   Wrench,
-  ContactRound,
   Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -102,13 +101,9 @@ type AdminBadges = {
   triageAlerts: number;
 };
 
-// ─── Business unit definitions ────────────────────────────────────────────────
+// ─── Scope ───────────────────────────────────────────────────────────────────
 
-type Scope = 'b3hub';
-
-const BUSINESS_UNITS: { id: Scope; label: string; href: string }[] = [
-  { id: 'b3hub', label: 'APP', href: '/dashboard/admin' },
-];
+type Scope = 'bilt';
 
 // ─── Bilt navigation (marketplace admin) ────────────────────────────────────
 // 7 items max — one per business domain. Tabs within each domain live
@@ -174,7 +169,6 @@ const B3HUB_NAV: NavSection[] = [
     id: 'growth',
     label: 'Izaugsme',
     items: [
-      { label: 'CRM', href: '/dashboard/admin/crm', icon: ContactRound },
       { label: 'CMS', href: '/dashboard/admin/cms', icon: FileText },
       { label: 'Mārketings', href: '/dashboard/admin/marketing', icon: Megaphone },
     ],
@@ -200,68 +194,14 @@ const B3HUB_NAV: NavSection[] = [
   },
 ];
 
-// ─── B3 Recycling navigation ──────────────────────────────────────────────────
-
-const RECYCLING_NAV: NavSection[] = [
-  {
-    id: 'overview',
-    label: 'Pārskats',
-    items: [{ label: 'Vadības panelis', href: '/dashboard/b3-recycling', icon: LayoutDashboard }],
-  },
-  {
-    id: 'jobs',
-    label: 'Darbi',
-    items: [
-      { label: 'Ienākošie darbi', href: '/dashboard/b3-recycling/jobs', icon: Truck },
-      {
-        label: 'Atkritumu žurnāls',
-        href: '/dashboard/b3-recycling/waste-log',
-        icon: ClipboardList,
-      },
-      {
-        label: 'APUS',
-        href: '/dashboard/b3-recycling/apus',
-        icon: FileText,
-      },
-      {
-        label: 'Finanses & Vide',
-        href: '/dashboard/b3-recycling/finances',
-        icon: BarChart3,
-      },
-    ],
-  },
-  {
-    id: 'docs',
-    label: 'Dokumenti',
-    items: [
-      {
-        label: 'Sertifikāti',
-        href: '/dashboard/b3-recycling/certificates',
-        icon: FileText,
-      },
-    ],
-  },
-  {
-    id: 'settings',
-    label: 'Iestatījumi',
-    items: [
-      {
-        label: 'Gulbenes lauks',
-        href: '/dashboard/admin/b3-fields',
-        icon: MapPin,
-      },
-    ],
-  },
-];
-
 // ─── Scope icon map ───────────────────────────────────────────────────────────
 
 const SCOPE_ICON: Record<Scope, React.ElementType> = {
-  b3hub: ShieldCheck,
+  bilt: ShieldCheck,
 };
 
 const SCOPE_SUBTITLE: Record<Scope, string> = {
-  b3hub: 'Platformas pārvaldība',
+  bilt: 'Platformas administrācija',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -271,9 +211,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
   const pathname = usePathname();
   const router = useRouter();
 
-  // Always APP scope — Grupa tab removed
-  const activeScope: Scope = 'b3hub';
-
+  const activeScope: Scope = 'bilt';
   const activeNav = B3HUB_NAV;
 
   const ScopeIcon = SCOPE_ICON[activeScope];
@@ -363,17 +301,17 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="Admin">
-              <Link href={BUSINESS_UNITS.find((u) => u.id === activeScope)!.href}>
+              <Link href="/dashboard/admin">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-900 text-white shrink-0 relative">
                   <ScopeIcon className="size-4" />
-                  {activeScope === 'b3hub' && totalAlerts > 0 && (
+                  {totalAlerts > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] text-white font-bold group-data-[collapsible=icon]:flex">
                       {totalAlerts > 9 ? '!' : totalAlerts}
                     </span>
                   )}
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">B3 Group Admin</span>
+                  <span className="truncate font-semibold">Bilt</span>
                   <span className="truncate text-xs text-gray-500">
                     {SCOPE_SUBTITLE[activeScope]}
                   </span>

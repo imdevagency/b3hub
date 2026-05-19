@@ -430,7 +430,7 @@ export function TransportWizard({ mode }: Props) {
       totalSteps={4}
       title={isSent ? 'Pieprasījums nosūtīts' : 'Kravu pārvadāšana'}
       onBack={getOnBack()}
-      onClose={mode === 'public' && !isSent ? () => router.push('/order') : undefined}
+      onClose={mode === 'public' && !isSent ? () => router.push('/dashboard') : undefined}
       innerScroll={mode === 'dashboard'}
     >
       {/* ── Step 1: Cargo description + weight ── */}

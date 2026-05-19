@@ -48,13 +48,9 @@ export * from './guest-orders';
 
 export * from './company';
 
-export * from './projects';
-
 export * from './analytics';
 
 export * from './recycler';
-
-export * from './rentals';
 
 export * from './fuel';
 
@@ -92,8 +88,6 @@ import { companyApi } from './company';
 
 import { paymentsApi } from './payments';
 
-import { projectsApi } from './projects';
-
 import { savedAddressesApi } from './saved-addresses';
 
 import { paymentMethodsApi } from './payment-methods';
@@ -103,8 +97,6 @@ import { guestOrdersApi } from './guest-orders';
 
 
 import { analyticsApi } from './analytics';
-
-import { rentalsApi } from './rentals';
 
 import { fuelApi } from './fuel';
 
@@ -186,11 +178,6 @@ export const api = {
 
 
 
-  // ── Projects ─────────────────────────────────────────────────────────
-
-  ...projectsApi,
-
-
 
   // ── Saved addresses ──────────────────────────────────────────────────
 
@@ -210,9 +197,6 @@ export const api = {
   // ── Analytics ────────────────────────────────────────────────────────
 
   analytics: analyticsApi,
-  // ── Generic rental services (scaffolding, generators, fencing, etc.) ─
-
-  rentals: rentalsApi,
 
   // ── Fuel price rates (public, no auth) ──────────────────────────────
 

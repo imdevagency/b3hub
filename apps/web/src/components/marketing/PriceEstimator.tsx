@@ -17,9 +17,9 @@ interface FuelRates {
 type ServiceType = 'materials' | 'transport' | 'disposal';
 
 const SERVICE_HREFS: Record<ServiceType, string> = {
-  materials: '/order/materials',
-  transport: '/order/transport',
-  disposal: '/order/disposal',
+  materials: '/register',
+  transport: '/register',
+  disposal: '/register',
 };
 
 const SERVICE_LABELS: Record<ServiceType, string> = {

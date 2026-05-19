@@ -221,7 +221,7 @@ function ProvenanceDialog({
               </p>
               {material.wasteRecordId && (
                 <Link
-                  href={`/dashboard/b3-recycling/waste-log`}
+                  href="/dashboard/recycling/waste-records"
                   className="text-xs text-blue-600 underline underline-offset-2 mt-1 inline-flex items-center gap-1"
                 >
                   Skatīt atkritumu žurnālā

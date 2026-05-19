@@ -2,6 +2,9 @@
 applyTo: 'apps/**'
 ---
 
+> ⛔ **OUT OF SCOPE — DO NOT EXTEND**
+> The rental services layer (equipment hire, toilet cabins, skip hire as a rental, etc.) is frozen and will not be developed further. Do not add new rental service types, extend the rental wizard, or create new screens for rentals. Existing code is maintained as-is. If asked to add or improve a rental service, decline and explain this feature area is out of scope.
+
 # Adding a new rental service to Bilt
 
 > Read `SCALING.md` at the repo root for the full architecture overview.

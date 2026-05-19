@@ -365,7 +365,7 @@ export function DisposalWizard({ mode }: Props) {
       totalSteps={3}
       title={isSent ? 'Pieprasījums nosūtīts' : 'Atkritumu izvešana'}
       onBack={getOnBack()}
-      onClose={mode === 'public' && !isSent ? () => router.push('/order') : undefined}
+      onClose={mode === 'public' && !isSent ? () => router.push('/dashboard') : undefined}
       innerScroll={mode === 'dashboard'}
     >
       {/* ── Step 1: Waste type + weight ── */}

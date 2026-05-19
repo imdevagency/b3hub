@@ -70,8 +70,13 @@ export function RoleTabs() {
                 ))}
               </ul>
               <div className="mt-4 flex flex-wrap gap-4 items-center">
-                <CTAButton href={'/order'} variant="inverted" size="lg" className="w-fit text-base">
-                  Pasūtīt tagad <ArrowRight className="w-5 h-5 ml-1.5" />
+                <CTAButton
+                  href={'/register'}
+                  variant="inverted"
+                  size="lg"
+                  className="w-fit text-base"
+                >
+                  Sākt tagad <ArrowRight className="w-5 h-5 ml-1.5" />
                 </CTAButton>
                 <Link
                   href="/buvniekiem"

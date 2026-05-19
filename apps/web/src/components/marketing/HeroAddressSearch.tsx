@@ -4,8 +4,8 @@
  * HeroAddressSearch
  *
  * Address autocomplete bar for the marketing hero.
- * On address selection → navigates to /order with address pre-filled as URL params
- * so downstream wizards can skip the address step.
+ * On address selection → navigates to /register with address pre-filled as URL params
+ * so the registration flow can capture delivery context.
  */
 
 import { useState } from 'react';
@@ -45,7 +45,7 @@ export function HeroAddressSearch() {
     if (selected?.lat) params.set('lat', String(selected.lat));
     if (selected?.lng) params.set('lng', String(selected.lng));
     if (selected?.city) params.set('city', selected.city);
-    router.push(`/order?${params.toString()}`);
+    router.push(`/register?${params.toString()}`);
   }
 
   return (

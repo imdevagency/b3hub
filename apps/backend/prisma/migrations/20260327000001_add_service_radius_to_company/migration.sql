@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "Company" ADD COLUMN "serviceRadiusKm" INTEGER;
+ALTER TABLE "companies" ADD COLUMN IF NOT EXISTS "serviceRadiusKm" INTEGER;

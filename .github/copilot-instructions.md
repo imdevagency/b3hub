@@ -3,17 +3,23 @@
 
 ## What this product is
 
-**B3 Group** is the parent company behind Bilt. Bilt is a **pure construction logistics marketplace** — one platform, one admin dashboard at `/dashboard/admin/*`.
+**Bilt** is Latvia's **all-in-one digital platform for construction site supply and waste management** — a neutral marketplace, a driver of a genuine circular economy, and an expert in optimized material flows.
 
-**Bilt** is a **construction logistics marketplace** for the Latvian/Baltic market — serving both **B2C and B2B** customers on the same platform.
+> THE PLATFORM FOR MATERIAL FLOWS. SUSTAINABLE. DIGITAL. EFFICIENT.
 
-It connects **four market sides**:
-- **Buyers** — ranges from homeowners ordering a skip for a garden project (B2C, guest checkout) to construction companies running 50 deliveries across multiple sites (B2B, full account with contracts and team management)
-- **Sellers/Suppliers** — quarries and material suppliers listing gravel, sand, concrete, soil
-- **Carriers** — trucking companies and independent drivers executing deliveries
-- **Recyclers** — licensed waste processing facilities accepting, processing, and certifying construction waste
+**Bilt is an ecosystem, not just a marketplace.** The platform combines digital logistics know-how, data-driven material flow management, and recycling center infrastructure to make the construction sector more sustainable — driving the industry toward climate neutrality.
+
+Bilt connects **four market sides** into one closed logistics loop:
+- **Buyers** — construction companies ordering bulk materials, transport, and waste disposal; homeowners and small trades for one-off needs
+- **Suppliers** — quarries and material suppliers listing gravel, sand, concrete, recycled construction materials (RC materials)
+- **Carriers** — trucking companies and independent drivers executing deliveries via the transport exchange
+- **Recyclers** — licensed recycling centers accepting, processing, and certifying construction waste; producing RC materials for resale
 
 Full order flow: buyer places order → seller confirms loading → driver delivers → documents auto-generated.
+
+Every tonne of material has a digital trail. Every waste transfer has a certified record. Every payment is automatic.
+
+**Circular economy vision**: Bilt knows what materials are produced in "urban quarries" (demolition/dismantling sites) and where they are needed. Our own recycling centers supply customers quickly and reliably with RC materials — reducing the construction sector's ecological footprint. Goals: increase recycling rates for construction materials, reduce landfill dependency, promote sustainable resource use.
 
 **B2C segment**: homeowners, small trades, micro-contractors. One-off needs. Guest checkout supported; account offered post-order as convenience, not a gate. Public order wizards are a valid acquisition channel for this segment.
 **B2B segment**: construction companies, contractors, project managers. Account required. Framework contracts, project cost tracking, invoicing, team/permissions management.
@@ -52,7 +58,9 @@ npm run dev:mobile        # Expo dev server
 ### API prefix
 
 <!-- GEN:api-prefix -->
+
 All routes prefixed with `/api/v1` (e.g. `POST /api/v1/orders`).
+
 <!-- END GEN -->
 
 ### Module anatomy
@@ -80,6 +88,7 @@ src/<feature>/
 ### RequestingUser shape (JWT payload)
 
 <!-- GEN:requesting-user -->
+
 ```ts
 export interface RequestingUser {
   /** Primary ID (alias: same as userId) */
@@ -106,6 +115,7 @@ export interface RequestingUser {
   companyFeatures?: string[]; // Enabled SaaS feature modules for this company (CompanyFeature enum values)
 }
 ```
+
 <!-- END GEN -->
 
 > ⚠️ **Important**: The `/auth/me` and login API responses return company features as `user.company.features` (nested), **not** as a flat `user.companyFeatures`. Mobile `mode-context.tsx` reads `user.company.features` accordingly. Never read `user.companyFeatures` directly in mobile code.
@@ -166,6 +176,7 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 ### Route groups (Expo Router file-based routing)
 
 <!-- GEN:mobile-routes -->
+
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
 - `(buyer)` — (account)/, catalog, equipment/, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
 - `(driver)` — active, billing-settings, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
@@ -210,9 +221,27 @@ Prefer hooks over inline `useEffect` + `fetch` in components.
 
 ## Admin dashboard — scope
 
-One admin dashboard, one scope: `/dashboard/admin/*`. It manages all four market sides — buyers, sellers, carriers, and recyclers — plus platform operations.
+One admin dashboard, one scope: `/dashboard/admin/*`. It manages all four market sides — buyers, suppliers, carriers, and recyclers — plus platform operations.
 
-> ⚠️ There is **no** `Būve` tab, **no** `/dashboard/b3-construction` route, **no** B3 Fields / gate-scan feature, and **no** separate B3 Recycling admin scope. Do not recreate them. B3 Fields and the gate app variant have been removed — the platform is a neutral marketplace.
+Recycling centers are a **market participant** (one of the four sides), not a separate branded scope. The admin view for recyclers lives at `/dashboard/admin/recycling-centers` — same pattern as suppliers, carriers.
+
+The `b3-recycling` path (`/dashboard/(internal)/b3-recycling/`) is legacy from a previous private-operator concept. Do not extend it. Do not add new pages there. The platform-side recycler portal is at `/dashboard/(platform)/recycling/`.
+
+> There is **no** separate B3 Group admin tab, **no** `B3 Recycling` sidebar scope, and **no** B3-branded sub-portal. It’s one neutral marketplace admin.
+
+---
+
+## Features frozen — do not develop further
+
+The following areas are **out of scope** and must not be extended, improved, or have new screens/APIs added:
+
+| Area                                                | What exists                                                                     | Action                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Rental services**                                 | `apps/backend/src/rentals/`, `apps/mobile/lib/rental-services.ts`, wizard steps | Frozen. No new service types, no new screens, no extensions. |
+| **B3 field operator portal / APUS waste reporting** | `/dashboard/(internal)/b3-recycling/`                                           | Legacy. Do not add pages or extend.                          |
+| **CRM / projects module**                           | Any `projects` or `crm` routes/services                                         | Do not add or extend.                                        |
+
+If asked to work on any of these areas, decline and explain the feature is out of scope.
 
 ### Integration ownership
 
@@ -267,7 +296,6 @@ Before writing any custom styled View, div, or input, check the component librar
 Detailed references are in scoped instruction files:
 
 - **Backend** (`apps/backend/**`) → `.github/instructions/backend-schema.instructions.md`
-- **All apps** (`apps/**`) → `.github/instructions/rental-services.instructions.md` ← adding a new rental service
 - **Web** (`apps/web/**`) → `.github/instructions/web-components.instructions.md`
 - **Mobile** (`apps/mobile/**`) → `.github/instructions/mobile-components.instructions.md`
 - **Mobile styling** (`apps/mobile/**`) → `.github/instructions/mobile-styling.instructions.md`
@@ -278,7 +306,6 @@ Key rules:
 - **Web**: use shadcn/ui primitives from `@/components/ui/`. Never write raw `<button>` or custom modal markup.
 - **Mobile**: every screen must start with `<ScreenContainer>`. Detail screens must use `<ScreenHeader>`. Named sections must use `<InfoSection>` + `<DetailRow>`. Status must use `<StatusPill>`. Empty lists must use `<EmptyState>`.
 - **Mobile styling**: always check the NativeWind safe-usage rules before writing any `className` or `style` in mobile. Never use arbitrary values (`text-[16px]`) in `className`. Never mix the custom `Text` component with font-weight overrides.
-- **New rental service**: always read `.github/instructions/rental-services.instructions.md` before building anything. The answer is always 4 file edits — never a new module, model, or screen.
 
 ---
 
@@ -304,13 +331,6 @@ Key rules:
 | `.github/instructions/mobile-components.instructions.md`     | Mobile UI component catalog + usage                                                     |
 | `.github/instructions/mobile-styling.instructions.md`        | NativeWind safe-usage rules — what goes in className vs style, font rules               |
 | `scripts/generate-instructions.mjs`                          | Regenerates all instruction files from source — runs automatically on `prisma:generate` |
-| `SCALING.md`                                                 | **Rental platform scaling guide** — architecture, 5-step checklist, status flows        |
-| `.github/instructions/rental-services.instructions.md`       | AI checklist for adding a new rental service (4 file edits, 0 new screens)              |
-| `apps/backend/src/rentals/`                                  | Generic rental module — handles all service types via `RentalOrder` model               |
-| `apps/mobile/lib/rental-services.ts`                         | Mobile service registry — one config entry per rental service type                      |
-| `apps/mobile/lib/api/rentals.ts`                             | Mobile API — one file covers all rental service types                                   |
-| `apps/mobile/components/wizard/RentalHirePeriodStep.tsx`     | Shared hire period wizard step — reused by all rental service wizards                   |
-| `apps/mobile/components/driver/RentalOrderCard.tsx`          | Generic driver order card — reused by all rental service types on the driver tab        |
 
 ```
 

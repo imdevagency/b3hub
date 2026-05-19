@@ -997,14 +997,4 @@ export class AdminController {
   getMarketMatch() {
     return this.service.adminGetMarketMatch();
   }
-
-  /**
-   * GET /admin/projects
-   * Platform-wide list of all construction projects with waste declarations
-   * and material needs — the supply/demand signal overview.
-   */
-  @Get('projects')
-  getAllProjects() {
-    return this.service.adminGetAllProjects();
-  }
 }

@@ -11,7 +11,7 @@
  *
  * Decision rule: "Who is the end user of this integration's data?"
  *   → Marketplace users (auto-fill, risk signals, payments, notifications) = here
- *   → B3 Recycling internal staff                         = /dashboard/b3-recycling
+ *   → Recycler operators                                  = /dashboard/recycling
  * ──────────────────────────────────────────────────────────────────────────────
  */
 

@@ -272,7 +272,7 @@ export function ToiletCabinWizard({ mode }: Props) {
           norādītajā adresē.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full max-w-sm">
-          <Button className="flex-1" onClick={() => router.push('/order')}>
+          <Button className="flex-1" onClick={() => router.push('/dashboard')}>
             Atpakaļ uz pakalpojumiem
           </Button>
           {mode === 'dashboard' && (
@@ -299,7 +299,7 @@ export function ToiletCabinWizard({ mode }: Props) {
       step={step + 1}
       totalSteps={4}
       title="Tualetes kabīnes"
-      onClose={mode === 'public' && !isConfirmed ? () => router.push('/order') : undefined}
+      onClose={mode === 'public' && !isConfirmed ? () => router.push('/dashboard') : undefined}
       onBack={step > 0 ? () => setStep(step - 1) : undefined}
       innerScroll={mode === 'dashboard'}
     >

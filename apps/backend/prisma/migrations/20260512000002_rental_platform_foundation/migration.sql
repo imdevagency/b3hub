@@ -6,6 +6,55 @@
 --   4. rental_orders table (generic rental service model for new services)
 --   5. carrier_rental_settings table
 
+-- 0. Ensure enums and tables that may have been created via db push exist ──────
+DO $$ BEGIN
+  CREATE TYPE "PaymentMethod" AS ENUM ('CARD', 'INVOICE', 'SEPA');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ToiletCabinType" AS ENUM ('STANDARD', 'DISABLED_ACCESS', 'VIP', 'HEATED');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ToiletCabinStatus" AS ENUM ('PENDING', 'CONFIRMED', 'DELIVERED', 'IN_USE', 'COLLECTED', 'COMPLETED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+CREATE TABLE IF NOT EXISTS "toilet_cabin_orders" (
+  "id"               TEXT NOT NULL,
+  "orderNumber"      TEXT NOT NULL,
+  "address"          TEXT NOT NULL,
+  "city"             TEXT NOT NULL,
+  "lat"              DOUBLE PRECISION,
+  "lng"              DOUBLE PRECISION,
+  "cabinType"        "ToiletCabinType" NOT NULL DEFAULT 'STANDARD',
+  "cabinCount"       INTEGER NOT NULL DEFAULT 1,
+  "hireDays"         INTEGER NOT NULL,
+  "deliveryDate"     TIMESTAMP(3) NOT NULL,
+  "deliveryWindow"   TEXT,
+  "price"            DOUBLE PRECISION NOT NULL,
+  "currency"         TEXT NOT NULL DEFAULT 'EUR',
+  "paymentMethod"    "PaymentMethod" NOT NULL DEFAULT 'CARD',
+  "payseraOrderId"   TEXT,
+  "payseraPaymentUrl" TEXT,
+  "paymentStatus"    "PaymentStatus" NOT NULL DEFAULT 'PENDING',
+  "status"           "ToiletCabinStatus" NOT NULL DEFAULT 'PENDING',
+  "contactName"      TEXT,
+  "contactEmail"     TEXT,
+  "contactPhone"     TEXT,
+  "userId"           TEXT,
+  "carrierId"        TEXT,
+  "notes"            TEXT,
+  "statusTimestamps" JSONB,
+  "createdAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"        TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "toilet_cabin_orders_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "toilet_cabin_orders_orderNumber_key" ON "toilet_cabin_orders"("orderNumber");
+
 -- 1. Toilet cabin order parity ─────────────────────────────────────────────
 ALTER TABLE "toilet_cabin_orders"
   ADD COLUMN IF NOT EXISTS "currentLocation" JSONB,

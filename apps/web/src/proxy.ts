@@ -16,11 +16,9 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-pa
 // All routes that are only accessible to ADMIN users (internal staff dashboards)
 const INTERNAL_PATH_PREFIXES = [
   '/dashboard/admin',
-  '/dashboard/b3-recycling',
 ];
 const ADMIN_ALLOWED_PREFIXES = [
   '/dashboard/admin',
-  '/dashboard/b3-recycling',
   '/dashboard/settings',
   '/dashboard/notifications',
   '/dashboard/chat',
@@ -60,7 +58,6 @@ export default function proxy(request: NextRequest) {
     }
     const isPermitted =
       pathname.startsWith('/dashboard/admin') ||
-      pathname.startsWith('/dashboard/b3-recycling') ||
       pathname.startsWith('/dashboard/settings') ||
       pathname.startsWith('/dashboard/notifications') ||
       pathname.startsWith('/dashboard/chat') ||
@@ -73,7 +70,7 @@ export default function proxy(request: NextRequest) {
     }
   } else {
     // ── APP_MODE: marketplace deployment — block internal routes for non-admins.
-    // This covers /dashboard/admin and /dashboard/b3-recycling.
+    // This covers /dashboard/admin/*.
     // Admins can still access them so local dev (no APP_MODE set) works.
     if (INTERNAL_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
       const token = request.cookies.get('b3hub_token')?.value;
@@ -94,8 +91,8 @@ export default function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protect /dashboard/** and /order/** routes (B2B only — no guest access)
-  if (!pathname.startsWith('/dashboard') && !pathname.startsWith('/order')) {
+  // Protect /dashboard/** routes
+  if (!pathname.startsWith('/dashboard')) {
     return NextResponse.next();
   }
 

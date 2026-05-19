@@ -14,7 +14,6 @@ import {
   Trash2,
   Package,
   MessageSquare,
-  FolderKanban,
   Receipt,
   Truck,
   Recycle,
@@ -76,12 +75,6 @@ const MANAGE_ITEMS: ManageItem[] = [
     description: 'Pieprasīt piedāvājumus no piegādātājiem',
     icon: MessageSquare,
     href: '/dashboard/quote-requests',
-  },
-  {
-    label: 'Projekti',
-    description: 'Grupēt pasūtījumus pa būvdarbu projektiem',
-    icon: FolderKanban,
-    href: '/dashboard/projects',
   },
   {
     label: 'Rēķini & Dokumenti',

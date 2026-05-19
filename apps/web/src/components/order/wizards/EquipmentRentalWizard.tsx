@@ -232,7 +232,7 @@ export function EquipmentRentalWizard({ mode, initialServiceType, listingId, lis
 
   const estimatedPrice = quantity * hireDays * effectivePrice;
 
-  const catalogHref = mode === 'dashboard' ? '/dashboard/order/equipment' : '/order/equipment';
+  const catalogHref = '/dashboard/order/equipment';
 
   // ── Submit ──────────────────────────────────────────────────
   const doSubmit = useCallback(

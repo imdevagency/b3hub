@@ -1,12 +1,8 @@
 /**
  * OrderServiceGrid
  *
- * Shared service-picker grid used on both:
- *   /order             (marketing, public — no auth required)
- *   /dashboard/order   (authenticated dashboard)
- *
- * Same cards, same design, same service data. Intentionally mode-agnostic —
- * each card is just a Link; auth is handled downstream in the wizard.
+ * Service-picker grid used on /dashboard/order.
+ * Each card links to the dashboard order flow.
  */
 import Link from 'next/link';
 import { HardHat, Lock, Truck, Recycle, Pickaxe } from 'lucide-react';
@@ -25,7 +21,7 @@ export interface ServiceDef {
 const SERVICES: ServiceDef[] = [
   {
     id: 'materials',
-    href: '/order/materials',
+    href: '/dashboard/order/materials',
     icon: HardHat,
     title: 'Pirkt būvmateriālus',
     description:
@@ -34,7 +30,7 @@ const SERVICES: ServiceDef[] = [
   },
   {
     id: 'disposal',
-    href: '/order/disposal',
+    href: '/dashboard/order/disposal',
     icon: Recycle,
     title: 'Nodot būvgružus',
     description:
@@ -43,7 +39,7 @@ const SERVICES: ServiceDef[] = [
   },
   {
     id: 'transport',
-    href: '/order/transport',
+    href: '/dashboard/order/transport',
     icon: Truck,
     title: 'Pasūtīt transportu',
     description: 'Pasūtiet tik daudz pārvadājumu, cik nepieciešams — ātri un vienkārši.',

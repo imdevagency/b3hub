@@ -20,7 +20,6 @@ import { MaterialsModule } from './materials/materials.module';
 import { OrdersModule } from './orders/orders.module';
 import { SkipHireModule } from './skip-hire/skip-hire.module';
 import { ToiletCabinsModule } from './toilet-cabins/toilet-cabins.module';
-import { RentalsModule } from './rentals/rentals.module';
 import { DocumentsModule } from './documents/documents.module';
 import { ProviderApplicationsModule } from './provider-applications/provider-applications.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
@@ -42,7 +41,6 @@ import { CompanyMembersModule } from './company-members/company-members.module';
 import { MapsModule } from './maps/maps.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-import { ProjectsModule } from './projects/projects.module';
 import { UpdatesModule } from './updates/updates.module';
 import { HealthModule } from './health/health.module';
 import { SavedAddressesModule } from './saved-addresses/saved-addresses.module';
@@ -50,16 +48,11 @@ import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { SupportModule } from './support/support.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
-import { FieldPassesModule } from './field-passes/field-passes.module';
 import { WeighingSlipsModule } from './weighing-slips/weighing-slips.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { GuestOrdersModule } from './guest-orders/guest-orders.module';
 import { PayoutsModule } from './payouts/payouts.module';
-import { B3FieldsModule } from './b3-fields/b3-fields.module';
-import { SocialModule } from './social/social.module';
-import { EquipmentModule } from './equipment/equipment.module';
 import { VehicleAssignmentsModule } from './vehicle-assignments/vehicle-assignments.module';
-import { CrmModule } from './crm/crm.module';
 import { CmsModule } from './cms/cms.module';
 import { JumisModule } from './jumis/jumis.module';
 import { BisModule } from './bis/bis.module';
@@ -93,7 +86,6 @@ import { CatalogueModule } from './catalogue/catalogue.module';
     OrdersModule,
     SkipHireModule,
     ToiletCabinsModule,
-    RentalsModule,
     DocumentsModule,
     ProviderApplicationsModule,
     VehiclesModule,
@@ -116,7 +108,6 @@ import { CatalogueModule } from './catalogue/catalogue.module';
     MapsModule,
     PaymentsModule,
     AnalyticsModule,
-    ProjectsModule,
     UpdatesModule,
     HealthModule,
     SavedAddressesModule,
@@ -124,16 +115,11 @@ import { CatalogueModule } from './catalogue/catalogue.module';
     DisputesModule,
     SupportModule,
     ApiKeysModule,
-    FieldPassesModule,
     WeighingSlipsModule,
     TrackingModule,
     GuestOrdersModule,
     PayoutsModule,
-    B3FieldsModule,
-    SocialModule,
-    EquipmentModule,
     VehicleAssignmentsModule,
-    CrmModule,
     CmsModule,
     JumisModule,
     BisModule,

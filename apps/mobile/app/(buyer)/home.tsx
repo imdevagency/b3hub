@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Animated, ScrollView, RefreshControl } fr
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
-import type { ApiOrder, ApiTransportJob, ApiProject } from '@/lib/api';
+import type { ApiOrder, ApiTransportJob } from '@/lib/api';
 import {
   HardHat,
   Trash2,
@@ -12,9 +12,6 @@ import {
   AlertCircle,
   ArrowRight,
   MailCheck,
-  FolderOpen,
-  Wrench,
-  Search,
   RefreshCcw,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -81,7 +78,6 @@ export default function HomeScreen() {
 
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [transportOrders, setTransportOrders] = useState<ApiTransportJob[]>([]);
-  const [activeProjects, setActiveProjects] = useState<ApiProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
@@ -114,14 +110,10 @@ export default function HomeScreen() {
           return [] as ApiOrder[];
         }),
         api.transportJobs.myRequests(token).catch(() => [] as ApiTransportJob[]),
-        api.projects.getAll(token).catch(() => [] as ApiProject[]),
       ])
-        .then(([mats, reqs, projs]) => {
+        .then(([mats, reqs]) => {
           setOrders(mats as ApiOrder[]);
           setTransportOrders(reqs as ApiTransportJob[]);
-          setActiveProjects(
-            (projs as ApiProject[]).filter((p) => p.status === 'ACTIVE').slice(0, 5),
-          );
         })
         .finally(() => {
           setLoading(false);
@@ -713,95 +705,6 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-        )}
-
-        {/* ── Project Quick-Order ── */}
-        {activeProjects.length > 0 && (!user?.companyRole || (user?.permManageOrders ?? false)) && (
-          <View style={{ marginBottom: 32 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 20,
-                marginBottom: 16,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontSize: 20,
-                  letterSpacing: -0.4,
-                  color: '#111827',
-                }}
-              >
-                Projekti
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push('/(buyer)/orders' as any)}
-                hitSlop={12}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={{
-                    fontFamily: 'Inter_500Medium',
-                    fontSize: 14,
-                    color: '#4b5563',
-                    paddingRight: 4,
-                  }}
-                >
-                  Visi
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-            >
-              {activeProjects.map((project) => (
-                <TouchableOpacity
-                  key={project.id}
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    haptics.light();
-                    router.push(`/(buyer)/catalog?projectId=${project.id}` as any);
-                  }}
-                  style={{
-                    width: 140,
-                    height: 140,
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: 16,
-                    padding: 16,
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <View>
-                    <Text
-                      style={{
-                        fontFamily: 'Inter_600SemiBold',
-                        fontSize: 16,
-                        color: '#111827',
-                        marginBottom: 4,
-                      }}
-                      numberOfLines={2}
-                    >
-                      {project.name}
-                    </Text>
-                    <Text
-                      style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: '#6b7280' }}
-                      numberOfLines={2}
-                    >
-                      {project.siteAddress || 'Nav adreses'}
-                    </Text>
-                  </View>
-                  <View style={{ alignSelf: 'flex-end' }}>
-                    <FolderOpen size={24} color="#4b5563" strokeWidth={1.5} />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
           </View>
         )}
 

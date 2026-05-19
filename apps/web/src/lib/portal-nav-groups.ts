@@ -48,7 +48,6 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
         { label: 'Katalogs', href: '/dashboard/catalog' },
         { label: 'Cenu aptauja', href: '/dashboard/quote-requests' },
         { label: 'Pamatlīgumi', href: '/dashboard/framework-contracts' },
-        { label: 'Projekti', href: '/dashboard/projects' },
       ],
     },
     {

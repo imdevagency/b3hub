@@ -476,7 +476,7 @@ export function MaterialOrderWizard({
     setForm((f) => ({ ...f, ...updates }));
   }
 
-  const catalogHref = mode === 'dashboard' ? '/dashboard/catalog' : '/order/materials';
+  const catalogHref = mode === 'dashboard' ? '/dashboard/catalog' : '/dashboard/catalog';
 
   function handleAddressChange(
     addr: string,
@@ -789,7 +789,7 @@ export function MaterialOrderWizard({
                   const newCat = val as MaterialCategory;
                   // Navigate to the new category URL — resets wizard with fresh state
                   if (mode === 'public') {
-                    router.push('/order/materials/' + newCat.toLowerCase().replace(/_/g, '-'));
+                    router.push('/dashboard/catalog');
                   } else {
                     const m = CATEGORY_META[newCat];
                     const firstFraction = (categoryFractions[newCat] ??

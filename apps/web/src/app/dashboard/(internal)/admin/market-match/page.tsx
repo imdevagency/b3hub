@@ -274,7 +274,7 @@ function WasteTable({ rows }: { rows: WasteMatchRow[] }) {
                     </Link>
                   ) : (
                     <Link
-                      href="/dashboard/b3-recycling"
+                      href="/dashboard/recycling"
                       className="text-xs text-muted-foreground hover:underline"
                     >
                       Skatīt pārstrādi →

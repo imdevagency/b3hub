@@ -392,7 +392,7 @@ export default function CircularFlowPage() {
                       efektivitāte.
                     </p>
                     <Button asChild className="w-full">
-                      <Link href="/dashboard/b3-recycling/waste-log">
+                      <Link href="/dashboard/recycling/waste-records">
                         Konvertēt žurnālā <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
@@ -603,7 +603,7 @@ export default function CircularFlowPage() {
                   <Link href="/dashboard/admin/recycling-centers">Centru pārvaldība</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/dashboard/b3-recycling/waste-log">APUS žurnāls</Link>
+                  <Link href="/dashboard/recycling/waste-records">APUS žurnāls</Link>
                 </Button>
               </div>
             </div>
