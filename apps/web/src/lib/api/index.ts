@@ -16,7 +16,6 @@ export * from './analytics';
 export * from './driver-schedule';
 export * from './admin';
 export * from './notifications';
-export * from './quote-requests';
 export * from './chat';
 export * from './reviews';
 export * from './recycling-centers';

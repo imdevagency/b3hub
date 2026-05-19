@@ -30,7 +30,6 @@ import { CompanyModule } from './company/company.module';
 import { CarrierSettingsModule } from './carrier-settings/carrier-settings.module';
 import { DriverScheduleModule } from './driver-schedule/driver-schedule.module';
 import { AdminModule } from './admin/admin.module';
-import { QuoteRequestsModule } from './quote-requests/quote-requests.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
 import { ContainersModule } from './containers/containers.module';
@@ -97,7 +96,6 @@ import { CatalogueModule } from './catalogue/catalogue.module';
     DriverScheduleModule,
     SupplierLoadingSlotsModule,
     AdminModule,
-    QuoteRequestsModule,
     ReviewsModule,
     ChatModule,
     ContainersModule,

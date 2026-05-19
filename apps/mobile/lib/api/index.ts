@@ -24,8 +24,6 @@ export * from './transport';
 
 export * from './materials';
 
-export * from './quote-requests';
-
 export * from './invoices';
 
 export * from './notifications';
@@ -71,8 +69,6 @@ import { ordersApi } from './orders';
 import { transportApi } from './transport';
 
 import { materialsApi } from './materials';
-
-import { quoteRequestsApi } from './quote-requests';
 
 import { invoicesApi } from './invoices';
 
@@ -137,10 +133,6 @@ export const api = {
   // ── Materials & quotes ─────────────────────────────────────────────────
 
   ...materialsApi,
-
-  ...quoteRequestsApi,
-
-
 
   // ── Invoices ──────────────────────────────────────────────────────────
 

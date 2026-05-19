@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from './auth-context';
 import { api } from './api';
-import type { ApiOrder, ApiTransportJob, QuoteRequest } from './api';
+import type { ApiOrder, ApiTransportJob } from './api';
 
 // ── Types ────────────────────────────────────────────────────────────────────────────────────
 
@@ -38,8 +38,7 @@ export function orderSearchText(item: UnifiedOrder): string {
 export type UnifiedOrder =
   | { kind: 'material'; data: ApiOrder; sortDate: number; isActive: boolean }
   | { kind: 'transport'; data: ApiTransportJob; sortDate: number; isActive: boolean }
-  | { kind: 'disposal'; data: ApiTransportJob; sortDate: number; isActive: boolean }
-  | { kind: 'rfq'; data: QuoteRequest; sortDate: number; isActive: boolean };
+  | { kind: 'disposal'; data: ApiTransportJob; sortDate: number; isActive: boolean };
 
 // ── Bucket helpers (exported for use in card components) ──────
 
@@ -81,20 +80,12 @@ export function reqBucket(status: string): FilterKey {
   return 'CANCELLED';
 }
 
-const RFQ_ACTIVE = new Set(['PENDING', 'QUOTED']);
-export function rfqBucket(status: string): FilterKey {
-  if (RFQ_ACTIVE.has(status)) return 'ACTIVE';
-  if (status === 'ACCEPTED') return 'DONE';
-  return 'CANCELLED';
-}
-
 // ── Hook ──────────────────────────────────────────────────────
 
 export function useOrders() {
   const { token } = useAuth();
   const [matOrders, setMatOrders] = useState<ApiOrder[]>([]);
   const [reqOrders, setReqOrders] = useState<ApiTransportJob[]>([]);
-  const [rfqOrders, setRfqOrders] = useState<QuoteRequest[]>([]); 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterKey>('ALL');
@@ -108,15 +99,13 @@ export function useOrders() {
         return;
       }
       if (showSkeleton) setLoading(true);
-      const [matRes, reqRes, rfqRes] = await Promise.allSettled([
+      const [matRes, reqRes] = await Promise.allSettled([
         api.orders.myOrders(token),
         api.transportJobs.myRequests(token),
-        api.quoteRequests.list(token),
       ]);
       setMatOrders(matRes.status === 'fulfilled' && Array.isArray(matRes.value) ? matRes.value : []);
       setReqOrders(reqRes.status === 'fulfilled' && Array.isArray(reqRes.value) ? reqRes.value : []);
-      setRfqOrders(rfqRes.status === 'fulfilled' && Array.isArray(rfqRes.value) ? rfqRes.value : []);
-      setError([matRes, reqRes, rfqRes].every((r) => r.status === 'rejected'));
+      setError([matRes, reqRes].every((r) => r.status === 'rejected'));
       setLoading(false);
       setRefreshing(false);
     },
@@ -153,28 +142,18 @@ export function useOrders() {
         isActive: reqBucket(o.status) === 'ACTIVE',
       });
     });
-    rfqOrders.forEach((o) => {
-      list.push({
-        kind: 'rfq',
-        data: o,
-        sortDate: new Date(o.createdAt).getTime(),
-        isActive: rfqBucket(o.status) === 'ACTIVE',
-      });
-    });
     return list.sort((a, b) => {
       if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
       return b.sortDate - a.sortDate;
     });
-  }, [matOrders, reqOrders, rfqOrders]);
+  }, [matOrders, reqOrders]);
 
   const filtered = useMemo(() => {
     let list = filter === 'ALL' ? unified : unified.filter((item) => {
       const bucket =
         item.kind === 'transport' || item.kind === 'disposal'
           ? reqBucket(item.data.status)
-          : item.kind === 'rfq'
-            ? rfqBucket(item.data.status)
-            : matBucket(item.data.status);
+          : matBucket(item.data.status);
       return bucket === filter;
     });
     if (query.trim().length >= 2) {
@@ -190,9 +169,7 @@ export function useOrders() {
       const b: FilterKey =
         item.kind === 'transport' || item.kind === 'disposal'
           ? reqBucket(item.data.status)
-          : item.kind === 'rfq'
-            ? rfqBucket(item.data.status)
-            : matBucket(item.data.status);
+          : matBucket(item.data.status);
       c[b] = (c[b] ?? 0) + 1;
     });
     return c;

@@ -56,7 +56,6 @@ import {
   getAllTransportJobs,
   getMyOrders,
   getMyTransportJobs,
-  getOpenQuoteRequests,
   getProviderApplications,
   getUnreadNotificationCount,
   listDisputes,
@@ -283,7 +282,6 @@ const ACTIVE_JOB_STATUSES = new Set([
 
 type SidebarBadgeCounts = {
   notifications: number;
-  openRfqs: number;
   activeJobs: number;
   openDisputes: number;
   pendingApplications: number;
@@ -297,7 +295,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const [badgeCounts, setBadgeCounts] = React.useState<SidebarBadgeCounts>({
     notifications: 0,
-    openRfqs: 0,
     activeJobs: 0,
     openDisputes: 0,
     pendingApplications: 0,
@@ -350,7 +347,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (!token) {
       setBadgeCounts({
         notifications: 0,
-        openRfqs: 0,
         activeJobs: 0,
         openDisputes: 0,
         pendingApplications: 0,
@@ -364,14 +360,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const loadBadgeCounts = async () => {
       const [
         notificationsResult,
-        rfqResult,
         activeJobsResult,
         disputesResult,
         applicationsResult,
         pendingSellerResult,
       ] = await Promise.allSettled([
         getUnreadNotificationCount(token),
-        activeMode === 'SUPPLIER' ? getOpenQuoteRequests(token) : Promise.resolve([]),
         activeMode === 'CARRIER'
           ? (async () => {
               const canDispatchCarrierJobs =
@@ -408,7 +402,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           notificationsResult.status === 'fulfilled'
             ? Math.max(0, notificationsResult.value.count ?? 0)
             : 0,
-        openRfqs: rfqResult.status === 'fulfilled' ? Math.max(0, rfqResult.value.length) : 0,
         activeJobs:
           activeJobsResult.status === 'fulfilled' ? Math.max(0, activeJobsResult.value) : 0,
         openDisputes: disputesResult.status === 'fulfilled' ? Math.max(0, disputesResult.value) : 0,
@@ -440,7 +433,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const itemBadgeCountByHref = React.useMemo<Record<string, number>>(() => {
     const map: Record<string, number> = {
       '/dashboard/notifications': badgeCounts.notifications,
-      '/dashboard/quote-requests/open': badgeCounts.openRfqs,
       '/dashboard/incoming-orders': badgeCounts.pendingSellerOrders,
     };
 
@@ -457,7 +449,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     activeMode,
     badgeCounts.activeJobs,
     badgeCounts.notifications,
-    badgeCounts.openRfqs,
     badgeCounts.openDisputes,
     badgeCounts.pendingSellerOrders,
   ]);

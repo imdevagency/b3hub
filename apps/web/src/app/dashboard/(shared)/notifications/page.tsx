@@ -107,12 +107,6 @@ const TYPE_META: Record<string, TypeMeta> = {
     iconColor: '#0369a1',
     label: 'Piedāvājums iesniegts',
   },
-  QUOTE_REQUEST_RECEIVED: {
-    Icon: MessageSquare,
-    bg: '#fef9c3',
-    iconColor: '#a16207',
-    label: 'Jauns cenu pieprasījums',
-  },
   SYSTEM_ALERT: {
     Icon: AlertCircle,
     bg: '#fefce8',
@@ -189,8 +183,6 @@ function deepLink(n: AppNotification): string | null {
     case 'QUOTE_RECEIVED':
     case 'QUOTE_ACCEPTED':
     case 'QUOTE_SUBMITTED':
-    case 'QUOTE_REQUEST_RECEIVED':
-      return '/dashboard/orders';
     case 'DOCUMENT_EXPIRING_SOON':
       return '/dashboard/garage';
     case 'WEIGHING_SLIP':

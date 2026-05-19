@@ -1294,36 +1294,14 @@ export class AdminService {
 
   /**
    * GET /admin/demand-gaps
-   * Unfulfilled demand (expired/cancelled RFQs) + dormant supplier/carrier churn signals.
+   * Dormant supplier/carrier churn signals.
    * "Dormant" = had activity 30–90 days ago but nothing in the last 30 days.
    */
   async getDemandGaps() {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-    // ── 1. Unfulfilled RFQs ──────────────────────────────────────────────────
-    const unfulfilledRfqs = await this.prisma.quoteRequest.findMany({
-      where: {
-        status: { in: ['EXPIRED', 'CANCELLED'] },
-        createdAt: { gte: ninetyDaysAgo },
-      },
-      select: {
-        id: true,
-        requestNumber: true,
-        materialCategory: true,
-        materialName: true,
-        quantity: true,
-        unit: true,
-        deliveryCity: true,
-        status: true,
-        createdAt: true,
-        buyer: { select: { firstName: true, lastName: true, email: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
-
-    // ── 2. Dormant suppliers ─────────────────────────────────────────────────
+    // ── 1. Dormant suppliers ─────────────────────────────────────────────────
     const [recentOrderItems, historicOrderItems] = await Promise.all([
       this.prisma.orderItem.findMany({
         where: { order: { createdAt: { gte: thirtyDaysAgo } } },
@@ -1438,24 +1416,9 @@ export class AdminService {
       .sort((a, b) => (b.daysSinceLastJob ?? 0) - (a.daysSinceLastJob ?? 0));
 
     return {
-      unfulfilledRfqs: unfulfilledRfqs.map((r) => ({
-        id: r.id,
-        requestNumber: r.requestNumber,
-        materialCategory: r.materialCategory,
-        materialName: r.materialName,
-        quantity: r.quantity,
-        unit: r.unit,
-        deliveryCity: r.deliveryCity,
-        status: r.status,
-        createdAt: r.createdAt.toISOString(),
-        buyerName:
-          `${r.buyer.firstName} ${r.buyer.lastName}`.trim() ||
-          (r.buyer.email ?? 'Nav zināms'),
-      })),
       dormantSuppliers,
       dormantCarriers,
       summary: {
-        unfulfilledRfqCount: unfulfilledRfqs.length,
         dormantSupplierCount: dormantSuppliers.length,
         dormantCarrierCount: dormantCarriers.length,
       },
@@ -2486,40 +2449,6 @@ export class AdminService {
     return { sizes, carriers: enrichedCarriers };
   }
 
-  // ── RFQ / Quote Requests (admin view) ────────────────────────────────────
-
-  /** All quote requests across all buyers, newest first */
-  async adminGetQuoteRequests(page = 1, limit = 50, status?: string) {
-    const skip = (page - 1) * limit;
-    const where = status ? { status: status as never } : undefined;
-    const [data, total] = await Promise.all([
-      this.prisma.quoteRequest.findMany({
-        where,
-        include: {
-          buyer: {
-            select: { id: true, firstName: true, lastName: true, email: true },
-          },
-          responses: {
-            select: {
-              id: true,
-              pricePerUnit: true,
-              totalPrice: true,
-              unit: true,
-              status: true,
-              createdAt: true,
-              supplier: { select: { id: true, name: true } },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.quoteRequest.count({ where }),
-    ]);
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
-  }
-
   // ── Recycling centers (admin view) ────────────────────────────────────────
 
   /** GET /admin/recycling-centers — all centers (active and inactive) with waste record count */
@@ -3447,35 +3376,7 @@ export class AdminService {
       }),
     ]);
 
-    // ── Demand ────────────────────────────────────────────────────────────────
-    const [
-      rfqTotal,
-      rfqPending,
-      rfqExpired,
-      rfqAccepted,
-      rfqCancelled,
-      rfqByCategory,
-    ] = await Promise.all([
-      this.prisma.quoteRequest.count(),
-      this.prisma.quoteRequest.count({ where: { status: 'PENDING' } }),
-      this.prisma.quoteRequest.count({ where: { status: 'EXPIRED' } }),
-      this.prisma.quoteRequest.count({ where: { status: 'ACCEPTED' } }),
-      this.prisma.quoteRequest.count({ where: { status: 'CANCELLED' } }),
-      this.prisma.quoteRequest.groupBy({
-        by: ['materialCategory'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 5,
-      }),
-    ]);
-
-    const matchDenominator = rfqAccepted + rfqCancelled + rfqExpired;
-    const matchRate =
-      matchDenominator > 0
-        ? parseFloat(((rfqAccepted / matchDenominator) * 100).toFixed(1))
-        : 0;
-
-    // Orders last 30 days — how many had no suitable supplier?
+    // Orders last 30 days
     const ordersLast30d = await this.prisma.order.count({
       where: { createdAt: { gte: thirtyDaysAgo } },
     });
@@ -3560,14 +3461,6 @@ export class AdminService {
         totalRecyclers,
       },
       demand: {
-        totalRfqs: rfqTotal,
-        pendingRfqs: rfqPending,
-        expiredRfqs: rfqExpired,
-        matchRate,
-        topRequestedCategories: rfqByCategory.map((r) => ({
-          category: r.materialCategory as string,
-          count: r._count.id,
-        })),
         ordersLast30d,
         cancelledLast30d,
         cancelRate:
@@ -3633,18 +3526,6 @@ export class AdminService {
       select: { category: true, supplierId: true },
     });
 
-    // ── 2. RFQ demand per category ─────────────────────────────────────────
-    const rfqByCategory = await this.prisma.quoteRequest.groupBy({
-      by: ['materialCategory'],
-      _count: { id: true },
-    });
-
-    const pendingRfqByCategory = await this.prisma.quoteRequest.groupBy({
-      by: ['materialCategory'],
-      where: { status: 'PENDING' },
-      _count: { id: true },
-    });
-
     // ── 3. Recycling center waste type coverage ────────────────────────────
     const activeCenters = await this.prisma.recyclingCenter.findMany({
       where: { active: true },
@@ -3659,29 +3540,18 @@ export class AdminService {
       matSuppliersByCat.get(m.category)!.add(m.supplierId);
     }
 
-    const rfqTotalMap = new Map<string, number>(
-      rfqByCategory.map((r) => [r.materialCategory, r._count.id]),
-    );
-    const rfqPendingMap = new Map<string, number>(
-      pendingRfqByCategory.map((r) => [r.materialCategory, r._count.id]),
-    );
-
     const materialMatrix = MATERIAL_CATEGORIES.map((cat) => {
       const supplierSet = matSuppliersByCat.get(cat) ?? new Set<string>();
       const supplierCount = supplierSet.size;
       const listingCount = activeMaterials.filter(
         (m) => m.category === cat,
       ).length;
-      const rfqTotal = rfqTotalMap.get(cat) ?? 0;
-      const rfqPending = rfqPendingMap.get(cat) ?? 0;
       const status: 'COVERED' | 'THIN' | 'GAP' =
         supplierCount === 0 ? 'GAP' : supplierCount === 1 ? 'THIN' : 'COVERED';
       return {
         category: cat,
         supplierCount,
         listingCount,
-        rfqTotal,
-        rfqPending,
         status,
       };
     });

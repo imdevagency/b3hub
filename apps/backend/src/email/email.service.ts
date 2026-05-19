@@ -355,42 +355,6 @@ export class EmailService {
     });
   }
 
-  /** Notify a seller when they receive a new quote request (RFQ) */
-  async sendQuoteRequestReceived(
-    to: string,
-    sellerName: string,
-    rfq: {
-      requestNumber: string;
-      category: string;
-      quantity: number;
-      unit: string;
-      city: string;
-    },
-  ) {
-    const safeSellerName = this.escape(sellerName);
-    await this.send({
-      to,
-      subject: `Jauns cenu pieprasījums — B3Hub`,
-      html: this.base({
-        title: 'Saņemts jauns cenu pieprasījums',
-        body: `
-          <p>Labdien, ${safeSellerName}!</p>
-          <p>Jūs saņēmāt jaunu cenu pieprasījumu <strong>#${rfq.requestNumber}</strong>:</p>
-          <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
-            <tr><td style="padding:6px 0;color:#6b7280">Kategorija</td><td style="padding:6px 0;font-weight:600">${this.escape(rfq.category)}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Daudzums</td><td style="padding:6px 0;font-weight:600">${rfq.quantity} ${this.escape(rfq.unit)}</td></tr>
-            <tr><td style="padding:6px 0;color:#6b7280">Piegādes pilsēta</td><td style="padding:6px 0;font-weight:600">${this.escape(rfq.city)}</td></tr>
-          </table>
-          <p>Atbildiet uz pieprasījumu pēc iespējas ātrāk, lai palielinātu iespēju iegūt darījumu.</p>
-        `,
-        cta: {
-          label: 'Skatīt pieprasījumu',
-          url: `${this.webUrl}/dashboard/quote-requests`,
-        },
-      }),
-    });
-  }
-
   /** Notify a driver when they are assigned to a new transport job */
   async sendDriverJobAssigned(
     to: string,

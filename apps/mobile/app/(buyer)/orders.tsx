@@ -19,7 +19,7 @@ import {
 import { format, isSameDay } from 'date-fns';
 import { lv } from 'date-fns/locale';
 import { useOrders, UnifiedOrder, orderSearchText } from '@/lib/use-orders';
-import type { ApiOrder, ApiTransportJob, QuoteRequest } from '@/lib/api';
+import type { ApiOrder, ApiTransportJob } from '@/lib/api';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -89,8 +89,6 @@ export default function OrdersScreen() {
         return <TransportRow item={item.data} />;
       case 'disposal':
         return <DisposalRow item={item.data} />;
-      case 'rfq':
-        return <RfqRow item={item.data} />;
       default:
         return null;
     }
@@ -194,7 +192,7 @@ export default function OrdersScreen() {
         style={{ flex: 1, backgroundColor: '#ffffff' }}
         sections={displaySections}
         keyExtractor={(item) =>
-          item.kind === 'material' || item.kind === 'rfq'
+          item.kind === 'material'
             ? `${item.kind}-${(item.data as any).id}`
             : `${item.kind}-${(item.data as any).id}`
         }
@@ -568,32 +566,6 @@ function DisposalRow({ item }: { item: ApiTransportJob }) {
       statusColor={st.color}
       statusText={!isComplete ? st.label : ''}
       onPress={() => router.push(`/(buyer)/transport-job/${item.id}`)}
-    />
-  );
-}
-
-function RfqRow({ item }: { item: QuoteRequest }) {
-  const router = useRouter();
-  const st = getOrderStatus(item.status);
-
-  const title = item.materialName || 'Cenu aptauja';
-  const quotes = `${item.responses?.length || 0} piedāvājumi`;
-
-  const dateObject = item.createdAt ? new Date(item.createdAt) : new Date();
-  const dateStr = format(dateObject, 'd MMM', { locale: lv });
-  const timeStr = format(dateObject, 'HH:mm');
-
-  const displayTopLine = `${dateStr} · ${st.label}`;
-
-  return (
-    <UniversalRow
-      icon={<FileText size={24} color="#374151" strokeWidth={1.5} />}
-      title={title}
-      subtitleLines={[displayTopLine, quotes]}
-      price=""
-      statusColor={st.color}
-      statusText=""
-      onPress={() => router.push(`/(buyer)/rfq/${item.id}`)}
     />
   );
 }

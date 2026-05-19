@@ -31,7 +31,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   fleet: 'Flote',
   earnings: 'Ieņēmumi',
   projects: 'Projekti',
-  'quote-requests': 'Cenu Pieprasījumi',
   'framework-contracts': 'Ietvarlīgumi',
   'recycling-centers': 'Utilizācijas Centri',
   'transport-jobs': 'Transporta Darbi',

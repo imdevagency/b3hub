@@ -124,7 +124,6 @@ function BuyerLayoutContent() {
         <Tabs.Screen name="order/[id]" options={{ href: null }} />
         <Tabs.Screen name="skip-order/[id]" options={{ href: null }} />
         <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
-        <Tabs.Screen name="rfq/[id]" options={{ href: null }} />
         <Tabs.Screen name="framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />
         {/* (account) group — company management */}

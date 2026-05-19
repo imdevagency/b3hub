@@ -10,7 +10,7 @@ import { useHeaderConfig } from '@/lib/header-context';
 import { getRecyclerJobStatus } from '@/lib/status';
 import { haptics } from '@/lib/haptics';
 import { colors } from '@/lib/theme';
-import { Inbox, FileText, Recycle, ChevronRight, Plus } from 'lucide-react-native';
+import { Inbox, FileText, Recycle, ChevronRight } from 'lucide-react-native';
 
 function StatCard({
   label,
@@ -116,26 +116,15 @@ export default function RecyclerHomeScreen() {
             : 'Atkritumu savākšanas punkts'}
         </Text>
 
-        {/* No center registered — prompt to register */}
+        {/* No center registered — admin onboards recycling centers */}
         {centers.length === 0 && (
           <View style={ls.registerBanner}>
             <Recycle size={28} color="#203728" />
             <Text style={ls.registerTitle}>Objekts nav reģistrēts</Text>
             <Text style={ls.registerSub}>
-              Reģistrējiet savu atkritumu pārstrādes punktu, lai sāktu saņemt izvedumu darbus no
-              B3Hub platformas.
+              Jūsu atkritumu pārstrādes punkts tiek reģistrēts no platformas administratora puses.
+              Sazinieties ar Bilt administrāciju, lai aktivizētu jūsu centru.
             </Text>
-            <TouchableOpacity
-              style={ls.registerBtn}
-              activeOpacity={0.8}
-              onPress={() => {
-                haptics.light();
-                router.push('/(recycler)/register-center');
-              }}
-            >
-              <Plus size={16} color="#fff" />
-              <Text style={ls.registerBtnText}>Reģistrēt objektu</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -237,17 +226,6 @@ const ls = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 21,
   },
-  registerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#203728',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginTop: 4,
-  },
-  registerBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
   statsRow: {
     flexDirection: 'row',
     gap: 10,

@@ -13,7 +13,6 @@ import {
   ClipboardList,
   Trash2,
   Package,
-  MessageSquare,
   Receipt,
   Truck,
   Recycle,
@@ -69,12 +68,6 @@ const MANAGE_ITEMS: ManageItem[] = [
     description: 'Skatīt aktīvos un vēsturiskos pasūtījumus',
     icon: ClipboardList,
     href: '/dashboard/orders',
-  },
-  {
-    label: 'Cenu Aptauja',
-    description: 'Pieprasīt piedāvājumus no piegādātājiem',
-    icon: MessageSquare,
-    href: '/dashboard/quote-requests',
   },
   {
     label: 'Rēķini & Dokumenti',

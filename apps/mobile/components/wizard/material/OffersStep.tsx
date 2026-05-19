@@ -45,11 +45,10 @@ export type OffersStepProps = {
   offers: SupplierOffer[];
   offersLoading: boolean;
   offersError: string;
-  submitted: 'order' | 'rfq' | null;
+  submitted: 'order' | null;
   submitting: boolean;
   submitError: string;
   orderNumber: string;
-  rfqNumber: string;
   orderId: string;
   pickedAddress: PickedAddress | null;
   materialName: string;
@@ -67,7 +66,6 @@ export type OffersStepProps = {
   paymentMethod: 'CARD' | 'INVOICE';
   onPaymentMethodChange: (v: 'CARD' | 'INVOICE') => void;
   onSelectOffer: (offer: SupplierOffer) => void;
-  onSendRFQ: () => void;
   /**
    * Called when an unauthenticated user picks "Continue as guest" and
    * submits contact info. Parent should submit the order via the public
@@ -86,7 +84,6 @@ export type OffersStepProps = {
   /** Public tracking token for the guest order — used to persist it in AsyncStorage. */
   guestToken?: string;
   onNavigateToOrder: () => void;
-  onNavigateToRFQ: () => void;
   /**
    * When provided, the offers step works in "compare-only" mode:
    * - Contact/payment/terms UI is hidden (moved to a separate confirm step)
@@ -103,7 +100,6 @@ export function OffersStep({
   submitting,
   submitError,
   orderNumber,
-  rfqNumber,
   orderId,
   pickedAddress,
   materialName,
@@ -120,7 +116,6 @@ export function OffersStep({
   paymentMethod,
   onPaymentMethodChange,
   onSelectOffer,
-  onSendRFQ,
   onGuestContact,
   prefilledContactName,
   prefilledContactPhone,
@@ -130,7 +125,6 @@ export function OffersStep({
   isGuestSuccess,
   guestToken,
   onNavigateToOrder,
-  onNavigateToRFQ,
   onOfferChosen,
 }: OffersStepProps) {
   const router = useRouter();
@@ -327,59 +321,6 @@ export function OffersStep({
     );
   }
 
-  // ── Success: RFQ sent ──
-  if (submitted === 'rfq') {
-    return (
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <View style={s.successWrap}>
-          <View style={[s.successIconBg, { backgroundColor: colors.primary }]}>
-            <Send size={36} color="#fff" />
-          </View>
-          <Text style={s.successTitle}>Pieprasījums nosūtīts!</Text>
-          <Text style={s.successNum}>Nr. {rfqNumber}</Text>
-          <Text style={s.successSub}>
-            Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
-            paziņojumu.
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={{
-            backgroundColor: '#111827',
-            borderRadius: 999,
-            paddingVertical: 18,
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-          onPress={onNavigateToRFQ}
-          activeOpacity={0.85}
-        >
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: '700',
-              color: '#fff',
-              fontFamily: 'Inter_700Bold',
-              letterSpacing: -0.2,
-            }}
-          >
-            Skatīt pieprasījumu
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={{ paddingVertical: 14, alignItems: 'center' }}
-          onPress={() => router.replace('/(buyer)/home' as never)}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'Inter_500Medium' }}>
-            Atgriezties uz sākumu
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
-  }
-
   // ── Loading ──
   if (offersLoading) {
     return (
@@ -471,25 +412,6 @@ export function OffersStep({
               privātuma politikai
             </Text>
           </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => requireAuth(onSendRFQ)}
-          disabled={submitting || !termsAccepted}
-          style={[s.rfqBox, !termsAccepted && { opacity: 0.45 }]}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-            <View style={s.rfqIconBg}>
-              <Send size={20} color="#111827" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.rfqTitle}>Nosūtīt cenu pieprasījumu</Text>
-              <Text style={s.rfqSub}>
-                Jūsu pieprasījums tiks nosūtīts visiem atbilstošajiem piegādātājiem jūsu rajonā.
-              </Text>
-            </View>
-          </View>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -913,46 +835,6 @@ export function OffersStep({
             }}
           />
         ))}
-
-        {/* RFQ fallback */}
-        <View
-          style={{
-            marginTop: 12,
-            padding: 16,
-            backgroundColor: colors.bgSubtle,
-            borderRadius: 16,
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: '#f3f4f6',
-          }}
-        >
-          <Text
-            style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12, textAlign: 'center' }}
-          >
-            Neesat apmierināts ar cenām?
-          </Text>
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-              backgroundColor: '#fff',
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: '#d1d5db',
-              borderRadius: 8,
-            }}
-            onPress={() => requireAuth(onSendRFQ)}
-            disabled={submitting || !termsAccepted}
-            activeOpacity={0.8}
-          >
-            <Send size={14} color="#111827" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>
-              Pieprasīt spec. cenas
-            </Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       {/* Sticky Bottom Bar for Submission / Advancing */}

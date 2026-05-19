@@ -6,9 +6,9 @@
  * Self-contained material order wizard. Receives a pre-selected category
  * (from the URL) and starts directly at the specs step — no category picker.
  *
- * Steps: specs → where → offers → when → contact / rfq-sent / order-confirmed
+ * Steps: specs → where → offers → when → contact → order-confirmed
  *
- * Auth gate fires only when guest tries to select an offer or send an RFQ.
+ * Auth gate fires only when guest tries to confirm an order.
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/select';
 import {
   createCartOrder,
-  createQuoteRequest,
   getMaterialOffers,
   type MaterialCategory,
   type MaterialUnit,
@@ -71,7 +70,6 @@ import {
   Plus,
   ReceiptText,
   Recycle,
-  Send,
   Sprout,
   Star,
   Truck,
@@ -184,14 +182,7 @@ const getUnitLabel = (unit: MaterialUnit, quantity?: number): string => {
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type WizardStep =
-  | 'specs'
-  | 'where'
-  | 'offers'
-  | 'when'
-  | 'contact'
-  | 'rfq-sent'
-  | 'order-confirmed';
+type WizardStep = 'specs' | 'where' | 'offers' | 'when' | 'contact' | 'order-confirmed';
 
 const STEP_INDEX: Record<WizardStep, number> = {
   specs: 0,
@@ -199,7 +190,6 @@ const STEP_INDEX: Record<WizardStep, number> = {
   offers: 2,
   when: 3,
   contact: 4,
-  'rfq-sent': 4,
   'order-confirmed': 4,
 };
 
@@ -351,53 +341,6 @@ function OfferCard({
   );
 }
 
-function RFQPanel({
-  compact = false,
-  submitting,
-  error,
-  onSend,
-}: {
-  compact?: boolean;
-  submitting: boolean;
-  error: string;
-  onSend: () => void;
-}) {
-  return (
-    <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
-      {!compact && (
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-            <Send className="size-5 text-blue-600" />
-          </div>
-          <div>
-            <p className="font-bold text-foreground">Nosūtīt cenu pieprasījumu</p>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Jūsu pieprasījums tiks nosūtīts visiem atbilstošajiem piegādātājiem jūsu rajonā. Viņi
-              atbildēs ar savām cenām, un jūs izvēlēsieties labāko.
-            </p>
-          </div>
-        </div>
-      )}
-      {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-      <Button
-        onClick={onSend}
-        disabled={submitting}
-        variant={compact ? 'outline' : 'default'}
-        className={`w-full rounded-2xl font-bold ${compact ? 'h-11' : 'h-12'} ${!compact ? 'bg-[#203728] text-white hover:bg-[#203728]/90' : ''}`}
-      >
-        {submitting ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <>
-            <Send className="size-4 mr-1.5" />
-            {compact ? 'Pieprasīt vairāk piedāvājumu' : 'Nosūtīt pieprasījumu piegādātājiem'}
-          </>
-        )}
-      </Button>
-    </div>
-  );
-}
-
 // ── Props ──────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -465,8 +408,6 @@ export function MaterialOrderWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
-
-  const [rfqNumber, setRfqNumber] = useState('');
 
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [authGateMode, setAuthGateMode] = useState<'login' | 'register' | undefined>(undefined);
@@ -576,59 +517,6 @@ export function MaterialOrderWizard({
     }
   }
 
-  async function execSendRFQ(tok: string) {
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      const noteParts: string[] = [];
-      if (form.asap) {
-        noteParts.push('Piegāde: pēc iespējas ātrāk');
-      } else if (form.deliveryDate) {
-        const formatted = new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('lv-LV', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        });
-        noteParts.push(`Vēlamais piegādes datums: ${formatted}`);
-        if (form.deliveryWindow !== 'ANY') {
-          noteParts.push(
-            `Piegādes laiks: ${
-              form.deliveryWindow === 'AM' ? 'Rīts (8:00–13:00)' : 'Pēcpusdiena (13:00–18:00)'
-            }`,
-          );
-        }
-      }
-      if (form.truckCount > 1) {
-        noteParts.push(
-          `Nepieciešami ${form.truckCount} transportlīdzekļi` +
-            (form.truckIntervalMinutes ? `, intervāls ${form.truckIntervalMinutes} min` : ''),
-        );
-      }
-      if (form.notes) noteParts.push(form.notes);
-      if (form.driverNotes) noteParts.push(`Objekta instrukcijas: ${form.driverNotes}`);
-      const result = await createQuoteRequest(
-        {
-          materialCategory: form.category,
-          materialName: form.materialName,
-          quantity: form.quantity,
-          unit: form.unit,
-          deliveryAddress: form.address,
-          deliveryCity: form.city || form.address.split(',').slice(-1)[0]?.trim() || '',
-          deliveryLat: form.lat,
-          deliveryLng: form.lng,
-          notes: noteParts.length > 0 ? noteParts.join('\n') : undefined,
-        },
-        tok,
-      );
-      setRfqNumber(result.requestNumber);
-      setStep('rfq-sent');
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   // ── Google Map ────────────────────────────────────────────────────────────
 
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -718,25 +606,19 @@ export function MaterialOrderWizard({
       step={STEP_INDEX[step] + 1}
       totalSteps={5}
       title={
-        step === 'rfq-sent'
-          ? 'Pieprasījums nosūtīts'
-          : step === 'order-confirmed'
-            ? 'Pasūtījums pieņemts'
-            : (categoryLabels[form.category] ?? meta.label)
+        step === 'order-confirmed'
+          ? 'Pasūtījums pieņemts'
+          : (categoryLabels[form.category] ?? meta.label)
       }
       onBack={
-        STEP_INDEX[step] > 0 && step !== 'order-confirmed' && step !== 'rfq-sent'
+        STEP_INDEX[step] > 0 && step !== 'order-confirmed'
           ? () => setStep(Object.keys(STEP_INDEX)[STEP_INDEX[step] - 1] as WizardStep)
           : undefined
       }
-      onClose={
-        step !== 'order-confirmed' && step !== 'rfq-sent'
-          ? () => router.push(catalogHref)
-          : undefined
-      }
+      onClose={step !== 'order-confirmed' ? () => router.push(catalogHref) : undefined}
     >
       {/* Order summary pill */}
-      {step !== 'specs' && step !== 'rfq-sent' && step !== 'order-confirmed' && (
+      {step !== 'specs' && step !== 'order-confirmed' && (
         <div className="mb-6 rounded-2xl bg-gray-100 p-4">
           <div className="flex items-center gap-3">
             <Package className="size-5 text-gray-700 shrink-0" />
@@ -1067,13 +949,13 @@ export function MaterialOrderWizard({
             <button
               onClick={() =>
                 requireAuth((tok) =>
-                  selectedOffer ? execSelectOffer(selectedOffer, tok) : execSendRFQ(tok),
+                  selectedOffer ? execSelectOffer(selectedOffer, tok) : Promise.resolve(),
                 )
               }
-              disabled={!form.siteContactPhone.trim()}
+              disabled={!form.siteContactPhone.trim() || !selectedOffer}
               className="flex-2 rounded-xl bg-[#203728] py-3 text-sm font-bold text-white hover:bg-[#203728]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {selectedOffer ? 'Apstiprināt pasūtījumu' : 'Nosūtīt pieprasījumu'}
+              {selectedOffer ? 'Apstiprināt pasūtījumu' : 'Izvēlēties piedāvājumu'}
             </button>
           </div>
         </div>
@@ -1091,20 +973,11 @@ export function MaterialOrderWizard({
             </div>
           ) : offers.length === 0 ? (
             <div className="space-y-4">
-              <div>
-                <p className="text-xl font-bold text-foreground">Nav tūlītēju piedāvājumu</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Nosūtiet pieprasījumu — piegādātāji atbildēs ar savām cenām.
-                </p>
-              </div>
-              <RFQPanel
-                submitting={submitting}
-                error={submitError}
-                onSend={() => {
-                  setSelectedOffer(null);
-                  setStep('when');
-                }}
-              />
+              <p className="text-xl font-bold text-foreground">Nav pieejamu piedāvājumu</p>
+              <p className="text-sm text-muted-foreground">
+                Pašlaik neviens piegādātājs jūsu rajonā nav pievienojis cenas šim materiālam.
+                Pamēģiniet vēlāk vai sazinieties ar mums.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1133,56 +1006,8 @@ export function MaterialOrderWizard({
                     }}
                   />
                 ))}
-              <div className="pt-2 border-t border-border/50">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Vēlaties saņemt vairāk piedāvājumu?
-                </p>
-                <RFQPanel
-                  compact
-                  submitting={submitting}
-                  error=""
-                  onSend={() => {
-                    setSelectedOffer(null);
-                    setStep('when');
-                  }}
-                />
-              </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── RFQ sent ──────────────────────────────────────────────── */}
-      {step === 'rfq-sent' && (
-        <div className="flex flex-col items-center justify-center py-10 text-center space-y-5 animate-in zoom-in-95">
-          <div className="flex size-20 items-center justify-center rounded-full bg-blue-50">
-            <Send className="size-9 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground">Pieprasījums nosūtīts!</p>
-            <p className="text-base text-muted-foreground font-medium mt-1">
-              Nr. <span className="font-bold text-foreground">{rfqNumber}</span>
-            </p>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Piegādātāji jūsu rajonā saņēma paziņojumu. Kad kāds atbildēs ar cenu, jūs saņemsiet
-            paziņojumu.
-          </p>
-          <div className="w-full space-y-3 pt-2">
-            <Button
-              onClick={() => router.push('/dashboard/quote-requests')}
-              className="w-full rounded-2xl h-12 font-bold bg-[#203728] text-white hover:bg-[#203728]/90"
-            >
-              <ReceiptText className="size-4 mr-1.5" /> Skatīt pieprasījumus
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push(catalogHref)}
-              className="w-full rounded-2xl h-12 font-semibold"
-            >
-              Turpināt iepirkties
-            </Button>
-          </div>
         </div>
       )}
 

@@ -59,7 +59,7 @@ import {
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
 type Step = 'specs' | 'fulfillment' | 'address' | 'field' | 'when' | 'offers';
-type SubmitResult = 'order' | 'rfq';
+type SubmitResult = 'order';
 
 const STEP_TITLES: Record<Step, string> = {
   address: 'Kur piegādāt?',
@@ -194,7 +194,6 @@ export default function OrderRequestWizard() {
   const [submitted, setSubmitted] = useState<SubmitResult | null>(null);
   const [orderNumber, setOrderNumber] = useState('');
   const [orderId, setOrderId] = useState('');
-  const [rfqNumber, setRfqNumber] = useState('');
   const [rfqId, setRfqId] = useState('');
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   /** Offer selected in the compare step; used for submission in the confirm step. */
@@ -580,43 +579,6 @@ export default function OrderRequestWizard() {
     }
   };
 
-  // ── Submit: send RFQ ──
-  const handleSendRFQ = async () => {
-    const currentToken = tokenRef.current;
-    if (!currentToken || !pickedAddress) return;
-    if (submittingRef.current) return;
-    setSubmitting(true);
-    setSubmitError('');
-    submittingRef.current = true;
-    try {
-      const result = await api.quoteRequests.create(
-        {
-          materialCategory: category,
-          materialName,
-          quantity,
-          unit,
-          deliveryAddress: pickedAddress.address,
-          deliveryCity: pickedAddress.city,
-          deliveryLat: pickedAddress.lat,
-          deliveryLng: pickedAddress.lng,
-          notes: notes || undefined,
-          bisNumber: bisNumber || undefined,
-        },
-        currentToken,
-      );
-      setRfqNumber(result.requestNumber);
-      setRfqId(result.id);
-      setSubmitted('rfq');
-      haptics.success();
-      AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Kaut kas nogāja greizi.');
-    } finally {
-      setSubmitting(false);
-      submittingRef.current = false;
-    }
-  };
-
   // ── Submit: guest checkout (no account) — uses public /guest-orders ──
   const handleGuestSelectOffer = async (
     offer: SupplierOffer,
@@ -678,11 +640,9 @@ export default function OrderRequestWizard() {
             : !offersLoading && !submitting && !submitted && termsAccepted;
 
   const ctaLabel = submitted
-    ? submitted === 'rfq'
-      ? 'Skatīt pieprasījumu'
-      : orderId.startsWith('guest:')
-        ? 'Uz sākumu'
-        : 'Skatīt pasūtījumu'
+    ? orderId.startsWith('guest:')
+      ? 'Uz sākumu'
+      : 'Skatīt pasūtījumu'
     : step === 'offers'
       ? 'Nosūtīt pieprasījumu'
       : step === 'when' && selectedOffer
@@ -692,13 +652,11 @@ export default function OrderRequestWizard() {
         : 'Turpināt';
 
   const handleCTA = submitted
-    ? submitted === 'rfq'
-      ? () => router.replace(`/(buyer)/rfq/${rfqId}` as never)
-      : orderId.startsWith('guest:')
-        ? () => router.replace('/(buyer)/home' as never)
-        : () => router.replace(`/(buyer)/order/${orderId}` as never)
+    ? orderId.startsWith('guest:')
+      ? () => router.replace('/(buyer)/home' as never)
+      : () => router.replace(`/(buyer)/order/${orderId}` as never)
     : step === 'offers'
-      ? handleSendRFQ
+      ? undefined
       : step === 'when' && selectedOffer
         ? () => {
             if (tokenRef.current) {
@@ -714,13 +672,7 @@ export default function OrderRequestWizard() {
 
   return (
     <WizardLayout
-      title={
-        submitted === 'order'
-          ? 'Pasūtījums veikts!'
-          : submitted === 'rfq'
-            ? 'Pieprasījums nosūtīts!'
-            : STEP_TITLES[step]
-      }
+      title={submitted === 'order' ? 'Pasūtījums veikts!' : STEP_TITLES[step]}
       step={stepIndex + 1}
       totalSteps={STEPS.length}
       onBack={goBack}
@@ -1143,7 +1095,6 @@ export default function OrderRequestWizard() {
           submitting={submitting}
           submitError={submitError}
           orderNumber={orderNumber}
-          rfqNumber={rfqNumber}
           orderId={orderId}
           pickedAddress={pickedAddress}
           materialName={materialName}
@@ -1158,7 +1109,6 @@ export default function OrderRequestWizard() {
           termsAccepted={termsAccepted}
           onTermsAcceptedChange={setTermsAccepted}
           onSelectOffer={handleSelectOffer}
-          onSendRFQ={handleSendRFQ}
           onGuestContact={handleGuestSelectOffer}
           paymentMethod={paymentMethod}
           onPaymentMethodChange={setPaymentMethod}
@@ -1176,9 +1126,6 @@ export default function OrderRequestWizard() {
               return;
             }
             router.replace(`/(buyer)/order/${orderId}` as never);
-          }}
-          onNavigateToRFQ={() => {
-            if (rfqId) router.replace(`/(buyer)/rfq/${rfqId}` as never);
           }}
           onOfferChosen={
             fulfillmentType === 'DELIVERY'

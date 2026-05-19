@@ -46,7 +46,7 @@ export type WizardLayoutProps = {
   children: React.ReactNode;
   /** Primary CTA label. */
   ctaLabel: string;
-  onCTA: () => void;
+  onCTA?: () => void;
   ctaDisabled?: boolean;
   ctaLoading?: boolean;
   /** Optional custom content to left of CTA in footer */

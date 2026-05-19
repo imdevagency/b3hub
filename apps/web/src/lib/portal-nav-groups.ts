@@ -46,7 +46,6 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
       primaryHref: '/dashboard/catalog',
       tabs: [
         { label: 'Katalogs', href: '/dashboard/catalog' },
-        { label: 'Cenu aptauja', href: '/dashboard/quote-requests' },
         { label: 'Pamatlīgumi', href: '/dashboard/framework-contracts' },
       ],
     },
@@ -72,8 +71,6 @@ export const PORTAL_NAV_GROUPS: Record<Mode, PortalNavGroup[]> = {
         { label: 'Ienākošie', href: '/dashboard/orders' },
         { label: 'Iekraušanas grafiks', href: '/dashboard/supplier/loading-schedule' },
         { label: 'Piegādes', href: '/dashboard/deliveries' },
-        { label: 'RFQ tirgus', href: '/dashboard/quote-requests/open' },
-        { label: 'Pieprasījumi', href: '/dashboard/quote-requests' },
       ],
     },
     {

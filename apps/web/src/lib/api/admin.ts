@@ -581,19 +581,6 @@ export async function adminGetSupplierPerformance(
 
 // ─── Demand Gaps (unfulfilled demand + churn signals) ────────────────────────
 
-export interface AdminDemandGapsRfq {
-  id: string;
-  requestNumber: string;
-  materialCategory: string;
-  materialName: string;
-  quantity: number;
-  unit: string;
-  deliveryCity: string;
-  status: string;
-  createdAt: string;
-  buyerName: string;
-}
-
 export interface AdminDormantSupplier {
   id: string;
   name: string;
@@ -610,11 +597,9 @@ export interface AdminDormantCarrier {
 }
 
 export interface AdminDemandGaps {
-  unfulfilledRfqs: AdminDemandGapsRfq[];
   dormantSuppliers: AdminDormantSupplier[];
   dormantCarriers: AdminDormantCarrier[];
   summary: {
-    unfulfilledRfqCount: number;
     dormantSupplierCount: number;
     dormantCarrierCount: number;
   };
@@ -1151,51 +1136,6 @@ export async function adminDeletePricingRule(
   );
 }
 
-// ── RFQ / Quote Requests (admin) ──────────────────────────────────────────────
-
-export type AdminQuoteRequestStatus = 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'CANCELLED' | 'EXPIRED';
-export type AdminQuoteResponseStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
-
-export interface AdminQuoteResponse {
-  id: string;
-  pricePerUnit: number;
-  totalPrice: number;
-  unit: string;
-  status: AdminQuoteResponseStatus;
-  createdAt: string;
-  supplier: { id: string; name: string };
-}
-
-export interface AdminQuoteRequest {
-  id: string;
-  requestNumber: string;
-  materialCategory: string;
-  materialName: string;
-  quantity: number;
-  unit: string;
-  deliveryAddress: string;
-  deliveryCity: string;
-  status: AdminQuoteRequestStatus;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  buyer: { id: string; firstName: string; lastName: string; email: string };
-  responses: AdminQuoteResponse[];
-}
-
-export async function adminGetQuoteRequests(
-  token: string,
-  page = 1,
-  limit = 50,
-  status?: AdminQuoteRequestStatus,
-): Promise<{ data: AdminQuoteRequest[]; total: number; page: number; pages: number }> {
-  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-  if (status) params.set('status', status);
-  return apiFetch(`/admin/quote-requests?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
 // ── Documents (admin) ─────────────────────────────────────────────────────────
 
 export type AdminDocumentType =
@@ -1510,9 +1450,6 @@ export interface MarketHealthData {
     totalRecyclers: number;
   };
   demand: {
-    totalRfqs: number;
-    pendingRfqs: number;
-    expiredRfqs: number;
     matchRate: number;
     topRequestedCategories: { category: string; count: number }[];
     ordersLast30d: number;
@@ -1548,8 +1485,6 @@ export interface MaterialMatchRow {
   category: string;
   supplierCount: number;
   listingCount: number;
-  rfqTotal: number;
-  rfqPending: number;
   status: MatchStatus;
 }
 

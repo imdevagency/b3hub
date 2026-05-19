@@ -83,7 +83,6 @@ function SellerLayoutContent() {
             tabBarIcon: ({ color }) => <Inbox size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="quotes" options={{ href: null }} />
         <Tabs.Screen
           name="catalog"
           options={{

@@ -49,7 +49,6 @@ const schema = z
     lastName: z.string().min(2, 'Uzvārdam jābūt vismaz 2 rakstzīmēm'),
     email: z.string().email('Lūdzu ievadiet derīgu e-pastu'),
     phone: z.string().optional(),
-    userType: z.enum(['BUYER', 'SUPPLIER', 'CARRIER'] as const),
     companyName: z.string().min(2, 'Uzņēmuma nosaukums ir obligāts'),
     regNumber: z.string().optional(),
     password: z.string().min(8, 'Parolei jābūt vismaz 8 rakstzīmēm'),
@@ -72,8 +71,8 @@ function RegisterPageInner() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
-  // Map landing-page role params to internal RegistrationRole values
-  const ROLE_PARAM_MAP: Record<string, FormData['userType']> = {
+  // Map landing-page role params to initial selection
+  const ROLE_PARAM_MAP: Record<string, RegistrationRole> = {
     driver: 'CARRIER',
     carrier: 'CARRIER',
     seller: 'SUPPLIER',
@@ -81,7 +80,10 @@ function RegisterPageInner() {
     buyer: 'BUYER',
   };
   const roleParam = searchParams.get('role')?.toLowerCase() ?? '';
-  const initialUserType: FormData['userType'] = ROLE_PARAM_MAP[roleParam] ?? 'BUYER';
+  const initialRole: RegistrationRole = ROLE_PARAM_MAP[roleParam] ?? 'BUYER';
+
+  const [selectedRoles, setSelectedRoles] = useState<Set<RegistrationRole>>(new Set([initialRole]));
+  const [rolesError, setRolesError] = useState<string | null>(null);
 
   // Where to land after successful registration (middleware sets this)
   const redirectTo = searchParams.get('redirect') || '/dashboard';
@@ -93,7 +95,6 @@ function RegisterPageInner() {
       lastName: '',
       email: '',
       phone: '',
-      userType: initialUserType,
       companyName: '',
       regNumber: '',
       password: '',
@@ -110,10 +111,10 @@ function RegisterPageInner() {
   const onSubmit = async (data: FormData) => {
     setError(null);
     try {
-      const { confirmPassword: _, userType, companyName, regNumber, ...rest } = data;
+      const { confirmPassword: _, companyName, regNumber, ...rest } = data;
       const res = await registerUser({
         ...rest,
-        roles: [userType],
+        roles: Array.from(selectedRoles),
         isCompany: true,
         companyName: companyName?.trim() || undefined,
         regNumber: regNumber?.trim() || undefined,
@@ -268,55 +269,83 @@ function RegisterPageInner() {
                       Kā izmantosiet Bilt?
                     </h1>
                     <p className="text-[15px] text-gray-500">
-                      Izvēlieties savu galveno lomu platformā.
+                      Izvēlieties vienu vai vairākas lomas — var mainīt vēlāk.
                     </p>
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="userType"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        {USER_TYPE_META.map((type) => {
-                          const Icon = type.icon;
-                          const isSelected = field.value === type.value;
-                          return (
-                            <button
-                              key={type.value}
-                              type="button"
-                              onClick={() => field.onChange(type.value)}
-                              className={`w-full flex items-center p-4 rounded-xl border-2 transition-all text-left ${
-                                isSelected
-                                  ? 'border-black bg-[#f8f8f8]'
-                                  : 'border-transparent bg-gray-100 hover:bg-gray-200'
-                              }`}
+                  <div className="space-y-3">
+                    {USER_TYPE_META.map((type) => {
+                      const Icon = type.icon;
+                      const isSelected = selectedRoles.has(type.value);
+                      return (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => {
+                            setRolesError(null);
+                            setSelectedRoles((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(type.value)) next.delete(type.value);
+                              else next.add(type.value);
+                              return next;
+                            });
+                          }}
+                          className={`w-full flex items-center p-4 rounded-xl border-2 transition-all text-left ${
+                            isSelected
+                              ? 'border-black bg-[#f8f8f8]'
+                              : 'border-transparent bg-gray-100 hover:bg-gray-200'
+                          }`}
+                        >
+                          <div
+                            className={`p-3 rounded-full mr-4 transition-colors ${isSelected ? 'bg-black text-white' : 'bg-white text-gray-600 shadow-sm'}`}
+                          >
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3
+                              className={`text-[15px] font-medium ${isSelected ? 'text-black' : 'text-gray-900'}`}
                             >
-                              <div
-                                className={`p-3 rounded-full mr-4 transition-colors ${isSelected ? 'bg-black text-white' : 'bg-white text-gray-600 shadow-sm'}`}
-                              >
-                                <Icon className="w-5 h-5" />
-                              </div>
-                              <div>
-                                <h3
-                                  className={`text-[15px] font-medium ${isSelected ? 'text-black' : 'text-gray-900'}`}
-                                >
-                                  {type.label}
-                                </h3>
-                                <p className="text-[13px] text-gray-500 mt-0.5">
-                                  {type.description}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                        <FormMessage />
-                      </FormItem>
+                              {type.label}
+                            </h3>
+                            <p className="text-[13px] text-gray-500 mt-0.5">{type.description}</p>
+                          </div>
+                          <div
+                            className={`w-5 h-5 rounded shrink-0 border-2 flex items-center justify-center transition-colors ${
+                              isSelected ? 'bg-black border-black' : 'border-gray-300'
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg viewBox="0 0 10 8" className="w-3 h-3 fill-white">
+                                <path
+                                  d="M1 4l3 3 5-6"
+                                  stroke="white"
+                                  strokeWidth="1.5"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {rolesError && (
+                      <p className="text-[13px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                        {rolesError}
+                      </p>
                     )}
-                  />
+                  </div>
 
                   <Button
                     type="button"
-                    onClick={() => nextStep(['userType'])}
+                    onClick={() => {
+                      if (selectedRoles.size === 0) {
+                        setRolesError('Izvēlieties vismaz vienu lomu');
+                        return;
+                      }
+                      setStep(3);
+                    }}
                     className="w-full h-13 bg-black hover:bg-gray-800 text-white rounded-xl text-[15px] font-medium mt-6 transition-colors"
                   >
                     Turpināt
