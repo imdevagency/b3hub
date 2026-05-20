@@ -82,7 +82,7 @@ export class PaymentsController {
   @Post('onboard')
   @UseGuards(JwtAuthGuard)
   createConnectLink(@CurrentUser() user: RequestingUser) {
-    if (!user.canSell && !user.canTransport && !user.canSkipHire) {
+    if (!user.canSell && !user.canTransport) {
       throw new ForbiddenException(
         'Only approved sellers or carriers can onboard for payouts',
       );

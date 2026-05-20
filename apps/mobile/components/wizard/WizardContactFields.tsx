@@ -6,7 +6,7 @@
  * notes are optional and hidden when their handlers are omitted.
  *
  * An `extras` prop slot lets each wizard append its own bespoke inputs
- * (e.g. BIS number in skip-hire) inside the same visual container.
+ * inside the same visual container.
  *
  * Usage:
  *   <WizardContactFields

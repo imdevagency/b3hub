@@ -42,17 +42,37 @@ export type TruckOption = {
 export const TRUCK_OPTIONS: TruckOption[] = [
   {
     id: 'SEMI_26',
-    label: '26 t',
-    subtitle: 'Piekabes',
+    label: 'Sattelkipper',
+    subtitle: 'Piekabes · 26 t',
     capacity: 26,
     truckType: 'ARTICULATED_TIPPER',
   },
-  { id: 'TIPPER_17', label: '17 t', subtitle: '8×4', capacity: 17, truckType: 'TIPPER_LARGE' },
+  {
+    id: 'TIPPER_17',
+    label: '17 t Kipper',
+    subtitle: '8×4 · 17 t',
+    capacity: 17,
+    truckType: 'TIPPER_LARGE',
+  },
   {
     id: 'TIPPER_12',
-    label: '12 t',
-    subtitle: 'Standarta',
+    label: '12 t Kipper',
+    subtitle: 'Standarta · 12 t',
     capacity: 12,
+    truckType: 'TIPPER_SMALL',
+  },
+  {
+    id: 'TIPPER_9',
+    label: '9 t Kipper',
+    subtitle: 'Mazs · 9 t',
+    capacity: 9,
+    truckType: 'TIPPER_SMALL',
+  },
+  {
+    id: 'TIPPER_5',
+    label: '5 t Kipper',
+    subtitle: 'Mini · 5 t',
+    capacity: 5,
     truckType: 'TIPPER_SMALL',
   },
 ];

@@ -2,7 +2,7 @@
  * WizardRouteBox
  *
  * Uber-style pickup → dropoff route display used on the review/confirmation
- * step of any wizard that involves a route (transport, disposal, skip-hire, etc.).
+ * step of any wizard that involves a route (transport, disposal, etc.).
  *
  * Usage:
  *   <WizardRouteBox

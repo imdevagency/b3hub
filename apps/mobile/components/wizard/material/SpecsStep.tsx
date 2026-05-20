@@ -15,6 +15,7 @@ import {
   Image,
 } from 'react-native';
 import { Check, ChevronDown, Truck, Minus, Plus, Camera, X } from 'lucide-react-native';
+import { TruckIllustration } from '@/components/ui/TruckIllustration';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { CATEGORY_LABELS } from '@/lib/materials';
 import type { MaterialCategory } from '@/lib/materials';
@@ -26,6 +27,7 @@ import {
   ORDER_TYPE_LABELS,
   ORDER_TYPE_UNIT_LABEL,
   MATERIAL_DENSITY,
+  TRUCK_OPTIONS,
   type OrderType,
 } from './_constants';
 
@@ -84,6 +86,27 @@ export function SpecsStep({
   const [calcLength, setCalcLength] = useState('');
   const [calcWidth, setCalcWidth] = useState('');
   const [calcDepth, setCalcDepth] = useState('');
+
+  // ── Truck counts (BY_LOAD mode) ──
+  const [truckCounts, setTruckCounts] = useState<Record<string, number>>(() =>
+    Object.fromEntries(TRUCK_OPTIONS.map((o) => [o.id, 0])),
+  );
+
+  function changeTruckCount(id: string, delta: number) {
+    setTruckCounts((prev) => {
+      const next = { ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) };
+      const totalTonnes = TRUCK_OPTIONS.reduce((sum, o) => sum + (next[o.id] ?? 0) * o.capacity, 0);
+      if (totalTonnes > 0) onQuantityChange(totalTonnes);
+      return next;
+    });
+    haptics.light();
+  }
+
+  const totalTruckTonnes = TRUCK_OPTIONS.reduce(
+    (sum, o) => sum + (truckCounts[o.id] ?? 0) * o.capacity,
+    0,
+  );
+  const totalTruckLoads = TRUCK_OPTIONS.reduce((sum, o) => sum + (truckCounts[o.id] ?? 0), 0);
 
   // ── Volume calculator ──
   const calcM3 = (() => {
@@ -218,8 +241,153 @@ export function SpecsStep({
           </View>
         </TouchableOpacity>
 
-        {/* Quantity stepper */}
-        <View className="mb-6 mt-2">
+        {/* Vehicle grid — only for BY_LOAD */}
+        {orderType === 'BY_LOAD' && (
+          <View className="mb-6 mt-2">
+            {/* Running total header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: totalTruckLoads > 0 ? '#f0fdf4' : '#f9fafb',
+                borderRadius: 16,
+                paddingVertical: 16,
+                paddingHorizontal: 20,
+                marginBottom: 20,
+                borderWidth: 1.5,
+                borderColor: totalTruckLoads > 0 ? '#86efac' : '#f0f0f0',
+              }}
+            >
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 28,
+                    fontFamily: 'Inter_800ExtraBold',
+                    color: totalTruckLoads > 0 ? '#16a34a' : '#9ca3af',
+                    letterSpacing: -1,
+                  }}
+                >
+                  {totalTruckTonnes > 0 ? `${totalTruckTonnes.toFixed(1)} t` : '0 t'}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontFamily: 'Inter_500Medium',
+                    color: '#9ca3af',
+                    marginTop: 2,
+                  }}
+                >
+                  {totalTruckLoads > 0
+                    ? `${totalTruckLoads} ${totalTruckLoads === 1 ? 'kravas auto' : 'kravas auto'}`
+                    : 'Izvēlieties automašīnas'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Truck rows */}
+            {TRUCK_OPTIONS.map((opt) => {
+              const count = truckCounts[opt.id] ?? 0;
+              return (
+                <View
+                  key={opt.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: count > 0 ? '#f9fafb' : '#fff',
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: count > 0 ? '#e5e7eb' : '#f0f0f0',
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    marginBottom: 10,
+                  }}
+                >
+                  {/* Truck illustration */}
+                  <View style={{ width: 64, alignItems: 'center', marginRight: 12 }}>
+                    <TruckIllustration type={opt.truckType} height={32} />
+                  </View>
+
+                  {/* Label */}
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontFamily: 'Inter_700Bold',
+                        color: '#111827',
+                        letterSpacing: -0.2,
+                      }}
+                    >
+                      {opt.label}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontFamily: 'Inter_500Medium',
+                        color: '#9ca3af',
+                        marginTop: 1,
+                      }}
+                    >
+                      {opt.subtitle}
+                    </Text>
+                  </View>
+
+                  {/* Counter */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <TouchableOpacity
+                      onPress={() => changeTruckCount(opt.id, -1)}
+                      activeOpacity={0.7}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: count > 0 ? '#111827' : '#f3f4f6',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Minus size={16} color={count > 0 ? '#fff' : '#9ca3af'} />
+                    </TouchableOpacity>
+
+                    <Text
+                      style={{
+                        width: 28,
+                        textAlign: 'center',
+                        fontSize: 18,
+                        fontFamily: 'Inter_800ExtraBold',
+                        color: count > 0 ? '#111827' : '#d1d5db',
+                        letterSpacing: -0.5,
+                      }}
+                    >
+                      {count}
+                    </Text>
+
+                    <TouchableOpacity
+                      onPress={() => changeTruckCount(opt.id, 1)}
+                      activeOpacity={0.7}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: '#111827',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Plus size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Quantity stepper — hidden in BY_LOAD (vehicle grid handles quantity) */}
+        <View
+          className="mb-6 mt-2"
+          style={orderType === 'BY_LOAD' ? { display: 'none' } : undefined}
+        >
           <Text
             style={{
               fontSize: 13,
@@ -454,64 +622,66 @@ export function SpecsStep({
           </View>
         </View>
 
-        {/* Truck load info */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#fff',
-            borderRadius: 20,
-            borderWidth: 1.5,
-            borderColor: '#f0f0f0',
-            padding: 16,
-            marginBottom: 24,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            elevation: 2,
-          }}
-        >
+        {/* Truck load info — hidden in BY_LOAD (vehicle grid already shows the total) */}
+        {orderType !== 'BY_LOAD' && (
           <View
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: '#f8fafc',
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#fff',
+              borderRadius: 20,
               borderWidth: 1.5,
               borderColor: '#f0f0f0',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 16,
+              padding: 16,
+              marginBottom: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 10,
+              elevation: 2,
             }}
           >
-            <Truck size={20} color="#111827" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
+            <View
               style={{
-                fontSize: 15,
-                color: '#111827',
-                fontFamily: 'Inter_700Bold',
-                letterSpacing: -0.2,
-                marginBottom: 2,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: '#f8fafc',
+                borderWidth: 1.5,
+                borderColor: '#f0f0f0',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 16,
               }}
             >
-              Tehniska informācija
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                color: '#6b7280',
-                fontFamily: 'Inter_500Medium',
-                lineHeight: 18,
-              }}
-            >
-              Nepieciešami {Math.ceil(quantity / 26)} reisi (26 {ORDER_TYPE_UNIT_LABEL[orderType]}{' '}
-              ietilpība automašīnai)
-            </Text>
+              <Truck size={20} color="#111827" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: '#111827',
+                  fontFamily: 'Inter_700Bold',
+                  letterSpacing: -0.2,
+                  marginBottom: 2,
+                }}
+              >
+                Tehniska informācija
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: '#6b7280',
+                  fontFamily: 'Inter_500Medium',
+                  lineHeight: 18,
+                }}
+              >
+                Nepieciešami {Math.ceil(quantity / 26)} reisi (26 {ORDER_TYPE_UNIT_LABEL[orderType]}{' '}
+                ietilpība automašīnai)
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Notes */}
         <View className="mt-8">

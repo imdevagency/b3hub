@@ -28,7 +28,6 @@ const journey = [
 const earnings = [
   { type: 'Vietējais reiss (< 50 km)', rate: '€85–€140 / reiss' },
   { type: 'Reģionālais reiss (50–150 km)', rate: '€160–€280 / reiss' },
-  { type: 'Skip hire piegāde', rate: '€65–€95 / piegāde' },
 ];
 
 export default function ParvadatajemPage() {

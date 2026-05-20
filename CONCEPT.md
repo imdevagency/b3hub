@@ -2,9 +2,9 @@
 
 ## What Bilt Is
 
-Bilt is a **construction logistics platform** for the Latvian and Baltic market. It connects buyers, suppliers, carriers, and recyclers in one place — and gives construction companies the operational software to manage their projects, crews, and costs on top of that marketplace.
+Bilt is a **construction logistics marketplace** for the Latvian and Baltic market. It connects buyers, suppliers, carriers, and recyclers on one transaction layer.
 
-One platform. One login. Everything a construction company needs.
+One platform. One login. One place to order, move, and dispose of bulk construction materials.
 
 ---
 
@@ -17,13 +17,13 @@ Internal B3 staff only. Controls the platform.
 - User and company management
 - Feature flag assignment (who gets what)
 - Marketplace health (orders, payouts, disputes)
-- Recycling center verification
-- Subscription and billing management
+- Recycling center verification and waste records
+- Carrier and supplier applications
 - Platform analytics
 
 ### 2. Bilt App (`/dashboard/*` — web + mobile)
 
-Everyone else. What a company sees depends on their type and active features.
+Everyone else. What a company sees depends on their company type and role.
 
 ---
 
@@ -31,70 +31,58 @@ Everyone else. What a company sees depends on their type and active features.
 
 ### Any authenticated user (baseline)
 
-- Order materials, transport, disposal, skip hire
-- Track their orders
-- Messaging
+- Order bulk materials, transport jobs, waste disposal
+- Track their orders and documents
+- View delivery notes and waste certificates
+- Bilt support chat (the one contact channel)
 
 ### B2B Buyer (construction company, contractor)
 
 Everything above, plus:
 
-- Project-linked ordering (assign orders to a project/site)
-- Framework contracts
+- Framework contracts + call-offs
 - Team and permissions management
-- Cost tracking against marketplace spend
+- Company invoicing
 
 ### Supplier
 
 - Material catalog management
-- Incoming orders
+- Incoming orders — confirm / reject
 - Pricing and availability
 
-### Carrier
+### Carrier / Driver
 
-- Transport job queue
-- Earnings and payouts
-- Vehicle and driver management
-
-### Construction company with `CONSTRUCTION_MANAGEMENT` feature
-
-Everything a B2B buyer gets, plus:
-
-- **Projects** — create and manage construction projects
-- **Budget estimator** — line-item cost planning with live marketplace rates
-- **Daily reports (DPRs)** — field progress and cost logging per day
-- **Budget vs actual** — real profitability per project
-- **GPS timesheets** _(Phase 2)_ — field crew clock in/out, feeds DPR costs automatically
+- Transport job queue — accept / reject jobs
+- Real-time status flow during active delivery
+- Earnings and payout view
+- Vehicle and document management
 
 ### Recycler company (`companyType: RECYCLER`)
 
 Everything a B2B company gets, plus:
 
-- **Intake log** — waste received by type, weight, source order
-- **APUS reporting** — VVD mandatory waste movement reporting
-- **Certificate generation** — waste acceptance certificates per customer
-- **Site settings** — operating hours, accepted waste types, capacity
+- Intake log — waste received by type, weight, source order
+- APUS reporting — VVD mandatory waste movement reporting (Latvia)
+- Certificate generation — waste acceptance certificates per customer
+- Site settings — operating hours, accepted waste types, capacity
 
 ---
 
 ## Feature Access Model
 
-Access is determined by three things carried in the auth token:
+Access is determined by the auth token:
 
 ```
 userType        BUYER | ADMIN
 companyType     CONSTRUCTION | SUPPLIER | CARRIER | RECYCLER | HYBRID
-companyFeatures CONSTRUCTION_MANAGEMENT | RECYCLING_OPS | ...
 companyRole     OWNER | MANAGER | DRIVER | MEMBER
 ```
 
-| Who                                                                       | Sees                                     |
-| ------------------------------------------------------------------------- | ---------------------------------------- |
-| `userType: ADMIN`                                                         | Admin panel only                         |
-| Any authenticated user                                                    | Marketplace (orders, catalog, transport) |
-| `companyFeatures: CONSTRUCTION_MANAGEMENT` + `companyRole: OWNER/MANAGER` | Projects, DPRs, Budgets, Timesheets      |
-| `companyFeatures: CONSTRUCTION_MANAGEMENT` + `companyRole: DRIVER/MEMBER` | Clock in/out, own DPR entries            |
-| `companyType: RECYCLER`                                                   | Intake log, APUS, Certificates           |
+| Who | Sees |
+| --- | ---- |
+| `userType: ADMIN` | Admin panel only |
+| Any authenticated user | Marketplace (orders, catalog, transport, disposal) |
+| `companyType: RECYCLER` | Intake log, APUS, Certificates |
 
 ---
 
@@ -104,56 +92,56 @@ All three use the same platform. None has a separate app or login.
 
 ### Bilt (the marketplace)
 
-The core. Materials, transport, disposal, skip hire. Open to all.
+The core. Material orders, transport jobs, waste disposal bookings. Open to all. Bilt is the sole contractual and contact partner — no buyer contacts a driver directly, no buyer negotiates with a supplier on-platform. All communication routes through Bilt support.
 
-### B3 Recycling
+### B3 Recycling — Gulbene
 
-A licensed construction waste recycling facility in Gulbene. Operates as a `RECYCLER` company on its own platform — exactly how any other recycler would. Gets `RECYCLING_OPS` features. Also listed in the disposal wizard as a marketplace provider.
+A licensed construction waste recycling facility. Operates as a `RECYCLER` company on its own platform — exactly as any external recycler would. Listed as the primary provider in the disposal wizard. Processes waste into certified RC material and lists that material back on the Bilt catalogue — closing the circular loop.
 
 ### B3 Construction
 
-A groundworks subcontracting company. Operates as a `CONSTRUCTION` company on its own platform — exactly how any other contractor would. Gets `CONSTRUCTION_MANAGEMENT` features. Dog-foods the SaaS before it opens to other contractors.
+A groundworks subcontracting company. Operates as a `CONSTRUCTION` buyer on its own platform. Orders materials, books disposal, places transport jobs through Bilt. Provides baseline order volume from day one and proves the platform works before external buyers are acquired.
 
 ---
 
 ## What Is Out of Scope
 
-The rule: **if it doesn't make someone order more through Bilt, don't build it.**
+The rule: **if it doesn't move a tonne of material or handle a tonne of waste on Bilt, don't build it.**
 
-Never build:
+Do not build:
 
-- Payroll processing
-- Full accounting / bookkeeping (VAT, P&L, tax)
+- **Skip hire / container hire** — removed from scope
+- **Toilet cabin hire** — removed from scope
+- **Metal scrap buyback** — removed from scope
+- **Quote requests / RFQ** — removed; framework contracts replace the negotiation workflow
+- **Project management** (Gantt, milestones, DPRs, GPS timesheets) — out of scope
+- **Equipment / plant hire** — out of scope
+- **P2P messaging** — no buyer↔driver, buyer↔seller, or carrier↔supplier direct chat
+- Payroll / HR / accounting
 - BIM or site planning tools
-- HR / recruitment
-- Dedicated compliance software for other recyclers
 
 ---
 
 ## Roadmap (high level)
 
-### Now
+### Now — Build density in Riga region
 
-- Finish construction SaaS features for internal B3 Construction use
-- All routes still behind `ADMIN` guard while dog-fooding
+- Drive material order volume with B3 Construction as anchor buyer
+- Get enough carriers that response time is under 24 hours
+- Activate disposal wizard for existing buyers
 
-### Next
+### Next — Close the circular loop
 
-- Add `companyFeatures` flag to Company model
-- Swap `ADMIN` guards to `CompanyFeatureGuard`
-- Move construction routes from `/b3-construction/*` to `/projects/*`
-- Move recycling routes to `/recycling/*`
-- Open to first external construction companies
-
-### Phase 2
-
-- GPS timesheets (mobile clock in/out → auto-feed DPR labour costs)
+- Activate WasteRecord → Material listing workflow at Gulbene (the one missing step — admin clicks "Create Supply Listing" on a completed waste record)
 - External recycler onboarding (apply → verify → listed in disposal wizard)
-- Equipment rental marketplace
-- Subcontractor marketplace
+
+### Phase 2 — Baltic expansion
+
+- Extend platform to Lithuania and Estonia
+- Add B3 Field locations in secondary Latvian cities (Jelgava, Valmiera, Daugavpils)
 
 ---
 
 ## The Differentiator
 
-No other Baltic tool connects project budget lines to live supplier rates, procurement orders, delivery tracking, and field costs in one place. A construction manager on Bilt sees their project budget, places a material order against it, tracks the delivery, and sees the actual cost land in their profitability dashboard — without touching a spreadsheet.
+Bilt is the only Baltic construction logistics platform that closes the full material loop: material delivered to sites → construction waste routed to B3 Recycling Gulbene → processed into certified secondary raw material → listed back on the platform. Every tonne in generates revenue; every tonne out generates supply. No other Baltic operator owns all four sides of this loop.

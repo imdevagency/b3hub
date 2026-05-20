@@ -453,24 +453,6 @@ export class AdminController {
     );
   }
 
-  /** GET /admin/skip-hire — all skip hire orders (paginated) */
-  @Get('skip-hire')
-  getSkipHireOrders(@Query() pagination: PagePaginationDto) {
-    return this.service.getSkipHireOrders(
-      pagination.page ?? 1,
-      pagination.limit ?? 50,
-    );
-  }
-
-  /** GET /admin/toilet-cabins — all toilet cabin hire orders (paginated) */
-  @Get('toilet-cabins')
-  getToiletCabinOrders(@Query() pagination: PagePaginationDto) {
-    return this.service.getToiletCabinOrders(
-      pagination.page ?? 1,
-      pagination.limit ?? 50,
-    );
-  }
-
   /**
    * GET /admin/exceptions — all transport job exceptions
    * Query param: ?status=OPEN|RESOLVED|ALL
@@ -649,48 +631,6 @@ export class AdminController {
   @Delete('catalogue/vehicle-categories/:code')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteVehicleCategory(@Param('code') code: string) { return this.service.adminDeleteVehicleCategory(code); }
-
-  // ── Catalogue CRUD — toilet cabin types ──────────────────────────────────
-
-  @Get('catalogue/toilet-cabin-types')
-  listToiletCabinTypes() { return this.service.adminListToiletCabinTypes(); }
-
-  @Put('catalogue/toilet-cabin-types/:code')
-  upsertToiletCabinType(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
-    return this.service.adminUpsertToiletCabinType(code, dto);
-  }
-
-  @Delete('catalogue/toilet-cabin-types/:code')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteToiletCabinType(@Param('code') code: string) { return this.service.adminDeleteToiletCabinType(code); }
-
-  // ── Catalogue CRUD — rental service types ────────────────────────────────
-
-  @Get('catalogue/rental-service-types')
-  listRentalServiceTypes() { return this.service.adminListRentalServiceTypes(); }
-
-  @Put('catalogue/rental-service-types/:code')
-  upsertRentalServiceType(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
-    return this.service.adminUpsertRentalServiceType(code, dto);
-  }
-
-  @Delete('catalogue/rental-service-types/:code')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteRentalServiceType(@Param('code') code: string) { return this.service.adminDeleteRentalServiceType(code); }
-
-  // ── Catalogue CRUD — scrap materials ─────────────────────────────────────
-
-  @Get('catalogue/scrap-materials')
-  listScrapMaterials() { return this.service.adminListScrapMaterials(); }
-
-  @Put('catalogue/scrap-materials/:code')
-  upsertScrapMaterial(@Param('code') code: string, @Body() dto: Record<string, unknown>) {
-    return this.service.adminUpsertScrapMaterial(code, dto);
-  }
-
-  @Delete('catalogue/scrap-materials/:code')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteScrapMaterial(@Param('code') code: string) { return this.service.adminDeleteScrapMaterial(code); }
 
   // ── Marketplace engine overview ───────────────────────────────────────────
 

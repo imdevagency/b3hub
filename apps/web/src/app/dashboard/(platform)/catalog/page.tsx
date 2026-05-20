@@ -1008,8 +1008,8 @@ function WizardInline({
         </div>
       )}
 
-      {/* offers / rfq-sent / order-confirmed: full summary + best price */}
-      {!showMap && (step === 'offers' || step === 'rfq-sent' || step === 'order-confirmed') && (
+      {/* offers / order-confirmed: full summary + best price */}
+      {!showMap && (step === 'offers' || step === 'order-confirmed') && (
         <div className="absolute inset-0 flex flex-col justify-center p-8 gap-5 overflow-y-auto animate-in fade-in duration-200">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             Pasūtījuma pārskats

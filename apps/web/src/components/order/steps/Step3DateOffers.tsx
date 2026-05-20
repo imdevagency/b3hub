@@ -11,25 +11,6 @@ import { CheckCircle2, Loader2, Package, Star, Truck, X } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 
-// Skip hire API removed from scope — stub types and functions locally
-interface SkipHireQuote {
-  carrierId: string;
-  carrierName: string;
-  carrierLogo?: string;
-  carrierRating: number | null;
-  price: number;
-  currency: string;
-}
-function mapSkipSize(s: string): string {
-  return s;
-}
-async function getSkipHireQuotes(
-  _size: string,
-  _location: string,
-  _date: string,
-): Promise<SkipHireQuote[]> {
-  return [];
-}
 import { Calendar } from '@/components/ui/calendar';
 
 // ── Offer type ────────────────────────────────────────────────────────────────
@@ -45,34 +26,6 @@ export interface Offer {
   badge?: string;
   deliveryNote: string;
   available: boolean;
-}
-
-function mapQuotesToOffers(quotes: SkipHireQuote[], hirePeriodDays: number): Offer[] {
-  const offers: Offer[] = quotes.map((q) => ({
-    id: q.carrierId,
-    carrier: q.carrierName,
-    logo: q.carrierLogo?.startsWith('http')
-      ? q.carrierLogo
-      : q.carrierName
-          .split(' ')
-          .map((w) => w[0])
-          .join('')
-          .slice(0, 2)
-          .toUpperCase(),
-    rating: q.carrierRating,
-    hirePeriodDays,
-    price: q.price,
-    currency: q.currency,
-    badge: undefined as string | undefined,
-    deliveryNote: 'Piegāde izvēlētajā datumā',
-    available: true,
-  }));
-  if (offers.length > 0) offers[0].badge = 'LĒTĀKAIS';
-  const topRated = [...offers]
-    .filter((o) => o.rating !== null)
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0];
-  if (topRated && !topRated.badge) topRated.badge = 'VISLABĀK VĒRTĒTS';
-  return offers;
 }
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -166,20 +119,11 @@ export function Step3DateOffers({
 
     setFetchError('');
     let cancelled = false;
-    getSkipHireQuotes(mapSkipSize(size), location, deliveryDate)
-      .then((quotes) => {
-        if (cancelled) return;
-        setOffers(mapQuotesToOffers(quotes, hirePeriodDays));
-        setOffersLoaded(true);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setFetchError('Neizdevās ielādēt piedāvājumus. Pārbaudiet savienojumu.');
-        setOffersLoaded(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingOffers(false);
-      });
+    setOffers([]);
+    if (!cancelled) {
+      setOffersLoaded(true);
+      setLoadingOffers(false);
+    }
     return () => {
       cancelled = true;
     };

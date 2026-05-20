@@ -27,24 +27,6 @@ export class CatalogueController {
     return this.catalogueService.getVehicleCategories();
   }
 
-  /** Toilet cabin type definitions */
-  @Get('toilet-cabin-types')
-  getToiletCabinTypes() {
-    return this.catalogueService.getToiletCabinTypes();
-  }
-
-  /** Equipment rental service type definitions */
-  @Get('rental-service-types')
-  getRentalServiceTypes() {
-    return this.catalogueService.getRentalServiceTypes();
-  }
-
-  /** Scrap buyback material definitions */
-  @Get('scrap-materials')
-  getScrapMaterials() {
-    return this.catalogueService.getScrapMaterials();
-  }
-
   /** Waste type definitions for the disposal/utilization wizard.
    *  Filter by ?group=CONSTRUCTION_WASTE | LICENSED_WASTE | SECONDARY_MATERIALS */
   @Get('waste-types')

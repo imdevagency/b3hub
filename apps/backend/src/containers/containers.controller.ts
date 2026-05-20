@@ -26,7 +26,7 @@ import { UpdateContainerOrderStatusDto } from './dto/update-container-order-stat
 
 /** Asserts the caller is an approved carrier operator. */
 function assertIsCarrier(user: RequestingUser): void {
-  if (!user.canSkipHire && !user.canTransport) {
+  if (!user.canTransport) {
     throw new ForbiddenException(
       'Only approved carriers can manage containers',
     );

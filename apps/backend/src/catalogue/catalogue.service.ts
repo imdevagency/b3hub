@@ -35,27 +35,6 @@ export class CatalogueService implements OnModuleInit {
     });
   }
 
-  getToiletCabinTypes() {
-    return this.prisma.toiletCabinDefinition.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-    });
-  }
-
-  getRentalServiceTypes() {
-    return this.prisma.rentalServiceDefinition.findMany({
-      where: { isActive: true },
-      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }],
-    });
-  }
-
-  getScrapMaterials() {
-    return this.prisma.scrapMaterialDefinition.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-    });
-  }
-
   getWasteTypes(group?: string) {
     return this.prisma.wasteTypeDefinition.findMany({
       where: {
@@ -73,9 +52,6 @@ export class CatalogueService implements OnModuleInit {
     await this.seedMaterialFractions();
     await this.seedWasteTypes();
     await this.seedVehicleCategories();
-    await this.seedToiletCabinTypes();
-    await this.seedRentalServiceTypes();
-    await this.seedScrapMaterials();
   }
 
   private async seedMaterialCategories() {
@@ -316,159 +292,6 @@ export class CatalogueService implements OnModuleInit {
         where: { code: cat.code },
         update: {},
         create: { ...rest, eligibleVehicleTypes },
-      });
-    }
-  }
-
-  private async seedToiletCabinTypes() {
-    const types = [
-      {
-        code: 'STANDARD',
-        label: 'Standard',
-        labelLv: 'Standarta kabīne',
-        description: 'Basic portable toilet cabin',
-        descriptionLv: 'Pamata pārvietojamā kabīne',
-        basePrice: 30,
-        sortOrder: 1,
-      },
-      {
-        code: 'VIP',
-        label: 'VIP',
-        labelLv: 'VIP kabīne',
-        description: 'Internal sink, soap dispenser',
-        descriptionLv: 'Iekšējā izlietne, ziepju dozators',
-        basePrice: 50,
-        sortOrder: 2,
-      },
-      {
-        code: 'DISABLED_ACCESS',
-        label: 'Accessible',
-        labelLv: 'Piekļūstama kabīne',
-        description: 'For people with special needs',
-        descriptionLv: 'Cilvēkiem ar īpašām vajadzībām',
-        basePrice: 80,
-        sortOrder: 3,
-      },
-      {
-        code: 'HEATED',
-        label: 'Heated',
-        labelLv: 'Siltināta kabīne',
-        description: 'Heater and interior lighting',
-        descriptionLv: 'Radiators, apgaismojums',
-        basePrice: 80,
-        sortOrder: 4,
-      },
-    ];
-
-    for (const type of types) {
-      await this.prisma.toiletCabinDefinition.upsert({
-        where: { code: type.code },
-        update: {},
-        create: type,
-      });
-    }
-  }
-
-  private async seedRentalServiceTypes() {
-    const services = [
-      // Site welfare
-      { code: 'SITE_OFFICE', label: 'Site Office', labelLv: 'Būvlaukuma birojs', group: 'SITE_WELFARE', basePrice: 150, priceUnit: 'week', sortOrder: 1 },
-      { code: 'TOILET_CABIN', label: 'Toilet Cabin', labelLv: 'Tualetes kabīne', group: 'SITE_WELFARE', basePrice: 30, priceUnit: 'month', sortOrder: 2 },
-      { code: 'TEMP_FENCING', label: 'Temporary Fencing', labelLv: 'Pagaidu žogs', group: 'SITE_WELFARE', basePrice: 5, priceUnit: 'day', sortOrder: 3 },
-      { code: 'SCAFFOLDING', label: 'Scaffolding', labelLv: 'Sastatnes', group: 'SITE_WELFARE', basePrice: 80, priceUnit: 'week', sortOrder: 4 },
-      { code: 'ALUMINUM_TOWER', label: 'Aluminium Tower', labelLv: 'Alumīnija tornis', group: 'SITE_WELFARE', basePrice: 40, priceUnit: 'day', sortOrder: 5 },
-      // Utilities
-      { code: 'GENERATOR', label: 'Generator', labelLv: 'Ģenerators', group: 'UTILITIES', basePrice: 60, priceUnit: 'day', sortOrder: 1 },
-      { code: 'LIGHTING_TOWER', label: 'Lighting Tower', labelLv: 'Apgaismojuma tornis', group: 'UTILITIES', basePrice: 45, priceUnit: 'day', sortOrder: 2 },
-      { code: 'WATER_BOWSER', label: 'Water Bowser', labelLv: 'Ūdens autocisterna', group: 'UTILITIES', basePrice: 50, priceUnit: 'day', sortOrder: 3 },
-      { code: 'AIR_COMPRESSOR', label: 'Air Compressor', labelLv: 'Gaisa kompresors', group: 'UTILITIES', basePrice: 35, priceUnit: 'day', sortOrder: 4 },
-      { code: 'HEATER', label: 'Space Heater', labelLv: 'Telpas sildītājs', group: 'UTILITIES', basePrice: 25, priceUnit: 'day', sortOrder: 5 },
-      // Construction equipment
-      { code: 'MINI_EXCAVATOR', label: 'Mini Excavator', labelLv: 'Mini ekskavators', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 180, priceUnit: 'day', sortOrder: 1 },
-      { code: 'EXCAVATOR', label: 'Excavator', labelLv: 'Ekskavators', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 350, priceUnit: 'day', sortOrder: 2 },
-      { code: 'DUMPER', label: 'Site Dumper', labelLv: 'Pašizgāzēja auto', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 120, priceUnit: 'day', sortOrder: 3 },
-      { code: 'COMPACTOR', label: 'Compactor / Roller', labelLv: 'Kompaktors / Rullis', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 90, priceUnit: 'day', sortOrder: 4 },
-      { code: 'TELEHANDLER', label: 'Telehandler', labelLv: 'Teleskopiskais manipulators', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 280, priceUnit: 'day', sortOrder: 5 },
-      { code: 'AERIAL_PLATFORM', label: 'Aerial Platform', labelLv: 'Gaisa platforma', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 200, priceUnit: 'day', sortOrder: 6 },
-      { code: 'CONCRETE_EQUIPMENT', label: 'Concrete Equipment', labelLv: 'Betona tehnika', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 60, priceUnit: 'day', sortOrder: 7 },
-      { code: 'REBAR_EQUIPMENT', label: 'Rebar Equipment', labelLv: 'Armatūras tehnika', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 50, priceUnit: 'day', sortOrder: 8 },
-      { code: 'WELDER', label: 'Welder', labelLv: 'Metināšanas iekārta', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 35, priceUnit: 'day', sortOrder: 9 },
-      { code: 'POWER_TOOLS', label: 'Power Tools', labelLv: 'Elektroinstrumenti', group: 'CONSTRUCTION_EQUIPMENT', basePrice: 20, priceUnit: 'day', sortOrder: 10 },
-    ];
-
-    for (const svc of services) {
-      await this.prisma.rentalServiceDefinition.upsert({
-        where: { code: svc.code },
-        update: {},
-        create: svc,
-      });
-    }
-  }
-
-  private async seedScrapMaterials() {
-    const materials = [
-      {
-        code: 'FERROUS_METAL',
-        label: 'Ferrous Metal / Steel',
-        labelLv: 'Melnais metāls / Tērauds',
-        description: 'Iron, steel, reinforcement bars, pipes',
-        descriptionLv: 'Čuguns, tērauds, armatūra, caurules',
-        indicativePricePerTonne: 180,
-        sortOrder: 1,
-      },
-      {
-        code: 'ALUMINIUM',
-        label: 'Aluminium',
-        labelLv: 'Alumīnijs',
-        description: 'Aluminium profiles, sheets, extrusions',
-        descriptionLv: 'Alumīnija profili, loksnes',
-        indicativePricePerTonne: 1200,
-        sortOrder: 2,
-      },
-      {
-        code: 'COPPER',
-        label: 'Copper',
-        labelLv: 'Varš',
-        description: 'Copper cables, pipes, fittings',
-        descriptionLv: 'Vara kabeļi, caurules, armatūra',
-        indicativePricePerTonne: 6500,
-        sortOrder: 3,
-      },
-      {
-        code: 'MIXED_METAL',
-        label: 'Mixed Metal',
-        labelLv: 'Jauktais metāls',
-        description: 'Unsorted mixed scrap metal',
-        descriptionLv: 'Nesortēti jaukti metāllūžņi',
-        indicativePricePerTonne: 140,
-        sortOrder: 4,
-      },
-      {
-        code: 'STAINLESS_STEEL',
-        label: 'Stainless Steel',
-        labelLv: 'Nerūsējošais tērauds',
-        description: 'Stainless steel equipment and fittings',
-        descriptionLv: 'Nerūsējošā tērauda iekārtas un armatūra',
-        indicativePricePerTonne: 900,
-        sortOrder: 5,
-      },
-      {
-        code: 'LEAD',
-        label: 'Lead',
-        labelLv: 'Svins',
-        description: 'Lead batteries, cable sheathing',
-        descriptionLv: 'Svina akumulatori, kabeļu apvalks',
-        indicativePricePerTonne: 1600,
-        selfTransportAllowed: false,
-        sortOrder: 6,
-      },
-    ];
-
-    for (const mat of materials) {
-      await this.prisma.scrapMaterialDefinition.upsert({
-        where: { code: mat.code },
-        update: {},
-        create: mat,
       });
     }
   }

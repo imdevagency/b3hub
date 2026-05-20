@@ -84,10 +84,6 @@ export class CreateDocumentDto {
 
   @IsOptional()
   @IsString()
-  skipHireId?: string;
-
-  @IsOptional()
-  @IsString()
   issuedBy?: string;
 
   @IsOptional()

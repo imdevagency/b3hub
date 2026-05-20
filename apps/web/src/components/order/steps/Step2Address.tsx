@@ -23,7 +23,7 @@ interface Props {
   ) => void;
   onNext?: () => void;
   onBack?: () => void;
-  /** Override the step heading (defaults to skip-hire wording) */
+  /** Override the step heading */
   title?: string;
   /** Override the step subtitle */
   subtitle?: string;

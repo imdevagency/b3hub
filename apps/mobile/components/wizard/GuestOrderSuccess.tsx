@@ -1,6 +1,6 @@
 /**
  * GuestOrderSuccess — full-screen inline confirmation shown after a guest
- * (no-account) submission. Used by all four wizards (material, skip-hire,
+ * (no-account) submission. Used by all wizards (material,
  * transport, disposal).
  *
  * Shows:

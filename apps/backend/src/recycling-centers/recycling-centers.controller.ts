@@ -27,7 +27,7 @@ import { DisposalQuoteQueryDto } from './dto/disposal-quote-query.dto';
 
 /** Asserts caller is an approved carrier or recycler operator. */
 function assertIsCarrierOp(user: RequestingUser): void {
-  if (!user.canSkipHire && !user.canTransport && !user.canRecycle) {
+  if (!user.canTransport && !user.canRecycle) {
     throw new ForbiddenException(
       'Only approved carriers or recycling operators can manage recycling centers',
     );

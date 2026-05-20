@@ -596,12 +596,27 @@ export interface AdminDormantCarrier {
   daysSinceLastJob: number | null;
 }
 
+export interface UnfulfilledRfq {
+  id: string;
+  requestNumber: string;
+  materialName: string;
+  materialCategory: string;
+  quantity: number;
+  unit: string;
+  deliveryCity: string;
+  buyerName: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface AdminDemandGaps {
   dormantSuppliers: AdminDormantSupplier[];
   dormantCarriers: AdminDormantCarrier[];
+  unfulfilledRfqs: UnfulfilledRfq[];
   summary: {
     dormantSupplierCount: number;
     dormantCarrierCount: number;
+    unfulfilledRfqCount: number;
   };
 }
 
@@ -1169,7 +1184,6 @@ export interface AdminDocument {
   invoiceId: string | null;
   transportJobId: string | null;
   wasteRecordId: string | null;
-  skipHireId: string | null;
   ownerId: string;
   issuedBy: string | null;
   isGenerated: boolean;
@@ -1455,6 +1469,9 @@ export interface MarketHealthData {
     ordersLast30d: number;
     cancelledLast30d: number;
     cancelRate: number;
+    totalRfqs: number;
+    pendingRfqs: number;
+    expiredRfqs: number;
   };
   transport: {
     availableJobs: number;
@@ -1486,6 +1503,8 @@ export interface MaterialMatchRow {
   supplierCount: number;
   listingCount: number;
   status: MatchStatus;
+  rfqTotal: number;
+  rfqPending: number;
 }
 
 export interface WasteMatchRow {
@@ -1566,6 +1585,38 @@ export interface WasteSignalsData {
 
 export async function adminGetWasteSignals(token: string): Promise<WasteSignalsData> {
   return apiFetch<WasteSignalsData>('/admin/waste-signals', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ─── Circular Economy Stats ───────────────────────────────────────────────────
+
+export interface CircularEconomyMonthlyTrend {
+  month: string;
+  wasteIn: number;
+  recycled: number;
+  converted: number;
+}
+
+export interface CircularEconomyStats {
+  totalWasteInTonnes: number;
+  totalRecyclableTonnes: number;
+  totalConvertedTonnes: number;
+  quantitySoldTonnes: number;
+  avgRecoveryRate: number;
+  co2SavedTonnes: number;
+  pendingConversionCount: number;
+  pendingConversionTonnes: number;
+  activeMaterialListings: number;
+  revenueFromRecycledMaterials: number;
+  totalConvertedCount: number;
+  monthlyTrend: CircularEconomyMonthlyTrend[];
+}
+
+export async function adminGetCircularEconomyStats(
+  token: string,
+): Promise<CircularEconomyStats> {
+  return apiFetch<CircularEconomyStats>('/admin/b3-recycling/circular-economy-stats', {
     headers: { Authorization: `Bearer ${token}` },
   });
 }

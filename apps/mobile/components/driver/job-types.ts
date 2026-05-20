@@ -9,6 +9,8 @@ import type { ApiTransportJob } from '@/lib/api';
 export interface TransportJob {
   id: string;
   jobNumber: string;
+  jobType: string;
+  pickupDate: string;
   vehicleType: string;
   requiredVehicleEnum: string | null;
   payload: string;
@@ -155,6 +157,8 @@ export function mapJob(j: ApiTransportJob): TransportJob {
   return {
     id: j.id,
     jobNumber: j.jobNumber,
+    jobType: j.jobType ?? 'MATERIAL_DELIVERY',
+    pickupDate: j.pickupDate,
     vehicleType: j.requiredVehicleType ?? '',
     requiredVehicleEnum: j.requiredVehicleEnum ?? null,
     payload: j.cargoType,

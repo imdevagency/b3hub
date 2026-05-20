@@ -24,19 +24,8 @@
 | Orders list                       | `app/(buyer)/orders.tsx`                  |
 | Order detail                      | `app/(buyer)/order/[id].tsx`              |
 | Transport job detail              | `app/(buyer)/transport-job/[id].tsx`      |
-| Skip hire order detail            | `app/(buyer)/skip-order/[id].tsx`         |
-| RFQ detail                        | `app/(buyer)/rfq/[id].tsx`                |
-| Projects list                     | `app/(buyer)/projects.tsx`                |
-| Project detail                    | `app/(buyer)/project/[id].tsx`            |
-| New project                       | `app/(buyer)/project/new.tsx`             |
 | Framework contracts list          | `app/(buyer)/framework-contracts.tsx`     |
 | Framework contract detail         | `app/(buyer)/framework-contract/[id].tsx` |
-| Invoices                          | `app/(buyer)/invoices.tsx`                |
-| Documents                         | `app/(buyer)/documents.tsx`               |
-| Certificates                      | `app/(buyer)/certificates.tsx`            |
-| Team                              | `app/(buyer)/team.tsx`                    |
-| Saved addresses                   | `app/(buyer)/saved-addresses.tsx`         |
-| Disputes                          | `app/(buyer)/disputes.tsx`                |
 | Profile                           | `app/(buyer)/profile.tsx`                 |
 
 ### Seller (canSell users)
@@ -47,7 +36,6 @@
 | Catalog (my listings)     | `app/(seller)/catalog.tsx`                 |
 | Incoming orders           | `app/(seller)/incoming.tsx`                |
 | Order detail              | `app/(seller)/order/[id].tsx`              |
-| Quote requests            | `app/(seller)/quotes.tsx`                  |
 | Framework contracts list  | `app/(seller)/framework-contracts.tsx`     |
 | Framework contract detail | `app/(seller)/framework-contract/[id].tsx` |
 | Earnings                  | `app/(seller)/earnings.tsx`                |
@@ -62,7 +50,6 @@
 | Active job       | `app/(driver)/active.tsx`    |
 | Available jobs   | `app/(driver)/jobs.tsx`      |
 | Schedule         | `app/(driver)/schedule.tsx`  |
-| Skip hire jobs   | `app/(driver)/skips.tsx`     |
 | Earnings         | `app/(driver)/earnings.tsx`  |
 | Fleet / vehicles | `app/(driver)/vehicles.tsx`  |
 | Documents        | `app/(driver)/documents.tsx` |
@@ -85,7 +72,6 @@
 | Screen                | File                       |
 | --------------------- | -------------------------- |
 | Delivery proof upload | `app/delivery-proof.tsx`   |
-| Chat (job-scoped)     | `app/chat/[jobId].tsx`     |
 | Messages (inbox)      | `app/messages.tsx`         |
 | Notifications         | `app/notifications.tsx`    |
 | Support chat          | `app/support-chat.tsx`     |
@@ -128,26 +114,16 @@
 
 | Screen                    | Route                                 |
 | ------------------------- | ------------------------------------- |
-| Buyer overview            | `/dashboard/buyer`                    |
-| Projects                  | `/dashboard/buyer/projects`           |
-| Project detail            | `/dashboard/buyer/projects/[id]`      |
-| Projects (alt)            | `/dashboard/projects`                 |
-| Project detail (alt)      | `/dashboard/projects/[id]`            |
 | Orders list               | `/dashboard/orders`                   |
 | Order detail              | `/dashboard/orders/[id]`              |
 | Order schedules           | `/dashboard/orders/schedules`         |
 | Order — materials wizard  | `/dashboard/order/materials`          |
 | Order — transport wizard  | `/dashboard/order/transport`          |
 | Order — disposal wizard   | `/dashboard/order/disposal`           |
-| Order — skip hire         | `/dashboard/order/skip-hire`          |
-| Order (legacy entry)      | `/order`                              |
 | Invoices                  | `/dashboard/invoices`                 |
 | Checkout                  | `/dashboard/checkout`                 |
-| Certificates              | `/dashboard/certificates`             |
 | Framework contracts list  | `/dashboard/framework-contracts`      |
 | Framework contract detail | `/dashboard/framework-contracts/[id]` |
-| Quote requests            | `/dashboard/quote-requests`           |
-| Open RFQs                 | `/dashboard/quote-requests/open`      |
 
 ### Supplier
 
@@ -171,9 +147,6 @@
 | Transporter earnings | `/dashboard/transporter/earnings` |
 | Driver earnings      | `/dashboard/driver/earnings`      |
 | Transporter settings | `/dashboard/transporter/settings` |
-| Containers           | `/dashboard/containers`           |
-| Container fleet      | `/dashboard/containers/fleet`     |
-| Skip hire            | `/dashboard/skip-hire`            |
 | Recycling centers    | `/dashboard/recycling-centers`    |
 
 ### Admin

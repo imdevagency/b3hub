@@ -9,7 +9,7 @@ export interface RequestingUser {
   canBuy: boolean; // approved to place orders as a buyer
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
-  canSkipHire: boolean; // approved to manage skip hire fleet
+  canSkipHire: boolean; // legacy — skip hire removed from scope; field retained for schema compatibility
   canRent: boolean; // approved equipment rental provider — can receive & fulfil rental orders
   canRecycle: boolean; // approved to operate a recycling/waste center
   companyId?: string; // linked Company id, if any

@@ -2035,29 +2035,150 @@ export default function TransportWizard() {
                 {/* ── Pricing ── */}
                 <View style={{ gap: 12, marginBottom: 20 }}>
                   {pricingMode === 'FLAT' ? (
-                    <>
-                      <TextInputField
-                        placeholder="Piedāvātā cena (€) — pēc izvēles"
-                        keyboardType="numeric"
-                        value={offeredRateText}
-                        onChangeText={setOfferedRateText}
-                        containerStyle={{
-                          backgroundColor: '#f3f4f6',
-                          borderWidth: 0,
-                          borderRadius: 12,
-                        }}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: '#6b7280',
-                          marginTop: -4,
-                          paddingHorizontal: 4,
-                        }}
-                      >
-                        Neobligāti — norādiet summu, lai ātrāk atrastu pārvadātāju.
-                      </Text>
-                    </>
+                    (() => {
+                      const minRate = currentVehicle
+                        ? Math.round(currentVehicle.fromPrice * 0.7)
+                        : 50;
+                      const maxRate = currentVehicle
+                        ? Math.round(currentVehicle.fromPrice * 1.8)
+                        : 300;
+                      const stepSize = Math.max(5, Math.round((maxRate - minRate) / 20));
+                      const currentVal = offeredRateText ? parseFloat(offeredRateText) : null;
+                      const displayVal =
+                        currentVal !== null && !isNaN(currentVal) ? currentVal : null;
+                      const fraction =
+                        displayVal !== null
+                          ? Math.max(0, Math.min(1, (displayVal - minRate) / (maxRate - minRate)))
+                          : null;
+                      return (
+                        <>
+                          <View
+                            style={{
+                              backgroundColor: '#111827',
+                              borderRadius: 16,
+                              padding: 18,
+                              gap: 14,
+                            }}
+                          >
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: '#9ca3af',
+                                  fontSize: 13,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {vehicleOptions.find((v) => v.type === selectedVehicle)?.label ??
+                                  '—'}
+                              </Text>
+                              <Text
+                                style={{
+                                  color: displayVal !== null ? '#fff' : '#4b5563',
+                                  fontSize: 24,
+                                  fontWeight: '800',
+                                  letterSpacing: -0.5,
+                                }}
+                              >
+                                {displayVal !== null ? `€${displayVal}` : 'Nav norādīts'}
+                              </Text>
+                            </View>
+                            {/* Visual bar */}
+                            <View
+                              style={{ height: 4, backgroundColor: '#374151', borderRadius: 2 }}
+                            >
+                              {fraction !== null && (
+                                <View
+                                  style={{
+                                    height: 4,
+                                    width: `${Math.round(fraction * 100)}%`,
+                                    backgroundColor: '#10b981',
+                                    borderRadius: 2,
+                                  }}
+                                />
+                              )}
+                            </View>
+                            {/* Step controls */}
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 8,
+                              }}
+                            >
+                              <Text style={{ color: '#6b7280', fontSize: 12 }}>€{minRate}</Text>
+                              <View
+                                style={{
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  flex: 1,
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                {[-stepSize * 2, -stepSize, stepSize, stepSize * 2].map((delta) => (
+                                  <TouchableOpacity
+                                    key={delta}
+                                    onPress={() => {
+                                      const base =
+                                        displayVal ??
+                                        (currentVehicle
+                                          ? Math.round(
+                                              currentVehicle.fromPrice +
+                                                (route?.distanceKm ?? 30) *
+                                                  currentVehicle.pricePerKm,
+                                            )
+                                          : minRate);
+                                      const next = Math.min(
+                                        maxRate,
+                                        Math.max(minRate, base + delta),
+                                      );
+                                      setOfferedRateText(String(next));
+                                      haptics.light();
+                                    }}
+                                    style={{
+                                      paddingHorizontal: 10,
+                                      paddingVertical: 7,
+                                      borderRadius: 8,
+                                      backgroundColor: '#1f2937',
+                                    }}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Text
+                                      style={{
+                                        color: '#d1d5db',
+                                        fontSize: 13,
+                                        fontWeight: '700',
+                                      }}
+                                    >
+                                      {delta > 0 ? `+${delta}` : `${delta}`}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                              <Text style={{ color: '#6b7280', fontSize: 12 }}>€{maxRate}</Text>
+                            </View>
+                          </View>
+                          {displayVal === null && (
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: '#6b7280',
+                                paddingHorizontal: 4,
+                              }}
+                            >
+                              Neobligāti — norādiet summu, lai ātrāk atrastu pārvadātāju.
+                            </Text>
+                          )}
+                        </>
+                      );
+                    })()
                   ) : (
                     <>
                       <TextInputField

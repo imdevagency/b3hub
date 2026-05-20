@@ -136,12 +136,6 @@ export class DocumentsService {
         entityId: dto.wasteRecordId,
         role: DocumentLinkRole.PRIMARY,
       });
-    if (dto.skipHireId)
-      directLinks.push({
-        entityType: DocumentEntityType.SKIP_HIRE_ORDER,
-        entityId: dto.skipHireId,
-        role: DocumentLinkRole.PRIMARY,
-      });
 
     return this.prisma.document.create({
       data: {

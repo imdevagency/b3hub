@@ -505,9 +505,6 @@ export class EmailService {
       materialName?: string;
       quantity?: number;
       unit?: string;
-      skipSize?: string;
-      skipWasteCategory?: string;
-      hireDays?: number;
       pickupAddress?: string;
       pickupCity?: string;
       vehicleType?: string;
@@ -528,13 +525,6 @@ export class EmailService {
     // Build category-specific detail rows
     let detailRows = '';
     switch (category) {
-      case 'SKIP_HIRE':
-        detailRows = `
-          <tr><td style="padding:6px 0;color:#6b7280;width:40%">Konteiners</td><td style="padding:6px 0;font-weight:600">${this.escape(details.skipSize ?? '')} — ${this.escape(details.skipWasteCategory ?? '')}</td></tr>
-          <tr><td style="padding:6px 0;color:#6b7280">Nomas periods</td><td style="padding:6px 0;font-weight:600">${details.hireDays ?? 14} dienas</td></tr>
-          <tr><td style="padding:6px 0;color:#6b7280">Piegādes adrese</td><td style="padding:6px 0;font-weight:600">${safeDeliveryAddr}, ${safeDeliveryCity}</td></tr>
-        `;
-        break;
       case 'TRANSPORT':
         detailRows = `
           <tr><td style="padding:6px 0;color:#6b7280;width:40%">Iekraušana</td><td style="padding:6px 0;font-weight:600">${this.escape(details.pickupAddress ?? '')}${details.pickupCity ? `, ${this.escape(details.pickupCity)}` : ''}</td></tr>

@@ -31,6 +31,7 @@ import {
   ResolveTransportExceptionDto,
 } from './dto/report-exception.dto';
 import { ReportDelayDto } from './dto/report-delay.dto';
+import { ScheduleArrivalDto } from './dto/schedule-arrival.dto';
 import {
   IsBoolean,
   IsEnum,
@@ -399,6 +400,23 @@ export class TransportJobsController {
       );
     }
     return this.service.accept(id, user.userId);
+  }
+
+  /**
+   * PATCH /transport-jobs/:id/schedule-arrival
+   * Driver sets a planned arrival time; buyer receives an ETA notification.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/schedule-arrival')
+  scheduleArrival(
+    @Param('id') id: string,
+    @Body() dto: ScheduleArrivalDto,
+    @CurrentUser() user: RequestingUser,
+  ) {
+    if (!user.canTransport) {
+      throw new ForbiddenException('Only approved drivers can schedule arrival');
+    }
+    return this.service.scheduleArrival(id, user.userId, dto.plannedArrivalAt);
   }
 
   /**

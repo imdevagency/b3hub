@@ -291,6 +291,7 @@ const JobCard = React.memo(function JobCard({
   fuelDiesel?: number | null;
 }) {
   const swipeRef = useRef<{ close(): void } | null>(null);
+  const cardRouter = useRouter();
 
   const renderRightActions = () => (
     <TouchableOpacity
@@ -368,6 +369,20 @@ const JobCard = React.memo(function JobCard({
           >
             {job.time}
           </Text>
+          <View style={{ marginTop: 4 }}>
+            <StatusPill
+              label={
+                job.jobType === 'WASTE_COLLECTION'
+                  ? 'Utilizācija'
+                  : job.jobType === 'MATERIAL_DELIVERY'
+                    ? 'Piegāde'
+                    : 'Transports'
+              }
+              bg="#1f2937"
+              color="#fff"
+              size="sm"
+            />
+          </View>
         </View>
       </View>
 
@@ -510,6 +525,25 @@ const JobCard = React.memo(function JobCard({
       >
         {card}
       </Swipeable>
+      <TouchableOpacity
+        onPress={() => {
+          haptics.light();
+          cardRouter.push(`/(driver)/job/${job.id}` as never);
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 10,
+          gap: 4,
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#6b7280' }}>
+          Detaļas
+        </Text>
+        <Text style={{ fontSize: 13, color: '#9ca3af' }}>→</Text>
+      </TouchableOpacity>
     </View>
   );
 });
@@ -786,7 +820,10 @@ export default function JobsScreen() {
       haptics.success();
       setAcceptSheetJob(null);
       toast.success('Darbs pieņemts!');
-      router.replace('/(driver)/active');
+      router.replace({
+        pathname: '/(driver)/schedule-arrival' as never,
+        params: { jobId: job.id, pickupDate: job.pickupDate ?? '' },
+      } as never);
     } catch (err: unknown) {
       haptics.error();
       toast.error(err instanceof Error ? err.message : 'Neizdevās pieņemt darbu');

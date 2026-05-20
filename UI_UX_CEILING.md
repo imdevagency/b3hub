@@ -71,7 +71,7 @@ Drivers are the most important UX surface. They use the app while physically wor
 
 **Ceiling:**
 
-- **Actionable dashboard** — the first thing a seller or dispatcher sees is not a list but a prioritized action queue: "3 orders need confirmation", "2 drivers are overdue", "1 quote request expires today". Every item is one click to resolve.
+- **Actionable dashboard** — the first thing a seller or dispatcher sees is not a list but a prioritized action queue: "3 orders need confirmation", "2 drivers are overdue", "1 delivery SLA at risk". Every item is one click to resolve.
 - **Real-time updates without reload** — WebSocket-powered live feed. New order appears in the incoming list instantly. Driver location updates on the map without refresh.
 - **Keyboard-first power user mode** — dispatchers can action, assign, and resolve everything with keyboard shortcuts. No mouse required for repetitive tasks.
 
@@ -133,7 +133,7 @@ This is the highest-complexity screen in the product.
 **Ceiling:**
 
 - Interactive walkthrough on first use — not slides, but a guided first action. Driver's first session walks them through accepting a real (or simulated) job.
-- Progressive disclosure — advanced features (framework contracts, RFQ, CO₂ reports) introduced only after core flow is mastered
+- Progressive disclosure — advanced features (framework contracts, CO₂ reports) introduced only after core flow is mastered
 - Contextual help — "?" tooltip on every non-obvious field explaining what it does and why it matters
 - Empty state education — every empty list has a clear explanation of what will appear here and how to get started
 

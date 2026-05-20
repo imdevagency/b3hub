@@ -25,7 +25,7 @@ export function orderSearchText(item: UnifiedOrder): string {
   // material
   if (d.material?.name) parts.push(d.material.name);
   if (d.items) (d.items as any[]).forEach((i) => { if (i.material?.name) parts.push(i.material.name); });
-  // RFQ
+  // search text
   if (d.title) parts.push(d.title);
   // supplier / buyer names
   if (d.supplier?.name) parts.push(d.supplier.name);
@@ -42,8 +42,6 @@ export type UnifiedOrder =
 
 // ── Bucket helpers (exported for use in card components) ──────
 
-const SKIP_ACTIVE = new Set(['PENDING', 'CONFIRMED', 'DELIVERED']);
-const SKIP_DONE = new Set(['COLLECTED', 'COMPLETED']);
 const MAT_ACTIVE = new Set([
   'PENDING',
   'CONFIRMED',
@@ -61,12 +59,6 @@ const TJB_ACTIVE = new Set([
   'EN_ROUTE_DELIVERY',
   'AT_DELIVERY',
 ]);
-
-export function skipBucket(status: string): FilterKey {
-  if (SKIP_ACTIVE.has(status)) return 'ACTIVE';
-  if (SKIP_DONE.has(status)) return 'DONE';
-  return 'CANCELLED';
-}
 
 export function matBucket(status: string): FilterKey {
   if (MAT_ACTIVE.has(status)) return 'ACTIVE';

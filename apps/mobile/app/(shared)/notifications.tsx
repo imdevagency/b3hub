@@ -70,7 +70,6 @@ const TYPE_INFO: Record<string, TypeInfo> = {
   JOB_COMPLETED: { Icon: Award, bg: '#f3f4f6', iconColor: '#6b7280' },
   INVOICE_ISSUED: { Icon: Receipt, bg: '#f9fafb', iconColor: '#6b7280' },
   QUOTE_SUBMITTED: { Icon: MessageSquare, bg: '#f0f9ff', iconColor: '#0369a1' },
-  QUOTE_REQUEST_RECEIVED: { Icon: MessageSquare, bg: '#fef9c3', iconColor: '#a16207' },
   ORDER_REJECTED: { Icon: XCircle, bg: '#fef2f2', iconColor: '#b91c1c' },
   SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280' },
 };
@@ -93,7 +92,6 @@ const BUYER_TYPES = new Set([
 ]);
 const SELLER_TYPES = new Set([
   'ORDER_CREATED', // new order received by seller
-  'QUOTE_REQUEST_RECEIVED', // seller received an RFQ
   'QUOTE_ACCEPTED', // seller's quote accepted
 ]);
 const CARRIER_TYPES = new Set([
@@ -144,9 +142,8 @@ function deepLinkPath(notif: ApiNotification, mode: AppMode): string | null {
     // ── Seller ────────────────────────────────────────────────
     case 'ORDER_CREATED':
       return d.orderId ? `/(seller)/order/${d.orderId}` : '/(seller)/incoming';
-    case 'QUOTE_REQUEST_RECEIVED':
     case 'QUOTE_ACCEPTED':
-      return '/(seller)/quotes';
+      return '/(seller)/incoming';
     // ── Driver ────────────────────────────────────────────────
     case 'JOB_AVAILABLE':
       return '/(driver)/jobs';

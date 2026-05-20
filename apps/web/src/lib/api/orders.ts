@@ -169,18 +169,6 @@ export async function sellerCancelOrder(id: string, token: string, reason = 'Pā
   });
 }
 
-export async function linkSkipOrder(
-  orderId: string,
-  skipHireOrderId: string | null,
-  token: string,
-): Promise<ApiOrder> {
-  return apiFetch<ApiOrder>(`/orders/${orderId}/link-skip`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ skipHireOrderId }),
-  });
-}
-
 export async function createMaterialOrder(
   input: {
     materialId: string;

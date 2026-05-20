@@ -296,6 +296,7 @@ enum NotificationType {
   TRANSPORT_ASSIGNED
   TRANSPORT_STARTED
   TRANSPORT_COMPLETED
+  TRANSPORT_ARRIVAL_SCHEDULED // driver committed to an ETA window; buyer is notified
   PAYMENT_RECEIVED
   QUOTE_RECEIVED
   QUOTE_ACCEPTED
@@ -1148,6 +1149,11 @@ model TransportJob {
   // Tracking
   currentLocation  Json?
   estimatedArrival DateTime?
+
+  // Carrier arrival scheduling (driver sets ETA after accepting)
+  plannedArrivalAt    DateTime? // driver's committed arrival time
+  arrivalWindowStart  DateTime? // plannedArrivalAt - 90 min
+  arrivalWindowEnd    DateTime? // plannedArrivalAt + 90 min
 
   // Proof of delivery
   deliveryProof DeliveryProof?

@@ -42,14 +42,12 @@ All four sides share a single platform. A company can be a seller **and** a carr
 | Guest checkout for B2C one-off orders                                        | Phone + email capture at step 1                                 |
 | Track every order from placement to invoice in real time                     | Push notification at each status change                         |
 | Download invoices, delivery notes, weighing slips, waste certificates as PDF | Auto-generated from transaction data                            |
-| Submit RFQs to multiple suppliers simultaneously                             | Convert winning quote directly to order                         |
 | Framework contracts with preferred suppliers                                 | Call-off orders against agreed volumes and rates                |
-| Assign orders to procurement projects; see project-level spend vs budget     | Spend is only what flows through Bilt                           |
 | Manage a company team: invite members, set roles, toggle permissions         | Roles: OWNER, MANAGER, DRIVER, MEMBER                           |
 | Pay via card or in-app payment sheet                                         | Paysera (primary); Stripe Connect for individual driver payouts |
 | Save frequently used delivery addresses                                      | —                                                               |
 | Write reviews for suppliers and carriers after delivery                      | —                                                               |
-| Chat with driver on an active transport job                                  | Per-job thread only                                             |
+| Contact Bilt support about an active order                                   | Bilt↔user only; no P2P chat                                     |
 
 ### What Bilt does NOT provide
 
@@ -79,7 +77,6 @@ All four sides share a single platform. A company can be a seller **and** a carr
 | Receive order notifications and confirm or reject within SLA                                          | —                                   |
 | Confirm driver arrival at loading point                                                               | Digital loading confirmation in-app |
 | See which driver is on their loading point and their ETA                                              | —                                   |
-| Respond to RFQs with a quoted price, quantity, and ETA                                                | —                                   |
 | Manage framework contract volumes and call-offs                                                       | See remaining balances per contract |
 | Earnings dashboard: transactions per period, payout history                                           | —                                   |
 | Receive automatic payouts when orders complete                                                        | Via Stripe Connect                  |

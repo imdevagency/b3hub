@@ -18,45 +18,6 @@ export interface VehicleServiceCategory {
   sortOrder: number;
 }
 
-export interface ToiletCabinDefinition {
-  id: string;
-  code: string;
-  label: string;
-  labelLv: string | null;
-  description: string | null;
-  descriptionLv: string | null;
-  basePrice: number | null;
-  currency: string;
-  sortOrder: number;
-}
-
-export interface RentalServiceDefinition {
-  id: string;
-  code: string;
-  label: string;
-  labelLv: string | null;
-  description: string | null;
-  descriptionLv: string | null;
-  group: string | null;
-  basePrice: number | null;
-  priceUnit: string | null;
-  currency: string;
-  sortOrder: number;
-}
-
-export interface ScrapMaterialDefinition {
-  id: string;
-  code: string;
-  label: string;
-  labelLv: string | null;
-  description: string | null;
-  descriptionLv: string | null;
-  indicativePricePerTonne: number | null;
-  currency: string;
-  selfTransportAllowed: boolean;
-  sortOrder: number;
-}
-
 export interface MaterialCategoryDefinition {
   id: string;
   code: string;
@@ -86,14 +47,6 @@ export interface MaterialFractionDefinition {
 
 export async function fetchVehicleCategories(): Promise<VehicleServiceCategory[]> {
   return apiFetch<VehicleServiceCategory[]>('/catalogue/vehicle-categories');
-}
-
-export async function fetchRentalServiceTypes(): Promise<RentalServiceDefinition[]> {
-  return apiFetch<RentalServiceDefinition[]>('/catalogue/rental-service-types');
-}
-
-export async function fetchScrapMaterials(): Promise<ScrapMaterialDefinition[]> {
-  return apiFetch<ScrapMaterialDefinition[]>('/catalogue/scrap-materials');
 }
 
 export async function fetchMaterialCategories(): Promise<MaterialCategoryDefinition[]> {

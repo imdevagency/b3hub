@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   CheckCircle2,
   X,
+  Clock,
+  FileText,
 } from 'lucide-react-native';
 
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -373,6 +375,48 @@ export default function OrderTrackingScreen() {
               )}
             </View>
 
+            {/* Arrival window banner */}
+            {activeJob?.plannedArrivalAt &&
+              !isTerminal &&
+              (() => {
+                const windowStart = activeJob.arrivalWindowStart
+                  ? new Date(activeJob.arrivalWindowStart)
+                  : new Date(new Date(activeJob.plannedArrivalAt).getTime() - 90 * 60 * 1000);
+                const windowEnd = activeJob.arrivalWindowEnd
+                  ? new Date(activeJob.arrivalWindowEnd)
+                  : new Date(new Date(activeJob.plannedArrivalAt).getTime() + 90 * 60 * 1000);
+                const fmt = (d: Date) =>
+                  d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#ECFDF5',
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: '#A7F3D0',
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      marginBottom: 12,
+                      gap: 10,
+                    }}
+                  >
+                    <Clock size={16} color="#059669" />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontFamily: 'Inter_600SemiBold',
+                        color: '#065F46',
+                      }}
+                    >
+                      Paredzamais ierašanās laiks: {fmt(windowStart)} – {fmt(windowEnd)}
+                    </Text>
+                  </View>
+                );
+              })()}
+
             {/* Terminal state card or active timeline */}
             {isTerminal ? (
               <View style={styles.terminalSection}>
@@ -525,6 +569,26 @@ export default function OrderTrackingScreen() {
               >
                 Detaļas
               </Button>
+              {activeJob?.deliveryProof && (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="flex-1"
+                  onPress={() => {
+                    haptics.light();
+                    router.push(`/(shared)/delivery-proof?jobId=${activeJob.id}` as never);
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <FileText size={16} color="#374151" />
+                    <Text
+                      style={{ fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#374151' }}
+                    >
+                      Pavadzīme
+                    </Text>
+                  </View>
+                </Button>
+              )}
               {order.status === 'PENDING' && token && (
                 <Button
                   variant="destructive"

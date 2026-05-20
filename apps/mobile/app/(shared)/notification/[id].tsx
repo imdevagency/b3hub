@@ -108,12 +108,7 @@ const TYPE_INFO: Record<string, TypeInfo> = {
     iconColor: '#0369a1',
     label: 'Piedāvājums iesniegts',
   },
-  QUOTE_REQUEST_RECEIVED: {
-    Icon: MessageSquare,
-    bg: '#fef9c3',
-    iconColor: '#a16207',
-    label: 'Jauns cenu pieprasījums',
-  },
+
   SYSTEM_ALERT: { Icon: Bell, bg: '#fefce8', iconColor: '#ca8a04', label: 'Sistēmas brīdinājums' },
   SYSTEM: { Icon: Bell, bg: '#f3f4f6', iconColor: '#6b7280', label: 'Sistēmas paziņojums' },
   DOCUMENT_EXPIRING_SOON: {
@@ -168,9 +163,8 @@ function deepLinkPath(notif: ApiNotification, mode: string): string | null {
       return '/(buyer)/orders';
     case 'ORDER_CREATED':
       return d.orderId ? `/(seller)/order/${d.orderId}` : '/(seller)/incoming';
-    case 'QUOTE_REQUEST_RECEIVED':
     case 'QUOTE_ACCEPTED':
-      return '/(seller)/quotes';
+      return '/(seller)/incoming';
     case 'JOB_AVAILABLE':
       return '/(driver)/jobs';
     case 'JOB_ACCEPTED':

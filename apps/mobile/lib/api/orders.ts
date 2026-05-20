@@ -224,6 +224,9 @@ export interface ApiOrder {
     cargoWeight: number | null;
     actualWeightKg: number | null;
     pickupPhotoUrl: string | null;
+    plannedArrivalAt: string | null;
+    arrivalWindowStart: string | null;
+    arrivalWindowEnd: string | null;
     driver: {
       id: string;
       firstName: string;

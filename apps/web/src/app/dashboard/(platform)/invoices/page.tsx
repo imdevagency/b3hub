@@ -8,13 +8,7 @@
 import { useCallback, useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import {
-  getMyInvoices,
-  markInvoicePaid,
-  getProjects,
-  type ApiInvoice,
-  type ApiProject,
-} from '@/lib/api';
+import { getMyInvoices, markInvoicePaid, type ApiInvoice } from '@/lib/api';
 import { blobFetch } from '@/lib/api/common';
 import {
   CheckCircle2,
@@ -35,14 +29,6 @@ import { PageSpinner } from '@/components/ui/page-spinner';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
 // ── Invoices page ─────────────────────────────────────────────────────────────
 
 export default function InvoicesPage() {
@@ -72,7 +58,6 @@ function InvoicesPageInner() {
   const [xmlLoading, setXmlLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'OVERDUE'>('ALL');
   const [projectFilter, setProjectFilter] = useState<string>(initialProjectId);
-  const [projects, setProjects] = useState<ApiProject[]>([]);
 
   async function handleExportCsv() {
     if (!token) return;
@@ -135,14 +120,6 @@ function InvoicesPageInner() {
   useEffect(() => {
     load();
   }, [load]);
-
-  // Load projects for filter dropdown
-  useEffect(() => {
-    if (!token) return;
-    getProjects(token)
-      .then(setProjects)
-      .catch(() => {});
-  }, [token]);
 
   // Reset to page 1 whenever the filter changes
   useEffect(() => {
@@ -230,38 +207,6 @@ function InvoicesPageInner() {
           </button>
         ))}
       </div>
-
-      {/* Project filter */}
-      {projects.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Select
-            value={projectFilter || 'ALL'}
-            onValueChange={(v) => setProjectFilter(v === 'ALL' ? '' : v)}
-          >
-            <SelectTrigger className="w-60 h-9 rounded-xl border-0 bg-muted/50 text-sm shadow-none">
-              <SelectValue placeholder="Visi projekti" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Visi projekti</SelectItem>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {projectFilter && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setProjectFilter('')}
-              className="text-muted-foreground"
-            >
-              Notīrīt
-            </Button>
-          )}
-        </div>
-      )}
 
       {paymentSuccess && (
         <div className="flex items-center gap-3 rounded-xl bg-green-50 border border-green-200 px-4 py-3">

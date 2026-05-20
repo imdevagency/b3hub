@@ -217,11 +217,10 @@ Use this component in the following priority:
 - [ ] `apps/mobile/app/(auth)/forgot-password.tsx`
 - [ ] `apps/mobile/app/(auth)/apply-role.tsx`
 
-**Phase 2 - Order/RFQ flows:**
+**Phase 2 - Order flows:**
 
 - [ ] `apps/mobile/app/order-request-new.tsx` (Uber-style fields)
 - [ ] `apps/mobile/app/disposal/index.tsx` (disposal order)
-- [ ] `apps/mobile/app/(buyer)/rfq/[id].tsx` (quote request)
 
 **Phase 3 - Driver/Seller management:**
 

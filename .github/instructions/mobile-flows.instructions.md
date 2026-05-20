@@ -152,29 +152,52 @@ Used for: `order/[id]/details.tsx`, `skip-order/[id]/details.tsx`, `transport-jo
 
 ## Order wizard pattern (`(wizards)/`)
 
-**When to use:** multi-step order creation (material order, skip hire, transport, disposal)
+**When to use:** multi-step order creation (material order, transport, disposal)
 
-### Standard 4-step template
+### Material order — 7-step Schüttflix-modelled flow (CANONICAL)
 
-Every Bilt wizard follows the same 4-step structure, matching best-in-class UX (Bolt, Wolt, Zolt):
+The material order wizard (`(wizards)/material-order.tsx`) follows a 7-step flow for delivery, 5-step for pickup, modelled on Schüttflix best practice.
+
+**Delivery flow (7 steps):**
 
 ```
-Step 1 — WHAT    : service / product / waste type selection (pick from list, no free text)
-Step 2 — WHERE   : delivery or pickup address (inline map, single action)
-Step 3 — COMPARE : supplier offers or pricing comparison (buyer picks one)
-Step 4 — CONFIRM : date, contact, review summary, submit
+Step 1 — order-type  : Delivery or Pickup? (full-screen card selection)
+Step 2 — product     : Material category (visual 2-col grid) + fraction (bottom sheet)
+Step 3 — quantity    : Tab: "Veselas automašīnas" (BY_LOAD vehicle grid) | "Ievadīt daudzumu" (BY_WEIGHT/BY_VOLUME stepper)
+Step 4 — address     : Delivery address + site access restrictions (max truck class chips)
+Step 5 — unload      : Precise unload spot (optional: map pin + site photo + access notes)
+Step 6 — when        : Delivery date (calendar) + time window (Any / AM / PM)
+Step 7 — offers      : Supplier comparison (top offers, pick one) → contact → submit
 ```
 
-> Never add a step that can be merged into an adjacent step. If a step has only one decision — it should be one screen.
+**Pickup flow (5 steps):**
 
-### Current wizard step maps
+```
+Step 1 — order-type  : Delivery or Pickup? → user picks Pickup
+Step 2 — product     : Material category + fraction
+Step 3 — quantity    : Amount selection
+Step 4 — field       : Pickup point + slot selection
+Step 5 — offers      : Confirm + submit
+```
 
-| Wizard             | Step 1                 | Step 2         | Step 3      | Step 4              | Extra          |
-| ------------------ | ---------------------- | -------------- | ----------- | ------------------- | -------------- |
-| **material-order** | Specs (Ko?)            | Address (Kur?) | When (Kad?) | Offers → pick       | —              |
-| **skip-hire**      | Waste type             | Container size | Address     | Date+Quotes+Confirm | —              |
-| **transport**      | Pickup+Dropoff address | Vehicle+cargo  | Date+route  | Contact+submit      | —              |
-| **disposal**       | Waste type             | Location       | Volume      | Date+confirm        | Compare (opt.) |
+**Step components** (all in `components/wizard/material/`):
+| Step key | Component | Description |
+|--------------|---------------------|--------------------------------------------------|
+| `order-type` | `OrderTypeStep` | Two-card selection, auto-advances on tap |
+| `product` | `ProductStep` | 2-col category grid + fraction bottom sheet |
+| `quantity` | `QuantityStep` | Tab: vehicle grid OR manual stepper |
+| `address` | inline in wizard | AddressField + truck access restriction chips |
+| `unload` | `UnloadSpotStep` | Optional: map pin + photo + notes; skip allowed |
+| `when` | `WhenStep` | Calendar (single date) + AM/PM/Any window |
+| `offers` | `OffersStep` | Supplier cards + contact form + submit |
+| `field` | `FieldPickerStep` | Pickup-only: field + slot selection |
+
+### Other wizards step maps
+
+| Wizard        | Step 1                 | Step 2        | Step 3     | Step 4         |
+| ------------- | ---------------------- | ------------- | ---------- | -------------- |
+| **transport** | Pickup+Dropoff address | Vehicle+cargo | Date+route | Contact+submit |
+| **disposal**  | Waste type             | Location      | Volume     | Date+confirm   |
 
 ### Rules
 
@@ -183,10 +206,10 @@ Step 4 — CONFIRM : date, contact, review summary, submit
 - The `WizardLayout` shell (thin progress bar + large bold left-aligned title + pill CTA) **must** be used for all steps — never build a custom shell
 - **Never render a wizard step title locally inside the screen component.** The `WizardLayout` shell already provides the large left-aligned h1 title. Local titles duplicate the header (e.g., two "Kur piegādāt?" or "Piegādes vieta" texts). Render only section subtitles or form elements inside the step.
 - Step 1 always sets the order type / primary selection — must never ask for address first
-- The "compare offers / pick a supplier" step **always comes before** the confirmation step
-- Final step is always a review + confirm before the API call
+- The "compare offers / pick a supplier" step **always comes last** — after date is set
+- Optional steps (e.g. `unload`) must always have a visible "Izlaist" (skip) action — never block progression
 - On success → `router.replace('/(buyer)/orders')` or the new order's tracking screen
-- Maximum **4 steps** for any wizard path. Conditional branches (e.g. material `fulfillment` or `field`) are only inserted when the user's selection unlocks them — they must not increase the perceived depth for the default path
+- Keep wizard steps focused. Merge only if two decisions are trivially related. Never merge to hit an arbitrary step count — the material order has 7 steps for good UX reasons.
 
 ### WizardLayout chrome
 

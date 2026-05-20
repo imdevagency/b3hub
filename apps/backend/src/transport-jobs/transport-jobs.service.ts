@@ -1227,6 +1227,55 @@ export class TransportJobsService {
     return updatedJob;
   }
 
+  // ── Driver schedules arrival window ──────────────────────────
+  async scheduleArrival(jobId: string, driverId: string, plannedArrivalAt: string) {
+    const job = await this.prisma.transportJob.findUnique({
+      where: { id: jobId },
+      include: { order: { select: { userId: true } } },
+    });
+    if (!job) throw new NotFoundException('Transport job not found');
+    if (job.driverId !== driverId) {
+      throw new ForbiddenException('Šis darbs nav jūsu');
+    }
+    if (job.status !== 'ACCEPTED' && job.status !== 'EN_ROUTE_PICKUP') {
+      throw new BadRequestException('Ierašanās laiku var iestatīt tikai pieņemtam darbam');
+    }
+
+    const plannedDate = new Date(plannedArrivalAt);
+    const windowStart = new Date(plannedDate.getTime() - 90 * 60 * 1000);
+    const windowEnd = new Date(plannedDate.getTime() + 90 * 60 * 1000);
+
+    const updated = await this.prisma.transportJob.update({
+      where: { id: jobId },
+      data: { plannedArrivalAt: plannedDate, arrivalWindowStart: windowStart, arrivalWindowEnd: windowEnd },
+    });
+
+    // Notify buyer about the arrival window
+    const buyerUserId = job.order?.userId;
+    if (buyerUserId) {
+      const fmt = (d: Date) =>
+        d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Riga' });
+      const dateStr = plannedDate.toLocaleDateString('lv-LV', {
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'Europe/Riga',
+      });
+      this.notifications
+        .create({
+          userId: buyerUserId,
+          type: NotificationType.TRANSPORT_ARRIVAL_SCHEDULED,
+          title: '🕐 Šoferis ir ieplānojis ierašanos',
+          message: `Piegāde ${dateStr} no ${fmt(windowStart)} līdz ${fmt(windowEnd)}.`,
+          data: { jobId: updated.id, jobNumber: updated.jobNumber },
+        })
+        .catch((err) =>
+          this.logger.warn(`Arrival notification failed for job ${jobId}: ${(err as Error).message}`),
+        );
+    }
+
+    return updated;
+  }
+
   // ── Decline an offered job ────────────────────────────────────
   async declineOffer(jobId: string, driverId: string) {
     const job = await this.prisma.transportJob.findUnique({

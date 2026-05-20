@@ -78,7 +78,7 @@ Any screen that is navigable within a tab group but should **not** appear as a t
 Rules:
 
 - All dynamic routes (`[id]`, `[orderId]`) must be `href: null`
-- Detail screens, sub-flows (rfq, skip-order, transport-job, delivery-proof) must be `href: null`
+- Detail screens, sub-flows (transport-job, delivery-proof, order detail) must be `href: null`
 - Never add a dynamic route as a visible tab
 
 ---

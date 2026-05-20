@@ -235,6 +235,13 @@ export const transportApi = {
         headers: { Authorization: `Bearer ${token}` },
       }),
 
+    scheduleArrival: (id: string, dto: { plannedArrivalAt: string }, token: string) =>
+      apiFetch<ApiTransportJob>(`/transport-jobs/${id}/schedule-arrival`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(dto),
+      }),
+
     declineOffer: (id: string, token: string) =>
       apiFetch<{ ok: boolean }>(`/transport-jobs/${id}/decline-offer`, {
         method: 'POST',

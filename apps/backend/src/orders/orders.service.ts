@@ -2159,7 +2159,6 @@ export class OrdersService {
       activeOrders,
       awaitingDelivery,
       totalMatOrders,
-      skipHireOrders,
       transportJobs,
       documents,
     ] = await Promise.all([
@@ -2181,7 +2180,6 @@ export class OrdersService {
         where: { createdById: userId, status: OrderStatus.CONFIRMED },
       }),
       this.prisma.order.count({ where: { createdById: userId } }),
-      this.prisma.skipHireOrder.count({ where: { userId } }),
       this.prisma.transportJob.count({ where: { requestedById: userId } }),
       this.prisma.document.count({ where: { ownerId: userId } }),
     ]);
@@ -2189,7 +2187,7 @@ export class OrdersService {
     const buyer = {
       activeOrders,
       awaitingDelivery,
-      myOrders: totalMatOrders + skipHireOrders + transportJobs,
+      myOrders: totalMatOrders + transportJobs,
       documents,
     };
 

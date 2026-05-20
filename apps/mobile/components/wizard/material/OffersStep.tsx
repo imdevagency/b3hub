@@ -2,7 +2,7 @@
  * OffersStep — "Piedāvājumi" step of the material order wizard.
  *
  * Handles: loading/error states, supplier offer cards, sort & filter pills,
- * RFQ fallback, and success screens after order or RFQ submission.
+ * and success screens after order submission.
  *
  * Owns sort/filter UI state internally; all data and submit callbacks
  * come from the wizard root.
@@ -355,7 +355,7 @@ export function OffersStep({
           </Text>
         ) : null}
 
-        {/* BIS + terms before the RFQ button */}
+        {/* BIS + terms before submit */}
         <TextInput
           value={bisNumber}
           onChangeText={onBisNumberChange}
@@ -916,7 +916,7 @@ export function OffersStep({
         </View>
       )}
 
-      {/* Auth gate — shown when a guest taps an offer or RFQ button */}
+      {/* Auth gate — shown when a guest taps an offer */}
       <WizardAuthGate
         visible={authGateVisible}
         onAuthenticated={handleAuthenticated}

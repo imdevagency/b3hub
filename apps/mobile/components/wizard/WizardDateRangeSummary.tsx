@@ -1,8 +1,8 @@
 /**
  * WizardDateRangeSummary
  *
- * The "Piegāde → Savākšana" summary card shared across all hire-period wizards
- * (skip-hire, toilet-cabin, etc.). Shows start date on the left, end date on
+ * The "Piegāde → Savākšana" summary card for hire-period wizards (disposal, utilization).
+ * Shows start date on the left, end date on
  * the right with an arrow between. Grays out empty slots.
  *
  * Usage:

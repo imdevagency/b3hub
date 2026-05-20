@@ -12,7 +12,12 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { TransportJobStatus } from '@prisma/client';
+import {
+  TransportJobStatus,
+  OrderType,
+  ApusStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAdminUserDto } from './dto/create-admin-user.dto';
@@ -1821,78 +1826,6 @@ export class AdminService {
   }
 
   /**
-   * GET /admin/skip-hire — all skip hire orders (paginated)
-   */
-  async getSkipHireOrders(page = 1, limit = 50) {
-    const skip = (page - 1) * limit;
-    const [data, total] = await Promise.all([
-      this.prisma.skipHireOrder.findMany({
-        select: {
-          id: true,
-          orderNumber: true,
-          location: true,
-          wasteCategory: true,
-          skipSize: true,
-          deliveryDate: true,
-          hireDays: true,
-          price: true,
-          currency: true,
-          paymentStatus: true,
-          status: true,
-          contactName: true,
-          contactEmail: true,
-          contactPhone: true,
-          notes: true,
-          carrier: { select: { id: true, name: true } },
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.skipHireOrder.count(),
-    ]);
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
-  }
-
-  async getToiletCabinOrders(page = 1, limit = 50) {
-    const skip = (page - 1) * limit;
-    const [data, total] = await Promise.all([
-      this.prisma.toiletCabinOrder.findMany({
-        select: {
-          id: true,
-          orderNumber: true,
-          address: true,
-          city: true,
-          lat: true,
-          lng: true,
-          cabinCount: true,
-          hireDays: true,
-          deliveryDate: true,
-          deliveryWindow: true,
-          price: true,
-          currency: true,
-          paymentStatus: true,
-          status: true,
-          contactName: true,
-          contactEmail: true,
-          contactPhone: true,
-          notes: true,
-          carrier: { select: { id: true, name: true } },
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.toiletCabinOrder.count(),
-    ]);
-    return { data, total, page, limit, pages: Math.ceil(total / limit) };
-  }
-
-  /**
    * GET /admin/exceptions — all open transport job exceptions (paginated)
    */
   async getExceptions(page = 1, limit = 50, statusFilter?: string) {
@@ -2327,62 +2260,6 @@ export class AdminService {
 
   async adminDeleteVehicleCategory(code: string) {
     await this.prisma.vehicleServiceCategory.delete({ where: { code } });
-  }
-
-  // ── Catalogue CRUD — toilet cabin types ──────────────────────────────────
-
-  async adminListToiletCabinTypes() {
-    return this.prisma.toiletCabinDefinition.findMany({ orderBy: { sortOrder: 'asc' } });
-  }
-
-  async adminUpsertToiletCabinType(code: string, data: Record<string, unknown>) {
-    return this.prisma.toiletCabinDefinition.upsert({
-      where: { code },
-      create: { code, label: (data.label as string) ?? code, ...(data as any) },
-      update: data as any,
-    });
-  }
-
-  async adminDeleteToiletCabinType(code: string) {
-    await this.prisma.toiletCabinDefinition.delete({ where: { code } });
-  }
-
-  // ── Catalogue CRUD — rental service types ────────────────────────────────
-
-  async adminListRentalServiceTypes() {
-    return this.prisma.rentalServiceDefinition.findMany({
-      orderBy: [{ group: 'asc' }, { sortOrder: 'asc' }],
-    });
-  }
-
-  async adminUpsertRentalServiceType(code: string, data: Record<string, unknown>) {
-    return this.prisma.rentalServiceDefinition.upsert({
-      where: { code },
-      create: { code, label: (data.label as string) ?? code, ...(data as any) },
-      update: data as any,
-    });
-  }
-
-  async adminDeleteRentalServiceType(code: string) {
-    await this.prisma.rentalServiceDefinition.delete({ where: { code } });
-  }
-
-  // ── Catalogue CRUD — scrap materials ─────────────────────────────────────
-
-  async adminListScrapMaterials() {
-    return this.prisma.scrapMaterialDefinition.findMany({ orderBy: { sortOrder: 'asc' } });
-  }
-
-  async adminUpsertScrapMaterial(code: string, data: Record<string, unknown>) {
-    return this.prisma.scrapMaterialDefinition.upsert({
-      where: { code },
-      create: { code, label: (data.label as string) ?? code, ...(data as any) },
-      update: data as any,
-    });
-  }
-
-  async adminDeleteScrapMaterial(code: string) {
-    await this.prisma.scrapMaterialDefinition.delete({ where: { code } });
   }
 
   // ── Marketplace engine overview ────────────────────────────────────────────
@@ -2938,7 +2815,6 @@ export class AdminService {
       monthlyRaw,
       pendingSupplier,
       pendingCarrier,
-      skipGmvThisMonth,
       monthlyPaymentsRaw,
     ] = await Promise.all([
       // GMV all-time
@@ -3016,15 +2892,6 @@ export class AdminService {
         _count: { id: true },
         where: { status: 'PENDING' },
       }),
-      // Skip hire GMV this month
-      this.prisma.skipHireOrder.aggregate({
-        _sum: { price: true },
-        _count: { id: true },
-        where: {
-          status: { not: 'CANCELLED' as any },
-          createdAt: { gte: thisMonthStart },
-        },
-      }),
       // Last 12 months of payments for commission trend
       this.prisma.payment.findMany({
         where: {
@@ -3076,8 +2943,6 @@ export class AdminService {
         allTime: r(gmvAllTime._sum.total),
         thisMonth: r(gmvThisMonth._sum.total),
         lastMonth: r(gmvLastMonth._sum.total),
-        skipThisMonth: r(skipGmvThisMonth._sum.price),
-        skipCountThisMonth: skipGmvThisMonth._count.id,
       },
       commission: {
         allTime: r(commissionAllTime._sum.platformFee),
@@ -3609,6 +3474,237 @@ export class AdminService {
         gapWasteTypes: wasteGaps,
         matchScore: parseFloat(((covered / total) * 100).toFixed(1)),
       },
+    };
+  }
+
+  // ── B3 Recycling — Inbound Jobs & Waste Records ──────────────────────────
+
+  /** GET /admin/b3-recycling/jobs — DISPOSAL orders as inbound job feed */
+  async adminGetRecyclingInboundJobs(
+    page = 1,
+    limit = 50,
+    centerId?: string,
+  ) {
+    const skip = (page - 1) * limit;
+    const where: Prisma.OrderWhereInput = {
+      orderType: OrderType.DISPOSAL,
+      ...(centerId
+        ? { wasteRecords: { some: { recyclingCenterId: centerId } } }
+        : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          createdBy: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          buyer: { select: { id: true, name: true } },
+          transportJobs: { select: { id: true, status: true } },
+          wasteRecords: {
+            select: {
+              id: true,
+              wasteType: true,
+              weight: true,
+              apusStatus: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /** GET /admin/b3-recycling/waste-records — all processed waste records */
+  async adminGetRecyclingWasteRecords(
+    page = 1,
+    limit = 50,
+    centerId?: string,
+  ) {
+    const skip = (page - 1) * limit;
+    const where: Prisma.WasteRecordWhereInput = centerId
+      ? { recyclingCenterId: centerId }
+      : {};
+    const [data, total] = await Promise.all([
+      this.prisma.wasteRecord.findMany({
+        where,
+        include: {
+          recyclingCenter: { select: { id: true, name: true, city: true } },
+          order: { select: { id: true, orderNumber: true, status: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.wasteRecord.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  // ── B3 Recycling — APUS ───────────────────────────────────────────────────
+
+  /** GET /admin/b3-recycling/apus-stats — counts by APUS status */
+  async adminGetApusStats(centerId?: string) {
+    const base: Prisma.WasteRecordWhereInput = centerId
+      ? { recyclingCenterId: centerId }
+      : {};
+    const [total, pending, submitted, accepted, rejected, notRequired] =
+      await Promise.all([
+        this.prisma.wasteRecord.count({ where: base }),
+        this.prisma.wasteRecord.count({
+          where: { ...base, apusStatus: ApusStatus.PENDING },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...base, apusStatus: ApusStatus.SUBMITTED },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...base, apusStatus: ApusStatus.ACCEPTED },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...base, apusStatus: ApusStatus.REJECTED },
+        }),
+        this.prisma.wasteRecord.count({
+          where: { ...base, apusStatus: ApusStatus.NOT_REQUIRED },
+        }),
+      ]);
+    return { total, pending, submitted, accepted, rejected, notRequired };
+  }
+
+  /** GET /admin/b3-recycling/apus-records — paginated waste records with APUS status */
+  async adminGetApusRecords(
+    page = 1,
+    limit = 50,
+    centerId?: string,
+    status?: string,
+  ) {
+    const skip = (page - 1) * limit;
+    const where: Prisma.WasteRecordWhereInput = {
+      ...(centerId ? { recyclingCenterId: centerId } : {}),
+      ...(status ? { apusStatus: status as ApusStatus } : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.wasteRecord.findMany({
+        where,
+        include: {
+          recyclingCenter: { select: { id: true, name: true, city: true } },
+          order: { select: { id: true, orderNumber: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.wasteRecord.count({ where }),
+    ]);
+    return { data, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /** POST /admin/b3-recycling/waste-records/:id/apus-submit */
+  async adminApusSubmitRecord(id: string, adminId: string) {
+    const record = await this.prisma.wasteRecord.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!record) throw new NotFoundException('Waste record not found');
+
+    await this.apus.submitWasteRecord(id);
+
+    await this.logAdminAction(
+      adminId,
+      'APUS_RECORD_SUBMITTED',
+      'WasteRecord',
+      id,
+      null,
+      { id },
+    );
+
+    return this.prisma.wasteRecord.findUniqueOrThrow({ where: { id } });
+  }
+
+  /** POST /admin/b3-recycling/apus-bulk-submit */
+  async adminApusBulkSubmit(centerId: string, adminId: string) {
+    const result = await this.apus.bulkSubmitForCenter(centerId);
+
+    await this.logAdminAction(
+      adminId,
+      'APUS_BULK_SUBMITTED',
+      'RecyclingCenter',
+      centerId,
+      null,
+      result,
+    );
+
+    return result;
+  }
+
+  /** PATCH /admin/b3-recycling/waste-records/:id/apus-status */
+  async adminApusSetStatus(
+    id: string,
+    status: string,
+    note: string | undefined,
+    adminId: string,
+  ) {
+    const record = await this.prisma.wasteRecord.findUnique({
+      where: { id },
+      select: { id: true, apusStatus: true },
+    });
+    if (!record) throw new NotFoundException('Waste record not found');
+
+    const updated = await this.prisma.wasteRecord.update({
+      where: { id },
+      data: {
+        apusStatus: status as ApusStatus,
+        apusNote: note ?? null,
+      },
+    });
+
+    await this.logAdminAction(
+      adminId,
+      'APUS_STATUS_OVERRIDE',
+      'WasteRecord',
+      id,
+      { apusStatus: record.apusStatus },
+      { apusStatus: status, apusNote: note },
+    );
+
+    return updated;
+  }
+
+  /** GET /admin/b3-recycling/circular-economy-stats — platform-wide KPIs */
+  async adminGetCircularEconomyStats() {
+    const [
+      totalDisposalOrders,
+      totalWasteRecords,
+      totalWeightAgg,
+      recyclableWeightAgg,
+      acceptedApus,
+    ] = await Promise.all([
+      this.prisma.order.count({ where: { orderType: OrderType.DISPOSAL } }),
+      this.prisma.wasteRecord.count(),
+      this.prisma.wasteRecord.aggregate({ _sum: { weight: true } }),
+      this.prisma.wasteRecord.aggregate({ _sum: { recyclableWeight: true } }),
+      this.prisma.wasteRecord.count({
+        where: { apusStatus: ApusStatus.ACCEPTED },
+      }),
+    ]);
+
+    const weightReceived = totalWeightAgg._sum.weight ?? 0;
+    const weightRecycled = recyclableWeightAgg._sum.recyclableWeight ?? 0;
+    const recyclingRate =
+      weightReceived > 0
+        ? parseFloat(((weightRecycled / weightReceived) * 100).toFixed(1))
+        : 0;
+
+    return {
+      totalDisposalOrders,
+      totalWasteRecords,
+      weightReceived,
+      weightRecycled,
+      recyclingRate,
+      acceptedApus,
     };
   }
 }

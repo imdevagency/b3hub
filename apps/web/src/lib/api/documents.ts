@@ -29,7 +29,6 @@ export interface Document {
   invoiceId?: string;
   transportJobId?: string;
   wasteRecordId?: string;
-  skipHireId?: string;
   ownerId: string;
   issuedBy?: string;
   isGenerated: boolean;

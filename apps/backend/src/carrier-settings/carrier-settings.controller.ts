@@ -24,9 +24,9 @@ import { CreateZoneDto } from './dto/create-zone.dto';
 import { SetPriceDto } from './dto/set-price.dto';
 import { SetRadiusDto } from './dto/set-radius.dto';
 
-/** Asserts the caller is an approved carrier (canSkipHire or canTransport). */
+/** Asserts the caller is an approved carrier. */
 function assertIsCarrier(user: RequestingUser): void {
-  if (!user.canSkipHire && !user.canTransport) {
+  if (!user.canTransport) {
     throw new ForbiddenException(
       'Only approved carriers can access carrier settings',
     );

@@ -4,6 +4,17 @@
 > This document defines functional requirements from first principles — not what is built, but what must work for the platform to be a real, self-sustaining marketplace.
 > For implementation status, see [STATUS.md](STATUS.md). For product vision and business model, see [PRODUCT.md](PRODUCT.md).
 
+> ⚠️ **STALE SECTIONS — DO NOT IMPLEMENT**
+> The following sections describe features that have been **removed from Bilt's scope**. They are preserved here as a historical record only. Do not use them as a basis for new development.
+>
+> | Section                                     | Feature                      | Status                |
+> | ------------------------------------------- | ---------------------------- | --------------------- |
+> | [Section 6](#6-skip-hire--container-rental) | Skip Hire & Container Rental | ❌ Removed from scope |
+> | [Section 8](#8-quote-requests-rfq)          | Quote Requests (RFQ)         | ❌ Removed from scope |
+> | [Section 10](#10-projects)                  | Projects                     | ❌ Removed from scope |
+>
+> Active scope: Sections 1–5, 7, 9, 11–15 and beyond.
+
 ---
 
 ## Table of Contents

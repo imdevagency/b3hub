@@ -71,7 +71,7 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 **What Bilt eliminated:**
 | Manual step | Bilt equivalent |
 |---|---|
-| Price negotiation call | Fixed catalog price or RFQ |
+| Price negotiation call | Fixed catalog price (supplier-set; no RFQ) |
 | Truck booking phone call | Automatic nearest-driver dispatch |
 | Paper weighing slip | Auto-generated weighing slip PDF |
 | Handwritten delivery note | Auto-generated signed CMR |
@@ -117,35 +117,9 @@ Today that chain is held together by phone calls, WhatsApp messages, handwritten
 
 ---
 
-## Workflow 3 — Skip Hire (B2C — Homeowner)
+## Workflow 3 — Skip Hire _(removed from scope)_
 
-### A homeowner is renovating a bathroom. Needs a 6m³ skip for a week.
-
----
-
-### How it works today (without Bilt)
-
-1. Homeowner searches Google for "skip hire Rīga". Gets 5 different websites.
-2. Calls two of them. One doesn't pick up. One gives a price but can't tell them if a skip is available for Thursday.
-3. Books verbally. No written confirmation.
-4. Skip arrives Thursday. Driver leaves it on the street.
-5. Homeowner doesn't know if they need a permit for placing the skip on public road. No one told them.
-6. Skip is collected a week later. Homeowner receives a paper invoice in the post 2 weeks later.
-7. No documentation of what type of waste was in the skip. Legally the owner of the waste is responsible for its disposal.
-
----
-
-### How it works on Bilt
-
-1. Homeowner goes to the Bilt landing page (or mobile app — guest checkout, no account needed).
-2. Skip hire wizard: choose skip size (2m³ / 4m³ / 6m³ / 8m³), waste type, address, delivery date, collection date.
-3. Precise placement location selected on the map by tapping. Optional site photo attached.
-4. Pays by card. Confirmation email sent immediately with booking reference.
-5. Driver delivers skip on the confirmed date. Homeowner can track via the app.
-6. When skip is collected, waste transfer note auto-generated. Proves legal disposal.
-7. No phone call. No missing paperwork. Homeowner has a legal document proving their renovation waste was disposed of correctly.
-
-**Why this matters legally:** in Latvia, the waste producer (homeowner) is legally responsible for ensuring construction waste is disposed of at a licensed facility. A waste transfer note is the proof. Most homeowners don't know they need one. Bilt generates it automatically.
+> ⚠️ Skip hire has been removed from Bilt’s scope. This workflow is preserved as a historical reference only. Do not implement.
 
 ---
 
@@ -298,7 +272,7 @@ Every delivery on Bilt produces a set of documents automatically. Here is what g
 | **Supplier (quarry operator)**  | Web portal + mobile      | Confirm incoming orders, manage catalog prices and stock, upload quality certs, see earnings |
 | **Carrier dispatcher**          | Web portal               | Assign jobs to drivers, monitor fleet on GPS map, handle SLA exceptions                      |
 | **Driver**                      | Mobile app only          | Accept jobs, advance status, enter weight, submit delivery proof                             |
-| **Bilt admin**                 | Web portal               | Review applications, resolve disputes, monitor all platform activity                         |
+| **Bilt admin**                  | Web portal               | Review applications, resolve disputes, monitor all platform activity                         |
 
 ---
 
@@ -316,7 +290,7 @@ Bilt connects all three sides under one transaction model. The value increases w
 
 ## Summary: What Bilt Automates
 
-| Manual today                        | Bilt                                               |
+| Manual today                        | Bilt                                                |
 | ----------------------------------- | --------------------------------------------------- |
 | Phone calls to find availability    | Catalog with real-time stock                        |
 | Price negotiation per delivery      | Framework contracts, fixed catalog prices           |

@@ -100,7 +100,7 @@ export interface RequestingUser {
   canBuy: boolean; // approved to place orders as a buyer
   canSell: boolean; // approved seller — can list materials, see incoming orders
   canTransport: boolean; // approved driver — can accept & execute transport jobs
-  canSkipHire: boolean; // approved to manage skip hire fleet
+  canSkipHire: boolean; // legacy — skip hire removed from scope; field retained for schema compatibility
   canRecycle: boolean; // approved to operate a recycling/waste center
   companyId?: string; // linked Company id, if any
   companyRole?: string; // 'OWNER' | 'MANAGER' | 'DRIVER' | 'MEMBER'
@@ -135,7 +135,6 @@ Access is controlled by flags on the `User` model:
 | -------------- | ------------------------------------------------------ |
 | `canSell`      | Approved to list materials and receive incoming orders |
 | `canTransport` | Approved to accept and execute transport jobs          |
-| `canSkipHire`  | Approved to manage skip hire fleet                     |
 
 A **company's business type** (`CompanyType`) is separate: `CONSTRUCTION`, `SUPPLIER`, `RECYCLER`, `CARRIER`, `HYBRID`.
 A recycler operator is `userType: BUYER` + their company has `companyType: RECYCLER`.
@@ -178,12 +177,12 @@ Global: 120 req/min per IP (ThrottlerModule). Override per-route with `@Throttle
 <!-- GEN:mobile-routes -->
 
 - `(auth)` — apply-role, forgot-password, login, onboarding, phone-otp, register, welcome
-- `(buyer)` — (account)/, catalog, equipment/, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, rfq/, skip-order/, transport-job/
-- `(driver)` — active, billing-settings, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, skips, toilet-cabins, vehicles
-- `(recycler)` — documents, home, incoming, messages, more, profile, records, register-center
-- `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile, quotes
+- `(buyer)` — (account)/, catalog, equipment/, framework-contract/, framework-contracts, home, messages, more, new-order, order/, orders, profile, transport-job/
+- `(driver)` — active, billing-settings, documents, earnings, home, job-stat/, jobs, messages, more, profile, schedule, vehicles
+- `(recycler)` — documents, home, incoming, messages, more, profile, records
+- `(seller)` — billing-settings, catalog, documents, earnings, framework-contract/, framework-contracts, home, incoming, more, order/, profile
 - `(shared)` — change-password, chat/, delivery-proof, help, language, messages, notification/, notifications, review/, settings, support-chat
-- `(wizards)` — disposal/, material-order, rental/, scrap-buyback/, skip-hire/, toilet-cabin/, transport/, utilization/
+- `(wizards)` — disposal/, material-order, transport/, utilization/
 <!-- END GEN -->
 
 ### Styling
@@ -307,7 +306,7 @@ Backend is flat (`apps/backend/src/`). All marketplace and admin features use th
 - **"Improve X" means edit X, not build a parallel X.** Patch the gap in the existing file — do not design a new flow from scratch alongside it.
 - **Read the destination screen before touching the entry point.** If the task is "improve the catalog → order flow," read `order-request-new.tsx` (or whatever the destination is) before writing a single line in `catalog.tsx`.
 - **Ask one scoped question before implementing anything net-new.** If unsure whether a flow already exists, ask: _"Does [screen] already handle [feature]?"_ — one grep answers it in seconds.
-- **No new BottomSheet/modal for a flow that has a dedicated screen.** If a full wizard screen exists (`order-request-new`, `rfq/[id]`, etc.), navigate to it — don't replicate steps inside a sheet.
+- **No new BottomSheet/modal for a flow that has a dedicated screen.** If a full wizard screen exists (`order-request-new`, `disposal/`, `transport/`, etc.), navigate to it — don't replicate steps inside a sheet.
 
 ---
 

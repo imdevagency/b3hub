@@ -286,28 +286,6 @@ export default function OrdersScreen() {
                 router.push('/transport');
               }}
             />
-            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
-            <SheetRow
-              iconBg="#fef9c3"
-              icon={<FileText size={20} color="#ca8a04" />}
-              title="Metāllūžņi"
-              subtitle="Nodo lūžņus un saņem samaksu"
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/scrap-buyback');
-              }}
-            />
-            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />
-            <SheetRow
-              iconBg="#f0fdf4"
-              icon={<User size={20} color="#16a34a" />}
-              title="Metāllūžņi"
-              subtitle="Nodo lūžņus un saņem samaksu"
-              onPress={() => {
-                setShowTypePicker(false);
-                router.push('/scrap-buyback');
-              }}
-            />
           </View>
         </BottomSheet>
       )}

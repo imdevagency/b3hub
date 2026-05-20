@@ -68,7 +68,7 @@ const TJ_ACTIVE_STATUSES = new Set([
 const SERVICES = [
   { id: 'materials', icon: HardHat, label: 'Materiāli', route: '/(buyer)/catalog' },
   { id: 'disposal', icon: Trash2, label: 'Utilizācija', route: '/disposal' },
-  { id: 'transport', icon: Truck, label: 'Transports', route: '/transport' },
+  { id: 'transport', icon: Truck, label: 'Transports', route: '/(buyer)/new-order' },
 ];
 
 export default function HomeScreen() {
@@ -180,12 +180,12 @@ export default function HomeScreen() {
     [orders, transportOrders],
   );
 
-  // Unified "order again" items — material, skip hire, and transport
+  // Unified "order again" items — material and transport
   type ReorderItem = {
     key: string;
     label: string;
     sub: string;
-    kind: 'material' | 'skip' | 'transport';
+    kind: 'material' | 'transport';
     onPress: () => void;
   };
   const recentReorders = useMemo<ReorderItem[]>(() => {

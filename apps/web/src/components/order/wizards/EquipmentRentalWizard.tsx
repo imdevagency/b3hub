@@ -29,12 +29,6 @@ import { Container } from '@/components/marketing/layout/Container';
 import { Calendar } from '@/components/ui/calendar';
 import { loadGoogleMapsScript } from '@/components/ui/AddressAutocomplete';
 import { getGoogleMapsPublicKey } from '@/lib/google-maps-key';
-import {
-  createRentalOrder,
-  getRentalListingAvailability,
-  checkRentalListingRadius,
-  type RentalServiceType,
-} from '@/lib/api/rentals';
 import type { User } from '@/lib/api';
 import {
   ArrowRight,
@@ -47,8 +41,43 @@ import {
   Plus,
   User as UserIcon,
 } from 'lucide-react';
-import type { ServiceDef } from '@/lib/equipment-services';
-import { useEquipmentServices } from '@/lib/use-equipment-services';
+
+// ── Rental services removed from scope — local stubs ─────────────────────────
+type RentalServiceType = string;
+interface HirePeriodOption {
+  days: number;
+  label: string;
+}
+interface ServiceDef {
+  type: string;
+  label: string;
+  description: string;
+  priceFrom: number;
+  pricePerDay: number;
+  unit: string;
+  unitLabel: string;
+  icon: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Icon: React.ElementType<any>;
+  color?: string;
+  hirePeriodOptions: HirePeriodOption[];
+}
+function useEquipmentServices(): ServiceDef[] {
+  return [];
+}
+async function createRentalOrder(..._args: unknown[]): Promise<{ orderNumber: string }> {
+  throw new Error('Rental services not available');
+}
+async function getRentalListingAvailability(
+  ..._args: unknown[]
+): Promise<{ blockedDates: string[] }> {
+  return { blockedDates: [] };
+}
+async function checkRentalListingRadius(
+  ..._args: unknown[]
+): Promise<{ withinRadius: boolean; maxRadiusKm?: number; distanceKm?: number }> {
+  return { withinRadius: true };
+}
 
 // ── Step types (mirrors MaterialOrderWizard pattern) ─────────────────────────
 

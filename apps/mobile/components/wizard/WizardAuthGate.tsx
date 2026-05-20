@@ -2,7 +2,7 @@
  * WizardAuthGate
  *
  * Bottom-sheet modal shown when a guest (unauthenticated) user taps "Select offer"
- * or "Send RFQ" in an order wizard. Lets them:
+ * in an order wizard. Lets them:
  *   1. Register a quick BUYER account (name + email + phone + password)
  *   2. Log in to an existing account
  *

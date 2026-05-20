@@ -18,6 +18,8 @@ import {
   ScrollText,
   ChevronRight,
   Zap,
+  Settings,
+  HelpCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
@@ -67,6 +69,18 @@ const MANAGE_ITEMS: ManageItem[] = [
     description: 'Rēķini, piegādes dokumenti un sertifikāti',
     icon: Receipt,
     href: '/dashboard/documents',
+  },
+  {
+    label: 'Iestatījumi',
+    description: 'Profils, paziņojumi un drošība',
+    icon: Settings,
+    href: '/dashboard/settings',
+  },
+  {
+    label: 'Palīdzība',
+    description: 'BIJ jautājumi un atbalsts',
+    icon: HelpCircle,
+    href: '/dashboard/help',
   },
 ];
 

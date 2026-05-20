@@ -1,7 +1,6 @@
 import {
   IsEmail,
   IsIn,
-  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -14,9 +13,9 @@ import {
 
 export class CreateGuestOrderDto {
   // ── Category discriminator ─────────────────────────────────────────────────
-  /** MATERIAL | SKIP_HIRE | TRANSPORT | DISPOSAL | TOILET_CABIN — defaults to MATERIAL */
+  /** MATERIAL | TRANSPORT | DISPOSAL — defaults to MATERIAL */
   @IsOptional()
-  @IsIn(['MATERIAL', 'SKIP_HIRE', 'TRANSPORT', 'DISPOSAL', 'TOILET_CABIN'])
+  @IsIn(['MATERIAL', 'TRANSPORT', 'DISPOSAL'])
   category?: string;
 
   // ── MATERIAL fields ───────────────────────────────────────────────────────
@@ -41,27 +40,6 @@ export class CreateGuestOrderDto {
   @IsString()
   @MaxLength(20)
   unit?: string;
-
-  // ── SKIP_HIRE fields ──────────────────────────────────────────────────────
-  @IsOptional()
-  @IsString()
-  @MaxLength(30)
-  skipSize?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  skipWasteCategory?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(365)
-  hireDays?: number;
-
-  @IsOptional()
-  @IsString()
-  collectionDate?: string; // ISO date string
 
   // ── TRANSPORT fields ──────────────────────────────────────────────────────
   @IsOptional()
