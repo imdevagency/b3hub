@@ -36,13 +36,13 @@ import { colors } from '@/lib/theme';
 const WEB_FLEET_URL = 'https://b3hub.lv/dashboard/fleet-management';
 
 const VEHICLE_LABELS: Record<VehicleType, string> = {
-  DUMP_TRUCK: 'Pašizgāzējs',
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
   FLATBED_TRUCK: 'Platforma',
   SEMI_TRAILER: 'Vilcējs ar puspiekabi',
-  HOOK_LIFT: 'Āķa pacēlājs',
   SKIP_LOADER: 'Konteinerauto',
   TANKER: 'Cisternauto',
-  VAN: 'Furgons',
 };
 
 function daysUntil(iso: string | null | undefined): number | null {

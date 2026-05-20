@@ -56,18 +56,18 @@ export const SKIP_WASTE_LABELS: Record<SkipWasteCategory, { label: string; sub: 
 // These must stay in sync with the backend Prisma enum VehicleType.
 
 export type DisposalTruckType =
-  | 'TIPPER_SMALL'
-  | 'TIPPER_LARGE'
-  | 'ARTICULATED_TIPPER';
+  | 'DUMP_TRUCK_10T'
+  | 'DUMP_TRUCK_18T'
+  | 'DUMP_TRUCK_26T';
 
 export type TransportVehicleType =
-  | 'TIPPER_SMALL'
-  | 'TIPPER_LARGE'
-  | 'ARTICULATED_TIPPER'
-  | 'FLATBED'
-  | 'BOX_TRUCK'
-  | 'CAR'
-  | 'PICKUP_TRUCK';
+  | 'DUMP_TRUCK_10T'
+  | 'DUMP_TRUCK_18T'
+  | 'DUMP_TRUCK_26T'
+  | 'FLATBED_TRUCK'
+  | 'SEMI_TRAILER'
+  | 'SKIP_LOADER'
+  | 'TANKER';
 
 // ── Transport job statuses ──────────────────────────────────────────────────
 

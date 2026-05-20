@@ -55,10 +55,6 @@ export function Navbar() {
               <CTAButton href={`/register`} variant="secondary" size="sm">
                 Reģistrēties
               </CTAButton>
-              <div className="w-px h-5 bg-border/60 mx-1" aria-hidden="true" />
-              <CTAButton href={`/dashboard`} variant="primary" size="sm">
-                Sākt darbu
-              </CTAButton>
             </div>
 
             {/* Mobile toggle */}
@@ -102,15 +98,6 @@ export function Navbar() {
               >
                 Ienākt
               </Link>
-              <CTAButton
-                href={`/dashboard`}
-                variant="primary"
-                size="lg"
-                className="text-center w-full mt-2"
-                onClick={() => setMobileOpen(false)}
-              >
-                Sākt darbu
-              </CTAButton>
               <CTAButton
                 href={`/register`}
                 variant="secondary"

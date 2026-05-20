@@ -1,8 +1,9 @@
 /**
- * (buyer)/framework-contracts.tsx
+ * (buyer)/framework-contracts.tsx  →  Projects list
  *
- * Buyer: list of framework contracts where this company is the buyer.
- * Users with permCreateContracts (or OWNER) can create new contracts.
+ * Shows the buyer's construction-site projects.
+ * Each project can contain multiple framework contracts.
+ * Users with permCreateContracts (or OWNER/MANAGER) can create new projects.
  */
 
 import React, { useCallback, useState } from 'react';
@@ -20,10 +21,9 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useScreenLoad } from '@/lib/use-screen-load';
-import { api, type ApiFrameworkContract, type FrameworkContractStatus } from '@/lib/api';
-import { formatDateShort } from '@/lib/format';
+import { api, type ApiProject } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
-import { Handshake, Plus } from 'lucide-react-native';
+import { FolderOpen, Plus, MapPin } from 'lucide-react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -32,7 +32,6 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/Toast';
 import { colors } from '@/lib/theme';
-import { getFrameworkContractStatus } from '@/lib/status';
 
 function getProgressColor(pct: number) {
   if (pct >= 90) return '#ef4444';
@@ -40,15 +39,15 @@ function getProgressColor(pct: number) {
   return '#10b981';
 }
 
-export default function BuyerFrameworkContractsScreen() {
+export default function BuyerProjectsScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
   const toast = useToast();
 
-  const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', startDate: '', endDate: '', notes: '' });
+  const [form, setForm] = useState({ title: '', address: '', notes: '' });
 
   const canCreate =
     user?.companyRole === 'OWNER' ||
@@ -57,57 +56,51 @@ export default function BuyerFrameworkContractsScreen() {
 
   const fetcher = useCallback(async () => {
     if (!token) return;
-    const data = await api.frameworkContracts.list(token);
-    setContracts(data);
+    const data = await api.projects.list(token);
+    setProjects(data);
   }, [token]);
 
   const { loading, refreshing, onRefresh } = useScreenLoad(fetcher);
 
   const openCreate = () => {
     haptics.light();
-    setForm({ title: '', startDate: '', endDate: '', notes: '' });
+    setForm({ title: '', address: '', notes: '' });
     setCreateOpen(true);
   };
 
   const handleCreate = async () => {
     if (!token) return;
     if (!form.title.trim()) {
-      Alert.alert('Kļūda', 'Ievadiet līguma nosaukumu');
-      return;
-    }
-    if (!form.startDate.trim()) {
-      Alert.alert('Kļūda', 'Ievadiet sākuma datumu (YYYY-MM-DD)');
+      Alert.alert('Kļūda', 'Ievadiet projekta nosaukumu');
       return;
     }
     setSaving(true);
     try {
-      const created = await api.frameworkContracts.create(
+      const created = await api.projects.create(
         {
           title: form.title.trim(),
-          startDate: new Date(form.startDate.trim()).toISOString(),
-          endDate: form.endDate.trim() ? new Date(form.endDate.trim()).toISOString() : undefined,
+          address: form.address.trim() || undefined,
           notes: form.notes.trim() || undefined,
         },
         token,
       );
       haptics.success();
       setCreateOpen(false);
-      setContracts((prev) => [created, ...prev]);
+      setProjects((prev) => [created, ...prev]);
       router.push({
-        pathname: '/(buyer)/framework-contract/[id]',
+        pathname: '/(buyer)/project/[id]',
         params: { id: created.id },
       } as any);
     } catch (e) {
       haptics.error();
-      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot līgumu');
+      toast.error(e instanceof Error ? e.message : 'Neizdevās izveidot projektu');
     } finally {
       setSaving(false);
     }
   };
 
-  const renderItem = ({ item: contract }: { item: ApiFrameworkContract }) => {
-    const status = getFrameworkContractStatus(contract.status);
-    const pct = Math.min(100, contract.totalProgressPct);
+  const renderItem = ({ item: project }: { item: ApiProject }) => {
+    const pct = Math.min(100, project.totalProgressPct);
     const progColor = getProgressColor(pct);
 
     return (
@@ -116,42 +109,47 @@ export default function BuyerFrameworkContractsScreen() {
         onPress={() => {
           haptics.light();
           router.push({
-            pathname: '/(buyer)/framework-contract/[id]',
-            params: { id: contract.id },
+            pathname: '/(buyer)/project/[id]',
+            params: { id: project.id },
           } as any);
         }}
         activeOpacity={0.7}
       >
         <View style={s.cardTopRow}>
           <Text style={s.cardTitle} numberOfLines={1}>
-            {contract.title}
+            {project.title}
           </Text>
-          <View style={[s.statusBadge, { backgroundColor: status.bg }]}>
-            <Text style={[s.statusText, { color: status.color }]}>{status.label}</Text>
+          <View style={s.contractCountBadge}>
+            <Text style={s.contractCountText}>{project.contractCount} līg.</Text>
           </View>
         </View>
 
-        <Text style={s.cardMeta}>{contract.contractNumber}</Text>
-
-        <Text style={s.cardDates}>
-          {formatDateShort(contract.startDate)}
-          {contract.endDate ? ` – ${formatDateShort(contract.endDate)}` : ' – Neierobežots'}
-        </Text>
-
-        <View style={s.progressRow}>
-          <View style={s.progressTrack}>
-            <View
-              style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: progColor }]}
-            />
+        {project.address ? (
+          <View style={s.addressRow}>
+            <MapPin size={12} color={colors.textMuted} />
+            <Text style={s.cardMeta} numberOfLines={1}>
+              {project.address}
+            </Text>
           </View>
-          <Text style={[s.progressLabel, { color: progColor }]}>{pct}%</Text>
-        </View>
+        ) : null}
 
-        {contract.positions.length > 0 && (
-          <Text style={s.posCount}>
-            {contract.positions.length} pozīcij{contract.positions.length === 1 ? 'a' : 'as'} •{' '}
-            {contract.totalCallOffs} pasūtījumi
-          </Text>
+        {project.contractCount > 0 ? (
+          <>
+            <View style={s.progressRow}>
+              <View style={s.progressTrack}>
+                <View
+                  style={[s.progressFill, { width: `${pct}%` as any, backgroundColor: progColor }]}
+                />
+              </View>
+              <Text style={[s.progressLabel, { color: progColor }]}>{Math.round(pct)}%</Text>
+            </View>
+            <Text style={s.qtyRow}>
+              {project.totalConsumedQty.toLocaleString('lv')} /{' '}
+              {project.totalAgreedQty.toLocaleString('lv')} t
+            </Text>
+          </>
+        ) : (
+          <Text style={s.cardMeta}>Nav pievienotu rāmjlīgumu</Text>
         )}
       </TouchableOpacity>
     );
@@ -161,7 +159,7 @@ export default function BuyerFrameworkContractsScreen() {
     <ScreenContainer bg="white">
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader
-        title="Rāmjlīgumi"
+        title="Projekti"
         rightAction={
           canCreate ? (
             <TouchableOpacity onPress={openCreate} hitSlop={12} activeOpacity={0.7}>
@@ -177,33 +175,33 @@ export default function BuyerFrameworkContractsScreen() {
         </View>
       ) : (
         <FlatList
-          data={contracts}
+          data={projects}
           keyExtractor={(item) => item.id}
           removeClippedSubviews={true}
           initialNumToRender={10}
           renderItem={renderItem}
-          contentContainerStyle={contracts.length === 0 ? s.emptyScroll : s.listContent}
+          contentContainerStyle={projects.length === 0 ? s.emptyScroll : s.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
           }
           ListEmptyComponent={
             <EmptyState
-              icon={<Handshake size={42} color="#9ca3af" />}
-              title="Nav rāmjlīgumu"
-              subtitle="Rāmjlīgumi ļauj rezervēt apjomu par fiksētu cenu uz ilgāku periodu."
+              icon={<FolderOpen size={42} color="#9ca3af" />}
+              title="Nav projektu"
+              subtitle="Projekti palīdz organizēt rāmjlīgumus pa būvlaukumiem."
             />
           }
         />
       )}
 
-      {/* Create contract sheet */}
+      {/* Create project sheet */}
       <BottomSheet
         visible={createOpen}
         onClose={() => !saving && setCreateOpen(false)}
-        title="Jauns rāmjlīgums"
+        title="Jauns projekts"
         scrollable
-        maxHeightPct={0.92}
+        maxHeightPct={0.85}
       >
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12, gap: 20 }}>
@@ -213,33 +211,20 @@ export default function BuyerFrameworkContractsScreen() {
                 style={s.input}
                 value={form.title}
                 onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
-                placeholder="Piem. Grants piegāde — Projekts A"
+                placeholder="Piem. Biroju ēka — Andrejsala"
                 placeholderTextColor="#9ca3af"
                 maxLength={120}
               />
             </View>
             <View style={s.fieldGroup}>
-              <Text style={s.fieldLabel}>SĀKUMA DATUMS * (GGGG-MM-DD)</Text>
+              <Text style={s.fieldLabel}>BŪVLAUKUMA ADRESE</Text>
               <TextInput
                 style={s.input}
-                value={form.startDate}
-                onChangeText={(v) => setForm((f) => ({ ...f, startDate: v }))}
-                placeholder="2026-06-01"
+                value={form.address}
+                onChangeText={(v) => setForm((f) => ({ ...f, address: v }))}
+                placeholder="Piem. Andrejostas iela 1, Rīga"
                 placeholderTextColor="#9ca3af"
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
-            </View>
-            <View style={s.fieldGroup}>
-              <Text style={s.fieldLabel}>BEIGU DATUMS (GGGG-MM-DD)</Text>
-              <TextInput
-                style={s.input}
-                value={form.endDate}
-                onChangeText={(v) => setForm((f) => ({ ...f, endDate: v }))}
-                placeholder="2026-12-31"
-                placeholderTextColor="#9ca3af"
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
+                maxLength={200}
               />
             </View>
             <View style={s.fieldGroup}>
@@ -307,23 +292,25 @@ const s = StyleSheet.create({
     flex: 1,
     letterSpacing: -0.3,
   },
-  statusBadge: {
+  contractCountBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
+    backgroundColor: '#f3f4f6',
   },
-  statusText: {
+  contractCountText: {
     fontSize: 12,
     fontWeight: '600',
+    color: colors.textMuted,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   cardMeta: {
     fontSize: 13,
-    fontWeight: '500',
     color: colors.textMuted,
-  },
-  cardDates: {
-    fontSize: 13,
-    color: colors.textDisabled,
   },
   progressRow: {
     flexDirection: 'row',
@@ -348,7 +335,7 @@ const s = StyleSheet.create({
     minWidth: 36,
     textAlign: 'right',
   },
-  posCount: {
+  qtyRow: {
     fontSize: 12,
     color: colors.textDisabled,
   },

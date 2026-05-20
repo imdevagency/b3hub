@@ -115,6 +115,7 @@ export default function RegisterScreen() {
     if (step === 2) {
       if (firstName.trim().length < 2) e.firstName = 'Nepieciešams vārds';
       if (lastName.trim().length < 2) e.lastName = 'Nepieciešams uzvārds';
+      if (phone.trim().length < 6) e.phone = 'Nepieciešams mobilā tālruņa numurs';
     }
     if (step === 3) {
       if (password.length < 8) e.password = 'Parolei jābūt vismaz 8 rakstzīmēm';
@@ -294,10 +295,10 @@ export default function RegisterScreen() {
         className="text-3xl text-black mb-2"
         style={{ fontFamily: 'Inter_700Bold', fontWeight: '700' }}
       >
-        Jūsu vārds
+        Kontaktpersona
       </Text>
       <Text className="text-base text-gray-500 mb-8" style={{ fontFamily: 'Inter_400Regular' }}>
-        Redzams dokumentos un piegāžu apstiprinājumos.
+        Vārds un tālrunis redzams pasūtījumu apstiprinājumos un saziņā ar Bilt.
       </Text>
 
       <View style={[s.grid, { flexDirection: 'row' }]}>
@@ -329,14 +330,15 @@ export default function RegisterScreen() {
 
       <View style={{ marginTop: 12 }}>
         <TextInput
-          style={s.softInput}
-          placeholder="Tālruņa numurs (neobligāts)"
+          style={[s.softInput, errors.phone && s.inputErr]}
+          placeholder="Mobilais tālrunis (piem. +371 20 000 000)"
           placeholderTextColor="#9ca3af"
           keyboardType="phone-pad"
           maxLength={20}
           value={phone}
           onChangeText={setPhone}
         />
+        {errors.phone && <Text style={s.err}>{errors.phone}</Text>}
       </View>
     </View>
   );

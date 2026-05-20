@@ -25,20 +25,6 @@ import { colors } from '@/lib/theme';
 
 const TAB_H = 52;
 
-const REVENUE_STATUSES = [
-  'CONFIRMED',
-  'PROCESSING',
-  'IN_PROGRESS',
-  'SHIPPED',
-  'DELIVERED',
-  'COMPLETED',
-];
-
-function fmtEur(v: number) {
-  if (v >= 1000) return `€${(v / 1000).toFixed(1)}k`;
-  return `€${v.toFixed(0)}`;
-}
-
 export default function SellerHomeScreen() {
   const { user, token } = useAuth();
   const router = useRouter();
@@ -46,12 +32,9 @@ export default function SellerHomeScreen() {
   const { setConfig } = useHeaderConfig();
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [recentOrders, setRecentOrders] = useState<ApiOrder[]>([]);
+  const [todaySchedule, setTodaySchedule] = useState<ApiOrder[]>([]);
   const [materialCount, setMaterialCount] = useState<number | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [todayRevenue, setTodayRevenue] = useState<number | null>(null);
-  const [weekRevenue, setWeekRevenue] = useState<number | null>(null);
-  const [monthRevenue, setMonthRevenue] = useState<number | null>(null);
   const toast = useToast();
 
   const loadData = useCallback(
@@ -59,38 +42,28 @@ export default function SellerHomeScreen() {
       if (!token) return;
       if (isRefresh) setRefreshing(true);
       api.orders
-        .myOrders(token)
+        .sellerOrders(token)
         .then((orders) => {
-          const companyId = user?.company?.id;
-          const sellerOrders = companyId
-            ? orders.filter((o) => o.buyer?.id !== companyId)
-            : orders.filter((o) => o.createdBy?.id !== user?.id);
-          const pending = sellerOrders.filter(
-            (o) => o.status === 'PENDING' || o.status === 'CONFIRMED',
-          ).length;
+          const pending = orders.filter((o) => o.status === 'PENDING').length;
           setPendingCount(pending);
-          // Revenue KPIs computed from seller orders
+          // Today's loading schedule — CONFIRMED/IN_PROGRESS orders due today
           const now = new Date();
           const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const weekStart = new Date(todayStart);
-          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          let today = 0,
-            week = 0,
-            month = 0;
-          for (const o of sellerOrders) {
-            if (!REVENUE_STATUSES.includes(o.status)) continue;
-            const d = new Date(o.createdAt);
-            const v = o.total ?? 0;
-            if (d >= monthStart) month += v;
-            if (d >= weekStart) week += v;
-            if (d >= todayStart) today += v;
-          }
-          setTodayRevenue(today);
-          setWeekRevenue(week);
-          setMonthRevenue(month);
-          // Recent = last 5 seller orders sorted by newest
-          const sorted = [...sellerOrders].sort(
+          const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+          const schedule = orders
+            .filter((o) => {
+              if (!['CONFIRMED', 'PROCESSING', 'IN_PROGRESS'].includes(o.status)) return false;
+              if (!o.deliveryDate) return false;
+              const d = new Date(o.deliveryDate);
+              return d >= todayStart && d < todayEnd;
+            })
+            .sort((a, b) => {
+              const w: Record<string, number> = { AM: 0, PM: 1, ANY: 2 };
+              return (w[a.deliveryWindow ?? 'ANY'] ?? 2) - (w[b.deliveryWindow ?? 'ANY'] ?? 2);
+            });
+          setTodaySchedule(schedule);
+          // Recent = last 5 orders sorted by newest
+          const sorted = [...orders].sort(
             (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime(),
           );
           setRecentOrders(sorted.slice(0, 5));
@@ -100,12 +73,6 @@ export default function SellerHomeScreen() {
           setPendingCount(0);
         })
         .finally(() => setRefreshing(false));
-      api.notifications
-        .unreadCount(token)
-        .then((res) => setUnreadCount(res.count))
-        .catch((err) =>
-          console.warn('Unread count failed:', err instanceof Error ? err.message : err),
-        );
       const companyId = user?.company?.id;
       if (companyId) {
         api.materials
@@ -119,7 +86,7 @@ export default function SellerHomeScreen() {
         setMaterialCount(null);
       }
     },
-    [token, toast, user?.company?.id, user?.id],
+    [token, toast, user?.company?.id],
   );
 
   useFocusEffect(
@@ -210,6 +177,91 @@ export default function SellerHomeScreen() {
               </View>
               <ChevronRight size={16} color="#d97706" />
             </TouchableOpacity>
+          )}
+
+          {/* TODAY'S LOADING SCHEDULE */}
+          {todaySchedule.length > 0 && (
+            <View style={{ marginBottom: 20 }}>
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: '700',
+                  color: colors.textPrimary,
+                  letterSpacing: -0.5,
+                  marginBottom: 12,
+                }}
+              >
+                Šodienas iekraušanas
+              </Text>
+              {todaySchedule.map((order) => {
+                const job = order.transportJobs?.[0];
+                const vehicle = job?.vehicle;
+                const material = order.items?.[0];
+                const win = order.deliveryWindow;
+                return (
+                  <TouchableOpacity
+                    key={order.id}
+                    onPress={() => {
+                      haptics.light();
+                      router.push(`/(seller)/order/${order.id}`);
+                    }}
+                    activeOpacity={0.8}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'flex-start',
+                      padding: 14,
+                      backgroundColor: '#f0fdf4',
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: '#bbf7d0',
+                      marginBottom: 8,
+                      gap: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: '#166534',
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        minWidth: 52,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#ffffff' }}>
+                        {win === 'AM' ? '8–12' : win === 'PM' ? '12–17' : '—'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: '700',
+                          color: colors.textPrimary,
+                          letterSpacing: -0.2,
+                        }}
+                      >
+                        {material?.material?.name ?? 'Materīls'}
+                        {material?.quantity ? ` · ${material.quantity}t` : ''}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}
+                        numberOfLines={1}
+                      >
+                        {order.buyer?.name ?? '—'}
+                      </Text>
+                      {vehicle && (
+                        <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                          {vehicle.licensePlate}
+                          {vehicle.vehicleType ? ` · ${vehicle.vehicleType}` : ''}
+                        </Text>
+                      )}
+                    </View>
+                    <ChevronRight size={16} color="#9ca3af" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
 
           {/* FIRST-RUN ONBOARDING */}
@@ -387,22 +439,6 @@ export default function SellerHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* REVENUE KPI TILES */}
-          {(todayRevenue !== null || weekRevenue !== null || monthRevenue !== null) && (
-            <View style={ls.kpiRow}>
-              {[
-                { label: 'Šodien', value: todayRevenue },
-                { label: 'Nedēļā', value: weekRevenue },
-                { label: 'Mēnesī', value: monthRevenue },
-              ].map((t) => (
-                <View key={t.label} style={ls.kpiTile}>
-                  <Text style={ls.kpiValue}>{t.value !== null ? fmtEur(t.value) : '—'}</Text>
-                  <Text style={ls.kpiLabel}>{t.label}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
           {/* RECENT ORDERS HEADER */}
           <View className="flex-row justify-between items-center mb-2">
             <Text
@@ -472,33 +508,4 @@ export default function SellerHomeScreen() {
   );
 }
 
-const ls = StyleSheet.create({
-  kpiRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  kpiTile: {
-    flex: 1,
-    backgroundColor: colors.bgSubtle,
-    borderRadius: 16,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
-  kpiValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  kpiLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textDisabled,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginTop: 2,
-  },
-});
+const ls = StyleSheet.create({});

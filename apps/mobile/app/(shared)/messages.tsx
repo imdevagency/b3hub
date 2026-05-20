@@ -9,7 +9,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { MessageCircle, PhoneCall, HelpCircle } from 'lucide-react-native';
+import { MessageCircle, HelpCircle } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth-context';
 import { colors, spacing, radius } from '@/lib/theme';
 import { t } from '@/lib/translations';

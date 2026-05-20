@@ -23,6 +23,7 @@ import {
   Building2,
   Users,
   CreditCard,
+  LayoutGrid,
 } from 'lucide-react-native';
 
 export default function SellerMoreScreen() {
@@ -39,6 +40,7 @@ export default function SellerMoreScreen() {
 
   const mainTiles: TileItem[] = [
     { icon: User, label: 'Profils', onPress: () => router.push('/(seller)/profile') },
+    { icon: LayoutGrid, label: 'Katalogs', onPress: () => router.push('/(seller)/catalog') },
     { icon: Euro, label: 'Izpeļņa', onPress: () => router.push('/(seller)/earnings') },
     { icon: Tag, label: 'Piedāvājumi', onPress: () => router.push('/(seller)/quotes') },
     { icon: FileText, label: 'Dokumenti', onPress: () => router.push('/(seller)/documents') },
@@ -57,7 +59,7 @@ export default function SellerMoreScreen() {
 
   return (
     <ScreenContainer topInset={0} noAnimation>
-      <ScreenHeader title="Vairāk" />
+      <ScreenHeader title="Pārvaldība" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
         {/* Main tiles */}
         <TileGrid tiles={mainTiles} />

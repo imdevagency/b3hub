@@ -17,7 +17,7 @@ import {
 import { haptics } from '@/lib/haptics';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { SearchBar } from '@/components/ui/SearchBar';
+
 import { useHeaderConfig } from '@/lib/header-context';
 import { useToast } from '@/components/ui/Toast';
 import { useMode } from '@/lib/mode-context';
@@ -66,7 +66,7 @@ const TJ_ACTIVE_STATUSES = new Set([
 // ── Services ──────────────────────────────────────────────────────────────
 
 const SERVICES = [
-  { id: 'materials', icon: HardHat, label: 'Materiāli', route: '/(buyer)/catalog' },
+  { id: 'materials', icon: HardHat, label: 'Materiāli', route: '/(wizards)/material-order' },
   { id: 'disposal', icon: Trash2, label: 'Utilizācija', route: '/disposal' },
   { id: 'transport', icon: Truck, label: 'Transports', route: '/(buyer)/new-order' },
 ];
@@ -292,8 +292,8 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Single-priority account nudge — profile completion wins over email nudge */}
-        {user && (!user.phone || (user.isCompany && !user.company?.id)) ? (
+        {/* Single-priority account nudge — company profile completion */}
+        {user && user.isCompany && !user.company?.id ? (
           <TouchableOpacity
             style={{
               marginHorizontal: 20,
@@ -310,17 +310,14 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => {
               haptics.light();
-              if (!user.phone) router.push('/(buyer)/profile');
-              else router.push('/(auth)/apply-role?type=supplier' as never);
+              router.push('/(auth)/apply-role?type=supplier' as never);
             }}
           >
             <AlertCircle size={18} color="#d97706" />
             <Text
               style={{ flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: '#92400e' }}
             >
-              {!user.phone
-                ? 'Pievienojiet tālruni, lai veiktu pasūtījumus'
-                : 'Pievienojiet uzņēmuma datus'}
+              Pievienojiet uzņēmuma datus
             </Text>
             <ChevronRight size={16} color="#d97706" />
           </TouchableOpacity>
@@ -510,14 +507,6 @@ export default function HomeScreen() {
         {/* ── Search + Services + Popular Materials — always visible for permitted users ── */}
         {(!user?.companyRole || (user?.permManageOrders ?? false)) && (
           <>
-            {/* Search shortcut */}
-            <SearchBar
-              style={{ marginHorizontal: 20, marginBottom: 24 }}
-              onPress={() =>
-                router.push({ pathname: '/(buyer)/catalog', params: { focus: '1' } } as never)
-              }
-            />
-
             {/* Services — Uber style 2-column grid */}
             <View style={{ marginBottom: 32, paddingHorizontal: 20 }}>
               <View
@@ -562,80 +551,6 @@ export default function HomeScreen() {
                   );
                 })}
               </View>
-            </View>
-
-            {/* Popular materials — horizontal scroll, matching Uber style */}
-            <View style={{ marginBottom: 32 }}>
-              <Text
-                style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontSize: 20,
-                  letterSpacing: -0.4,
-                  color: '#111827',
-                  paddingHorizontal: 20,
-                  marginBottom: 16,
-                }}
-              >
-                Populārākie materiāli
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
-                keyboardShouldPersistTaps="handled"
-              >
-                {[
-                  { cat: 'GRAVEL', icon: HardHat, label: 'Grants', sub: 'Ceļu un pamatu būvei' },
-                  { cat: 'SAND', icon: HardHat, label: 'Smiltis', sub: 'Būvēm un apzaļumiem' },
-                  { cat: 'STONE', icon: HardHat, label: 'Šķembas', sub: 'Drenāžai un ceļiem' },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <TouchableOpacity
-                      key={item.cat}
-                      activeOpacity={0.85}
-                      onPress={() => {
-                        haptics.light();
-                        router.push({
-                          pathname: '/(wizards)/material-order' as never,
-                          params: { initialCategory: item.cat },
-                        } as never);
-                      }}
-                      style={{
-                        width: 140,
-                        height: 140,
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: 16,
-                        padding: 16,
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <View>
-                        <Text
-                          style={{
-                            fontFamily: 'Inter_600SemiBold',
-                            fontSize: 16,
-                            color: '#111827',
-                            marginBottom: 4,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {item.label}
-                        </Text>
-                        <Text
-                          style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: '#6b7280' }}
-                          numberOfLines={2}
-                        >
-                          {item.sub}
-                        </Text>
-                      </View>
-                      <View style={{ alignSelf: 'flex-end' }}>
-                        <Icon size={28} color="#4b5563" strokeWidth={1.5} />
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
             </View>
           </>
         )}

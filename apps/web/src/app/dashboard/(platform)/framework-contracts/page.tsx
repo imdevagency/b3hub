@@ -5,7 +5,19 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, RefreshCw, Layers, Calendar, Package, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  Plus,
+  RefreshCw,
+  Layers,
+  Calendar,
+  Package,
+  CheckCircle2,
+  Loader2,
+  FolderOpen,
+  MapPin,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -28,8 +40,11 @@ import {
   getFrameworkContracts,
   createFrameworkContract,
   activateFrameworkContract,
+  getProjects,
+  createProject,
   getMaterials,
   type ApiFrameworkContract,
+  type ApiProject,
   type ApiMaterial,
   type FrameworkContractStatus,
   type FrameworkPositionType,
@@ -559,23 +574,183 @@ function CreateContractDialog({
   );
 }
 
+// ─── Project section (collapsible group) ─────────────────────────────────────
+
+function ProjectSection({
+  project,
+  onActivate,
+}: {
+  project: ApiProject;
+  onActivate?: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const pct = Math.min(100, project.totalProgressPct);
+  const progColor = pct >= 90 ? 'bg-red-500' : pct >= 60 ? 'bg-amber-500' : 'bg-emerald-500';
+
+  return (
+    <div className="space-y-3">
+      <button
+        className="w-full flex items-center gap-3 group text-left"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        )}
+        <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+          {project.title}
+        </span>
+        {project.address ? (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3" />
+            {project.address}
+          </span>
+        ) : null}
+        {project.contractCount > 0 ? (
+          <div className="ml-auto flex items-center gap-3 shrink-0">
+            <div className="hidden sm:flex items-center gap-2 w-28">
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${progColor}`} style={{ width: `${pct}%` }} />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground w-8 text-right">
+                {Math.round(pct)}%
+              </span>
+            </div>
+            <span className="text-xs text-muted-foreground">{project.contractCount} līg.</span>
+          </div>
+        ) : (
+          <span className="ml-auto text-xs text-muted-foreground shrink-0">Nav līgumu</span>
+        )}
+      </button>
+
+      {expanded && project.contracts.length > 0 && (
+        <div className="pl-7 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {(project.contracts as unknown as ApiFrameworkContract[]).map((c) => (
+            <ContractCard key={c.id} contract={c} onActivate={onActivate} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Create project dialog ─────────────────────────────────────────────────
+
+function CreateProjectDialog({
+  open,
+  onClose,
+  onCreate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (data: { title: string; address: string; notes: string }) => Promise<void>;
+}) {
+  const [title, setTitle] = useState('');
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      await onCreate({ title, address, notes });
+      setTitle('');
+      setAddress('');
+      setNotes('');
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputClasses =
+    'mt-1.5 bg-muted/40 border-0 shadow-none h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 px-4 text-[15px] transition-colors';
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => (!o && !saving ? onClose() : null)}>
+      <SheetContent className="sm:max-w-md w-full overflow-hidden p-0 flex flex-col border-l shadow-2xl">
+        <div className="px-6 pt-8 pb-4">
+          <SheetHeader>
+            <SheetTitle className="text-2xl font-bold tracking-tight">Jauns projekts</SheetTitle>
+            <p className="text-[15px] text-muted-foreground leading-relaxed pt-1">
+              Projekts grupē rāmjlīgumus pa būvlaukumiem.
+            </p>
+          </SheetHeader>
+        </div>
+        <div className="flex-1 px-6 space-y-5 overflow-y-auto pb-32">
+          <div>
+            <Label className="text-sm font-medium ml-1">Nosaukums *</Label>
+            <Input
+              className={inputClasses}
+              placeholder="Piem. Biroju ēka — Andrejsala"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium ml-1">Būvlaukuma adrese</Label>
+            <Input
+              className={inputClasses}
+              placeholder="Piem. Andrejostas iela 1, Rīga"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium ml-1">Piezīmes</Label>
+            <Textarea
+              className="mt-1.5 bg-muted/40 border-0 shadow-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary/30 p-4 text-[15px] min-h-25 resize-none transition-colors"
+              placeholder="Papildu informācija..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 p-5 bg-background/90 backdrop-blur-xl border-t border-border/50">
+          <Button
+            className="w-full h-14 rounded-2xl text-[16px] font-semibold bg-foreground hover:bg-foreground/90 text-background shadow-lg transition-all"
+            onClick={handleSubmit}
+            disabled={!title.trim() || saving}
+          >
+            {saving ? 'Saglabā...' : 'Izveidot projektu'}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function FrameworkContractsPage() {
   const { token } = useAuth();
-  const [contracts, setContracts] = useState<ApiFrameworkContract[]>([]);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
+  const [unlinkedContracts, setUnlinkedContracts] = useState<ApiFrameworkContract[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showCreateContract, setShowCreateContract] = useState(false);
   const [activating, setActivating] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await getFrameworkContracts(token);
-      setContracts(data);
+      const [projectsData, allContracts] = await Promise.all([
+        getProjects(token),
+        getFrameworkContracts(token),
+      ]);
+      setProjects(projectsData);
+      // Contracts not linked to any project
+      const linkedIds = new Set(
+        projectsData.flatMap((p) => (p.contracts as unknown as { id: string }[]).map((c) => c.id)),
+      );
+      setUnlinkedContracts(allContracts.filter((c) => !linkedIds.has(c.id)));
     } catch {
-      setContracts([]);
+      setProjects([]);
+      setUnlinkedContracts([]);
     } finally {
       setLoading(false);
     }
@@ -592,13 +767,34 @@ export default function FrameworkContractsPage() {
     setActivating(id);
     try {
       const updated = await activateFrameworkContract(id, token);
-      setContracts((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      setUnlinkedContracts((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      setProjects((prev) =>
+        prev.map((p) => ({
+          ...p,
+          contracts: (p.contracts as unknown as ApiFrameworkContract[]).map((c) =>
+            c.id === id ? (updated as unknown as typeof c) : c,
+          ) as unknown as typeof p.contracts,
+        })),
+      );
     } finally {
       setActivating(null);
     }
   };
 
-  const handleCreate = async (form: {
+  const handleCreateProject = async (form: { title: string; address: string; notes: string }) => {
+    if (!token) return;
+    const created = await createProject(
+      {
+        title: form.title,
+        address: form.address || undefined,
+        notes: form.notes || undefined,
+      },
+      token,
+    );
+    setProjects((prev) => [created, ...prev]);
+  };
+
+  const handleCreateContract = async (form: {
     title: string;
     startDate: string;
     endDate: string;
@@ -624,12 +820,10 @@ export default function FrameworkContractsPage() {
       },
       token,
     );
-    setContracts((prev) => [created, ...prev]);
+    setUnlinkedContracts((prev) => [created, ...prev]);
   };
 
-  const drafts = contracts.filter((c) => c.status === 'DRAFT');
-  const active = contracts.filter((c) => c.status === 'ACTIVE');
-  const rest = contracts.filter((c) => c.status !== 'ACTIVE' && c.status !== 'DRAFT');
+  const isEmpty = projects.length === 0 && unlinkedContracts.length === 0;
 
   return (
     <div className="w-full h-full pb-20 space-y-8">
@@ -637,9 +831,7 @@ export default function FrameworkContractsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 mb-2">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Projekti</h1>
-          <p className="text-muted-foreground mt-1">
-            Bloku līgumi ar fiksētiem apjomiem — pasūtiet daļās, kad nepieciešāms
-          </p>
+          <p className="text-muted-foreground mt-1">Bloku līgumi grupēti pa būvlaukumiem</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={load}>
@@ -647,10 +839,16 @@ export default function FrameworkContractsPage() {
             <span className="hidden sm:inline">Atjaunot</span>
           </Button>
           {canCreate && (
-            <Button size="sm" onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Jauns projekts
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={() => setShowCreateContract(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Jauns līgums
+              </Button>
+              <Button size="sm" onClick={() => setShowCreateProject(true)}>
+                <FolderOpen className="h-4 w-4 mr-1.5" />
+                Jauns projekts
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -661,28 +859,38 @@ export default function FrameworkContractsPage() {
             <div key={i} className="h-40 bg-muted animate-pulse rounded-2xl" />
           ))}
         </div>
-      ) : contracts.length === 0 ? (
+      ) : isEmpty ? (
         <EmptyState
           icon={Package}
           title="Nav projektu"
-          description="Izveidojiet pirmo projektu līgumu, lai pārvaldītu apjoma pasūtijumus par fiksētu cenu"
+          description="Izveidojiet pirmo projektu, lai organizētu rāmjlīgumus pa būvlaukumiem"
           action={
             canCreate ? (
-              <Button onClick={() => setShowCreate(true)}>
-                <Plus className="h-4 w-4 mr-1.5" /> Jauns projekts
+              <Button onClick={() => setShowCreateProject(true)}>
+                <FolderOpen className="h-4 w-4 mr-1.5" /> Jauns projekts
               </Button>
             ) : undefined
           }
         />
       ) : (
-        <>
-          {drafts.length > 0 && (
+        <div className="space-y-8">
+          {/* Projects */}
+          {projects.map((project) => (
+            <ProjectSection
+              key={project.id}
+              project={project}
+              onActivate={canCreate ? handleActivate : undefined}
+            />
+          ))}
+
+          {/* Unlinked contracts */}
+          {unlinkedContracts.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-amber-700 uppercase tracking-wide mb-4">
-                Melnraksti — gaida aktivizāciju
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                Bez projekta
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {drafts.map((c) => (
+                {unlinkedContracts.map((c) => (
                   <ContractCard
                     key={c.id}
                     contract={c}
@@ -692,37 +900,19 @@ export default function FrameworkContractsPage() {
               </div>
             </section>
           )}
-          {active.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-                Aktīvie
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {active.map((c) => (
-                  <ContractCard key={c.id} contract={c} />
-                ))}
-              </div>
-            </section>
-          )}
-          {rest.length > 0 && (
-            <section className="mt-8">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-                Citi
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {rest.map((c) => (
-                  <ContractCard key={c.id} contract={c} />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
+        </div>
       )}
 
+      <CreateProjectDialog
+        open={showCreateProject}
+        onClose={() => setShowCreateProject(false)}
+        onCreate={handleCreateProject}
+      />
+
       <CreateContractDialog
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        onCreate={handleCreate}
+        open={showCreateContract}
+        onClose={() => setShowCreateContract(false)}
+        onCreate={handleCreateContract}
       />
     </div>
   );

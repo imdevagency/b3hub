@@ -230,6 +230,19 @@ export default function OrdersScreen() {
               }
               title={query ? 'Nekas netika atrasts' : 'Nav pasūtījumu'}
               subtitle={query ? 'Pamēģiniet citu atslēgvārdu.' : 'Jums vēl nav neviena pasūtījuma.'}
+              action={
+                !query && canManageOrders ? (
+                  <TouchableOpacity
+                    className="mt-4 bg-primary px-6 py-3 rounded-full"
+                    onPress={() => {
+                      haptics.light();
+                      router.push('/(wizards)/material-order' as never);
+                    }}
+                  >
+                    <Text className="text-white font-semibold text-sm">Veikt pasūtījumu</Text>
+                  </TouchableOpacity>
+                ) : undefined
+              }
             />
           )
         }
@@ -261,7 +274,7 @@ export default function OrdersScreen() {
               subtitle="Smiltis, grants, betons un citi"
               onPress={() => {
                 setShowTypePicker(false);
-                router.push('/(buyer)/catalog');
+                router.push('/(wizards)/material-order' as never);
               }}
             />
             <View style={{ height: 1, backgroundColor: '#f3f4f6', marginLeft: 80 }} />

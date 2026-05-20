@@ -152,7 +152,7 @@ export default function RecyclerHomeScreen() {
         </View>
 
         {/* recent incoming jobs */}
-        <Text style={ls.sectionTitle}>Ienākošie transports</Text>
+        <Text style={ls.sectionTitle}>Ienākošais transports</Text>
         {incomingJobs.length === 0 ? (
           <View style={ls.emptyBox}>
             <Text style={ls.emptyText}>Nav aktīvu piegāžu</Text>

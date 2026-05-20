@@ -37,7 +37,7 @@ function RecyclerLayoutContent() {
       activeOpacity={0.85}
       onPress={() => {
         haptics.light();
-        router.push('/(recycler)/more');
+        router.push('/(recycler)/profile');
       }}
     >
       <Text style={ls.avatarBtnText}>

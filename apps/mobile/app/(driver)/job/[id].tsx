@@ -19,9 +19,18 @@ import { api, ApiTransportJob } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 
 const VEHICLE_LABEL: Record<string, string> = {
-  DUMP_TRUCK: 'Pašizgāzējs',
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
+  FLATBED_TRUCK: 'Platforma',
+  SEMI_TRAILER: 'Vilcējs ar puspiekabi',
+  SKIP_LOADER: 'Konteinerauto',
+  TANKER: 'Cisternauto',
+  // legacy fallbacks
+  TIPPER_SMALL: 'Pašizgāzējs (10 t)',
+  TIPPER_LARGE: 'Pašizgāzējs (18 t)',
+  ARTICULATED_TIPPER: 'Pašizgāzējs (26 t)',
   FLATBED: 'Platforma',
-  CURTAINSIDER: 'Tentkravējs',
   TIPPER_10T: 'Pašizgāzējs 10t',
   TIPPER_20T: 'Pašizgāzējs 20t',
   TIPPER_25T: 'Pašizgāzējs 25t',

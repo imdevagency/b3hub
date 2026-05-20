@@ -1428,13 +1428,13 @@ export default function JobsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_ANY_">Jebkurš</SelectItem>
-                      <SelectItem value="DUMP_TRUCK">Pašizgāzējs</SelectItem>
+                      <SelectItem value="DUMP_TRUCK_10T">Pašizgāzējs (10 t)</SelectItem>
+                      <SelectItem value="DUMP_TRUCK_18T">Pašizgāzējs (18 t)</SelectItem>
+                      <SelectItem value="DUMP_TRUCK_26T">Pašizgāzējs (26 t)</SelectItem>
                       <SelectItem value="FLATBED_TRUCK">Platforma</SelectItem>
                       <SelectItem value="SEMI_TRAILER">Piekabes kravas auto</SelectItem>
-                      <SelectItem value="HOOK_LIFT">Āķa pacēlājs</SelectItem>
                       <SelectItem value="SKIP_LOADER">Konteineru auto</SelectItem>
                       <SelectItem value="TANKER">Cisterna</SelectItem>
-                      <SelectItem value="VAN">Furgons</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -44,7 +44,7 @@ const INITIAL: DisposalWizardState = {
   locationLng: null,
   locationCity: '',
   wasteType: null,
-  truckType: 'TIPPER_LARGE',
+  truckType: 'DUMP_TRUCK_18T',
   truckCount: 1,
   description: '',
   requestedDate: '',

@@ -28,7 +28,7 @@ function DriverLayoutContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { hasActiveJob } = useActiveJob();
-  const { unreadCount, chatUnreadCount } = useNotifications();
+  const { unreadCount } = useNotifications();
   const { config } = useHeaderConfig();
 
   // eslint-disable-next-line react/display-name
@@ -155,7 +155,7 @@ function DriverLayoutContent() {
           options={{
             title: 'Ziņojumi',
             tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} />,
-            tabBarBadge: chatUnreadCount > 0 ? chatUnreadCount : undefined,
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           }}
         />
         <Tabs.Screen name="profile" options={{ href: null }} />
@@ -166,7 +166,6 @@ function DriverLayoutContent() {
             tabBarIcon: ({ color }) => <MoreHorizontal size={22} color={color} />,
           }}
         />
-        <Tabs.Screen name="skips" options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ href: null }} />
         <Tabs.Screen name="job-stat/[id]" options={{ href: null }} />
       </Tabs>

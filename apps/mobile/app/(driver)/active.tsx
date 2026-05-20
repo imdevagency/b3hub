@@ -58,6 +58,20 @@ import { SkeletonDetail } from '@/components/ui/Skeleton';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 
+const VEHICLE_LABEL: Record<string, string> = {
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
+  FLATBED_TRUCK: 'Platforma',
+  SEMI_TRAILER: 'Vilcējs ar puspiekabi',
+  SKIP_LOADER: 'Konteinerauto',
+  TANKER: 'Cisternauto',
+  // legacy fallbacks
+  TIPPER_SMALL: 'Pašizgāzējs (10 t)',
+  TIPPER_LARGE: 'Pašizgāzējs (18 t)',
+  ARTICULATED_TIPPER: 'Pašizgāzējs (26 t)',
+};
+
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -1923,7 +1937,7 @@ export default function ActiveJobScreen() {
                     marginTop: 4,
                   }}
                 >
-                  {job.requiredVehicleType}
+                  {VEHICLE_LABEL[job.requiredVehicleType] ?? job.requiredVehicleType}
                 </Text>
               </View>
             )}

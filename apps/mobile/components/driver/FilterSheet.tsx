@@ -18,13 +18,13 @@ import { RADIUS_OPTIONS } from './job-types';
 import { colors } from '@/lib/theme';
 
 const VEHICLE_TYPE_LABELS: { value: string; label: string }[] = [
-  { value: 'DUMP_TRUCK', label: 'Pašizgāzējs' },
+  { value: 'DUMP_TRUCK_10T', label: 'Pašizgāzējs (10 t)' },
+  { value: 'DUMP_TRUCK_18T', label: 'Pašizgāzējs (18 t)' },
+  { value: 'DUMP_TRUCK_26T', label: 'Pašizgāzējs (26 t)' },
   { value: 'FLATBED_TRUCK', label: 'Platforma' },
   { value: 'SEMI_TRAILER', label: 'Puspiekabe' },
-  { value: 'HOOK_LIFT', label: 'Hāks' },
   { value: 'SKIP_LOADER', label: 'Konteiners' },
   { value: 'TANKER', label: 'Cisterna' },
-  { value: 'VAN', label: 'Furgons' },
 ];
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -169,10 +169,18 @@ export function FilterSheet({
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={fs.radiusRow}>
                 <TouchableOpacity
-                  style={[fs.radChip, (!draft.vehicleType || draft.vehicleType === '') && fs.radChipActive]}
+                  style={[
+                    fs.radChip,
+                    (!draft.vehicleType || draft.vehicleType === '') && fs.radChipActive,
+                  ]}
                   onPress={() => onChange({ ...draft, vehicleType: '' })}
                 >
-                  <Text style={[fs.radChipText, (!draft.vehicleType || draft.vehicleType === '') && fs.radChipTextActive]}>
+                  <Text
+                    style={[
+                      fs.radChipText,
+                      (!draft.vehicleType || draft.vehicleType === '') && fs.radChipTextActive,
+                    ]}
+                  >
                     Visi
                   </Text>
                 </TouchableOpacity>
@@ -180,9 +188,19 @@ export function FilterSheet({
                   <TouchableOpacity
                     key={vt.value}
                     style={[fs.radChip, draft.vehicleType === vt.value && fs.radChipActive]}
-                    onPress={() => onChange({ ...draft, vehicleType: draft.vehicleType === vt.value ? '' : vt.value })}
+                    onPress={() =>
+                      onChange({
+                        ...draft,
+                        vehicleType: draft.vehicleType === vt.value ? '' : vt.value,
+                      })
+                    }
                   >
-                    <Text style={[fs.radChipText, draft.vehicleType === vt.value && fs.radChipTextActive]}>
+                    <Text
+                      style={[
+                        fs.radChipText,
+                        draft.vehicleType === vt.value && fs.radChipTextActive,
+                      ]}
+                    >
                       {vt.label}
                     </Text>
                   </TouchableOpacity>
@@ -200,7 +218,9 @@ export function FilterSheet({
                 <TextInput
                   style={fs.input}
                   value={draft.priceMin ? String(draft.priceMin) : ''}
-                  onChangeText={(v) => onChange({ ...draft, priceMin: v ? Number(v.replace(/[^0-9]/g, '')) : 0 })}
+                  onChangeText={(v) =>
+                    onChange({ ...draft, priceMin: v ? Number(v.replace(/[^0-9]/g, '')) : 0 })
+                  }
                   placeholder="No"
                   placeholderTextColor="#9ca3af"
                   keyboardType="numeric"
@@ -212,7 +232,9 @@ export function FilterSheet({
                 <TextInput
                   style={fs.input}
                   value={draft.priceMax ? String(draft.priceMax) : ''}
-                  onChangeText={(v) => onChange({ ...draft, priceMax: v ? Number(v.replace(/[^0-9]/g, '')) : 0 })}
+                  onChangeText={(v) =>
+                    onChange({ ...draft, priceMax: v ? Number(v.replace(/[^0-9]/g, '')) : 0 })
+                  }
                   placeholder="Līdz"
                   placeholderTextColor="#9ca3af"
                   keyboardType="numeric"

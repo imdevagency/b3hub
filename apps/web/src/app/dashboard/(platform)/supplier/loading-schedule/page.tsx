@@ -9,13 +9,13 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft, ChevronRight, Package, Truck, Phone, Calendar, Weight } from 'lucide-react';
 
 const VEHICLE_LABELS: Record<string, string> = {
-  DUMP_TRUCK: 'Pašizgāzējs',
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
   FLATBED_TRUCK: 'Platforma',
-  SEMI_TRAILER: 'Piekabes',
-  HOOK_LIFT: 'Hāku pacēlājs',
-  SKIP_LOADER: 'Skip iekrāvējs',
+  SEMI_TRAILER: 'Puspiekabe',
+  SKIP_LOADER: 'Konteinerauto',
   TANKER: 'Cisterna',
-  VAN: 'Furgons',
 };
 
 const WINDOW_LABELS: Record<string, string> = {

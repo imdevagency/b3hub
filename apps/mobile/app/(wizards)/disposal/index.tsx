@@ -36,6 +36,8 @@ import {
   FlameKindling,
   CircleDot,
   Leaf,
+  Minus,
+  Plus,
   type LucideIcon,
 } from 'lucide-react-native';
 import { haptics } from '@/lib/haptics';
@@ -192,7 +194,7 @@ const TIPPER_TRUCKS: Array<{
   fromPrice: number; // price per truck
 }> = [
   {
-    type: 'TIPPER_SMALL',
+    type: 'DUMP_TRUCK_10T',
     label: 'Mazā pašizgāzēja',
     sublabel: 'līdz 10 t · 8 m³',
     capacity: 10,
@@ -200,7 +202,7 @@ const TIPPER_TRUCKS: Array<{
     fromPrice: 89,
   },
   {
-    type: 'TIPPER_LARGE',
+    type: 'DUMP_TRUCK_18T',
     label: 'Lielā pašizgāzēja',
     sublabel: 'līdz 18 t · 12 m³',
     capacity: 18,
@@ -208,7 +210,7 @@ const TIPPER_TRUCKS: Array<{
     fromPrice: 149,
   },
   {
-    type: 'ARTICULATED_TIPPER',
+    type: 'DUMP_TRUCK_26T',
     label: 'Puspiekabe',
     sublabel: 'līdz 26 t · 18 m³',
     capacity: 26,
@@ -249,10 +251,10 @@ function deriveTruckType(weightT: number): {
   truckCount: number;
   fromPrice: number;
 } {
-  if (weightT <= 7) return { truckType: 'TIPPER_SMALL', truckCount: 1, fromPrice: 89 };
-  if (weightT <= 15) return { truckType: 'TIPPER_LARGE', truckCount: 1, fromPrice: 149 };
+  if (weightT <= 7) return { truckType: 'DUMP_TRUCK_10T', truckCount: 1, fromPrice: 89 };
+  if (weightT <= 15) return { truckType: 'DUMP_TRUCK_18T', truckCount: 1, fromPrice: 149 };
   const truckCount = Math.ceil(weightT / 20);
-  return { truckType: 'ARTICULATED_TIPPER', truckCount, fromPrice: 219 * truckCount };
+  return { truckType: 'DUMP_TRUCK_26T', truckCount, fromPrice: 219 * truckCount };
 }
 
 // ── Component ─────────────────────────────────────────────────────
@@ -327,6 +329,7 @@ export default function DisposalWizard() {
   );
   const [contactWillBePresent, setContactWillBePresent] = useState(true);
   const [wasteReadiness, setWasteReadiness] = useState<'PILED' | 'NEEDS_PREP'>('PILED');
+  const [truckCountManual, setTruckCountManual] = useState<number | null>(null);
 
   // Recycling centre comparison (populated from disposal-quote when >1 center exists)
   const [availableCenters, setAvailableCenters] = useState<DisposalQuoteCenterResult[]>([]);
@@ -342,6 +345,8 @@ export default function DisposalWizard() {
   const weightT = parseFloat(weightText);
   const derived = deriveTruckType(!isNaN(weightT) && weightT > 0 ? weightT : 1);
   const activeTruck = TIPPER_TRUCKS.find((t) => t.type === derived.truckType) ?? TIPPER_TRUCKS[0];
+  const effectiveTruckCount = truckCountManual ?? derived.truckCount;
+  const effectiveFromPrice = activeTruck.fromPrice * effectiveTruckCount;
 
   // Auth gate fires at commitment, not on mount
   // (removed early redirect)
@@ -492,7 +497,7 @@ export default function DisposalWizard() {
       return;
     }
     setTruckType(derived.truckType);
-    setTruckCount(derived.truckCount);
+    setTruckCount(effectiveTruckCount);
     setDescription(desc);
     setRequestedDate(toISO(date));
     if (loadingRef.current) return;
@@ -516,7 +521,7 @@ export default function DisposalWizard() {
           pickupLng: state.locationLng ?? undefined,
           wasteType: state.wasteType,
           truckType: derived.truckType,
-          truckCount: derived.truckCount,
+          truckCount: effectiveTruckCount,
           estimatedWeight,
           description: fullDescription || undefined,
           requestedDate: toISO(date),
@@ -528,7 +533,7 @@ export default function DisposalWizard() {
           loadingBy: loadingBy || undefined,
           contactWillBePresent,
           wasteReadiness: wasteReadiness || undefined,
-          quotedRate: derived.fromPrice,
+          quotedRate: effectiveFromPrice,
           projectId: projectId || undefined,
           preferredRecyclingCenterId: preferredRecyclingCenterId || undefined,
         },
@@ -557,10 +562,10 @@ export default function DisposalWizard() {
         wasteType: state.wasteType,
         wasteBreakdown: selectedWastes,
         truckType: derived.truckType,
-        truckCount: derived.truckCount,
+        truckCount: effectiveTruckCount,
         requestedDate: toISO(date),
         estimatedWeight,
-        fromPrice: derived.fromPrice,
+        fromPrice: effectiveFromPrice,
       });
       AsyncStorage.removeItem(DISPOSAL_DRAFT_KEY).catch(() => {});
       router.replace({
@@ -570,7 +575,7 @@ export default function DisposalWizard() {
           pickupAddress: state.location ?? '',
           wasteType: state.wasteType ?? '',
           truckType: derived.truckType,
-          truckCount: String(derived.truckCount),
+          truckCount: String(effectiveTruckCount),
           requestedDate: toISO(date),
         },
       } as never);
@@ -602,6 +607,8 @@ export default function DisposalWizard() {
     selectedWastes,
     picked,
     preferredRecyclingCenterId,
+    effectiveTruckCount,
+    effectiveFromPrice,
   ]);
 
   // ── Guest submit handler ──────────────────────────────────────────────────
@@ -892,6 +899,142 @@ export default function DisposalWizard() {
                 Ievadiet derīgu svaru
               </Text>
             )}
+
+            {/* ── Live truck display (Schüttflix-style) ── */}
+            {weightT > 0 && (
+              <View
+                style={{
+                  backgroundColor: '#f8fafc',
+                  borderRadius: 20,
+                  padding: 20,
+                  marginTop: 20,
+                  borderWidth: 1,
+                  borderColor: '#e2e8f0',
+                }}
+              >
+                {/* t ↔ m³ headline */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'baseline',
+                    gap: 8,
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 36, fontWeight: '700', color: '#111827', letterSpacing: -1 }}
+                  >
+                    {weightT}
+                  </Text>
+                  <Text style={{ fontSize: 22, fontWeight: '600', color: '#111827' }}>t</Text>
+                  <Text style={{ fontSize: 18, color: '#9ca3af', marginHorizontal: 4 }}>≈</Text>
+                  <Text style={{ fontSize: 24, fontWeight: '600', color: '#374151' }}>
+                    {(weightT * 0.6).toFixed(1)}
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#6b7280' }}>m³</Text>
+                </View>
+
+                {/* Truck type row */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingBottom: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#e2e8f0',
+                    marginBottom: 16,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 52,
+                      height: 40,
+                      backgroundColor: '#e2e8f0',
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 22 }}>🚛</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827' }}>
+                      {activeTruck.label}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>
+                      {activeTruck.sublabel}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Truck count stepper */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#111827' }}>
+                    Pašizgāzēju skaits
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setTruckCountManual((m) => Math.max(1, (m ?? derived.truckCount) - 1))
+                      }
+                      activeOpacity={0.7}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: '#e5e7eb',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Minus size={18} color="#111827" strokeWidth={2.5} />
+                    </TouchableOpacity>
+                    <Text
+                      style={{
+                        fontSize: 22,
+                        fontWeight: '700',
+                        color: '#111827',
+                        minWidth: 28,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {effectiveTruckCount}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setTruckCountManual((m) => Math.min(10, (m ?? derived.truckCount) + 1))
+                      }
+                      activeOpacity={0.7}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: '#111827',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Plus size={18} color="#ffffff" strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* ── Cargo description (Frachtbeschreibung) ── */}
+            <SectionLabel label="Kravas apraksts (nav obligāts)" style={{ marginTop: 20 }} />
+            <TextInputField
+              placeholder="Piem. Z0 grunts, betona gabali, jauktie būvatkritumi..."
+              value={desc}
+              onChangeText={setDesc}
+            />
           </ScrollView>
         )}
 
@@ -985,11 +1128,11 @@ export default function DisposalWizard() {
               />
               <DetailRow
                 label="Transports"
-                value={`${derived.truckCount} × ${activeTruck.label}`}
+                value={`${effectiveTruckCount} × ${activeTruck.label}`}
               />
               <DetailRow
                 label="Apjoms"
-                value={`${weightT > 0 ? weightT : derived.truckCount * activeTruck.capacity} t ≈ ${derived.truckCount * activeTruck.volume} m³`}
+                value={`${weightT > 0 ? weightT : effectiveTruckCount * activeTruck.capacity} t ≈ ${effectiveTruckCount * activeTruck.volume} m³`}
               />
               <DetailRow
                 label="Datums"
@@ -1011,7 +1154,7 @@ export default function DisposalWizard() {
               />
               <DetailRow
                 label="Orientējošā cena"
-                value={`no €${derived.fromPrice} + PVN 21%`}
+                value={`no €${effectiveFromPrice} + PVN 21%`}
                 last={!hasComparison}
               />
               {hasComparison && (

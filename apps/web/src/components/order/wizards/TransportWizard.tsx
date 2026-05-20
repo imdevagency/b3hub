@@ -52,22 +52,28 @@ const VEHICLES: {
   fromPrice: number;
 }[] = [
   {
-    type: 'TIPPER_SMALL',
+    type: 'DUMP_TRUCK_10T',
     label: 'Mazais pašizgāzējs',
-    sub: 'līdz 5 t · 6 m³',
-    maxT: 5,
+    sub: 'līdz 10 t · 8 m³',
+    maxT: 10,
     fromPrice: 89,
   },
   {
-    type: 'TIPPER_LARGE',
+    type: 'DUMP_TRUCK_18T',
     label: 'Lielais pašizgāzējs',
-    sub: 'līdz 15 t · 18 m³',
-    maxT: 15,
+    sub: 'līdz 18 t · 14 m³',
+    maxT: 18,
     fromPrice: 149,
   },
-  { type: 'FLATBED', label: 'Platforma', sub: 'līdz 20 t · 13.6 m', maxT: 20, fromPrice: 199 },
   {
-    type: 'ARTICULATED_TIPPER',
+    type: 'FLATBED_TRUCK',
+    label: 'Platforma',
+    sub: 'līdz 20 t · 13.6 m',
+    maxT: 20,
+    fromPrice: 199,
+  },
+  {
+    type: 'DUMP_TRUCK_26T',
     label: 'Puspiekabe',
     sub: 'līdz 26 t · 22 m³',
     maxT: 26,
@@ -105,10 +111,10 @@ const STEP_INDEX: Record<WizardStep, number> = {
 };
 
 function suggestVehicle(weightT: number): TransportVehicleType {
-  if (weightT <= 5) return 'TIPPER_SMALL';
-  if (weightT <= 15) return 'TIPPER_LARGE';
-  if (weightT <= 20) return 'FLATBED';
-  return 'ARTICULATED_TIPPER';
+  if (weightT <= 10) return 'DUMP_TRUCK_10T';
+  if (weightT <= 18) return 'DUMP_TRUCK_18T';
+  if (weightT <= 20) return 'FLATBED_TRUCK';
+  return 'DUMP_TRUCK_26T';
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -124,7 +130,7 @@ export function TransportWizard({ mode }: Props) {
   const [step, setStep] = useState<WizardStep>('cargo');
   const [cargoDesc, setCargoDesc] = useState('');
   const [weightT, setWeightT] = useState('');
-  const [vehicleType, setVehicleType] = useState<TransportVehicleType>('TIPPER_LARGE');
+  const [vehicleType, setVehicleType] = useState<TransportVehicleType>('DUMP_TRUCK_18T');
   const [vehicleOverridden, setVehicleOverridden] = useState(false);
 
   const [fromAddress, setFromAddress] = useState('');

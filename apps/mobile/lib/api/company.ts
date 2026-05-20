@@ -310,3 +310,77 @@ export const companyApi = {
       body: JSON.stringify(data),
     }),
 };
+
+// ─── Project types ──────────────────────────────────────────────────────────
+
+export interface ApiProjectContract {
+  id: string;
+  contractNumber: string;
+  title: string;
+  status: FrameworkContractStatus;
+  startDate: string;
+  endDate: string | null;
+  totalAgreedQty: number;
+  totalConsumedQty: number;
+  totalProgressPct: number;
+  positionCount: number;
+  callOffCount: number;
+}
+
+export interface ApiProject {
+  id: string;
+  title: string;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  notes: string | null;
+  contractCount: number;
+  totalAgreedQty: number;
+  totalConsumedQty: number;
+  totalProgressPct: number;
+  contracts: ApiProjectContract[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectInput {
+  title: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  notes?: string;
+}
+
+// ─── Projects API ───────────────────────────────────────────────────────────
+
+export const projectsApi = {
+  list: (token: string) =>
+    apiFetch<ApiProject[]>('/projects', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  get: (id: string, token: string) =>
+    apiFetch<ApiProject>(`/projects/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  create: (data: CreateProjectInput, token: string) =>
+    apiFetch<ApiProject>('/projects', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: Partial<CreateProjectInput>, token: string) =>
+    apiFetch<ApiProject>(`/projects/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  remove: (id: string, token: string) =>
+    apiFetch<{ deleted: boolean }>(`/projects/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+};

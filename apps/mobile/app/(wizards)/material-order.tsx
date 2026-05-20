@@ -1,18 +1,19 @@
 /**
  * material-order.tsx
  *
- * Buyer material order wizard — 7-step Schüttflix-modelled flow (delivery):
+ * Buyer material order wizard — Schüttflix 8-step flow.
  *
- *  Step 1 – order-type : Delivery or Pickup?
- *  Step 2 – product    : Material category + fraction
- *  Step 3 – quantity   : Whole vehicles (BY_LOAD) OR manual amount
- *  Step 4 – address    : Delivery address + site truck access restrictions
- *  Step 5 – unload     : Precise unload spot (optional: photo + notes)
- *  Step 6 – when       : Delivery date + time window
- *  Step 7 – offers     : Supplier comparison → pick one → submit
+ * Flow (8 steps):
+ *  Step 1 – type     : Order intent (Piegāde / Projekta pasūtījums)
+ *  Step 2 – address  : Delivery address + truck access
+ *  Step 3 – product  : Material category + fraction  (with live prices at that address)
+ *  Step 4 – quantity : Whole vehicles (BY_LOAD) OR manual amount
+ *  Step 5 – when     : Delivery date + time window
+ *  Step 6 – offers   : Supplier comparison → pick one (compare only, no checkout)
+ *  Step 7 – unload   : Precise unload spot (optional: photo + notes)
+ *  Step 8 – review   : Contact + payment + terms + submit
  *
- * Pickup flow (5 steps): order-type → product → quantity → field → offers
- *
+ * Schüttflix model: delivery only. Pickup at physical sites is not offered.
  * State and submit handlers live here. Step UI lives in components/wizard/material/.
  */
 
@@ -45,16 +46,16 @@ import { DetailRow } from '@/components/ui/DetailRow';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { TextInputField } from '@/components/ui/TextInputField';
 import { WizardPaymentMethodPicker } from '@/components/wizard/WizardPaymentMethodPicker';
+import { WizardContactFields, wizardInputStyle } from '@/components/wizard/WizardContactFields';
 import { WizardLayout } from '@/components/wizard/WizardLayout';
 import { AddressField } from '@/components/ui/AddressField';
 import type { PickedAddress } from '@/components/wizard/InlineAddressStep';
-import { OrderTypeStep } from '@/components/wizard/material/OrderTypeStep';
+// OrderTypeStep removed — delivery/pickup toggle is now inline in the address step
 import { ProductStep } from '@/components/wizard/material/ProductStep';
 import { QuantityStep } from '@/components/wizard/material/QuantityStep';
 import { UnloadSpotStep } from '@/components/wizard/material/UnloadSpotStep';
 import { WhenStep } from '@/components/wizard/material/WhenStep';
 import { OffersStep } from '@/components/wizard/material/OffersStep';
-import { FieldPickerStep } from '@/components/wizard/material/FieldPickerStep';
 import { WizardAuthGate } from '@/components/wizard/WizardAuthGate';
 
 import {
@@ -67,37 +68,38 @@ import {
 const DRAFT_KEY = '@b3hub_wizard_draft';
 
 type Step =
-  | 'order-type' // Step 1: Delivery or Pickup?
-  | 'product' // Step 2: Material category + fraction
-  | 'quantity' // Step 3: How much? (vehicle grid or manual)
-  | 'address' // Step 4: Delivery address + truck access
-  | 'unload' // Step 5: Unload spot (optional)
-  | 'when' // Step 6: Date + time window
-  | 'offers' // Step 7: Supplier offers → pick → submit
-  | 'field'; // Pickup: field/slot selection
+  | 'type' // Step 1: Order intent (Piegāde / Projekta pasūtījums)
+  | 'address' // Step 2: Where to deliver?
+  | 'product' // Step 3: Material category + fraction
+  | 'quantity' // Step 4: How much? (vehicle grid or manual)
+  | 'when' // Step 5: Date + time window
+  | 'offers' // Step 6: Supplier comparison (compare only)
+  | 'unload' // Step 7: Unload spot (optional)
+  | 'review'; // Step 8: Contact + payment + terms + submit
 
 type SubmitResult = 'order';
 
+// Schüttflix 8-step flow: intent → address → catalog → quantity → date → comparison → unload → review
 const DELIVERY_STEPS: Step[] = [
-  'order-type',
+  'type',
+  'address',
   'product',
   'quantity',
-  'address',
-  'unload',
   'when',
   'offers',
+  'unload',
+  'review',
 ];
-const PICKUP_STEPS: Step[] = ['order-type', 'product', 'quantity', 'field', 'offers'];
 
 const STEP_TITLES: Record<Step, string> = {
-  'order-type': 'Pasūtījuma veids',
+  type: 'Kā vēlaties pasūtīt?',
+  address: 'Kur piegādāt?',
   product: 'Ko pasūtīt?',
   quantity: 'Cik daudz?',
-  address: 'Kur piegādāt?',
-  unload: 'Izkraušanas vieta',
   when: 'Kad piegādāt?',
   offers: 'Salīdzini piedāvājumus',
-  field: 'Izvēlies punktu',
+  unload: 'Izkraušanas vieta',
+  review: 'Apstiprināt pasūtījumu',
 };
 
 type WizardDraft = {
@@ -143,25 +145,14 @@ export default function OrderRequestWizard() {
   );
   const category = selectedCategory;
 
+  // ── Order intent (Step 1) ──
+  const [orderIntent, setOrderIntent] = useState<'DELIVERY' | 'PROJECT'>('DELIVERY');
+
   // ── Step ──
-  const [step, setStep] = useState<Step>('order-type');
-  const [fulfillmentType, setFulfillmentType] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
-  const [pickupFieldId, setPickupFieldId] = useState('');
-  const [pickupSlotId, setPickupSlotId] = useState('');
-  const [pickupDate, setPickupDate] = useState('');
+  const [step, setStep] = useState<Step>('type');
 
-  // Computed STEPS depends on fulfillmentType
-  const STEPS: Step[] = fulfillmentType === 'PICKUP' ? PICKUP_STEPS : DELIVERY_STEPS;
-
+  const STEPS: Step[] = DELIVERY_STEPS;
   const stepIndex = STEPS.indexOf(step);
-
-  // When fulfillmentType changes and current step is no longer valid, snap to first step
-  useEffect(() => {
-    if (stepIndex === -1) {
-      setStep('order-type');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fulfillmentType]);
 
   // ── Specs ──
   const [materialName, setMaterialName] = useState(
@@ -214,6 +205,12 @@ export default function OrderRequestWizard() {
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'INVOICE'>('CARD');
   const [repeatEnabled] = useState(() => params.schedule === '1');
   const [repeatInterval] = useState<7 | 14 | 30>(7);
+
+  // ── Live prices for catalog step (per-category min prices at this address) ──
+  const [livePrices, setLivePrices] = useState<
+    Record<string, { minPrice: number | null; supplierCount: number }>
+  >({});
+  const [livePricesLoading, setLivePricesLoading] = useState(false);
 
   // ── Offers ──
   const [offers, setOffers] = useState<SupplierOffer[]>([]);
@@ -291,7 +288,7 @@ export default function OrderRequestWizard() {
           setUnit(d.unit || unit);
           setQuantity(d.quantity || quantity);
           setNotes(d.notes || '');
-          setStep(d.step || 'order-type');
+          setStep(d.step || 'type');
           if (d.pickedAddress) setPickedAddress(d.pickedAddress);
           if (d.deliveryDate) setDeliveryDate(d.deliveryDate);
           setDeliveryWindow(d.deliveryWindow || 'ANY');
@@ -367,11 +364,56 @@ export default function OrderRequestWizard() {
     setUnit(orderType === 'BY_LOAD' ? 'TONNE' : ORDER_TYPE_UNIT_MAP[orderType]);
   }, [orderType]);
 
+  // ── Live prices for catalog/product step ──
+  useEffect(() => {
+    if (step !== 'product') return;
+    if (!pickedAddress) return;
+    const CATS: MaterialCategory[] = [
+      'GRAVEL',
+      'SAND',
+      'STONE',
+      'CONCRETE',
+      'ASPHALT',
+      'SOIL',
+      'CLAY',
+      'RECYCLED_CONCRETE',
+      'RECYCLED_SOIL',
+      'OTHER',
+    ];
+    setLivePricesLoading(true);
+    Promise.all(
+      CATS.map(async (cat) => {
+        try {
+          const catOffers = await api.materials.getOffers(
+            { category: cat, quantity: 26, lat: pickedAddress?.lat, lng: pickedAddress?.lng },
+            token ?? undefined,
+          );
+          const prices = catOffers.map((o) => o.basePrice).filter((p) => p > 0);
+          return {
+            category: cat,
+            minPrice: prices.length > 0 ? Math.min(...prices) : null,
+            supplierCount: catOffers.length,
+          };
+        } catch {
+          return { category: cat, minPrice: null, supplierCount: 0 };
+        }
+      }),
+    )
+      .then((results) => {
+        const map: Record<string, { minPrice: number | null; supplierCount: number }> = {};
+        for (const r of results)
+          map[r.category] = { minPrice: r.minPrice, supplierCount: r.supplierCount };
+        setLivePrices(map);
+      })
+      .finally(() => setLivePricesLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, pickedAddress?.lat, pickedAddress?.lng]);
+
   // ── Load offers when entering the offers step ──
   // No auth required to browse prices — auth gate fires at the moment of commitment.
   useEffect(() => {
     if (step !== 'offers') return;
-    if (fulfillmentType === 'DELIVERY' && !pickedAddress) return;
+    if (!pickedAddress) return;
     setOffersLoading(true);
     setOffersError('');
     setOffers([]);
@@ -529,10 +571,7 @@ export default function OrderRequestWizard() {
           unitPrice: offer.basePrice,
           deliveryAddress: pickedAddress?.address ?? '',
           deliveryCity: pickedAddress?.city ?? '',
-          deliveryDate:
-            pickupDate ||
-            deliveryDate ||
-            new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          deliveryDate: deliveryDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
           deliveryWindow: deliveryWindow !== 'ANY' ? deliveryWindow : undefined,
           deliveryFee: offer.deliveryFee ?? undefined,
           deliveryLat: pickedAddress?.lat,
@@ -547,9 +586,7 @@ export default function OrderRequestWizard() {
           noContactOnSite: noContactOnSite || undefined,
           truckCount,
           truckIntervalMinutes: truckCount > 1 ? truckIntervalMinutes : undefined,
-          fulfillmentType,
-          pickupFieldId: pickupFieldId || undefined,
-          pickupSlotId: pickupSlotId || undefined,
+          fulfillmentType: 'DELIVERY' as const,
           paymentMethod,
         },
         currentToken,
@@ -664,21 +701,25 @@ export default function OrderRequestWizard() {
 
   // ── CTA ──
   const canProceed =
-    step === 'order-type'
+    step === 'type'
       ? true
-      : step === 'product'
-        ? !!selectedFraction
-        : step === 'quantity'
-          ? quantity > 0
-          : step === 'address'
-            ? !!pickedAddress
-            : step === 'unload'
-              ? true // optional
-              : step === 'field'
-                ? !!pickupFieldId && !!pickupSlotId
-                : step === 'when'
-                  ? !!deliveryDate
-                  : !offersLoading && !submitting && !submitted && termsAccepted;
+      : step === 'address'
+        ? !!pickedAddress
+        : step === 'product'
+          ? !!selectedFraction
+          : step === 'quantity'
+            ? quantity > 0
+            : step === 'when'
+              ? !!deliveryDate
+              : step === 'offers'
+                ? false // OffersStep owns its sticky CTA
+                : step === 'unload'
+                  ? true // optional
+                  : /* review */ !submitting &&
+                    !submitted &&
+                    termsAccepted &&
+                    !!selectedOffer &&
+                    (noContactOnSite || !!contactPhone.trim());
 
   const hasUnloadData = !!sitePhotoUri || !!notes.trim();
 
@@ -686,15 +727,15 @@ export default function OrderRequestWizard() {
     ? orderId.startsWith('guest:')
       ? 'Uz sākumu'
       : 'Skatīt pasūtījumu'
-    : step === 'order-type'
-      ? 'Turpināt'
-      : step === 'unload'
-        ? hasUnloadData
-          ? 'Turpināt'
-          : 'Izlaist'
-        : step === 'offers'
-          ? 'Nosūtīt pieprasījumu'
-          : 'Turpināt';
+    : step === 'unload'
+      ? hasUnloadData
+        ? 'Turpināt'
+        : 'Izlaist'
+      : step === 'review'
+        ? submitting
+          ? 'Nosūtā...'
+          : 'Nosūtīt pasūtījumu'
+        : 'Turpināt';
 
   const handleCTA = submitted
     ? orderId.startsWith('guest:')
@@ -702,7 +743,11 @@ export default function OrderRequestWizard() {
       : () => router.replace(`/(buyer)/order/${orderId}` as never)
     : step === 'offers'
       ? undefined
-      : goNext;
+      : step === 'review'
+        ? () => {
+            if (selectedOffer) handleSelectOffer(selectedOffer);
+          }
+        : goNext;
 
   return (
     <WizardLayout
@@ -717,22 +762,100 @@ export default function OrderRequestWizard() {
       ctaLabel={ctaLabel}
       onCTA={handleCTA}
       ctaDisabled={!canProceed || submitting}
-      ctaLoading={submitting && step !== 'offers'}
-      hideFooter={step === 'offers' || step === 'order-type'}
+      ctaLoading={submitting && step === 'review'}
+      hideFooter={step === 'offers' || step === 'type'}
       stepKey={step}
     >
-      {/* ── Step 1: Order type ─────────────────────────────────────────── */}
-      {step === 'order-type' && (
-        <OrderTypeStep
-          fulfillmentType={fulfillmentType}
-          onSelect={(type) => {
-            setFulfillmentType(type);
-            goNext();
-          }}
-        />
+      {/* ── Step 1: Order type ──────────────────────────────────────────── */}
+      {step === 'type' && (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text
+            style={{
+              fontSize: 15,
+              fontFamily: 'Inter_500Medium',
+              color: '#6B7280',
+              lineHeight: 22,
+              marginBottom: 28,
+            }}
+          >
+            Izvēlieties pasūtīšanas veidu, lai sāktu
+          </Text>
+
+          {[
+            {
+              id: 'DELIVERY' as const,
+              emoji: '🚚',
+              title: 'Piegāde',
+              subtitle: 'Materiāli tiks piegādāti uz jūsu norādīto adresi',
+            },
+            {
+              id: 'PROJECT' as const,
+              emoji: '📋',
+              title: 'Projekta pasūtījums',
+              subtitle: 'Materiāls tiks saistīts ar esošu projektu vai pamatlīgumu',
+            },
+          ].map((opt) => {
+            const active = orderIntent === opt.id;
+            return (
+              <TouchableOpacity
+                key={opt.id}
+                activeOpacity={0.85}
+                onPress={() => {
+                  haptics.medium();
+                  setOrderIntent(opt.id);
+                  goNext();
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 16,
+                  backgroundColor: active ? '#111827' : '#fff',
+                  borderRadius: 16,
+                  borderWidth: 1.5,
+                  borderColor: active ? '#111827' : '#E5E7EB',
+                  padding: 20,
+                  marginBottom: 12,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}
+              >
+                <Text style={{ fontSize: 28 }}>{opt.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: 'Inter_700Bold',
+                      color: active ? '#fff' : '#111827',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {opt.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: 'Inter_400Regular',
+                      color: active ? 'rgba(255,255,255,0.7)' : '#6B7280',
+                      lineHeight: 18,
+                    }}
+                  >
+                    {opt.subtitle}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       )}
 
-      {/* ── Step 2: Product ────────────────────────────────────────────── */}
+      {/* ── Step 3: Product (catalog with live prices) ────────────────────── */}
       {step === 'product' && (
         <ProductStep
           category={selectedCategory}
@@ -741,6 +864,8 @@ export default function OrderRequestWizard() {
           onFractionChange={setSelectedFraction}
           categoryLabels={categoryLabels}
           categoryFractions={categoryFractions}
+          livePrices={livePrices}
+          livePricesLoading={livePricesLoading}
         />
       )}
 
@@ -756,7 +881,7 @@ export default function OrderRequestWizard() {
         />
       )}
 
-      {/* ── Step 4: Address + truck access ─────────────────────────────── */}
+      {/* ── Step 1: Address ─────────────────────────────────────────────── */}
       {step === 'address' && (
         <ScrollView
           style={{ flex: 1 }}
@@ -765,7 +890,7 @@ export default function OrderRequestWizard() {
           keyboardShouldPersistTaps="handled"
         >
           {/* ── Instructions ── */}
-          <View style={{ marginBottom: 24, marginTop: 8 }}>
+          <View style={{ marginBottom: 24, marginTop: 0 }}>
             <Text
               style={{
                 fontSize: 16,
@@ -938,19 +1063,7 @@ export default function OrderRequestWizard() {
         />
       )}
 
-      {/* ── Step 4 (pickup): Field/slot picker ─────────────────────────── */}
-      {step === 'field' && (
-        <FieldPickerStep
-          selectedFieldId={pickupFieldId}
-          selectedSlotId={pickupSlotId}
-          onFieldChange={setPickupFieldId}
-          onSlotChange={setPickupSlotId}
-          onPickupDateChange={setPickupDate}
-          requestedQty={quantity}
-        />
-      )}
-
-      {/* ── Step 6: When ───────────────────────────────────────────────── */}
+      {/* ── Step 5: When ───────────────────────────────────────────────── */}
       {step === 'when' && (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -965,7 +1078,7 @@ export default function OrderRequestWizard() {
         </ScrollView>
       )}
 
-      {/* ── Step 7: Offers ─────────────────────────────────────────────── */}
+      {/* ── Step 6: Offers (compare only — no checkout) ─────────────────── */}
       {step === 'offers' && (
         <OffersStep
           offers={offers}
@@ -999,6 +1112,10 @@ export default function OrderRequestWizard() {
           onContactPhoneChange={setContactPhone}
           isGuestSuccess={orderId.startsWith('guest:')}
           guestToken={orderId.startsWith('guest:') ? orderId.slice(6) : undefined}
+          onOfferChosen={(offer) => {
+            setSelectedOffer(offer);
+            goNext(); // advances to 'unload'
+          }}
           onNavigateToOrder={() => {
             if (!orderId) return;
             if (orderId.startsWith('guest:')) {
@@ -1010,7 +1127,142 @@ export default function OrderRequestWizard() {
         />
       )}
 
-      {/* Auth gate — shown when a guest taps submit in the offers step */}
+      {/* ── Step 8: Review + checkout ───────────────────────────────────── */}
+      {step === 'review' && (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Order summary card */}
+          {selectedOffer && (
+            <WizardSummaryCard>
+              <DetailRow label="Materiāls" value={materialName || selectedFraction} />
+              <DetailRow label="Daudzums" value={`${quantity} ${UNIT_SHORT[unit]}`} />
+              <DetailRow label="Adrese" value={pickedAddress?.address ?? ''} />
+              <DetailRow label="Piegāde" value={deliveryDate} />
+              <DetailRow label="Piegādātājs" value={selectedOffer.supplier.name} />
+              <DetailRow label="Cena" value={`€${selectedOffer.totalPrice.toFixed(2)}`} last />
+            </WizardSummaryCard>
+          )}
+
+          {/* Contact person */}
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_700Bold',
+              color: '#9ca3af',
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              marginTop: 24,
+              marginBottom: 12,
+            }}
+          >
+            Kontaktpersona objektā
+          </Text>
+          <WizardContactFields
+            name={contactName}
+            onChangeName={setContactName}
+            phone={contactPhone}
+            onChangePhone={setContactPhone}
+            extras={
+              <TextInput
+                placeholder="BIS numurs (neobligāts)"
+                placeholderTextColor="#9CA3AF"
+                value={bisNumber}
+                onChangeText={setBisNumber}
+                style={wizardInputStyle}
+              />
+            }
+          />
+
+          {/* Payment method */}
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: 'Inter_700Bold',
+              color: '#9ca3af',
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              marginTop: 24,
+              marginBottom: 12,
+            }}
+          >
+            Apmaksas veids
+          </Text>
+          <WizardPaymentMethodPicker
+            value={paymentMethod}
+            onChange={setPaymentMethod}
+            isLoggedIn={!!user}
+          />
+
+          {/* Terms */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              haptics.light();
+              setTermsAccepted((v) => !v);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 12,
+              marginTop: 24,
+              padding: 16,
+              backgroundColor: '#fff',
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: termsAccepted ? '#111827' : '#E5E7EB',
+            }}
+          >
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 4,
+                borderWidth: 1.5,
+                borderColor: termsAccepted ? '#111827' : '#D1D5DB',
+                backgroundColor: termsAccepted ? '#111827' : '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 1,
+              }}
+            >
+              {termsAccepted && <CheckCircle2 size={12} color="#fff" />}
+            </View>
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 13,
+                fontFamily: 'Inter_500Medium',
+                color: '#374151',
+                lineHeight: 19,
+              }}
+            >
+              Piekrītu{' '}
+              <Text style={{ textDecorationLine: 'underline' }}>lietošanas noteikumiem</Text> un
+              apstiprinu, ka sniegtā informācija ir pareiza.
+            </Text>
+          </TouchableOpacity>
+
+          {submitError ? (
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: 'Inter_500Medium',
+                color: '#ef4444',
+                marginTop: 12,
+                textAlign: 'center',
+              }}
+            >
+              {submitError}
+            </Text>
+          ) : null}
+        </ScrollView>
+      )}
+
+      {/* Auth gate — shown when a guest taps submit in the review step */}
       <WizardAuthGate
         visible={authGateVisible}
         onAuthenticated={() => {

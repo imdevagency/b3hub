@@ -17,13 +17,13 @@ export type TransportJobType =
   | 'EQUIPMENT_TRANSPORT';
 
 export type VehicleTypeEnum =
-  | 'DUMP_TRUCK'
+  | 'DUMP_TRUCK_10T'
+  | 'DUMP_TRUCK_18T'
+  | 'DUMP_TRUCK_26T'
   | 'FLATBED_TRUCK'
   | 'SEMI_TRAILER'
-  | 'HOOK_LIFT'
   | 'SKIP_LOADER'
-  | 'TANKER'
-  | 'VAN';
+  | 'TANKER';
 
 export interface ApiTransportJob {
   id: string;

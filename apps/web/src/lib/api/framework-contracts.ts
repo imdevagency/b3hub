@@ -212,3 +212,53 @@ export async function activateFrameworkContract(
 export async function createAdvanceInvoice(contractId: string, amount: number, notes: string | undefined, token: string) {
   // stub to fix build
 }
+
+// ─── Projects ─────────────────────────────────────────────────────────────
+
+export interface ApiProject {
+  id: string;
+  title: string;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  notes: string | null;
+  contractCount: number;
+  totalAgreedQty: number;
+  totalConsumedQty: number;
+  totalProgressPct: number;
+  contracts: ApiFrameworkContract[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectInput {
+  title: string;
+  address?: string;
+  notes?: string;
+}
+
+export async function getProjects(token: string): Promise<ApiProject[]> {
+  return apiFetch<ApiProject[]>('/projects', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function createProject(data: CreateProjectInput, token: string): Promise<ApiProject> {
+  return apiFetch<ApiProject>('/projects', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateProject(
+  id: string,
+  data: Partial<CreateProjectInput>,
+  token: string,
+): Promise<ApiProject> {
+  return apiFetch<ApiProject>(`/projects/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}

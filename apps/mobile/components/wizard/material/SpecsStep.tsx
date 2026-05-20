@@ -47,8 +47,6 @@ export type SpecsStepProps = {
   setSitePhotoUrl: (url: string | null) => void;
   uploadingPhoto: boolean;
   handlePickSitePhoto: () => void;
-  fulfillmentType?: 'DELIVERY' | 'PICKUP';
-  onFulfillmentTypeChange?: (v: 'DELIVERY' | 'PICKUP') => void;
   /** Live category labels from DB; falls back to static @b3hub/shared values. */
   categoryLabels?: Record<string, string>;
   /** Live fractions per category from DB; falls back to static @b3hub/shared values. */
@@ -71,8 +69,6 @@ export function SpecsStep({
   setSitePhotoUrl,
   uploadingPhoto,
   handlePickSitePhoto,
-  fulfillmentType,
-  onFulfillmentTypeChange,
   categoryLabels: categoryLabelsProp,
   categoryFractions: categoryFractionsProp,
 }: SpecsStepProps) {
@@ -146,57 +142,6 @@ export function SpecsStep({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Fulfillment type toggle */}
-        {onFulfillmentTypeChange && (
-          <View
-            style={{
-              flexDirection: 'row',
-              backgroundColor: colors.bgMuted || '#f3f4f6',
-              borderRadius: 999,
-              padding: 4,
-              marginBottom: 24,
-            }}
-          >
-            {(['DELIVERY', 'PICKUP'] as const).map((opt) => {
-              const active = fulfillmentType === opt;
-              return (
-                <TouchableOpacity
-                  key={opt}
-                  onPress={() => {
-                    haptics.light();
-                    onFulfillmentTypeChange(opt);
-                  }}
-                  activeOpacity={0.8}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 12,
-                    borderRadius: 999,
-                    alignItems: 'center',
-                    backgroundColor: active ? colors.bgCard || '#fff' : 'transparent',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: active ? 0.05 : 0,
-                    shadowRadius: active ? 4 : 0,
-                    elevation: active ? 2 : 0,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontFamily: active ? 'Inter_700Bold' : 'Inter_600SemiBold',
-                      color: active
-                        ? colors.textPrimary || '#111827'
-                        : colors.textMuted || '#9ca3af',
-                    }}
-                  >
-                    {opt === 'DELIVERY' ? '🚛 Piegāde' : '📍 Paņemšana'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
         {/* Material + Fraction pickers */}
         <View className="flex-row gap-4 mb-6">
           <TouchableOpacity

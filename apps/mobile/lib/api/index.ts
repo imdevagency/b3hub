@@ -80,7 +80,7 @@ import { chatApi } from './chat';
 
 import { containersApi } from './containers';
 
-import { companyApi } from './company';
+import { companyApi, projectsApi } from './company';
 
 import { paymentsApi } from './payments';
 
@@ -193,5 +193,9 @@ export const api = {
   // ── Fuel price rates (public, no auth) ──────────────────────────────
 
   ...fuelApi,
+
+  // ── Projects ─────────────────────────────────────────────────────────
+
+  projects: projectsApi,
 
 };

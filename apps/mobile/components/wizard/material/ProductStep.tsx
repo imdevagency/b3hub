@@ -18,6 +18,7 @@ import {
   Check,
 } from 'lucide-react-native';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SearchBar } from '@/components/ui/SearchBar';
 import { haptics } from '@/lib/haptics';
 import type { MaterialCategory } from '@/lib/materials';
 import { CATEGORY_FRACTIONS, type OrderType } from './_constants';
@@ -69,6 +70,9 @@ export type ProductStepProps = {
   categoryLabels?: Record<string, string>;
   /** Live fractions per category from DB (optional). */
   categoryFractions?: Record<string, string[]>;
+  /** Live min price per category at the delivery address. */
+  livePrices?: Record<string, { minPrice: number | null; supplierCount: number }>;
+  livePricesLoading?: boolean;
 };
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -80,11 +84,22 @@ export function ProductStep({
   onFractionChange,
   categoryLabels,
   categoryFractions: categoryFractionsProp,
+  livePrices,
+  livePricesLoading,
 }: ProductStepProps) {
   const activeFractions = categoryFractionsProp ?? CATEGORY_FRACTIONS;
   const [fractionPickerOpen, setFractionPickerOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   const fractions = activeFractions[category] ?? CATEGORY_FRACTIONS[category] ?? [];
+
+  const query = search.trim().toLowerCase();
+  const visibleCategories = query
+    ? CATEGORY_ORDER.filter((cat) => {
+        const label = (categoryLabels?.[cat] ?? CATEGORY_META[cat]?.label ?? cat).toLowerCase();
+        return label.includes(query);
+      })
+    : CATEGORY_ORDER;
 
   function handleCategorySelect(cat: MaterialCategory) {
     haptics.medium();
@@ -105,6 +120,15 @@ export function ProductStep({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Search bar */}
+        <SearchBar
+          editable
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Meklēt materīlu..."
+          style={{ marginBottom: 20 }}
+        />
+
         {/* Category grid */}
         <View
           style={{
@@ -114,7 +138,7 @@ export function ProductStep({
             marginBottom: 24,
           }}
         >
-          {CATEGORY_ORDER.map((cat) => {
+          {visibleCategories.map((cat) => {
             const meta = CATEGORY_META[cat] ?? CATEGORY_META.OTHER;
             const Icon = meta.Icon;
             const active = category === cat;
@@ -185,6 +209,24 @@ export function ProductStep({
                 >
                   {label}
                 </Text>
+
+                {/* Live price badge */}
+                {livePrices?.[cat] != null && (
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'Inter_600SemiBold',
+                      color: active ? 'rgba(255,255,255,0.75)' : '#6b7280',
+                      marginTop: 4,
+                    }}
+                  >
+                    {livePrices[cat].minPrice != null
+                      ? `no €${livePrices[cat].minPrice!.toFixed(2)}/t`
+                      : livePricesLoading
+                        ? '...'
+                        : '—'}
+                  </Text>
+                )}
               </TouchableOpacity>
             );
           })}

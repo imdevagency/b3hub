@@ -5,14 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/lib/auth-context';
 import { useMode, MODE_HOME } from '@/lib/mode-context';
-import {
-  Home,
-  ClipboardList,
-  User,
-  MoreHorizontal,
-  LayoutGrid,
-  MessageCircle,
-} from 'lucide-react-native';
+import { Home, ClipboardList, User, MoreHorizontal, MessageCircle } from 'lucide-react-native';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { t } from '@/lib/translations';
@@ -32,8 +25,6 @@ function BuyerLayoutContent() {
   const pathname = usePathname();
   // Routes that run edge-to-edge and should hide the tab bar + top bar (tracking, live maps, etc.)
   const isFullScreenRoute = /\/(order|transport-job)\/[^/]/.test(pathname);
-  // Catalog manages its own top safe-area via its custom header — no layout padding needed
-  const isCatalogScreen = pathname.endsWith('/catalog');
   // eslint-disable-next-line react/display-name
   const renderTabBar = useCallback(
     (props: BottomTabBarProps) => (isFullScreenRoute ? null : <AnimatedTabBar {...props} />),
@@ -85,7 +76,7 @@ function BuyerLayoutContent() {
         paddingTop: isFullScreenRoute ? 0 : insets.top,
       }}
     >
-      {config !== null && !isFullScreenRoute && !isCatalogScreen && (
+      {config !== null && !isFullScreenRoute && (
         <TopBar title="" unreadCount={unreadCount} leftElement={avatarBtn} />
       )}
       <Tabs screenOptions={{ headerShown: false }} tabBar={renderTabBar}>
@@ -97,13 +88,7 @@ function BuyerLayoutContent() {
           }}
         />
         <Tabs.Screen name="new-order" options={{ href: null }} />
-        <Tabs.Screen
-          name="catalog"
-          options={{
-            title: t.tabs.catalog,
-            tabBarIcon: ({ color }) => <LayoutGrid size={22} color={color} />,
-          }}
-        />
+        <Tabs.Screen name="catalog" options={{ href: null }} />
         <Tabs.Screen
           name="orders"
           options={{
@@ -125,6 +110,7 @@ function BuyerLayoutContent() {
         <Tabs.Screen name="transport-job/[id]" options={{ href: null }} />
         <Tabs.Screen name="framework-contracts" options={{ href: null }} />
         <Tabs.Screen name="framework-contract/[id]" options={{ href: null }} />
+        <Tabs.Screen name="project/[id]" options={{ href: null }} />
         {/* (account) group — company management */}
         <Tabs.Screen name="(account)/invoices" options={{ href: null }} />
         <Tabs.Screen name="(account)/certificates" options={{ href: null }} />

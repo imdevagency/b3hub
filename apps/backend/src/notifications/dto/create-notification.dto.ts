@@ -29,6 +29,7 @@ export enum NotificationType {
   SURCHARGE_REJECTED = 'SURCHARGE_REJECTED', // buyer rejected a pending surcharge
   DRIVER_DELAY = 'DRIVER_DELAY', // driver reported they are running late
   PAYOUT_PENDING = 'PAYOUT_PENDING', // carrier needs to complete Stripe Connect onboarding
+  TRANSPORT_ARRIVAL_SCHEDULED = 'TRANSPORT_ARRIVAL_SCHEDULED', // driver scheduled their arrival window
 }
 
 export class CreateNotificationDto {

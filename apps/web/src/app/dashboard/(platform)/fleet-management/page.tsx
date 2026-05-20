@@ -38,13 +38,13 @@ import {
 // ── Vehicle constants ─────────────────────────────────────────────────────────
 
 const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
-  DUMP_TRUCK: 'Pašizgāzējs',
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
   FLATBED_TRUCK: 'Platforma',
   SEMI_TRAILER: 'Vilcējs ar puspiekabi',
-  HOOK_LIFT: 'Āķa pacēlājs',
   SKIP_LOADER: 'Konteinerauto',
   TANKER: 'Cisternas auto',
-  VAN: 'Furgons',
 };
 
 const VEHICLE_STATUS_CONFIG: Record<VehicleStatus, { label: string; className: string }> = {

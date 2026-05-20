@@ -68,25 +68,12 @@ Bilt serves **two customer segments**:
 
 ---
 
-## B3 Fields — Physical Fulfillment Network
+## Fulfillment Model
 
-In addition to the digital marketplace, B3 Group operates **B3 Fields** — physical sites where customers can pick up materials or drop off construction waste.
+**Delivery only.** Bilt does not operate physical pickup points. All material orders are delivered to the buyer's site by a carrier. There is no self-collection ("pickup at field") option.
 
-### What B3 Fields do
-
-- **Materials pickup** — customers buy materials on the platform and collect on-site (no delivery truck needed). Ideal for homeowners and small contractors with their own vehicle.
-- **Waste drop-off** — clients drive in and leave construction waste. Waste is received, logged, and a receipt is issued.
-- **Trailer rental** — rent a trailer tied to a material pickup order for self-haul.
-
-### How B3 Fields fit the platform
-
-Every transaction at a B3 Field flows through the Bilt platform. Payment, documents, and receipts are handled the same way as any other order.
-
-B3 Fields are modelled as **fulfillment locations** in the system:
-
-- Material orders: `fulfillmentType: PICKUP` at a B3 Field address
-- Waste disposal: B3 Field registered as a `RecyclingCenter` with `licensed` flag, physical address, and opening hours
-- Trailer rental: attached to a Bilt order (not available as a standalone rental)
+- `fulfillmentType` on orders is always `DELIVERY`. The `PICKUP` enum value exists in the DB schema for historical reasons but is not exposed in any product UI.
+- Waste disposal: clients use the disposal wizard; a licensed recycling center accepts the waste at its own address (not a B3-operated site).
 
 ---
 

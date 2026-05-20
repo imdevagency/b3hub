@@ -49,9 +49,17 @@ import { colors } from '@/lib/theme';
 import { entering } from '@/lib/transitions';
 
 const VEHICLE_LABEL: Record<string, string> = {
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
+  FLATBED_TRUCK: 'Platforma',
+  SEMI_TRAILER: 'Vilcējs ar puspiekabi',
+  SKIP_LOADER: 'Konteinerauto',
+  TANKER: 'Cisternauto',
+  // legacy fallbacks
   TIPPER_SMALL: 'Pašizgāzējs (10 t)',
-  TIPPER_LARGE: 'Pašizgāzējs lielais (18 t)',
-  ARTICULATED_TIPPER: 'Sattelkipper (26 t)',
+  TIPPER_LARGE: 'Pašizgāzējs (18 t)',
+  ARTICULATED_TIPPER: 'Pašizgāzējs (26 t)',
 };
 
 const CARGO_LABEL: Record<string, string> = {

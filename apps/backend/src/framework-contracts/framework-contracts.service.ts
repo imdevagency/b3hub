@@ -339,6 +339,7 @@ export class FrameworkContractsService {
         notes: dto.notes,
         status: FrameworkContractStatus.DRAFT,
         supplierId: dto.supplierId ?? null,
+        projectId: dto.projectId ?? null,
         positions: dto.positions?.length
           ? {
               create: dto.positions.map((p) => ({
@@ -728,7 +729,7 @@ export class FrameworkContractsService {
       supplier: c.supplier,
       createdBy: c.createdBy,
       projectId:
-        (c as unknown as { projectId?: string | null }).projectId ?? null,
+        (c as any).projectId ?? null,
       totalCallOffs: c._count?.callOffJobs ?? 0,
       totalAgreedQty: totalAgreed,
       totalConsumedQty: totalConsumed,

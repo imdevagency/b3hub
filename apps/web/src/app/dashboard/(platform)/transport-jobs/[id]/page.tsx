@@ -90,13 +90,13 @@ const CARGO_LABELS: Record<string, string> = {
 };
 
 const VEHICLE_LABELS: Record<string, string> = {
-  DUMP_TRUCK: 'Pašizgāzējs',
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Pašizgāzējs (26 t)',
   FLATBED_TRUCK: 'Platforma',
-  HOOK_LIFT: 'Hāku pacēlājs',
-  SKIP_LOADER: 'Konteinera auto',
   SEMI_TRAILER: 'Puspiekabe',
+  SKIP_LOADER: 'Konteinera auto',
   TANKER: 'Cisterna',
-  VAN: 'Furgons',
 };
 
 function fmtTime(iso: string | null | undefined) {

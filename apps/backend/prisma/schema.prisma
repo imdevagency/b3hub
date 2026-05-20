@@ -270,15 +270,13 @@ enum TransportExceptionStatus {
 }
 
 enum VehicleType {
-  DUMP_TRUCK
+  DUMP_TRUCK_10T
+  DUMP_TRUCK_18T
+  DUMP_TRUCK_26T
   FLATBED_TRUCK
   SEMI_TRAILER
-  HOOK_LIFT
   SKIP_LOADER
   TANKER
-  VAN
-  CAR
-  PICKUP_TRUCK
 }
 
 enum VehicleStatus {
@@ -535,6 +533,7 @@ model User {
   sentMessages                ChatMessage[]
   chatLastReads               ChatLastRead[]
   frameworkContracts          FrameworkContract[]
+  createdProjects             Project[]
   reportedTransportExceptions TransportJobException[] @relation("ExceptionReporter")
   resolvedTransportExceptions TransportJobException[] @relation("ExceptionResolver")
   savedAddresses              SavedAddress[]
@@ -649,6 +648,7 @@ model Company {
   reviews                    Review[]
   frameworkContracts         FrameworkContract[]   @relation("BuyerFrameworkContracts")
   supplierFrameworkContracts FrameworkContract[]   @relation("SupplierFrameworkContracts")
+  projects                   Project[]
   apiKeys                    ApiKey[]
   fieldPasses                FieldPass[]
   advanceInvoices            Invoice[]             @relation("BuyerInvoices")
@@ -2110,6 +2110,9 @@ model FrameworkContract {
   prepaidBalance  Float   @default(0)      // total advance payments received (EUR)
   prepaidUsed     Float   @default(0)      // consumed by issued field passes (EUR)
 
+  project     Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId   String?
+
   positions   FrameworkPosition[]
   callOffJobs TransportJob[]
   fieldPasses FieldPass[]
@@ -2118,7 +2121,32 @@ model FrameworkContract {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([projectId])
   @@map("framework_contracts")
+}
+
+// ── Projects (construction sites grouping framework contracts) ────────────────
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  address     String?
+  lat         Float?
+  lng         Float?
+  notes       String?
+
+  buyer       Company  @relation(fields: [buyerId], references: [id])
+  buyerId     String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+
+  frameworkContracts FrameworkContract[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerId])
+  @@map("projects")
 }
 
 model FrameworkPosition {

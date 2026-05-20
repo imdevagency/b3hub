@@ -64,28 +64,28 @@ const VEHICLE_OPTIONS: {
   pricePerKm: number;
 }[] = [
   {
-    type: 'TIPPER_SMALL',
+    type: 'DUMP_TRUCK_10T',
     label: 'Mazā pašizgāzēja',
-    sub: 'līdz 5 t · 6 m³',
+    sub: 'līdz 10 t · 8 m³',
     fromPrice: 89,
     pricePerKm: 1.5,
   },
   {
-    type: 'TIPPER_LARGE',
+    type: 'DUMP_TRUCK_18T',
     label: 'Lielā pašizgāzēja',
-    sub: 'līdz 15 t · 18 m³',
+    sub: 'līdz 18 t · 14 m³',
     fromPrice: 149,
     pricePerKm: 2.0,
   },
   {
-    type: 'ARTICULATED_TIPPER',
+    type: 'DUMP_TRUCK_26T',
     label: 'Puspiekabe',
     sub: 'līdz 26 t · 22 m³',
     fromPrice: 219,
     pricePerKm: 3.0,
   },
   {
-    type: 'FLATBED',
+    type: 'FLATBED_TRUCK',
     label: 'Platforma',
     sub: 'līdz 20 t · garums 13.6 m',
     fromPrice: 199,
@@ -222,22 +222,14 @@ export default function TransportWizard() {
     const weightTonnes = weightText ? parseFloat(weightText) : null;
     const cargo = activeDesc === 'Cits' ? otherText : activeDesc;
     if (weightTonnes !== null && !isNaN(weightTonnes)) {
-      if (weightTonnes <= 0.05) return 'CAR' as TransportVehicleType;
-      if (weightTonnes <= 1.0) return 'PICKUP_TRUCK' as TransportVehicleType;
-      if (weightTonnes <= 3.5) {
-        if (cargo === 'Smiltis/Grants' || cargo === 'Būvgruži') return 'TIPPER_SMALL';
-        return 'BOX_TRUCK';
-      }
-      if (weightTonnes <= 5.0) return 'TIPPER_SMALL';
-      if (weightTonnes <= 15.0) return 'TIPPER_LARGE';
-      return 'ARTICULATED_TIPPER';
+      if (weightTonnes <= 10.0) return 'DUMP_TRUCK_10T';
+      if (weightTonnes <= 18.0) return 'DUMP_TRUCK_18T';
+      return 'DUMP_TRUCK_26T';
     }
-    if (cargo === 'Mēbeles') return 'BOX_TRUCK';
-    if (cargo === 'Iekārtas') return 'FLATBED';
+    if (cargo === 'Iekārtas') return 'FLATBED_TRUCK';
+    if (cargo === 'Koks/Dēļi') return 'FLATBED_TRUCK';
     if (cargo === 'Smiltis/Grants' || cargo === 'Būvgruži' || cargo === 'Metāls/Lūžņi')
-      return 'TIPPER_SMALL';
-    if (cargo === 'Paletes' || cargo === 'Materiāli') return 'BOX_TRUCK';
-    if (cargo === 'Koks/Dēļi') return 'FLATBED';
+      return 'DUMP_TRUCK_10T';
     return null;
   }, [weightText, activeDesc, otherText]);
 

@@ -15,11 +15,10 @@ import { colors } from '@/lib/theme';
 import { formatDate } from '@/lib/format';
 
 const VEHICLE_LABELS: Record<string, string> = {
-  TIPPER_SMALL: 'Mazais pašizgāzējs (5 t)',
-  TIPPER_LARGE: 'Lielais pašizgāzējs (15 t)',
-  ARTICULATED_TIPPER: 'Puspiekabe (26 t)',
-  FLATBED: 'Platforma (20 t)',
-  BOX_TRUCK: 'Kravas furgons (3.5 t)',
+  DUMP_TRUCK_10T: 'Pašizgāzējs (10 t)',
+  DUMP_TRUCK_18T: 'Pašizgāzējs (18 t)',
+  DUMP_TRUCK_26T: 'Puspiekabe (26 t)',
+  FLATBED_TRUCK: 'Platforma (20 t)',
 };
 
 export default function TransportConfirmation() {

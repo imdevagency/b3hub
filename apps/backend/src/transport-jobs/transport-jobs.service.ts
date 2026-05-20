@@ -1231,7 +1231,7 @@ export class TransportJobsService {
   async scheduleArrival(jobId: string, driverId: string, plannedArrivalAt: string) {
     const job = await this.prisma.transportJob.findUnique({
       where: { id: jobId },
-      include: { order: { select: { userId: true } } },
+      include: { order: { select: { createdById: true } } },
     });
     if (!job) throw new NotFoundException('Transport job not found');
     if (job.driverId !== driverId) {
@@ -1251,7 +1251,7 @@ export class TransportJobsService {
     });
 
     // Notify buyer about the arrival window
-    const buyerUserId = job.order?.userId;
+    const buyerUserId = job.order?.createdById;
     if (buyerUserId) {
       const fmt = (d: Date) =>
         d.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Riga' });
